@@ -10,12 +10,11 @@ import lombok.NoArgsConstructor
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-class AuthenticationResponse : GenericSuccessResponse() {
+class AuthenticationResponse {
     @JsonProperty("access_token")
     var accessToken: String? = null
 
     @JsonProperty("refresh_token")
     var refreshToken: String? = null
-
 
 }

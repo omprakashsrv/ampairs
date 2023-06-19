@@ -13,7 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/auth/v1")
+@RequestMapping("/v1/auth")
 class AuthController @Autowired constructor(
     private val userService: UserService,
     private val authService: AuthService

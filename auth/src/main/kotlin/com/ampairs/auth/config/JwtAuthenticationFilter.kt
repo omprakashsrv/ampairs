@@ -1,6 +1,7 @@
 package com.ampairs.auth.config
 
 import com.ampairs.auth.domain.model.Token
+import com.ampairs.auth.domain.service.JwtService
 import com.ampairs.auth.persistance.respository.TokenRepository
 import jakarta.servlet.FilterChain
 import jakarta.servlet.ServletException
@@ -39,7 +40,7 @@ class JwtAuthenticationFilter @Autowired constructor(
         if (SecurityContextHolder.getContext().authentication == null) {
             val userDetails = userDetailsService.loadUserByUsername(userEmail)
             val isTokenValid =
-                tokenRepository.findByToken(jwt).map({ t: Token -> t.expired && t.revoked }).orElse(false)
+                tokenRepository.findByToken(jwt).map({ t: Token -> !t.expired && !t.revoked }).orElse(false)
             if (jwtService.isTokenValid(jwt, userDetails) && isTokenValid) {
                 val authToken = UsernamePasswordAuthenticationToken(
                     userDetails, null, userDetails.authorities

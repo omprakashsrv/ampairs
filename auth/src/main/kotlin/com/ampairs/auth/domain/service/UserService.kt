@@ -2,8 +2,12 @@ package com.ampairs.auth.domain.service
 
 import com.ampairs.auth.domain.model.User
 import com.ampairs.auth.persistance.respository.UserRepository
+import com.ampairs.auth.web.contract.UserUpdateRequest
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.security.core.Authentication
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
+
 
 @Service
 class UserService @Autowired constructor(val userRepository: UserRepository) {
@@ -13,6 +17,18 @@ class UserService @Autowired constructor(val userRepository: UserRepository) {
             existingUser = userRepository.save(user)
         }
         return existingUser
+    }
+
+    fun updateUser(userUpdateRequest: UserUpdateRequest): User {
+        val user = getSessionUser()
+        user.firstName = userUpdateRequest.firstName
+        user.lastName = userUpdateRequest.lastName
+        return userRepository.save(user)
+    }
+
+    fun getSessionUser(): User {
+        val auth: Authentication = SecurityContextHolder.getContext().authentication
+        return auth.principal as User
     }
 
 }

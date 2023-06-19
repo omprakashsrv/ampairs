@@ -1,6 +1,5 @@
 package com.ampairs.auth.domain.service
 
-import com.ampairs.auth.config.JwtService
 import com.ampairs.auth.domain.enums.TokenType
 import com.ampairs.auth.domain.model.SmsVerification
 import com.ampairs.auth.domain.model.Token
