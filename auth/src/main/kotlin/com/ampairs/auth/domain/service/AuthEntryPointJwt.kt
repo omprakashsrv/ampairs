@@ -19,7 +19,7 @@ class AuthEntryPointJwt : AuthenticationEntryPoint {
         response: HttpServletResponse,
         authException: AuthenticationException
     ) {
-        logger.error("Unauthorized error: {}", authException.message)
+        logger.error("Unauthorized error", authException)
         response.contentType = MediaType.APPLICATION_JSON_VALUE
         response.status = HttpServletResponse.SC_UNAUTHORIZED
         val body: MutableMap<String, Any?> = HashMap()
