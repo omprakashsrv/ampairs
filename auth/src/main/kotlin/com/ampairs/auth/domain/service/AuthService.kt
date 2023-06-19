@@ -12,6 +12,7 @@ import com.ampairs.auth.web.contract.AuthenticationRequest
 import com.ampairs.auth.web.contract.AuthenticationResponse
 import com.ampairs.auth.web.contract.GenericSuccessResponse
 import jakarta.servlet.http.HttpServletRequest
+import jakarta.transaction.Transactional
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpHeaders
 import org.springframework.security.authentication.AuthenticationManager
@@ -32,7 +33,7 @@ class AuthService @Autowired constructor(
     val authenticationManager: AuthenticationManager,
     val encoder: PasswordEncoder
 ) {
-
+    @Transactional
     fun init(user: User): GenericSuccessResponse {
         val smsVerification = SmsVerification()
         smsVerification.countryCode = user.countryCode
@@ -48,6 +49,7 @@ class AuthService @Autowired constructor(
         return genericSuccessResponse
     }
 
+    @Transactional
     fun authenticate(request: AuthenticationRequest): AuthenticationResponse {
         authenticationManager.authenticate(
             UsernamePasswordAuthenticationToken(
@@ -86,6 +88,7 @@ class AuthService @Autowired constructor(
     }
 
     @Throws(Exception::class)
+    @Transactional
     fun refreshToken(
         request: HttpServletRequest,
     ): AuthenticationResponse {
@@ -111,6 +114,7 @@ class AuthService @Autowired constructor(
     }
 
     @Throws(Exception::class)
+    @Transactional
     fun logout(
         request: HttpServletRequest,
     ): GenericSuccessResponse {
