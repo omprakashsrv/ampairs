@@ -1,0 +1,11 @@
+package com.ampairs.auth.persistance.respository
+
+import com.ampairs.auth.domain.model.User
+import org.springframework.data.repository.CrudRepository
+import org.springframework.stereotype.Repository
+import java.util.*
+
+@Repository
+interface UserRepository : CrudRepository<User, String> {
+    fun findByUserName(userName: String): Optional<User>
+}
