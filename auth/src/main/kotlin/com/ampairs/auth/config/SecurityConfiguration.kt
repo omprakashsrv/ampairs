@@ -1,6 +1,7 @@
 package com.ampairs.auth.config
 
-import com.ampairs.auth.domain.service.AuthEntryPointJwt
+import com.ampairs.auth.exception.AuthEntryPointJwt
+import com.ampairs.auth.filter.JwtAuthenticationFilter
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

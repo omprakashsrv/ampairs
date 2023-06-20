@@ -1,4 +1,4 @@
-package com.ampairs.auth.web.contract
+package com.ampairs.auth.domain.dto
 
 import lombok.AllArgsConstructor
 import lombok.NoArgsConstructor
@@ -8,5 +8,5 @@ import lombok.NoArgsConstructor
 class AuthenticationRequest {
     var userName: String? = null
     var password: String? = null
-    var authMode: AuthMode = AuthMode.OTP
+    val authMode: AuthMode = AuthMode.OTP
 }

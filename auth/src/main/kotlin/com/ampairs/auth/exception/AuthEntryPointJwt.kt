@@ -1,4 +1,4 @@
-package com.ampairs.auth.domain.service
+package com.ampairs.auth.exception
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.servlet.ServletException

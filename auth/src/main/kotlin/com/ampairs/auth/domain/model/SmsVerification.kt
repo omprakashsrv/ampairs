@@ -1,13 +1,12 @@
 package com.ampairs.auth.domain.model
 
-import com.ampairs.auth.config.Constants
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import lombok.NoArgsConstructor
 
 @Entity
 @NoArgsConstructor
-class SmsVerification : AbstractIdVerification() {
+class SmsVerification : com.ampairs.auth.domain.model.AbstractIdVerification() {
     @Column(name = "country_code")
     var countryCode: Int? = null
 
@@ -15,6 +14,6 @@ class SmsVerification : AbstractIdVerification() {
     var phone: String? = null
 
     override fun obtainIdPrefix(): String {
-        return Constants.SMS_VERIFICATION_PREFIX
+        return com.ampairs.auth.config.Constants.SMS_VERIFICATION_PREFIX
     }
 }

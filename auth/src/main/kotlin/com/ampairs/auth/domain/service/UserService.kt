@@ -1,8 +1,7 @@
 package com.ampairs.auth.domain.service
 
 import com.ampairs.auth.domain.model.User
-import com.ampairs.auth.persistance.respository.UserRepository
-import com.ampairs.auth.web.contract.UserUpdateRequest
+import com.ampairs.auth.respository.UserRepository
 import jakarta.transaction.Transactional
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.core.Authentication
@@ -23,7 +22,7 @@ class UserService @Autowired constructor(val userRepository: UserRepository) {
     }
 
     @Transactional
-    fun updateUser(userUpdateRequest: UserUpdateRequest): User {
+    fun updateUser(userUpdateRequest: com.ampairs.auth.domain.dto.UserUpdateRequest): User {
         val user = getSessionUser()
         user.firstName = userUpdateRequest.firstName
         user.lastName = userUpdateRequest.lastName

@@ -1,7 +1,6 @@
 package com.ampairs.auth.domain.model
 
 import ch.qos.logback.core.model.Model
-import com.ampairs.auth.config.Constants
 import com.ampairs.auth.utils.Helper
 import jakarta.persistence.*
 import java.sql.Timestamp
@@ -44,7 +43,7 @@ abstract class BaseDomain : Model() {
     @PrePersist
     protected fun prePersist() {
         if (id == "") {
-            id = Helper.generateUniqueId(obtainIdPrefix(), Constants.ID_LENGTH)
+            id = Helper.generateUniqueId(obtainIdPrefix(), com.ampairs.auth.config.Constants.ID_LENGTH)
         }
     }
 }

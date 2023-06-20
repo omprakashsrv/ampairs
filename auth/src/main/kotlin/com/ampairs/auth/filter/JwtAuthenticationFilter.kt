@@ -1,8 +1,8 @@
-package com.ampairs.auth.config
+package com.ampairs.auth.filter
 
 import com.ampairs.auth.domain.model.Token
 import com.ampairs.auth.domain.service.JwtService
-import com.ampairs.auth.persistance.respository.TokenRepository
+import com.ampairs.auth.respository.TokenRepository
 import jakarta.servlet.FilterChain
 import jakarta.servlet.ServletException
 import jakarta.servlet.http.HttpServletRequest

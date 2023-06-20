@@ -1,12 +1,12 @@
 package com.ampairs.auth.web.controller
 
+import com.ampairs.auth.domain.dto.AuthInitRequest
+import com.ampairs.auth.domain.dto.AuthenticationRequest
+import com.ampairs.auth.domain.dto.AuthenticationResponse
+import com.ampairs.auth.domain.dto.GenericSuccessResponse
 import com.ampairs.auth.domain.model.User
 import com.ampairs.auth.domain.service.AuthService
 import com.ampairs.auth.domain.service.UserService
-import com.ampairs.auth.web.contract.AuthInitRequest
-import com.ampairs.auth.web.contract.AuthenticationRequest
-import com.ampairs.auth.web.contract.AuthenticationResponse
-import com.ampairs.auth.web.contract.GenericSuccessResponse
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.springframework.beans.factory.annotation.Autowired

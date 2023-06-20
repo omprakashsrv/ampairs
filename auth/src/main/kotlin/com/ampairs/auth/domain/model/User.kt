@@ -1,7 +1,5 @@
 package com.ampairs.auth.domain.model
 
-import com.ampairs.auth.config.Constants
-import com.ampairs.auth.domain.enums.Role
 import jakarta.persistence.Column
 import jakarta.persistence.ElementCollection
 import jakarta.persistence.Entity
@@ -15,7 +13,7 @@ import org.springframework.security.core.userdetails.UserDetails
 @Setter
 @NoArgsConstructor
 @Entity()
-class User : BaseDomain(), UserDetails {
+class User : com.ampairs.auth.domain.model.BaseDomain(), UserDetails {
     @Column(name = "country_code", nullable = false)
     var countryCode: Int = 91
 
@@ -42,7 +40,7 @@ class User : BaseDomain(), UserDetails {
 
 
     override fun obtainIdPrefix(): String {
-        return Constants.USER_ID_PREFIX
+        return com.ampairs.auth.config.Constants.USER_ID_PREFIX
     }
 
     val fullName: String
@@ -50,7 +48,7 @@ class User : BaseDomain(), UserDetails {
 
     @ElementCollection
     override fun getAuthorities(): List<SimpleGrantedAuthority> {
-        return listOf(SimpleGrantedAuthority(Role.ADMIN.name))
+        return listOf(SimpleGrantedAuthority(com.ampairs.auth.domain.enums.Role.ADMIN.name))
     }
 
     override fun getPassword(): String {

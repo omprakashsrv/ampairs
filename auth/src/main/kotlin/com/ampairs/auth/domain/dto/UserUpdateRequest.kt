@@ -1,4 +1,4 @@
-package com.ampairs.auth.web.contract
+package com.ampairs.auth.domain.dto
 
 import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.NotNull

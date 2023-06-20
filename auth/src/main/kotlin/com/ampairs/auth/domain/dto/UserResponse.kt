@@ -1,4 +1,4 @@
-package com.ampairs.auth.web.contract
+package com.ampairs.auth.domain.dto
 
 import com.ampairs.auth.domain.model.User
 import com.fasterxml.jackson.annotation.JsonIgnore

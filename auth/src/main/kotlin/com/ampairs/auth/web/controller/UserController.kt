@@ -1,8 +1,9 @@
 package com.ampairs.auth.web.controller
 
+import com.ampairs.auth.domain.dto.UserResponse
+import com.ampairs.auth.domain.dto.UserUpdateRequest
 import com.ampairs.auth.domain.model.User
 import com.ampairs.auth.domain.service.UserService
-import com.ampairs.auth.web.contract.*
 import jakarta.validation.Valid
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*

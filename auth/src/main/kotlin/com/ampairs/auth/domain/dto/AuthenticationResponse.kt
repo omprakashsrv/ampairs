@@ -1,4 +1,4 @@
-package com.ampairs.auth.web.contract
+package com.ampairs.auth.domain.dto
 
 import com.fasterxml.jackson.annotation.JsonProperty
 import lombok.AllArgsConstructor

@@ -1,6 +1,6 @@
 package com.ampairs.auth.config
 
-import com.ampairs.auth.persistance.respository.UserRepository
+import com.ampairs.auth.respository.UserRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration

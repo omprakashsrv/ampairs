@@ -1,4 +1,4 @@
-package com.ampairs.auth.web.contract
+package com.ampairs.auth.domain.dto
 
 import lombok.AllArgsConstructor
 import lombok.Getter

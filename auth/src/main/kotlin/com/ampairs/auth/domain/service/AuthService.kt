@@ -1,16 +1,12 @@
 package com.ampairs.auth.domain.service
 
-import com.ampairs.auth.domain.enums.TokenType
-import com.ampairs.auth.domain.model.SmsVerification
+import com.ampairs.auth.domain.dto.AuthenticationRequest
 import com.ampairs.auth.domain.model.Token
 import com.ampairs.auth.domain.model.User
-import com.ampairs.auth.persistance.respository.SmsVerificationRepository
-import com.ampairs.auth.persistance.respository.TokenRepository
-import com.ampairs.auth.persistance.respository.UserRepository
+import com.ampairs.auth.respository.SmsVerificationRepository
+import com.ampairs.auth.respository.TokenRepository
+import com.ampairs.auth.respository.UserRepository
 import com.ampairs.auth.utils.UniqueIdGenerators
-import com.ampairs.auth.web.contract.AuthenticationRequest
-import com.ampairs.auth.web.contract.AuthenticationResponse
-import com.ampairs.auth.web.contract.GenericSuccessResponse
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.transaction.Transactional
 import org.springframework.beans.factory.annotation.Autowired
@@ -29,28 +25,28 @@ class AuthService @Autowired constructor(
     val userRepository: UserRepository,
     val tokenRepository: TokenRepository,
     val smsVerificationRepository: SmsVerificationRepository,
-    val jwtService: JwtService,
+    val jwtService: com.ampairs.auth.domain.service.JwtService,
     val authenticationManager: AuthenticationManager,
     val encoder: PasswordEncoder
 ) {
     @Transactional
-    fun init(user: User): GenericSuccessResponse {
-        val smsVerification = SmsVerification()
+    fun init(user: User): com.ampairs.auth.domain.dto.GenericSuccessResponse {
+        val smsVerification = com.ampairs.auth.domain.model.SmsVerification()
         smsVerification.countryCode = user.countryCode
         smsVerification.phone = user.phone
         smsVerification.userId = user.id
-        smsVerification.code = UniqueIdGenerators.NUMERIC.generate(OTP_LENGTH)
-        smsVerification.validTill = Timestamp(System.currentTimeMillis() + SMS_VERIFICATION_VALIDITY)
+        smsVerification.code = UniqueIdGenerators.NUMERIC.generate(com.ampairs.auth.domain.service.OTP_LENGTH)
+        smsVerification.validTill = Timestamp(System.currentTimeMillis() + com.ampairs.auth.domain.service.SMS_VERIFICATION_VALIDITY)
         smsVerificationRepository.save(smsVerification)
         user.userPassword = encoder.encode(smsVerification.code)
         userRepository.save(user)
-        val genericSuccessResponse = GenericSuccessResponse()
+        val genericSuccessResponse = com.ampairs.auth.domain.dto.GenericSuccessResponse()
         genericSuccessResponse.message = "OTP sent successfully"
         return genericSuccessResponse
     }
 
     @Transactional
-    fun authenticate(request: AuthenticationRequest): AuthenticationResponse {
+    fun authenticate(request: AuthenticationRequest): com.ampairs.auth.domain.dto.AuthenticationResponse {
         authenticationManager.authenticate(
             UsernamePasswordAuthenticationToken(
                 request.userName,
@@ -63,7 +59,7 @@ class AuthService @Autowired constructor(
         val refreshToken: String = jwtService.generateRefreshToken(user)
         revokeAllUserTokens(user)
         saveUserToken(user, jwtToken)
-        val authResponse = AuthenticationResponse()
+        val authResponse = com.ampairs.auth.domain.dto.AuthenticationResponse()
         authResponse.accessToken = jwtToken
         authResponse.refreshToken = refreshToken
         return authResponse
@@ -73,7 +69,7 @@ class AuthService @Autowired constructor(
         val token = Token()
         token.userId = user.id
         token.token = jwtToken
-        token.tokenType = TokenType.BEARER
+        token.tokenType = com.ampairs.auth.domain.enums.TokenType.BEARER
         tokenRepository.save(token)
     }
 
@@ -91,7 +87,7 @@ class AuthService @Autowired constructor(
     @Transactional
     fun refreshToken(
         request: HttpServletRequest,
-    ): AuthenticationResponse {
+    ): com.ampairs.auth.domain.dto.AuthenticationResponse {
         val authHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw Exception("Access token not found")
@@ -105,7 +101,7 @@ class AuthService @Autowired constructor(
             val accessToken: String = jwtService.generateToken(user)
             revokeAllUserTokens(user)
             saveUserToken(user, accessToken)
-            val authResponse = AuthenticationResponse()
+            val authResponse = com.ampairs.auth.domain.dto.AuthenticationResponse()
             authResponse.accessToken = accessToken
             authResponse.refreshToken = refreshToken
             return authResponse
@@ -117,7 +113,7 @@ class AuthService @Autowired constructor(
     @Transactional
     fun logout(
         request: HttpServletRequest,
-    ): GenericSuccessResponse {
+    ): com.ampairs.auth.domain.dto.GenericSuccessResponse {
         val authHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw Exception("Access token not found")
@@ -128,7 +124,7 @@ class AuthService @Autowired constructor(
         val user: User = this.userRepository.findByUserName(userName)
             .orElseThrow()
         revokeAllUserTokens(user)
-        val genericSuccessResponse = GenericSuccessResponse()
+        val genericSuccessResponse = com.ampairs.auth.domain.dto.GenericSuccessResponse()
         genericSuccessResponse.message = "User logged out successfully"
         return genericSuccessResponse
     }

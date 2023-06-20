@@ -1,10 +1,10 @@
-package com.ampairs.auth
+package com.ampairs.product
 
 import org.junit.jupiter.api.Test
 import org.springframework.boot.test.context.SpringBootTest
 
 @SpringBootTest
-class AuthApplicationTests {
+class ProductApplicationTests {
 
     @Test
     fun contextLoads() {

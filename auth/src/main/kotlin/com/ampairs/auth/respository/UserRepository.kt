@@ -1,4 +1,4 @@
-package com.ampairs.auth.persistance.respository
+package com.ampairs.auth.respository
 
 import com.ampairs.auth.domain.model.User
 import org.springframework.data.repository.CrudRepository
