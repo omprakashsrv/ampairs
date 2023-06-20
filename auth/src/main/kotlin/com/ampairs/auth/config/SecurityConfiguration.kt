@@ -33,13 +33,13 @@ class SecurityConfiguration @Autowired constructor(
             .exceptionHandling({ exception -> exception.authenticationEntryPoint(unauthorizedHandler) })
             .sessionManagement({ session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS) })
             .authorizeHttpRequests({ requests ->
-                requests.requestMatchers("/v1/auth/**").permitAll()
-                    .requestMatchers("/v1/user/**").permitAll()
+                requests.requestMatchers("/auth/v1/**").permitAll()
+                    .requestMatchers("/user/v1/**").permitAll()
                     .anyRequest().authenticated()
             }).authenticationProvider(authenticationProvider)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter::class.java)
             .logout { logout: LogoutConfigurer<HttpSecurity?> ->
-                logout.addLogoutHandler(logoutHandler).logoutUrl("/v1/auth/logout")
+                logout.addLogoutHandler(logoutHandler).logoutUrl("/auth/v1/logout")
                     .logoutSuccessHandler(logoutSuccessHandler)
             }
         return http.build()

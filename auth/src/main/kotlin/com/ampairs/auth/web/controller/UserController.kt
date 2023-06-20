@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/v1/user")
+@RequestMapping("/user/v1")
 class UserController @Autowired constructor(
     private val userService: UserService
 ) {
