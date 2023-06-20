@@ -1,9 +1,10 @@
 package com.ampairs.auth.config
 
-import com.ampairs.auth.exception.AuthEntryPointJwt
-import com.ampairs.auth.filter.JwtAuthenticationFilter
+import com.ampairs.core.exception.AuthEntryPointJwt
+import com.ampairs.core.filter.JwtAuthenticationFilter
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
 import org.springframework.security.authentication.AuthenticationProvider
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
@@ -19,6 +20,7 @@ import org.springframework.security.web.authentication.logout.LogoutSuccessHandl
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
+@ComponentScan(value = arrayOf("com.ampairs.core"))
 class SecurityConfiguration @Autowired constructor(
     val jwtAuthFilter: JwtAuthenticationFilter,
     val authenticationProvider: AuthenticationProvider,
