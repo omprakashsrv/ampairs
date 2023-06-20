@@ -21,6 +21,7 @@ class AuthController @Autowired constructor(
 
     @PostMapping("/init")
     fun init(@RequestBody @Valid authInitRequest: AuthInitRequest): GenericSuccessResponse {
+//        var requestParam: RequestParam1 = null
         val user: User = userService.createUser(authInitRequest.toUser());
         return authService.init(user)
     }
