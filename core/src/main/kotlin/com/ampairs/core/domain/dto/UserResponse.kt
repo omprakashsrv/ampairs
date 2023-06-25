@@ -7,6 +7,7 @@ class UserResponse(@JsonIgnore val user: User) {
     var id: String = user.id
     var firstName: String = user.firstName
     var lastName: String? = user.lastName
+    var userName: String? = user.userName
     var countryCode: Int = user.countryCode
     var phone: String = user.phone
 }

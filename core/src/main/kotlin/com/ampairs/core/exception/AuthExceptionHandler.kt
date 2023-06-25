@@ -1,24 +1,30 @@
 package com.ampairs.core.exception
 
-import jakarta.servlet.http.HttpServletResponse
+import com.ampairs.core.domain.dto.ErrorResponse
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
-import org.springframework.http.ResponseEntity
+import org.springframework.beans.factory.annotation.Value
+import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
-import java.sql.SQLException
+import org.springframework.web.bind.annotation.ResponseBody
+import org.springframework.web.bind.annotation.ResponseStatus
+import java.util.*
 
 
 @ControllerAdvice
 class AuthExceptionHandler {
-    @ExceptionHandler(SQLException::class)
-    fun sqlError(ex: Exception?): ResponseEntity<Any?>? {
-        logger.error("SQL error", ex)
-        val body: MutableMap<String, Any?> = HashMap()
-        body["status"] = HttpServletResponse.SC_INTERNAL_SERVER_ERROR
-        body["error"] = "SQL Exception"
-        body["message"] = "SQL Exception"
-        return ResponseEntity.status(HttpServletResponse.SC_INTERNAL_SERVER_ERROR).body(body)
+    @Value("\${drees.stacktrace}")
+    var stackTrace = false
+
+    @ExceptionHandler(Exception::class)
+    @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
+    @ResponseBody
+    fun processAllError(ex: Exception): ErrorResponse {
+        if (stackTrace) {
+            logger.error("Exception", ex)
+        }
+        return ErrorResponse(500, ex.message ?: "System Error")
     }
 
     companion object {

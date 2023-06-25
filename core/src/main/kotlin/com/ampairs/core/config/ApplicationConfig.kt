@@ -42,4 +42,5 @@ class ApplicationConfig @Autowired constructor(val repository: UserRepository) {
     fun passwordEncoder(): PasswordEncoder {
         return BCryptPasswordEncoder()
     }
+
 }
