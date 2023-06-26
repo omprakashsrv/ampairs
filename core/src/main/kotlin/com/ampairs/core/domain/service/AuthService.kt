@@ -49,7 +49,7 @@ class AuthService @Autowired constructor(
     }
 
     @Transactional
-    fun authenticate(request: AuthenticationRequest): com.ampairs.core.domain.dto.AuthenticationResponse {
+    fun authenticate(request: AuthenticationRequest): AuthenticationResponse {
         authenticationManager.authenticate(
             UsernamePasswordAuthenticationToken(
                 request.userName,
@@ -62,7 +62,7 @@ class AuthService @Autowired constructor(
         val refreshToken: String = jwtService.generateRefreshToken(user)
         revokeAllUserTokens(user)
         saveUserToken(user, jwtToken)
-        val authResponse = com.ampairs.core.domain.dto.AuthenticationResponse()
+        val authResponse = AuthenticationResponse()
         authResponse.accessToken = jwtToken
         authResponse.refreshToken = refreshToken
         return authResponse
@@ -90,7 +90,7 @@ class AuthService @Autowired constructor(
     @Transactional
     fun refreshToken(
         request: HttpServletRequest,
-    ): com.ampairs.core.domain.dto.AuthenticationResponse {
+    ): AuthenticationResponse {
         val authHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw Exception("Access token not found")
