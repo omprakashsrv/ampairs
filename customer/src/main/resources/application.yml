@@ -3,7 +3,7 @@ server:
   tomcat:
     accesslog:
       enabled: true
-  port: 8080
+  port: 8081
 spring:
   jackson:
     property-naming-strategy: SNAKE_CASE
@@ -14,7 +14,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-#      ddl-auto: create-drop
+#      ddl-auto: create
       show-sql: false
       properties:
         hibernate:

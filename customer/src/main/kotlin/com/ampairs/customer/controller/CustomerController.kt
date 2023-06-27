@@ -1,29 +1,36 @@
 package com.ampairs.customer.controller
 
-import com.ampairs.core.domain.dto.UserResponse
-import com.ampairs.core.domain.dto.UserUpdateRequest
-import com.ampairs.core.domain.model.User
+import com.ampairs.customer.domain.dto.CustomerResponse
+import com.ampairs.customer.domain.dto.CustomerUpdateRequest
+import com.ampairs.customer.domain.dto.asCustomerResponse
+import com.ampairs.customer.domain.dto.toCompany
+import com.ampairs.customer.domain.model.SessionUser
+import com.ampairs.customer.domain.service.CompanyService
 import com.ampairs.customer.domain.service.CustomerService
 import jakarta.validation.Valid
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/customer/v1")
 class CustomerController @Autowired constructor(
-    private val customerService: CustomerService
+    private val customerService: CustomerService,
+    private val companyService: CompanyService
 ) {
 
     @PostMapping("/update")
-    fun updateUser(@RequestBody @Valid userUpdateRequest: UserUpdateRequest): UserResponse {
-        val user: User = customerService.updateCustomer(userUpdateRequest);
-        return UserResponse(user)
+    fun updateUser(@RequestBody @Valid customerUpdateRequest: CustomerUpdateRequest): CustomerResponse {
+        val company = customerUpdateRequest.toCompany()
+        val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
+        return customerService.updateCustomer(sessionUser.company.id, company).asCustomerResponse()
     }
 
     @GetMapping("")
-    fun getCustomers(): UserResponse {
-        val sessionUser = customerService.getCustomers()
-        return UserResponse(sessionUser)
+    fun getCustomers(@RequestParam("last_updated") lastUpdated: Long?): List<CustomerResponse> {
+        val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
+        val customers = customerService.getCustomers(sessionUser.company.id, lastUpdated)
+        return customers.asCustomerResponse()
     }
 
 }

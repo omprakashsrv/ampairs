@@ -8,7 +8,7 @@ import org.springframework.security.core.userdetails.UserDetails
 
 
 @Entity()
-class User : BaseDomain(), UserDetails {
+open class User : BaseDomain(), UserDetails {
     @Column(name = "country_code", nullable = false)
     var countryCode: Int = 91
 

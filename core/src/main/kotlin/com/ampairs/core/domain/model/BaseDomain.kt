@@ -3,13 +3,11 @@ package com.ampairs.core.domain.model
 import ch.qos.logback.core.model.Model
 import com.ampairs.core.utils.Helper
 import jakarta.persistence.*
-import java.sql.Timestamp
 
 @MappedSuperclass
-@Table(uniqueConstraints = arrayOf(UniqueConstraint(columnNames = ["id"])))
 abstract class BaseDomain : Model() {
 
-    @Column(name = "id", length = 200, updatable = false, nullable = false)
+    @Column(name = "id", length = 200, updatable = false, nullable = false, unique = true)
     var id: String = ""
 
     @Id
@@ -25,19 +23,28 @@ abstract class BaseDomain : Model() {
 
     @Column(
         name = "created_at",
-        columnDefinition = "timestamp default CURRENT_TIMESTAMP",
+        columnDefinition = "TIMESTAMP default CURRENT_TIMESTAMP",
         insertable = false, updatable = false, nullable = false
     )
-    protected var createdAt: Timestamp? = null
+    var createdAt: String? = null
 
     @Column(
         name = "updated_at",
-        columnDefinition = "timestamp default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP",
+        columnDefinition = "TIMESTAMP default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP",
         insertable = false,
         updatable = false,
         nullable = false
     )
-    protected var updatedAt: Timestamp? = null
+    var updatedAt: String? = null
+
+    @Column(
+        name = "last_updated",
+        columnDefinition = "BIGINT default (UNIX_TIMESTAMP()*1000)",
+        insertable = false,
+        updatable = false,
+        nullable = false
+    )
+    var lastUpdated: Long? = null
     abstract fun obtainIdPrefix(): String?
 
     @PrePersist
@@ -45,5 +52,6 @@ abstract class BaseDomain : Model() {
         if (id == "") {
             id = Helper.generateUniqueId(obtainIdPrefix(), com.ampairs.core.config.Constants.ID_LENGTH)
         }
+        lastUpdated = System.currentTimeMillis()
     }
 }
