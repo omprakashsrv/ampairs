@@ -2,6 +2,8 @@ package com.ampairs.customer.controller
 
 import com.ampairs.core.domain.dto.UserResponse
 import com.ampairs.core.domain.dto.UserUpdateRequest
+import com.ampairs.customer.domain.dto.CustomerResponse
+import com.ampairs.customer.domain.dto.asCustomerResponse
 import com.ampairs.customer.domain.service.CompanyService
 import jakarta.validation.Valid
 import org.springframework.beans.factory.annotation.Autowired
@@ -21,6 +23,11 @@ class CompanyController @Autowired constructor(
     @PostMapping("/update")
     fun updateCompany(@RequestBody @Valid userUpdateRequest: UserUpdateRequest): UserResponse? {
         return null
+    }
+
+    @GetMapping("")
+    fun getCompany(): CustomerResponse {
+        return companyService.getUserCompany().asCustomerResponse()
     }
 
 }

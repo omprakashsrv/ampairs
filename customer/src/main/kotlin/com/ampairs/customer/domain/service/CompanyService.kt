@@ -4,6 +4,8 @@ import com.ampairs.customer.domain.model.Company
 import com.ampairs.customer.repository.CompanyRepository
 import com.ampairs.customer.repository.UserCompanyRepository
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.security.core.Authentication
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 
 @Service
@@ -23,6 +25,11 @@ class CompanyService @Autowired constructor(
     fun getUserCompany(userId: String, companyId: String): Company? {
         val userCompany = userCompanyRepository.findByUserIdAndCompanyId(userId, companyId)
         return userCompany?.company;
+    }
+
+    fun getUserCompany(): Company {
+        val auth: Authentication = SecurityContextHolder.getContext().authentication
+        return auth.principal as Company
     }
 
 }
