@@ -13,7 +13,10 @@ class CompanyResponse(
     var pincode: String?,
     var state: String?,
     var latitude: Double?,
-    var longitude: Double?
+    var longitude: Double?,
+    var lastUpdated: Long,
+    var createdAt: String,
+    var updatedAt: String
 )
 
 
@@ -29,7 +32,10 @@ fun CompanyResponse.toCompanyResponse(company: Company): CompanyResponse {
         pincode = company.pincode,
         state = company.state,
         latitude = company.location?.x,
-        longitude = company.location?.y
+        longitude = company.location?.y,
+        createdAt = company.createdAt,
+        updatedAt = company.updatedAt,
+        lastUpdated = company.lastUpdated
     )
 }
 
@@ -46,7 +52,10 @@ fun List<Company>.toCompanyResponse(): List<CompanyResponse> {
             pincode = it.pincode,
             state = it.state,
             latitude = it.location?.x,
-            longitude = it.location?.y
+            longitude = it.location?.y,
+            lastUpdated = it.lastUpdated,
+            createdAt = it.createdAt,
+            updatedAt = it.updatedAt
         )
     }
 }

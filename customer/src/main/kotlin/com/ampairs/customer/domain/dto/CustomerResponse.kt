@@ -4,6 +4,7 @@ import com.ampairs.core.domain.model.Company
 
 data class CustomerResponse(
     var id: String,
+    var name: String,
     var countryCode: Int,
     var phone: String,
     var email: String?,
@@ -23,6 +24,7 @@ fun List<Company>.asCustomerResponse(): List<CustomerResponse> {
     return map {
         CustomerResponse(
             id = it.id,
+            name = it.name,
             countryCode = it.countryCode,
             phone = it.phone,
             email = it.email,
@@ -42,6 +44,7 @@ fun List<Company>.asCustomerResponse(): List<CustomerResponse> {
 fun Company.asCustomerResponse(): CustomerResponse {
     return CustomerResponse(
         id = this.id,
+        name = this.name,
         countryCode = this.countryCode,
         phone = this.phone,
         email = this.email,

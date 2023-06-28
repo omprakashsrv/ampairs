@@ -26,7 +26,7 @@ abstract class BaseDomain : Model() {
         columnDefinition = "TIMESTAMP default CURRENT_TIMESTAMP",
         insertable = false, updatable = false, nullable = false
     )
-    var createdAt: String? = null
+    lateinit var createdAt: String
 
     @Column(
         name = "updated_at",
@@ -35,7 +35,7 @@ abstract class BaseDomain : Model() {
         updatable = false,
         nullable = false
     )
-    var updatedAt: String? = null
+    lateinit var updatedAt: String
 
     @Column(
         name = "last_updated",
@@ -44,7 +44,7 @@ abstract class BaseDomain : Model() {
         updatable = false,
         nullable = false
     )
-    var lastUpdated: Long? = null
+    var lastUpdated: Long = 0
     abstract fun obtainIdPrefix(): String?
 
     @PrePersist
