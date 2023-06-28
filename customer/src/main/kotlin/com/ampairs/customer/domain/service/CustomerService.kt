@@ -1,6 +1,6 @@
 package com.ampairs.customer.domain.service
 
-import com.ampairs.customer.domain.model.Company
+import com.ampairs.core.domain.model.Company
 import com.ampairs.customer.domain.model.Customer
 import com.ampairs.customer.repository.CompanyRepository
 import com.ampairs.customer.repository.CustomerPagingRepository

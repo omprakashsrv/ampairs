@@ -1,5 +1,6 @@
 package com.ampairs.customer.domain.model
 
+import com.ampairs.core.domain.model.Company
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.customer.config.Constants
 import jakarta.persistence.*

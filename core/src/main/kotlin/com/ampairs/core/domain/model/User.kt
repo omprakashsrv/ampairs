@@ -1,8 +1,6 @@
 package com.ampairs.core.domain.model
 
-import jakarta.persistence.Column
-import jakarta.persistence.ElementCollection
-import jakarta.persistence.Entity
+import jakarta.persistence.*
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 
@@ -33,6 +31,9 @@ open class User : BaseDomain(), UserDetails {
     @Column(name = "active", nullable = false)
     var active = true
 
+    @OneToMany(fetch = FetchType.EAGER)
+    @JoinColumn(name = "user_id", referencedColumnName = "id", updatable = false, insertable = false)
+    var userCompanies: List<UserCompany> = arrayListOf()
 
     override fun obtainIdPrefix(): String {
         return com.ampairs.core.config.Constants.USER_ID_PREFIX

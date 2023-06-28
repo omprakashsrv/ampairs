@@ -1,5 +1,6 @@
 package com.ampairs.core.domain.model
 
+import com.ampairs.core.config.Constants
 import jakarta.persistence.*
 import lombok.NoArgsConstructor
 
@@ -24,6 +25,6 @@ class Token : com.ampairs.core.domain.model.BaseDomain() {
     var tokenType = com.ampairs.core.domain.enums.TokenType.BEARER
 
     override fun obtainIdPrefix(): String {
-        return com.ampairs.core.config.Constants.SMS_VERIFICATION_PREFIX
+        return Constants.TOKEN_PREFIX
     }
 }

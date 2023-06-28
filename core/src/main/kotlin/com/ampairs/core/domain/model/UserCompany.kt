@@ -1,7 +1,6 @@
-package com.ampairs.customer.domain.model
+package com.ampairs.core.domain.model
 
-import com.ampairs.core.domain.model.BaseDomain
-import com.ampairs.customer.config.Constants
+import com.ampairs.core.config.Constants
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.JoinColumn

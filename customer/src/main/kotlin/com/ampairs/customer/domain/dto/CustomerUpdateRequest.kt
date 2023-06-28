@@ -1,6 +1,6 @@
 package com.ampairs.customer.domain.dto
 
-import com.ampairs.customer.domain.model.Company
+import com.ampairs.core.domain.model.Company
 import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.NotNull
 

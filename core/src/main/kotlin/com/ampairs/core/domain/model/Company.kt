@@ -1,7 +1,6 @@
-package com.ampairs.customer.domain.model
+package com.ampairs.core.domain.model
 
-import com.ampairs.core.domain.model.BaseDomain
-import com.ampairs.customer.config.Constants
+import com.ampairs.core.config.Constants
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import org.springframework.data.geo.Point
@@ -11,6 +10,9 @@ class Company : BaseDomain() {
 
     @Column(name = "country_code", nullable = false)
     var countryCode: Int = 91
+
+    @Column(name = "name", nullable = false, length = 255)
+    var name: String = ""
 
     @Column(name = "phone", nullable = false, length = 12)
     var phone: String = ""
