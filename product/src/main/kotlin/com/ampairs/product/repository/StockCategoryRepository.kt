@@ -1,6 +1,8 @@
 package com.ampairs.product.repository
 
-import com.ampairs.product.domain.StockCategory
+import com.ampairs.product.domain.ProductCategory
 import org.springframework.data.repository.CrudRepository
 
-interface StockCategoryRepository : CrudRepository<StockCategory, String>
+interface StockCategoryRepository : CrudRepository<ProductCategory, String>{
+
+}
