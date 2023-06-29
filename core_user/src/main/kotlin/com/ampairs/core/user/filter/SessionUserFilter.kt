@@ -1,9 +1,9 @@
-package com.ampairs.customer.filter
+package com.ampairs.core.user.filter
 
 import com.ampairs.core.domain.dto.ErrorResponse
 import com.ampairs.core.domain.model.User
-import com.ampairs.customer.domain.model.SessionUser
-import com.ampairs.customer.domain.service.CompanyService
+import com.ampairs.core.user.model.SessionUser
+import com.ampairs.core.user.service.CompanyService
 import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
@@ -26,6 +26,12 @@ class SessionUserFilter @Autowired constructor(
         response: HttpServletResponse,
         chain: FilterChain
     ) {
+        if (request.servletPath.contains("/auth/v1")
+            || request.servletPath.contains("/user/v1")
+        ) {
+            chain.doFilter(request, response)
+            return
+        }
         val auth: Authentication = SecurityContextHolder.getContext().authentication
         val user = auth.principal as User
         val companyId = request.getHeader("X-Company")

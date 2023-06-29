@@ -2,6 +2,7 @@ package com.ampairs.product.config
 
 import com.ampairs.core.exception.AuthEntryPointJwt
 import com.ampairs.core.filter.JwtAuthenticationFilter
+import com.ampairs.core.user.filter.SessionUserFilter
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan

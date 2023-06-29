@@ -1,4 +1,4 @@
-package com.ampairs.customer.domain.dto
+package com.ampairs.core.user.model.dto
 
 import com.ampairs.core.domain.model.Company
 

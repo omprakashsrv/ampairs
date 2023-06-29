@@ -1,8 +1,8 @@
-package com.ampairs.customer.domain.service
+package com.ampairs.core.user.service
 
 import com.ampairs.core.domain.model.Company
-import com.ampairs.customer.repository.CompanyRepository
-import com.ampairs.customer.repository.UserCompanyRepository
+import com.ampairs.core.user.repository.CompanyRepository
+import com.ampairs.core.user.repository.UserCompanyRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder

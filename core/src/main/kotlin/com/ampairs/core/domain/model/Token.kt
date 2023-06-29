@@ -5,19 +5,19 @@ import jakarta.persistence.*
 import lombok.NoArgsConstructor
 
 @NoArgsConstructor
-@Entity()
-class Token : com.ampairs.core.domain.model.BaseDomain() {
+@Entity(name = "token")
+class Token : BaseDomain() {
 
     @Column(name = "token", nullable = false)
     var token: String = ""
 
-    @Column(name = "expired",nullable = false)
+    @Column(name = "expired", nullable = false)
     var expired: Boolean = false
 
-    @Column(name = "revoked",nullable = false)
+    @Column(name = "revoked", nullable = false)
     var revoked: Boolean = false
 
-    @Column(name = "user_id",nullable = false)
+    @Column(name = "user_id", nullable = false)
     var userId: String = ""
 
     @Enumerated(EnumType.STRING)

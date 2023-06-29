@@ -35,4 +35,8 @@ class UserService @Autowired constructor(val userRepository: UserRepository) {
         return auth.principal as User
     }
 
+    fun getUser(id: String): User {
+        return userRepository.findById(id).get()
+    }
+
 }

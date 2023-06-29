@@ -1,8 +1,8 @@
-package com.ampairs.customer.domain.model
+package com.ampairs.core.user.model
 
 import com.ampairs.core.domain.model.Company
 import com.ampairs.core.domain.model.OwnableBaseDomain
-import com.ampairs.customer.config.Constants
+import com.ampairs.core.user.config.Constants
 import jakarta.persistence.*
 
 @Entity(name = "customer")

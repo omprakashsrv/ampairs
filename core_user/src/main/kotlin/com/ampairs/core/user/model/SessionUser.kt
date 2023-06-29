@@ -1,4 +1,4 @@
-package com.ampairs.customer.domain.model
+package com.ampairs.core.user.model
 
 import com.ampairs.core.domain.model.Company
 import com.ampairs.core.domain.model.User

@@ -1,8 +1,8 @@
 package com.ampairs.customer.domain.service
 
 import com.ampairs.core.domain.model.Company
-import com.ampairs.customer.domain.model.Customer
-import com.ampairs.customer.repository.CompanyRepository
+import com.ampairs.core.user.model.Customer
+import com.ampairs.core.user.repository.CompanyRepository
 import com.ampairs.customer.repository.CustomerPagingRepository
 import com.ampairs.customer.repository.CustomerRepository
 import org.springframework.beans.factory.annotation.Autowired

@@ -10,7 +10,7 @@ import java.util.*
 interface TokenRepository : CrudRepository<Token, String> {
 
     @Query(value = """
-            select t from Token t inner join User u 
+            select t from token t inner join user u 
             on t.userId = u.id 
             where u.id = :userId and (t.expired = false or t.revoked = false)
             """)

@@ -1,11 +1,11 @@
 package com.ampairs.customer.controller
 
-import com.ampairs.customer.domain.dto.CustomerResponse
+import com.ampairs.core.user.model.SessionUser
+import com.ampairs.core.user.model.dto.CustomerResponse
+import com.ampairs.core.user.model.dto.asCustomerResponse
+import com.ampairs.core.user.service.CompanyService
 import com.ampairs.customer.domain.dto.CustomerUpdateRequest
-import com.ampairs.customer.domain.dto.asCustomerResponse
 import com.ampairs.customer.domain.dto.toCompany
-import com.ampairs.customer.domain.model.SessionUser
-import com.ampairs.customer.domain.service.CompanyService
 import com.ampairs.customer.domain.service.CustomerService
 import jakarta.validation.Valid
 import org.springframework.beans.factory.annotation.Autowired

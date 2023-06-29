@@ -1,4 +1,4 @@
-package com.ampairs.customer.repository
+package com.ampairs.core.user.repository
 
 import com.ampairs.core.domain.model.UserCompany
 import org.springframework.data.repository.CrudRepository

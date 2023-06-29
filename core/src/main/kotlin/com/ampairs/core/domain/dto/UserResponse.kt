@@ -20,6 +20,7 @@ fun User.toUserResponse(): UserResponse {
         countryCode = this.countryCode,
         phone = this.phone,
         userName = this.userName,
-        companies = this.userCompanies.stream().map { userCompany -> userCompany.company }.toList().toCompanyResponse()
+        companies = this.userCompanies.stream()
+            .map { userCompany -> userCompany.company }.toList().toCompanyResponse()
     )
 }

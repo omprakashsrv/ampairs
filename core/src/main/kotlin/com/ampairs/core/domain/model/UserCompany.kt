@@ -15,7 +15,7 @@ class UserCompany : BaseDomain() {
     @Column(name = "user_id", length = 200, updatable = false, nullable = false)
     var userId: String = ""
 
-    @OneToOne()
+    @OneToOne
     @JoinColumn(name = "company_id", referencedColumnName = "id", updatable = false, insertable = false)
     lateinit var company: Company
 

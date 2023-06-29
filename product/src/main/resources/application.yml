@@ -3,10 +3,11 @@ server:
   tomcat:
     accesslog:
       enabled: true
-  port: 8080
+  port: 8082
 spring:
   jackson:
     property-naming-strategy: SNAKE_CASE
+    date-format: yyyy-MM-dd HH:mm:ss
   datasource:
     url: jdbc:mysql://localhost:3306/munsi_app
     username: root
@@ -17,8 +18,12 @@ spring:
       ddl-auto: update
       properties:
         hibernate:
-          format_sql: true
           show-sql: false
+          format_sql: true
+          jdbc:
+            time_zone:UTC
+        database: postgresql
+        database-platform: org.hibernate.dialect.PostgreSQLDialect
 
 application:
   security:

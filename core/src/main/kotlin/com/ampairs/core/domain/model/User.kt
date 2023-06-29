@@ -5,7 +5,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 
 
-@Entity()
+@Entity(name = "user")
 open class User : BaseDomain(), UserDetails {
     @Column(name = "country_code", nullable = false)
     var countryCode: Int = 91
@@ -29,11 +29,11 @@ open class User : BaseDomain(), UserDetails {
     var lastName = ""
 
     @Column(name = "active", nullable = false)
-    var active = true
+    var active: Boolean = true
 
-    @OneToMany(fetch = FetchType.EAGER)
+    @OneToMany
     @JoinColumn(name = "user_id", referencedColumnName = "id", updatable = false, insertable = false)
-    var userCompanies: List<UserCompany> = arrayListOf()
+    var userCompanies: MutableList<UserCompany> = mutableListOf()
 
     override fun obtainIdPrefix(): String {
         return com.ampairs.core.config.Constants.USER_ID_PREFIX

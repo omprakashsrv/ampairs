@@ -4,9 +4,9 @@ import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import lombok.NoArgsConstructor
 
-@Entity
+@Entity(name = "sms_verification")
 @NoArgsConstructor
-class SmsVerification : com.ampairs.core.domain.model.AbstractIdVerification() {
+class SmsVerification : AbstractIdVerification() {
     @Column(name = "country_code")
     var countryCode: Int? = null
 

@@ -1,17 +1,21 @@
 package com.ampairs.product.service
 
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
-import org.springframework.web.bind.annotation.RestController
+import com.ampairs.product.domain.model.Product
+import com.ampairs.product.repository.ProductPagingRepository
+import org.springframework.data.domain.Sort
+import org.springframework.stereotype.Service
 
 
-@RestController
-@RequestMapping("/product/v1")
-class ProductService {
+@Service
+class ProductService(
+    val productPagingRepository: ProductPagingRepository
+) {
 
-    @GetMapping("")
-    fun getProducts(@RequestParam("last_updated") lastUpdated: Long?) {
-        TODO()
+    fun getProducts(ownerId: String, lastUpdated: Long?): List<Product> {
+        return productPagingRepository.findAllByOwnerIdAndLastUpdatedGreaterThanEqual(
+            ownerId,
+            lastUpdated ?: 0,
+            Sort.by("lastUpdated").ascending()
+        )
     }
 }
