@@ -5,10 +5,14 @@ import com.ampairs.product.domain.model.Product
 data class ProductResponse(
     val id: String,
     val name: String,
+    val taxCode: String,
     val group: String,
     val category: String,
     val active: Boolean,
-    val taxCodes: List<TaxCodeResponse>
+    val taxCodes: List<TaxCodeResponse>,
+    var lastUpdated: Long?,
+    var createdAt: String?,
+    var updatedAt: String?,
 )
 
 fun List<Product>.asProductResponse(): List<ProductResponse> {
@@ -16,10 +20,14 @@ fun List<Product>.asProductResponse(): List<ProductResponse> {
         ProductResponse(
             id = it.id,
             name = it.name,
+            taxCode = it.taxCode,
             active = it.active,
             taxCodes = it.taxCodes.asTaxCodeResponse(),
             group = it.group?.name ?: "",
-            category = it.category?.name ?: ""
+            category = it.category?.name ?: "",
+            lastUpdated = it.lastUpdated,
+            createdAt = it.createdAt,
+            updatedAt = it.updatedAt
         )
     }
 }
