@@ -9,6 +9,8 @@ data class ProductResponse(
     val group: String,
     val category: String,
     val active: Boolean,
+    val mrp: Double,
+    val sellingPrice: Double,
     val taxCodes: List<TaxCodeResponse>,
     var lastUpdated: Long?,
     var createdAt: String?,
@@ -20,6 +22,8 @@ fun List<Product>.asProductResponse(): List<ProductResponse> {
         ProductResponse(
             id = it.id,
             name = it.name,
+            mrp = it.mrp,
+            sellingPrice = it.sellingPrice,
             taxCode = it.taxCode,
             active = it.active,
             taxCodes = it.taxCodes.asTaxCodeResponse(),

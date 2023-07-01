@@ -22,6 +22,12 @@ class Product : OwnableBaseDomain() {
     @Column(name = "active", nullable = false)
     var active: Boolean = true
 
+    @Column(name = "mrp", nullable = false)
+    var mrp: Double = 0.0
+
+    @Column(name = "selling_price", nullable = false)
+    var sellingPrice: Double = 0.0
+
     @OneToOne()
     @JoinColumn(name = "group_id", referencedColumnName = "id", updatable = false, insertable = false)
     var group: ProductGroup? = null
@@ -32,11 +38,7 @@ class Product : OwnableBaseDomain() {
 
     @OneToMany()
     @JoinColumn(
-        name = "code",
-        referencedColumnName = "tax_code",
-        insertable = false,
-        updatable = false,
-        nullable = false
+        name = "code", referencedColumnName = "tax_code", insertable = false, updatable = false, nullable = false
     )
     var taxCodes: MutableList<TaxCode> = mutableListOf()
 
