@@ -19,11 +19,17 @@ class Product : OwnableBaseDomain() {
     @Column(name = "category_id", length = 200)
     var categoryId: String = ""
 
+    @Column(name = "base_unit_id", length = 200)
+    var baseUnitId: String = ""
+
     @Column(name = "active", nullable = false)
     var active: Boolean = true
 
     @Column(name = "mrp", nullable = false)
     var mrp: Double = 0.0
+
+    @Column(name = "dp", nullable = false)
+    var dp: Double = 0.0
 
     @Column(name = "selling_price", nullable = false)
     var sellingPrice: Double = 0.0
@@ -35,6 +41,10 @@ class Product : OwnableBaseDomain() {
     @OneToOne()
     @JoinColumn(name = "group_id", referencedColumnName = "id", updatable = false, insertable = false)
     var category: ProductCategory? = null
+
+    @OneToOne()
+    @JoinColumn(name = "base_unit_id", referencedColumnName = "id", updatable = false, insertable = false)
+    var baseUnit: Unit? = null
 
     @OneToMany()
     @JoinColumn(
