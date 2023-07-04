@@ -12,9 +12,11 @@ data class ProductResponse(
     val mrp: Double,
     val sellingPrice: Double,
     val taxCodes: List<TaxCodeResponse>,
-    var lastUpdated: Long?,
-    var createdAt: String?,
-    var updatedAt: String?,
+    val unitConversions: List<UnitConversionResponse>,
+    val lastUpdated: Long?,
+    val createdAt: String?,
+    val updatedAt: String?,
+    val baseUnit: UnitResponse?,
 )
 
 fun List<Product>.asProductResponse(): List<ProductResponse> {
@@ -31,7 +33,9 @@ fun List<Product>.asProductResponse(): List<ProductResponse> {
             category = it.category?.name ?: "",
             lastUpdated = it.lastUpdated,
             createdAt = it.createdAt,
-            updatedAt = it.updatedAt
+            updatedAt = it.updatedAt,
+            unitConversions = it.unitConversions.asUnitConversionResponse(),
+            baseUnit = it.baseUnit?.asUnitResponse()
         )
     }
 }

@@ -7,11 +7,14 @@ import jakarta.persistence.Entity
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.OneToOne
 
-@Entity(name = "product_unit")
-class SecondaryUnit : OwnableBaseDomain() {
+@Entity(name = "unit_conversion")
+class UnitConversion : OwnableBaseDomain() {
 
     @Column(name = "base_unit_id", length = 200)
     var baseUnitId: String = ""
+
+    @Column(name = "derived_unit_id", length = 200)
+    var derivedUnitId: String = ""
 
     @Column(name = "product_id", length = 200)
     var productId: String = ""
@@ -21,7 +24,11 @@ class SecondaryUnit : OwnableBaseDomain() {
 
     @OneToOne()
     @JoinColumn(name = "base_unit_id", referencedColumnName = "id", updatable = false, insertable = false)
-    var unit: Unit? = null
+    lateinit var baseUnit: Unit
+
+    @OneToOne()
+    @JoinColumn(name = "derived_unit_id", referencedColumnName = "id", updatable = false, insertable = false)
+    lateinit var derivedUnit: Unit
 
     @OneToOne()
     @JoinColumn(name = "product_id", referencedColumnName = "id", updatable = false, insertable = false)

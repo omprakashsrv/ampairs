@@ -52,6 +52,12 @@ class Product : OwnableBaseDomain() {
     )
     var taxCodes: MutableList<TaxCode> = mutableListOf()
 
+    @OneToMany()
+    @JoinColumn(
+        name = "product_id", referencedColumnName = "id", insertable = false, updatable = false, nullable = false
+    )
+    var unitConversions: MutableList<UnitConversion> = mutableListOf()
+
     override fun obtainIdPrefix(): String {
         return Constants.PRODUCT_PREFIX
     }

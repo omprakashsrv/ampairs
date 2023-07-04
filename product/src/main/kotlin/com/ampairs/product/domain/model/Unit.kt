@@ -24,9 +24,6 @@ class Unit : OwnableBaseDomain() {
     @Column(name = "short_name", length = 10)
     var shortName: String = ""
 
-    @Column(name = "multiplier")
-    var multiplier: Double = 1.0
-
     @Column(name = "decimal_places")
     var decimalPlaces: Int = 2
 
