@@ -4,38 +4,38 @@ import jakarta.xml.bind.annotation.XmlAccessType
 import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlAttribute
 
-@XmlAccessorType(XmlAccessType.NONE)
-class BankAllocation {
+@XmlAccessorType(XmlAccessType.FIELD)
+data class BankAllocation(
     @XmlAttribute(name = "DATE")
-    var date: String? = null
+    var date: String? = null,
 
     @XmlAttribute(name = "INSTRUMENTDATE")
-    var instrumentDate: String? = null
+    var instrumentDate: String? = null,
 
     @XmlAttribute(name = "TRANSACTIONTYPE")
-    var transactionType: String? = null
+    var transactionType: String? = null,
 
     @XmlAttribute(name = "BANKNAME")
-    var bankName: String? = null
+    var bankName: String? = null,
 
     @XmlAttribute(name = "PAYMENTFAVOURING")
-    var paymentFavouring: String? = null
+    var paymentFavouring: String? = null,
 
     @XmlAttribute(name = "INSTRUMENTNUMBER")
-    var instrumentNumber: String? = null
+    var instrumentNumber: String? = null,
 
     @XmlAttribute(name = "UNIQUEREFERENCENUMBER")
-    var uniqueReferenceNumber: String? = null
+    var uniqueReferenceNumber: String? = null,
 
     @XmlAttribute(name = "PAYMENTMODE")
-    var paymentMode = "Transacted"
+    var paymentMode: String? = null,
 
     @XmlAttribute(name = "STATUS")
-    var status = "No"
+    var status: String? = null,
 
     @XmlAttribute(name = "BANKPARTYNAME")
-    var bankPartyName: String? = null
+    var bankPartyName: String? = null,
 
     @XmlAttribute(name = "AMOUNT")
-    var amount: String? = null
-}
+    var amount: String? = null,
+)

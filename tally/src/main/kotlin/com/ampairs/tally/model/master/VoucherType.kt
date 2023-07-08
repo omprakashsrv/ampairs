@@ -5,71 +5,71 @@ import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlAttribute
 import jakarta.xml.bind.annotation.XmlElement
 
-@XmlAccessorType(XmlAccessType.NONE)
-class VoucherType {
+@XmlAccessorType(XmlAccessType.FIELD)
+data class VoucherType(
     @XmlAttribute(name = "NAME")
-    var name = ""
+    var name: String? = null,
 
     @XmlAttribute(name = "RESERVEDNAME")
-    var reservedName = ""
+    var reservedName: String? = null,
 
-    @XmlElement(name = "NAME.LIST", type = Name::class)
-    var nameList: List<Name>? = null
+    @field:XmlElement(name = "NAME.LIST", type = Name::class)
+    var nameList: List<Name>? = null,
 
-    @XmlElement(name = "ADDITIONALNAME")
-    var additionalName: String? = null
+    @field:XmlElement(name = "ADDITIONALNAME")
+    var additionalName: String? = null,
 
-    @XmlElement(name = "PARENT")
-    var parent: String? = null
+    @field:XmlElement(name = "PARENT")
+    var parent: String? = null,
 
-    @XmlElement(name = "NUMBERINGMETHOD")
-    var numberingMethod: String? = null
+    @field:XmlElement(name = "NUMBERINGMETHOD")
+    var numberingMethod: String? = null,
 
-    @XmlElement(name = "ISDEEMEDPOSITIVE")
-    var isDeemedPositive: String? = null
+    @field:XmlElement(name = "ISDEEMEDPOSITIVE")
+    var isDeemedPositive: String? = null,
 
-    @XmlElement(name = "AFFECTSTOCK")
-    var affectStock: String? = null
+    @field:XmlElement(name = "AFFECTSTOCK")
+    var affectStock: String? = null,
 
-    @XmlElement(name = "PREVENTDUPLICATES")
-    var preventDuplicates: String? = null
+    @field:XmlElement(name = "PREVENTDUPLICATES")
+    var preventDuplicates: String? = null,
 
-    @XmlElement(name = "PREFILLZERO")
-    var prefillZero: String? = null
+    @field:XmlElement(name = "PREFILLZERO")
+    var prefillZero: String? = null,
 
-    @XmlElement(name = "PRINTAFTERSAVE")
-    var printAfterSave: String? = null
+    @field:XmlElement(name = "PRINTAFTERSAVE")
+    var printAfterSave: String? = null,
 
-    @XmlElement(name = "FORMALRECEIPT")
-    var formalReceipt: String? = null
+    @field:XmlElement(name = "FORMALRECEIPT")
+    var formalReceipt: String? = null,
 
-    @XmlElement(name = "ISOPTIONAL")
-    var isOptional: String? = null
+    @field:XmlElement(name = "ISOPTIONAL")
+    var isOptional: String? = null,
 
-    @XmlElement(name = "ASMFGJRNL")
-    var asmfgjrnl: String? = null
+    @field:XmlElement(name = "ASMFGJRNL")
+    var asmfgjrnl: String? = null,
 
-    @XmlElement(name = "EFFECTIVEDATE")
-    var effectiveDate: String? = null
+    @field:XmlElement(name = "EFFECTIVEDATE")
+    var effectiveDate: String? = null,
 
-    @XmlElement(name = "COMMONNARRATION")
-    var commonNarration: String? = null
+    @field:XmlElement(name = "COMMONNARRATION")
+    var commonNarration: String? = null,
 
-    @XmlElement(name = "MULTINARRATION")
-    var multiNarration: String? = null
+    @field:XmlElement(name = "MULTINARRATION")
+    var multiNarration: String? = null,
 
-    @XmlElement(name = "ISTAXINVOICE")
-    var isTaxInvoice: String? = null
+    @field:XmlElement(name = "ISTAXINVOICE")
+    var isTaxInvoice: String? = null,
 
-    @XmlElement(name = "USEFORPOSINVOICE")
-    var useForPosInvoice: String? = null
+    @field:XmlElement(name = "USEFORPOSINVOICE")
+    var useForPosInvoice: String? = null,
 
-    @XmlElement(name = "USEFOREXCISETRADINGINVOICE")
-    var useForExciseTradingInvoice: String? = null
+    @field:XmlElement(name = "USEFOREXCISETRADINGINVOICE")
+    var useForExciseTradingInvoice: String? = null,
 
-    @XmlElement(name = "SORTPOSITION")
-    var sortPosition: String? = null
+    @field:XmlElement(name = "SORTPOSITION")
+    var sortPosition: String? = null,
 
-    @XmlElement(name = "BEGINNINGNUMBER")
-    var beginningNumber: String? = null
-}
+    @field:XmlElement(name = "BEGINNINGNUMBER")
+    var beginningNumber: String? = null,
+)

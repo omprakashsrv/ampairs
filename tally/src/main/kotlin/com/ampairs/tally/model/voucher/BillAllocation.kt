@@ -5,21 +5,21 @@ import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlElement
 import jakarta.xml.bind.annotation.XmlType
 
-@XmlAccessorType(XmlAccessType.NONE)
+@XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(propOrder = ["name", "billType", "billCreditPeriod", "tdsDeducteeIsSpecialRate", "amount"])
-class BillAllocation {
-    @XmlElement(name = "NAME")
-    var name: String? = null
+data class BillAllocation(
+    @field:XmlElement(name = "NAME")
+    var name: String? = null,
 
-    @XmlElement(name = "BILLTYPE")
-    var billType: String? = null
+    @field:XmlElement(name = "BILLTYPE")
+    var billType: String? = null,
 
-    @XmlElement(name = "BILLCREDITPERIOD")
-    var billCreditPeriod: String? = null
+    @field:XmlElement(name = "BILLCREDITPERIOD")
+    var billCreditPeriod: String? = null,
 
-    @XmlElement(name = "TDSDEDUCTEEISSPECIALRATE")
-    var tdsDeducteeIsSpecialRate: String? = null
+    @field:XmlElement(name = "TDSDEDUCTEEISSPECIALRATE")
+    var tdsDeducteeIsSpecialRate: String? = null,
 
-    @XmlElement(name = "AMOUNT")
-    var amount: String? = null
-}
+    @field:XmlElement(name = "AMOUNT")
+    var amount: String? = null,
+)

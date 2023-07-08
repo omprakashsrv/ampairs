@@ -5,12 +5,12 @@ import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlElement
 import jakarta.xml.bind.annotation.XmlType
 
-@XmlAccessorType(XmlAccessType.NONE)
+@XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(propOrder = ["requestDesc", "requestData"])
 data class ImportData(
-    @XmlElement(name = "REQUESTDESC", type = RequestDesc::class)
-    var requestDesc: RequestDesc,
+    @field:XmlElement(name = "REQUESTDESC", type = RequestDesc::class)
+    var requestDesc: RequestDesc? = null,
 
-    @XmlElement(name = "REQUESTDATA", type = RequestData::class)
-    var requestData: RequestData
+    @field:XmlElement(name = "REQUESTDATA", type = RequestData::class)
+    var requestData: RequestData? = null
 )

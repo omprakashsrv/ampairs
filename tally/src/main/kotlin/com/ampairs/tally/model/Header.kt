@@ -4,8 +4,8 @@ import jakarta.xml.bind.annotation.XmlAccessType
 import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlElement
 
-@XmlAccessorType(XmlAccessType.NONE)
-data class Header (
-    @XmlElement(name = "TALLYREQUEST")
-    var tallyString :String
+@XmlAccessorType(XmlAccessType.FIELD)
+data class Header(
+    @field:XmlElement(name = "TALLYREQUEST")
+    var tallyString: String? = null
 )

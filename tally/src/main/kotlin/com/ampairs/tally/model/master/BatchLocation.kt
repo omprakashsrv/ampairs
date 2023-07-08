@@ -4,20 +4,20 @@ import jakarta.xml.bind.annotation.XmlAccessType
 import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlElement
 
-@XmlAccessorType(XmlAccessType.NONE)
+@XmlAccessorType(XmlAccessType.FIELD)
 data class BatchLocation(
-    @XmlElement(name = "GODOWNNAME")
-    var godownName: String?,
+    @field:XmlElement(name = "GODOWNNAME")
+    var godownName: String? = null,
 
-    @XmlElement(name = "BATCHNAME")
-    var batchName: String?,
+    @field:XmlElement(name = "BATCHNAME")
+    var batchName: String? = null,
 
-    @XmlElement(name = "OPENINGBALANCE")
-    var openingBalance: String?,
+    @field:XmlElement(name = "OPENINGBALANCE")
+    var openingBalance: String? = null,
 
-    @XmlElement(name = "OPENINGVALUE")
-    var openingValue: String?,
+    @field:XmlElement(name = "OPENINGVALUE")
+    var openingValue: String? = null,
 
-    @XmlElement(name = "OPENINGRATE")
-    var openingRate: String?,
+    @field:XmlElement(name = "OPENINGRATE")
+    var openingRate: String? = null,
 )

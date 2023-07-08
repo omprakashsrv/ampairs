@@ -4,47 +4,40 @@ import jakarta.xml.bind.annotation.XmlAccessType
 import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlElement
 
-/**
- * Created by paripranu on 06/13/18.
- */
-@XmlAccessorType(XmlAccessType.NONE)
-class InventoryList {
-    @XmlElement(name = "STOCKITEMNAME")
-    var stockItemName = ""
 
-    @XmlElement(name = "ISDEEMEDPOSITIVE")
-    var isDeemedPositive = ""
+@XmlAccessorType(XmlAccessType.FIELD)
+data class InventoryList(
+    @field:XmlElement(name = "STOCKITEMNAME")
+    var stockItemName: String? = null,
 
-    @XmlElement(name = "ISLASTDEEMEDPOSITIVE")
-    var isLastDeemedPositive = ""
+    @field:XmlElement(name = "ISDEEMEDPOSITIVE")
+    var isDeemedPositive: String? = null,
 
-    @XmlElement(name = "RATE")
-    var rate = ""
+    @field:XmlElement(name = "ISLASTDEEMEDPOSITIVE")
+    var isLastDeemedPositive: String? = null,
 
-    @XmlElement(name = "AMOUNT")
-    var amount = ""
+    @field:XmlElement(name = "RATE")
+    var rate: String? = null,
 
-    @XmlElement(name = "ACTUALQTY")
-    var actualQty = ""
+    @field:XmlElement(name = "AMOUNT")
+    var amount: String? = null,
 
-    @XmlElement(name = "BILLEDQTY")
-    var billedQty = ""
+    @field:XmlElement(name = "ACTUALQTY")
+    var actualQty: String? = null,
 
-    @XmlElement(name = "GODOWNNAME")
-    var godownName: String? = null
+    @field:XmlElement(name = "BILLEDQTY")
+    var billedQty: String? = null,
 
-    @XmlElement(name = "DISOCUNT")
-    var discount = 0.0
+    @field:XmlElement(name = "GODOWNNAME")
+    var godownName: String? = null,
 
-    @XmlElement(name = "ACCOUNTINGALLOCATIONS.LIST")
-    var accountingAllocationList: List<AccountingAllocation>? = null
+    @field:XmlElement(name = "DISOCUNT")
+    var discount: Double,
 
-    @XmlElement(name = "BATCHALLOCATIONS.LIST")
-    var batchAllocationsList: List<BatchAllocation>? = null
+    @field:XmlElement(name = "ACCOUNTINGALLOCATIONS.LIST")
+    var accountingAllocationList: List<AccountingAllocation>? = null,
 
-    companion object {
-        const val MAIN_LOCATION = "Main Location"
-        const val DAMAGE_LOCATION = "Damage Location"
-        const val PRIMARY_BATCH = "Primary Batch"
-    }
-}
+    @field:XmlElement(name = "BATCHALLOCATIONS.LIST")
+    var batchAllocationsList: List<BatchAllocation>? = null,
+
+    )

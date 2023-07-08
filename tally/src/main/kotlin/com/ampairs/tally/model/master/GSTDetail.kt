@@ -4,20 +4,20 @@ import jakarta.xml.bind.annotation.XmlAccessType
 import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlElement
 
-@XmlAccessorType(XmlAccessType.NONE)
-class GSTDetail {
-    @XmlElement(name = "APPLICABLEFROM")
-    var applicableFrom: String? = null
+@XmlAccessorType(XmlAccessType.FIELD)
+data class GSTDetail(
+    @field:XmlElement(name = "APPLICABLEFROM")
+    var applicableFrom: String? = null,
 
-    @XmlElement(name = "HSNCODE")
-    var hsnCode: String? = null
+    @field:XmlElement(name = "HSNCODE")
+    var hsnCode: String? = null,
 
-    @XmlElement(name = "HSN")
-    var hsn: String? = null
+    @field:XmlElement(name = "HSN")
+    var hsn: String? = null,
 
-    @XmlElement(name = "TAXABILITY")
-    var taxability = "Taxable"
+    @field:XmlElement(name = "TAXABILITY")
+    var taxability: String? = null,
 
-    @XmlElement(name = "STATEWISEDETAILS.LIST", type = StateWiseDetail::class)
-    var stateWiseDetailsList: List<StateWiseDetail>? = null
-}
+    @field:XmlElement(name = "STATEWISEDETAILS.LIST", type = StateWiseDetail::class)
+    var stateWiseDetailsList: List<StateWiseDetail>? = null,
+)

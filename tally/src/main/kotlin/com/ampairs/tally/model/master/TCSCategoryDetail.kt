@@ -4,11 +4,11 @@ import jakarta.xml.bind.annotation.XmlAccessType
 import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlElement
 
-@XmlAccessorType(XmlAccessType.NONE)
-class TCSCategoryDetail {
-    @XmlElement(name = "CATEGORYDATE")
-    var categoryDate: String? = null
+@XmlAccessorType(XmlAccessType.FIELD)
+data class TCSCategoryDetail(
+    @field:XmlElement(name = "CATEGORYDATE")
+    var categoryDate: String? = null,
 
-    @XmlElement(name = "CATEGORYNAME")
-    var categoryName: String? = null
-}
+    @field:XmlElement(name = "CATEGORYNAME")
+    var categoryName: String? = null,
+)

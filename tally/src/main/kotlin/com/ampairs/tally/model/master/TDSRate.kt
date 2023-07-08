@@ -5,26 +5,26 @@ import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlAttribute
 import jakarta.xml.bind.annotation.XmlElement
 
-@XmlAccessorType(XmlAccessType.NONE)
-class TDSRate {
+@XmlAccessorType(XmlAccessType.FIELD)
+data class TDSRate(
     @XmlAttribute(name = "NAME")
-    var name = ""
+    var name: String? = null,
 
     @XmlAttribute(name = "RESERVEDNAME")
-    var reservedName = ""
+    var reservedName: String? = null,
 
-    @XmlElement(name = "ASORIGINAL")
-    var asOriginal: String? = null
+    @field:XmlElement(name = "ASORIGINAL")
+    var asOriginal: String? = null,
 
-    @XmlElement(name = "ISACTIVE")
-    var isActive: String? = null
+    @field:XmlElement(name = "ISACTIVE")
+    var isActive: String? = null,
 
-    @XmlElement(name = "ISFORTCS")
-    var isForTCS: String? = null
+    @field:XmlElement(name = "ISFORTCS")
+    var isForTCS: String? = null,
 
-    @XmlElement(name = "NAME.LIST", type = Name::class)
-    var nameList: List<Name>? = null
+    @field:XmlElement(name = "NAME.LIST", type = Name::class)
+    var nameList: List<Name>? = null,
 
-    @XmlElement(name = "CATEGORYDETAILS.LIST", type = CategoryDetail::class)
-    var categoryDetails: List<CategoryDetail>? = null
-}
+    @field:XmlElement(name = "CATEGORYDETAILS.LIST", type = CategoryDetail::class)
+    var categoryDetails: List<CategoryDetail>? = null,
+)

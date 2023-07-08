@@ -9,33 +9,33 @@ import jakarta.xml.bind.annotation.XmlAttribute
 import jakarta.xml.bind.annotation.XmlElement
 import kotlin.String
 
-@XmlAccessorType(XmlAccessType.NONE) //@XmlType(propOrder = {"xmlsUdf", "group","voucher", "ledger", "unit", "stockGroup", "stockItem","gstClassification"})
-
+@XmlAccessorType(XmlAccessType.FIELD)
+//@XmlType(propOrder = {"xmlsUdf", "group","voucher", "ledger", "unit", "stockGroup", "stockItem","gstClassification"})
 data class TallyMessage(
     @XmlAttribute(name = "xmlns:UDF")
-    var xmlsUdf: String,
+    var xmlsUdf: String? = null,
 
-    @XmlElement(name = "VOUCHER", type = Voucher::class)
-    var voucher: Voucher?,
+    @field:XmlElement(name = "VOUCHER", type = Voucher::class)
+    var voucher: Voucher? = null,
 
-    @XmlElement(name = "LEDGER", type = Ledger::class)
-    var ledger: Ledger?,
+    @field:XmlElement(name = "LEDGER", type = Ledger::class)
+    var ledger: Ledger? = null,
 
-    @XmlElement(name = "UNIT", type = Unit::class)
-    var unit: Unit?,
+    @field:XmlElement(name = "UNIT", type = Unit::class)
+    var unit: Unit? = null,
 
-    @XmlElement(name = "STOCKGROUP", type = StockGroup::class)
-    var stockGroup: StockGroup?,
+    @field:XmlElement(name = "STOCKGROUP", type = StockGroup::class)
+    var stockGroup: StockGroup? = null,
 
-    @XmlElement(name = "STOCKITEM", type = StockItem::class)
-    var stockItem: StockItem?,
+    @field:XmlElement(name = "STOCKITEM", type = StockItem::class)
+    var stockItem: StockItem? = null,
 
-    @XmlElement(name = "GSTCLASSIFICATION", type = GSTClassification::class)
-    var gstClassification: GSTClassification?,
+    @field:XmlElement(name = "GSTCLASSIFICATION", type = GSTClassification::class)
+    var gstClassification: GSTClassification? = null,
 
-    @XmlElement(name = "TDSRATE", type = TDSRate::class)
-    var tdsRate: TDSRate?,
+    @field:XmlElement(name = "TDSRATE", type = TDSRate::class)
+    var tdsRate: TDSRate? = null,
 
-    @XmlElement(name = "GROUP", type = Group::class)
-    var group: Group?,
+    @field:XmlElement(name = "GROUP", type = Group::class)
+    var group: Group? = null,
 )

@@ -4,32 +4,29 @@ import jakarta.xml.bind.annotation.XmlAccessType
 import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlElement
 
-/**
- * Created by paripranu on 06/13/18.
- */
-@XmlAccessorType(XmlAccessType.NONE)
-class GSTClassificationDetail {
-    @XmlElement(name = "APPLICABLEFROM")
-    var applicableFrom: String? = null
+@XmlAccessorType(XmlAccessType.FIELD)
+data class GSTClassificationDetail(
+    @field:XmlElement(name = "APPLICABLEFROM")
+    var applicableFrom: String? = null,
 
-    @XmlElement(name = "HSNMASTERNAME")
-    var hsnMasterName: String? = null
+    @field:XmlElement(name = "HSNMASTERNAME")
+    var hsnMasterName: String? = null,
 
-    @XmlElement(name = "HSNCODE")
-    var hsnCode: String? = null
+    @field:XmlElement(name = "HSNCODE")
+    var hsnCode: String? = null,
 
-    @XmlElement(name = "TAXABILITY")
-    var taxability: String? = null
+    @field:XmlElement(name = "TAXABILITY")
+    var taxability: String? = null,
 
-    @XmlElement(name = "ISREVERSECHARGEAPPLICABLE")
-    var isReverseChargeApplicable: String? = null
+    @field:XmlElement(name = "ISREVERSECHARGEAPPLICABLE")
+    var isReverseChargeApplicable: String? = null,
 
-    @XmlElement(name = "ISNONGSTGOODS")
-    var isNonGstGoods: String? = null
+    @field:XmlElement(name = "ISNONGSTGOODS")
+    var isNonGstGoods: String? = null,
 
-    @XmlElement(name = "GSTINELIGIBLEITC")
-    var gstInEligibleitc: String? = null
+    @field:XmlElement(name = "GSTINELIGIBLEITC")
+    var gstInEligibleitc: String? = null,
 
-    @XmlElement(name = "STATEWISEDETAILS.LIST", type = StateWiseDetail::class)
-    var stateWiseDetailsList: List<StateWiseDetail>? = null
-}
+    @field:XmlElement(name = "STATEWISEDETAILS.LIST", type = StateWiseDetail::class)
+    var stateWiseDetailsList: List<StateWiseDetail>? = null,
+)

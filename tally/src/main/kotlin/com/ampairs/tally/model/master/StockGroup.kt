@@ -5,17 +5,17 @@ import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlAttribute
 import jakarta.xml.bind.annotation.XmlElement
 
-@XmlAccessorType(XmlAccessType.NONE)
-class StockGroup {
+@XmlAccessorType(XmlAccessType.FIELD)
+data class StockGroup(
     @XmlAttribute(name = "NAME")
-    var name = ""
+    var name: String? = null,
 
     @XmlAttribute(name = "RESERVEDNAME")
-    var reservedName = ""
+    var reservedName: String? = null,
 
-    @XmlElement(name = "NAME.LIST", type = Name::class)
-    var nameList: List<Name>? = null
+    @field:XmlElement(name = "NAME.LIST", type = Name::class)
+    var nameList: List<Name>? = null,
 
-    @XmlElement(name = "PARENT")
-    var parent = ""
-}
+    @field:XmlElement(name = "PARENT")
+    var parent: String? = null,
+)

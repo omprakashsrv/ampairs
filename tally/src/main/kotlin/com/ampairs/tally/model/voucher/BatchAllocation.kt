@@ -5,24 +5,24 @@ import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlElement
 import jakarta.xml.bind.annotation.XmlType
 
-@XmlAccessorType(XmlAccessType.NONE)
+@XmlAccessorType(XmlAccessType.FIELD)
 @XmlType(propOrder = ["godownName", "batchName", "destinationGodownName", "amount", "actualQty", "billedQty"])
-class BatchAllocation {
-    @XmlElement(name = "GODOWNNAME")
-    var godownName = "Main Location"
+data class BatchAllocation(
+    @field:XmlElement(name = "GODOWNNAME")
+    var godownName: String? = null,
 
-    @XmlElement(name = "BATCHNAME")
-    var batchName = "Primary Batch"
+    @field:XmlElement(name = "BATCHNAME")
+    var batchName: String? = null,
 
-    @XmlElement(name = "DESTINATIONGODOWNNAME")
-    var destinationGodownName = "Main Location"
+    @field:XmlElement(name = "DESTINATIONGODOWNNAME")
+    var destinationGodownName: String? = null,
 
-    @XmlElement(name = "AMOUNT")
-    var amount: String? = null
+    @field:XmlElement(name = "AMOUNT")
+    var amount: String? = null,
 
-    @XmlElement(name = "ACTUALQTY")
-    var actualQty: String? = null
+    @field:XmlElement(name = "ACTUALQTY")
+    var actualQty: String? = null,
 
-    @XmlElement(name = "BILLEDQTY")
-    var billedQty: String? = null
-}
+    @field:XmlElement(name = "BILLEDQTY")
+    var billedQty: String? = null,
+)

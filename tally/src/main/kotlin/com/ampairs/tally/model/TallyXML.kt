@@ -1,19 +1,28 @@
 package com.ampairs.tally.model
 
+import jakarta.xml.bind.JAXBContext
 import jakarta.xml.bind.annotation.*
+import java.io.FileReader
 
-@XmlAccessorType(XmlAccessType.NONE)
+
+@XmlAccessorType(XmlAccessType.FIELD)
 @XmlRootElement(name = "ENVELOPE")
-@XmlType(propOrder = ["header", "body"])
+@XmlType(propOrder = arrayOf("header", "body"))
 data class TallyXML(
-    @XmlElement(name = "HEADER", type = Header::class)
-    var header: Header,
+    @field:XmlElement(name = "HEADER", type = Header::class)
+    var header: Header? = null,
 
-    @XmlElement(name = "BODY", type = Body::class)
-    var body: Body
+    @field:XmlElement(name = "BODY", type = Body::class)
+    var body: Body? = null
 
 )
 
 fun main() {
-
+    val context = JAXBContext.newInstance(TallyXML::class.java)
+    val fileReader = FileReader("tally.xml")
+//    val readText = fileReader.readText()
+//    println("readText = ${readText}")
+    val unmarshal = context.createUnmarshaller()
+        .unmarshal(fileReader)
+    println("unmarshal = ${unmarshal}")
 }

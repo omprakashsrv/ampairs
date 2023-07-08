@@ -5,11 +5,11 @@ import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlAttribute
 import jakarta.xml.bind.annotation.XmlElement
 
-@XmlAccessorType(XmlAccessType.NONE)
-class AllBankersDate {
+@XmlAccessorType(XmlAccessType.FIELD)
+data class AllBankersDate(
     @XmlAttribute(name = "TYPE")
-    var type = "Date"
+    var type: String? = null,
 
-    @XmlElement(name = "BASICBANKERSDATE")
-    var basicBankersDate: String? = null
-}
+    @field:XmlElement(name = "BASICBANKERSDATE")
+    var basicBankersDate: String? = null,
+)

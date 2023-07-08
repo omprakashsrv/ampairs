@@ -4,8 +4,8 @@ import jakarta.xml.bind.annotation.XmlAccessType
 import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlElement
 
-@XmlAccessorType(XmlAccessType.NONE)
+@XmlAccessorType(XmlAccessType.FIELD)
 data class StaticVariables(
-    @XmlElement(name = "SVCURRENTCOMPANY")
-    var svCurrenCompany: String
+    @field:XmlElement(name = "SVCURRENTCOMPANY")
+    var svCurrenCompany: String? = null
 )

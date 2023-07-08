@@ -5,23 +5,23 @@ import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlAttribute
 import jakarta.xml.bind.annotation.XmlElement
 
-@XmlAccessorType(XmlAccessType.NONE)
+@XmlAccessorType(XmlAccessType.FIELD)
 data class Unit(
     @XmlAttribute(name = "NAME")
-    var name: String,
+    var name: String? = null,
 
     @XmlAttribute(name = "RESERVEDNAME")
-    var reservedName: String,
+    var reservedName: String? = null,
 
-    @XmlElement(name = "NAME")
-    var unitName: String?,
+    @field:XmlElement(name = "NAME")
+    var unitName: String? = null,
 
-    @XmlElement(name = "GSTREPUOM")
-    var gstRepUOM: String?,
+    @field:XmlElement(name = "GSTREPUOM")
+    var gstRepUOM: String? = null,
 
-    @XmlElement(name = "DECIMALPLACES")
-    var decimalPlaces: String?,
+    @field:XmlElement(name = "DECIMALPLACES")
+    var decimalPlaces: String? = null,
 
-    @XmlElement(name = "ISSIMPLEUNIT")
-    var isSimpleUnit: String?,
+    @field:XmlElement(name = "ISSIMPLEUNIT")
+    var isSimpleUnit: String? = null,
 )

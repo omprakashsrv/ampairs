@@ -4,8 +4,8 @@ import jakarta.xml.bind.annotation.XmlAccessType
 import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlElement
 
-@XmlAccessorType(XmlAccessType.NONE)
+@XmlAccessorType(XmlAccessType.FIELD)
 data class Address(
-    @XmlElement(name = "ADDRESS")
-    var address: String?
+    @field:XmlElement(name = "ADDRESS")
+    var address: String? = null
 )

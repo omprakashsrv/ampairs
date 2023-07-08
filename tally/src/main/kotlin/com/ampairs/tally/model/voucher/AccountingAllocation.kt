@@ -4,40 +4,20 @@ import jakarta.xml.bind.annotation.XmlAccessType
 import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlElement
 
-/**
- * Created by paripranu on 06/13/18.
- */
-@XmlAccessorType(XmlAccessType.NONE)
-class AccountingAllocation {
-    @XmlElement(name = "LEDGERNAME")
-    var ledgerName = ""
+@XmlAccessorType(XmlAccessType.FIELD)
+data class AccountingAllocation(
+    @field:XmlElement(name = "LEDGERNAME")
+    var ledgerName: String? = null,
 
-    @XmlElement(name = "ISDEEMEDPOSITIVE")
-    private var isDeemedPositive = ""
+    @field:XmlElement(name = "ISDEEMEDPOSITIVE")
+    private var isDeemedPositive: String? = null,
 
-    @XmlElement(name = "ISPARTYLEDGER")
-    var isPartyLedger = ""
+    @field:XmlElement(name = "ISPARTYLEDGER")
+    var isPartyLedger: String? = null,
 
-    @XmlElement(name = "ISLASTDEEMEDPOSITIVE")
-    private var isLastDeemedPositive = ""
+    @field:XmlElement(name = "ISLASTDEEMEDPOSITIVE")
+    private var isLastDeemedPositive: String? = null,
 
-    @XmlElement(name = "AMOUNT")
-    var amount = ""
-    fun getIsDeemedPositive(): String {
-        return isDeemedPositive
-    }
-
-    fun setIsDeemedPositive(isDeemedPositive: String) {
-        this.isDeemedPositive = isDeemedPositive
-        isLastDeemedPositive = isDeemedPositive
-    }
-
-    fun getIsLastDeemedPositive(): String {
-        return isLastDeemedPositive
-    }
-
-    fun setIsLastDeemedPositive(isLastDeemedPositive: String) {
-        this.isLastDeemedPositive = isLastDeemedPositive
-        isDeemedPositive = isLastDeemedPositive
-    }
-}
+    @field:XmlElement(name = "AMOUNT")
+    var amount: String? = null,
+)

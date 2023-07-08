@@ -4,26 +4,26 @@ import jakarta.xml.bind.annotation.XmlAccessType
 import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlElement
 
-@XmlAccessorType(XmlAccessType.NONE)
+@XmlAccessorType(XmlAccessType.FIELD)
 data class CategoryDetail(
-    @XmlElement(name = "APPLICABLEFROM")
-    var applicableFrom: String?,
+    @field:XmlElement(name = "APPLICABLEFROM")
+    var applicableFrom: String? = null,
 
-    @XmlElement(name = "ISZERORATED")
-    var isZeroRated: String?,
+    @field:XmlElement(name = "ISZERORATED")
+    var isZeroRated: String? = null,
 
-    @XmlElement(name = "ISNORMALRATEAPPLICABLE")
-    var isNormalRateApplicable: String?,
+    @field:XmlElement(name = "ISNORMALRATEAPPLICABLE")
+    var isNormalRateApplicable: String? = null,
 
-    @XmlElement(name = "RATEOFTAX")
-    var rateOfTax: String?,
+    @field:XmlElement(name = "RATEOFTAX")
+    var rateOfTax: String? = null,
 
-    @XmlElement(name = "OTHERRATE")
-    var otherRate: String?,
+    @field:XmlElement(name = "OTHERRATE")
+    var otherRate: String? = null,
 
-    @XmlElement(name = "NOPANRATEOFTAX")
-    var noPANRateOfTax: String?,
+    @field:XmlElement(name = "NOPANRATEOFTAX")
+    var noPANRateOfTax: String? = null,
 
-    @XmlElement(name = "NOPANOTHERRATE")
-    var noPANOtherRate: String?,
+    @field:XmlElement(name = "NOPANOTHERRATE")
+    var noPANOtherRate: String? = null,
 )

@@ -5,9 +5,9 @@ import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlElement
 import jakarta.xml.bind.annotation.XmlRootElement
 
-@XmlAccessorType(XmlAccessType.NONE)
+@XmlAccessorType(XmlAccessType.FIELD)
 @XmlRootElement(name = "REQUESTDATA")
 data class RequestData(
-    @XmlElement(name = "TALLYMESSAGE", type = TallyMessage::class)
-    var tallyMessage: MutableList<TallyMessage?>
+    @field:XmlElement(name = "TALLYMESSAGE", type = TallyMessage::class)
+    var tallyMessage: MutableList<TallyMessage?>? = null
 )

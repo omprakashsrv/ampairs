@@ -4,8 +4,8 @@ import jakarta.xml.bind.annotation.XmlAccessType
 import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlElement
 
-@XmlAccessorType(XmlAccessType.NONE)
+@XmlAccessorType(XmlAccessType.FIELD)
 data class Body(
-    @XmlElement(name = "IMPORTDATA", type = ImportData::class)
-    var importData: ImportData
+    @field:XmlElement(name = "IMPORTDATA", type = ImportData::class)
+    var importData: ImportData? = null
 )

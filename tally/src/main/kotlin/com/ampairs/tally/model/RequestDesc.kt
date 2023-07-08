@@ -4,11 +4,11 @@ import jakarta.xml.bind.annotation.XmlAccessType
 import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlElement
 
-@XmlAccessorType(XmlAccessType.NONE)
+@XmlAccessorType(XmlAccessType.FIELD)
 data class RequestDesc(
-    @XmlElement(name = "REPORTNAME")
-    var reportName: String,
+    @field:XmlElement(name = "REPORTNAME")
+    var reportName: String? = null,
 
-    @XmlElement(name = "STATICVARIABLES", type = StaticVariables::class)
-    var staticVariables: StaticVariables
+    @field:XmlElement(name = "STATICVARIABLES", type = StaticVariables::class)
+    var staticVariables: StaticVariables? = null
 )

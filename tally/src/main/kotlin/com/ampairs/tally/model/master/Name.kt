@@ -4,13 +4,8 @@ import jakarta.xml.bind.annotation.XmlAccessType
 import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlElement
 
-@XmlAccessorType(XmlAccessType.NONE)
-class Name {
-    @XmlElement(name = "NAME")
-    var name: String? = null
-
-    constructor()
-    constructor(name: String?) {
-        this.name = name
-    }
-}
+@XmlAccessorType(XmlAccessType.FIELD)
+data class Name(
+    @field:XmlElement(name = "NAME")
+    var name: String? = null,
+)
