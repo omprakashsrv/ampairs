@@ -44,7 +44,10 @@ data class StockItem(
     var conversion: String? = null,
 
     @field:XmlElement(name = "STANDARDCOSTLIST.LIST", type = StandardCost::class)
-    var standardCostList: StandardCost? = null,
+    var standardCost: StandardCost? = null,
+
+    @field:XmlElement(name = "STANDARDPRICELIST.LIST", type = StandardPrice::class)
+    var standardPrice: StandardPrice? = null,
 
     @field:XmlElement(name = "GSTDETAILS.LIST", type = GSTClassificationDetail::class)
     var gstClassificationDetailList: List<GSTClassificationDetail>? = null,

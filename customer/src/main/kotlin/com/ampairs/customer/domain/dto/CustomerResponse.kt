@@ -1,6 +1,6 @@
-package com.ampairs.core.user.model.dto
+package com.ampairs.customer.domain.dto
 
-import com.ampairs.core.domain.model.Company
+import com.ampairs.core.user.model.Customer
 
 data class CustomerResponse(
     var id: String,
@@ -20,7 +20,7 @@ data class CustomerResponse(
 )
 
 
-fun List<Company>.asCustomerResponse(): List<CustomerResponse> {
+fun List<Customer>.asCompanyResponse(): List<CustomerResponse> {
     return map {
         CustomerResponse(
             id = it.id,
@@ -41,7 +41,7 @@ fun List<Company>.asCustomerResponse(): List<CustomerResponse> {
     }
 }
 
-fun Company.asCustomerResponse(): CustomerResponse {
+fun Customer.asCompanyResponse(): CustomerResponse {
     return CustomerResponse(
         id = this.id,
         name = this.name,

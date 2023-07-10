@@ -18,7 +18,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@ComponentScan(value = arrayOf("com.ampairs.core"))
+@ComponentScan(value = arrayOf("com.ampairs.core", "com.ampairs.tally"))
 class SecurityConfiguration @Autowired constructor(
     val jwtAuthFilter: JwtAuthenticationFilter,
     val authenticationProvider: AuthenticationProvider,

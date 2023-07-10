@@ -5,7 +5,7 @@ import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlElement
 
 @XmlAccessorType(XmlAccessType.FIELD)
-data class StandardCost(
+data class StandardPrice(
     @field:XmlElement(name = "DATE")
     var date: String? = null,
 

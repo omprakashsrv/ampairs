@@ -1,9 +1,9 @@
-package com.ampairs.customer.controller
+package com.ampairs.auth.controller
 
 import com.ampairs.core.domain.dto.UserResponse
 import com.ampairs.core.domain.dto.UserUpdateRequest
-import com.ampairs.core.user.model.dto.CustomerResponse
-import com.ampairs.core.user.model.dto.asCustomerResponse
+import com.ampairs.core.user.model.dto.CompanyResponse
+import com.ampairs.core.user.model.dto.asCompanyResponse
 import com.ampairs.core.user.service.CompanyService
 import jakarta.validation.Valid
 import org.springframework.beans.factory.annotation.Autowired
@@ -26,8 +26,8 @@ class CompanyController @Autowired constructor(
     }
 
     @GetMapping("")
-    fun getCompany(): CustomerResponse {
-        return companyService.getUserCompany().asCustomerResponse()
+    fun getCompany(): CompanyResponse {
+        return companyService.getUserCompany().asCompanyResponse()
     }
 
 }

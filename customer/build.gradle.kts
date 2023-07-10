@@ -5,7 +5,7 @@ plugins {
     id("io.spring.dependency-management") version "1.1.0"
     kotlin("jvm") version "1.8.22"
     kotlin("plugin.spring") version "1.8.22"
-    id ("org.jetbrains.kotlin.plugin.allopen") version "1.8.22"
+    id("org.jetbrains.kotlin.plugin.allopen") version "1.8.22"
 }
 
 group = "com.ampairs"
@@ -25,6 +25,7 @@ repositories {
 dependencies {
     implementation(project(mapOf("path" to ":core")))
     implementation(project(mapOf("path" to ":core_user")))
+    implementation(project(mapOf("path" to ":tally")))
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework:spring-web")
     implementation("org.springframework:spring-webmvc")
