@@ -184,6 +184,12 @@ data class Ledger(
     @field:XmlElement(name = "SORTPOSITION")
     var sortPosition: String? = null,
 
+    @field:XmlElement(name = "LEDGERMOBILE")
+    var ledgerMobile: String? = null,
+
+    @field:XmlElement(name = "LEDGERPHONE")
+    var ledgerPhone: String? = null,
+
     @field:XmlElement(name = "TCSCATEGORYDETAILS.LIST")
     private var tcsCategoryDetailList: MutableList<TCSCategoryDetail>? = null,
 )

@@ -1,8 +1,11 @@
 package com.ampairs.customer.repository
 
-import com.ampairs.core.user.model.Customer
+import com.ampairs.customer.domain.model.Customer
 import org.springframework.data.repository.CrudRepository
 import org.springframework.stereotype.Repository
 
 @Repository
-interface CustomerRepository : CrudRepository<Customer, String>
+interface CustomerRepository : CrudRepository<Customer, String> {
+    fun findByRefId(refId: String?): Customer?
+
+}

@@ -1,6 +1,6 @@
 package com.ampairs.customer.domain.dto
 
-import com.ampairs.core.user.model.Customer
+import com.ampairs.customer.domain.model.Customer
 
 data class CustomerResponse(
     var id: String,

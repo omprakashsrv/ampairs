@@ -14,12 +14,12 @@ abstract class BaseDomain : Model() {
     @Column(
         name = "seq_id",
         unique = true,
-        insertable = false,
         updatable = false,
+        insertable = false,
         columnDefinition = "BIGINT AUTO_INCREMENT"
     )
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    protected var seqId: Int? = null
+    var seqId: Int? = null
 
     @Column(
         name = "created_at",

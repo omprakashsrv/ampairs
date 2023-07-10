@@ -8,7 +8,18 @@ import kotlin.String
 import kotlin.arrayOf
 
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(propOrder = arrayOf("unit", "stockGroup", "gstClassification", "group", "stockItem"))
+@XmlType(
+    propOrder = arrayOf(
+        "unit",
+        "stockGroup",
+        "gstClassification",
+        "group",
+        "stockItem",
+        "tdsRate",
+        "ledger",
+        "voucher"
+    )
+)
 data class TallyMessage(
     @XmlAttribute(name = "xmlns:UDF")
     val xmlsUdf: String? = null,

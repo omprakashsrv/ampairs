@@ -1,7 +1,7 @@
 package com.ampairs.customer.domain.service
 
-import com.ampairs.core.user.model.Customer
 import com.ampairs.core.user.repository.CompanyRepository
+import com.ampairs.customer.domain.model.Customer
 import com.ampairs.customer.domain.model.asDatabaseModel
 import com.ampairs.customer.repository.CustomerPagingRepository
 import com.ampairs.customer.repository.CustomerRepository
@@ -33,8 +33,15 @@ class CustomerService @Autowired constructor(
 
     @Transactional
     fun updateMasters(tallyMessage: TallyMessage?) {
-        tallyMessage?.ledger?.asDatabaseModel()?.let {
-            customerRepository.save(it)
+        if (tallyMessage?.ledger?.isBillWiseOn?.equals("Yes") == true) {
+            tallyMessage.ledger?.asDatabaseModel()?.let {
+                val existingCustomer = customerRepository.findByRefId(it.refId)
+                if (existingCustomer != null) {
+                    it.seqId = existingCustomer.seqId
+                    it.id = existingCustomer.id
+                }
+                customerRepository.save(it)
+            }
         }
     }
 }

@@ -5,6 +5,10 @@ server:
       enabled: true
   port: 8081
 spring:
+  servlet:
+    multipart:
+      max-file-size: 100MB
+      max-request-size: 100MB
   jackson:
     property-naming-strategy: SNAKE_CASE
   datasource:
@@ -14,7 +18,7 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-#      ddl-auto: create
+      ddl-auto: update
       show-sql: false
       properties:
         hibernate:

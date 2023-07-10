@@ -8,4 +8,8 @@ import jakarta.xml.bind.annotation.XmlElement
 data class Address(
     @field:XmlElement(name = "ADDRESS")
     var address: String? = null
-)
+) {
+    override fun toString(): String {
+        return "$address"
+    }
+}

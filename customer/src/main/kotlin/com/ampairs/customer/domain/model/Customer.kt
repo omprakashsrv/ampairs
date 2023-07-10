@@ -1,12 +1,15 @@
-package com.ampairs.core.user.model
+package com.ampairs.customer.domain.model
 
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.core.user.config.Constants
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.Index
+import jakarta.persistence.Table
 import org.springframework.data.geo.Point
 
 @Entity(name = "customer")
+@Table(indexes = arrayOf(Index(name = "customer_ref_idx", columnList = "ref_id", unique = true)))
 class Customer : OwnableBaseDomain() {
 
     @Column(name = "country_code", nullable = false)
@@ -17,6 +20,9 @@ class Customer : OwnableBaseDomain() {
 
     @Column(name = "phone", nullable = false, length = 12)
     var phone: String = ""
+
+    @Column(name = "landline", nullable = false, length = 12)
+    var landline: String = ""
 
     @Column(name = "email", length = 255)
     var email: String = ""

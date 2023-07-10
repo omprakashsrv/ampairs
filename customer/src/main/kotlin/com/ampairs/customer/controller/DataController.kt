@@ -11,7 +11,7 @@ import org.springframework.web.multipart.MultipartFile
 
 
 @RestController
-@RequestMapping("/product/v1/data")
+@RequestMapping("/customer/v1/data")
 class DataController constructor(
     val tallyService: TallyService,
     val customerService: CustomerService
