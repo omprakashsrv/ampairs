@@ -10,17 +10,17 @@ class Product : OwnableBaseDomain() {
     @Column(name = "name", nullable = false, length = 255)
     var name: String = ""
 
-    @Column(name = "tax_code", length = 10)
+    @Column(name = "tax_code", length = 20)
     var taxCode: String = ""
 
     @Column(name = "group_id", length = 200)
-    var groupId: String = ""
+    var groupId: String? = null
 
     @Column(name = "category_id", length = 200)
-    var categoryId: String = ""
+    var categoryId: String? = null
 
     @Column(name = "base_unit_id", length = 200)
-    var baseUnitId: String = ""
+    var baseUnitId: String? = null
 
     @Column(name = "active", nullable = false)
     var active: Boolean = true
@@ -39,7 +39,7 @@ class Product : OwnableBaseDomain() {
     var group: ProductGroup? = null
 
     @OneToOne()
-    @JoinColumn(name = "group_id", referencedColumnName = "id", updatable = false, insertable = false)
+    @JoinColumn(name = "category_id", referencedColumnName = "id", updatable = false, insertable = false)
     var category: ProductCategory? = null
 
     @OneToOne()

@@ -35,7 +35,9 @@ fun StockItem.asDatabaseModel(): Product {
     val product = Product()
     product.refId = this.guid
     product.name = this.name ?: ""
-    product.baseUnitId = this.baseUnits ?: ""
-//    product.mrp = this.standardCost?.rate?.toDouble() ?: 0.0
+    product.taxCode = this.gstDetailList?.get(0)?.hsnCode ?: ""
+    product.mrp = 0.0
+    product.sellingPrice = this.standardPrice?.rate?.split("/")?.get(0)?.toDouble() ?: 0.0
+    product.dp = this.standardCost?.rate?.split("/")?.get(0)?.toDouble() ?: 0.0
     return product
 }

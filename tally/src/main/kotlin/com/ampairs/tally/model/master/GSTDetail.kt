@@ -9,14 +9,23 @@ data class GSTDetail(
     @field:XmlElement(name = "APPLICABLEFROM")
     var applicableFrom: String? = null,
 
+    @field:XmlElement(name = "HSNMASTERNAME")
+    var hsnMasterName: String? = null,
+
     @field:XmlElement(name = "HSNCODE")
     var hsnCode: String? = null,
 
-    @field:XmlElement(name = "HSN")
-    var hsn: String? = null,
-
     @field:XmlElement(name = "TAXABILITY")
     var taxability: String? = null,
+
+    @field:XmlElement(name = "ISREVERSECHARGEAPPLICABLE")
+    var isReverseChargeApplicable: String? = null,
+
+    @field:XmlElement(name = "ISNONGSTGOODS")
+    var isNonGstGoods: String? = null,
+
+    @field:XmlElement(name = "GSTINELIGIBLEITC")
+    var gstInEligibleitc: String? = null,
 
     @field:XmlElement(name = "STATEWISEDETAILS.LIST", type = StateWiseDetail::class)
     var stateWiseDetailsList: List<StateWiseDetail>? = null,

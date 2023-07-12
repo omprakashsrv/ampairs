@@ -55,8 +55,8 @@ data class StockItem(
     @field:XmlElement(name = "STANDARDPRICELIST.LIST", type = StandardPrice::class)
     var standardPrice: StandardPrice? = null,
 
-    @field:XmlElement(name = "GSTDETAILS.LIST", type = GSTClassificationDetail::class)
-    var gstClassificationDetailList: List<GSTClassificationDetail>? = null,
+    @field:XmlElement(name = "GSTDETAILS.LIST", type = GSTDetail::class)
+    var gstDetailList: List<GSTDetail>? = null,
 
     @field:XmlElement(name = "TCSCATEGORYDETAILS.LIST", type = TCSCategoryDetail::class)
     var tcsCategoryDetailList: List<TCSCategoryDetail>? = null,

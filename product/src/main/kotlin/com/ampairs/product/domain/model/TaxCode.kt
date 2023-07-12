@@ -1,6 +1,6 @@
 package com.ampairs.product.domain.model
 
-import com.ampairs.core.domain.model.BaseDomain
+import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.product.config.Constants
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -17,9 +17,9 @@ import java.sql.Timestamp
         )
     )
 )
-class TaxCode : BaseDomain() {
+class TaxCode : OwnableBaseDomain() {
 
-    @Column(name = "code", length = 10)
+    @Column(name = "code", length = 20)
     var code: String = ""
 
     @Column(name = "effective_from")
@@ -46,4 +46,22 @@ class TaxCode : BaseDomain() {
     override fun obtainIdPrefix(): String {
         return Constants.HSN_CODE_PREFIX
     }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+        if (!super.equals(other)) return false
+
+        other as TaxCode
+
+        return code == other.code
+    }
+
+    override fun hashCode(): Int {
+        var result = super.hashCode()
+        result = 31 * result + code.hashCode()
+        return result
+    }
+
+
 }
