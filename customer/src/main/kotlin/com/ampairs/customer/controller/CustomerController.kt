@@ -29,7 +29,7 @@ class CustomerController @Autowired constructor(
     @GetMapping("")
     fun getCustomers(@RequestParam("last_updated") lastUpdated: Long?): List<CustomerResponse> {
         val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
-        val customers = customerService.getCustomers(sessionUser.company.id, lastUpdated)
+        val customers = customerService.getCustomers(lastUpdated)
         return customers.asCompanyResponse()
     }
 

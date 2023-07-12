@@ -6,6 +6,7 @@ import com.ampairs.product.domain.model.TaxCode
 import com.ampairs.product.repository.*
 import com.ampairs.tally.model.TallyMessage
 import com.ampairs.tally.model.TallyXML
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -25,10 +26,9 @@ class ProductService(
 ) {
 
     fun getProducts(ownerId: String, lastUpdated: Long?): List<Product> {
-        return productPagingRepository.findAllByOwnerIdAndLastUpdatedGreaterThanEqual(
-            ownerId,
+        return productPagingRepository.findAllByLastUpdatedGreaterThanEqual(
             lastUpdated ?: 0,
-            Sort.by("lastUpdated").ascending()
+            PageRequest.of(0, 1000, Sort.by("lastUpdated").ascending())
         )
     }
 

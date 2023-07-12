@@ -8,6 +8,7 @@ import com.ampairs.customer.repository.CustomerRepository
 import com.ampairs.tally.model.TallyMessage
 import com.ampairs.tally.model.TallyXML
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -24,10 +25,10 @@ class CustomerService @Autowired constructor(
         return customerRepository.save(customer)
     }
 
-    fun getCustomers(companyId: String, lastUpdate: Long?): List<Customer> {
+    fun getCustomers(lastUpdate: Long?): List<Customer> {
         val customers =
-            customerPagingRepository.findAllByOwnerIdAndLastUpdatedGreaterThanEqual(
-                companyId, lastUpdate ?: 0, Sort.by("lastUpdated").ascending()
+            customerPagingRepository.findAllByLastUpdatedGreaterThanEqual(
+                lastUpdate ?: 0, PageRequest.of(0, 1000, Sort.by("lastUpdated").ascending())
             )
         return customers
     }
