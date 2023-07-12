@@ -6,7 +6,7 @@ import jakarta.xml.bind.annotation.XmlAttribute
 import jakarta.xml.bind.annotation.XmlElement
 
 @XmlAccessorType(XmlAccessType.FIELD)
-data class Unit(
+data class StockCategory(
     @XmlAttribute(name = "NAME")
     var name: String? = null,
 
@@ -16,15 +16,9 @@ data class Unit(
     @field:XmlElement(name = "GUID")
     var guid: String? = null,
 
-    @field:XmlElement(name = "NAME")
-    var unitName: String? = null,
+    @field:XmlElement(name = "NAME.LIST", type = Name::class)
+    var nameList: List<Name>? = null,
 
-    @field:XmlElement(name = "GSTREPUOM")
-    var gstRepUOM: String? = null,
-
-    @field:XmlElement(name = "DECIMALPLACES")
-    var decimalPlaces: String? = null,
-
-    @field:XmlElement(name = "ISSIMPLEUNIT")
-    var isSimpleUnit: String? = null,
+    @field:XmlElement(name = "PARENT")
+    var parent: String? = null,
 )

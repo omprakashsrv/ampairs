@@ -12,6 +12,7 @@ import kotlin.arrayOf
     propOrder = arrayOf(
         "unit",
         "stockGroup",
+        "stockCategory",
         "gstClassification",
         "group",
         "stockItem",
@@ -35,6 +36,9 @@ data class TallyMessage(
 
     @field:XmlElement(name = "STOCKGROUP", type = StockGroup::class)
     val stockGroup: StockGroup? = null,
+
+    @field:XmlElement(name = "STOCKCATEGORY", type = StockCategory::class)
+    val stockCategory: StockCategory? = null,
 
     @field:XmlElement(name = "STOCKITEM", type = StockItem::class)
     val stockItem: StockItem? = null,

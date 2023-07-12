@@ -1,29 +1,41 @@
 package com.ampairs.product.domain.dto
 
 import com.ampairs.product.domain.model.Product
+import com.ampairs.product.domain.model.ProductCategory
 import com.ampairs.product.domain.model.ProductGroup
 import com.ampairs.product.domain.model.Unit
+import com.ampairs.tally.model.master.StockCategory
 import com.ampairs.tally.model.master.StockGroup
 import com.ampairs.tally.model.master.StockItem
 
 fun com.ampairs.tally.model.master.Unit.asDatabaseModel(): Unit {
     val unit = Unit()
+    unit.refId = this.guid
     unit.name = this.name ?: ""
     unit.shortName = this.reservedName ?: ""
-    unit.decimalPlaces = this.decimalPlaces?.toInt() ?: 0
+    unit.decimalPlaces = this.decimalPlaces?.trim()?.toInt() ?: 0
     return unit
 }
 
 fun StockGroup.asDatabaseModel(): ProductGroup {
     val productGroup = ProductGroup()
+    productGroup.refId = this.guid
     productGroup.name = this.name ?: ""
     return productGroup
 }
 
+fun StockCategory.asDatabaseModel(): ProductCategory {
+    val productCategory = ProductCategory()
+    productCategory.refId = this.guid
+    productCategory.name = this.name ?: ""
+    return productCategory
+}
+
 fun StockItem.asDatabaseModel(): Product {
     val product = Product()
+    product.refId = this.guid
     product.name = this.name ?: ""
     product.baseUnitId = this.baseUnits ?: ""
-    product.mrp = this.standardCost?.rate?.toDouble() ?: 0.0
+//    product.mrp = this.standardCost?.rate?.toDouble() ?: 0.0
     return product
 }

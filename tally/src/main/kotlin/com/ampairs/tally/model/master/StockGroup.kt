@@ -13,6 +13,9 @@ data class StockGroup(
     @XmlAttribute(name = "RESERVEDNAME")
     var reservedName: String? = null,
 
+    @field:XmlElement(name = "GUID")
+    var guid: String? = null,
+
     @field:XmlElement(name = "NAME.LIST", type = Name::class)
     var nameList: List<Name>? = null,
 

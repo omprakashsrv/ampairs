@@ -13,8 +13,14 @@ data class StockItem(
     @XmlAttribute(name = "RESERVEDNAME")
     var reservedName: String? = null,
 
+    @field:XmlElement(name = "GUID")
+    var guid: String? = null,
+
     @field:XmlElement(name = "PARENT")
     var parent: String? = null,
+
+    @field:XmlElement(name = "CATEGORY")
+    var category: String? = null,
 
     @field:XmlElement(name = "GSTAPPLICABLE")
     var gstApplicable: String? = null,

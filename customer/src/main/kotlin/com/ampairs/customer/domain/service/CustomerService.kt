@@ -6,6 +6,7 @@ import com.ampairs.customer.domain.model.asDatabaseModel
 import com.ampairs.customer.repository.CustomerPagingRepository
 import com.ampairs.customer.repository.CustomerRepository
 import com.ampairs.tally.model.TallyMessage
+import com.ampairs.tally.model.TallyXML
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
@@ -31,17 +32,21 @@ class CustomerService @Autowired constructor(
         return customers
     }
 
-    @Transactional
     fun updateMasters(tallyMessage: TallyMessage?) {
         if (tallyMessage?.ledger?.isBillWiseOn?.equals("Yes") == true) {
             tallyMessage.ledger?.asDatabaseModel()?.let {
                 val existingCustomer = customerRepository.findByRefId(it.refId)
-                if (existingCustomer != null) {
-                    it.seqId = existingCustomer.seqId
-                    it.id = existingCustomer.id
-                }
+                it.seqId = existingCustomer?.seqId
+                it.id = existingCustomer?.id ?: ""
                 customerRepository.save(it)
             }
+        }
+    }
+
+    @Transactional
+    fun updateTallyXml(tallyXML: TallyXML?) {
+        for (tallyMessage in tallyXML?.body?.importData?.requestData?.tallyMessage.orEmpty()) {
+            updateMasters(tallyMessage)
         }
     }
 }

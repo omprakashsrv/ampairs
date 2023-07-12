@@ -1,12 +1,12 @@
 package com.ampairs.product.domain.model
 
-import com.ampairs.core.domain.model.BaseDomain
+import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.product.config.Constants
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 
 @Entity(name = "product_group")
-class ProductGroup : BaseDomain() {
+class ProductGroup : OwnableBaseDomain() {
 
     @Column(name = "name", nullable = false, length = 255)
     var name: String = ""

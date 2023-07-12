@@ -25,9 +25,7 @@ class DataController constructor(
 
         file.inputStream.use { inputStream ->
             val tallyXML = tallyService.importMasters(inputStream)
-            for (tallyMessage in tallyXML?.body?.importData?.requestData?.tallyMessage.orEmpty()) {
-                customerService.updateMasters(tallyMessage)
-            }
+            customerService.updateTallyXml(tallyXML)
         }
         file.inputStream.close()
         return GenericSuccessResponse()
