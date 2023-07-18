@@ -8,9 +8,9 @@ spring:
   jackson:
     property-naming-strategy: SNAKE_CASE
   datasource:
-    url: jdbc:mysql://prod-db.c1mfpengh7jq.ap-south-1.rds.amazonaws.com:3306/ampairs_app
-    username: ampairs_rw
-    password: Amp.213@873$123
+    url: jdbc:mysql://localhost:3306/munsi_app
+    username: root
+    password: pass
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
