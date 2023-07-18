@@ -1,4 +1,5 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 plugins {
     id("org.springframework.boot") version "3.1.0"
@@ -9,7 +10,7 @@ plugins {
 }
 
 group = "com.ampairs"
-version = "0.0.1-SNAPSHOT"
+version = ""
 java.sourceCompatibility = JavaVersion.VERSION_17
 
 configurations {
@@ -61,3 +62,7 @@ tasks.withType<Test> {
 }
 
 tasks.register("prepareKotlinBuildScriptModel") {}
+
+tasks.withType<BootJar> {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}

@@ -30,3 +30,5 @@ application:
 
 drees:
   stacktrace: true
+logging:
+  file.name: logs/auth.log

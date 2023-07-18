@@ -39,3 +39,5 @@ application:
 
 drees:
   stacktrace: true
+logging:
+  file.name: logs/product.log
