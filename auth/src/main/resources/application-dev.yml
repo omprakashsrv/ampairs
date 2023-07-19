@@ -1,4 +1,7 @@
 #Set context root
+env:
+  name:dev
+
 server:
   tomcat:
     accesslog:

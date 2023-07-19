@@ -36,7 +36,11 @@ class SecurityConfiguration @Autowired constructor(
             .exceptionHandling({ exception -> exception.authenticationEntryPoint(unauthorizedHandler) })
             .sessionManagement({ session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS) })
             .authorizeHttpRequests({ requests ->
-                requests.requestMatchers("/auth/v1/**").permitAll()
+                requests
+                    .requestMatchers(
+                        "/auth/v1/**",
+                        "/actuator/**"
+                    ).permitAll()
                     .anyRequest().authenticated()
             }).authenticationProvider(authenticationProvider)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter::class.java)
