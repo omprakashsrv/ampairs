@@ -25,7 +25,9 @@ class JwtAuthenticationFilter @Autowired constructor(
     override fun doFilterInternal(
         @NonNull request: HttpServletRequest, @NonNull response: HttpServletResponse, @NonNull filterChain: FilterChain
     ) {
-        if (request.servletPath.contains("/auth/v1")) {
+        if (request.servletPath.contains("/auth/v1") ||
+            request.servletPath.contains("/actuator/health")
+        ) {
             filterChain.doFilter(request, response)
             return
         }
