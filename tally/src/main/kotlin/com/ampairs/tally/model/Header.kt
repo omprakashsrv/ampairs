@@ -7,5 +7,13 @@ import jakarta.xml.bind.annotation.XmlElement
 @XmlAccessorType(XmlAccessType.FIELD)
 data class Header(
     @field:XmlElement(name = "TALLYREQUEST")
-    var tallyString: String? = null
+    var tallyString: String? = null,
+    @field:XmlElement(name = "VERSION")
+    var version: String = "1",
+    @field:XmlElement(name = "TALLYREQUEST")
+    var tallyRequest: String = "EXPORT",
+    @field:XmlElement(name = "TYPE")
+    var type: String = "COLLECTION",
+    @field:XmlElement(name = "ID")
+    var id: String = "",
 )

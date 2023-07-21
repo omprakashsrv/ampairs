@@ -1,11 +1,11 @@
-package com.ampairs.tally.model.export
+package com.ampairs.tally.model.client
 
 import jakarta.xml.bind.annotation.XmlAccessType
 import jakarta.xml.bind.annotation.XmlAccessorType
 import jakarta.xml.bind.annotation.XmlElement
 
 @XmlAccessorType(XmlAccessType.FIELD)
-data class Body(
-    @field:XmlElement(name = "DESC", type = Desc::class)
-    var desc: Desc = Desc()
+data class TDL(
+    @field:XmlElement(name = "TDLMESSAGE")
+    var type: TDLMessage = TDLMessage(),
 )

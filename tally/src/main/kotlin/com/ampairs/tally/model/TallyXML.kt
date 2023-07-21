@@ -9,6 +9,9 @@ import java.io.FileReader
 @XmlRootElement(name = "ENVELOPE")
 @XmlType(propOrder = arrayOf("header", "body"))
 data class TallyXML(
+    @XmlAttribute(name = "Action")
+    val action: String = "",
+
     @field:XmlElement(name = "HEADER", type = Header::class)
     var header: Header? = null,
 

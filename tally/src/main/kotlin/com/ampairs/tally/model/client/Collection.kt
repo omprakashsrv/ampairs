@@ -1,4 +1,4 @@
-package com.ampairs.tally.model.export
+package com.ampairs.tally.model.client
 
 import jakarta.xml.bind.annotation.XmlAccessType
 import jakarta.xml.bind.annotation.XmlAccessorType
