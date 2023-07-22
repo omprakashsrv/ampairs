@@ -7,5 +7,5 @@ import jakarta.xml.bind.annotation.XmlElement
 @XmlAccessorType(XmlAccessType.FIELD)
 data class TDL(
     @field:XmlElement(name = "TDLMESSAGE")
-    var type: TDLMessage = TDLMessage(),
+    var tdlMessage: TDLMessage = TDLMessage(),
 )

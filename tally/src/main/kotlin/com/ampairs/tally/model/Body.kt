@@ -9,6 +9,8 @@ import jakarta.xml.bind.annotation.XmlElement
 data class Body(
     @field:XmlElement(name = "IMPORTDATA", type = ImportData::class)
     var importData: ImportData? = null,
+    @field:XmlElement(name = "DATA", type = Data::class)
+    var data: Data? = null,
     @field:XmlElement(name = "DESC", type = Desc::class)
     var desc: Desc = Desc()
 )

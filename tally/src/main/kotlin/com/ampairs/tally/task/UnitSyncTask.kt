@@ -11,7 +11,11 @@ class UnitSyncTask @Autowired constructor(val tallyClient: TallyClient) {
 
     @Scheduled(fixedDelay = 2 * 10 * 1000)
     fun syncUnits() {
-        val responseEntity = tallyClient.post(TallyXML())
+        val tallyXML = TallyXML()
+        tallyXML.header.id = "CUSTOMLEDGERCOL"
+        tallyXML.body.desc.tdl.tdlMessage.collection.name = "CUSTOMLEDGERCOL"
+        tallyXML.body.desc.tdl.tdlMessage.collection.type = "LEDGER"
+        val responseEntity = tallyClient.post(tallyXML)
         println("responseEntity = ${responseEntity}")
     }
 }

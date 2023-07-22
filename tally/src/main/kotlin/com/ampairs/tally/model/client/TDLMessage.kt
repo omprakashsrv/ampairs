@@ -7,5 +7,5 @@ import jakarta.xml.bind.annotation.XmlElement
 @XmlAccessorType(XmlAccessType.FIELD)
 data class TDLMessage(
     @field:XmlElement(name = "COLLECTION")
-    var type: Collection = Collection(),
+    var collection: Collection = Collection(),
 )

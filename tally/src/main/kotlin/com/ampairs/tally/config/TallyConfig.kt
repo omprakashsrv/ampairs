@@ -6,18 +6,25 @@ import org.springframework.boot.web.client.RestTemplateBuilder
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.MediaType
+import org.springframework.http.client.ClientHttpRequestInterceptor
 import org.springframework.http.converter.xml.Jaxb2RootElementHttpMessageConverter
 import org.springframework.web.client.RestTemplate
 
 
 @Configuration
-class ApplicationConfig @Autowired constructor() {
+class TallyConfig @Autowired constructor() {
 
     @Bean
-    fun restTemplate(builder: RestTemplateBuilder): RestTemplate {
-        val converter = Jaxb2RootElementHttpMessageConverter()
-        converter.supportedMediaTypes = mutableListOf(MediaType.APPLICATION_XML)
-        return builder.messageConverters(converter).build()
+    fun restTemplate(builder: RestTemplateBuilder, loggingInterceptor: ClientHttpRequestInterceptor): RestTemplate {
+        val converter = JaxbMessageConverter()
+        converter.supportedMediaTypes = mutableListOf(MediaType.APPLICATION_XML, MediaType.TEXT_XML)
+        return builder.messageConverters(converter)
+            .interceptors(loggingInterceptor).build()
+    }
+
+    @Bean
+    fun loggingInterceptor(): ClientHttpRequestInterceptor {
+        return LoggingInterceptor()
     }
 
     @Bean
