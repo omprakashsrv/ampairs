@@ -27,7 +27,6 @@ repositories {
 }
 
 dependencies {
-    implementation(project(mapOf("path" to ":tally-core")))
     implementation("jakarta.xml.bind:jakarta.xml.bind-api:4.0.0")
     runtimeOnly("com.sun.xml.bind:jaxb-impl:4.0.3")
     implementation("org.jetbrains.kotlin:kotlin-reflect")

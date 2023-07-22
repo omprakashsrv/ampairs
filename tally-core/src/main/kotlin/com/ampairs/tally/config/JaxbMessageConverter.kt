@@ -9,9 +9,7 @@ class JaxbMessageConverter : Jaxb2RootElementHttpMessageConverter() {
 
     override fun processSource(source: Source): Source {
         val streamSource = source as StreamSource
-        val inputStream = streamSource.inputStream
-        val replacingInputStream = ReplacingInputStream(inputStream, "&#4;", "")
-        streamSource.inputStream = replacingInputStream
+        streamSource.inputStream = com.ampairs.tally.config.ReplacingInputStream(streamSource.inputStream, "&#4;", "")
         return super.processSource(source)
     }
 

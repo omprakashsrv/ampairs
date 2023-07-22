@@ -16,7 +16,7 @@ class TallyConfig @Autowired constructor() {
 
     @Bean
     fun restTemplate(builder: RestTemplateBuilder, loggingInterceptor: ClientHttpRequestInterceptor): RestTemplate {
-        val converter = JaxbMessageConverter()
+        val converter = com.ampairs.tally.config.JaxbMessageConverter()
         converter.supportedMediaTypes = mutableListOf(MediaType.APPLICATION_XML, MediaType.TEXT_XML)
         return builder.messageConverters(converter)
             .interceptors(loggingInterceptor).build()
@@ -24,7 +24,7 @@ class TallyConfig @Autowired constructor() {
 
     @Bean
     fun loggingInterceptor(): ClientHttpRequestInterceptor {
-        return LoggingInterceptor()
+        return com.ampairs.tally.config.LoggingInterceptor()
     }
 
     @Bean
