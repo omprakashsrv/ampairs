@@ -11,3 +11,14 @@ fun Unit.asUnitResponse(): UnitResponse {
         id = this.id, name = this.name, shortName = this.shortName, decimalPlaces = this.decimalPlaces
     )
 }
+
+fun List<Unit>.asUnitResponse(): List<UnitResponse> {
+    return map {
+        UnitResponse(
+            id = it.id,
+            name = it.name,
+            shortName = it.shortName,
+            decimalPlaces = it.decimalPlaces
+        )
+    }
+}

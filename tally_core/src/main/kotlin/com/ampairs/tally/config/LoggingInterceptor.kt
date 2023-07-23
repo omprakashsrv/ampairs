@@ -8,13 +8,13 @@ import org.springframework.http.client.ClientHttpRequestInterceptor
 import org.springframework.http.client.ClientHttpResponse
 import java.nio.charset.StandardCharsets
 
-val LOGGER: Logger = LoggerFactory.getLogger(com.ampairs.tally.config.LoggingInterceptor::class.java)
+val LOGGER: Logger = LoggerFactory.getLogger(LoggingInterceptor::class.java)
 
 class LoggingInterceptor : ClientHttpRequestInterceptor {
     override fun intercept(
         request: HttpRequest, body: ByteArray, execution: ClientHttpRequestExecution
     ): ClientHttpResponse {
-        com.ampairs.tally.config.LOGGER.info("Request body: {}", String(body, StandardCharsets.UTF_8))
+        LOGGER.info("Request body: {}", String(body, StandardCharsets.UTF_8))
         return execution.execute(request, body)
     }
 }

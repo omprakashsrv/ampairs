@@ -3,6 +3,7 @@ package com.ampairs.product.service
 import com.ampairs.product.domain.dto.asDatabaseModel
 import com.ampairs.product.domain.model.Product
 import com.ampairs.product.domain.model.TaxCode
+import com.ampairs.product.domain.model.Unit
 import com.ampairs.product.repository.*
 import com.ampairs.tally.model.TallyMessage
 import com.ampairs.tally.model.TallyXML
@@ -117,6 +118,16 @@ class ProductService(
                 productRepository.save(it)
             }
         }
+    }
+
+    fun updateUnits(ownerId: String, units: List<Unit>): List<Unit> {
+        units.forEach {
+            val unit = unitRepository.findByRefId(it.refId)
+            it.seqId = unit?.seqId
+            it.id = unit?.id ?: ""
+            unitRepository.save(it)
+        }
+        return units
     }
 
 

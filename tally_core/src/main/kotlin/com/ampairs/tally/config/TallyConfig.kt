@@ -15,16 +15,22 @@ import org.springframework.web.client.RestTemplate
 class TallyConfig @Autowired constructor() {
 
     @Bean
-    fun restTemplate(builder: RestTemplateBuilder, loggingInterceptor: ClientHttpRequestInterceptor): RestTemplate {
-        val converter = com.ampairs.tally.config.JaxbMessageConverter()
+    fun tallyRestTemplate(
+        tallyRestTemplateBuilder: RestTemplateBuilder, loggingInterceptor: ClientHttpRequestInterceptor
+    ): RestTemplate {
+        val converter = JaxbMessageConverter()
         converter.supportedMediaTypes = mutableListOf(MediaType.APPLICATION_XML, MediaType.TEXT_XML)
-        return builder.messageConverters(converter)
-            .interceptors(loggingInterceptor).build()
+        return tallyRestTemplateBuilder.messageConverters(converter).interceptors(loggingInterceptor).build()
+    }
+
+    @Bean
+    fun tallyRestTemplateBuilder(): RestTemplateBuilder {
+        return RestTemplateBuilder()
     }
 
     @Bean
     fun loggingInterceptor(): ClientHttpRequestInterceptor {
-        return com.ampairs.tally.config.LoggingInterceptor()
+        return LoggingInterceptor()
     }
 
     @Bean
@@ -35,8 +41,8 @@ class TallyConfig @Autowired constructor() {
     }
 
     @Bean
-    fun tallyClient(restTemplate: RestTemplate): TallyClient {
-        return TallyClient(restTemplate)
+    fun tallyClient(tallyRestTemplate: RestTemplate): TallyClient {
+        return TallyClient(tallyRestTemplate)
     }
 
 }

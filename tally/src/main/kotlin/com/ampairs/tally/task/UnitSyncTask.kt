@@ -1,22 +1,29 @@
 package com.ampairs.tally.task
 
-import com.ampairs.tally.model.TallyXML
-import com.ampairs.tally.service.TallyClient
+import com.ampairs.network.auth.AuthApi
+import com.ampairs.network.auth.model.AuthInit
+import com.skydoves.sandwich.onError
+import com.skydoves.sandwich.onFailure
+import com.skydoves.sandwich.onSuccess
+import kotlinx.coroutines.runBlocking
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
-class UnitSyncTask @Autowired constructor(val tallyClient: TallyClient) {
+class UnitSyncTask @Autowired constructor(val authApi: AuthApi) {
 
     @Scheduled(fixedDelay = 2 * 10 * 1000)
     fun syncUnits() {
-        val tallyXML = TallyXML()
-        tallyXML.header.id = "CUSTOMLEDGERCOL"
-        tallyXML.body.desc.tdl.tdlMessage.collection.name = "CUSTOMLEDGERCOL"
-        tallyXML.body.desc.tdl.tdlMessage.collection.type = "LEDGER"
-        val responseEntity = tallyClient.post(tallyXML)
-        println("responseEntity = ${responseEntity}")
+        runBlocking {
+            authApi.initAuth(AuthInit(91, "9591781662")).onSuccess {
+                println("data.response = ${data.response}")
+            }.onError {
+                println("errorBody = ${errorBody}")
+            }.onFailure {
+                println("onFailure")
+            }
+        }
     }
 }
 

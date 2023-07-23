@@ -1,0 +1,21 @@
+#Set context root
+server:
+  tomcat:
+    accesslog:
+      enabled: true
+  port: 8090
+spring:
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+  datasource:
+    ddl-auto: update
+    url: jdbc:h2:mem:tallydb
+    driverClassName: org.h2.Driver
+    username: tally
+    password: tally@123456
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+drees:
+  stacktrace: true
+logging:
+  file.name: logs/tally.log
