@@ -8,19 +8,33 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/product/v1")
-class ProductController constructor(val productService: ProductService) {
+class ProductController(val productService: ProductService) {
 
     @GetMapping("")
     fun getProducts(@RequestParam("last_updated") lastUpdated: Long?): List<ProductResponse> {
         val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
         val products = productService.getProducts(sessionUser.company.id, lastUpdated)
-        return products.asProductResponse()
+        return products.asResponse()
     }
 
-    @PostMapping("/unit")
-    fun importMasters(units: List<UnitRequest>): List<UnitResponse> {
+    @PostMapping("/units")
+    fun updateUnits(units: List<UnitRequest>): List<UnitResponse> {
         val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
         val units = productService.updateUnits(sessionUser.company.id, units.asDatabaseModel())
-        return units.asUnitResponse()
+        return units.asResponse()
+    }
+
+    @PostMapping("/product_groups")
+    fun updateGroups(groups: List<ProductGroupRequest>): List<ProductGroupResponse> {
+        val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
+        val productGroups = productService.updateProductGroups(sessionUser.company.id, groups.asDatabaseModel())
+        return productGroups.asResponse()
+    }
+
+    @PostMapping("/product_categories")
+    fun updateCategories(groups: List<ProductGroupRequest>): List<ProductGroupResponse> {
+        val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
+        val productCategories = productService.updateProductGroups(sessionUser.company.id, groups.asDatabaseModel())
+        return productCategories.asResponse()
     }
 }

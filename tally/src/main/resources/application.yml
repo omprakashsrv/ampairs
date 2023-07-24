@@ -9,7 +9,7 @@ spring:
     property-naming-strategy: SNAKE_CASE
   datasource:
     ddl-auto: update
-    url: jdbc:h2:mem:tallydb
+    url: jdbc:h2:file:./tallydb
     driverClassName: org.h2.Driver
     username: tally
     password: tally@123456

@@ -20,7 +20,7 @@ data class ProductResponse(
     val baseUnit: UnitResponse?,
 )
 
-fun List<Product>.asProductResponse(): List<ProductResponse> {
+fun List<Product>.asResponse(): List<ProductResponse> {
     return map {
         ProductResponse(
             id = it.id,
@@ -37,7 +37,7 @@ fun List<Product>.asProductResponse(): List<ProductResponse> {
             createdAt = it.createdAt,
             updatedAt = it.updatedAt,
             unitConversions = it.unitConversions.asUnitConversionResponse(),
-            baseUnit = it.baseUnit?.asUnitResponse()
+            baseUnit = it.baseUnit?.asResponse()
         )
     }
 }

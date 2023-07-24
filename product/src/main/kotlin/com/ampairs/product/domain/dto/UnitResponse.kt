@@ -6,13 +6,13 @@ data class UnitResponse(
     var id: String, var name: String, var shortName: String, var decimalPlaces: Int
 )
 
-fun Unit.asUnitResponse(): UnitResponse {
+fun Unit.asResponse(): UnitResponse {
     return UnitResponse(
         id = this.id, name = this.name, shortName = this.shortName, decimalPlaces = this.decimalPlaces
     )
 }
 
-fun List<Unit>.asUnitResponse(): List<UnitResponse> {
+fun List<Unit>.asResponse(): List<UnitResponse> {
     return map {
         UnitResponse(
             id = it.id,
