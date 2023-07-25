@@ -79,7 +79,7 @@ class ProductService(
                 }
             }
         }
-        updateTaxCodes(taxCodeSet)
+        updateTaxCodes(taxCodeSet.toMutableList())
         val productCategories = productCategoryRepository.findAll()
         val productGroups = productGroupRepository.findAll()
         val units = unitRepository.findAll()
@@ -99,13 +99,14 @@ class ProductService(
         updateProducts(products)
     }
 
-    private fun updateTaxCodes(taxCodeSet: MutableSet<TaxCode>) {
-        taxCodeSet.forEach {
+    fun updateTaxCodes(taxCodes: List<TaxCode>): List<TaxCode> {
+        taxCodes.forEach {
             val taxCode = taxCodeRepository.findByCode(it.refId)
             it.seqId = taxCode?.seqId
             it.id = taxCode?.id ?: ""
             taxCodeRepository.save(it)
         }
+        return taxCodes
     }
 
     private fun updateProducts(products: List<Product?>) {

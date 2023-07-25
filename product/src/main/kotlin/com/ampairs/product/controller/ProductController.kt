@@ -32,9 +32,17 @@ class ProductController(val productService: ProductService) {
     }
 
     @PostMapping("/product_categories")
-    fun updateCategories(groups: List<ProductGroupRequest>): List<ProductGroupResponse> {
+    fun updateCategories(categories: List<ProductCategoryRequest>): List<ProductCategoryResponse> {
         val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
-        val productCategories = productService.updateProductGroups(sessionUser.company.id, groups.asDatabaseModel())
+        val productCategories =
+            productService.updateProductCategories(sessionUser.company.id, categories.asDatabaseModel())
         return productCategories.asResponse()
+    }
+
+    @PostMapping("/tax_codes")
+    fun updateTaxCodes(codes: List<TaxCodeRequest>): List<TaxCodeResponse> {
+        val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
+        val taxCodes = productService.updateTaxCodes(codes.asDatabaseModel())
+        return taxCodes.asResponse()
     }
 }

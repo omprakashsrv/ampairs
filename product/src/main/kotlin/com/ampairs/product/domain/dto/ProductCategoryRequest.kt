@@ -3,7 +3,7 @@ package com.ampairs.product.domain.dto
 import com.ampairs.product.domain.model.ProductCategory
 
 data class ProductCategoryRequest(
-    var name: String, var refId: String
+    var id: String, var name: String, var refId: String
 )
 
 fun List<ProductCategoryRequest>.asDatabaseModel(): List<ProductCategory> {

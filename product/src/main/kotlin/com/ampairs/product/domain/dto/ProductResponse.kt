@@ -30,7 +30,7 @@ fun List<Product>.asResponse(): List<ProductResponse> {
             sellingPrice = it.sellingPrice,
             taxCode = it.taxCode,
             active = it.active,
-            taxCodes = it.taxCodes.asTaxCodeResponse(),
+            taxCodes = it.taxCodes.asResponse(),
             group = it.group?.name ?: "",
             category = it.category?.name ?: "",
             lastUpdated = it.lastUpdated,

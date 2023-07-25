@@ -19,7 +19,7 @@ data class TaxCodeResponse(
 )
 
 
-fun List<TaxCode>.asTaxCodeResponse(): List<TaxCodeResponse> {
+fun List<TaxCode>.asResponse(): List<TaxCodeResponse> {
     return map {
         TaxCodeResponse(
             id = it.id,
