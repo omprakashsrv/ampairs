@@ -1,6 +1,6 @@
 package com.ampairs.tally.repository
 
-import com.ampairs.tally.model.domain.User
+import com.ampairs.tally.model.domain.user.User
 import org.springframework.data.repository.CrudRepository
 import org.springframework.stereotype.Repository
 import java.util.*

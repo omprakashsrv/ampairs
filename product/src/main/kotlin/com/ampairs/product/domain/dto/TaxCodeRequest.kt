@@ -9,7 +9,6 @@ import java.util.*
 
 class TaxCodeRequest(
     val id: String,
-    val refId: String,
     val code: String,
     @Enumerated(EnumType.STRING)
     var type: TaxType,
@@ -26,7 +25,6 @@ fun List<TaxCodeRequest>.asDatabaseModel(): List<TaxCode> {
     return map {
         val taxCode = TaxCode()
         taxCode.id = it.id
-        taxCode.refId = it.refId
         taxCode.code = it.code
         taxCode.type = it.type
         taxCode.description = it.description

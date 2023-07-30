@@ -54,4 +54,11 @@ abstract class BaseDomain : Model() {
         }
         lastUpdated = System.currentTimeMillis()
     }
+
+    @PreUpdate
+    protected fun preUpdate() {
+        lastUpdated = System.currentTimeMillis()
+    }
+
+
 }

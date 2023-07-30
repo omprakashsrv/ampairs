@@ -1,5 +1,6 @@
-package com.ampairs.tally.model.domain
+package com.ampairs.tally.model.domain.user
 
+import com.ampairs.tally.model.domain.BaseDomain
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 

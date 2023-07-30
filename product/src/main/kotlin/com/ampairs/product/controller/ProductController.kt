@@ -17,22 +17,28 @@ class ProductController(val productService: ProductService) {
         return products.asResponse()
     }
 
+    @PostMapping("/products")
+    fun updateProducts(@RequestBody products: List<ProductRequest>): List<ProductResponse> {
+        val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
+        return productService.updateProducts(products.asDatabaseModel()).asResponse()
+    }
+
     @PostMapping("/units")
-    fun updateUnits(units: List<UnitRequest>): List<UnitResponse> {
+    fun updateUnits(@RequestBody units: List<UnitRequest>): List<UnitResponse> {
         val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
         val units = productService.updateUnits(sessionUser.company.id, units.asDatabaseModel())
         return units.asResponse()
     }
 
     @PostMapping("/product_groups")
-    fun updateGroups(groups: List<ProductGroupRequest>): List<ProductGroupResponse> {
+    fun updateGroups(@RequestBody groups: List<ProductGroupRequest>): List<ProductGroupResponse> {
         val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
         val productGroups = productService.updateProductGroups(sessionUser.company.id, groups.asDatabaseModel())
         return productGroups.asResponse()
     }
 
     @PostMapping("/product_categories")
-    fun updateCategories(categories: List<ProductCategoryRequest>): List<ProductCategoryResponse> {
+    fun updateCategories(@RequestBody categories: List<ProductCategoryRequest>): List<ProductCategoryResponse> {
         val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
         val productCategories =
             productService.updateProductCategories(sessionUser.company.id, categories.asDatabaseModel())
@@ -40,7 +46,7 @@ class ProductController(val productService: ProductService) {
     }
 
     @PostMapping("/tax_codes")
-    fun updateTaxCodes(codes: List<TaxCodeRequest>): List<TaxCodeResponse> {
+    fun updateTaxCodes(@RequestBody codes: List<TaxCodeRequest>): List<TaxCodeResponse> {
         val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
         val taxCodes = productService.updateTaxCodes(codes.asDatabaseModel())
         return taxCodes.asResponse()

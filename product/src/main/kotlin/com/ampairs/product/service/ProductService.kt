@@ -96,12 +96,12 @@ class ProductService(
             }?.id ?: null
             product
         }
-        updateProducts(products)
+//        updateProducts(products)
     }
 
     fun updateTaxCodes(taxCodes: List<TaxCode>): List<TaxCode> {
         taxCodes.forEach {
-            val taxCode = taxCodeRepository.findByCode(it.refId)
+            val taxCode = taxCodeRepository.findByCode(it.code)
             it.seqId = taxCode?.seqId
             it.id = taxCode?.id ?: ""
             taxCodeRepository.save(it)
@@ -109,15 +109,14 @@ class ProductService(
         return taxCodes
     }
 
-    private fun updateProducts(products: List<Product?>) {
+    fun updateProducts(products: List<Product>): List<Product> {
         products.forEach {
-            it?.let {
-                val product = productRepository.findByRefId(it.refId)
-                it.seqId = product?.seqId
-                it.id = product?.id ?: ""
-                productRepository.save(it)
-            }
+            val product = productRepository.findByRefId(it.refId)
+            it.seqId = product?.seqId
+            it.id = product?.id ?: ""
+            productRepository.save(it)
         }
+        return products;
     }
 
     fun updateUnits(ownerId: String, units: List<Unit>): List<Unit> {
@@ -140,14 +139,14 @@ class ProductService(
         return groups
     }
 
-    fun updateProductCategories(ownerId: String, groups: List<ProductCategory>): List<ProductCategory> {
-        groups.forEach {
-            val unit = productCategoryRepository.findByRefId(it.refId)
-            it.seqId = unit?.seqId
-            it.id = unit?.id ?: ""
+    fun updateProductCategories(ownerId: String, productCategories: List<ProductCategory>): List<ProductCategory> {
+        productCategories.forEach {
+            val category = productCategoryRepository.findByRefId(it.refId)
+            it.seqId = category?.seqId
+            it.id = category?.id ?: ""
             productCategoryRepository.save(it)
         }
-        return groups
+        return productCategories
     }
 
 

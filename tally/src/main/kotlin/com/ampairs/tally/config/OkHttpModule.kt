@@ -1,6 +1,5 @@
 package com.ampairs.tally.config
 
-import com.ampairs.api.repository.UserPreferencesRepository
 import com.ampairs.network.auth.ApiAuthenticator
 import com.ampairs.network.auth.AuthInterceptor
 import com.ampairs.network.model.DateTimeAdapter
@@ -20,14 +19,14 @@ class OkHttpModule @Autowired constructor() {
 
     @Bean
     fun okHttpClient(
-        userPreferencesRepository: UserPreferencesRepository
+        tokenStoreRepository: TokenStoreRepository
     ): OkHttpClient {
         val builder = OkHttpClient.Builder()
         val loggingInterceptor = HttpLoggingInterceptor()
         loggingInterceptor.setLevel(HttpLoggingInterceptor.Level.BODY)
         builder.addInterceptor(loggingInterceptor)
-        builder.addInterceptor(AuthInterceptor(userPreferencesRepository))
-        return builder.authenticator(ApiAuthenticator(AUTH_ENDPOINT, userPreferencesRepository)).build()
+        builder.addInterceptor(AuthInterceptor(tokenStoreRepository))
+        return builder.authenticator(ApiAuthenticator(AUTH_ENDPOINT, tokenStoreRepository)).build()
     }
 
     @Bean
@@ -39,7 +38,7 @@ class OkHttpModule @Autowired constructor() {
     }
 
     @Bean
-    fun userPreferencesRepository(userRepository: UserRepository): UserPreferencesRepository {
+    fun tokenStoreRepository(userRepository: UserRepository): TokenStoreRepository {
         return TokenStoreRepository()
     }
 }

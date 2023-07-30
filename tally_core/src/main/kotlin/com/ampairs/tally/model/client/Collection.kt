@@ -34,26 +34,26 @@ data class Collection(
     val voucher: List<Voucher>? = null,
 
     @field:XmlElement(name = "LEDGER", type = Ledger::class)
-    val ledger: List<Ledger>? = null,
+    val ledgers: List<Ledger>? = null,
 
     @field:XmlElement(name = "UNIT", type = Unit::class)
-    val unit: List<Unit>? = null,
+    val units: List<Unit>? = null,
 
     @field:XmlElement(name = "STOCKGROUP", type = StockGroup::class)
-    val stockGroup: List<StockGroup>? = null,
+    val stockGroups: List<StockGroup>? = null,
 
     @field:XmlElement(name = "STOCKCATEGORY", type = StockCategory::class)
-    val stockCategory: List<StockCategory>? = null,
+    val stockCategories: List<StockCategory>? = null,
 
     @field:XmlElement(name = "STOCKITEM", type = StockItem::class)
-    val stockItem: List<StockItem>? = null,
+    val stockItems: List<StockItem>? = null,
 
     @field:XmlElement(name = "GSTCLASSIFICATION", type = GSTClassification::class)
-    val gstClassification: List<GSTClassification>? = null,
+    val gstClassifications: List<GSTClassification>? = null,
 
     @field:XmlElement(name = "TDSRATE", type = TDSRate::class)
-    val tdsRate: List<TDSRate>? = null,
+    val tdsRates: List<TDSRate>? = null,
 
     @field:XmlElement(name = "GROUP", type = Group::class)
-    val group: List<Group>? = null,
+    val groups: List<Group>? = null,
 )

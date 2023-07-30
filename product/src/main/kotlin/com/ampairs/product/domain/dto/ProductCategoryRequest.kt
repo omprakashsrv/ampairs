@@ -8,9 +8,9 @@ data class ProductCategoryRequest(
 
 fun List<ProductCategoryRequest>.asDatabaseModel(): List<ProductCategory> {
     return map {
-        val unit = ProductCategory()
-        unit.name = it.name
-        unit.refId = it.refId
-        unit
+        val productCategory = ProductCategory()
+        productCategory.name = it.name
+        productCategory.refId = it.refId
+        productCategory
     }
 }
