@@ -35,8 +35,26 @@ fun List<Customer>.asCompanyResponse(): List<CustomerResponse> {
             latitude = it.location?.x,
             longitude = it.location?.y,
             lastUpdated = it.lastUpdated,
-            createdAt = it.createdAt.toString(),
-            updatedAt = it.updatedAt.toString()
+            createdAt = it.createdAt,
+            updatedAt = it.updatedAt
+        )
+    }
+}
+
+fun List<Customer>.asCustomerResponse(): List<CustomerUpdateRequest> {
+    return map {
+        CustomerUpdateRequest(
+            id = it.id,
+            refId = it.refId,
+            name = it.name,
+            countryCode = it.countryCode,
+            phone = it.phone,
+            landline = it.landline,
+            email = it.email,
+            gstin = it.gstin,
+            address = it.address,
+            pincode = it.pincode,
+            state = it.state,
         )
     }
 }
@@ -55,8 +73,8 @@ fun Customer.asCompanyResponse(): CustomerResponse {
         latitude = this.location?.x,
         longitude = this.location?.y,
         lastUpdated = this.lastUpdated,
-        createdAt = this.createdAt.toString(),
-        updatedAt = this.updatedAt.toString()
+        createdAt = this.createdAt,
+        updatedAt = this.updatedAt
     )
 }
 

@@ -1,6 +1,5 @@
 package com.ampairs.customer.domain.service
 
-import com.ampairs.core.user.repository.CompanyRepository
 import com.ampairs.customer.domain.model.Customer
 import com.ampairs.customer.domain.model.asDatabaseModel
 import com.ampairs.customer.repository.CustomerPagingRepository
@@ -16,13 +15,23 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class CustomerService @Autowired constructor(
     val customerRepository: CustomerRepository,
-    val customerPagingRepository: CustomerPagingRepository,
-    private val companyRepository: CompanyRepository
+    val customerPagingRepository: CustomerPagingRepository
 ) {
 
     @Transactional
     fun updateCustomer(ownerId: String, customer: Customer): Customer {
         return customerRepository.save(customer)
+    }
+
+    @Transactional
+    fun updateCustomers(ownerId: String, customers: List<Customer>): List<Customer> {
+        customers.forEach { customer ->
+            val existingCustomer = customerRepository.findByRefId(customer.refId)
+            customer.seqId = existingCustomer?.seqId
+            customer.id = existingCustomer?.id ?: ""
+            customerRepository.save(customer)
+        }
+        return customers
     }
 
     fun getCustomers(lastUpdate: Long?): List<Customer> {
