@@ -2,6 +2,7 @@ package com.ampairs.core.user.filter
 
 import com.ampairs.core.domain.dto.ErrorResponse
 import com.ampairs.core.domain.model.User
+import com.ampairs.core.multitenancy.TenantContext
 import com.ampairs.core.user.model.SessionUser
 import com.ampairs.core.user.service.CompanyService
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -39,6 +40,7 @@ class SessionUserFilter @Autowired constructor(
         if (!companyId.isNullOrEmpty()) {
             val company = companyService.getUserCompany(user.id, companyId)
             if (company != null) {
+                TenantContext.setCurrentTenant(company);
                 val authToken = UsernamePasswordAuthenticationToken(
                     SessionUser(user, company), null, user.authorities
                 )
