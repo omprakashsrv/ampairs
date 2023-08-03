@@ -8,10 +8,9 @@ import org.springframework.stereotype.Component
 
 @Component
 class TenantIdentifierResolver : CurrentTenantIdentifierResolver, HibernatePropertiesCustomizer {
-    private var currentTenant = "munsi_app"
 
     override fun resolveCurrentTenantIdentifier(): String {
-        return TenantContext.getCurrentTenant()?.id ?: currentTenant
+        return TenantContext.getCurrentTenant().id;
     }
 
     override fun validateExistingCurrentSessions(): Boolean {
