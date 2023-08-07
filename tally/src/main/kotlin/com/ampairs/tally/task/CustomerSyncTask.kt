@@ -4,6 +4,7 @@ import com.ampairs.network.customer.CustomerApi
 import com.ampairs.tally.model.Type
 import com.ampairs.tally.model.dto.toCustomers
 import com.ampairs.tally.model.toTallyXML
+import com.ampairs.tally.repository.UserRepository
 import com.ampairs.tally.service.TallyClient
 import com.skydoves.sandwich.onSuccess
 import kotlinx.coroutines.runBlocking
@@ -12,10 +13,12 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 @Component
-class CustomerSyncTask @Autowired constructor(val tallyClient: TallyClient, val customerApi: CustomerApi) {
+class CustomerSyncTask @Autowired constructor(val tallyClient: TallyClient, val customerApi: CustomerApi, val userRepository: UserRepository) {
 
     @Scheduled(fixedDelay = 2 * 10 * 1000)
     fun syncCustomer() {
+        val user = userRepository.findById("")
+        println("user = ${user}")
         runBlocking {
             val tallyLedgers = tallyClient.post(Type.LEDGER.toTallyXML())
             val customersResponse =

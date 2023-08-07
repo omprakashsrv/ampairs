@@ -8,13 +8,14 @@ spring:
   jackson:
     property-naming-strategy: SNAKE_CASE
   datasource:
-    ddl-auto: update
-    url: jdbc:h2:file:./tallydb
-    driverClassName: org.h2.Driver
-    username: tally
-    password: tally@123456
+    url: jdbc:sqlite:file:./tally.sqlite
+    driverClassName: org.sqlite.JDBC
   jpa:
-    database-platform: org.hibernate.dialect.H2Dialect
+    database-platform: org.hibernate.community.dialect.SQLiteDialect
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
 drees:
   stacktrace: true
 logging:

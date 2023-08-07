@@ -40,7 +40,10 @@ dependencies {
     implementation("org.springframework:spring-webmvc")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    runtimeOnly("com.h2database:h2")
+
+    implementation("org.xerial:sqlite-jdbc:3.42.0.0")
+    implementation("org.hibernate.orm:hibernate-community-dialects:6.2.7.Final")
+
     implementation("org.springframework.boot:spring-boot-starter-validation")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
