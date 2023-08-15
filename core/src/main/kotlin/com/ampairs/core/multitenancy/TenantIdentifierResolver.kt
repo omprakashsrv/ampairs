@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component
 class TenantIdentifierResolver : CurrentTenantIdentifierResolver, HibernatePropertiesCustomizer {
 
     override fun resolveCurrentTenantIdentifier(): String {
-        return TenantContext.getCurrentTenant().id;
+        return TenantContext.getCurrentTenant()?.id ?: ""
     }
 
     override fun validateExistingCurrentSessions(): Boolean {
