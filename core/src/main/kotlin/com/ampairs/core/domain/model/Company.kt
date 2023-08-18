@@ -17,6 +17,9 @@ class Company : BaseDomain() {
     @Column(name = "phone", nullable = false, length = 12)
     var phone: String = ""
 
+    @Column(name = "landline", nullable = false, length = 12)
+    var landline: String = ""
+
     @Column(name = "email", length = 255)
     var email: String = ""
 

@@ -3,6 +3,7 @@ package com.ampairs.core.domain.service
 import com.ampairs.core.domain.dto.AuthenticationRequest
 import com.ampairs.core.domain.dto.AuthenticationResponse
 import com.ampairs.core.domain.dto.GenericSuccessResponse
+import com.ampairs.core.domain.dto.RefreshTokenRequest
 import com.ampairs.core.domain.model.Token
 import com.ampairs.core.domain.model.User
 import com.ampairs.core.respository.SmsVerificationRepository
@@ -89,14 +90,9 @@ class AuthService @Autowired constructor(
     @Throws(Exception::class)
     @Transactional
     fun refreshToken(
-        request: HttpServletRequest,
+        refreshTokenRequest: RefreshTokenRequest,
     ): AuthenticationResponse {
-        val authHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw Exception("Access token not found")
-        }
-
-        val refreshToken: String = authHeader.substring(7)
+        val refreshToken: String? = refreshTokenRequest.refreshToken
         val userName: String = jwtService.extractUsername(refreshToken)
         val user: User = this.userRepository.findByUserName(userName)
             .orElseThrow()

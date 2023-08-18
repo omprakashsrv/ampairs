@@ -1,9 +1,6 @@
 package com.ampairs.auth.controller
 
-import com.ampairs.core.domain.dto.AuthInitRequest
-import com.ampairs.core.domain.dto.AuthenticationRequest
-import com.ampairs.core.domain.dto.AuthenticationResponse
-import com.ampairs.core.domain.dto.GenericSuccessResponse
+import com.ampairs.core.domain.dto.*
 import com.ampairs.core.domain.model.User
 import com.ampairs.core.domain.service.AuthService
 import com.ampairs.core.domain.service.UserService
@@ -32,7 +29,7 @@ class AuthController @Autowired constructor(
     }
 
     @PostMapping("/refresh_token")
-    fun refreshToken(request: HttpServletRequest): AuthenticationResponse {
+    fun refreshToken(@RequestBody @Valid request: RefreshTokenRequest): AuthenticationResponse {
         return authService.refreshToken(request)
     }
 

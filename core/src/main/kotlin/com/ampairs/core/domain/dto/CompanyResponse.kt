@@ -7,6 +7,7 @@ class CompanyResponse(
     var countryCode: Int,
     var name: String,
     var phone: String,
+    var landline: String,
     var email: String?,
     var gstin: String?,
     var address: String?,
@@ -26,6 +27,7 @@ fun CompanyResponse.toCompanyResponse(company: Company): CompanyResponse {
         name = company.name,
         countryCode = company.countryCode,
         phone = company.phone,
+        landline = company.landline,
         email = company.email,
         gstin = company.gstin,
         address = company.address,
@@ -55,7 +57,8 @@ fun List<Company>.toCompanyResponse(): List<CompanyResponse> {
             longitude = it.location?.y,
             lastUpdated = it.lastUpdated,
             createdAt = it.createdAt,
-            updatedAt = it.updatedAt
+            updatedAt = it.updatedAt,
+            landline = it.landline
         )
     }
 }
