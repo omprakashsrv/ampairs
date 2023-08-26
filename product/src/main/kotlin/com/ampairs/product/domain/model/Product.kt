@@ -16,8 +16,14 @@ class Product : OwnableBaseDomain() {
     @Column(name = "group_id", length = 200)
     var groupId: String? = null
 
+    @Column(name = "brand_id", length = 200)
+    var brandId: String? = null
+
     @Column(name = "category_id", length = 200)
     var categoryId: String? = null
+
+    @Column(name = "sub_category_id", length = 200)
+    var subCategoryId: String? = null
 
     @Column(name = "base_unit_id", length = 200)
     var baseUnitId: String? = null
@@ -39,8 +45,16 @@ class Product : OwnableBaseDomain() {
     var group: ProductGroup? = null
 
     @OneToOne()
+    @JoinColumn(name = "brand_id", referencedColumnName = "id", updatable = false, insertable = false)
+    var brand: ProductBrand? = null
+
+    @OneToOne()
     @JoinColumn(name = "category_id", referencedColumnName = "id", updatable = false, insertable = false)
     var category: ProductCategory? = null
+
+    @OneToOne()
+    @JoinColumn(name = "sub_category_id", referencedColumnName = "id", updatable = false, insertable = false)
+    var subCategory: ProductSubCategory? = null
 
     @OneToOne()
     @JoinColumn(name = "base_unit_id", referencedColumnName = "id", updatable = false, insertable = false)

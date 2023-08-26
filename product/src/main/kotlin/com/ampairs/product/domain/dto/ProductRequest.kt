@@ -8,7 +8,9 @@ data class ProductRequest(
     val name: String,
     val taxCode: String?,
     val groupId: String?,
+    val brandId: String?,
     val categoryId: String?,
+    val subCategoryId: String?,
     val baseUnitId: String?,
     val active: Boolean,
     val mrp: Double,
@@ -29,6 +31,8 @@ fun List<ProductRequest>.asDatabaseModel(): List<Product> {
         product.taxCode = it.taxCode ?: ""
         product.groupId = it.groupId
         product.categoryId = it.categoryId
+        product.subCategoryId = it.subCategoryId
+        product.brandId = it.brandId
         product.baseUnitId = it.baseUnitId
         product.active = it.active
         product.mrp = it.mrp
