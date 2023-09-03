@@ -20,12 +20,14 @@ class ProductService(
     val productPagingRepository: ProductPagingRepository,
     val unitRepository: UnitRepository,
     val productGroupRepository: ProductGroupRepository,
+    val productBrandRepository: ProductBrandRepository,
     val productCategoryRepository: ProductCategoryRepository,
+    val productSubCategoryRepository: ProductSubCategoryRepository,
     val productRepository: ProductRepository,
     private val taxCodeRepository: TaxCodeRepository
 ) {
 
-    fun getProducts(ownerId: String, lastUpdated: Long?): List<Product> {
+    fun getProducts(lastUpdated: Long?): List<Product> {
         return productPagingRepository.findAllByLastUpdatedGreaterThanEqual(
             lastUpdated ?: 0,
             PageRequest.of(0, 1000, Sort.by("lastUpdated").ascending())
@@ -119,7 +121,7 @@ class ProductService(
         return products;
     }
 
-    fun updateUnits(ownerId: String, units: List<Unit>): List<Unit> {
+    fun updateUnits(units: List<Unit>): List<Unit> {
         units.forEach {
             val unit = unitRepository.findByRefId(it.refId)
             it.seqId = unit?.seqId
@@ -147,6 +149,22 @@ class ProductService(
             productCategoryRepository.save(it)
         }
         return productCategories
+    }
+
+    fun getGroups(): List<ProductGroup> {
+        return productGroupRepository.findAll().toList()
+    }
+
+    fun getCategories(): List<ProductCategory> {
+        return productCategoryRepository.findAll().toList()
+    }
+
+    fun getBrands(): List<ProductBrand> {
+        return productBrandRepository.findAll().toList()
+    }
+
+    fun getSubCategories(): List<ProductSubCategory> {
+        return productSubCategoryRepository.findAll().toList()
     }
 
 

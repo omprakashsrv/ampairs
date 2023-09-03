@@ -10,4 +10,5 @@ interface ProductPagingRepository : PagingAndSortingRepository<Product, String> 
         lastUpdated: Long,
         pageable: Pageable
     ): List<Product>
+
 }

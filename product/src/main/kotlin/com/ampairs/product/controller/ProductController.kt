@@ -12,22 +12,43 @@ class ProductController(val productService: ProductService) {
 
     @GetMapping("")
     fun getProducts(@RequestParam("last_updated") lastUpdated: Long?): List<ProductResponse> {
-        val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
-        val products = productService.getProducts(sessionUser.company.id, lastUpdated)
+        val products = productService.getProducts(lastUpdated)
         return products.asResponse()
     }
 
     @PostMapping("/products")
     fun updateProducts(@RequestBody products: List<ProductRequest>): List<ProductResponse> {
-        val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
         return productService.updateProducts(products.asDatabaseModel()).asResponse()
     }
 
     @PostMapping("/units")
     fun updateUnits(@RequestBody units: List<UnitRequest>): List<UnitResponse> {
-        val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
-        val units = productService.updateUnits(sessionUser.company.id, units.asDatabaseModel())
+        val units = productService.updateUnits(units.asDatabaseModel())
         return units.asResponse()
+    }
+
+    @GetMapping("/groups")
+    fun getGroups(): List<ProductGroupResponse> {
+        val groups = productService.getGroups()
+        return groups.asResponse()
+    }
+
+    @GetMapping("/brands")
+    fun getBrands(): List<ProductBrandResponse> {
+        val brands = productService.getBrands()
+        return brands.asResponse()
+    }
+
+    @GetMapping("/categories")
+    fun getCategories(): List<ProductCategoryResponse> {
+        val categories = productService.getCategories()
+        return categories.asResponse()
+    }
+
+    @GetMapping("/sub_categories")
+    fun getSubCategories(): List<ProductSubCategoryResponse> {
+        val categories = productService.getSubCategories()
+        return categories.asResponse()
     }
 
     @PostMapping("/product_groups")
@@ -47,7 +68,6 @@ class ProductController(val productService: ProductService) {
 
     @PostMapping("/tax_codes")
     fun updateTaxCodes(@RequestBody codes: List<TaxCodeRequest>): List<TaxCodeResponse> {
-        val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
         val taxCodes = productService.updateTaxCodes(codes.asDatabaseModel())
         return taxCodes.asResponse()
     }
