@@ -5,6 +5,7 @@ import com.ampairs.product.domain.model.Product
 data class ProductResponse(
     val id: String,
     val name: String,
+    val code: String,
     val taxCode: String,
     val groupId: String,
     val brandId: String,
@@ -27,6 +28,7 @@ fun List<Product>.asResponse(): List<ProductResponse> {
         ProductResponse(
             id = it.id,
             name = it.name,
+            code = it.code,
             mrp = it.mrp,
             dp = it.dp,
             sellingPrice = it.sellingPrice,

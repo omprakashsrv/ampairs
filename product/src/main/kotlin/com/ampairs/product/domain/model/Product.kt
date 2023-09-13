@@ -10,6 +10,9 @@ class Product : OwnableBaseDomain() {
     @Column(name = "name", nullable = false, length = 255)
     var name: String = ""
 
+    @Column(name = "code", nullable = false, length = 255)
+    var code: String = ""
+
     @Column(name = "tax_code", length = 20)
     var taxCode: String = ""
 

@@ -20,20 +20,20 @@ class CustomerController @Autowired constructor(
     fun updateUser(@RequestBody @Valid customerUpdateRequest: CustomerUpdateRequest): CustomerResponse {
         val company = customerUpdateRequest.toCustomer()
         val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
-        return customerService.updateCustomer(sessionUser.company.id, company).asCompanyResponse()
+        return customerService.updateCustomer(sessionUser.company.id, company).asCustomerResponse()
     }
 
     @PostMapping("/customers")
-    fun updateCustomers(@RequestBody @Valid customerUpdateRequest: List<CustomerUpdateRequest>): List<CustomerUpdateRequest> {
+    fun updateCustomers(@RequestBody @Valid customerUpdateRequest: List<CustomerUpdateRequest>): List<CustomerResponse> {
         val customers = customerUpdateRequest.toCustomers()
         val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
-        return customerService.updateCustomers(sessionUser.company.id, customers).asCustomerResponse()
+        return customerService.updateCustomers(sessionUser.company.id, customers).asCustomersResponse()
     }
 
     @GetMapping("")
     fun getCustomers(@RequestParam("last_updated") lastUpdated: Long?): List<CustomerResponse> {
         val customers = customerService.getCustomers(lastUpdated)
-        return customers.asCompanyResponse()
+        return customers.asCustomersResponse()
     }
 
 }

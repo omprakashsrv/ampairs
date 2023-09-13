@@ -6,6 +6,7 @@ data class ProductRequest(
     val id: String,
     val refId: String?,
     val name: String,
+    val code: String,
     val taxCode: String?,
     val groupId: String?,
     val brandId: String?,
@@ -28,6 +29,7 @@ fun List<ProductRequest>.asDatabaseModel(): List<Product> {
         product.id = it.id
         product.refId = it.refId
         product.name = it.name
+        product.code = it.code
         product.taxCode = it.taxCode ?: ""
         product.groupId = it.groupId
         product.categoryId = it.categoryId

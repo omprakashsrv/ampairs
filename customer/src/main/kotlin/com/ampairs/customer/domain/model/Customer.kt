@@ -18,6 +18,9 @@ class Customer : OwnableBaseDomain() {
     @Column(name = "name", nullable = false, length = 255)
     var name: String = ""
 
+    @Column(name = "company_id", nullable = false, length = 255)
+    var companyId: String = ""
+
     @Column(name = "phone", nullable = false, length = 12)
     var phone: String = ""
 

@@ -5,6 +5,7 @@ import com.ampairs.customer.domain.model.Customer
 data class CustomerResponse(
     var id: String,
     var name: String,
+    var companyId: String,
     var countryCode: Int,
     var phone: String,
     var landline: String,
@@ -21,50 +22,17 @@ data class CustomerResponse(
 )
 
 
-fun List<Customer>.asCompanyResponse(): List<CustomerResponse> {
+fun List<Customer>.asCustomersResponse(): List<CustomerResponse> {
     return map {
-        CustomerResponse(
-            id = it.id,
-            name = it.name,
-            countryCode = it.countryCode,
-            phone = it.phone,
-            landline = it.landline,
-            email = it.email,
-            gstin = it.gstin,
-            address = it.address,
-            pincode = it.pincode,
-            state = it.state,
-            latitude = it.location?.x,
-            longitude = it.location?.y,
-            lastUpdated = it.lastUpdated,
-            createdAt = it.createdAt,
-            updatedAt = it.updatedAt
-        )
+        it.asCustomerResponse()
     }
 }
 
-fun List<Customer>.asCustomerResponse(): List<CustomerUpdateRequest> {
-    return map {
-        CustomerUpdateRequest(
-            id = it.id,
-            refId = it.refId,
-            name = it.name,
-            countryCode = it.countryCode,
-            phone = it.phone,
-            landline = it.landline,
-            email = it.email,
-            gstin = it.gstin,
-            address = it.address,
-            pincode = it.pincode,
-            state = it.state,
-        )
-    }
-}
-
-fun Customer.asCompanyResponse(): CustomerResponse {
+fun Customer.asCustomerResponse(): CustomerResponse {
     return CustomerResponse(
         id = this.id,
         name = this.name,
+        companyId = this.companyId,
         countryCode = this.countryCode,
         phone = this.phone,
         landline = this.landline,

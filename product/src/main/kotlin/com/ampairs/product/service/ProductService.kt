@@ -155,10 +155,6 @@ class ProductService(
         return productGroupRepository.findAll().toList()
     }
 
-    fun getCategories(): List<ProductCategory> {
-        return productCategoryRepository.findAll().toList()
-    }
-
     fun getBrands(): List<ProductBrand> {
         return productBrandRepository.findAll().toList()
     }
@@ -167,5 +163,12 @@ class ProductService(
         return productSubCategoryRepository.findAll().toList()
     }
 
+    fun getProducts(groupId: String): List<Product> {
+        return productRepository.getProduct(groupId)
+    }
+
+    fun getCategories(ids: Set<String>): List<ProductCategory> {
+      return productCategoryRepository.findByIds(ids.toList())
+    }
 
 }

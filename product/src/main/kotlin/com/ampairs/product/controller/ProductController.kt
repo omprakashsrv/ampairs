@@ -16,6 +16,14 @@ class ProductController(val productService: ProductService) {
         return products.asResponse()
     }
 
+    @GetMapping("/product_category")
+    fun getProducts(@RequestParam("group_id") groupId: String): ProductsCategoryResponse {
+        val products = productService.getProducts(groupId)
+        val categoryIds = products.map { it.categoryId ?: "" }.toSet()
+        val productCategories = productService.getCategories(categoryIds)
+        return ProductsCategoryResponse(products = products.asResponse(), categories = productCategories.asResponse())
+    }
+
     @PostMapping("/products")
     fun updateProducts(@RequestBody products: List<ProductRequest>): List<ProductResponse> {
         return productService.updateProducts(products.asDatabaseModel()).asResponse()
@@ -37,12 +45,6 @@ class ProductController(val productService: ProductService) {
     fun getBrands(): List<ProductBrandResponse> {
         val brands = productService.getBrands()
         return brands.asResponse()
-    }
-
-    @GetMapping("/categories")
-    fun getCategories(): List<ProductCategoryResponse> {
-        val categories = productService.getCategories()
-        return categories.asResponse()
     }
 
     @GetMapping("/sub_categories")
