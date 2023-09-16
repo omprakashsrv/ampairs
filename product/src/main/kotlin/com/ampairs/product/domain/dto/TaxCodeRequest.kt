@@ -1,7 +1,7 @@
 package com.ampairs.product.domain.dto
 
+import com.ampairs.product.domain.enums.TaxType
 import com.ampairs.product.domain.model.TaxCode
-import com.ampairs.product.domain.model.TaxType
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
 import java.sql.Timestamp
@@ -14,10 +14,7 @@ class TaxCodeRequest(
     var type: TaxType,
     val description: String,
     val effectiveFrom: Date?,
-    val cgst: Double,
-    val sgst: Double,
-    val igst: Double,
-    val cess: Double
+    val taxInfos: List<TaxInfoRequest>,
 )
 
 
@@ -29,10 +26,7 @@ fun List<TaxCodeRequest>.asDatabaseModel(): List<TaxCode> {
         taxCode.type = it.type
         taxCode.description = it.description
         taxCode.effectiveFrom = it.effectiveFrom?.time?.let { it1 -> Timestamp(it1) }
-        taxCode.cgst = it.cgst
-        taxCode.sgst = it.sgst
-        taxCode.igst = it.igst
-        taxCode.cess = it.cess
+        taxCode.taxInfos = it.taxInfos.asDatabaseModel()
         taxCode
     }
 }

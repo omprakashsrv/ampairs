@@ -1,6 +1,7 @@
 package com.ampairs.product.service
 
 import com.ampairs.product.domain.dto.asDatabaseModel
+import com.ampairs.product.domain.enums.TaxSpec
 import com.ampairs.product.domain.model.*
 import com.ampairs.product.domain.model.Unit
 import com.ampairs.product.repository.*
@@ -24,7 +25,7 @@ class ProductService(
     val productCategoryRepository: ProductCategoryRepository,
     val productSubCategoryRepository: ProductSubCategoryRepository,
     val productRepository: ProductRepository,
-    private val taxCodeRepository: TaxCodeRepository
+    private val taxCodeRepository: TaxCodeRepository,
 ) {
 
     fun getProducts(lastUpdated: Long?): List<Product> {
@@ -70,13 +71,47 @@ class ProductService(
                         Timestamp(SimpleDateFormat("yyyyMMdd", Locale.ENGLISH).parse(it.applicableFrom).time)
                     taxCode.description = it.hsnMasterName ?: ""
                     val rateDetailsList = it.stateWiseDetailsList?.get(0)?.rateDetailsList
-                    taxCode.cgst =
+                    val taxInfos = mutableListOf<TaxInfo>()
+                    val cgst =
                         rateDetailsList?.find { it.gstRateDutyHead == "Central Tax" }?.gstRate?.toDouble() ?: 0.0
-                    taxCode.sgst =
+                    if (cgst > 0) {
+                        val cgstInfo = TaxInfo()
+                        cgstInfo.name = "CGST " + cgst + "%"
+                        cgstInfo.formattedName = "CGST " + cgst + "%"
+                        cgstInfo.taxSpec = TaxSpec.INTER
+                        cgstInfo.percentage = cgst
+                        taxInfos.add(cgstInfo)
+                    }
+                    val sgst =
                         rateDetailsList?.find { it.gstRateDutyHead == "State Tax" }?.gstRate?.toDouble() ?: 0.0
-                    taxCode.igst =
+                    if (sgst > 0) {
+                        val sgstInfo = TaxInfo()
+                        sgstInfo.name = "SGST " + sgst + "%"
+                        sgstInfo.formattedName = "SGST " + sgst + "%"
+                        sgstInfo.taxSpec = TaxSpec.INTER
+                        sgstInfo.percentage = sgst
+                        taxInfos.add(sgstInfo)
+                    }
+                    val igst =
                         rateDetailsList?.find { it.gstRateDutyHead == "Integrated Tax" }?.gstRate?.toDouble() ?: 0.0
-                    taxCode.cess = rateDetailsList?.find { it.gstRateDutyHead == "Cess" }?.gstRate?.toDouble() ?: 0.0
+                    if (igst > 0) {
+                        val igstInfo = TaxInfo()
+                        igstInfo.name = "IGST " + igst + "%"
+                        igstInfo.formattedName = "IGST " + igst + "%"
+                        igstInfo.taxSpec = TaxSpec.INTER
+                        igstInfo.percentage = igst
+                        taxInfos.add(igstInfo)
+                    }
+                    val cess = rateDetailsList?.find { it.gstRateDutyHead == "Cess" }?.gstRate?.toDouble() ?: 0.0
+                    if (cess > 0) {
+                        val cessInfo = TaxInfo()
+                        cessInfo.name = "CESS " + cess + "%"
+                        cessInfo.formattedName = "CESS " + cess + "%"
+                        cessInfo.taxSpec = TaxSpec.INTER
+                        cessInfo.percentage = cess
+                        taxInfos.add(cessInfo)
+                    }
+                    taxCode.taxInfos = taxInfos
                     taxCodeSet.add(taxCode)
                 }
             }
@@ -89,13 +124,13 @@ class ProductService(
             val product = it?.stockItem?.asDatabaseModel()
             product?.groupId = productGroups.find { it1 ->
                 it1.name == it?.stockItem?.parent
-            }?.id ?: null
+            }?.id
             product?.categoryId = productCategories.find { it1 ->
                 it1.name == it?.stockItem?.category
-            }?.id ?: null
+            }?.id
             product?.baseUnitId = units.find { it1 ->
                 it1.name == it?.stockItem?.baseUnits
-            }?.id ?: null
+            }?.id
             product
         }
 //        updateProducts(products)
@@ -168,7 +203,7 @@ class ProductService(
     }
 
     fun getCategories(ids: Set<String>): List<ProductCategory> {
-      return productCategoryRepository.findByIds(ids.toList())
+        return productCategoryRepository.findByIds(ids.toList())
     }
 
 }

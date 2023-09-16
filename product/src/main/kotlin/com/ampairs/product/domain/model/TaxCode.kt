@@ -2,10 +2,10 @@ package com.ampairs.product.domain.model
 
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.product.config.Constants
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.Index
-import jakarta.persistence.Table
+import com.ampairs.product.domain.enums.TaxType
+import io.hypersistence.utils.hibernate.type.json.JsonType
+import jakarta.persistence.*
+import org.hibernate.annotations.Type
 import java.sql.Timestamp
 
 @Entity(name = "tax_code")
@@ -31,17 +31,9 @@ class TaxCode : OwnableBaseDomain() {
     @Column(name = "description", length = 255)
     var description: String = ""
 
-    @Column(name = "cgst")
-    var cgst: Double = 0.0
-
-    @Column(name = "sgst")
-    var sgst: Double = 0.0
-
-    @Column(name = "igst")
-    var igst: Double = 0.0
-
-    @Column(name = "cess")
-    var cess: Double = 0.0
+    @Type(JsonType::class)
+    @Column(name = "tax_info", length = 255, columnDefinition = "json")
+    var taxInfos: List<TaxInfo> = listOf()
 
     override fun obtainIdPrefix(): String {
         return Constants.HSN_CODE_PREFIX

@@ -45,7 +45,7 @@ abstract class BaseDomain : Model() {
         nullable = false
     )
     var lastUpdated: Long = 0
-    abstract fun obtainIdPrefix(): String?
+    abstract fun obtainIdPrefix(): String
 
     @PrePersist
     protected fun prePersist() {

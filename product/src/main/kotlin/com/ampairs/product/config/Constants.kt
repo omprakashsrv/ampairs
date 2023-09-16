@@ -4,6 +4,7 @@ interface Constants {
     companion object {
         const val ID_LENGTH = 34
         const val PRODUCT_PREFIX = "PRD"
+        const val TAX_INFO_PREFIX = "TIN"
         const val PRODUCT_GROUP_PREFIX = "PRG"
         const val PRODUCT_BRAND_PREFIX = "PBR"
         const val PRODUCT_CATEGORY_PREFIX = "PRC"

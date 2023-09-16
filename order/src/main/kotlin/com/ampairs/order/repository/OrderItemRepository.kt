@@ -1,6 +1,6 @@
 package com.ampairs.order.repository
 
-import com.ampairs.order.domain.OrderItem
+import com.ampairs.order.domain.model.OrderItem
 import org.springframework.data.repository.CrudRepository
 import org.springframework.stereotype.Repository
 
