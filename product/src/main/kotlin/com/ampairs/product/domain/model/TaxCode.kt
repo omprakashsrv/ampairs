@@ -32,7 +32,7 @@ class TaxCode : OwnableBaseDomain() {
     var description: String = ""
 
     @Type(JsonType::class)
-    @Column(name = "tax_info", length = 255, columnDefinition = "json")
+    @Column(name = "tax_info", length = 255, nullable = false, columnDefinition = "json")
     var taxInfos: List<TaxInfo> = listOf()
 
     override fun obtainIdPrefix(): String {

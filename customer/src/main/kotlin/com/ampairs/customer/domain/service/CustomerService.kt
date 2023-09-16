@@ -15,16 +15,16 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class CustomerService @Autowired constructor(
     val customerRepository: CustomerRepository,
-    val customerPagingRepository: CustomerPagingRepository
+    val customerPagingRepository: CustomerPagingRepository,
 ) {
 
     @Transactional
-    fun updateCustomer(ownerId: String, customer: Customer): Customer {
+    fun updateCustomer(customer: Customer): Customer {
         return customerRepository.save(customer)
     }
 
     @Transactional
-    fun updateCustomers(ownerId: String, customers: List<Customer>): List<Customer> {
+    fun updateCustomers(customers: List<Customer>): List<Customer> {
         customers.forEach { customer ->
             val existingCustomer = customerRepository.findByRefId(customer.refId)
             customer.seqId = existingCustomer?.seqId

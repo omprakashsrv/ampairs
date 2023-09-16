@@ -1,13 +1,16 @@
 package com.ampairs.order.domain.model
 
-import com.ampairs.core.domain.model.BaseDomain
+import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.order.config.Constants
+import com.ampairs.order.domain.dto.TaxInfo
 import com.ampairs.order.domain.enums.ItemStatus
+import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import org.hibernate.annotations.Type
 
 @Entity(name = "order_item")
-class OrderItem : BaseDomain() {
+class OrderItem : OwnableBaseDomain() {
 
     @Column(name = "order_id", nullable = false, length = 255)
     var orderId: String = ""
@@ -18,11 +21,17 @@ class OrderItem : BaseDomain() {
     @Column(name = "product_id", nullable = false, length = 255)
     var productId: String = ""
 
+    @Column(name = "tax_code", nullable = false, length = 255)
+    var taxCode: String = ""
+
     @Column(name = "status", nullable = false, length = 10)
     var status: ItemStatus = ItemStatus.ACTIVE
 
-    @Column(name = "qunatity", nullable = false)
-    var qunatity: Double = 0.0
+    @Column(name = "quantity", nullable = false)
+    var quantity: Double = 0.0
+
+    @Column(name = "item_no", nullable = false)
+    var itemNo: Int = 0
 
     @Column(name = "selling_price", nullable = false)
     var sellingPrice: Double = 0.0
@@ -39,11 +48,12 @@ class OrderItem : BaseDomain() {
     @Column(name = "base_price", nullable = false)
     var basePrice: Double = 0.0
 
-    @Column(name = "total_items", nullable = false)
-    var totalItems: Int = 0
+    @Column(name = "total_tax", nullable = false)
+    var totalTax: Double = 0.0
 
-    @Column(name = "total_quantity", nullable = false)
-    var totalQuantity: Double = 0.0
+    @Type(JsonType::class)
+    @Column(name = "tax_info", length = 255, columnDefinition = "json")
+    var taxInfos: List<TaxInfo> = listOf()
 
     override fun obtainIdPrefix(): String {
         return Constants.ORDER_ITEM_PREFIX
