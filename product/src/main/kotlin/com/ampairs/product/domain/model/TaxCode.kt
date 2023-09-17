@@ -26,6 +26,7 @@ class TaxCode : OwnableBaseDomain() {
     var effectiveFrom: Timestamp? = null
 
     @Column(name = "type", length = 10)
+    @Enumerated(EnumType.STRING)
     var type: TaxType = TaxType.HSN
 
     @Column(name = "description", length = 255)

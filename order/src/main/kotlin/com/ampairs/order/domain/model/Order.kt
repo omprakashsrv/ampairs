@@ -49,6 +49,7 @@ class Order : OwnableBaseDomain() {
     var totalTax: Double = 0.0
 
     @Column(name = "status", nullable = false)
+    @Enumerated(EnumType.STRING)
     var status: OrderStatus = OrderStatus.DRAFT
 
     @Column(name = "total_items", nullable = false)

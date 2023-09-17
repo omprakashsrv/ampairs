@@ -7,6 +7,8 @@ import com.ampairs.order.domain.enums.ItemStatus
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import org.hibernate.annotations.Type
 
 @Entity(name = "order_item")
@@ -25,6 +27,7 @@ class OrderItem : OwnableBaseDomain() {
     var taxCode: String = ""
 
     @Column(name = "status", nullable = false, length = 10)
+    @Enumerated(EnumType.STRING)
     var status: ItemStatus = ItemStatus.ACTIVE
 
     @Column(name = "quantity", nullable = false)
