@@ -11,13 +11,20 @@ import org.springframework.web.bind.annotation.*
 class ProductController(val productService: ProductService) {
 
     @GetMapping("")
-    fun getProducts(@RequestParam("last_updated") lastUpdated: Long?): List<ProductResponse> {
+    fun getProducts(
+        @RequestParam("last_updated") lastUpdated: Long?,
+        @RequestParam("group_id") groupId: String?,
+    ): List<ProductResponse> {
+        if (!groupId.isNullOrEmpty()) {
+            val products = productService.getProducts(groupId)
+            return products.asResponse()
+        }
         val products = productService.getProducts(lastUpdated)
         return products.asResponse()
     }
 
     @GetMapping("/product_category")
-    fun getProducts(@RequestParam("group_id") groupId: String): ProductsCategoryResponse {
+    fun getProductsWithCategory(@RequestParam("group_id") groupId: String): ProductsCategoryResponse {
         val products = productService.getProducts(groupId)
         val categoryIds = products.map { it.categoryId ?: "" }.toSet()
         val productCategories = productService.getCategories(categoryIds)
@@ -39,6 +46,20 @@ class ProductController(val productService: ProductService) {
     fun getGroups(): List<ProductGroupResponse> {
         val groups = productService.getGroups()
         return groups.asResponse()
+    }
+
+    @GetMapping("/all_groups_category")
+    fun getGroupsCategory(): AllGroupsResponse {
+        val groups = productService.getGroups()
+        val categories = productService.getCategories()
+        val brands = productService.getBrands()
+        val subCategories = productService.getSubCategories()
+        return AllGroupsResponse(
+            groups = groups.asResponse(),
+            categories = categories.asResponse(),
+            brands = brands.asResponse(),
+            subCategories = subCategories.asResponse()
+        )
     }
 
     @GetMapping("/brands")

@@ -206,4 +206,8 @@ class ProductService(
         return productCategoryRepository.findByIds(ids.toList())
     }
 
+    fun getCategories(): List<ProductCategory> {
+        return productCategoryRepository.findAll().toMutableList()
+    }
+
 }
