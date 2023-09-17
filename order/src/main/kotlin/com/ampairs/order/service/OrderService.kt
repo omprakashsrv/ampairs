@@ -9,6 +9,8 @@ import com.ampairs.order.repository.OrderRepository
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import kotlin.jvm.optionals.getOrDefault
+import kotlin.jvm.optionals.getOrNull
 
 @Service
 class OrderService @Autowired constructor(
@@ -17,8 +19,13 @@ class OrderService @Autowired constructor(
 ) {
     @Transactional
     fun updateOrder(order: Order, orderItems: List<OrderItem>): OrderResponse {
-//        val existingOrder = orderRepository.findById(order.id).getOrNull()
-//        order.seqId = existingOrder?.seqId
+        val existingOrder = orderRepository.findById(order.id).getOrNull()
+        order.seqId = existingOrder?.seqId
+        order.orderNumber = existingOrder?.orderNumber ?: ""
+        if (order.orderNumber.isEmpty()) {
+            val orderNumber = orderRepository.findMaxOrderNumber().getOrDefault("0").toIntOrNull() ?: 0
+            order.orderNumber = (orderNumber + 1).toString()
+        }
         orderRepository.save(order)
         orderItems.forEach {
             orderItemRepository.save(it)
