@@ -33,6 +33,9 @@ class Order : OwnableBaseDomain() {
     @Column(name = "to_customer_name", nullable = false, length = 255)
     var toCustomerName: String = ""
 
+    @Column(name = "place_of_supply", nullable = false, length = 255)
+    var placeOfSupply: String = ""
+
     @Column(name = "from_customer_gst", nullable = false, length = 30)
     var fromCustomerGst: String = ""
 

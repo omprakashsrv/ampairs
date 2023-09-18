@@ -30,4 +30,10 @@ class CustomerController @Autowired constructor(
         return customers.asCustomersResponse()
     }
 
+    @GetMapping("/states")
+    fun getStates(@RequestParam("last_updated") lastUpdated: Long?): List<StateResponse> {
+        val states = customerService.getStates()
+        return states.asStatesResponse()
+    }
+
 }

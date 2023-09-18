@@ -1,9 +1,11 @@
 package com.ampairs.customer.domain.service
 
 import com.ampairs.customer.domain.model.Customer
+import com.ampairs.customer.domain.model.State
 import com.ampairs.customer.domain.model.asDatabaseModel
 import com.ampairs.customer.repository.CustomerPagingRepository
 import com.ampairs.customer.repository.CustomerRepository
+import com.ampairs.customer.repository.StateRepository
 import com.ampairs.tally.model.TallyMessage
 import com.ampairs.tally.model.TallyXML
 import org.springframework.beans.factory.annotation.Autowired
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional
 class CustomerService @Autowired constructor(
     val customerRepository: CustomerRepository,
     val customerPagingRepository: CustomerPagingRepository,
+    val stateRepository: StateRepository,
 ) {
 
     @Transactional
@@ -58,5 +61,9 @@ class CustomerService @Autowired constructor(
         for (tallyMessage in tallyXML?.body?.importData?.requestData?.tallyMessage.orEmpty()) {
             updateMasters(tallyMessage)
         }
+    }
+
+    fun getStates(): List<State> {
+        return stateRepository.findAll().toMutableList()
     }
 }
