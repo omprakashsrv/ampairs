@@ -11,6 +11,7 @@ interface Constants {
         const val COMPANY_PREFIX = "COM"
         const val USER_COMPANY_PREFIX = "UCM"
         const val TOKEN_PREFIX = "JWT"
+        const val FILE_ID_PREFIX = "FIL"
 
     }
 }

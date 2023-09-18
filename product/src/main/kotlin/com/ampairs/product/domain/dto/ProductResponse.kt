@@ -1,5 +1,7 @@
 package com.ampairs.product.domain.dto
 
+import com.ampairs.core.domain.dto.FileResponse
+import com.ampairs.core.domain.dto.toFileResponse
 import com.ampairs.product.domain.model.Product
 
 data class ProductResponse(
@@ -21,6 +23,7 @@ data class ProductResponse(
     val createdAt: String?,
     val updatedAt: String?,
     val baseUnit: UnitResponse?,
+    val images: List<FileResponse>?,
 )
 
 fun List<Product>.asResponse(): List<ProductResponse> {
@@ -43,7 +46,8 @@ fun List<Product>.asResponse(): List<ProductResponse> {
             createdAt = it.createdAt,
             updatedAt = it.updatedAt,
             unitConversions = it.unitConversions.asUnitConversionResponse(),
-            baseUnit = it.baseUnit?.asResponse()
+            baseUnit = it.baseUnit?.asResponse(),
+            images = it.images.map { it.image?.toFileResponse() ?: FileResponse()  }
         )
     }
 }

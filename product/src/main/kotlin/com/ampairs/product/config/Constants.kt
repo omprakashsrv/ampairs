@@ -11,6 +11,6 @@ interface Constants {
         const val PRODUCT_SUB_CATEGORY_PREFIX = "PSC"
         const val HSN_CODE_PREFIX = "HSN"
         const val UNIT_PREFIX = "UNT"
-        const val PRODUCT_UNIT_PREFIX = "PUT"
+        const val PRODUCT_IMAGE_PREFIX = "PIM"
     }
 }

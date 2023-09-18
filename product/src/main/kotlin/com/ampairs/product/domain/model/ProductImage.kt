@@ -8,23 +8,24 @@ import jakarta.persistence.Entity
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.OneToOne
 
-@Entity(name = "product_group")
-class ProductGroup : OwnableBaseDomain() {
 
-    @Column(name = "name", nullable = false, length = 255)
-    var name: String = ""
+@Entity(name = "product_image")
+class ProductImage : OwnableBaseDomain() {
 
-    @Column(name = "active", nullable = false)
+    @Column(name = "image_id", length = 50, nullable = false)
+    var imageId: String = ""
+
+    @Column(name = "product_id", length = 50, nullable = false)
+    var productId: String = ""
+
+    @Column(name = "active")
     var active: Boolean = true
-
-    @Column(name = "image_id", length = 200)
-    var imageId: String? = null
 
     @OneToOne
     @JoinColumn(name = "image_id", referencedColumnName = "id", updatable = false, insertable = false)
     var image: File? = null
 
     override fun obtainIdPrefix(): String {
-        return Constants.PRODUCT_GROUP_PREFIX
+        return Constants.PRODUCT_IMAGE_PREFIX
     }
 }

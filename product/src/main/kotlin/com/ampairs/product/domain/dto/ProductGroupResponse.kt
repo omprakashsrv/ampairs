@@ -1,9 +1,12 @@
 package com.ampairs.product.domain.dto
 
+import com.ampairs.core.domain.dto.FileResponse
+import com.ampairs.core.domain.dto.toFileResponse
 import com.ampairs.product.domain.model.ProductGroup
 
 data class ProductGroupResponse(
-    var id: String, var name: String, var refId: String?, var active: Boolean?
+    var id: String, var name: String, var refId: String?, var active: Boolean?,
+    var image: FileResponse?,
 )
 
 fun List<ProductGroup>.asResponse(): List<ProductGroupResponse> {
@@ -12,7 +15,8 @@ fun List<ProductGroup>.asResponse(): List<ProductGroupResponse> {
             id = it.id,
             name = it.name,
             refId = it.refId,
-            active = it.active
+            active = it.active,
+            image = it.image?.toFileResponse()
         )
     }
 }

@@ -73,6 +73,12 @@ class Product : OwnableBaseDomain() {
     @JoinColumn(
         name = "product_id", referencedColumnName = "id", insertable = false, updatable = false, nullable = false
     )
+    var images: MutableList<ProductImage> = mutableListOf()
+
+    @OneToMany()
+    @JoinColumn(
+        name = "product_id", referencedColumnName = "id", insertable = false, updatable = false, nullable = false
+    )
     var unitConversions: MutableList<UnitConversion> = mutableListOf()
 
     override fun obtainIdPrefix(): String {
