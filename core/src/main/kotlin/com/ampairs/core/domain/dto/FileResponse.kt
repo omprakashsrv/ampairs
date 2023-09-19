@@ -4,6 +4,7 @@ import com.ampairs.core.domain.model.File
 
 data class FileResponse(
     val id: String = "",
+    var refId: String? = "",
     val name: String = "",
     val bucket: String = "",
     val objectKey: String = "",

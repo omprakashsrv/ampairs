@@ -6,6 +6,7 @@ import com.ampairs.product.domain.model.ProductSubCategory
 
 data class ProductSubCategoryResponse(
     var id: String, var name: String, var refId: String?,
+    val active: Boolean,
     var image: FileResponse?,
 )
 
@@ -15,6 +16,7 @@ fun List<ProductSubCategory>.asResponse(): List<ProductSubCategoryResponse> {
             id = it.id,
             name = it.name,
             refId = it.refId,
+            active = it.active,
             image = it.image?.toFileResponse()
         )
     }

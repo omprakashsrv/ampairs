@@ -47,7 +47,11 @@ fun List<Product>.asResponse(): List<ProductResponse> {
             updatedAt = it.updatedAt,
             unitConversions = it.unitConversions.asUnitConversionResponse(),
             baseUnit = it.baseUnit?.asResponse(),
-            images = it.images.map { it.image?.toFileResponse() ?: FileResponse()  }
+            images = it.images.map { productImage ->
+                val fileResponse = productImage.image?.toFileResponse() ?: FileResponse()
+                fileResponse.refId = productImage.id
+                fileResponse
+            }
         )
     }
 }
