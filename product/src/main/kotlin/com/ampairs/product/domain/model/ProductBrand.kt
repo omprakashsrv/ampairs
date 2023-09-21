@@ -20,6 +20,9 @@ class ProductBrand : OwnableBaseDomain() {
     @Column(name = "image_id", length = 200)
     var imageId: String? = null
 
+    @Column(name = "index", nullable = false)
+    var index: Int = 0
+
     @OneToOne
     @JoinColumn(name = "image_id", referencedColumnName = "id", updatable = false, insertable = false)
     var image: File? = null

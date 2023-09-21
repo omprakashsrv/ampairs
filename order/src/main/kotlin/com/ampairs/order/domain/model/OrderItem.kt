@@ -33,8 +33,8 @@ class OrderItem : OwnableBaseDomain() {
     @Column(name = "quantity", nullable = false)
     var quantity: Double = 0.0
 
-    @Column(name = "item_no", nullable = false)
-    var itemNo: Int = 0
+    @Column(name = "index", nullable = false)
+    var index: Int = 0
 
     @Column(name = "selling_price", nullable = false)
     var sellingPrice: Double = 0.0
