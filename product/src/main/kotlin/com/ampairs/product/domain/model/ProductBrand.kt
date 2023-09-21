@@ -14,9 +14,6 @@ class ProductBrand : OwnableBaseDomain() {
     @Column(name = "name", nullable = false, length = 255)
     var name: String = ""
 
-    @Column(name = "active", nullable = false)
-    var active: Boolean = true
-
     @Column(name = "image_id", length = 200)
     var imageId: String? = null
 

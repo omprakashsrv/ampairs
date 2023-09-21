@@ -31,9 +31,6 @@ class Product : OwnableBaseDomain() {
     @Column(name = "base_unit_id", length = 200)
     var baseUnitId: String? = null
 
-    @Column(name = "active", nullable = false)
-    var active: Boolean = true
-
     @Column(name = "mrp", nullable = false)
     var mrp: Double = 0.0
 
@@ -62,6 +59,9 @@ class Product : OwnableBaseDomain() {
     @OneToOne()
     @JoinColumn(name = "base_unit_id", referencedColumnName = "id", updatable = false, insertable = false)
     var baseUnit: Unit? = null
+
+    @Column(name = "index", nullable = false)
+    var index: Int = 0
 
     @OneToMany()
     @JoinColumn(

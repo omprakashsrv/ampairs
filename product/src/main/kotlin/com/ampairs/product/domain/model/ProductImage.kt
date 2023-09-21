@@ -18,9 +18,6 @@ class ProductImage : OwnableBaseDomain() {
     @Column(name = "product_id", length = 50, nullable = false)
     var productId: String = ""
 
-    @Column(name = "active")
-    var active: Boolean = true
-
     @OneToOne
     @JoinColumn(name = "image_id", referencedColumnName = "id", updatable = false, insertable = false)
     var image: File? = null

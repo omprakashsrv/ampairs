@@ -13,9 +13,6 @@ class ProductPrice : OwnableBaseDomain() {
     @Column(name = "product_id", length = 200)
     var productId: String = ""
 
-    @Column(name = "active", nullable = false)
-    var active: Boolean = true
-
     @Column(name = "mrp", nullable = false)
     var mrp: Double = 0.0
 

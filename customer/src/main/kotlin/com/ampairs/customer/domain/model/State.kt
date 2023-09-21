@@ -20,8 +20,6 @@ class State : OwnableBaseDomain() {
     @Column(name = "gst_code", nullable = false)
     var gstCode: Int = 0
 
-    @Column(name = "active", nullable = false)
-    var active: Boolean = true
     override fun obtainIdPrefix(): String {
         return Constants.STATE_PREFIX
     }
