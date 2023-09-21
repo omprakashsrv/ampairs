@@ -60,7 +60,7 @@ class Product : OwnableBaseDomain() {
     @JoinColumn(name = "base_unit_id", referencedColumnName = "id", updatable = false, insertable = false)
     var baseUnit: Unit? = null
 
-    @Column(name = "index", nullable = false)
+    @Column(name = "index_no", nullable = false)
     var index: Int = 0
 
     @OneToMany()

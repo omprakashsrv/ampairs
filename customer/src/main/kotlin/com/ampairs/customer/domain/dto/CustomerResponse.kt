@@ -16,6 +16,8 @@ data class CustomerResponse(
     var state: String?,
     val latitude: Double?,
     val longitude: Double?,
+    val active: Boolean,
+    val softDeleted: Boolean,
     var lastUpdated: Long?,
     var createdAt: String?,
     var updatedAt: String?,
@@ -45,7 +47,9 @@ fun Customer.asCustomerResponse(): CustomerResponse {
         longitude = this.location?.y,
         lastUpdated = this.lastUpdated,
         createdAt = this.createdAt,
-        updatedAt = this.updatedAt
+        updatedAt = this.updatedAt,
+        active = this.active,
+        softDeleted = this.softDeleted
     )
 }
 

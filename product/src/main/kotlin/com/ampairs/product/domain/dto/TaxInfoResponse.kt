@@ -8,6 +8,8 @@ data class TaxInfoResponse(
     var percentage: Double = 0.0,
     var formattedName: String = "",
     var taxSpec: TaxSpec = TaxSpec.INTER,
+    val active: Boolean,
+    val softDeleted: Boolean,
 )
 
 fun TaxInfo.asResponse(): TaxInfoResponse {
@@ -15,7 +17,9 @@ fun TaxInfo.asResponse(): TaxInfoResponse {
         name = this.name,
         formattedName = this.formattedName,
         percentage = this.percentage,
-        taxSpec = this.taxSpec
+        taxSpec = this.taxSpec,
+        active = this.active,
+        softDeleted = this.softDeleted
     )
 }
 

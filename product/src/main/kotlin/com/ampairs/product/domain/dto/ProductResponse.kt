@@ -14,6 +14,7 @@ data class ProductResponse(
     val categoryId: String,
     val subCategoryId: String,
     val active: Boolean,
+    val softDeleted: Boolean,
     val mrp: Double,
     val dp: Double,
     val sellingPrice: Double,
@@ -51,7 +52,8 @@ fun List<Product>.asResponse(): List<ProductResponse> {
                 val fileResponse = productImage.image?.toFileResponse() ?: FileResponse()
                 fileResponse.refId = productImage.id
                 fileResponse
-            }
+            },
+            softDeleted = it.softDeleted
         )
     }
 }

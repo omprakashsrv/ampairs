@@ -6,7 +6,9 @@ data class UnitConversionResponse(
     var id: String,
     var baseUnit: UnitResponse,
     var derivedUnit: UnitResponse,
-    var multiplier: Double
+    var multiplier: Double,
+    val active: Boolean,
+    val softDeleted: Boolean,
 )
 
 
@@ -16,7 +18,9 @@ fun List<UnitConversion>.asUnitConversionResponse(): List<UnitConversionResponse
             id = it.id,
             baseUnit = it.baseUnit.asResponse(),
             derivedUnit = it.derivedUnit.asResponse(),
-            multiplier = it.multiplier
+            multiplier = it.multiplier,
+            active = it.active,
+            softDeleted = it.softDeleted
         )
     }
 }

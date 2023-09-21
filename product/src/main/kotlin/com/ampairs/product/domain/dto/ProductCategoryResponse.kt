@@ -8,6 +8,7 @@ data class ProductCategoryResponse(
     var id: String, var name: String, var refId: String?,
     var active: Boolean,
     var image: FileResponse?,
+    val softDeleted: Boolean,
 )
 
 fun List<ProductCategory>.asResponse(): List<ProductCategoryResponse> {
@@ -16,8 +17,9 @@ fun List<ProductCategory>.asResponse(): List<ProductCategoryResponse> {
             id = it.id,
             name = it.name,
             refId = it.refId,
-            active= it.active,
-            image = it.image?.toFileResponse()
+            active = it.active,
+            image = it.image?.toFileResponse(),
+            softDeleted = it.softDeleted
         )
     }
 }

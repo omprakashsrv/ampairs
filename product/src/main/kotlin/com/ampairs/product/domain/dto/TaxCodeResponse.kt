@@ -13,6 +13,8 @@ data class TaxCodeResponse(
     val description: String,
     val effectiveFrom: Date?,
     val taxInfos: List<TaxInfoResponse>,
+    val active: Boolean,
+    val softDeleted: Boolean,
 )
 
 
@@ -24,7 +26,9 @@ fun List<TaxCode>.asResponse(): List<TaxCodeResponse> {
             description = it.description,
             type = it.type,
             effectiveFrom = it.effectiveFrom?.time?.let { it1 -> Date(it1) },
-            taxInfos = it.taxInfos.asResponse()
+            taxInfos = it.taxInfos.asResponse(),
+            active = it.active,
+            softDeleted = it.softDeleted
         )
     }
 }

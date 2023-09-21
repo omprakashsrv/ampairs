@@ -7,6 +7,7 @@ import com.ampairs.product.domain.model.ProductGroup
 data class ProductGroupResponse(
     var id: String, var name: String, var refId: String?, var active: Boolean?,
     var image: FileResponse?,
+    val softDeleted: Boolean,
 )
 
 fun List<ProductGroup>.asResponse(): List<ProductGroupResponse> {
@@ -16,7 +17,8 @@ fun List<ProductGroup>.asResponse(): List<ProductGroupResponse> {
             name = it.name,
             refId = it.refId,
             active = it.active,
-            image = it.image?.toFileResponse()
+            image = it.image?.toFileResponse(),
+            softDeleted = it.softDeleted
         )
     }
 }

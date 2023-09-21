@@ -17,7 +17,7 @@ class ProductSubCategory : OwnableBaseDomain() {
     @Column(name = "image_id", length = 200)
     var imageId: String? = null
 
-    @Column(name = "index", nullable = false)
+    @Column(name = "index_no", nullable = false)
     var index: Int = 0
 
     @OneToOne
