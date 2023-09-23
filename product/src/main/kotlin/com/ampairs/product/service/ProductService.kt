@@ -168,9 +168,9 @@ class ProductService(
 
     fun updateProductGroups(ownerId: String, groups: List<ProductGroup>): List<ProductGroup> {
         groups.forEach {
-            val unit = productGroupRepository.findByRefId(it.refId)
-            it.seqId = unit?.seqId
-            it.id = unit?.id ?: ""
+            val group = productGroupRepository.findByRefId(it.refId)
+            it.seqId = group?.seqId
+            it.id = group?.id ?: ""
             productGroupRepository.save(it)
         }
         return groups

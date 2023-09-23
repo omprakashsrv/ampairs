@@ -3,7 +3,12 @@ package com.ampairs.product.domain.dto
 import com.ampairs.product.domain.model.ProductGroup
 
 data class ProductGroupRequest(
-    var id: String, var name: String, var refId: String?, var active: Boolean?
+    var id: String,
+    var name: String,
+    var refId: String?,
+    var active: Boolean?,
+    var softDeleted: Boolean?,
+    var imageId: String?,
 )
 
 fun List<ProductGroupRequest>.asDatabaseModel(): List<ProductGroup> {
@@ -11,7 +16,9 @@ fun List<ProductGroupRequest>.asDatabaseModel(): List<ProductGroup> {
         val productGroup = ProductGroup()
         productGroup.name = it.name
         productGroup.refId = it.refId
+        productGroup.imageId = it.imageId
         productGroup.active = it.active ?: true
+        productGroup.softDeleted = it.softDeleted ?: false
         productGroup
     }
 }

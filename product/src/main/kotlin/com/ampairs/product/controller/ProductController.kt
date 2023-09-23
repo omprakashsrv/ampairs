@@ -1,14 +1,21 @@
 package com.ampairs.product.controller
 
+import com.ampairs.core.domain.dto.FileResponse
+import com.ampairs.core.domain.dto.toFileResponse
+import com.ampairs.core.domain.service.FileService
+import com.ampairs.core.multitenancy.TenantContext
 import com.ampairs.core.user.model.SessionUser
+import com.ampairs.core.utils.Helper
+import com.ampairs.product.config.Constants
 import com.ampairs.product.domain.dto.*
 import com.ampairs.product.service.ProductService
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.multipart.MultipartFile
 
 @RestController
 @RequestMapping("/product/v1")
-class ProductController(val productService: ProductService) {
+class ProductController(val productService: ProductService, val fileService: FileService) {
 
     @GetMapping("")
     fun getProducts(
@@ -74,7 +81,7 @@ class ProductController(val productService: ProductService) {
         return categories.asResponse()
     }
 
-    @PostMapping("/product_groups")
+    @PostMapping("/groups")
     fun updateGroups(@RequestBody groups: List<ProductGroupRequest>): List<ProductGroupResponse> {
         val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
         val productGroups = productService.updateProductGroups(sessionUser.company.id, groups.asDatabaseModel())
@@ -93,5 +100,22 @@ class ProductController(val productService: ProductService) {
     fun updateTaxCodes(@RequestBody codes: List<TaxCodeRequest>): List<TaxCodeResponse> {
         val taxCodes = productService.updateTaxCodes(codes.asDatabaseModel())
         return taxCodes.asResponse()
+    }
+
+    @PostMapping("/upload_image")
+    fun uploadImage(
+        @RequestParam("file") file: MultipartFile,
+        @RequestParam("path") path: String,
+    ): FileResponse {
+        return fileService.saveFile(
+            bytes = file.inputStream.readAllBytes(),
+            name = file.name,
+            objectKey = TenantContext.getCurrentTenant()?.id + path + "/" + Helper.generateUniqueId(
+                Constants.PRODUCT_IMAGE_PREFIX,
+                com.ampairs.core.config.Constants.ID_LENGTH
+            ),
+            bucket = "ampairs",
+            contentType = file.contentType.toString()
+        ).toFileResponse()
     }
 }
