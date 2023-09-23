@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.sql.Timestamp
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.jvm.optionals.getOrNull
 
 
 @Service
@@ -168,9 +169,15 @@ class ProductService(
 
     fun updateProductGroups(ownerId: String, groups: List<ProductGroup>): List<ProductGroup> {
         groups.forEach {
-            val group = productGroupRepository.findByRefId(it.refId)
-            it.seqId = group?.seqId
-            it.id = group?.id ?: ""
+            if (it.id.isNotEmpty()) {
+                val group = productGroupRepository.findById(it.id).getOrNull()
+                it.seqId = group?.seqId
+                it.refId = group?.refId ?: ""
+            } else if (it.refId?.isNotEmpty() == true) {
+                val group = productGroupRepository.findByRefId(it.refId)
+                it.seqId = group?.seqId
+                it.id = group?.id ?: ""
+            }
             productGroupRepository.save(it)
         }
         return groups
