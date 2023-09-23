@@ -2,6 +2,10 @@ package com.ampairs.product.domain.model
 
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.product.config.Constants
+import com.ampairs.product.domain.model.group.ProductBrand
+import com.ampairs.product.domain.model.group.ProductCategory
+import com.ampairs.product.domain.model.group.ProductGroup
+import com.ampairs.product.domain.model.group.ProductSubCategory
 import jakarta.persistence.*
 
 @Entity(name = "product")

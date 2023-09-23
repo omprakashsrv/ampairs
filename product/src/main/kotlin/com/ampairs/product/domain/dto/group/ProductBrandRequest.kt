@@ -1,8 +1,8 @@
-package com.ampairs.product.domain.dto
+package com.ampairs.product.domain.dto.group
 
-import com.ampairs.product.domain.model.ProductGroup
+import com.ampairs.product.domain.model.group.ProductBrand
 
-data class ProductGroupRequest(
+data class ProductBrandRequest(
     var id: String,
     var name: String,
     var refId: String?,
@@ -11,9 +11,9 @@ data class ProductGroupRequest(
     var imageId: String?,
 )
 
-fun List<ProductGroupRequest>.asDatabaseModel(): List<ProductGroup> {
+fun List<ProductBrandRequest>.asDatabaseModel(): List<ProductBrand> {
     return map {
-        val productGroup = ProductGroup()
+        val productGroup = ProductBrand()
         productGroup.id = it.id
         productGroup.name = it.name
         productGroup.refId = it.refId

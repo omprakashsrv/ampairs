@@ -1,4 +1,4 @@
-package com.ampairs.product.domain.model
+package com.ampairs.product.domain.model.group
 
 import com.ampairs.core.domain.model.File
 import com.ampairs.core.domain.model.OwnableBaseDomain

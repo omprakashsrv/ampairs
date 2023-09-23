@@ -1,4 +1,4 @@
-package com.ampairs.product.domain.dto
+package com.ampairs.product.domain.dto.group
 
 data class AllGroupsResponse(
     val groups: List<ProductGroupResponse>,

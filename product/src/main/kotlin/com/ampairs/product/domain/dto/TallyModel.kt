@@ -1,9 +1,9 @@
 package com.ampairs.product.domain.dto
 
 import com.ampairs.product.domain.model.Product
-import com.ampairs.product.domain.model.ProductCategory
-import com.ampairs.product.domain.model.ProductGroup
 import com.ampairs.product.domain.model.Unit
+import com.ampairs.product.domain.model.group.ProductCategory
+import com.ampairs.product.domain.model.group.ProductGroup
 import com.ampairs.tally.model.master.StockCategory
 import com.ampairs.tally.model.master.StockGroup
 import com.ampairs.tally.model.master.StockItem

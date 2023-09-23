@@ -2,8 +2,14 @@ package com.ampairs.product.service
 
 import com.ampairs.product.domain.dto.asDatabaseModel
 import com.ampairs.product.domain.enums.TaxSpec
-import com.ampairs.product.domain.model.*
+import com.ampairs.product.domain.model.Product
+import com.ampairs.product.domain.model.TaxCode
+import com.ampairs.product.domain.model.TaxInfo
 import com.ampairs.product.domain.model.Unit
+import com.ampairs.product.domain.model.group.ProductBrand
+import com.ampairs.product.domain.model.group.ProductCategory
+import com.ampairs.product.domain.model.group.ProductGroup
+import com.ampairs.product.domain.model.group.ProductSubCategory
 import com.ampairs.product.repository.*
 import com.ampairs.tally.model.TallyMessage
 import com.ampairs.tally.model.TallyXML
@@ -167,7 +173,7 @@ class ProductService(
         return units
     }
 
-    fun updateProductGroups(ownerId: String, groups: List<ProductGroup>): List<ProductGroup> {
+    fun updateProductGroups(groups: List<ProductGroup>): List<ProductGroup> {
         groups.forEach {
             if (it.id.isNotEmpty()) {
                 val group = productGroupRepository.findById(it.id).getOrNull()
@@ -183,14 +189,52 @@ class ProductService(
         return groups
     }
 
-    fun updateProductCategories(ownerId: String, productCategories: List<ProductCategory>): List<ProductCategory> {
+    fun updateProductBrands(brands: List<ProductBrand>): List<ProductBrand> {
+        brands.forEach {
+            if (it.id.isNotEmpty()) {
+                val group = productBrandRepository.findById(it.id).getOrNull()
+                it.seqId = group?.seqId
+                it.refId = group?.refId ?: ""
+            } else if (it.refId?.isNotEmpty() == true) {
+                val group = productBrandRepository.findByRefId(it.refId)
+                it.seqId = group?.seqId
+                it.id = group?.id ?: ""
+            }
+            productBrandRepository.save(it)
+        }
+        return brands
+    }
+
+    fun updateProductCategories(productCategories: List<ProductCategory>): List<ProductCategory> {
         productCategories.forEach {
-            val category = productCategoryRepository.findByRefId(it.refId)
-            it.seqId = category?.seqId
-            it.id = category?.id ?: ""
+            if (it.id.isNotEmpty()) {
+                val productCategory = productCategoryRepository.findById(it.id).getOrNull()
+                it.seqId = productCategory?.seqId
+                it.refId = productCategory?.refId ?: ""
+            } else if (it.refId?.isNotEmpty() == true) {
+                val productCategory = productCategoryRepository.findByRefId(it.refId)
+                it.seqId = productCategory?.seqId
+                it.id = productCategory?.id ?: ""
+            }
             productCategoryRepository.save(it)
         }
         return productCategories
+    }
+
+    fun updateProductSubCategories(productSubCategories: List<ProductSubCategory>): List<ProductSubCategory> {
+        productSubCategories.forEach {
+            if (it.id.isNotEmpty()) {
+                val productCategory = productSubCategoryRepository.findById(it.id).getOrNull()
+                it.seqId = productCategory?.seqId
+                it.refId = productCategory?.refId ?: ""
+            } else if (it.refId?.isNotEmpty() == true) {
+                val productCategory = productSubCategoryRepository.findByRefId(it.refId)
+                it.seqId = productCategory?.seqId
+                it.id = productCategory?.id ?: ""
+            }
+            productSubCategoryRepository.save(it)
+        }
+        return productSubCategories
     }
 
     fun getGroups(): List<ProductGroup> {

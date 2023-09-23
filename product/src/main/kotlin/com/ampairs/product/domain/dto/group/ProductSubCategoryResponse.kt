@@ -1,19 +1,19 @@
-package com.ampairs.product.domain.dto
+package com.ampairs.product.domain.dto.group
 
 import com.ampairs.core.domain.dto.FileResponse
 import com.ampairs.core.domain.dto.toFileResponse
-import com.ampairs.product.domain.model.ProductCategory
+import com.ampairs.product.domain.model.group.ProductSubCategory
 
-data class ProductCategoryResponse(
+data class ProductSubCategoryResponse(
     var id: String, var name: String, var refId: String?,
-    var active: Boolean,
+    val active: Boolean,
     var image: FileResponse?,
     val softDeleted: Boolean,
 )
 
-fun List<ProductCategory>.asResponse(): List<ProductCategoryResponse> {
+fun List<ProductSubCategory>.asResponse(): List<ProductSubCategoryResponse> {
     return map {
-        ProductCategoryResponse(
+        ProductSubCategoryResponse(
             id = it.id,
             name = it.name,
             refId = it.refId,

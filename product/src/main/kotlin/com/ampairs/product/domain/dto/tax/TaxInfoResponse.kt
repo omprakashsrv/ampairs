@@ -1,4 +1,4 @@
-package com.ampairs.product.domain.dto
+package com.ampairs.product.domain.dto.tax
 
 import com.ampairs.product.domain.enums.TaxSpec
 import com.ampairs.product.domain.model.TaxInfo

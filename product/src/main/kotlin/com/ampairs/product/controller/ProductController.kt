@@ -4,12 +4,22 @@ import com.ampairs.core.domain.dto.FileResponse
 import com.ampairs.core.domain.dto.toFileResponse
 import com.ampairs.core.domain.service.FileService
 import com.ampairs.core.multitenancy.TenantContext
-import com.ampairs.core.user.model.SessionUser
 import com.ampairs.core.utils.Helper
 import com.ampairs.product.config.Constants
-import com.ampairs.product.domain.dto.*
+import com.ampairs.product.domain.dto.group.*
+import com.ampairs.product.domain.dto.product.ProductRequest
+import com.ampairs.product.domain.dto.product.ProductResponse
+import com.ampairs.product.domain.dto.product.asDatabaseModel
+import com.ampairs.product.domain.dto.product.asResponse
+import com.ampairs.product.domain.dto.tax.TaxCodeRequest
+import com.ampairs.product.domain.dto.tax.TaxCodeResponse
+import com.ampairs.product.domain.dto.tax.asDatabaseModel
+import com.ampairs.product.domain.dto.tax.asResponse
+import com.ampairs.product.domain.dto.unit.UnitRequest
+import com.ampairs.product.domain.dto.unit.UnitResponse
+import com.ampairs.product.domain.dto.unit.asDatabaseModel
+import com.ampairs.product.domain.dto.unit.asResponse
 import com.ampairs.product.service.ProductService
-import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 
@@ -83,17 +93,28 @@ class ProductController(val productService: ProductService, val fileService: Fil
 
     @PostMapping("/groups")
     fun updateGroups(@RequestBody groups: List<ProductGroupRequest>): List<ProductGroupResponse> {
-        val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
-        val productGroups = productService.updateProductGroups(sessionUser.company.id, groups.asDatabaseModel())
+        val productGroups = productService.updateProductGroups(groups.asDatabaseModel())
         return productGroups.asResponse()
     }
 
-    @PostMapping("/product_categories")
+    @PostMapping("/brands")
+    fun updateBrands(@RequestBody groups: List<ProductBrandRequest>): List<ProductBrandResponse> {
+        val productGroups = productService.updateProductBrands(groups.asDatabaseModel())
+        return productGroups.asResponse()
+    }
+
+    @PostMapping("/categories")
     fun updateCategories(@RequestBody categories: List<ProductCategoryRequest>): List<ProductCategoryResponse> {
-        val sessionUser: SessionUser = SecurityContextHolder.getContext().authentication.principal as SessionUser
         val productCategories =
-            productService.updateProductCategories(sessionUser.company.id, categories.asDatabaseModel())
+            productService.updateProductCategories(categories.asDatabaseModel())
         return productCategories.asResponse()
+    }
+
+    @PostMapping("/sub_categories")
+    fun updateSubCategories(@RequestBody categories: List<ProductSubCategoryRequest>): List<ProductSubCategoryResponse> {
+        val productSubCategories =
+            productService.updateProductSubCategories(categories.asDatabaseModel())
+        return productSubCategories.asResponse()
     }
 
     @PostMapping("/tax_codes")

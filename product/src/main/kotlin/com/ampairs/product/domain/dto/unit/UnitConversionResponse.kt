@@ -1,4 +1,4 @@
-package com.ampairs.product.domain.dto
+package com.ampairs.product.domain.dto.unit
 
 import com.ampairs.product.domain.model.UnitConversion
 
@@ -14,7 +14,7 @@ data class UnitConversionResponse(
 
 fun List<UnitConversion>.asUnitConversionResponse(): List<UnitConversionResponse> {
     return map {
-        com.ampairs.product.domain.dto.UnitConversionResponse(
+        UnitConversionResponse(
             id = it.id,
             baseUnit = it.baseUnit.asResponse(),
             derivedUnit = it.derivedUnit.asResponse(),

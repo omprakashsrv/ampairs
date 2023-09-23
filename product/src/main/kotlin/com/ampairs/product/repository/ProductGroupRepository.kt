@@ -1,6 +1,6 @@
 package com.ampairs.product.repository
 
-import com.ampairs.product.domain.model.ProductGroup
+import com.ampairs.product.domain.model.group.ProductGroup
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
 import java.util.*

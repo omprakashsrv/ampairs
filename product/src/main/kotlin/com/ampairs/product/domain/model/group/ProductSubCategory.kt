@@ -1,4 +1,4 @@
-package com.ampairs.product.domain.model
+package com.ampairs.product.domain.model.group
 
 import com.ampairs.core.domain.model.File
 import com.ampairs.core.domain.model.OwnableBaseDomain
@@ -8,8 +8,8 @@ import jakarta.persistence.Entity
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.OneToOne
 
-@Entity(name = "product_brand")
-class ProductBrand : OwnableBaseDomain() {
+@Entity(name = "product_sub_category")
+class ProductSubCategory : OwnableBaseDomain() {
 
     @Column(name = "name", nullable = false, length = 255)
     var name: String = ""
@@ -25,6 +25,6 @@ class ProductBrand : OwnableBaseDomain() {
     var image: File? = null
 
     override fun obtainIdPrefix(): String {
-        return Constants.PRODUCT_BRAND_PREFIX
+        return Constants.PRODUCT_SUB_CATEGORY_PREFIX
     }
 }

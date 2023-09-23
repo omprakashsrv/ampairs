@@ -1,5 +1,6 @@
-package com.ampairs.product.domain.dto
+package com.ampairs.product.domain.dto.product
 
+import com.ampairs.product.domain.dto.unit.UnitConversionRequest
 import com.ampairs.product.domain.model.Product
 
 data class ProductRequest(

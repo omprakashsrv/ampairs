@@ -1,4 +1,4 @@
-package com.ampairs.product.domain.dto
+package com.ampairs.product.domain.dto.unit
 
 import com.ampairs.product.domain.model.UnitConversion
 

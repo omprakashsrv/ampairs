@@ -1,7 +1,13 @@
-package com.ampairs.product.domain.dto
+package com.ampairs.product.domain.dto.product
 
 import com.ampairs.core.domain.dto.FileResponse
 import com.ampairs.core.domain.dto.toFileResponse
+import com.ampairs.product.domain.dto.tax.TaxCodeResponse
+import com.ampairs.product.domain.dto.tax.asResponse
+import com.ampairs.product.domain.dto.unit.UnitConversionResponse
+import com.ampairs.product.domain.dto.unit.UnitResponse
+import com.ampairs.product.domain.dto.unit.asResponse
+import com.ampairs.product.domain.dto.unit.asUnitConversionResponse
 import com.ampairs.product.domain.model.Product
 
 data class ProductResponse(
