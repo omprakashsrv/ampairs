@@ -1,5 +1,4 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import org.springframework.boot.gradle.tasks.bundling.BootJar
 
 plugins {
     id("org.springframework.boot") version "3.1.0"
@@ -23,9 +22,17 @@ repositories {
     mavenCentral()
 }
 
+allOpen {
+    annotation("jakarta.persistence.Entity")
+}
+
 dependencies {
     implementation(project(mapOf("path" to ":core")))
     implementation(project(mapOf("path" to ":core_user")))
+    implementation(project(mapOf("path" to ":auth")))
+    implementation(project(mapOf("path" to ":customer")))
+    implementation(project(mapOf("path" to ":product")))
+    implementation(project(mapOf("path" to ":order")))
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework:spring-web")
     implementation("org.springframework:spring-webmvc")
@@ -35,8 +42,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("io.jsonwebtoken:jjwt-api:0.11.5")
-    implementation("org.modelmapper:modelmapper:3.1.0")
-    implementation("io.hypersistence:hypersistence-utils-hibernate-62:3.5.2")
+    implementation("no.digipost.jaxb:jaxb2-jackson-helper:1.0.1")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
     runtimeOnly("com.mysql:mysql-connector-j")
@@ -59,7 +65,3 @@ tasks.withType<Test> {
 }
 
 tasks.register("prepareKotlinBuildScriptModel") {}
-
-tasks.withType<BootJar> {
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-}

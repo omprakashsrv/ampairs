@@ -1,33 +1,29 @@
 #Set context root
+env:
+  name:prod
+
 server:
   tomcat:
     accesslog:
       enabled: true
-  port: 8082
+  port: 8080
 spring:
-  servlet:
-    multipart:
-      max-file-size: 100MB
-      max-request-size: 100MB
+  main:
+    allow-bean-definition-overriding: true
   jackson:
     property-naming-strategy: SNAKE_CASE
-    date-format: yyyy-MM-dd HH:mm:ss
   datasource:
-    url: jdbc:mysql://localhost:3306/munsi_app
-    username: root
-    password: pass
+    url: jdbc:mysql://prod-db.c1mfpengh7jq.ap-south-1.rds.amazonaws.com:3306/ampairs_app
+    username: ampairs_rw
+    password: Amp.213@873$123
     driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: update
       properties:
         hibernate:
-          show-sql: false
           format_sql: true
-          jdbc:
-            time_zone:UTC
-        database: postgresql
-        database-platform: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false
 
 application:
   security:
@@ -40,4 +36,4 @@ application:
 drees:
   stacktrace: true
 logging:
-  file.name: logs/product.log
+  file.name: logs/auth.log

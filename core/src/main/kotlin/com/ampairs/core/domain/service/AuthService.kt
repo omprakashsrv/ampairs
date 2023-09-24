@@ -28,7 +28,7 @@ class AuthService @Autowired constructor(
     val userRepository: UserRepository,
     val tokenRepository: TokenRepository,
     val smsVerificationRepository: SmsVerificationRepository,
-    val jwtService: com.ampairs.core.domain.service.JwtService,
+    val jwtService: JwtService,
     val authenticationManager: AuthenticationManager,
     val encoder: PasswordEncoder
 ) {

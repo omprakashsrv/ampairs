@@ -1,11 +1,14 @@
-package com.ampairs.order
+package com.ampairs
 
+import com.ampairs.core.utils.PropertiesUtils
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication
 
+
 @SpringBootApplication
-class OrderApplication
+class AmpairsApplication
 
 fun main(args: Array<String>) {
-    runApplication<OrderApplication>(*args)
+    PropertiesUtils.initProperties()
+    runApplication<AmpairsApplication>(*args)
 }

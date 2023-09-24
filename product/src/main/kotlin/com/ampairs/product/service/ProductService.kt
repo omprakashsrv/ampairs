@@ -1,27 +1,17 @@
 package com.ampairs.product.service
 
-import com.ampairs.product.domain.dto.asDatabaseModel
-import com.ampairs.product.domain.enums.TaxSpec
 import com.ampairs.product.domain.model.Product
 import com.ampairs.product.domain.model.TaxCode
-import com.ampairs.product.domain.model.TaxInfo
 import com.ampairs.product.domain.model.Unit
 import com.ampairs.product.domain.model.group.ProductBrand
 import com.ampairs.product.domain.model.group.ProductCategory
 import com.ampairs.product.domain.model.group.ProductGroup
 import com.ampairs.product.domain.model.group.ProductSubCategory
 import com.ampairs.product.repository.*
-import com.ampairs.tally.model.TallyMessage
-import com.ampairs.tally.model.TallyXML
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
-import java.sql.Timestamp
-import java.text.SimpleDateFormat
-import java.util.*
 import kotlin.jvm.optionals.getOrNull
-
 
 @Service
 class ProductService(
@@ -40,107 +30,6 @@ class ProductService(
             lastUpdated ?: 0,
             PageRequest.of(0, 1000, Sort.by("lastUpdated").ascending())
         )
-    }
-
-    private fun updateMasters(tallyMessage: TallyMessage?) {
-        tallyMessage?.unit?.asDatabaseModel()?.let {
-            val unit = unitRepository.findByRefId(it.refId)
-            it.seqId = unit?.seqId
-            it.id = unit?.id ?: ""
-            unitRepository.save(it)
-        }
-        tallyMessage?.stockGroup?.asDatabaseModel()?.let {
-            val productGroup = productGroupRepository.findByRefId(it.refId)
-            it.seqId = productGroup?.seqId
-            it.id = productGroup?.id ?: ""
-            productGroupRepository.save(it)
-        }
-        tallyMessage?.stockCategory?.asDatabaseModel()?.let {
-            val productCategory = productCategoryRepository.findByRefId(it.refId)
-            it.seqId = productCategory?.seqId
-            it.id = productCategory?.id ?: ""
-            productCategoryRepository.save(it)
-        }
-    }
-
-    @Transactional
-    fun updateTallyXml(tallyXML: TallyXML?) {
-        tallyXML?.body?.importData?.requestData?.tallyMessage?.forEach {
-            updateMasters(it)
-        }
-        val taxCodeSet = mutableSetOf<TaxCode>()
-        tallyXML?.body?.importData?.requestData?.tallyMessage?.forEach {
-            it?.stockItem?.let {
-                it.gstDetailList?.forEach {
-                    val taxCode = TaxCode()
-                    taxCode.code = it.hsnCode ?: ""
-                    taxCode.effectiveFrom =
-                        Timestamp(SimpleDateFormat("yyyyMMdd", Locale.ENGLISH).parse(it.applicableFrom).time)
-                    taxCode.description = it.hsnMasterName ?: ""
-                    val rateDetailsList = it.stateWiseDetailsList?.get(0)?.rateDetailsList
-                    val taxInfos = mutableListOf<TaxInfo>()
-                    val cgst =
-                        rateDetailsList?.find { it.gstRateDutyHead == "Central Tax" }?.gstRate?.toDouble() ?: 0.0
-                    if (cgst > 0) {
-                        val cgstInfo = TaxInfo()
-                        cgstInfo.name = "CGST " + cgst + "%"
-                        cgstInfo.formattedName = "CGST " + cgst + "%"
-                        cgstInfo.taxSpec = TaxSpec.INTER
-                        cgstInfo.percentage = cgst
-                        taxInfos.add(cgstInfo)
-                    }
-                    val sgst =
-                        rateDetailsList?.find { it.gstRateDutyHead == "State Tax" }?.gstRate?.toDouble() ?: 0.0
-                    if (sgst > 0) {
-                        val sgstInfo = TaxInfo()
-                        sgstInfo.name = "SGST " + sgst + "%"
-                        sgstInfo.formattedName = "SGST " + sgst + "%"
-                        sgstInfo.taxSpec = TaxSpec.INTER
-                        sgstInfo.percentage = sgst
-                        taxInfos.add(sgstInfo)
-                    }
-                    val igst =
-                        rateDetailsList?.find { it.gstRateDutyHead == "Integrated Tax" }?.gstRate?.toDouble() ?: 0.0
-                    if (igst > 0) {
-                        val igstInfo = TaxInfo()
-                        igstInfo.name = "IGST " + igst + "%"
-                        igstInfo.formattedName = "IGST " + igst + "%"
-                        igstInfo.taxSpec = TaxSpec.INTER
-                        igstInfo.percentage = igst
-                        taxInfos.add(igstInfo)
-                    }
-                    val cess = rateDetailsList?.find { it.gstRateDutyHead == "Cess" }?.gstRate?.toDouble() ?: 0.0
-                    if (cess > 0) {
-                        val cessInfo = TaxInfo()
-                        cessInfo.name = "CESS " + cess + "%"
-                        cessInfo.formattedName = "CESS " + cess + "%"
-                        cessInfo.taxSpec = TaxSpec.INTER
-                        cessInfo.percentage = cess
-                        taxInfos.add(cessInfo)
-                    }
-                    taxCode.taxInfos = taxInfos
-                    taxCodeSet.add(taxCode)
-                }
-            }
-        }
-        updateTaxCodes(taxCodeSet.toMutableList())
-        val productCategories = productCategoryRepository.findAll()
-        val productGroups = productGroupRepository.findAll()
-        val units = unitRepository.findAll()
-        val products = tallyXML?.body?.importData?.requestData?.tallyMessage.orEmpty().map {
-            val product = it?.stockItem?.asDatabaseModel()
-            product?.groupId = productGroups.find { it1 ->
-                it1.name == it?.stockItem?.parent
-            }?.id
-            product?.categoryId = productCategories.find { it1 ->
-                it1.name == it?.stockItem?.category
-            }?.id
-            product?.baseUnitId = units.find { it1 ->
-                it1.name == it?.stockItem?.baseUnits
-            }?.id
-            product
-        }
-//        updateProducts(products)
     }
 
     fun updateTaxCodes(taxCodes: List<TaxCode>): List<TaxCode> {

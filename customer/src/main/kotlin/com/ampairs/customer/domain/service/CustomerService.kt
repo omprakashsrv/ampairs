@@ -2,12 +2,9 @@ package com.ampairs.customer.domain.service
 
 import com.ampairs.customer.domain.model.Customer
 import com.ampairs.customer.domain.model.State
-import com.ampairs.customer.domain.model.asDatabaseModel
 import com.ampairs.customer.repository.CustomerPagingRepository
 import com.ampairs.customer.repository.CustomerRepository
 import com.ampairs.customer.repository.StateRepository
-import com.ampairs.tally.model.TallyMessage
-import com.ampairs.tally.model.TallyXML
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -55,24 +52,6 @@ class CustomerService @Autowired constructor(
                 lastUpdate ?: 0, PageRequest.of(0, 1000, Sort.by("lastUpdated").ascending())
             )
         return customers
-    }
-
-    fun updateMasters(tallyMessage: TallyMessage?) {
-        if (tallyMessage?.ledger?.isBillWiseOn?.equals("Yes") == true) {
-            tallyMessage.ledger?.asDatabaseModel()?.let {
-                val existingCustomer = customerRepository.findByRefId(it.refId)
-                it.seqId = existingCustomer?.seqId
-                it.id = existingCustomer?.id ?: ""
-                customerRepository.save(it)
-            }
-        }
-    }
-
-    @Transactional
-    fun updateTallyXml(tallyXML: TallyXML?) {
-        for (tallyMessage in tallyXML?.body?.importData?.requestData?.tallyMessage.orEmpty()) {
-            updateMasters(tallyMessage)
-        }
     }
 
     fun getStates(): List<State> {
