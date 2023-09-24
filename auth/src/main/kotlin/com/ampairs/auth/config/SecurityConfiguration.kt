@@ -32,17 +32,17 @@ class SecurityConfiguration @Autowired constructor(
     @Bean
     @Throws(Exception::class)
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
-        http.csrf({ csrf -> csrf.disable() })
-            .exceptionHandling({ exception -> exception.authenticationEntryPoint(unauthorizedHandler) })
-            .sessionManagement({ session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS) })
-            .authorizeHttpRequests({ requests ->
+        http.csrf { csrf -> csrf.disable() }
+            .exceptionHandling { exception -> exception.authenticationEntryPoint(unauthorizedHandler) }
+            .sessionManagement { session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+            .authorizeHttpRequests { requests ->
                 requests
                     .requestMatchers(
                         "/auth/v1/**",
                         "/actuator/**"
                     ).permitAll()
                     .anyRequest().authenticated()
-            }).authenticationProvider(authenticationProvider)
+            }.authenticationProvider(authenticationProvider)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter::class.java)
             .logout { logout: LogoutConfigurer<HttpSecurity?> ->
                 logout.addLogoutHandler(logoutHandler).logoutUrl("/auth/v1/logout")

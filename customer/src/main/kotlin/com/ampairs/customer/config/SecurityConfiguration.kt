@@ -23,18 +23,22 @@ class SecurityConfiguration @Autowired constructor(
     val jwtAuthFilter: JwtAuthenticationFilter,
     val authenticationProvider: AuthenticationProvider,
     val unauthorizedHandler: AuthEntryPointJwt,
-    val sessionUserFilter: SessionUserFilter
+    val sessionUserFilter: SessionUserFilter,
 ) {
 
     @Bean
     @Throws(Exception::class)
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
-        http.csrf({ csrf -> csrf.disable() })
-            .exceptionHandling({ exception -> exception.authenticationEntryPoint(unauthorizedHandler) })
-            .sessionManagement({ session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS) })
-            .authorizeHttpRequests({ requests ->
-                requests.anyRequest().authenticated()
-            }).authenticationProvider(authenticationProvider)
+        http.csrf { csrf -> csrf.disable() }
+            .exceptionHandling { exception -> exception.authenticationEntryPoint(unauthorizedHandler) }
+            .sessionManagement { session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+            .authorizeHttpRequests { requests ->
+                requests
+                    .requestMatchers(
+                        "/actuator/**"
+                    ).permitAll()
+                    .anyRequest().authenticated()
+            }.authenticationProvider(authenticationProvider)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter::class.java)
             .addFilterAfter(sessionUserFilter, JwtAuthenticationFilter::class.java)
         return http.build()
