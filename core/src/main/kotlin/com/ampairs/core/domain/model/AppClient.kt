@@ -1,15 +1,6 @@
 package com.ampairs.core.domain.model
 
-import lombok.AllArgsConstructor
-import lombok.Getter
-import lombok.NoArgsConstructor
-import lombok.Setter
-
-@Getter
-@Setter
-@AllArgsConstructor
-@NoArgsConstructor
-class AppClient : com.ampairs.core.domain.model.BaseDomain() {
+class AppClient : BaseDomain() {
     private val clientId: String? = null
     private val clientSecret: String? = null
     private val app: com.ampairs.core.domain.enums.App? = null

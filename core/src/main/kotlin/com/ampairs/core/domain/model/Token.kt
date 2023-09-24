@@ -1,10 +1,11 @@
 package com.ampairs.core.domain.model
 
 import com.ampairs.core.config.Constants
-import jakarta.persistence.*
-import lombok.NoArgsConstructor
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 
-@NoArgsConstructor
 @Entity(name = "token")
 class Token : BaseDomain() {
 

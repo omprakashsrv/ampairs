@@ -1,15 +1,7 @@
 package com.ampairs.core.domain.dto
 
 import com.fasterxml.jackson.annotation.JsonProperty
-import lombok.AllArgsConstructor
-import lombok.Builder
-import lombok.Data
-import lombok.NoArgsConstructor
 
-@Data
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
 class AuthenticationResponse {
     @JsonProperty("access_token")
     var accessToken: String? = null
