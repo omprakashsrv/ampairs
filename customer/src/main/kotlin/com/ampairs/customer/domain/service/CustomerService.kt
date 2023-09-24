@@ -13,6 +13,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import kotlin.jvm.optionals.getOrNull
 
 @Service
 class CustomerService @Autowired constructor(
@@ -29,9 +30,20 @@ class CustomerService @Autowired constructor(
     @Transactional
     fun updateCustomers(customers: List<Customer>): List<Customer> {
         customers.forEach { customer ->
-            val existingCustomer = customerRepository.findByRefId(customer.refId)
-            customer.seqId = existingCustomer?.seqId
-            customer.id = existingCustomer?.id ?: ""
+            if (customer.id.isNotEmpty()) {
+                val existingCustomer = customerRepository.findById(customer.id).getOrNull()
+                customer.seqId = existingCustomer?.seqId
+                customer.refId = existingCustomer?.refId ?: ""
+                customer.createdAt = existingCustomer?.createdAt ?: ""
+                customer.updatedAt = existingCustomer?.updatedAt ?: ""
+            } else if (customer.refId?.isNotEmpty() == true) {
+                val existingCustomer = customerRepository.findByRefId(customer.refId)
+                customer.seqId = existingCustomer?.seqId
+                customer.id = existingCustomer?.id ?: ""
+                customer.createdAt = existingCustomer?.createdAt ?: ""
+                customer.updatedAt = existingCustomer?.updatedAt ?: ""
+            }
+            customer.lastUpdated = System.currentTimeMillis()
             customerRepository.save(customer)
         }
         return customers

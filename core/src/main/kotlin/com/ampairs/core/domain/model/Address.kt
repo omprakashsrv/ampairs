@@ -1,4 +1,4 @@
-package com.ampairs.order.domain.model
+package com.ampairs.core.domain.model
 
 data class Address(
     var street: String = "",

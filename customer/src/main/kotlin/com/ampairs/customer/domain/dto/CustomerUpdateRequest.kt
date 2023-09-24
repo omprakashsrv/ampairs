@@ -1,5 +1,6 @@
 package com.ampairs.customer.domain.dto
 
+import com.ampairs.core.domain.model.Address
 import com.ampairs.customer.domain.model.Customer
 import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.NotNull
@@ -16,12 +17,25 @@ data class CustomerUpdateRequest(
     var pincode: String?,
     var address: String?,
     var state: String?,
+    var street: String = "",
+    var street2: String = "",
+    var city: String = "",
+    var country: String = "",
+    var billingAddress: Address? = Address(),
+    var shippingAddress: Address? = Address(),
+    val latitude: Double?,
+    val longitude: Double?,
+    val active: Boolean,
+    val softDeleted: Boolean,
+    var billingSameAsRegistered: Boolean,
+    var shippingSameAsBilling: Boolean,
 )
 
 fun CustomerUpdateRequest.toCustomer(): Customer {
     val customer = Customer()
     customer.id = this.id ?: ""
     customer.refId = this.refId ?: ""
+    customer.name = this.name
     customer.countryCode = this.countryCode
     customer.phone = this.phone ?: ""
     customer.landline = this.landline ?: ""
@@ -30,23 +44,20 @@ fun CustomerUpdateRequest.toCustomer(): Customer {
     customer.gstin = this.gstin ?: ""
     customer.address = this.address ?: ""
     customer.state = this.state ?: ""
+    customer.street = this.street
+    customer.street2 = this.street2
+    customer.city = this.city
+    customer.billingAddress = this.billingAddress ?: Address()
+    customer.shippingAddress = this.shippingAddress ?: Address()
+    customer.active = this.active
+    customer.softDeleted = this.softDeleted
+    customer.billingSameAsRegistered = this.billingSameAsRegistered
+    customer.shippingSameAsBilling = this.shippingSameAsBilling
     return customer
 }
 
 fun List<CustomerUpdateRequest>.toCustomers(): List<Customer> {
     return map {
-        val customer = Customer()
-        customer.id = it.id ?: ""
-        customer.refId = it.refId ?: ""
-        customer.countryCode = it.countryCode
-        customer.phone = it.phone ?: ""
-        customer.landline = it.landline ?: ""
-        customer.email = it.email ?: ""
-        customer.pincode = it.pincode ?: ""
-        customer.gstin = it.gstin ?: ""
-        customer.address = it.address ?: ""
-        customer.state = it.state ?: ""
-        customer.email = ""
-        customer
+        it.toCustomer()
     }
 }

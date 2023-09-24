@@ -200,6 +200,7 @@ class ProductService(
                 it.seqId = group?.seqId
                 it.id = group?.id ?: ""
             }
+            it.lastUpdated = System.currentTimeMillis()
             productBrandRepository.save(it)
         }
         return brands

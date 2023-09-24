@@ -1,7 +1,7 @@
 package com.ampairs.order.domain.dto
 
+import com.ampairs.core.domain.model.Address
 import com.ampairs.order.domain.enums.OrderStatus
-import com.ampairs.order.domain.model.Address
 import com.ampairs.order.domain.model.Order
 
 data class OrderUpdateRequest(

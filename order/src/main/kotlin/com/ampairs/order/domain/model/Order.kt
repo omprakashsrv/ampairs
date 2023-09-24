@@ -1,5 +1,6 @@
 package com.ampairs.order.domain.model
 
+import com.ampairs.core.domain.model.Address
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.order.config.Constants
 import com.ampairs.order.domain.dto.TaxInfo
