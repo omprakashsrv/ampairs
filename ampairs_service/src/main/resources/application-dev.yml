@@ -9,6 +9,9 @@ server:
     accesslog:
       enabled: true
       filename: logs/access.log
+      file-date-format: .yyyy-MM-dd
+      append: true
+      format: extended_ncsa
     threads:
       max: 50
     connection-idle-timeout: 10000
