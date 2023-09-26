@@ -6,8 +6,11 @@ server:
   jetty:
     accesslog:
       enabled: true
+    threads:
+      max: 50
+    connection-idle-timeout: 10000
   port: 8080
-
+  
 spring:
   main:
     allow-bean-definition-overriding: true
