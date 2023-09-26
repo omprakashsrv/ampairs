@@ -3,9 +3,12 @@ env:
   name:prod
 
 server:
+  compression:
+    enabled: true
   jetty:
     accesslog:
       enabled: true
+      filename: logs/access.log
     threads:
       max: 50
     connection-idle-timeout: 10000

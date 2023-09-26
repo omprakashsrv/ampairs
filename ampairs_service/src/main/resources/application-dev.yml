@@ -3,14 +3,17 @@ env:
   name:dev
 
 server:
+  compression:
+    enabled: true
   jetty:
     accesslog:
       enabled: true
+      filename: logs/access.log
     threads:
       max: 50
     connection-idle-timeout: 10000
   port: 8080
-  
+
 spring:
   main:
     allow-bean-definition-overriding: true
