@@ -3,7 +3,7 @@ env:
   name:dev
 
 server:
-  tomcat:
+  jetty:
     accesslog:
       enabled: true
   port: 8080
@@ -37,4 +37,5 @@ application:
 drees:
   stacktrace: true
 logging:
-  file.name: logs/auth.log
+  file:
+    name: logs/ampairs.log

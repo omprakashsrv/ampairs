@@ -36,4 +36,5 @@ application:
 drees:
   stacktrace: true
 logging:
-  file.name: logs/auth.log
+  file:
+    name: logs/ampairs.log
