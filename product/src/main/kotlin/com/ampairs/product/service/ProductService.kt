@@ -44,12 +44,18 @@ class ProductService(
 
     fun updateProducts(products: List<Product>): List<Product> {
         products.forEach {
-            val product = productRepository.findByRefId(it.refId)
-            it.seqId = product?.seqId
-            it.id = product?.id ?: ""
+            if (it.id.isNotEmpty()) {
+                val group = productRepository.findById(it.id).getOrNull()
+                it.seqId = group?.seqId
+                it.refId = group?.refId ?: ""
+            } else if (it.refId?.isNotEmpty() == true) {
+                val group = productRepository.findByRefId(it.refId)
+                it.seqId = group?.seqId
+                it.id = group?.id ?: ""
+            }
             productRepository.save(it)
         }
-        return products;
+        return products
     }
 
     fun updateUnits(units: List<Unit>): List<Unit> {

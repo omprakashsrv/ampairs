@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*
 class TaxController(val taxService: TaxService) {
 
     @PostMapping("/tax_infos")
-    suspend fun updateTaxInfos(@RequestBody taxInfos: List<TaxInfoRequest>): List<TaxInfoResponse> {
+    fun updateTaxInfos(@RequestBody taxInfos: List<TaxInfoRequest>): List<TaxInfoResponse> {
         return taxService.updateTaxInfos(taxInfos.asDatabaseModel()).asResponse()
     }
 
