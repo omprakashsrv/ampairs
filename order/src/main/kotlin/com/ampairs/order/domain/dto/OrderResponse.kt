@@ -27,7 +27,15 @@ data class OrderResponse(
     var shippingAddress: Address = Address(),
     var orderItems: List<OrderItemResponse> = arrayListOf(),
     val taxInfos: List<TaxInfo> = arrayListOf(),
+    val active: Boolean = true,
+    val softDeleted: Boolean = false,
 )
+
+fun List<Order>.toResponse(): List<OrderResponse> {
+    return map {
+        it.toResponse(it.orderItems)
+    }
+}
 
 fun Order.toResponse(orderItems: List<OrderItem>): OrderResponse {
     return OrderResponse(
@@ -49,7 +57,9 @@ fun Order.toResponse(orderItems: List<OrderItem>): OrderResponse {
         billingAddress = this.billingAddress,
         shippingAddress = this.shippingAddress,
         taxInfos = this.taxInfos,
-        orderItems = orderItems.toResponse()
+        orderItems = orderItems.toResponse(),
+        active = this.active,
+        softDeleted = this.softDeleted
     )
 }
 

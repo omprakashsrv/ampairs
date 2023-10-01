@@ -17,12 +17,15 @@ data class OrderItemRequest(
     var productId: String = "",
     var taxCode: String = "",
     val taxInfos: List<TaxInfo> = arrayListOf(),
+    val active: Boolean = true,
+    val softDeleted: Boolean = false,
 )
 
 fun List<OrderItemRequest>.toOrderItems(): List<OrderItem> {
     return map {
         val orderItem = OrderItem()
         orderItem.id = it.id
+        orderItem.index = it.itemNo
         orderItem.description = it.description
         orderItem.quantity = it.quantity
         orderItem.sellingPrice = it.price
@@ -35,6 +38,8 @@ fun List<OrderItemRequest>.toOrderItems(): List<OrderItem> {
         orderItem.productId = it.productId
         orderItem.taxCode = it.taxCode
         orderItem.taxInfos = it.taxInfos
+        orderItem.active = it.active
+        orderItem.softDeleted = it.softDeleted
         orderItem
     }
 }

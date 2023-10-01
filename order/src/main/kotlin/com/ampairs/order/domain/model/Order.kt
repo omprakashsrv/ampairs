@@ -74,6 +74,12 @@ class Order : OwnableBaseDomain() {
     @Column(name = "tax_info", length = 255, columnDefinition = "json")
     var taxInfos: List<TaxInfo> = listOf()
 
+    @OneToMany()
+    @JoinColumn(
+        name = "order_id", referencedColumnName = "id", insertable = false, updatable = false, nullable = false
+    )
+    var orderItems: MutableList<OrderItem> = mutableListOf()
+
 
     override fun obtainIdPrefix(): String {
         return Constants.ORDER_PREFIX

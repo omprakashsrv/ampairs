@@ -3,12 +3,9 @@ package com.ampairs.order.domain.model
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.order.config.Constants
 import com.ampairs.order.domain.dto.TaxInfo
-import com.ampairs.order.domain.enums.ItemStatus
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
-import jakarta.persistence.EnumType
-import jakarta.persistence.Enumerated
 import org.hibernate.annotations.Type
 
 @Entity(name = "order_item")
@@ -25,10 +22,6 @@ class OrderItem : OwnableBaseDomain() {
 
     @Column(name = "tax_code", nullable = false, length = 255)
     var taxCode: String = ""
-
-    @Column(name = "status", nullable = false, length = 10)
-    @Enumerated(EnumType.STRING)
-    var status: ItemStatus = ItemStatus.ACTIVE
 
     @Column(name = "quantity", nullable = false)
     var quantity: Double = 0.0

@@ -4,6 +4,7 @@ import com.ampairs.order.domain.model.OrderItem
 
 data class OrderItemResponse(
     var id: String = "",
+    var itemNo: Int = 0,
     var description: String = "",
     var quantity: Double = 0.0,
     var price: Double = 0.0,
@@ -16,12 +17,15 @@ data class OrderItemResponse(
     var productId: String = "",
     var taxCode: String = "",
     val taxInfos: List<TaxInfo> = arrayListOf(),
+    val active: Boolean = true,
+    val softDeleted: Boolean = false,
 )
 
 fun List<OrderItem>.toResponse(): List<OrderItemResponse> {
     return map {
         OrderItemResponse(
             id = it.id,
+            itemNo = it.index,
             description = it.description,
             quantity = it.quantity,
             price = it.sellingPrice,
@@ -33,7 +37,9 @@ fun List<OrderItem>.toResponse(): List<OrderItemResponse> {
             orderId = it.orderId,
             productId = it.productId,
             taxCode = it.taxCode,
-            taxInfos = it.taxInfos
+            taxInfos = it.taxInfos,
+            active = it.active,
+            softDeleted = it.softDeleted
         )
     }
 }
