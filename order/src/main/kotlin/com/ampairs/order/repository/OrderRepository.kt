@@ -12,6 +12,6 @@ interface OrderRepository : CrudRepository<Order, String> {
     @Query("SELECT co FROM customer_order co WHERE co.id = :id")
     override fun findById(id: String): Optional<Order>
 
-    @Query("SELECT max(co.orderNumber) FROM customer_order co")
+    @Query("SELECT MAX(CAST(co.orderNumber AS INTEGER)) FROM customer_order co")
     fun findMaxOrderNumber(): Optional<String>
 }
