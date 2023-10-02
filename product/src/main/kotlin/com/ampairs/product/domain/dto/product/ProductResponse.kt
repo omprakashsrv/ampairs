@@ -30,6 +30,7 @@ data class ProductResponse(
     val createdAt: String?,
     val updatedAt: String?,
     val baseUnit: UnitResponse?,
+    val baseUnitId: String?,
     val images: List<FileResponse>?,
 )
 
@@ -44,7 +45,7 @@ fun List<Product>.asResponse(): List<ProductResponse> {
             sellingPrice = it.sellingPrice,
             taxCode = it.taxCode,
             active = it.active,
-            taxCodes = it.taxCodes.asResponse(),
+            taxCodes = it.taxCodes?.asResponse() ?: arrayListOf(),
             groupId = it.groupId ?: "",
             categoryId = it.categoryId ?: "",
             subCategoryId = it.subCategoryId ?: "",
@@ -59,7 +60,8 @@ fun List<Product>.asResponse(): List<ProductResponse> {
                 fileResponse.refId = productImage.id
                 fileResponse
             },
-            softDeleted = it.softDeleted
+            softDeleted = it.softDeleted,
+            baseUnitId = it.baseUnitId
         )
     }
 }

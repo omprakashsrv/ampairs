@@ -11,6 +11,7 @@ import com.ampairs.product.repository.*
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import kotlin.jvm.optionals.getOrNull
 
 @Service
@@ -32,6 +33,8 @@ class ProductService(
         )
     }
 
+
+    @Transactional
     fun updateTaxCodes(taxCodes: List<TaxCode>): List<TaxCode> {
         taxCodes.forEach {
             val taxCode = taxCodeRepository.findByCode(it.code)
@@ -42,6 +45,7 @@ class ProductService(
         return taxCodes
     }
 
+    @Transactional
     fun updateProducts(products: List<Product>): List<Product> {
         products.forEach {
             if (it.id.isNotEmpty()) {
@@ -58,16 +62,25 @@ class ProductService(
         return products
     }
 
+
+    @Transactional
     fun updateUnits(units: List<Unit>): List<Unit> {
         units.forEach {
-            val unit = unitRepository.findByRefId(it.refId)
-            it.seqId = unit?.seqId
-            it.id = unit?.id ?: ""
+            if (it.id.isNotEmpty()) {
+                val unit = unitRepository.findById(it.id).getOrNull()
+                it.seqId = unit?.seqId
+                it.refId = unit?.refId ?: ""
+            } else if (it.refId?.isNotEmpty() == true) {
+                val unit = unitRepository.findByRefId(it.refId)
+                it.seqId = unit?.seqId
+                it.id = unit?.id ?: ""
+            }
             unitRepository.save(it)
         }
         return units
     }
 
+    @Transactional
     fun updateProductGroups(groups: List<ProductGroup>): List<ProductGroup> {
         groups.forEach {
             if (it.id.isNotEmpty()) {
@@ -84,6 +97,7 @@ class ProductService(
         return groups
     }
 
+    @Transactional
     fun updateProductBrands(brands: List<ProductBrand>): List<ProductBrand> {
         brands.forEach {
             if (it.id.isNotEmpty()) {
@@ -101,6 +115,8 @@ class ProductService(
         return brands
     }
 
+
+    @Transactional
     fun updateProductCategories(productCategories: List<ProductCategory>): List<ProductCategory> {
         productCategories.forEach {
             if (it.id.isNotEmpty()) {
@@ -117,6 +133,8 @@ class ProductService(
         return productCategories
     }
 
+
+    @Transactional
     fun updateProductSubCategories(productSubCategories: List<ProductSubCategory>): List<ProductSubCategory> {
         productSubCategories.forEach {
             if (it.id.isNotEmpty()) {
@@ -135,6 +153,10 @@ class ProductService(
 
     fun getGroups(): List<ProductGroup> {
         return productGroupRepository.findAll().toList()
+    }
+
+    fun getUnits(): List<Unit> {
+        return unitRepository.findAll().toList()
     }
 
     fun getBrands(): List<ProductBrand> {

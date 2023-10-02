@@ -59,6 +59,13 @@ class ProductController(val productService: ProductService, val fileService: Fil
         return units.asResponse()
     }
 
+    @GetMapping("/units")
+    fun updateTaxCodes(): List<UnitResponse> {
+        val units = productService.getUnits()
+        return units.asResponse()
+    }
+
+
     @GetMapping("/groups")
     fun getGroups(): List<ProductGroupResponse> {
         val groups = productService.getGroups()

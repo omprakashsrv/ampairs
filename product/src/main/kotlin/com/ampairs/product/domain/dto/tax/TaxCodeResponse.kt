@@ -2,6 +2,7 @@ package com.ampairs.product.domain.dto.tax
 
 import com.ampairs.product.domain.enums.TaxType
 import com.ampairs.product.domain.model.TaxCode
+import com.ampairs.product.domain.model.asResponse
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
 import java.util.*

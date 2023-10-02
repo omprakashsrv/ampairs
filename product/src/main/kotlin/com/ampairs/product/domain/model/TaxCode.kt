@@ -34,7 +34,7 @@ class TaxCode : OwnableBaseDomain() {
 
     @Type(JsonType::class)
     @Column(name = "tax_info", length = 255, nullable = false, columnDefinition = "json")
-    var taxInfos: List<TaxInfo> = listOf()
+    var taxInfos: List<TaxInfoModel> = listOf()
 
     override fun obtainIdPrefix(): String {
         return Constants.HSN_CODE_PREFIX

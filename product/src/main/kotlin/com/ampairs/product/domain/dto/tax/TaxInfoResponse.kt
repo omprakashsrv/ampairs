@@ -4,6 +4,7 @@ import com.ampairs.product.domain.enums.TaxSpec
 import com.ampairs.product.domain.model.TaxInfo
 
 data class TaxInfoResponse(
+    var id: String,
     var name: String = "",
     var percentage: Double = 0.0,
     var formattedName: String = "",
@@ -14,6 +15,7 @@ data class TaxInfoResponse(
 
 fun TaxInfo.asResponse(): TaxInfoResponse {
     return TaxInfoResponse(
+        id = this.id,
         name = this.name,
         formattedName = this.formattedName,
         percentage = this.percentage,
