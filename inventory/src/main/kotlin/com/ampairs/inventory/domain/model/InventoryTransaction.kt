@@ -8,8 +8,8 @@ import jakarta.persistence.Entity
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.OneToOne
 
-@Entity(name = "inventory")
-class Inventory : OwnableBaseDomain() {
+@Entity(name = "inventory_transaction")
+class InventoryTransaction : OwnableBaseDomain() {
 
     @Column(name = "description", nullable = false, length = 255)
     var description: String = ""
@@ -22,9 +22,6 @@ class Inventory : OwnableBaseDomain() {
 
     @Column(name = "selling_price", nullable = false)
     var sellingPrice: Double = 0.0
-
-    @Column(name = "buying_price", nullable = false)
-    var buyingPrice: Double = 0.0
 
     @Column(name = "mrp", nullable = false)
     var mrp: Double = 0.0
