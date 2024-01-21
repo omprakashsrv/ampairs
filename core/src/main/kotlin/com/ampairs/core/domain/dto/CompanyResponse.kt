@@ -16,8 +16,8 @@ class CompanyResponse(
     var latitude: Double?,
     var longitude: Double?,
     var lastUpdated: Long,
-    var createdAt: String,
-    var updatedAt: String
+    var createdAt: String?,
+    var updatedAt: String?,
 )
 
 

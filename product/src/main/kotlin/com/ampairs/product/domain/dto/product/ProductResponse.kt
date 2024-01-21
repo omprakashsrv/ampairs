@@ -2,6 +2,8 @@ package com.ampairs.product.domain.dto.product
 
 import com.ampairs.core.domain.dto.FileResponse
 import com.ampairs.core.domain.dto.toFileResponse
+import com.ampairs.inventory.domain.dto.InventoryResponse
+import com.ampairs.inventory.domain.dto.asResponse
 import com.ampairs.product.domain.dto.tax.TaxCodeResponse
 import com.ampairs.product.domain.dto.tax.asResponse
 import com.ampairs.product.domain.dto.unit.UnitConversionResponse
@@ -32,6 +34,7 @@ data class ProductResponse(
     val baseUnit: UnitResponse?,
     val baseUnitId: String?,
     val images: List<FileResponse>?,
+    val inventory: InventoryResponse?,
 )
 
 fun List<Product>.asResponse(): List<ProductResponse> {
@@ -61,7 +64,8 @@ fun List<Product>.asResponse(): List<ProductResponse> {
                 fileResponse
             },
             softDeleted = it.softDeleted,
-            baseUnitId = it.baseUnitId
+            baseUnitId = it.baseUnitId,
+            inventory = it.inventory?.asResponse()
         )
     }
 }

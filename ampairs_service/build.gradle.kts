@@ -37,7 +37,6 @@ dependencies {
     implementation(project(mapOf("path" to ":customer")))
     implementation(project(mapOf("path" to ":product")))
     implementation(project(mapOf("path" to ":order")))
-    implementation(project(mapOf("path" to ":inventory")))
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework:spring-web")
     implementation("org.springframework:spring-webmvc")
@@ -49,9 +48,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("io.jsonwebtoken:jjwt-api:0.11.5")
-    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
-    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
+
+    val jwt = "0.11.5"
+    implementation("io.jsonwebtoken:jjwt-api:" + jwt)
+    runtimeOnly("io.jsonwebtoken:jjwt-impl:" + jwt)
+    runtimeOnly("io.jsonwebtoken:jjwt-jackson:" + jwt)
     runtimeOnly("com.mysql:mysql-connector-j")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -68,5 +69,3 @@ tasks.withType<KotlinCompile> {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
-
-tasks.register("prepareKotlinBuildScriptModel") {}

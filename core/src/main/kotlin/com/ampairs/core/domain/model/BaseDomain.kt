@@ -26,7 +26,7 @@ abstract class BaseDomain : Model() {
         columnDefinition = "TIMESTAMP default CURRENT_TIMESTAMP",
         insertable = false, updatable = false, nullable = false
     )
-    lateinit var createdAt: String
+    var createdAt: String? = null
 
     @Column(
         name = "updated_at",
@@ -35,7 +35,7 @@ abstract class BaseDomain : Model() {
         updatable = false,
         nullable = false
     )
-    lateinit var updatedAt: String
+    var updatedAt: String? = null
 
     @Column(
         name = "last_updated",

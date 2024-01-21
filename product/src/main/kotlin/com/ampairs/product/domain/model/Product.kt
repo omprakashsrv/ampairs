@@ -1,6 +1,7 @@
 package com.ampairs.product.domain.model
 
 import com.ampairs.core.domain.model.OwnableBaseDomain
+import com.ampairs.inventory.domain.model.Inventory
 import com.ampairs.product.config.Constants
 import com.ampairs.product.domain.model.group.ProductBrand
 import com.ampairs.product.domain.model.group.ProductCategory
@@ -84,6 +85,11 @@ class Product : OwnableBaseDomain() {
         name = "product_id", referencedColumnName = "id", insertable = false, updatable = false, nullable = false
     )
     var unitConversions: MutableList<UnitConversion> = mutableListOf()
+
+    @ManyToOne()
+    @JoinColumn(name = "id", referencedColumnName = "product_id", updatable = false, insertable = false)
+    var inventory: Inventory? = null
+
 
     override fun obtainIdPrefix(): String {
         return Constants.PRODUCT_PREFIX
