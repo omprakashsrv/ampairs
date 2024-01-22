@@ -2,6 +2,7 @@ package com.ampairs.order.domain.model
 
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.order.config.Constants
+import com.ampairs.order.domain.dto.Discount
 import com.ampairs.order.domain.dto.TaxInfo
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
@@ -50,6 +51,10 @@ class OrderItem : OwnableBaseDomain() {
     @Type(JsonType::class)
     @Column(name = "tax_info", length = 255, columnDefinition = "json")
     var taxInfos: List<TaxInfo> = listOf()
+
+    @Type(JsonType::class)
+    @Column(name = "discount", nullable = true, columnDefinition = "json")
+    var discount: List<Discount>? = null
 
     override fun obtainIdPrefix(): String {
         return Constants.ORDER_ITEM_PREFIX

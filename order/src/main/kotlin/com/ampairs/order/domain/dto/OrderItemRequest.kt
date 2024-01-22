@@ -19,6 +19,7 @@ data class OrderItemRequest(
     val taxInfos: List<TaxInfo> = arrayListOf(),
     val active: Boolean = true,
     val softDeleted: Boolean = false,
+    val discount: List<Discount>? = null,
 )
 
 fun List<OrderItemRequest>.toOrderItems(): List<OrderItem> {
@@ -40,6 +41,7 @@ fun List<OrderItemRequest>.toOrderItems(): List<OrderItem> {
         orderItem.taxInfos = it.taxInfos
         orderItem.active = it.active
         orderItem.softDeleted = it.softDeleted
+        orderItem.discount = it.discount
         orderItem
     }
 }

@@ -3,6 +3,7 @@ package com.ampairs.order.domain.model
 import com.ampairs.core.domain.model.Address
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.order.config.Constants
+import com.ampairs.order.domain.dto.Discount
 import com.ampairs.order.domain.dto.TaxInfo
 import com.ampairs.order.domain.enums.OrderStatus
 import io.hypersistence.utils.hibernate.type.json.JsonType
@@ -69,6 +70,10 @@ class Order : OwnableBaseDomain() {
     @Type(JsonType::class)
     @Column(name = "shipping_address", nullable = false, columnDefinition = "json")
     var shippingAddress: Address = Address()
+
+    @Type(JsonType::class)
+    @Column(name = "discount", nullable = true, columnDefinition = "json")
+    var discount: List<Discount>? = null
 
     @Type(JsonType::class)
     @Column(name = "tax_info", length = 255, columnDefinition = "json")

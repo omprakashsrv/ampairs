@@ -86,9 +86,11 @@ class Product : OwnableBaseDomain() {
     )
     var unitConversions: MutableList<UnitConversion> = mutableListOf()
 
-    @ManyToOne()
-    @JoinColumn(name = "id", referencedColumnName = "product_id", updatable = false, insertable = false)
-    var inventory: Inventory? = null
+    @OneToMany
+    @JoinColumn(
+        name = "product_id", referencedColumnName = "id", insertable = false, updatable = false, nullable = false
+    )
+    var inventory: MutableList<Inventory> = mutableListOf()
 
 
     override fun obtainIdPrefix(): String {

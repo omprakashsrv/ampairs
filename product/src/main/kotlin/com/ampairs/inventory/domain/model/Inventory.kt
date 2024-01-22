@@ -4,10 +4,7 @@ import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.inventory.config.Constants
 import com.ampairs.product.domain.model.Product
 import com.ampairs.product.domain.model.Unit
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.JoinColumn
-import jakarta.persistence.OneToOne
+import jakarta.persistence.*
 
 @Entity(name = "inventory")
 class Inventory : OwnableBaseDomain() {
@@ -40,7 +37,7 @@ class Inventory : OwnableBaseDomain() {
     @JoinColumn(name = "unit_id", referencedColumnName = "id", updatable = false, insertable = false)
     var unit: Unit? = null
 
-    @OneToOne()
+    @ManyToOne()
     @JoinColumn(name = "product_id", referencedColumnName = "id", updatable = false, insertable = false)
     var product: Product? = null
 

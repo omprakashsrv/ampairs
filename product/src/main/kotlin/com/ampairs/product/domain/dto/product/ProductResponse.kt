@@ -65,7 +65,7 @@ fun List<Product>.asResponse(): List<ProductResponse> {
             },
             softDeleted = it.softDeleted,
             baseUnitId = it.baseUnitId,
-            inventory = it.inventory?.asResponse()
+            inventory = if (it.inventory.size > 0) it.inventory[0].asResponse() else null
         )
     }
 }

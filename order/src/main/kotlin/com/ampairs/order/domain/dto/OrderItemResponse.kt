@@ -19,6 +19,7 @@ data class OrderItemResponse(
     val taxInfos: List<TaxInfo> = arrayListOf(),
     val active: Boolean = true,
     val softDeleted: Boolean = false,
+    val discount: List<Discount>? = null,
 )
 
 fun List<OrderItem>.toResponse(): List<OrderItemResponse> {
@@ -39,7 +40,8 @@ fun List<OrderItem>.toResponse(): List<OrderItemResponse> {
             taxCode = it.taxCode,
             taxInfos = it.taxInfos,
             active = it.active,
-            softDeleted = it.softDeleted
+            softDeleted = it.softDeleted,
+            discount = it.discount
         )
     }
 }

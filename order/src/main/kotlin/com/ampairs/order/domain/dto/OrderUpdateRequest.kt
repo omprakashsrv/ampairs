@@ -24,6 +24,7 @@ data class OrderUpdateRequest(
     var shippingAddress: Address = Address(),
     var orderItems: List<OrderItemRequest> = arrayListOf(),
     val taxInfos: List<TaxInfo> = arrayListOf(),
+    val discount: List<Discount>? = null,
 )
 
 fun OrderUpdateRequest.toOrder(): Order {
@@ -45,5 +46,6 @@ fun OrderUpdateRequest.toOrder(): Order {
     order.shippingAddress = this.shippingAddress
     order.taxInfos = this.taxInfos
     order.totalTax = this.totalTax
+    order.discount = this.discount
     return order
 }
