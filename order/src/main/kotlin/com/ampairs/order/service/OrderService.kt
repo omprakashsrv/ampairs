@@ -31,8 +31,12 @@ class OrderService @Autowired constructor(
             order.orderNumber = (orderNumber + 1).toString()
         }
         orderRepository.save(order)
-        orderItems.forEach {
-            orderItemRepository.save(it)
+        orderItems.forEach { orderItem ->
+            if (orderItem.id.isNotEmpty()) {
+                val existingOrderItem = orderItemRepository.findById(orderItem.id).getOrNull()
+                orderItem.seqId = existingOrderItem?.seqId
+            }
+            orderItemRepository.save(orderItem)
         }
         return order.toResponse(orderItems)
     }
