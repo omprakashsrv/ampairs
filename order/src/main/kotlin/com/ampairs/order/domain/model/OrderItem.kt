@@ -33,6 +33,9 @@ class OrderItem : OwnableBaseDomain() {
     @Column(name = "selling_price", nullable = false)
     var sellingPrice: Double = 0.0
 
+    @Column(name = "selling_price", nullable = false)
+    var productPrice: Double = 0.0
+
     @Column(name = "mrp", nullable = false)
     var mrp: Double = 0.0
 
