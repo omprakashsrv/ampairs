@@ -8,7 +8,6 @@ data class OrderItemRequest(
     var description: String = "",
     var quantity: Double = 0.0,
     var price: Double = 0.0,
-    var productPrice: Double = 0.0,
     var mrp: Double = 0.0,
     var dp: Double = 0.0,
     var totalCost: Double = 0.0,
@@ -31,7 +30,6 @@ fun List<OrderItemRequest>.toOrderItems(): List<OrderItem> {
         orderItem.description = it.description
         orderItem.quantity = it.quantity
         orderItem.sellingPrice = it.price
-        orderItem.productPrice = it.productPrice
         orderItem.mrp = it.mrp
         orderItem.dp = it.dp
         orderItem.totalCost = it.totalCost
