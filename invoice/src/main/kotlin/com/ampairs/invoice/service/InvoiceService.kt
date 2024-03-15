@@ -41,6 +41,7 @@ class InvoiceService @Autowired constructor(
         return invoice.toResponse(invoiceItems)
     }
 
+    @Transactional(readOnly = true)
     fun getInvoices(lastUpdated: Long): List<Invoice> {
         val invoices =
             invoicePagingRepository.findAllByLastUpdatedGreaterThanEqual(

@@ -1,6 +1,9 @@
 package com.ampairs.order.service
 
+import com.ampairs.invoice.service.InvoiceService
 import com.ampairs.order.domain.dto.OrderResponse
+import com.ampairs.order.domain.dto.toInvoice
+import com.ampairs.order.domain.dto.toInvoiceItems
 import com.ampairs.order.domain.dto.toResponse
 import com.ampairs.order.domain.model.Order
 import com.ampairs.order.domain.model.OrderItem
@@ -20,6 +23,7 @@ class OrderService @Autowired constructor(
     val orderRepository: OrderRepository,
     val orderItemRepository: OrderItemRepository,
     val orderPagingRepository: OrderPagingRepository,
+    val invoiceService: InvoiceService,
 ) {
     @Transactional
     fun updateOrder(order: Order, orderItems: List<OrderItem>): OrderResponse {
@@ -38,6 +42,32 @@ class OrderService @Autowired constructor(
             }
             orderItemRepository.save(orderItem)
         }
+        return order.toResponse(orderItems)
+    }
+
+    @Transactional
+    fun createInvoice(order: Order, orderItems: List<OrderItem>): OrderResponse {
+        val existingOrder = orderRepository.findById(order.id).getOrNull()
+        order.seqId = existingOrder?.seqId
+        order.orderNumber = existingOrder?.orderNumber ?: ""
+        if (!order.invoiceRefId.isNullOrEmpty()) {
+            throw RuntimeException("Invoice already created")
+        }
+        if (order.orderNumber.isEmpty()) {
+            val orderNumber = orderRepository.findMaxOrderNumber().getOrDefault("0").toIntOrNull() ?: 0
+            order.orderNumber = (orderNumber + 1).toString()
+        }
+        val savedOrder = orderRepository.save(order)
+        val savedOrderItems = orderItems.map { orderItem ->
+            if (orderItem.id.isNotEmpty()) {
+                val existingOrderItem = orderItemRepository.findById(orderItem.id).getOrNull()
+                orderItem.seqId = existingOrderItem?.seqId
+            }
+            orderItemRepository.save(orderItem)
+        }.toList()
+        val updatedInvoice = invoiceService.updateInvoice(savedOrder.toInvoice(), savedOrderItems.toInvoiceItems())
+        savedOrder.invoiceRefId = updatedInvoice.id
+        orderRepository.save(order)
         return order.toResponse(orderItems)
     }
 

@@ -1,6 +1,8 @@
 package com.ampairs.order.domain.dto
 
 import com.ampairs.core.domain.model.Address
+import com.ampairs.invoice.domain.enums.InvoiceStatus
+import com.ampairs.invoice.domain.model.Invoice
 import com.ampairs.order.domain.enums.OrderStatus
 import com.ampairs.order.domain.model.Order
 
@@ -8,6 +10,7 @@ data class OrderUpdateRequest(
     val id: String = "",
     val orderDate: String = "",
     val orderNumber: String = "",
+    val invoiceRefId: String = "",
     var fromCustomerId: String = "",
     var fromCustomerName: String = "",
     var toCustomerId: String = "",
@@ -31,6 +34,7 @@ fun OrderUpdateRequest.toOrder(): Order {
     val order = Order()
     order.id = this.id
     order.orderNumber = this.orderNumber
+    order.invoiceRefId = this.invoiceRefId
     order.fromCustomerId = this.fromCustomerId
     order.toCustomerId = this.toCustomerId
     order.fromCustomerName = this.fromCustomerName
@@ -49,3 +53,28 @@ fun OrderUpdateRequest.toOrder(): Order {
     order.discount = this.discount
     return order
 }
+
+fun Order.toInvoice(): Invoice {
+    val invoice = Invoice()
+    invoice.id = ""
+    invoice.invoiceNumber = ""
+    invoice.orderRefId = this.id
+    invoice.fromCustomerId = this.fromCustomerId
+    invoice.toCustomerId = this.toCustomerId
+    invoice.fromCustomerName = this.fromCustomerName
+    invoice.toCustomerName = this.toCustomerName
+    invoice.fromCustomerGst = this.fromCustomerGst
+    invoice.toCustomerGst = this.toCustomerGst
+    invoice.basePrice = this.basePrice
+    invoice.totalItems = this.totalItems
+    invoice.totalCost = this.totalCost
+    invoice.status = InvoiceStatus.NEW
+    invoice.totalQuantity = this.totalQuantity
+    invoice.billingAddress = this.billingAddress
+    invoice.shippingAddress = this.shippingAddress
+    invoice.taxInfos = this.taxInfos.toInvoiceTaxInfos()
+    invoice.totalTax = this.totalTax
+    invoice.discount = this.discount?.toInvoiceDiscount()
+    return invoice
+}
+

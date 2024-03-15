@@ -1,5 +1,6 @@
 package com.ampairs.order.domain.dto
 
+import com.ampairs.invoice.domain.model.InvoiceItem
 import com.ampairs.order.domain.model.OrderItem
 
 data class OrderItemRequest(
@@ -44,6 +45,31 @@ fun List<OrderItemRequest>.toOrderItems(): List<OrderItem> {
         orderItem.active = it.active
         orderItem.softDeleted = it.softDeleted
         orderItem.discount = it.discount
+        orderItem
+    }
+}
+
+fun List<OrderItem>.toInvoiceItems(): List<InvoiceItem> {
+    return map {
+        val orderItem = InvoiceItem()
+        orderItem.id = it.id
+        orderItem.index = it.index
+        orderItem.description = it.description
+        orderItem.quantity = it.quantity
+        orderItem.sellingPrice = it.sellingPrice
+        orderItem.productPrice = it.productPrice
+        orderItem.mrp = it.mrp
+        orderItem.dp = it.dp
+        orderItem.totalCost = it.totalCost
+        orderItem.totalTax = it.totalTax
+        orderItem.basePrice = it.basePrice
+        orderItem.invoiceId = ""
+        orderItem.productId = it.productId
+        orderItem.taxCode = it.taxCode
+        orderItem.taxInfos = it.taxInfos.toInvoiceTaxInfos()
+        orderItem.active = it.active
+        orderItem.softDeleted = it.softDeleted
+        orderItem.discount = it.discount?.toInvoiceDiscount()
         orderItem
     }
 }

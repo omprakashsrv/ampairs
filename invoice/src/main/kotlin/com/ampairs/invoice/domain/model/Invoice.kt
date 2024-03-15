@@ -19,6 +19,9 @@ class Invoice : OwnableBaseDomain() {
     @Column(name = "invoice_number", nullable = false, length = 255)
     var invoiceNumber: String = ""
 
+    @Column(name = "order_ref_id", nullable = true, length = 255)
+    var orderRefId: String? = null
+
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "invoice_date", nullable = false)
     var invoiceDate: Date = Date()

@@ -19,6 +19,13 @@ class OrderController @Autowired constructor(
         return orderService.updateOrder(order, orderItems)
     }
 
+    @PostMapping("create_invoice")
+    fun createInvoice(@RequestBody @Valid orderUpdateRequest: OrderUpdateRequest): OrderResponse {
+        val order = orderUpdateRequest.toOrder()
+        val orderItems = orderUpdateRequest.orderItems.toOrderItems()
+        return orderService.createInvoice(order, orderItems)
+    }
+
     @GetMapping("")
     fun getOrders(@RequestParam("last_updated") lastUpdated: Long?): List<OrderResponse> {
         return orderService.getOrders(lastUpdated ?: 0).toResponse()

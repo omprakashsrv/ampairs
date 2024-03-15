@@ -8,6 +8,7 @@ data class InvoiceUpdateRequest(
     val id: String = "",
     val invoiceDate: String = "",
     val invoiceNumber: String = "",
+    val orderRefId: String? = null,
     var fromCustomerId: String = "",
     var fromCustomerName: String = "",
     var toCustomerId: String = "",
@@ -31,6 +32,7 @@ fun InvoiceUpdateRequest.toInvoice(): Invoice {
     val invoice = Invoice()
     invoice.id = this.id
     invoice.invoiceNumber = this.invoiceNumber
+    invoice.orderRefId = this.orderRefId
     invoice.fromCustomerId = this.fromCustomerId
     invoice.toCustomerId = this.toCustomerId
     invoice.fromCustomerName = this.fromCustomerName
