@@ -50,9 +50,6 @@ class OrderService @Autowired constructor(
         val existingOrder = orderRepository.findById(order.id).getOrNull()
         order.seqId = existingOrder?.seqId
         order.orderNumber = existingOrder?.orderNumber ?: ""
-        if (!order.invoiceRefId.isNullOrEmpty()) {
-            throw RuntimeException("Invoice already created")
-        }
         if (order.orderNumber.isEmpty()) {
             val orderNumber = orderRepository.findMaxOrderNumber().getOrDefault("0").toIntOrNull() ?: 0
             order.orderNumber = (orderNumber + 1).toString()
@@ -65,10 +62,15 @@ class OrderService @Autowired constructor(
             }
             orderItemRepository.save(orderItem)
         }.toList()
-        val updatedInvoice = invoiceService.updateInvoice(savedOrder.toInvoice(), savedOrderItems.toInvoiceItems())
-        savedOrder.invoiceRefId = updatedInvoice.id
-        orderRepository.save(order)
-        return order.toResponse(orderItems)
+        if (!existingOrder?.invoiceRefId.isNullOrEmpty()) {
+            savedOrder.invoiceRefId = existingOrder?.invoiceRefId
+        } else {
+            val updatedInvoice = invoiceService.updateInvoice(savedOrder.toInvoice(), savedOrderItems.toInvoiceItems())
+            savedOrder.invoiceRefId = updatedInvoice.id
+            orderRepository.save(savedOrder)
+        }
+
+        return savedOrder.toResponse(orderItems)
     }
 
     fun getOrders(lastUpdated: Long): List<Order> {

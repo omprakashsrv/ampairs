@@ -30,12 +30,14 @@ class InvoiceService @Autowired constructor(
             val invoiceNumber = invoiceRepository.findMaxInvoiceNumber().getOrDefault("0").toIntOrNull() ?: 0
             invoice.invoiceNumber = (invoiceNumber + 1).toString()
         }
-        invoiceRepository.save(invoice)
+        val updatedInvoice = invoiceRepository.save(invoice)
+        invoice.id = updatedInvoice.id
         invoiceItems.forEach { invoiceItem ->
             if (invoiceItem.id.isNotEmpty()) {
                 val existingInvoiceItem = invoiceItemRepository.findById(invoiceItem.id).getOrNull()
                 invoiceItem.seqId = existingInvoiceItem?.seqId
             }
+            invoiceItem.invoiceId = invoice.id
             invoiceItemRepository.save(invoiceItem)
         }
         return invoice.toResponse(invoiceItems)
@@ -48,6 +50,10 @@ class InvoiceService @Autowired constructor(
                 lastUpdated, PageRequest.of(0, 50, Sort.by("lastUpdated").ascending())
             )
         return invoices
+    }
+
+    fun getInvoice(id: String): Invoice? {
+        return invoiceRepository.findById(id = id).getOrNull()
     }
 
 
