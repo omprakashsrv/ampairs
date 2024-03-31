@@ -2,7 +2,7 @@ rootProject.name = "ampairs"
 
 include("core")
 include("auth")
-include("core_user")
+include("company")
 include("product")
 include("customer")
 include("order")

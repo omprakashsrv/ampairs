@@ -29,7 +29,7 @@ repositories {
 
 dependencies {
     implementation(project(mapOf("path" to ":core")))
-    implementation(project(mapOf("path" to ":core_user")))
+//    implementation(project(mapOf("path" to ":core_user")))
     implementation(project(mapOf("path" to ":invoice")))
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework:spring-web")

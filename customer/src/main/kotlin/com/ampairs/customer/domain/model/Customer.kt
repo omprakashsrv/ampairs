@@ -2,7 +2,7 @@ package com.ampairs.customer.domain.model
 
 import com.ampairs.core.domain.model.Address
 import com.ampairs.core.domain.model.OwnableBaseDomain
-import com.ampairs.core.user.config.Constants
+import com.ampairs.customer.config.Constants
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity

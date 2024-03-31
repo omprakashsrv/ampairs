@@ -1,15 +1,14 @@
 package com.ampairs.core.multitenancy
 
-import com.ampairs.core.domain.model.Company
 
 object TenantContext {
-    private val currentTenant: ThreadLocal<Company?> = InheritableThreadLocal()
+    private val currentTenant: ThreadLocal<String?> = InheritableThreadLocal()
 
-    fun getCurrentTenant(): Company? {
+    fun getCurrentTenant(): String? {
         return currentTenant.get()
     }
 
-    fun setCurrentTenant(tenant: Company) {
+    fun setCurrentTenant(tenant: String) {
         currentTenant.set(tenant)
     }
 

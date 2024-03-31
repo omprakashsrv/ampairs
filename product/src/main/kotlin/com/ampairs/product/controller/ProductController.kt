@@ -138,7 +138,7 @@ class ProductController(val productService: ProductService, val fileService: Fil
         return fileService.saveFile(
             bytes = file.inputStream.readAllBytes(),
             name = file.name,
-            objectKey = TenantContext.getCurrentTenant()?.id + path + "/" + Helper.generateUniqueId(
+            objectKey = TenantContext.getCurrentTenant() + path + "/" + Helper.generateUniqueId(
                 Constants.PRODUCT_IMAGE_PREFIX,
                 com.ampairs.core.config.Constants.ID_LENGTH
             ),

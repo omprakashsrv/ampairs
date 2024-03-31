@@ -10,7 +10,7 @@ abstract class OwnableBaseDomain : BaseDomain() {
 
     @Column(name = "owner_id", length = 200)
     @TenantId
-    var ownerId: String = TenantContext.getCurrentTenant()?.id ?: ""
+    var ownerId: String = TenantContext.getCurrentTenant() ?: ""
 
     @Column(name = "ref_id", length = 255)
     var refId: String? = null
