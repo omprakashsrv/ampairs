@@ -1,12 +1,12 @@
 package com.ampairs.company.controller
 
-import com.ampairs.company.model.dto.CompanyResponse
-import com.ampairs.company.model.dto.toCompanyResponse
+import com.ampairs.company.model.dto.*
 import com.ampairs.company.service.CompanyService
-import com.ampairs.user.model.dto.UserResponse
-import com.ampairs.user.model.dto.UserUpdateRequest
+import com.ampairs.user.model.User
 import jakarta.validation.Valid
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.security.core.Authentication
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -15,19 +15,18 @@ class CompanyController @Autowired constructor(
     private val companyService: CompanyService,
 ) {
 
-    @PostMapping("/register")
-    fun registerCompany(@RequestBody @Valid userUpdateRequest: UserUpdateRequest): UserResponse? {
-        return null
-    }
-
-    @PostMapping("/update")
-    fun updateCompany(@RequestBody @Valid userUpdateRequest: UserUpdateRequest): UserResponse? {
-        return null
+    @PostMapping("")
+    fun registerCompany(@RequestBody @Valid companyRequest: CompanyRequest): CompanyRequest {
+        val auth: Authentication = SecurityContextHolder.getContext().authentication
+        val user = auth.principal as User
+        return companyService.updateCompany(companyRequest.toCompany(), user).toCompanyRequest()
     }
 
     @GetMapping("")
     fun getCompanies(): List<CompanyResponse> {
-        return companyService.getUserCompany().toCompanyResponse()
+        val auth: Authentication = SecurityContextHolder.getContext().authentication
+        val user = auth.principal as User
+        return companyService.getCompanies(user.id).toCompanyResponse()
     }
 
 }

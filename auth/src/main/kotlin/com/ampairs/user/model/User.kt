@@ -1,6 +1,5 @@
 package com.ampairs.user.model
 
-import com.ampairs.auth.model.enums.Role
 import com.ampairs.core.domain.model.BaseDomain
 import jakarta.persistence.Column
 import jakarta.persistence.ElementCollection
@@ -44,7 +43,7 @@ class User : BaseDomain(), UserDetails {
 
     @ElementCollection
     override fun getAuthorities(): List<SimpleGrantedAuthority> {
-        return listOf(SimpleGrantedAuthority(Role.ADMIN.name))
+        return listOf()
     }
 
     override fun getPassword(): String {

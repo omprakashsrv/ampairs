@@ -39,16 +39,19 @@ class SessionUserFilter @Autowired constructor(
         val user = auth.principal as User
         val companyId = request.getHeader("X-Company")
         if (!companyId.isNullOrEmpty()) {
-            val company = companyService.getUserCompany(user.id, companyId)
-            if (company != null) {
-                TenantContext.setCurrentTenant(company.id)
-                val authToken = UsernamePasswordAuthenticationToken(
-                    SessionUser(user, company), null, user.authorities
-                )
-                authToken.details = WebAuthenticationDetailsSource().buildDetails(request)
-                SecurityContextHolder.getContext().authentication = authToken
-                chain.doFilter(request, response)
-                return
+            val userCompanies = companyService.getUserCompanies(user.id)
+            if (userCompanies.isNotEmpty()) {
+                val userCompany = userCompanies.find { it.id == companyId }
+                if (userCompany != null) {
+                    TenantContext.setCurrentTenant(userCompany.companyId)
+                    val authToken = UsernamePasswordAuthenticationToken(
+                        SessionUser(user, userCompany), null, user.authorities
+                    )
+                    authToken.details = WebAuthenticationDetailsSource().buildDetails(request)
+                    SecurityContextHolder.getContext().authentication = authToken
+                    chain.doFilter(request, response)
+                    return
+                }
             }
         }
         response.contentType = MediaType.APPLICATION_JSON_VALUE

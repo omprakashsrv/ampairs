@@ -1,11 +1,9 @@
 package com.ampairs.company.model
 
+import com.ampairs.company.model.enums.Role
 import com.ampairs.core.config.Constants
 import com.ampairs.core.domain.model.BaseDomain
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.JoinColumn
-import jakarta.persistence.OneToOne
+import jakarta.persistence.*
 
 @Entity(name = "user_company")
 class UserCompany : BaseDomain() {
@@ -15,6 +13,10 @@ class UserCompany : BaseDomain() {
 
     @Column(name = "user_id", length = 200, updatable = false, nullable = false)
     var userId: String = ""
+
+    @Column(name = "role", length = 10, nullable = false)
+    @Enumerated(EnumType.STRING)
+    var role: Role = Role.USER
 
     @OneToOne
     @JoinColumn(name = "company_id", referencedColumnName = "id", updatable = false, insertable = false)

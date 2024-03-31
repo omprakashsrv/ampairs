@@ -1,10 +1,11 @@
 package com.ampairs.company.model.dto
 
 import com.ampairs.company.model.Company
+import org.springframework.data.geo.Point
 
 
-class CompanyResponse(
-    var id: String,
+class CompanyRequest(
+    var id: String?,
     var countryCode: Int,
     var name: String,
     var phone: String,
@@ -21,13 +22,13 @@ class CompanyResponse(
     var updatedAt: String?,
 )
 
-fun List<Company>.toCompanyResponse(): List<CompanyResponse> {
+fun List<Company>.toCompanyRequest(): List<CompanyRequest> {
     return map {
-        it.toCompanyResponse()
+        it.toCompanyRequest()
     }
 }
 
-fun Company.toCompanyResponse() = CompanyResponse(
+fun Company.toCompanyRequest() = CompanyRequest(
     id = this.id,
     name = this.name,
     countryCode = this.countryCode,
@@ -44,3 +45,20 @@ fun Company.toCompanyResponse() = CompanyResponse(
     updatedAt = this.updatedAt,
     landline = this.landline
 )
+
+
+fun CompanyRequest.toCompany(): Company {
+    val company = Company()
+    company.id = this.id ?: ""
+    company.name = this.name
+    company.countryCode = this.countryCode
+    company.email = this.email ?: ""
+    company.address = this.address ?: ""
+    company.pincode = this.pincode ?: ""
+    company.state = this.state ?: ""
+    company.location = this.latitude?.let { this.longitude?.let { it1 -> Point(it, it1) } }
+    company.phone = this.phone
+    company.landline = this.landline
+    company.gstin = this.gstin ?: ""
+    return company
+}
