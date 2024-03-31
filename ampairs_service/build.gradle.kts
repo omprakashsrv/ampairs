@@ -32,8 +32,8 @@ allOpen {
 
 dependencies {
     implementation(project(mapOf("path" to ":core")))
-    implementation(project(mapOf("path" to ":company")))
     implementation(project(mapOf("path" to ":auth")))
+    implementation(project(mapOf("path" to ":company")))
     implementation(project(mapOf("path" to ":customer")))
     implementation(project(mapOf("path" to ":product")))
     implementation(project(mapOf("path" to ":order")))

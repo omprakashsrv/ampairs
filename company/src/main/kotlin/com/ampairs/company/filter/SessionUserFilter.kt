@@ -29,6 +29,7 @@ class SessionUserFilter @Autowired constructor(
     ) {
         if (request.servletPath.contains("/auth/v1")
             || request.servletPath.contains("/user/v1")
+            || request.servletPath.contains("/company/v1")
             || request.servletPath.contains("/actuator/health")
         ) {
             chain.doFilter(request, response)

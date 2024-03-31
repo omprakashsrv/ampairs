@@ -1,4 +1,4 @@
-package com.ampairs.auth.controller
+package com.ampairs.user.controller
 
 import com.ampairs.user.model.User
 import com.ampairs.user.model.dto.UserResponse

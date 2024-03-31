@@ -26,7 +26,7 @@ class CompanyController @Autowired constructor(
     }
 
     @GetMapping("")
-    fun getCompany(): CompanyResponse {
+    fun getCompanies(): List<CompanyResponse> {
         return companyService.getUserCompany().toCompanyResponse()
     }
 

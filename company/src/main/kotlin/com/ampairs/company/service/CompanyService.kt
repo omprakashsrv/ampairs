@@ -3,6 +3,7 @@ package com.ampairs.company.service
 import com.ampairs.company.model.Company
 import com.ampairs.company.repository.CompanyRepository
 import com.ampairs.company.repository.UserCompanyRepository
+import com.ampairs.user.model.User
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
@@ -27,9 +28,11 @@ class CompanyService @Autowired constructor(
         return userCompany?.company
     }
 
-    fun getUserCompany(): Company {
+    fun getUserCompany(): List<Company> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        return auth.principal as Company
+        val user = auth.principal as User
+        val findAllByUserId = userCompanyRepository.findAllByUserId(user.id)
+        return findAllByUserId.map { it.company }
     }
 
 }

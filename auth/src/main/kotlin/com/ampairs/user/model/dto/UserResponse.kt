@@ -9,7 +9,6 @@ data class UserResponse(
     var userName: String?,
     var countryCode: Int,
     var phone: String,
-//    var companies: List<CompanyResponse>
 )
 
 fun User.toUserResponse(): UserResponse {
@@ -20,7 +19,5 @@ fun User.toUserResponse(): UserResponse {
         countryCode = this.countryCode,
         phone = this.phone,
         userName = this.userName,
-//        companies = this.userCompanies.stream()
-//            .map { userCompany -> userCompany.company }.toList().toCompanyResponse()
     )
 }
