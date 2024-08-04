@@ -38,6 +38,7 @@ dependencies {
     implementation(project(mapOf("path" to ":product")))
     implementation(project(mapOf("path" to ":order")))
     implementation(project(mapOf("path" to ":invoice")))
+    implementation(project(mapOf("path" to ":message-broker")))
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework:spring-web")
     implementation("org.springframework:spring-webmvc")
