@@ -66,3 +66,4 @@ application:
 
 drees:
   stacktrace: true
+debug: true
