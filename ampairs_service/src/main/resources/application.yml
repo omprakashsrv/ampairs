@@ -12,7 +12,7 @@ server:
       rotate: true
       renameOnRotate: true
       max-days: 10
-      directory: /var/log/ampairs/
+      directory: logs
     threads:
       max: 50
       min-spare: 10
@@ -25,7 +25,7 @@ logging:
       max-history: 7
       max-file-size: 1000MB
   file:
-    path: /var/log/ampairs/
+    path: logs/
     name: ${logging.file.path}production.log
   pattern:
     file: "%highlight(%-5level) [%date] [%thread] [%cyan(%logger{0})] : %message%n"
@@ -37,9 +37,9 @@ spring:
   jackson:
     property-naming-strategy: SNAKE_CASE
   datasource:
-    url: jdbc:mysql://ampairs-db.cxgs2q4wopd3.ap-south-1.rds.amazonaws.com:3306/ampairs_db
-    username: admin
-    password: I6AJrK2siCjaKHoDzw6W
+    url: jdbc:mysql://localhost:3306/munsi_app
+    username: root
+    password: pass
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       pool-name: main-db-pool

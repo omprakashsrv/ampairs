@@ -31,7 +31,7 @@ repositories {
 }
 
 dependencies {
-    implementation(project(mapOf("path" to ":tally_core")))
+    api(project(mapOf("path" to ":tally_core")))
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
     implementation("jakarta.xml.bind:jakarta.xml.bind-api:4.0.0")
     runtimeOnly("com.sun.xml.bind:jaxb-impl:4.0.3")

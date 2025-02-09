@@ -38,14 +38,10 @@ dependencies {
     implementation(project(mapOf("path" to ":product")))
     implementation(project(mapOf("path" to ":order")))
     implementation(project(mapOf("path" to ":invoice")))
-    implementation(project(mapOf("path" to ":message-broker")))
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework:spring-web")
     implementation("org.springframework:spring-webmvc")
-    implementation("org.springframework.boot:spring-boot-starter-web") {
-        exclude("org.springframework.boot", "spring-boot-starter-tomcat")
-    }
-    implementation("org.springframework.boot:spring-boot-starter-jetty")
+    implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-security")
