@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component
 
 
 @Component
-class TenantIdentifierResolver : CurrentTenantIdentifierResolver, HibernatePropertiesCustomizer {
+class TenantIdentifierResolver : CurrentTenantIdentifierResolver<String>, HibernatePropertiesCustomizer {
 
     override fun resolveCurrentTenantIdentifier(): String {
         return TenantContext.getCurrentTenant() ?: ""
