@@ -50,6 +50,14 @@ spring:
       max-lifetime: 300000
       validation-timeout: 5000
       leak-detection-threshold: 300000
+  cloud:
+    aws:
+      credentials:
+        access-key: AKIAQ4NSA2THT2L4K4FX
+        secret-key: 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
+      sns:
+        enabled: true
+        region: ap-south-1
   jpa:
     hibernate:
       naming:
@@ -66,4 +74,4 @@ application:
 
 drees:
   stacktrace: true
-debug: true
+debug: false

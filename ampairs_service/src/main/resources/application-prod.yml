@@ -1,3 +1,4 @@
+
 server:
   compression:
     enabled: true
@@ -66,3 +67,4 @@ application:
 
 drees:
   stacktrace: true
+debug: false

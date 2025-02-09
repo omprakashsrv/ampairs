@@ -11,6 +11,7 @@ import com.ampairs.core.respository.SmsVerificationRepository
 import com.ampairs.core.utils.UniqueIdGenerators
 import com.ampairs.user.model.User
 import com.ampairs.user.repository.UserRepository
+import io.awspring.cloud.sns.sms.SnsSmsTemplate
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.transaction.Transactional
 import org.springframework.beans.factory.annotation.Autowired
@@ -32,6 +33,7 @@ class AuthService @Autowired constructor(
     val jwtService: JwtService,
     val authenticationManager: AuthenticationManager,
     val encoder: PasswordEncoder,
+    val snsSmsTemplate: SnsSmsTemplate,
 ) {
     @Transactional
     fun init(user: User): GenericSuccessResponse {
@@ -45,6 +47,10 @@ class AuthService @Autowired constructor(
         smsVerificationRepository.save(smsVerification)
         user.userPassword = encoder.encode(smsVerification.code)
         userRepository.save(user)
+        snsSmsTemplate.send(
+            ("+" + user.countryCode.toString() + user.phone),
+            smsVerification.code + " is one time password to verify the phone number."
+        )
         val genericSuccessResponse = GenericSuccessResponse()
         genericSuccessResponse.message = "OTP sent successfully"
         return genericSuccessResponse

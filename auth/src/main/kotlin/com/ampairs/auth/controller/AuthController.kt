@@ -20,12 +20,11 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/auth/v1")
 class AuthController @Autowired constructor(
     private val userService: UserService,
-    private val authService: AuthService
+    private val authService: AuthService,
 ) {
 
     @PostMapping("/init")
     fun init(@RequestBody @Valid authInitRequest: AuthInitRequest): GenericSuccessResponse {
-//        var requestParam: RequestParam1 = null
         val user: User = userService.createUser(authInitRequest.toUser())
         return authService.init(user)
     }
