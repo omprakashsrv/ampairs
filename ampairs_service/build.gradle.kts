@@ -52,12 +52,24 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-cache")
+
+
+    val caffeine = "3.2.0"
+    implementation("javax.cache:cache-api:1.1.1")
+    implementation("com.github.ben-manes.caffeine:caffeine:$caffeine")
+    implementation("com.github.ben-manes.caffeine:jcache:$caffeine")
+
 
     val jwt = "0.11.5"
-    implementation("io.jsonwebtoken:jjwt-api:" + jwt)
-    runtimeOnly("io.jsonwebtoken:jjwt-impl:" + jwt)
-    runtimeOnly("io.jsonwebtoken:jjwt-jackson:" + jwt)
+    implementation("io.jsonwebtoken:jjwt-api:$jwt")
+    runtimeOnly("io.jsonwebtoken:jjwt-impl:$jwt")
+    runtimeOnly("io.jsonwebtoken:jjwt-jackson:$jwt")
     runtimeOnly("com.mysql:mysql-connector-j")
+
+    val bucket4j = "0.9.0"
+    implementation("com.giffing.bucket4j.spring.boot.starter:bucket4j-spring-boot-starter:$bucket4j")
+
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
