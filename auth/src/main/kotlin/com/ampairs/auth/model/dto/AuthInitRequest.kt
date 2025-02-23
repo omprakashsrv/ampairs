@@ -1,6 +1,5 @@
 package com.ampairs.auth.model.dto
 
-import com.ampairs.user.model.User
 import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.NotNull
 
@@ -10,13 +9,10 @@ class AuthInitRequest {
 
     @NotNull
     @NotEmpty
-    var phone: String? = null
+    var phone: String = ""
+    var tokenId: String = ""
 
-    fun toUser(): User {
-        val user = User()
-        user.countryCode = this.countryCode
-        user.phone = this.phone!!
-        user.userName = this.countryCode.toString() + this.phone
-        return user
+    fun phoneNumber(): String {
+        return this.countryCode.toString() + this.phone
     }
 }

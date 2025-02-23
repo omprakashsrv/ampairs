@@ -33,6 +33,7 @@ class SecurityConfiguration @Autowired constructor(
     @Throws(Exception::class)
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http.csrf { csrf -> csrf.disable() }
+            .cors { cors -> cors.disable() }
             .exceptionHandling { exception -> exception.authenticationEntryPoint(unauthorizedHandler) }
             .sessionManagement { session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests { requests ->

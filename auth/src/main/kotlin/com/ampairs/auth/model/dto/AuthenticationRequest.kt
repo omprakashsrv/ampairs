@@ -1,8 +1,6 @@
 package com.ampairs.auth.model.dto
 
 
-class AuthenticationRequest {
-    var userName: String? = null
-    var password: String? = null
-    val authMode: AuthMode = AuthMode.OTP
-}
+data class AuthenticationRequest(
+    var sessionId: String, var otp: String, val authMode: AuthMode,
+)

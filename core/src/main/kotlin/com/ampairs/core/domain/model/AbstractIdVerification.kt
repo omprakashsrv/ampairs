@@ -7,7 +7,7 @@ import jakarta.persistence.MappedSuperclass
 import java.sql.Timestamp
 
 @MappedSuperclass
-abstract class AbstractIdVerification : com.ampairs.core.domain.model.BaseDomain() {
+abstract class AbstractIdVerification : BaseDomain() {
     @Column(name = "code")
     var code: String = ""
 
@@ -21,8 +21,8 @@ abstract class AbstractIdVerification : com.ampairs.core.domain.model.BaseDomain
     @Column(name = "status")
     var status = com.ampairs.core.domain.enums.VerificationStatus.NEW
 
-    @Column(name = "user_id")
-    var userId: String = ""
+    @Column(name = "ref_id")
+    var refId: String = ""
 
 
 }

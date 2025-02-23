@@ -76,6 +76,7 @@ bucket4j:
   filters:
     - cache-name: rate-limit-bucket
       url: /auth/v1/init
+      http-response-body: '{"error":{"message":"Too many requests","code":429}}'
       rate-limits:
         - cache-key: "getRemoteAddr()"
           bandwidths:
@@ -84,6 +85,7 @@ bucket4j:
               unit: seconds
     - cache-name: rate-limit-bucket
       url: .*
+      http-response-body: '{"error":{"message":"Too many requests","code":429}}'
       rate-limits:
         - cache-key: "getRemoteAddr()" # IP based filter
           bandwidths:
