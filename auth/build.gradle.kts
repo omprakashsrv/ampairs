@@ -1,9 +1,9 @@
 plugins {
-    id("org.springframework.boot") version "3.4.2"
+    id("org.springframework.boot") version "3.5.3"
     id("io.spring.dependency-management") version "1.1.7"
-    kotlin("jvm") version "2.1.10"
-    kotlin("plugin.spring") version "2.1.10"
-    id("org.jetbrains.kotlin.plugin.allopen") version "2.1.10"
+    kotlin("jvm") version "2.2.0"
+    kotlin("plugin.spring") version "2.2.0"
+    id("org.jetbrains.kotlin.plugin.allopen") version "2.2.0"
 }
 
 group = "com.ampairs"
@@ -42,6 +42,7 @@ dependencies {
     val springCloudAwsVersion = "3.2.0"
     implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:${springCloudAwsVersion}"))
 
+
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework:spring-web")
     implementation("org.springframework:spring-webmvc")
@@ -68,3 +69,13 @@ tasks.withType<Test> {
 }
 
 tasks.register("prepareKotlinBuildScriptModel") {}
+
+// Disable bootJar since this module doesn't have a main class
+tasks.named("bootJar") {
+    enabled = false
+}
+
+tasks.named<Jar>("jar") {
+    enabled = true
+    archiveClassifier.set("")
+}

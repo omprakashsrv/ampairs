@@ -36,6 +36,10 @@ spring:
     active: dev
   jackson:
     property-naming-strategy: SNAKE_CASE
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=10000,expireAfterAccess=1800s
   datasource:
     url: jdbc:mysql://localhost:3306/munsi_app
     username: root
@@ -52,54 +56,76 @@ spring:
       leak-detection-threshold: 300000
   cloud:
     aws:
+      region: ap-south-1
       credentials:
-        access-key: AKIAQ4NSA2THT2L4K4FX
-        secret-key: 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
+        use-iam-role: true
+      s3:
+        bucket: ${AWS_S3_BUCKET:ampairs-files}
       sns:
         enabled: true
-        region: ap-south-1
+
+aws:
+  region: ${AWS_REGION:ap-south-1}
+  credentials:
+    use-iam-role: ${AWS_USE_IAM_ROLE:true}
+    access-key: ${AWS_ACCESS_KEY:}
+    secret-key: ${AWS_SECRET_KEY:}
+  s3:
+    bucket: ${AWS_S3_BUCKET:ampairs-files}
+  sns:
+    enabled: ${AWS_SNS_ENABLED:true}
   jpa:
     hibernate:
       naming:
         physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
       ddl-auto: update
-  cache:
-    cache-names[0]: rate-limit-bucket
-    caffeine:
-      spec: maximumSize=10000,expireAfterAccess=900s
-    jcache:
-      provider: com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider
-    type: jcache
 bucket4j:
   enabled: true
-  cache-to-use: jcache
-  filters:
-    - cache-name: rate-limit-bucket
-      url: /auth/v1/init
-      http-response-body: '{"error":{"message":"Too many requests","code":429}}'
-      rate-limits:
-        - cache-key: "getRemoteAddr()"
-          bandwidths:
-            - capacity: 1
-              time: 20
-              unit: seconds
-    - cache-name: rate-limit-bucket
-      url: .*
-      http-response-body: '{"error":{"message":"Too many requests","code":429}}'
-      rate-limits:
-        - cache-key: "getRemoteAddr()" # IP based filter
-          bandwidths:
-            - capacity: 20
-              time: 1
-              unit: minutes
 
 application:
+  multitenancy:
+    enabled: true
   security:
     jwt:
-      secret-key: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
-      expiration: 86400000 # a day
+      secret-key: ${JWT_SECRET_KEY:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
+      expiration: ${JWT_EXPIRATION:PT24H} # 24 hours
       refresh-token:
-        expiration: 15552000000 # 180 days
+        expiration: ${JWT_REFRESH_EXPIRATION:P180D} # 180 days
+    cors:
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001}
+      allowed-methods: ${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,OPTIONS}
+      allowed-headers: ${CORS_ALLOWED_HEADERS:*}
+      allow-credentials: ${CORS_ALLOW_CREDENTIALS:true}
+      max-age: ${CORS_MAX_AGE:PT1H}
+  cache:
+    default-ttl: ${CACHE_DEFAULT_TTL:PT30M}
+    max-size: ${CACHE_MAX_SIZE:10000}
+    rate-limit-cache:
+      expire-after-access: ${CACHE_RATE_LIMIT_EXPIRE:PT15M}
+      maximum-size: ${CACHE_RATE_LIMIT_MAX_SIZE:10000}
+  integration:
+    tally:
+      base-url: ${TALLY_BASE_URL:http://localhost:9000}
+      connection-timeout: ${TALLY_CONNECTION_TIMEOUT:PT30S}
+      read-timeout: ${TALLY_READ_TIMEOUT:PT2M}
+      retry-attempts: ${TALLY_RETRY_ATTEMPTS:3}
+      retry-delay: ${TALLY_RETRY_DELAY:PT5S}
+      sync:
+        customers:
+          enabled: ${TALLY_SYNC_CUSTOMERS_ENABLED:true}
+          cron-expression: ${TALLY_SYNC_CUSTOMERS_CRON:0 0 * * * *}
+          batch-size: ${TALLY_SYNC_CUSTOMERS_BATCH_SIZE:100}
+        products:
+          enabled: ${TALLY_SYNC_PRODUCTS_ENABLED:true}
+          cron-expression: ${TALLY_SYNC_PRODUCTS_CRON:0 0 * * * *}
+          batch-size: ${TALLY_SYNC_PRODUCTS_BATCH_SIZE:100}
+    notifications:
+      email:
+        enabled: ${NOTIFICATIONS_EMAIL_ENABLED:true}
+        from: ${NOTIFICATIONS_EMAIL_FROM:noreply@ampairs.com}
+      sms:
+        enabled: ${NOTIFICATIONS_SMS_ENABLED:true}
+        provider: ${NOTIFICATIONS_SMS_PROVIDER:aws-sns}
 drees:
   stacktrace: true
 debug: false

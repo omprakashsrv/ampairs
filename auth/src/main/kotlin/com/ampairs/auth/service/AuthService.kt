@@ -90,7 +90,8 @@ class AuthService @Autowired constructor(
     fun refreshToken(
         refreshTokenRequest: RefreshTokenRequest,
     ): AuthenticationResponse {
-        val refreshToken: String? = refreshTokenRequest.refreshToken
+        val refreshToken: String = refreshTokenRequest.refreshToken
+            ?: throw IllegalArgumentException("Refresh token is required")
         val userName: String = jwtService.extractUsername(refreshToken)
         val user: User = this.userRepository.findByUserName(userName)
             .orElseThrow()

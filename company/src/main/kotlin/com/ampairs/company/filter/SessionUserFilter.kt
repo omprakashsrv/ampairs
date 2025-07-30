@@ -2,7 +2,8 @@ package com.ampairs.company.filter
 
 import com.ampairs.company.model.SessionUser
 import com.ampairs.company.service.CompanyService
-import com.ampairs.core.domain.dto.ErrorResponse
+import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.domain.dto.ErrorCodes
 import com.ampairs.core.multitenancy.TenantContext
 import com.ampairs.user.model.User
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -57,6 +58,12 @@ class SessionUserFilter @Autowired constructor(
         response.contentType = MediaType.APPLICATION_JSON_VALUE
         response.status = HttpServletResponse.SC_FORBIDDEN
         val mapper = ObjectMapper()
-        mapper.writeValue(response.outputStream, ErrorResponse(HttpServletResponse.SC_FORBIDDEN, "Unauthorized"))
+        val errorResponse = ApiResponse.error<Any>(
+            code = ErrorCodes.ACCESS_DENIED,
+            message = "Company access denied",
+            details = "You don't have permission to access this company or no company header provided",
+            path = request.requestURI
+        )
+        mapper.writeValue(response.outputStream, errorResponse)
     }
 }

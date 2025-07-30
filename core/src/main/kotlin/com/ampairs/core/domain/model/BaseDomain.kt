@@ -1,11 +1,10 @@
 package com.ampairs.core.domain.model
 
-import ch.qos.logback.core.model.Model
 import com.ampairs.core.utils.Helper
 import jakarta.persistence.*
 
 @MappedSuperclass
-abstract class BaseDomain : Model() {
+abstract class BaseDomain {
 
     @Column(name = "id", length = 200, updatable = false, nullable = false, unique = true)
     var id: String = ""

@@ -1,6 +1,6 @@
 package com.ampairs.core.exception
 
-import com.ampairs.core.domain.dto.ErrorResponse
+import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.SuccessResponse
 import org.springframework.core.MethodParameter
 import org.springframework.http.MediaType
@@ -26,7 +26,7 @@ class GenericResponseAdvise : ResponseBodyAdvice<Any> {
         request: ServerHttpRequest,
         response: ServerHttpResponse
     ): Any? {
-        if(body is ErrorResponse) return body
+        if (body is ApiResponse<*>) return body
         return SuccessResponse(body)
     }
 }

@@ -4,8 +4,6 @@ import com.ampairs.core.domain.dto.FileResponse
 import com.ampairs.core.domain.dto.toFileResponse
 import com.ampairs.core.domain.service.FileService
 import com.ampairs.core.multitenancy.TenantContext
-import com.ampairs.core.utils.Helper
-import com.ampairs.product.config.Constants
 import com.ampairs.product.domain.dto.group.*
 import com.ampairs.product.domain.dto.product.ProductRequest
 import com.ampairs.product.domain.dto.product.ProductResponse
@@ -137,13 +135,9 @@ class ProductController(val productService: ProductService, val fileService: Fil
     ): FileResponse {
         return fileService.saveFile(
             bytes = file.inputStream.readAllBytes(),
-            name = file.name,
-            objectKey = TenantContext.getCurrentTenant() + path + "/" + Helper.generateUniqueId(
-                Constants.PRODUCT_IMAGE_PREFIX,
-                com.ampairs.core.config.Constants.ID_LENGTH
-            ),
-            bucket = "ampairs",
-            contentType = file.contentType.toString()
+            name = file.originalFilename ?: "unnamed_file",
+            contentType = file.contentType ?: "application/octet-stream",
+            folder = "products/${TenantContext.getCurrentTenant()}$path"
         ).toFileResponse()
     }
 }

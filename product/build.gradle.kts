@@ -1,11 +1,9 @@
-import org.springframework.boot.gradle.tasks.bundling.BootJar
-
 plugins {
-    id("org.springframework.boot") version "3.4.2"
+    id("org.springframework.boot") version "3.5.3"
     id("io.spring.dependency-management") version "1.1.7"
-    kotlin("jvm") version "2.1.10"
-    kotlin("plugin.spring") version "2.1.10"
-    id("org.jetbrains.kotlin.plugin.allopen") version "2.1.10"
+    kotlin("jvm") version "2.2.0"
+    kotlin("plugin.spring") version "2.2.0"
+    id("org.jetbrains.kotlin.plugin.allopen") version "2.2.0"
 }
 
 group = "com.ampairs"
@@ -41,6 +39,8 @@ repositories {
 dependencies {
     api(project(mapOf("path" to ":core")))
 //    implementation(project(mapOf("path" to ":core_user")))
+    compileOnly("org.springframework.boot:spring-boot-starter-data-rest")
+    compileOnly("org.springframework.data:spring-data-rest-webmvc")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework:spring-web")
     implementation("org.springframework:spring-webmvc")
@@ -66,6 +66,12 @@ tasks.withType<Test> {
 
 tasks.register("prepareKotlinBuildScriptModel") {}
 
-tasks.withType<BootJar> {
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+// Disable bootJar since this module doesn't have a main class
+tasks.named("bootJar") {
+    enabled = false
+}
+
+tasks.named<Jar>("jar") {
+    enabled = true
+    archiveClassifier.set("")
 }
