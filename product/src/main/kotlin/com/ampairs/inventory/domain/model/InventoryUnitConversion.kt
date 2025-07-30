@@ -35,7 +35,7 @@ class InventoryUnitConversion : OwnableBaseDomain() {
     @JoinColumn(name = "inventory_id", referencedColumnName = "id", updatable = false, insertable = false)
     var inventory: Inventory? = null
 
-    override fun obtainIdPrefix(): String {
+    override fun obtainSeqIdPrefix(): String {
         return Constants.UNIT_PREFIX
     }
 

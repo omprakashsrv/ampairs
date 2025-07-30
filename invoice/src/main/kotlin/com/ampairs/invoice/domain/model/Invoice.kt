@@ -89,7 +89,7 @@ class Invoice : OwnableBaseDomain() {
     var invoiceItems: MutableList<InvoiceItem> = mutableListOf()
 
 
-    override fun obtainIdPrefix(): String {
+    override fun obtainSeqIdPrefix(): String {
         return Constants.INVOICE_PREFIX
     }
 }

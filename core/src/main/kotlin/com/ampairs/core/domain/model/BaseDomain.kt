@@ -6,19 +6,12 @@ import jakarta.persistence.*
 @MappedSuperclass
 abstract class BaseDomain {
 
-    @Column(name = "id", length = 200, updatable = false, nullable = false, unique = true)
+    @Id
+    @Column(name = "id", length = 200, updatable = false, nullable = false)
     var id: String = ""
 
-    @Id
-    @Column(
-        name = "seq_id",
-        unique = true,
-        updatable = false,
-        insertable = false,
-        columnDefinition = "BIGINT AUTO_INCREMENT"
-    )
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var seqId: Int? = null
+    @Column(name = "seq_id", length = 200, updatable = false, nullable = false, unique = true)
+    var seqId: String = ""
 
     @Column(
         name = "created_at",
@@ -44,12 +37,12 @@ abstract class BaseDomain {
         nullable = false
     )
     var lastUpdated: Long = 0
-    abstract fun obtainIdPrefix(): String
+    abstract fun obtainSeqIdPrefix(): String
 
     @PrePersist
     protected fun prePersist() {
-        if (id == "") {
-            id = Helper.generateUniqueId(obtainIdPrefix(), com.ampairs.core.config.Constants.ID_LENGTH)
+        if (seqId == "") {
+            seqId = Helper.generateUniqueId(obtainSeqIdPrefix(), com.ampairs.core.config.Constants.ID_LENGTH)
         }
         lastUpdated = System.currentTimeMillis()
     }

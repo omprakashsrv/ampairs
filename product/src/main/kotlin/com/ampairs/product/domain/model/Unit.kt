@@ -27,7 +27,7 @@ class Unit : OwnableBaseDomain() {
     @Column(name = "decimal_places")
     var decimalPlaces: Int = 2
 
-    override fun obtainIdPrefix(): String {
+    override fun obtainSeqIdPrefix(): String {
         return Constants.UNIT_PREFIX
     }
 }

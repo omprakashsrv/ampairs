@@ -74,7 +74,7 @@ class Customer : OwnableBaseDomain() {
     @Column(name = "shipping_address", nullable = false, columnDefinition = "json")
     var shippingAddress: Address = Address()
 
-    override fun obtainIdPrefix(): String {
+    override fun obtainSeqIdPrefix(): String {
         return Constants.CUSTOMER_PREFIX
     }
 }

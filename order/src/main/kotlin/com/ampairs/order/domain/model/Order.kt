@@ -89,7 +89,7 @@ class Order : OwnableBaseDomain() {
     var orderItems: MutableList<OrderItem> = mutableListOf()
 
 
-    override fun obtainIdPrefix(): String {
+    override fun obtainSeqIdPrefix(): String {
         return Constants.ORDER_PREFIX
     }
 }

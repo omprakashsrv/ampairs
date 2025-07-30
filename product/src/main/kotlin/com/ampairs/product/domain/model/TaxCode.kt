@@ -36,7 +36,7 @@ class TaxCode : OwnableBaseDomain() {
     @Column(name = "tax_info", length = 255, nullable = false, columnDefinition = "json")
     var taxInfos: List<TaxInfoModel> = listOf()
 
-    override fun obtainIdPrefix(): String {
+    override fun obtainSeqIdPrefix(): String {
         return Constants.HSN_CODE_PREFIX
     }
 

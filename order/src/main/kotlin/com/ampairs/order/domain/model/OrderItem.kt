@@ -59,7 +59,7 @@ class OrderItem : OwnableBaseDomain() {
     @Column(name = "discount", nullable = true, columnDefinition = "json")
     var discount: List<Discount>? = null
 
-    override fun obtainIdPrefix(): String {
+    override fun obtainSeqIdPrefix(): String {
         return Constants.ORDER_ITEM_PREFIX
     }
 }

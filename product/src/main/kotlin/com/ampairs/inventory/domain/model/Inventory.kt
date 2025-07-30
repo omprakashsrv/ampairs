@@ -39,7 +39,7 @@ class Inventory : OwnableBaseDomain() {
     @JoinColumn(name = "unit_id", referencedColumnName = "id", updatable = false, insertable = false)
     var unit: Unit? = null
 
-    override fun obtainIdPrefix(): String {
+    override fun obtainSeqIdPrefix(): String {
         return Constants.INVENTORY_ITEM_PREFIX
     }
 }

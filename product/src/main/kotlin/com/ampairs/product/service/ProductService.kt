@@ -38,7 +38,7 @@ class ProductService(
     fun updateTaxCodes(taxCodes: List<TaxCode>): List<TaxCode> {
         taxCodes.forEach {
             val taxCode = taxCodeRepository.findByCode(it.code)
-            it.seqId = taxCode?.seqId
+            it.seqId = taxCode?.seqId.toString()
             it.id = taxCode?.id ?: ""
             taxCodeRepository.save(it)
         }
@@ -50,11 +50,11 @@ class ProductService(
         products.forEach {
             if (it.id.isNotEmpty()) {
                 val group = productRepository.findById(it.id).getOrNull()
-                it.seqId = group?.seqId
+                it.seqId = group?.seqId.toString()
                 it.refId = group?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val group = productRepository.findByRefId(it.refId)
-                it.seqId = group?.seqId
+                it.seqId = group?.seqId.toString()
                 it.id = group?.id ?: ""
             }
             productRepository.save(it)
@@ -68,11 +68,11 @@ class ProductService(
         units.forEach {
             if (it.id.isNotEmpty()) {
                 val unit = unitRepository.findById(it.id).getOrNull()
-                it.seqId = unit?.seqId
+                it.seqId = unit?.seqId.toString()
                 it.refId = unit?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val unit = unitRepository.findByRefId(it.refId)
-                it.seqId = unit?.seqId
+                it.seqId = unit?.seqId.toString()
                 it.id = unit?.id ?: ""
             }
             unitRepository.save(it)
@@ -85,11 +85,11 @@ class ProductService(
         groups.forEach {
             if (it.id.isNotEmpty()) {
                 val group = productGroupRepository.findById(it.id).getOrNull()
-                it.seqId = group?.seqId
+                it.seqId = group?.seqId.toString()
                 it.refId = group?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val group = productGroupRepository.findByRefId(it.refId)
-                it.seqId = group?.seqId
+                it.seqId = group?.seqId.toString()
                 it.id = group?.id ?: ""
             }
             productGroupRepository.save(it)
@@ -102,11 +102,11 @@ class ProductService(
         brands.forEach {
             if (it.id.isNotEmpty()) {
                 val group = productBrandRepository.findById(it.id).getOrNull()
-                it.seqId = group?.seqId
+                it.seqId = group?.seqId.toString()
                 it.refId = group?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val group = productBrandRepository.findByRefId(it.refId)
-                it.seqId = group?.seqId
+                it.seqId = group?.seqId.toString()
                 it.id = group?.id ?: ""
             }
             it.lastUpdated = System.currentTimeMillis()
@@ -121,11 +121,11 @@ class ProductService(
         productCategories.forEach {
             if (it.id.isNotEmpty()) {
                 val productCategory = productCategoryRepository.findById(it.id).getOrNull()
-                it.seqId = productCategory?.seqId
+                it.seqId = productCategory?.seqId.toString()
                 it.refId = productCategory?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val productCategory = productCategoryRepository.findByRefId(it.refId)
-                it.seqId = productCategory?.seqId
+                it.seqId = productCategory?.seqId.toString()
                 it.id = productCategory?.id ?: ""
             }
             productCategoryRepository.save(it)
@@ -139,11 +139,11 @@ class ProductService(
         productSubCategories.forEach {
             if (it.id.isNotEmpty()) {
                 val productCategory = productSubCategoryRepository.findById(it.id).getOrNull()
-                it.seqId = productCategory?.seqId
+                it.seqId = productCategory?.seqId.toString()
                 it.refId = productCategory?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val productCategory = productSubCategoryRepository.findByRefId(it.refId)
-                it.seqId = productCategory?.seqId
+                it.seqId = productCategory?.seqId.toString()
                 it.id = productCategory?.id ?: ""
             }
             productSubCategoryRepository.save(it)

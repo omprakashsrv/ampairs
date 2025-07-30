@@ -40,7 +40,7 @@ This is a Gradle multi-module project with the following modules:
 
 - **core**: Shared utilities, domain models, AWS configuration, and multi-tenancy support
 - **auth**: Authentication and JWT token management with user management
-- **company**: Company and location management with role-based access
+- **workspace**: Workspace and location management with role-based access
 - **customer**: Customer management with pagination support
 - **product**: Product catalog, inventory, tax management, and product categorization
 - **order**: Order processing and management

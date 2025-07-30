@@ -28,7 +28,7 @@ class OrderService @Autowired constructor(
     @Transactional
     fun updateOrder(order: Order, orderItems: List<OrderItem>): OrderResponse {
         val existingOrder = orderRepository.findById(order.id).getOrNull()
-        order.seqId = existingOrder?.seqId
+        order.seqId = existingOrder?.seqId.toString()
         order.orderNumber = existingOrder?.orderNumber ?: ""
         if (order.orderNumber.isEmpty()) {
             val orderNumber = orderRepository.findMaxOrderNumber().getOrDefault("0").toIntOrNull() ?: 0
@@ -38,7 +38,7 @@ class OrderService @Autowired constructor(
         orderItems.forEach { orderItem ->
             if (orderItem.id.isNotEmpty()) {
                 val existingOrderItem = orderItemRepository.findById(orderItem.id).getOrNull()
-                orderItem.seqId = existingOrderItem?.seqId
+                orderItem.seqId = existingOrderItem?.seqId.toString()
             }
             orderItemRepository.save(orderItem)
         }
@@ -48,7 +48,7 @@ class OrderService @Autowired constructor(
     @Transactional
     fun createInvoice(order: Order, orderItems: List<OrderItem>): OrderResponse {
         val existingOrder = orderRepository.findById(order.id).getOrNull()
-        order.seqId = existingOrder?.seqId
+        order.seqId = existingOrder?.seqId.toString()
         order.orderNumber = existingOrder?.orderNumber ?: ""
         if (order.orderNumber.isEmpty()) {
             val orderNumber = orderRepository.findMaxOrderNumber().getOrDefault("0").toIntOrNull() ?: 0
@@ -58,12 +58,12 @@ class OrderService @Autowired constructor(
         val savedOrderItems = orderItems.map { orderItem ->
             if (orderItem.id.isNotEmpty()) {
                 val existingOrderItem = orderItemRepository.findById(orderItem.id).getOrNull()
-                orderItem.seqId = existingOrderItem?.seqId
+                orderItem.seqId = existingOrderItem?.seqId.toString()
             }
             orderItemRepository.save(orderItem)
         }.toList()
         if (!existingOrder?.invoiceRefId.isNullOrEmpty()) {
-            savedOrder.invoiceRefId = existingOrder?.invoiceRefId
+            savedOrder.invoiceRefId = existingOrder.invoiceRefId
         } else {
             val updatedInvoice = invoiceService.updateInvoice(savedOrder.toInvoice(), savedOrderItems.toInvoiceItems())
             savedOrder.invoiceRefId = updatedInvoice.id

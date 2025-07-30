@@ -29,13 +29,13 @@ class CustomerService @Autowired constructor(
         customers.forEach { customer ->
             if (customer.id.isNotEmpty()) {
                 val existingCustomer = customerRepository.findById(customer.id).getOrNull()
-                customer.seqId = existingCustomer?.seqId
+                customer.seqId = existingCustomer?.seqId.toString()
                 customer.refId = existingCustomer?.refId ?: ""
                 customer.createdAt = existingCustomer?.createdAt ?: ""
                 customer.updatedAt = existingCustomer?.updatedAt ?: ""
             } else if (customer.refId?.isNotEmpty() == true) {
                 val existingCustomer = customerRepository.findByRefId(customer.refId)
-                customer.seqId = existingCustomer?.seqId
+                customer.seqId = existingCustomer?.seqId.toString()
                 customer.id = existingCustomer?.id ?: ""
                 customer.createdAt = existingCustomer?.createdAt ?: ""
                 customer.updatedAt = existingCustomer?.updatedAt ?: ""

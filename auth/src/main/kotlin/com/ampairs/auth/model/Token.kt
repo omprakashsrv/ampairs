@@ -27,7 +27,7 @@ class Token : BaseDomain() {
     @Column(name = "token_type", nullable = false)
     var tokenType = TokenType.BEARER
 
-    override fun obtainIdPrefix(): String {
+    override fun obtainSeqIdPrefix(): String {
         return Constants.TOKEN_PREFIX
     }
 }

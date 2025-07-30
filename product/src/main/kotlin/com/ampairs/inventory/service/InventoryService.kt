@@ -21,15 +21,15 @@ class InventoryService(
             val inventory = it.asDatabaseModel()
             if (it.id?.isNotEmpty() == true) {
                 val group = inventoryRepository.findById(it.id).getOrNull()
-                inventory.seqId = group?.seqId
+                inventory.seqId = group?.seqId.toString()
                 inventory.refId = group?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val group = inventoryRepository.findByRefId(it.refId)
-                inventory.seqId = group?.seqId
+                inventory.seqId = group?.seqId.toString()
                 inventory.id = group?.id ?: ""
             } else if (it.productId?.isNotEmpty() == true) {
                 val group = inventoryRepository.findByProductId(it.productId)
-                inventory.seqId = group?.seqId
+                inventory.seqId = group?.seqId.toString()
                 inventory.id = group?.id ?: ""
             }
             inventories.add(inventoryRepository.save(inventory))

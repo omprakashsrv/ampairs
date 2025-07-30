@@ -34,18 +34,18 @@ dependencies {
     // Project modules
     implementation(project(mapOf("path" to ":core")))
     implementation(project(mapOf("path" to ":auth")))
-    implementation(project(mapOf("path" to ":company")))
+    implementation(project(mapOf("path" to ":workspace")))
     implementation(project(mapOf("path" to ":customer")))
     implementation(project(mapOf("path" to ":product")))
     implementation(project(mapOf("path" to ":order")))
     implementation(project(mapOf("path" to ":invoice")))
-//    implementation(project(mapOf("path" to ":tally_core")))
 
     // Spring Boot starters
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-security")
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-cache")
     implementation("org.springframework.boot:spring-boot-configuration-processor")

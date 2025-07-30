@@ -35,7 +35,7 @@ class LoginSession : BaseDomain() {
     @Column(name = "status")
     var status = VerificationStatus.NEW
 
-    override fun obtainIdPrefix(): String {
+    override fun obtainSeqIdPrefix(): String {
         return LOGIN_SESSION_ID
     }
 

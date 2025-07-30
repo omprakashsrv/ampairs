@@ -26,7 +26,7 @@ class File : OwnableBaseDomain() {
     @Column(name = "etag", length = 100)
     var etag: String? = null
 
-    override fun obtainIdPrefix(): String {
+    override fun obtainSeqIdPrefix(): String {
         return Constants.FILE_ID_PREFIX
     }
 }

@@ -1,5 +1,6 @@
 package com.ampairs.user.model
 
+import com.ampairs.core.config.Constants
 import com.ampairs.core.domain.model.BaseDomain
 import jakarta.persistence.Column
 import jakarta.persistence.ElementCollection
@@ -34,8 +35,8 @@ class User : BaseDomain(), UserDetails {
     @Column(name = "active", nullable = false)
     var active: Boolean = true
 
-    override fun obtainIdPrefix(): String {
-        return com.ampairs.core.config.Constants.USER_ID_PREFIX
+    override fun obtainSeqIdPrefix(): String {
+        return Constants.USER_ID_PREFIX
     }
 
     val fullName: String

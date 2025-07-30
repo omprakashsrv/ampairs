@@ -202,6 +202,10 @@ class JwtService(
             val keyBytes = Decoders.BASE64.decode(applicationProperties.security.jwt.secretKey)
             return Keys.hmacShaKeyFor(keyBytes)
         }
+
+    fun getSignInKey(): ByteArray {
+        return Decoders.BASE64.decode(applicationProperties.security.jwt.secretKey)
+    }
 }
 
 interface UserDetailsWithId {

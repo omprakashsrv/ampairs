@@ -24,7 +24,7 @@ class ProductCategory : OwnableBaseDomain() {
     @JoinColumn(name = "image_id", referencedColumnName = "id", updatable = false, insertable = false)
     var image: File? = null
 
-    override fun obtainIdPrefix(): String {
+    override fun obtainSeqIdPrefix(): String {
         return Constants.PRODUCT_CATEGORY_PREFIX
     }
 }

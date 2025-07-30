@@ -19,11 +19,11 @@ class TaxService(
         taxInfos.forEach {
             if (it.id.isNotEmpty()) {
                 val taxInfo = taxInfoRepository.findById(it.id).getOrNull()
-                it.seqId = taxInfo?.seqId
+                it.seqId = taxInfo?.seqId.toString()
                 it.refId = taxInfo?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val taxInfo = taxInfoRepository.findByRefId(it.refId)
-                it.seqId = taxInfo?.seqId
+                it.seqId = taxInfo?.seqId.toString()
                 it.id = taxInfo?.id ?: ""
             }
             taxInfoRepository.save(it)
@@ -44,11 +44,11 @@ class TaxService(
         taxCodes.forEach {
             if (it.id.isNotEmpty()) {
                 val taxCode = taxCodeRepository.findById(it.id).getOrNull()
-                it.seqId = taxCode?.seqId
+                it.seqId = taxCode?.seqId.toString()
                 it.refId = taxCode?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val taxCode = taxCodeRepository.findByRefId(it.refId)
-                it.seqId = taxCode?.seqId
+                it.seqId = taxCode?.seqId.toString()
                 it.id = taxCode?.id ?: ""
             }
             taxCodeRepository.save(it)

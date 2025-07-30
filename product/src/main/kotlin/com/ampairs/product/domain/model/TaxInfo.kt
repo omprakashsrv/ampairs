@@ -23,7 +23,7 @@ class TaxInfo : OwnableBaseDomain() {
     @Column(name = "tax_spec", nullable = false, length = 10)
     @Enumerated(EnumType.STRING)
     var taxSpec: TaxSpec = TaxSpec.INTER
-    override fun obtainIdPrefix(): String {
+    override fun obtainSeqIdPrefix(): String {
         return Constants.TAX_INFO_PREFIX
     }
 }

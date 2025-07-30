@@ -26,7 +26,7 @@ class ProductPrice : OwnableBaseDomain() {
     @JoinColumn(name = "product_id", referencedColumnName = "id", updatable = false, insertable = false)
     var product: Product? = null
 
-    override fun obtainIdPrefix(): String {
+    override fun obtainSeqIdPrefix(): String {
         return Constants.PRODUCT_PREFIX
     }
 }

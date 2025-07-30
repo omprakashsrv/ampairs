@@ -93,7 +93,7 @@ class Product : OwnableBaseDomain() {
     var inventory: MutableList<Inventory> = mutableListOf()
 
 
-    override fun obtainIdPrefix(): String {
+    override fun obtainSeqIdPrefix(): String {
         return Constants.PRODUCT_PREFIX
     }
 }
