@@ -6,8 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Ampairs is a modern, multi-module Spring Boot application built with Kotlin that provides comprehensive business
 management functionality including authentication, customer management, product/inventory management, order processing,
-and invoice generation. The application features a secure, multi-tenant architecture with robust integrations including
-Tally ERP synchronization and AWS cloud services.
+and invoice generation. The application features a secure, multi-tenant architecture with robust AWS cloud services
+integration.
 
 ## Recent Architecture Improvements (2025)
 
@@ -29,36 +29,473 @@ The application has been significantly restructured with modern Spring Boot best
 ### Integration Improvements
 
 - **AWS Integration** - Proper credential management with IAM role support, enhanced S3 service with error handling
-- **Tally Integration** - Retry mechanisms, proper error handling, and connection pooling
 - **File Management** - Enhanced file service with metadata tracking and security features
 
 ## Architecture
 
-### Module Structure
+### System Architecture Overview
 
-This is a Gradle multi-module project with the following modules:
+Ampairs follows a **Multi-Module Microservice Architecture** with the following key architectural principles:
 
+- **Domain-Driven Design (DDD)**: Each module represents a bounded context with clear domain boundaries
+- **Multi-Tenancy**: Tenant-aware data isolation and security at all levels
+- **Event-Driven Communication**: Asynchronous processing for cross-module operations
+- **Layered Architecture**: Clear separation of concerns with controller, service, repository, and domain layers
+- **API-First Design**: RESTful APIs with comprehensive documentation and versioning
+
+### High-Level Architecture Diagram
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                        Client Applications                       │
+│                    (Web, Mobile, API Clients)                   │
+└─────────────────────────┬───────────────────────────────────────┘
+                          │ HTTPS/REST API
+┌─────────────────────────▼───────────────────────────────────────┐
+│                     API Gateway Layer                           │
+│                   (ampairs_service)                             │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐              │
+│  │ Load        │ │ Rate        │ │ Security    │              │
+│  │ Balancing   │ │ Limiting    │ │ (JWT/CORS)  │              │
+│  └─────────────┘ └─────────────┘ └─────────────┘              │
+└─────────────────────────┬───────────────────────────────────────┘
+                          │
+┌─────────────────────────▼───────────────────────────────────────┐
+│                    Business Logic Layer                         │
+│                    (Domain Modules)                             │
+│  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌───────────┐     │
+│  │   Auth    │ │ Workspace │ │ Customer  │ │  Product  │     │
+│  │  Module   │ │  Module   │ │  Module   │ │  Module   │     │
+│  └───────────┘ └───────────┘ └───────────┘ └───────────┘     │
+│  ┌───────────┐ ┌───────────┐                                 │
+│  │   Order   │ │  Invoice  │                                 │
+│  │  Module   │ │  Module   │                                 │
+│  └───────────┘ └───────────┘                                 │
+└─────────────────────────┬───────────────────────────────────────┘
+                          │
+┌─────────────────────────▼───────────────────────────────────────┐
+│                    Foundation Layer                             │
+│                     (Core Module)                               │
+│  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐              │
+│  │Multi-tenancy│ │   AWS       │ │  Exception  │              │
+│  │   Support   │ │Integration  │ │  Handling   │              │
+│  └─────────────┘ └─────────────┘ └─────────────┘              │
+└─────────────────────────┬───────────────────────────────────────┘
+                          │
+┌─────────────────────────▼───────────────────────────────────────┐
+│                   Data & Integration Layer                      │
+│  ┌─────────────┐ ┌─────────────┐                              │
+│  │   MySQL     │ │   AWS S3    │                              │
+│  │  Database   │ │   Storage   │                              │
+│  └─────────────┘ └─────────────┘                              │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Module Architecture Patterns
+
+#### 1. **Hexagonal Architecture (Ports & Adapters)**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Module Architecture                     │
+│                                                             │
+│  ┌─────────────┐    ┌─────────────────┐    ┌─────────────┐  │
+│  │   REST      │    │                 │    │   Database  │  │
+│  │ Controllers │◄──►│   Domain Core   │◄──►│ Repositories│  │
+│  │ (Adapters)  │    │   (Business     │    │ (Adapters)  │  │
+│  └─────────────┘    │    Logic)       │    └─────────────┘  │
+│                     │                 │                     │
+│  ┌─────────────┐    │  ┌───────────┐  │    ┌─────────────┐  │
+│  │   Event     │    │  │ Services  │  │    │   External  │  │
+│  │ Handlers    │◄──►│  │   DTOs    │  │◄──►│    APIs     │  │
+│  │ (Adapters)  │    │  │ Entities  │  │    │ (Adapters)  │  │
+│  └─────────────┘    │  └───────────┘  │    └─────────────┘  │
+│                     └─────────────────┘                     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### 2. **Domain-Driven Design Layers**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Presentation Layer                       │
+│           (Controllers, DTOs, Request/Response)             │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+┌─────────────────────────▼───────────────────────────────────┐
+│                   Application Layer                         │
+│              (Services, Use Cases, Workflows)               │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+┌─────────────────────────▼───────────────────────────────────┐
+│                     Domain Layer                            │
+│          (Entities, Value Objects, Domain Services)         │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+┌─────────────────────────▼───────────────────────────────────┐
+│                  Infrastructure Layer                       │
+│         (Repositories, External APIs, Persistence)          │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Module Structure & Dependencies
+
+This is a Gradle multi-module project organized by domain boundaries:
+
+#### **Foundation Layer**
 - **core**: Shared utilities, domain models, AWS configuration, and multi-tenancy support
+
+#### **Security & Identity Layer**
 - **auth**: Authentication and JWT token management with user management
 - **workspace**: Workspace and location management with role-based access
+
+#### **Business Domain Layer**
 - **customer**: Customer management with pagination support
 - **product**: Product catalog, inventory, tax management, and product categorization
 - **order**: Order processing and management
 - **invoice**: Invoice generation and management
+
+#### **Application & Integration Layer**
 - **ampairs_service**: Main Spring Boot application that aggregates all modules
-- **tally**: Tally ERP integration service with sync tasks
-- **tally_core**: Core Tally XML processing and client communication
+
+### Module Dependency Graph
+
+```
+                    ┌─────────────────┐
+                    │ ampairs_service │
+                    │   (Main App)    │
+                    └─────────┬───────┘
+                              │
+              ┌───────────────┼───────────────┐
+              │               │               │
+    ┌─────────▼─────────┐ ┌───▼────┐ ┌───────▼───────┐
+    │     customer      │ │ product│ │     order     │
+    │                   │ │        │ │               │
+    └─────────┬─────────┘ └───┬────┘ └───────┬───────┘
+              │               │               │
+              └───────────────┼───────────────┘
+                              │
+                    ┌─────────▼─────────┐
+                    │     invoice       │
+                    │                   │
+                    └─────────┬─────────┘
+                              │
+              ┌───────────────┼───────────────┐
+              │               │               │
+    ┌─────────▼─────────┐ ┌───▼────┐ ┌───────▼───────┐
+    │      auth         │ │workspace│ │     core      │
+    │                   │ │        │ │   (Foundation)│
+    └───────────────────┘ └────────┘ └───────────────┘
+```
+
+### Cross-Cutting Concerns Architecture
+
+#### **Multi-Tenancy Architecture**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      Request Flow                           │
+│                                                             │
+│  HTTP Request → JWT Token → Tenant Context → Data Access   │
+│                                                             │
+│  ┌─────────────┐   ┌─────────────┐   ┌─────────────┐      │
+│  │   JWT       │   │   Tenant    │   │   Database  │      │
+│  │ Validator   │──►│  Resolver   │──►│   Filter    │      │
+│  └─────────────┘   └─────────────┘   └─────────────┘      │
+│                                                             │
+│  Every database query automatically includes:               │
+│  WHERE tenant_id = :currentTenantId                         │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### **Security Architecture**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Security Layers                          │
+│                                                             │
+│  ┌─────────────┐   ┌─────────────┐   ┌─────────────┐      │
+│  │    CORS     │   │    Rate     │   │     JWT     │      │
+│  │  Headers    │──►│  Limiting   │──►│    Auth     │      │
+│  └─────────────┘   └─────────────┘   └─────────────┘      │
+│                                           │                 │
+│  ┌─────────────┐   ┌─────────────┐       │                │
+│  │   Method    │   │    Role     │       │                │
+│  │  Security   │◄──│   Based     │◄──────┘                │
+│  └─────────────┘   └─────────────┘                        │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### **Data Flow Architecture**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   Data Processing Flow                      │
+│                                                             │
+│  Request → Validation → Business Logic → Persistence       │
+│                                                             │
+│  ┌─────────────┐   ┌─────────────┐   ┌─────────────┐      │
+│  │   Input     │   │  Business   │   │  Database   │      │
+│  │ Validation  │──►│   Rules     │──►│ Transaction │      │
+│  └─────────────┘   └─────────────┘   └─────────────┘      │
+│                                                             │
+│  ┌─────────────┐   ┌─────────────┐   ┌─────────────┐      │
+│  │   Cache     │   │   Event     │   │   Response  │      │
+│  │  Updates    │◄──│ Publishing  │◄──│ Generation  │      │
+│  └─────────────┘   └─────────────┘   └─────────────┘      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### API Architecture
+
+#### **RESTful API Design Principles**
+
+- **Resource-Based URLs**: `/api/v1/{resource}/{id}`
+- **HTTP Methods**: GET, POST, PUT, DELETE for CRUD operations
+- **Status Codes**: Proper HTTP status codes for all responses
+- **Versioning**: URL-based versioning (`/api/v1/`)
+- **Content Negotiation**: JSON as primary content type
+- **Pagination**: Consistent pagination for list endpoints
+- **Error Handling**: Standardized error response format
+
+#### **API Response Format**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "12345",
+    "name": "Sample Resource",
+    "createdAt": "2023-01-01T12:00:00Z"
+  },
+  "pagination": {
+    "page": 0,
+    "size": 20,
+    "totalElements": 150,
+    "totalPages": 8
+  },
+  "metadata": {
+    "timestamp": "2023-01-01T12:00:00Z",
+    "version": "v1"
+  }
+}
+```
+
+#### **Error Response Format**
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid input data",
+    "details": {
+      "field": "email",
+      "issue": "Invalid email format"
+    },
+    "timestamp": "2023-01-01T12:00:00Z"
+  }
+}
+```
 
 ### Technology Stack
 
+#### **Core Technologies**
 - **Language**: Kotlin 2.2.0 with Java 21
 - **Framework**: Spring Boot 3.5.3
-- **Database**: MySQL with JPA/Hibernate
-- **Security**: Spring Security with JWT tokens
-- **Build Tool**: Gradle with Kotlin DSL
-- **Caching**: Caffeine with rate limiting via Bucket4j
-- **Cloud Services**: AWS S3 integration, SNS notifications
-- **External Integration**: Tally ERP via XML/HTTP
+- **Database**: MySQL 8.0 with JPA/Hibernate
+- **Security**: Spring Security 6.x with JWT tokens
+- **Build Tool**: Gradle 8.x with Kotlin DSL
+
+#### **Persistence & Data**
+
+- **ORM**: Hibernate 6.x with multi-tenancy support
+- **Connection Pooling**: HikariCP (20 max connections)
+- **Database Migrations**: Hibernate DDL auto-update
+- **Caching**: Caffeine cache with JCache API
+- **JSON Processing**: Jackson with JAXB support
+
+#### **Security & Authentication**
+
+- **Authentication**: JWT with refresh tokens
+- **Authorization**: Role-based access control (RBAC)
+- **Rate Limiting**: Bucket4j with Redis backend
+- **CORS**: Configurable cross-origin support
+- **Multi-tenancy**: Tenant-aware data isolation
+
+#### **Cloud & External Services**
+
+- **File Storage**: AWS S3 with metadata tracking
+- **Notifications**: AWS SNS for SMS/email
+- **Monitoring**: Micrometer with Prometheus metrics
+- **External Integration**: Third-party API integrations via REST/HTTP
+
+#### **Development & Operations**
+
+- **Testing**: JUnit 5, Mockito, TestContainers
+- **Documentation**: OpenAPI 3.0 (Swagger)
+- **Logging**: Logback with structured JSON logging
+- **Deployment**: Docker containers with systemd services
+- **Monitoring**: Spring Boot Actuator with health checks
+
+### Deployment Architecture
+
+#### **Production Environment**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Load Balancer                          │
+│                    (Nginx/HAProxy)                         │
+└─────────────────────────┬───────────────────────────────────┘
+                          │ HTTPS/SSL
+┌─────────────────────────▼───────────────────────────────────┐
+│                  Application Servers                       │
+│   ┌─────────────┐   ┌─────────────┐                       │
+│   │ Ampairs     │   │   Static    │                       │
+│   │ Service     │   │   Assets    │                       │
+│   │ (Port 8080) │   │ (CDN/S3)    │                       │
+│   └─────────────┘   └─────────────┘                       │
+└─────────────────────────┬───────────────────────────────────┘
+                          │
+┌─────────────────────────▼───────────────────────────────────┐
+│                    Data Layer                               │
+│   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐     │
+│   │   MySQL     │   │   Redis     │   │    AWS      │     │
+│   │  Database   │   │   Cache     │   │  Services   │     │
+│   │ (Primary)   │   │             │   │  (S3, SNS)  │     │
+│   └─────────────┘   └─────────────┘   └─────────────┘     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### **Development Environment**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Local Development                        │
+│                                                             │
+│   ┌─────────────┐   ┌─────────────┐   ┌─────────────┐     │
+│   │ Ampairs     │   │   MySQL     │   │    AWS      │     │
+│   │ Service     │   │  (Docker)   │   │ LocalStack  │     │
+│   │ (IDE/Gradle)│   │             │   │ (Optional)  │     │
+│   └─────────────┘   └─────────────┘   └─────────────┘     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Data Architecture
+
+#### **Database Schema Design**
+
+```sql
+-- Multi-tenant base structure (conceptual representation)
+-- All entities extend from BaseDomain or OwnableBaseDomain via JPA inheritance
+
+-- Base domain fields (via @MappedSuperclass)
+-- id: VARCHAR(36) PRIMARY KEY
+-- seq_id: BIGINT AUTO_INCREMENT UNIQUE  
+-- created_at: TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+-- updated_at: TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+-- version: INT DEFAULT 0
+
+-- Tenant-aware entities extend OwnableBaseDomain adding:
+-- tenant_id: VARCHAR(36) NOT NULL
+-- created_by: VARCHAR(36)
+-- updated_by: VARCHAR(36)
+
+-- Key indexes for performance:
+-- idx_tenant_id, idx_created_at, idx_updated_at
+-- idx_tenant_created (tenant_id, created_at)
+```
+
+#### **Entity Relationships**
+
+```
+Workspace (1) ────── (N) User_Company ────── (N) User
+    │                                            │
+    │                                            │
+    └── (1:N) ── Customer ── (1:N) ── Order ─── (N:1) ── Auth_Session
+                     │           │
+                     │           └── (1:N) ── Order_Item ── (N:1) ── Product
+                     │                                           │
+                     └── (1:N) ── Invoice ── (1:N) ── Invoice_Item ──┘
+                                     │
+                                     └── (N:1) ── Tax_Code
+```
+
+### Performance & Scalability Architecture
+
+#### **Caching Strategy**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     Cache Layers                            │
+│                                                             │
+│  ┌─────────────┐   ┌─────────────┐   ┌─────────────┐      │
+│  │   L1 Cache  │   │   L2 Cache  │   │   L3 Cache  │      │
+│  │ (Caffeine)  │   │   (Redis)   │   │ (Database)  │      │
+│  │  In-Memory  │   │ Distributed │   │ Persistent  │      │
+│  └─────────────┘   └─────────────┘   └─────────────┘      │
+│                                                             │
+│  Cache TTL: 15min   Cache TTL: 1hr   Cache TTL: 24hr      │
+│  Max Size: 10k      Max Size: 100k   Max Size: Unlimited  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+#### **Rate Limiting Strategy**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                   Rate Limiting Tiers                      │
+│                                                             │
+│  Global: 20 req/min per IP                                 │
+│  Auth Endpoints: 1 req/20sec per IP                       │
+│  API Endpoints: 100 req/min per user                      │
+│  File Upload: 10 req/min per user                         │
+│  Bulk Operations: 5 req/min per user                      │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Security Architecture Details
+
+#### **Authentication Flow**
+
+```
+1. User Login Request → OTP Generation → SMS/Email Delivery
+2. OTP Verification → JWT Token Generation → Session Creation
+3. API Request → JWT Validation → Tenant Resolution → Authorization
+4. Token Refresh → New JWT Generation → Session Update
+5. Logout → Token Revocation → Session Cleanup
+```
+
+#### **Authorization Matrix**
+
+```
+Role         | OWNER | ADMIN | MANAGER | EMPLOYEE | VIEWER
+-------------|-------|-------|---------|----------|--------
+User Mgmt    |   ✓   |   ✓   |    ✗    |    ✗     |   ✗
+Data CRUD    |   ✓   |   ✓   |    ✓    |    ✓     |   ✗
+Reports      |   ✓   |   ✓   |    ✓    |  Limited | Limited
+Settings     |   ✓   |   ✓   |    ✗    |    ✗     |   ✗
+Integration  |   ✓   |   ✓   |    ✗    |    ✗     |   ✗
+```
+
+### Integration Architecture
+
+#### **External System Integration**
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                  Integration Patterns                       │
+│                                                             │
+│  ┌─────────────┐   ┌─────────────┐   ┌─────────────┐      │
+│  │   Third     │   │     AWS     │   │   Payment   │      │
+│  │   Party     │   │  Services   │   │  Gateways   │      │
+│  │    APIs     │   │(REST/SDK)   │   │   (REST)    │      │
+│  └─────────────┘   └─────────────┘   └─────────────┘      │
+│                                                             │
+│  Retry Logic: 3x   Circuit Breaker  Webhook Support       │
+│  Error Handling    Monitoring       Event Processing      │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ## Development Commands
 
@@ -80,9 +517,6 @@ This is a Gradle multi-module project with the following modules:
 ```bash
 # Run main application
 ./gradlew :ampairs_service:bootRun
-
-# Run Tally integration service
-./gradlew :tally:bootRun
 ```
 
 ### Testing
@@ -134,7 +568,7 @@ Each module follows DDD patterns:
 
 ### Integration Patterns
 
-- **Tally Integration**: XML-based communication with scheduled sync tasks
+- **External Integrations**: RESTful API communication with third-party services
 - **AWS Services**: S3 for file storage, SNS for notifications
 - **Database**: Connection pooling with HikariCP (20 max connections)
 
@@ -185,3 +619,63 @@ Each module follows DDD patterns:
 - Use JUnit 5 platform
 - Follow existing test structure in each module
 - Mock external dependencies appropriately
+
+## Module Documentation
+
+Each module now includes comprehensive README.md files with detailed architecture and functionality documentation:
+
+### Core Modules
+
+- **[core/README.md](core/README.md)** - Foundation module with shared utilities, AWS integration, multi-tenancy
+  support, and global exception handling
+- **[auth/README.md](auth/README.md)** - Authentication and JWT token management with OTP-based verification, user
+  management, and session handling
+- **[workspace/README.md](workspace/README.md)** - Company/workspace management with role-based access control,
+  user-company associations, and geographic support
+
+### Business Logic Modules
+
+- **[customer/README.md](customer/README.md)** - Customer relationship management with comprehensive address handling,
+  GST compliance, and pagination support
+- **[product/README.md](product/README.md)** - Product catalog with inventory management, tax integration, hierarchical
+  categorization, and AWS S3 image storage
+- **[order/README.md](order/README.md)** - Order processing with complex pricing calculations, tax handling, status
+  workflow, and customer-to-customer order support
+- **[invoice/README.md](invoice/README.md)** - Invoice generation with GST compliance, PDF creation, email delivery, and
+  order-to-invoice conversion
+
+### Application & Integration Modules
+
+- **[ampairs_service/README.md](ampairs_service/README.md)** - Main Spring Boot application with security configuration,
+  module aggregation, and production deployment setup
+
+### README Content Structure
+
+Each module README includes:
+
+- **Overview** - Module purpose and key functionality
+- **Architecture** - Package structure and component organization
+- **Key Features** - Major capabilities and business logic
+- **Data Models** - Entity structures and relationships with examples
+- **API Endpoints** - REST API documentation with request/response samples
+- **Configuration** - Required properties and environment setup
+- **Dependencies** - Core libraries and integration requirements
+- **Validation Rules** - Data validation and business rules
+- **Error Handling** - Exception patterns and error response formats
+- **Testing** - Unit and integration testing approaches
+- **Build & Deployment** - Commands and deployment procedures
+- **Usage Examples** - Code samples and integration patterns
+- **Integration** - Inter-module dependencies and communication
+
+### Navigation
+
+To understand a specific module's functionality:
+
+1. Start with the module's README.md file for comprehensive documentation
+2. Review the package structure and key components
+3. Check API endpoints for available operations
+4. Examine data models for entity relationships
+5. Review configuration requirements for setup
+
+The README files provide complete documentation for developers to understand, maintain, and extend each module's
+functionality within the Ampairs ecosystem.
