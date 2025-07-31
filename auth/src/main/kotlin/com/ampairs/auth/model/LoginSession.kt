@@ -2,15 +2,13 @@ package com.ampairs.auth.model
 
 import com.ampairs.core.domain.enums.VerificationStatus
 import com.ampairs.core.domain.model.BaseDomain
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.EnumType
-import jakarta.persistence.Enumerated
+import jakarta.persistence.*
 import java.time.LocalDateTime
 
 private const val LOGIN_SESSION_ID = "LGS"
 
-@Entity(name = "login_session")
+@Entity
+@Table(name = "login_session")
 class LoginSession : BaseDomain() {
 
     @Column(name = "country_code", nullable = false)
@@ -23,7 +21,7 @@ class LoginSession : BaseDomain() {
     var userAgent: String = ""
 
     @Column(name = "expiry_time", nullable = false)
-    val expiryTime: LocalDateTime = LocalDateTime.now().plusMinutes(15)
+    var expiresAt: LocalDateTime? = null
 
     @Column(name = "code")
     var code: String = ""
@@ -31,16 +29,25 @@ class LoginSession : BaseDomain() {
     @Column(name = "attempts")
     var attempts = 0
 
+    @Column(name = "verified")
+    var verified: Boolean = false
+
+    @Column(name = "verified_at")
+    var verifiedAt: LocalDateTime? = null
+
+    @Column(name = "expired")
+    var expired: Boolean = false
+
     @Enumerated(value = EnumType.STRING)
     @Column(name = "status")
     var status = VerificationStatus.NEW
 
     override fun obtainSeqIdPrefix(): String {
-        return LOGIN_SESSION_ID
+        return "LSQ"
     }
 
-    fun expired(): Boolean {
-        return LocalDateTime.now().isBefore(expiryTime)
+    fun isExpired(): Boolean {
+        return expiresAt?.isBefore(LocalDateTime.now()) ?: true
     }
 
     fun userName(): String {

@@ -36,7 +36,7 @@ class UserService @Autowired constructor(val userRepository: UserRepository) {
     }
 
     fun getUser(id: String): User {
-        return userRepository.findById(id).get()
+        return userRepository.findBySeqId(id).get()
     }
 
 }

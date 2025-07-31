@@ -6,8 +6,8 @@ import org.springframework.stereotype.Repository
 import java.util.*
 
 @Repository
-interface UserRepository : CrudRepository<User, Int> {
+interface UserRepository : CrudRepository<User, Long> {
     fun findByUserName(userName: String): Optional<User>
 
-    fun findById(id: String): Optional<User>
+    fun findBySeqId(seqId: String): Optional<User>
 }

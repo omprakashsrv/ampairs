@@ -32,7 +32,7 @@ data class OrderUpdateRequest(
 
 fun OrderUpdateRequest.toOrder(): Order {
     val order = Order()
-    order.id = this.id
+    order.seqId = this.id
     order.orderNumber = this.orderNumber
     order.invoiceRefId = this.invoiceRefId
     order.fromCustomerId = this.fromCustomerId
@@ -56,9 +56,9 @@ fun OrderUpdateRequest.toOrder(): Order {
 
 fun Order.toInvoice(): Invoice {
     val invoice = Invoice()
-    invoice.id = ""
+    invoice.id = 0
     invoice.invoiceNumber = ""
-    invoice.orderRefId = this.id
+    invoice.orderRefId = this.seqId
     invoice.fromCustomerId = this.fromCustomerId
     invoice.toCustomerId = this.toCustomerId
     invoice.fromCustomerName = this.fromCustomerName

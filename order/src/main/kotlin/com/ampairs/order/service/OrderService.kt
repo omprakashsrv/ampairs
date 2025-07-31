@@ -27,7 +27,7 @@ class OrderService @Autowired constructor(
 ) {
     @Transactional
     fun updateOrder(order: Order, orderItems: List<OrderItem>): OrderResponse {
-        val existingOrder = orderRepository.findById(order.id).getOrNull()
+        val existingOrder = orderRepository.findBySeqId(order.seqId).getOrNull()
         order.seqId = existingOrder?.seqId.toString()
         order.orderNumber = existingOrder?.orderNumber ?: ""
         if (order.orderNumber.isEmpty()) {
@@ -36,8 +36,8 @@ class OrderService @Autowired constructor(
         }
         orderRepository.save(order)
         orderItems.forEach { orderItem ->
-            if (orderItem.id.isNotEmpty()) {
-                val existingOrderItem = orderItemRepository.findById(orderItem.id).getOrNull()
+            if (orderItem.seqId.isNotEmpty()) {
+                val existingOrderItem = orderItemRepository.findBySeqId(orderItem.seqId).getOrNull()
                 orderItem.seqId = existingOrderItem?.seqId.toString()
             }
             orderItemRepository.save(orderItem)
@@ -56,8 +56,8 @@ class OrderService @Autowired constructor(
         }
         val savedOrder = orderRepository.save(order)
         val savedOrderItems = orderItems.map { orderItem ->
-            if (orderItem.id.isNotEmpty()) {
-                val existingOrderItem = orderItemRepository.findById(orderItem.id).getOrNull()
+            if (orderItem.seqId.isNotEmpty()) {
+                val existingOrderItem = orderItemRepository.findBySeqId(orderItem.seqId).getOrNull()
                 orderItem.seqId = existingOrderItem?.seqId.toString()
             }
             orderItemRepository.save(orderItem)

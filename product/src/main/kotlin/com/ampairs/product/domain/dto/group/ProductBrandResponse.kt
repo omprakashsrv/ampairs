@@ -13,7 +13,7 @@ data class ProductBrandResponse(
 fun List<ProductBrand>.asResponse(): List<ProductBrandResponse> {
     return map {
         ProductBrandResponse(
-            id = it.id,
+            id = it.seqId,
             name = it.name,
             refId = it.refId,
             active = it.active,

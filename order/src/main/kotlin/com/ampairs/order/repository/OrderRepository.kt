@@ -7,10 +7,8 @@ import org.springframework.stereotype.Repository
 import java.util.*
 
 @Repository
-interface OrderRepository : CrudRepository<Order, String> {
-
-    @Query("SELECT co FROM customer_order co WHERE co.id = :id")
-    override fun findById(id: String): Optional<Order>
+interface OrderRepository : CrudRepository<Order, Long> {
+    fun findBySeqId(seqId: String): Optional<Order>
 
     @Query("SELECT MAX(CAST(co.orderNumber AS INTEGER)) FROM customer_order co")
     fun findMaxOrderNumber(): Optional<String>

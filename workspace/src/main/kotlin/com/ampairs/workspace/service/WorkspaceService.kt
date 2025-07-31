@@ -30,19 +30,19 @@ class WorkspaceService @Autowired constructor(
 
     @Transactional
     fun updateWorkspace(company: Workspace, user: User): Workspace {
-        val newWorkspace = company.id.isEmpty()
+        val newWorkspace = company.seqId.isEmpty()
         if (!newWorkspace) {
             val existingWorkspace =
-                companyRepository.findById(company.id).orElseThrow {
+                companyRepository.findBySeqId(company.seqId).orElseThrow {
                     Exception("No company found with given id")
                 }
-            company.seqId = existingWorkspace.seqId
+            company.id = existingWorkspace.id
         }
         val updatedWorkspace = companyRepository.save(company)
         if (newWorkspace) {
             val userWorkspace = UserWorkspace()
-            userWorkspace.companyId = updatedWorkspace.id
-            userWorkspace.userId = user.id
+            userWorkspace.companyId = updatedWorkspace.seqId
+            userWorkspace.userId = user.seqId
             userWorkspace.role = Role.OWNER
             userWorkspaceRepository.save(userWorkspace)
         }

@@ -22,7 +22,7 @@ data class TaxCodeResponse(
 fun List<TaxCode>.asResponse(): List<TaxCodeResponse> {
     return map {
         TaxCodeResponse(
-            id = it.id,
+            id = it.seqId,
             code = it.code,
             description = it.description,
             type = it.type,

@@ -28,7 +28,7 @@ fun List<Inventory>.asResponse(): List<InventoryResponse> {
 
 fun Inventory.asResponse(): InventoryResponse {
     return InventoryResponse(
-        id = this.id,
+        id = this.seqId,
         productId = this.productId,
         refId = this.refId,
         description = this.description,

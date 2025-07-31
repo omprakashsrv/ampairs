@@ -26,7 +26,7 @@ data class InvoiceItemResponse(
 fun List<InvoiceItem>.toResponse(): List<InvoiceItemResponse> {
     return map {
         InvoiceItemResponse(
-            id = it.id,
+            id = it.seqId,
             itemNo = it.index,
             description = it.description,
             quantity = it.quantity,

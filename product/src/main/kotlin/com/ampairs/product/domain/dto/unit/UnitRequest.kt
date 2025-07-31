@@ -13,6 +13,7 @@ data class UnitRequest(
 fun List<UnitRequest>.asDatabaseModel(): List<Unit> {
     return map {
         val unit = Unit()
+        unit.seqId = it.id
         unit.name = it.name
         unit.shortName = it.shortName ?: it.name
         unit.decimalPlaces = it.decimalPlaces

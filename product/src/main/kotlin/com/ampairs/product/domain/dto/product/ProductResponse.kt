@@ -40,7 +40,7 @@ data class ProductResponse(
 fun List<Product>.asResponse(): List<ProductResponse> {
     return map {
         ProductResponse(
-            id = it.id,
+            id = it.seqId,
             name = it.name,
             code = it.code,
             mrp = it.mrp,
@@ -60,7 +60,7 @@ fun List<Product>.asResponse(): List<ProductResponse> {
             baseUnit = it.baseUnit?.asResponse(),
             images = it.images.map { productImage ->
                 val fileResponse = productImage.image?.toFileResponse() ?: FileResponse()
-                fileResponse.refId = productImage.id
+                fileResponse.refId = productImage.seqId
                 fileResponse
             },
             softDeleted = it.softDeleted,

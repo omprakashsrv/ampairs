@@ -17,7 +17,7 @@ class CustomerSyncTask @Autowired constructor(val tallyClient: TallyClient, val 
 
     @Scheduled(fixedDelay = 2 * 10 * 1000)
     fun syncCustomer() {
-        val user = userRepository.findById("")
+        val user = userRepository.findByIdString("")
         println("user = ${user}")
         runBlocking {
             val tallyLedgers = tallyClient.post(Type.LEDGER.toTallyXML())

@@ -10,7 +10,7 @@ data class UnitResponse(
 
 fun Unit.asResponse(): UnitResponse {
     return UnitResponse(
-        id = this.id, name = this.name, shortName = this.shortName, decimalPlaces = this.decimalPlaces,
+        id = this.seqId, name = this.name, shortName = this.shortName, decimalPlaces = this.decimalPlaces,
         refId = this.refId,
         active = this.active,
         softDeleted = this.softDeleted
@@ -20,7 +20,7 @@ fun Unit.asResponse(): UnitResponse {
 fun List<Unit>.asResponse(): List<UnitResponse> {
     return map {
         UnitResponse(
-            id = it.id,
+            id = it.seqId,
             name = it.name,
             shortName = it.shortName,
             decimalPlaces = it.decimalPlaces,

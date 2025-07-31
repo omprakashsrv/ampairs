@@ -33,7 +33,7 @@ data class CustomerUpdateRequest(
 
 fun CustomerUpdateRequest.toCustomer(): Customer {
     val customer = Customer()
-    customer.id = this.id ?: ""
+    customer.seqId = this.id ?: ""
     customer.refId = this.refId ?: ""
     customer.name = this.name
     customer.countryCode = this.countryCode

@@ -30,7 +30,7 @@ fun List<InventoryRequest>.asDatabaseModel(): List<Inventory> {
 
 fun InventoryRequest.asDatabaseModel(): Inventory {
     val inventory = Inventory()
-    inventory.id = this.id ?: ""
+    inventory.seqId = this.id ?: ""
     inventory.refId = this.refId
     inventory.productId = this.productId ?: ""
     inventory.unitId = this.baseUnitId

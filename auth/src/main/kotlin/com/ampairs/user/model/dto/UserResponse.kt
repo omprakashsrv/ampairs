@@ -13,7 +13,7 @@ data class UserResponse(
 
 fun User.toUserResponse(): UserResponse {
     return UserResponse(
-        id = this.id,
+        id = this.seqId,
         firstName = this.firstName,
         lastName = this.lastName,
         countryCode = this.countryCode,

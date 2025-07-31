@@ -11,8 +11,8 @@ interface TokenRepository : CrudRepository<Token, String> {
 
     @Query(value = """
             select t from token t inner join user u 
-            on t.userId = u.id 
-            where u.id = :userId and (t.expired = false or t.revoked = false)
+            on t.userId = u.seqId 
+            where u.seqId = :userId and (t.expired = false or t.revoked = false)
             """)
     fun findAllValidTokenByUser(userId: String): List<Token>
 

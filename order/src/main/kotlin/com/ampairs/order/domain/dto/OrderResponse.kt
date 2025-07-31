@@ -41,7 +41,7 @@ fun List<Order>.toResponse(): List<OrderResponse> {
 
 fun Order.toResponse(orderItems: List<OrderItem>): OrderResponse {
     return OrderResponse(
-        id = this.id,
+        id = this.seqId,
         orderDate = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH).format(this.orderDate),
         orderNumber = this.orderNumber,
         invoiceRefId = this.invoiceRefId,

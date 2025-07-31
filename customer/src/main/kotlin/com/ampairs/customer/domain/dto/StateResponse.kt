@@ -12,7 +12,7 @@ data class StateResponse(
 fun List<State>.asStatesResponse(): List<StateResponse> {
     return map {
         StateResponse(
-            id = it.id,
+            id = it.seqId,
             name = it.name,
             gstCode = it.gstCode,
             active = it.active

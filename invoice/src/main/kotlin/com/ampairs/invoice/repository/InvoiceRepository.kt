@@ -7,10 +7,10 @@ import org.springframework.stereotype.Repository
 import java.util.*
 
 @Repository
-interface InvoiceRepository : CrudRepository<Invoice, String> {
+interface InvoiceRepository : CrudRepository<Invoice, Long> {
 
-    @Query("SELECT co FROM invoice co WHERE co.id = :id")
-    override fun findById(id: String): Optional<Invoice>
+    @Query("SELECT co FROM invoice co WHERE co.seqId = :seqId")
+    fun findBySeqId(seqId: String): Invoice?
 
     @Query("SELECT MAX(CAST(co.invoiceNumber AS INTEGER)) FROM invoice co")
     fun findMaxInvoiceNumber(): Optional<String>

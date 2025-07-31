@@ -12,7 +12,7 @@ data class FileResponse(
 
 fun File.toFileResponse(): FileResponse {
     return FileResponse(
-        id = this.id,
+        id = this.seqId,
         name = this.name,
         bucket = this.bucket,
         objectKey = this.objectKey

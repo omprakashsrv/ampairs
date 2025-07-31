@@ -9,6 +9,6 @@ import java.util.*
 interface UserRepository : CrudRepository<User, Int> {
     fun findByUserName(userName: String): Optional<User>
 
-    fun findById(id: String): Optional<User>
+    fun findByIdString(id: String): Optional<User>
 
 }

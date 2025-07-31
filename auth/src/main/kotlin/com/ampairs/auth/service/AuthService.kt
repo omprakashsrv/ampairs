@@ -34,22 +34,22 @@ class AuthService @Autowired constructor(
         loginSession.phone = authInitRequest.phone
         loginSession.countryCode = authInitRequest.countryCode
         loginSession.code = UniqueIdGenerators.NUMERIC.generate(OTP_LENGTH)
-        loginSessionRepository.save(loginSession)
+        loginSession.expiresAt = java.time.LocalDateTime.now().plusSeconds(SMS_VERIFICATION_VALIDITY.toLong())
+        val savedSession = loginSessionRepository.save(loginSession)
         snsSmsTemplate.send(
             ("+" + authInitRequest.countryCode.toString() + authInitRequest.phone),
             loginSession.code + " is one time password to verify the phone number."
         )
         val genericSuccessResponse = AuthInitResponse()
         genericSuccessResponse.message = "OTP sent successfully"
-        genericSuccessResponse.sessionId = loginSession.id
+        genericSuccessResponse.sessionId = savedSession.seqId
         return genericSuccessResponse
     }
 
     @Transactional
     fun authenticate(request: AuthenticationRequest): AuthenticationResponse {
-        request.sessionId
-        val loginSession =
-            loginSessionRepository.findById(request.sessionId).orElseThrow { Exception("Invalid session Id") }
+        val loginSession = loginSessionRepository.findBySeqIdAndVerifiedFalseAndExpiredFalse(request.sessionId)
+            ?: throw Exception("Invalid session Id")
 
         if (loginSession.code == request.otp) {
             val user: User = userRepository.findByUserName(loginSession.userName())
@@ -69,14 +69,14 @@ class AuthService @Autowired constructor(
 
     private fun saveUserToken(user: User, jwtToken: String) {
         val token = Token()
-        token.userId = user.id
+        token.userId = user.seqId
         token.token = jwtToken
         token.tokenType = TokenType.BEARER
         tokenRepository.save(token)
     }
 
     private fun revokeAllUserTokens(user: User) {
-        val validUserTokens: List<Token> = tokenRepository.findAllValidTokenByUser(user.id)
+        val validUserTokens: List<Token> = tokenRepository.findAllValidTokenByUser(user.seqId)
         if (validUserTokens.isEmpty()) return
         validUserTokens.forEach { token ->
             token.expired = true
@@ -128,11 +128,15 @@ class AuthService @Autowired constructor(
     }
 
     fun checkSession(sessionId: String): SessionResponse {
-        val loginSession = loginSessionRepository.findById(sessionId).orElse(null)
+        val loginSession = loginSessionRepository.findBySeqId(sessionId)
         val genericSuccessResponse = GenericSuccessResponse()
         genericSuccessResponse.message = if (loginSession != null) "Session is valid" else "Session is not valid"
         genericSuccessResponse.success = (loginSession != null)
-        return SessionResponse(loginSession.id, loginSession.countryCode, loginSession.phone, loginSession.expired())
+        return if (loginSession != null) {
+            SessionResponse(loginSession.seqId, loginSession.countryCode, loginSession.phone, loginSession.isExpired())
+        } else {
+            SessionResponse("", 0, "", true)
+        }
     }
 
 

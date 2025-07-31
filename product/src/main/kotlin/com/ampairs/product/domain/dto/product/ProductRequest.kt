@@ -27,7 +27,7 @@ data class ProductRequest(
 fun List<ProductRequest>.asDatabaseModel(): List<Product> {
     return map {
         val product = Product()
-        product.id = it.id
+        product.seqId = it.id
         product.refId = it.refId
         product.name = it.name
         product.code = it.code

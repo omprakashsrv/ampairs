@@ -23,7 +23,7 @@ fun List<TaxInfoRequest>.asDatabaseModel(): List<TaxInfo> {
 
 fun TaxInfoRequest.asDatabaseModel(): TaxInfo {
     val taxInfo = TaxInfo()
-    taxInfo.id = this.id ?: ""
+    taxInfo.seqId = this.id ?: ""
     taxInfo.refId = this.refId
     taxInfo.name = this.name
     taxInfo.formattedName = this.formattedName ?: this.name

@@ -40,9 +40,9 @@ class SessionUserFilter @Autowired constructor(
         val user = auth.principal as User
         val companyId = request.getHeader("X-Workspace")
         if (!companyId.isNullOrEmpty()) {
-            val userCompanies = companyService.getUserCompanies(user.id)
+            val userCompanies = companyService.getUserCompanies(user.seqId)
             if (userCompanies.isNotEmpty()) {
-                val userWorkspace = userCompanies.find { it.id == companyId }
+                val userWorkspace = userCompanies.find { it.seqId == companyId }
                 if (userWorkspace != null) {
                     TenantContext.setCurrentTenant(userWorkspace.companyId)
                     val authToken = UsernamePasswordAuthenticationToken(

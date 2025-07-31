@@ -7,8 +7,9 @@ import jakarta.persistence.*
 abstract class BaseDomain {
 
     @Id
-    @Column(name = "id", length = 200, updatable = false, nullable = false)
-    var id: String = ""
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "id", updatable = false, nullable = false)
+    var id: Long = 0
 
     @Column(name = "seq_id", length = 200, updatable = false, nullable = false, unique = true)
     var seqId: String = ""

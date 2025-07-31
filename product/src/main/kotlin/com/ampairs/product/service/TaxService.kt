@@ -6,7 +6,6 @@ import com.ampairs.product.repository.TaxCodeRepository
 import com.ampairs.product.repository.TaxInfoRepository
 import jakarta.transaction.Transactional
 import org.springframework.stereotype.Service
-import kotlin.jvm.optionals.getOrNull
 
 
 @Service
@@ -17,14 +16,14 @@ class TaxService(
     @Transactional
     fun updateTaxInfos(taxInfos: List<TaxInfo>): List<TaxInfo> {
         taxInfos.forEach {
-            if (it.id.isNotEmpty()) {
-                val taxInfo = taxInfoRepository.findById(it.id).getOrNull()
-                it.seqId = taxInfo?.seqId.toString()
+            if (it.seqId.isNotEmpty()) {
+                val taxInfo = taxInfoRepository.findBySeqId(it.seqId)
+                it.id = taxInfo?.id ?: 0
                 it.refId = taxInfo?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val taxInfo = taxInfoRepository.findByRefId(it.refId)
-                it.seqId = taxInfo?.seqId.toString()
-                it.id = taxInfo?.id ?: ""
+                it.id = taxInfo?.id ?: 0
+                it.seqId = taxInfo?.seqId ?: ""
             }
             taxInfoRepository.save(it)
         }
@@ -42,14 +41,14 @@ class TaxService(
     @Transactional
     fun updateTaxCodes(taxCodes: List<TaxCode>): List<TaxCode> {
         taxCodes.forEach {
-            if (it.id.isNotEmpty()) {
-                val taxCode = taxCodeRepository.findById(it.id).getOrNull()
-                it.seqId = taxCode?.seqId.toString()
+            if (it.seqId.isNotEmpty()) {
+                val taxCode = taxCodeRepository.findBySeqId(it.seqId)
+                it.id = taxCode?.id ?: 0
                 it.refId = taxCode?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val taxCode = taxCodeRepository.findByRefId(it.refId)
-                it.seqId = taxCode?.seqId.toString()
-                it.id = taxCode?.id ?: ""
+                it.id = taxCode?.id ?: 0
+                it.seqId = taxCode?.seqId ?: ""
             }
             taxCodeRepository.save(it)
         }

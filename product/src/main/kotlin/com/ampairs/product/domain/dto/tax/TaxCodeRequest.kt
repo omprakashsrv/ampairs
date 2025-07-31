@@ -25,7 +25,7 @@ class TaxCodeRequest(
 fun List<TaxCodeRequest>.asDatabaseModel(): List<TaxCode> {
     return map {
         val taxCode = TaxCode()
-        taxCode.id = it.id
+        taxCode.seqId = it.id
         taxCode.refId = it.refId
         taxCode.code = it.code
         taxCode.type = it.type
