@@ -93,3 +93,17 @@ application:
 drees:
   stacktrace: true
 debug: false
+
+# Google reCAPTCHA v3 Configuration for Production
+google:
+  recaptcha:
+    enabled: ${RECAPTCHA_ENABLED:true}
+    secret-key: ${RECAPTCHA_SECRET_KEY}  # Must be set in production environment
+    site-key: ${RECAPTCHA_SITE_KEY}     # Reference only - used by frontend
+    verify-url: ${RECAPTCHA_VERIFY_URL:https://www.google.com/recaptcha/api/siteverify}
+    min-score: ${RECAPTCHA_MIN_SCORE:0.7}  # Higher threshold for production
+    timeout-ms: ${RECAPTCHA_TIMEOUT_MS:5000}
+    actions:
+      login: ${RECAPTCHA_ACTION_LOGIN:login}
+      verify-otp: ${RECAPTCHA_ACTION_VERIFY_OTP:verify_otp}
+      resend-otp: ${RECAPTCHA_ACTION_RESEND_OTP:resend_otp}

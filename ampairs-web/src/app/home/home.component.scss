@@ -1,0 +1,197 @@
+.home-container {
+  min-height: 100vh;
+  background-color: #f5f5f5;
+}
+
+.header-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.logo-icon {
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.profile-button {
+  border-radius: 50%;
+}
+
+.profile-avatar mat-icon {
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+}
+
+.user-menu {
+  min-width: 280px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  gap: 12px;
+}
+
+.user-avatar-large mat-icon {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+  color: #3f51b5;
+}
+
+.user-details {
+  flex: 1;
+}
+
+.user-name {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: #333;
+}
+
+.user-mobile,
+.user-email {
+  margin: 2px 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.logout-button {
+  color: #f44336;
+}
+
+.main-content {
+  padding: 24px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.welcome-card {
+  margin-bottom: 24px;
+}
+
+.welcome-icon {
+  margin-right: 8px;
+  color: #3f51b5;
+}
+
+.user-welcome {
+  margin-bottom: 24px;
+}
+
+.greeting {
+  font-size: 18px;
+  margin: 0 0 8px 0;
+  color: #333;
+}
+
+.login-info {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.feature-card {
+  padding: 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  text-align: center;
+  background: white;
+}
+
+.feature-icon {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+  color: #3f51b5;
+  margin-bottom: 8px;
+}
+
+.feature-card h4 {
+  margin: 8px 0 4px 0;
+  color: #333;
+}
+
+.feature-card p {
+  margin: 0;
+  color: #666;
+  font-size: 14px;
+}
+
+.quick-actions {
+  margin-top: 24px;
+}
+
+.actions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+}
+
+.action-button {
+  height: 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.action-button mat-icon {
+  font-size: 24px;
+  width: 24px;
+  height: 24px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .main-content {
+    padding: 16px;
+  }
+  
+  .user-info {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .actions-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 480px) {
+  .logo {
+    font-size: 16px;
+  }
+  
+  .actions-grid {
+    grid-template-columns: 1fr;
+  }
+}

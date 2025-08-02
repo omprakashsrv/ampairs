@@ -11,6 +11,7 @@ class AuthInitRequest {
     @NotEmpty
     var phone: String = ""
     var tokenId: String = ""
+    var recaptchaToken: String? = null
 
     fun phoneNumber(): String {
         return this.countryCode.toString() + this.phone

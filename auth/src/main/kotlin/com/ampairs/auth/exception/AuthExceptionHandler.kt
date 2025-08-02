@@ -201,6 +201,38 @@ class AuthExceptionHandler : BaseExceptionHandler() {
             moduleName = "auth"
         )
     }
+
+    @ExceptionHandler(RecaptchaValidationException::class)
+    fun handleRecaptchaValidationException(
+        ex: RecaptchaValidationException,
+        request: HttpServletRequest,
+    ): ResponseEntity<ApiResponse<Any>> {
+        logger.warn("reCAPTCHA validation failed for request {}: {}", request.requestURI, ex.message)
+        
+        return createErrorResponse(
+            httpStatus = HttpStatus.BAD_REQUEST,
+            errorCode = ErrorCodes.VALIDATION_FAILED,
+            message = "Security verification failed",
+            details = "Please complete the security verification",
+            request = request,
+            moduleName = "auth"
+        )
+    }
+
+    @ExceptionHandler(RecaptchaTokenMissingException::class)
+    fun handleRecaptchaTokenMissingException(
+        ex: RecaptchaTokenMissingException,
+        request: HttpServletRequest,
+    ): ResponseEntity<ApiResponse<Any>> {
+        return createErrorResponse(
+            httpStatus = HttpStatus.BAD_REQUEST,
+            errorCode = ErrorCodes.VALIDATION_FAILED,
+            message = "Security token required",
+            details = ex.message ?: "Security verification token is required",
+            request = request,
+            moduleName = "auth"
+        )
+    }
 }
 
 // Custom auth exceptions

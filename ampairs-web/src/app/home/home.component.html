@@ -1,0 +1,117 @@
+<div class="home-container">
+  <!-- Header -->
+  <mat-toolbar color="primary" class="header-toolbar">
+    <span class="logo">
+      <mat-icon class="logo-icon">business</mat-icon>
+      Ampairs
+    </span>
+    
+    <span class="spacer"></span>
+    
+    <!-- User Profile Menu -->
+    <div class="user-profile" *ngIf="currentUser$ | async as user">
+      <button mat-icon-button [matMenuTriggerFor]="userMenu" class="profile-button">
+        <div class="profile-avatar">
+          <mat-icon>account_circle</mat-icon>
+        </div>
+      </button>
+      
+      <mat-menu #userMenu="matMenu" class="user-menu">
+        <div class="user-info">
+          <div class="user-avatar-large">
+            <mat-icon>account_circle</mat-icon>
+          </div>
+          <div class="user-details">
+            <h3 class="user-name">{{user.name || 'User'}}</h3>
+            <p class="user-mobile">+91 {{user.mobileNumber}}</p>
+            <p class="user-email" *ngIf="user.email">{{user.email}}</p>
+          </div>
+        </div>
+        
+        <mat-divider></mat-divider>
+        
+        <button mat-menu-item (click)="editProfile()">
+          <mat-icon>edit</mat-icon>
+          <span>Edit Profile</span>
+        </button>
+        
+        <button mat-menu-item (click)="viewSettings()">
+          <mat-icon>settings</mat-icon>
+          <span>Settings</span>
+        </button>
+        
+        <mat-divider></mat-divider>
+        
+        <button mat-menu-item (click)="logout()" class="logout-button">
+          <mat-icon>logout</mat-icon>
+          <span>Logout</span>
+        </button>
+      </mat-menu>
+    </div>
+  </mat-toolbar>
+
+  <!-- Main Content -->
+  <div class="main-content">
+    <div class="welcome-section">
+      <mat-card class="welcome-card">
+        <mat-card-header>
+          <mat-card-title>
+            <mat-icon class="welcome-icon">home</mat-icon>
+            Welcome to Ampairs!
+          </mat-card-title>
+          <mat-card-subtitle>
+            You have successfully logged in to your account
+          </mat-card-subtitle>
+        </mat-card-header>
+        
+        <mat-card-content>
+          <div class="user-welcome" *ngIf="currentUser$ | async as user">
+            <p class="greeting">
+              Hello, <strong>{{user.name || 'User'}}</strong>! 👋
+            </p>
+            <p class="login-info">
+              You are logged in with mobile number: <strong>+91 {{user.mobileNumber}}</strong>
+            </p>
+          </div>
+          
+          <div class="features-grid">
+            <div class="feature-card" *ngFor="let feature of features">
+              <mat-icon class="feature-icon">{{feature.icon}}</mat-icon>
+              <h4>{{feature.title}}</h4>
+              <p>{{feature.description}}</p>
+            </div>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Quick Actions</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="actions-grid">
+            <button mat-raised-button color="primary" class="action-button">
+              <mat-icon>dashboard</mat-icon>
+              Dashboard
+            </button>
+            <button mat-raised-button color="accent" class="action-button">
+              <mat-icon>analytics</mat-icon>
+              Analytics
+            </button>
+            <button mat-raised-button class="action-button">
+              <mat-icon>people</mat-icon>
+              Users
+            </button>
+            <button mat-raised-button class="action-button">
+              <mat-icon>settings</mat-icon>
+              Settings
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>

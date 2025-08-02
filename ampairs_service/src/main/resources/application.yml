@@ -129,3 +129,17 @@ application:
 drees:
   stacktrace: true
 debug: false
+
+# Google reCAPTCHA v3 Configuration
+google:
+  recaptcha:
+    enabled: ${RECAPTCHA_ENABLED:true}
+    secret-key: ${RECAPTCHA_SECRET_KEY:6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe}  # Test secret key for development
+    site-key: ${RECAPTCHA_SITE_KEY:6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI}    # Reference only - used by frontend
+    verify-url: ${RECAPTCHA_VERIFY_URL:https://www.google.com/recaptcha/api/siteverify}
+    min-score: ${RECAPTCHA_MIN_SCORE:0.5}
+    timeout-ms: ${RECAPTCHA_TIMEOUT_MS:5000}
+    actions:
+      login: ${RECAPTCHA_ACTION_LOGIN:login}
+      verify-otp: ${RECAPTCHA_ACTION_VERIFY_OTP:verify_otp}
+      resend-otp: ${RECAPTCHA_ACTION_RESEND_OTP:resend_otp}

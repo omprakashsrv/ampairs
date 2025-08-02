@@ -1,0 +1,119 @@
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 16px;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+}
+
+.logo-icon {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+  color: #3f51b5;
+  margin-bottom: 8px;
+}
+
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.otp-input {
+  text-align: center;
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: 8px;
+}
+
+.auth-button {
+  margin-top: 16px;
+  height: 48px;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.button-spinner {
+  margin-right: 8px;
+}
+
+.card-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px 24px;
+}
+
+.resend-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.timer-text {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #666;
+  font-size: 14px;
+  margin: 0;
+}
+
+.timer-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.back-button {
+  margin-top: 8px;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.full-width {
+  width: 100%;
+}
+
+mat-card-header {
+  margin-bottom: 8px;
+}
+
+mat-card-title h1 {
+  margin: 8px 0;
+  font-size: 24px;
+  font-weight: 500;
+}
+
+mat-card-subtitle strong {
+  color: #3f51b5;
+  font-size: 16px;
+}
+
+/* Responsive design */
+@media (max-width: 480px) {
+  .auth-container {
+    padding: 8px;
+  }
+  
+  .auth-card {
+    margin: 0;
+  }
+  
+  .otp-input {
+    font-size: 20px;
+    letter-spacing: 4px;
+  }
+}
