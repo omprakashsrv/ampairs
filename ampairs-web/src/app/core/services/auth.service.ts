@@ -1,12 +1,11 @@
-import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { BehaviorSubject, Observable, throwError } from 'rxjs';
-import { map, catchError } from 'rxjs/operators';
-import { Router } from '@angular/router';
+import {Injectable} from '@angular/core';
+import {HttpClient} from '@angular/common/http';
+import {BehaviorSubject, Observable, throwError} from 'rxjs';
+import {catchError, map} from 'rxjs/operators';
+import {Router} from '@angular/router';
 import Cookies from 'js-cookie';
-import { environment } from '../../../environments/environment';
-import { NotificationService } from './notification.service';
-import { RecaptchaService } from './recaptcha.service';
+import {environment} from '../../../environments/environment';
+import {NotificationService} from './notification.service';
 
 export interface AuthInitRequest {
   phone: string;
@@ -58,25 +57,11 @@ export class AuthService {
   constructor(
     private http: HttpClient,
     private router: Router,
-    private notificationService: NotificationService,
-    private recaptchaService: RecaptchaService
+    private notificationService: NotificationService
   ) {
     this.checkAuthenticationStatus();
   }
 
-  /**
-   * Initialize authentication by sending mobile number with reCAPTCHA
-   */
-  async initAuthWithRecaptcha(mobileNumber: string): Promise<Observable<AuthInitResponse>> {
-    try {
-      const recaptchaToken = await this.recaptchaService.getLoginToken();
-      return this.initAuth(mobileNumber, recaptchaToken);
-    } catch (error) {
-      console.error('reCAPTCHA error:', error);
-      // Fallback to without reCAPTCHA if it fails
-      return this.initAuth(mobileNumber);
-    }
-  }
 
   /**
    * Initialize authentication by sending mobile number
@@ -95,19 +80,6 @@ export class AuthService {
       );
   }
 
-  /**
-   * Verify OTP with reCAPTCHA
-   */
-  async verifyOtpWithRecaptcha(sessionId: string, otp: string): Promise<Observable<AuthResponse>> {
-    try {
-      const recaptchaToken = await this.recaptchaService.getVerifyOtpToken();
-      return this.verifyOtp(sessionId, otp, recaptchaToken);
-    } catch (error) {
-      console.error('reCAPTCHA error:', error);
-      // Fallback to without reCAPTCHA if it fails
-      return this.verifyOtp(sessionId, otp);
-    }
-  }
 
   /**
    * Verify OTP and complete authentication
@@ -165,7 +137,7 @@ export class AuthService {
       catchError((error: any) => {
         // Handle different types of refresh token failures
         let logoutReason = 'Token refresh error';
-        
+
         if (error.status === 401) {
           logoutReason = 'Refresh token expired or invalid';
         } else if (error.status === 403) {
@@ -173,7 +145,7 @@ export class AuthService {
         } else if (error.status === 400) {
           logoutReason = 'Invalid refresh token format';
         }
-        
+
         this.logout(logoutReason);
         return this.handleError(error);
       })
@@ -187,7 +159,7 @@ export class AuthService {
     // Log the reason for logout for debugging
     if (reason) {
       console.log('Logout reason:', reason);
-      
+
       // Show appropriate notification based on reason
       if (reason.includes('expired') || reason.includes('invalid')) {
         this.notificationService.showSessionExpired();
@@ -207,7 +179,7 @@ export class AuthService {
     this.clearAuthTokens();
     this.currentUserSubject.next(null);
     this.isAuthenticatedSubject.next(false);
-    
+
     // Only navigate if not already on login page to avoid navigation loops
     if (this.router.url !== '/login') {
       this.router.navigate(['/login']);
@@ -321,7 +293,7 @@ export class AuthService {
    */
   private handleError(error: any): Observable<never> {
     console.error('Auth Service Error:', error);
-    
+
     let errorMessage = 'An unexpected error occurred';
     if (error.error && error.error.error && error.error.error.message) {
       errorMessage = error.error.error.message;

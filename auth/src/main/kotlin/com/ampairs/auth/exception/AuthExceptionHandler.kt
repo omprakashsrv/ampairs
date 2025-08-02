@@ -211,7 +211,7 @@ class AuthExceptionHandler : BaseExceptionHandler() {
         
         return createErrorResponse(
             httpStatus = HttpStatus.BAD_REQUEST,
-            errorCode = ErrorCodes.VALIDATION_FAILED,
+            errorCode = ErrorCodes.VALIDATION_ERROR,
             message = "Security verification failed",
             details = "Please complete the security verification",
             request = request,
@@ -226,7 +226,7 @@ class AuthExceptionHandler : BaseExceptionHandler() {
     ): ResponseEntity<ApiResponse<Any>> {
         return createErrorResponse(
             httpStatus = HttpStatus.BAD_REQUEST,
-            errorCode = ErrorCodes.VALIDATION_FAILED,
+            errorCode = ErrorCodes.VALIDATION_ERROR,
             message = "Security token required",
             details = ex.message ?: "Security verification token is required",
             request = request,

@@ -33,6 +33,7 @@ allOpen {
 dependencies {
     // Project modules
     implementation(project(mapOf("path" to ":core")))
+    implementation(project(mapOf("path" to ":notification")))
     implementation(project(mapOf("path" to ":auth")))
     implementation(project(mapOf("path" to ":workspace")))
     implementation(project(mapOf("path" to ":customer")))

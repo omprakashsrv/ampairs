@@ -8,9 +8,9 @@ import com.ampairs.auth.repository.LoginSessionRepository
 import com.ampairs.auth.repository.TokenRepository
 import com.ampairs.core.domain.dto.GenericSuccessResponse
 import com.ampairs.core.utils.UniqueIdGenerators
+import com.ampairs.notification.service.NotificationService
 import com.ampairs.user.model.User
 import com.ampairs.user.repository.UserRepository
-import io.awspring.cloud.sns.sms.SnsSmsTemplate
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.transaction.Transactional
 import org.springframework.beans.factory.annotation.Autowired
@@ -26,7 +26,7 @@ class AuthService @Autowired constructor(
     val tokenRepository: TokenRepository,
     val loginSessionRepository: LoginSessionRepository,
     val jwtService: JwtService,
-    val snsSmsTemplate: SnsSmsTemplate,
+    val notificationService: NotificationService,
 ) {
     @Transactional
     fun init(authInitRequest: AuthInitRequest): AuthInitResponse {
@@ -36,7 +36,8 @@ class AuthService @Autowired constructor(
         loginSession.code = UniqueIdGenerators.NUMERIC.generate(OTP_LENGTH)
         loginSession.expiresAt = java.time.LocalDateTime.now().plusSeconds(SMS_VERIFICATION_VALIDITY.toLong())
         val savedSession = loginSessionRepository.save(loginSession)
-        snsSmsTemplate.send(
+        // Queue SMS for async sending
+        notificationService.queueSms(
             ("+" + authInitRequest.countryCode.toString() + authInitRequest.phone),
             loginSession.code + " is one time password to verify the phone number."
         )

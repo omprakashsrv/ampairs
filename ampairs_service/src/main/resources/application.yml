@@ -143,3 +143,43 @@ google:
       login: ${RECAPTCHA_ACTION_LOGIN:login}
       verify-otp: ${RECAPTCHA_ACTION_VERIFY_OTP:verify_otp}
       resend-otp: ${RECAPTCHA_ACTION_RESEND_OTP:resend_otp}
+
+# Notification Configuration
+notification:
+  # Batch processing settings
+  batch-size: ${NOTIFICATION_BATCH_SIZE:10}
+  retry-delay-minutes: ${NOTIFICATION_RETRY_DELAY_MINUTES:5}
+  cleanup-days: ${NOTIFICATION_CLEANUP_DAYS:30}
+  
+  # Parallel processing settings
+  parallel-threads: ${NOTIFICATION_PARALLEL_THREADS:5}
+  thread-pool:
+    queue-capacity: ${NOTIFICATION_THREAD_POOL_QUEUE_CAPACITY:100}
+    keep-alive-seconds: ${NOTIFICATION_THREAD_POOL_KEEP_ALIVE_SECONDS:60}
+  
+  # SMS Configuration
+  sms:
+    # Primary SMS provider (MSG91 or AWS_SNS)
+    primary-provider: ${SMS_PRIMARY_PROVIDER:MSG91}
+    
+    # MSG91 Configuration
+    msg91:
+      enabled: ${SMS_MSG91_ENABLED:true}
+      auth-key: ${MSG91_AUTH_KEY:}
+      template-id: ${MSG91_TEMPLATE_ID:}
+      sender-id: ${MSG91_SENDER_ID:AMPAIR}
+      api-url: ${MSG91_API_URL:https://control.msg91.com/api/v5/otp}
+    
+    # AWS SNS Configuration (references aws.sns section above)
+    aws-sns:
+      enabled: ${SMS_AWS_SNS_ENABLED:true}
+  
+  # Email Configuration (future)
+  email:
+    enabled: ${EMAIL_ENABLED:false}
+    primary-provider: ${EMAIL_PRIMARY_PROVIDER:SMTP}
+  
+  # WhatsApp Configuration (future)
+  whatsapp:
+    enabled: ${WHATSAPP_ENABLED:false}
+    primary-provider: ${WHATSAPP_PRIMARY_PROVIDER:TWILIO}

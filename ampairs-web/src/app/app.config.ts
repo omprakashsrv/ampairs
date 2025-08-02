@@ -1,12 +1,13 @@
-import { ApplicationConfig, provideZoneChangeDetection } from '@angular/core';
-import { provideRouter } from '@angular/router';
-import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
-import { provideHttpClient } from '@angular/common/http';
-import { HTTP_INTERCEPTORS } from '@angular/common/http';
+import {ApplicationConfig, importProvidersFrom, provideZoneChangeDetection} from '@angular/core';
+import {provideRouter} from '@angular/router';
+import {provideAnimationsAsync} from '@angular/platform-browser/animations/async';
+import {HTTP_INTERCEPTORS, provideHttpClient} from '@angular/common/http';
+import {RECAPTCHA_SETTINGS, RECAPTCHA_V3_SITE_KEY, RecaptchaV3Module} from 'ng-recaptcha-2';
 
-import { routes } from './app.routes';
-import { AuthInterceptor } from './core/interceptors/auth.interceptor';
-import { LoadingInterceptor } from './core/interceptors/loading.interceptor';
+import {routes} from './app.routes';
+import {AuthInterceptor} from './core/interceptors/auth.interceptor';
+import {LoadingInterceptor} from './core/interceptors/loading.interceptor';
+import {environment} from '../environments/environment';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -14,6 +15,7 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideAnimationsAsync(),
     provideHttpClient(),
+    importProvidersFrom(RecaptchaV3Module),
     {
       provide: HTTP_INTERCEPTORS,
       useClass: LoadingInterceptor,
@@ -23,6 +25,16 @@ export const appConfig: ApplicationConfig = {
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,
       multi: true
+    },
+    {
+      provide: RECAPTCHA_V3_SITE_KEY,
+      useValue: environment.recaptcha.siteKey
+    },
+    {
+      provide: RECAPTCHA_SETTINGS,
+      useValue: {
+        siteKey: environment.recaptcha.siteKey
+      }
     }
   ]
 };
