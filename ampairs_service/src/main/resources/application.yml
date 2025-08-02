@@ -162,6 +162,11 @@ notification:
     # Primary SMS provider (MSG91 or AWS_SNS)
     primary-provider: ${SMS_PRIMARY_PROVIDER:MSG91}
     
+    # SMS Template Configuration
+    sender-name: ${SMS_SENDER_NAME:AMPAIR}
+    app-name: ${SMS_APP_NAME:Ampairs}
+    support-url: ${SMS_SUPPORT_URL:https://ampairs.com/support}
+    
     # MSG91 Configuration
     msg91:
       enabled: ${SMS_MSG91_ENABLED:true}
@@ -169,6 +174,7 @@ notification:
       template-id: ${MSG91_TEMPLATE_ID:}
       sender-id: ${MSG91_SENDER_ID:AMPAIR}
       api-url: ${MSG91_API_URL:https://control.msg91.com/api/v5/otp}
+      use-template: ${MSG91_USE_TEMPLATE:false}
     
     # AWS SNS Configuration (references aws.sns section above)
     aws-sns:
