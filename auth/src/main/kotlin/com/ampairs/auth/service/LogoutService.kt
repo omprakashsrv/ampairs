@@ -1,5 +1,6 @@
 package com.ampairs.auth.service
 
+import com.ampairs.auth.model.Token
 import com.ampairs.auth.repository.TokenRepository
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -23,13 +24,26 @@ class LogoutService @Autowired constructor(val tokenRepository: TokenRepository)
             return
         }
         val jwt: String = authHeader.substring(7)
+
+        // OPTIMIZATION: Add token to blacklist only if not already present
         val storedToken = tokenRepository.findByToken(jwt).orElse(null)
         if (storedToken != null) {
+            // Token already in database, mark as revoked
             storedToken.expired = true
             storedToken.revoked = true
             tokenRepository.save(storedToken)
-            SecurityContextHolder.clearContext()
+        } else {
+            // Token not in database (normal case), add to blacklist
+            val blacklistToken = Token()
+            blacklistToken.token = jwt
+            blacklistToken.expired = true
+            blacklistToken.revoked = true
+            blacklistToken.userId = authentication.name ?: "unknown"
+            blacklistToken.tokenType = com.ampairs.auth.model.enums.TokenType.BEARER
+            tokenRepository.save(blacklistToken)
         }
+
+        SecurityContextHolder.clearContext()
     }
 
     override fun onLogoutSuccess(

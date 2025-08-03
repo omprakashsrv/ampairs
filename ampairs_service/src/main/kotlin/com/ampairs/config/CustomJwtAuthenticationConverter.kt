@@ -29,23 +29,26 @@ class CustomJwtAuthenticationConverter(
             SimpleGrantedAuthority("ROLE_$role")
         }
 
-        // Validate token in our database (for revocation/expiry checks)
         val tokenValue = jwt.tokenValue
-        val isTokenValid = tokenRepository.findByToken(tokenValue)
-            .map { token -> !token.expired && !token.revoked }
-            .orElse(false)
-
-        if (!isTokenValid) {
-            throw IllegalArgumentException("Token is revoked or expired")
-        }
-
-        // Load user details for additional context
         val username = jwt.subject
+
+        // Load user details for token validation
         val userDetails = userDetailsService.loadUserByUsername(username)
 
-        // Validate token signature and expiry using our JwtService
+        // First: Validate token signature and expiry using our JwtService
+        // This is fast and doesn't require database access
         if (!jwtService.isTokenValid(tokenValue, userDetails)) {
             throw IllegalArgumentException("Token validation failed")
+        }
+
+        // Second: Only if token is valid, check database for revocation/blacklist
+        // This optimizes performance by avoiding database lookups for invalid tokens
+        val isTokenRevoked = tokenRepository.findByToken(tokenValue)
+            .map { token -> token.expired || token.revoked }
+            .orElse(false) // If token not found in DB, it's not revoked (normal case)
+
+        if (isTokenRevoked) {
+            throw IllegalArgumentException("Token is revoked or expired")
         }
 
         return JwtAuthenticationToken(jwt, authorities, username)

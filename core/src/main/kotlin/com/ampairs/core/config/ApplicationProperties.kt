@@ -14,6 +14,7 @@ data class ApplicationProperties(
     data class SecurityProperties(
         val jwt: JwtProperties = JwtProperties(),
         val cors: CorsProperties = CorsProperties(),
+        val tokenCleanup: TokenCleanupProperties = TokenCleanupProperties(),
     ) {
         data class JwtProperties(
             val secretKey: String = "",
@@ -31,6 +32,12 @@ data class ApplicationProperties(
             val allowedHeaders: List<String> = listOf("*"),
             val allowCredentials: Boolean = true,
             val maxAge: Duration = Duration.ofHours(1),
+        )
+
+        data class TokenCleanupProperties(
+            val enabled: Boolean = true,
+            val cron: String = "0 0 2 * * ?", // Daily at 2 AM
+            val batchSize: Int = 100, // Process tokens in batches to avoid memory/transaction issues
         )
     }
 

@@ -3,6 +3,7 @@ package com.ampairs.core.exception
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.ErrorCodes
 import com.ampairs.core.domain.dto.ErrorDetails
+import com.ampairs.core.logging.TraceIdFilter
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
@@ -103,7 +104,7 @@ abstract class BaseExceptionHandler {
     }
 
     private fun generateTraceId(): String {
-        return MDC.get("traceId") ?: UUID.randomUUID().toString().substring(0, 8)
+        return MDC.get(TraceIdFilter.TRACE_ID_MDC_KEY) ?: UUID.randomUUID().toString().substring(0, 8)
     }
 
     protected fun getModuleName(): String {

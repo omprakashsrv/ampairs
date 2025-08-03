@@ -39,8 +39,7 @@ allOpen {
 dependencies {
     api(project(mapOf("path" to ":core")))
 
-    val springCloudAwsVersion = "3.2.0"
-    implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:${springCloudAwsVersion}"))
+    implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.3.0"))
 
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework:spring-web")

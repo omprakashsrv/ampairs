@@ -53,10 +53,10 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
 
-    // AWS SDK
-    implementation(platform("software.amazon.awssdk:bom:2.20.56"))
-    implementation("software.amazon.awssdk:s3")
-    implementation("software.amazon.awssdk:sns")
+    // Spring Cloud AWS - Auto-configuration for AWS services
+    implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.3.0"))
+    implementation("io.awspring.cloud:spring-cloud-aws-starter-s3")
+    implementation("io.awspring.cloud:spring-cloud-aws-starter-sns")
 
     // Database
     runtimeOnly("com.mysql:mysql-connector-j")

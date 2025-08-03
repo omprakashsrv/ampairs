@@ -79,10 +79,10 @@ dependencies {
     // Database
     runtimeOnly("com.mysql:mysql-connector-j")
 
-    // AWS SDK
-    implementation(platform("software.amazon.awssdk:bom:2.20.56"))
-    implementation("software.amazon.awssdk:s3")
-    implementation("software.amazon.awssdk:sns")
+    // Spring Cloud AWS - Auto-configuration for AWS services
+    implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.3.0"))
+    implementation("io.awspring.cloud:spring-cloud-aws-starter-s3")
+    implementation("io.awspring.cloud:spring-cloud-aws-starter-sns")
 
     // Observability
     implementation("io.micrometer:micrometer-registry-prometheus")

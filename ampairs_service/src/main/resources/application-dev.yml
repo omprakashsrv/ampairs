@@ -2,14 +2,43 @@
 # This profile is designed for local development and testing
 
 spring:
-  profiles:
-    active: dev
-  
   # Development database settings (if different)
   datasource:
     url: jdbc:mysql://localhost:3306/munsi_app
     username: root
     password: pass
+
+  # Development caching - shorter TTL for faster development
+  cache:
+    caffeine:
+      spec: maximumSize=1000,expireAfterAccess=300s  # 5 minutes instead of 30
+
+  # Development database settings
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+
+  # Disable security for certain endpoints in development (optional)
+  security:
+    debug: true
+
+  # Spring Cloud AWS settings for development (using LocalStack or test credentials)
+  cloud:
+    aws:
+      region:
+        static: us-east-1
+        auto: false  # Disable auto-region detection in development
+      credentials:
+        instance-profile: false  # Use explicit credentials in development
+        access-key: ${AWS_ACCESS_KEY:test}  # Test credentials for LocalStack
+        secret-key: ${AWS_SECRET_KEY:test}
+      s3:
+        endpoint: ${AWS_S3_ENDPOINT:}  # Can be set to LocalStack endpoint
+      sns:
+        endpoint: ${AWS_SNS_ENDPOINT:}  # Can be set to LocalStack endpoint
 
 # Rate limiting - DISABLED for development
 bucket4j:
@@ -56,15 +85,16 @@ application:
     email:
       enabled: false  # Disable email in development
 
-# AWS settings for development (using LocalStack or test credentials)
-aws:
-  region: us-east-1
-  credentials:
-    use-iam-role: false  # Use explicit credentials in development
-  s3:
-    bucket: ampairs-files-dev
-  sns:
-    enabled: false  # Disable SMS in development or use LocalStack
+
+# Application-specific AWS settings for development
+ampairs:
+  aws:
+    s3:
+      default-bucket: ampairs-files-dev
+      upload-folder: uploads
+      max-file-size: 5MB  # Smaller for development
+    sns:
+      enabled: false  # Disable SMS in development
 
 # Development server settings
 server:
@@ -76,24 +106,7 @@ server:
   compression:
     enabled: false  # Disable compression for easier debugging
 
-# Development caching - shorter TTL for faster development
-spring:
-  cache:
-    caffeine:
-      spec: maximumSize=1000,expireAfterAccess=300s  # 5 minutes instead of 30
-
-# Development database settings
-spring:
-  jpa:
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-        use_sql_comments: true
-  
-  # Disable security for certain endpoints in development (optional)
-  security:
-    debug: true
+# Spring settings merged above
 
 # Development-specific management endpoints
 management:

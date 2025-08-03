@@ -1,24 +1,9 @@
 # Test Profile Configuration
 # This profile is designed for automated testing, including E2E tests
 
+# Spring configuration for tests
 spring:
-  profiles:
-    active: test
-
-# Rate limiting - DISABLED for testing
-bucket4j:
-  enabled: false
-
-# reCAPTCHA - DISABLED for testing
-google:
-  recaptcha:
-    enabled: false
-    secret-key: 6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe  # Test secret key
-    site-key: 6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI    # Test site key
-    min-score: 0.0  # Always pass in tests
-
-# Test database configuration
-spring:
+  # Test database configuration
   datasource:
     url: jdbc:mysql://localhost:3306/munsi_app_test
     username: root
@@ -35,6 +20,33 @@ spring:
     type: simple  # Use simple cache for tests
     caffeine:
       spec: maximumSize=100,expireAfterAccess=60s
+
+  # Spring Cloud AWS settings for tests - use mocks
+  cloud:
+    aws:
+      region:
+        static: us-east-1
+        auto: false
+      credentials:
+        instance-profile: false
+        access-key: test
+        secret-key: test
+      s3:
+        endpoint: http://localhost:4566  # LocalStack endpoint for tests
+      sns:
+        endpoint: http://localhost:4566  # LocalStack endpoint for tests
+
+# Rate limiting - DISABLED for testing
+bucket4j:
+  enabled: false
+
+# reCAPTCHA - DISABLED for testing
+google:
+  recaptcha:
+    enabled: false
+    secret-key: 6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe  # Test secret key
+    site-key: 6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI    # Test site key
+    min-score: 0.0  # Always pass in tests
 
 # Logging for tests - less verbose
 logging:
@@ -66,16 +78,16 @@ application:
     email:
       enabled: false  # Disable actual email in tests
 
-# AWS settings for tests - use mocks
-aws:
-  region: us-east-1
-  credentials:
-    use-iam-role: false
-  s3:
-    bucket: test-bucket
-    enabled: false  # Disable actual S3 in tests
-  sns:
-    enabled: false  # Disable actual SNS in tests
+
+# Application-specific AWS settings for tests
+ampairs:
+  aws:
+    s3:
+      default-bucket: test-bucket
+      upload-folder: test-uploads
+      max-file-size: 1MB  # Small for tests
+    sns:
+      enabled: false  # Disable actual SNS in tests
 
 # Test server settings
 server:

@@ -17,7 +17,7 @@ class AwsSnsSmsProvider @Autowired constructor(
 
     private val logger = LoggerFactory.getLogger(AwsSnsSmsProvider::class.java)
 
-    @Value("\${aws.sns.enabled:true}")
+    @Value("\${ampairs.aws.sns.enabled:true}")
     private var enabled: Boolean = true
 
     override fun sendSms(phoneNumber: String, message: String): NotificationResult {

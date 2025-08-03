@@ -1,6 +1,5 @@
 package com.ampairs.config
 
-import com.ampairs.auth.repository.TokenRepository
 import com.ampairs.auth.service.JwtService
 import com.ampairs.core.exception.AuthEntryPointJwt
 import org.springframework.beans.factory.annotation.Autowired
@@ -11,7 +10,6 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
-import org.springframework.security.core.userdetails.UserDetailsService
 import org.springframework.security.oauth2.jwt.JwtDecoder
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import org.springframework.security.web.SecurityFilterChain
@@ -25,8 +23,6 @@ import javax.crypto.spec.SecretKeySpec
 @ComponentScan(value = ["com.ampairs.core"])
 class SecurityConfiguration @Autowired constructor(
     val jwtService: JwtService,
-    val userDetailsService: UserDetailsService,
-    val tokenRepository: TokenRepository,
     val customJwtAuthenticationConverter: CustomJwtAuthenticationConverter,
     val logoutHandler: LogoutHandler,
     val logoutSuccessHandler: LogoutSuccessHandler,
