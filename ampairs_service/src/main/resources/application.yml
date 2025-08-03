@@ -54,6 +54,11 @@ spring:
       max-lifetime: 300000
       validation-timeout: 5000
       leak-detection-threshold: 300000
+  jpa:
+    hibernate:
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+      ddl-auto: update
   cloud:
     aws:
       region: ap-south-1
@@ -74,11 +79,6 @@ aws:
     bucket: ${AWS_S3_BUCKET:ampairs-files}
   sns:
     enabled: ${AWS_SNS_ENABLED:true}
-  jpa:
-    hibernate:
-      naming:
-        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
-      ddl-auto: update
 bucket4j:
   enabled: true
 
