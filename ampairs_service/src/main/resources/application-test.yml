@@ -1,0 +1,106 @@
+# Test Profile Configuration
+# This profile is designed for automated testing, including E2E tests
+
+spring:
+  profiles:
+    active: test
+
+# Rate limiting - DISABLED for testing
+bucket4j:
+  enabled: false
+
+# reCAPTCHA - DISABLED for testing
+google:
+  recaptcha:
+    enabled: false
+    secret-key: 6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe  # Test secret key
+    site-key: 6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI    # Test site key
+    min-score: 0.0  # Always pass in tests
+
+# Test database configuration
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/munsi_app_test
+    username: root
+    password: pass
+  
+  # JPA settings for tests
+  jpa:
+    hibernate:
+      ddl-auto: create-drop  # Recreate schema for each test run
+    show-sql: false  # Reduce noise in test logs
+
+  # Cache settings for tests
+  cache:
+    type: simple  # Use simple cache for tests
+    caffeine:
+      spec: maximumSize=100,expireAfterAccess=60s
+
+# Logging for tests - less verbose
+logging:
+  level:
+    com.ampairs: INFO
+    org.springframework: WARN
+    org.hibernate: WARN
+    org.springframework.web: INFO
+  pattern:
+    console: "%highlight(%-5level) [%thread] [%cyan(%logger{36})]: %message%n"
+
+# Test-specific application settings
+application:
+  cors:
+    allowed-origins:
+      - "http://localhost:4200"
+      - "http://127.0.0.1:4200"
+  
+  # Fast JWT settings for tests
+  jwt:
+    secret: test-secret-key-for-testing-only-not-for-production-use
+    access-token-validity: PT1H    # 1 hour
+    refresh-token-validity: P1D    # 1 day
+
+  # Mock notifications for tests
+  notifications:
+    sms:
+      enabled: false  # Disable actual SMS in tests
+    email:
+      enabled: false  # Disable actual email in tests
+
+# AWS settings for tests - use mocks
+aws:
+  region: us-east-1
+  credentials:
+    use-iam-role: false
+  s3:
+    bucket: test-bucket
+    enabled: false  # Disable actual S3 in tests
+  sns:
+    enabled: false  # Disable actual SNS in tests
+
+# Test server settings
+server:
+  port: 8080
+  error:
+    include-stacktrace: always
+    include-message: always
+    include-binding-errors: always
+
+# Test management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,env"
+  endpoint:
+    health:
+      show-details: always
+
+# Test-specific debug settings
+debug: false
+
+# Override any OTP settings for consistent testing
+otp:
+  length: 6
+  validity-minutes: 10
+  test-mode: true  # Enable test mode if implemented
+  test-otp: "123456"  # Fixed OTP for testing

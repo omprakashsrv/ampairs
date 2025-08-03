@@ -80,7 +80,7 @@ aws:
   sns:
     enabled: ${AWS_SNS_ENABLED:true}
 bucket4j:
-  enabled: true
+  enabled: ${BUCKET4J_ENABLED:false}  # Disabled by default for development
 
 application:
   multitenancy:

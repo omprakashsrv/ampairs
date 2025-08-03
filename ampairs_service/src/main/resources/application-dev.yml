@@ -1,0 +1,111 @@
+# Development Profile Configuration
+# This profile is designed for local development and testing
+
+spring:
+  profiles:
+    active: dev
+  
+  # Development database settings (if different)
+  datasource:
+    url: jdbc:mysql://localhost:3306/munsi_app
+    username: root
+    password: pass
+
+# Rate limiting - DISABLED for development
+bucket4j:
+  enabled: false
+
+# reCAPTCHA - Using test keys for development
+google:
+  recaptcha:
+    enabled: false  # Disabled for easier development
+    secret-key: 6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe  # Test secret key
+    site-key: 6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI    # Test site key
+    min-score: 0.1  # Very lenient for development
+
+# Logging - More verbose for development
+logging:
+  level:
+    com.ampairs: DEBUG
+    org.springframework.web: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+  pattern:
+    console: "%highlight(%-5level) [%date{HH:mm:ss.SSS}] [%thread] [%cyan(%logger{36})]: %message%n"
+
+# Development-specific application settings
+application:
+  cors:
+    allowed-origins:
+      - "http://localhost:4200"  # Angular dev server
+      - "http://localhost:3000"  # React dev server (if used)
+      - "http://127.0.0.1:4200"
+      - "http://127.0.0.1:3000"
+  
+  # Relaxed JWT settings for development
+  jwt:
+    access-token-validity: PT24H  # 24 hours instead of 1 hour
+    refresh-token-validity: P7D   # 7 days
+
+  # SMS/Email settings for development
+  notifications:
+    sms:
+      enabled: true
+      # Could use a test/mock provider in development
+    email:
+      enabled: false  # Disable email in development
+
+# AWS settings for development (using LocalStack or test credentials)
+aws:
+  region: us-east-1
+  credentials:
+    use-iam-role: false  # Use explicit credentials in development
+  s3:
+    bucket: ampairs-files-dev
+  sns:
+    enabled: false  # Disable SMS in development or use LocalStack
+
+# Development server settings
+server:
+  port: 8080
+  error:
+    include-stacktrace: always
+    include-message: always
+    include-binding-errors: always
+  compression:
+    enabled: false  # Disable compression for easier debugging
+
+# Development caching - shorter TTL for faster development
+spring:
+  cache:
+    caffeine:
+      spec: maximumSize=1000,expireAfterAccess=300s  # 5 minutes instead of 30
+
+# Development database settings
+spring:
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+  
+  # Disable security for certain endpoints in development (optional)
+  security:
+    debug: true
+
+# Development-specific management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"  # Expose all actuator endpoints in development
+  endpoint:
+    health:
+      show-details: always
+    env:
+      show-values: always
+
+# Development-specific debug settings
+debug: true
