@@ -26,6 +26,7 @@ class AuthController @Autowired constructor(
         request: HttpServletRequest
     ): AuthInitResponse {
         logger.info("Auth init request for phone: {}", authInitRequest.phoneNumber())
+        logger.debug("Received reCAPTCHA token: '{}'", authInitRequest.recaptchaToken)
         
         // Validate reCAPTCHA if token is provided
         validateRecaptcha(authInitRequest.recaptchaToken, "login", getClientIp(request))
@@ -67,15 +68,23 @@ class AuthController @Autowired constructor(
      * Validate reCAPTCHA token if reCAPTCHA is enabled
      */
     private fun validateRecaptcha(recaptchaToken: String?, expectedAction: String, clientIp: String?) {
+        logger.debug("validateRecaptcha called: token={}, action={}, ip={}", recaptchaToken, expectedAction, clientIp)
+        
         if (!recaptchaValidationService.isEnabled()) {
             logger.debug("reCAPTCHA validation disabled, skipping validation")
             return
         }
 
+        logger.debug("reCAPTCHA validation enabled, proceeding with validation")
         val validationResult = recaptchaValidationService.validateRecaptcha(
             token = recaptchaToken,
             expectedAction = expectedAction,
             remoteIp = clientIp
+        )
+
+        logger.debug(
+            "reCAPTCHA validation result: success={}, score={}, message={}",
+            validationResult.success, validationResult.score, validationResult.message
         )
 
         if (!validationResult.success) {

@@ -50,6 +50,11 @@ data class RecaptchaConfiguration(
      * Development token configuration
      */
     var development: Development = Development(),
+
+    /**
+     * IP whitelist configuration
+     */
+    var whitelist: Whitelist = Whitelist(),
 ) {
 
     data class Actions(
@@ -81,5 +86,26 @@ data class RecaptchaConfiguration(
          * Example: "dev-dummy-token-*,test-token-*"
          */
         var tokenPatterns: String = "dev-dummy-token-*,test-token-*",
+    )
+
+    data class Whitelist(
+        /**
+         * Enable IP whitelisting for reCAPTCHA score bypass
+         */
+        var enabled: Boolean = false,
+
+        /**
+         * Comma-separated list of IP addresses that should bypass score validation
+         * Supports CIDR notation and wildcards
+         * Example: "127.0.0.1,192.168.1.0/24,10.0.0.*"
+         */
+        var ipAddresses: String = "127.0.0.1,::1",
+
+        /**
+         * Whether to still validate tokens with Google API for whitelisted IPs
+         * If true: validates with Google but accepts any score
+         * If false: completely bypasses Google validation for whitelisted IPs
+         */
+        var validateWithGoogle: Boolean = true,
     )
 }

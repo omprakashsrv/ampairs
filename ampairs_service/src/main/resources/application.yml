@@ -197,7 +197,12 @@ google:
     # Development token configuration
     development:
       enabled: ${RECAPTCHA_DEV_MODE_ENABLED:false}
-      token-patterns: ${RECAPTCHA_DEV_TOKEN_PATTERNS:dev-dummy-token-*,test-token-*}
+      tokenPatterns: ${RECAPTCHA_DEV_TOKEN_PATTERNS:dev-dummy-token-*,test-token-*}
+    # IP whitelist configuration
+    whitelist:
+      enabled: ${RECAPTCHA_WHITELIST_ENABLED:false}
+      ipAddresses: ${RECAPTCHA_WHITELIST_IPS:127.0.0.1,::1}
+      validateWithGoogle: ${RECAPTCHA_WHITELIST_VALIDATE_WITH_GOOGLE:true}
 
 # Notification Configuration
 notification:
