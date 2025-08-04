@@ -1,8 +1,8 @@
 package com.ampairs.auth.service
 
+import com.ampairs.auth.config.RecaptchaConfiguration
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpEntity
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
@@ -15,24 +15,14 @@ import org.springframework.web.client.RestTemplate
 
 /**
  * Service for validating Google reCAPTCHA v3 tokens
+ * Supports development mode for bypassing validation with specific token patterns
  */
 @Service
-class RecaptchaValidationService {
+class RecaptchaValidationService(
+    private val recaptchaConfiguration: RecaptchaConfiguration,
+) {
 
     private val logger = LoggerFactory.getLogger(RecaptchaValidationService::class.java)
-
-    @Value("\${google.recaptcha.secret-key}")
-    private lateinit var secretKey: String
-
-    @Value("\${google.recaptcha.verify-url:https://www.google.com/recaptcha/api/siteverify}")
-    private lateinit var verifyUrl: String
-
-    @Value("\${google.recaptcha.min-score:0.5}")
-    private var minScore: Double = 0.5
-
-    @Value("\${google.recaptcha.enabled:true}")
-    private var enabled: Boolean = true
-
     private val restTemplate = RestTemplate()
 
     /**
@@ -48,7 +38,7 @@ class RecaptchaValidationService {
         expectedAction: String,
         remoteIp: String? = null,
     ): RecaptchaValidationResult {
-        if (!enabled) {
+        if (!recaptchaConfiguration.enabled) {
             logger.debug("reCAPTCHA validation disabled, allowing request")
             return RecaptchaValidationResult(
                 success = true,
@@ -71,6 +61,20 @@ class RecaptchaValidationService {
                 challengeTs = null,
                 errorCodes = listOf("missing-input-response"),
                 message = "reCAPTCHA token is required"
+            )
+        }
+
+        // Check if this is a development token that should bypass Google validation
+        if (recaptchaConfiguration.development.enabled && isDevelopmentToken(token)) {
+            logger.info("Development token detected, bypassing Google reCAPTCHA validation: {}", token)
+            return RecaptchaValidationResult(
+                success = true,
+                score = 1.0,
+                action = expectedAction,
+                hostname = "localhost",
+                challengeTs = java.time.Instant.now().toString(),
+                errorCodes = emptyList(),
+                message = "Development token validation successful"
             )
         }
 
@@ -110,7 +114,7 @@ class RecaptchaValidationService {
         headers.contentType = MediaType.APPLICATION_FORM_URLENCODED
 
         val body: MultiValueMap<String, String> = LinkedMultiValueMap()
-        body.add("secret", secretKey)
+        body.add("secret", recaptchaConfiguration.secretKey)
         body.add("response", token)
         if (!remoteIp.isNullOrBlank()) {
             body.add("remoteip", remoteIp)
@@ -119,7 +123,11 @@ class RecaptchaValidationService {
         val requestEntity = HttpEntity(body, headers)
 
         logger.debug("Calling Google reCAPTCHA API for token validation")
-        return restTemplate.postForEntity(verifyUrl, requestEntity, RecaptchaApiResponse::class.java)
+        return restTemplate.postForEntity(
+            recaptchaConfiguration.verifyUrl,
+            requestEntity,
+            RecaptchaApiResponse::class.java
+        )
     }
 
     /**
@@ -169,8 +177,8 @@ class RecaptchaValidationService {
         }
 
         // Check score threshold
-        if (score < minScore) {
-            val message = "reCAPTCHA score too low: $score < $minScore"
+        if (score < recaptchaConfiguration.minScore) {
+            val message = "reCAPTCHA score too low: $score < ${recaptchaConfiguration.minScore}"
             logger.warn(message)
             return RecaptchaValidationResult(
                 success = false,
@@ -212,9 +220,38 @@ class RecaptchaValidationService {
     }
 
     /**
+     * Check if the given token matches any of the configured development token patterns
+     * Supports wildcards (*) at the end of patterns
+     * @param token The token to check
+     * @return true if the token matches a development pattern, false otherwise
+     */
+    private fun isDevelopmentToken(token: String): Boolean {
+        val patterns = recaptchaConfiguration.development.tokenPatterns
+            .split(",")
+            .map { it.trim() }
+            .filter { it.isNotBlank() }
+
+        return patterns.any { pattern ->
+            when {
+                pattern.endsWith("*") -> {
+                    val prefix = pattern.substring(0, pattern.length - 1)
+                    token.startsWith(prefix)
+                }
+
+                else -> token == pattern
+            }
+        }
+    }
+
+    /**
      * Check if reCAPTCHA validation is enabled
      */
-    fun isEnabled(): Boolean = enabled
+    fun isEnabled(): Boolean = recaptchaConfiguration.enabled
+
+    /**
+     * Check if development mode is enabled
+     */
+    fun isDevelopmentModeEnabled(): Boolean = recaptchaConfiguration.development.enabled
 }
 
 /**

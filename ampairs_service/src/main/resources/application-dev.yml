@@ -44,13 +44,16 @@ spring:
 bucket4j:
   enabled: false
 
-# reCAPTCHA - Using test keys for development
+# reCAPTCHA - Development configuration with dev token support
 google:
   recaptcha:
-    enabled: false  # Disabled for easier development
+    enabled: true  # Enabled but with dev token support
     secret-key: 6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe  # Test secret key
     site-key: 6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI    # Test site key
     min-score: 0.1  # Very lenient for development
+    development:
+      enabled: true  # Enable development mode
+      token-patterns: dev-dummy-token-*,test-token-*,local-test-*
 
 # Logging - More verbose for development
 logging:

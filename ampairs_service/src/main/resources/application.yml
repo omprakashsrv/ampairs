@@ -194,6 +194,10 @@ google:
       login: ${RECAPTCHA_ACTION_LOGIN:login}
       verify-otp: ${RECAPTCHA_ACTION_VERIFY_OTP:verify_otp}
       resend-otp: ${RECAPTCHA_ACTION_RESEND_OTP:resend_otp}
+    # Development token configuration
+    development:
+      enabled: ${RECAPTCHA_DEV_MODE_ENABLED:false}
+      token-patterns: ${RECAPTCHA_DEV_TOKEN_PATTERNS:dev-dummy-token-*,test-token-*}
 
 # Notification Configuration
 notification:

@@ -45,6 +45,11 @@ data class RecaptchaConfiguration(
      * Actions configuration for different endpoints
      */
     var actions: Actions = Actions(),
+
+    /**
+     * Development token configuration
+     */
+    var development: Development = Development(),
 ) {
 
     data class Actions(
@@ -62,5 +67,19 @@ data class RecaptchaConfiguration(
          * Expected action for resend OTP
          */
         var resendOtp: String = "resend_otp",
+    )
+
+    data class Development(
+        /**
+         * Enable development mode for token validation
+         */
+        var enabled: Boolean = false,
+
+        /**
+         * Comma-separated list of token patterns that should bypass Google validation
+         * Supports wildcards (*) at the end of patterns
+         * Example: "dev-dummy-token-*,test-token-*"
+         */
+        var tokenPatterns: String = "dev-dummy-token-*,test-token-*",
     )
 }
