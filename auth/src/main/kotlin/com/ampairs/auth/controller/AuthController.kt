@@ -48,20 +48,44 @@ class AuthController @Autowired constructor(
         
         // Validate reCAPTCHA if token is provided
         validateRecaptcha(authenticationRequest.recaptchaToken, "verify_otp", getClientIp(request))
-        
-        return authService.authenticate(authenticationRequest)
+
+        return authService.authenticate(authenticationRequest, request)
     }
 
     @PostMapping("/refresh_token")
-    fun refreshToken(@RequestBody @Valid request: RefreshTokenRequest): AuthenticationResponse {
+    fun refreshToken(
+        @RequestBody @Valid refreshTokenRequest: RefreshTokenRequest,
+        request: HttpServletRequest,
+    ): AuthenticationResponse {
         // No reCAPTCHA validation needed for refresh token (already authenticated)
-        return authService.refreshToken(request)
+        return authService.refreshToken(refreshTokenRequest, request)
     }
 
     @PostMapping("/logout")
     fun logout(request: HttpServletRequest): GenericSuccessResponse {
         // No reCAPTCHA validation needed for logout (already authenticated)
         return authService.logout(request)
+    }
+
+    @PostMapping("/logout/all")
+    fun logoutAllDevices(request: HttpServletRequest): GenericSuccessResponse {
+        // Logout from all devices
+        return authService.logoutAllDevices(request)
+    }
+
+    @GetMapping("/devices")
+    fun getUserDevices(request: HttpServletRequest): List<DeviceSessionDto> {
+        // Get all active device sessions for the authenticated user
+        return authService.getUserDevices(request)
+    }
+
+    @PostMapping("/devices/{deviceId}/logout")
+    fun logoutFromDevice(
+        @PathVariable deviceId: String,
+        request: HttpServletRequest,
+    ): GenericSuccessResponse {
+        // Logout from a specific device
+        return authService.logoutFromDevice(request, deviceId)
     }
 
     /**

@@ -23,6 +23,9 @@ class Token : BaseDomain() {
     @Column(name = "user_id", nullable = false)
     var userId: String = ""
 
+    @Column(name = "device_id")
+    var deviceId: String? = null
+
     @Enumerated(EnumType.STRING)
     @Column(name = "token_type", nullable = false)
     var tokenType = TokenType.BEARER

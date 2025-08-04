@@ -25,6 +25,7 @@ class JwtService(
         const val USER_ID_CLAIM = "userId"
         const val ROLES_CLAIM = "roles"
         const val TOKEN_TYPE_CLAIM = "type"
+        const val DEVICE_ID_CLAIM = "deviceId"
         const val ACCESS_TOKEN_TYPE = "access"
         const val REFRESH_TOKEN_TYPE = "refresh"
     }
@@ -48,6 +49,10 @@ class JwtService(
         }
     }
 
+    fun extractDeviceId(token: String): String? {
+        return extractClaim(token) { claims: Claims -> claims[DEVICE_ID_CLAIM] as? String }
+    }
+
     fun <T> extractClaim(token: String, claimsResolver: Function<Claims, T>): T {
         val claims = extractAllClaims(token)
         return claimsResolver.apply(claims)
@@ -67,8 +72,26 @@ class JwtService(
         )
     }
 
+    fun generateTokenWithDevice(userDetails: UserDetails, deviceId: String): String {
+        val extraClaims = mapOf(DEVICE_ID_CLAIM to deviceId)
+        return generateToken(extraClaims, userDetails)
+    }
+
     fun generateRefreshToken(userDetails: UserDetails): String {
         val claims = mapOf(TOKEN_TYPE_CLAIM to REFRESH_TOKEN_TYPE)
+        return buildToken(
+            claims,
+            userDetails,
+            applicationProperties.security.jwt.refreshToken.expiration.toMillis(),
+            REFRESH_TOKEN_TYPE
+        )
+    }
+
+    fun generateRefreshTokenWithDevice(userDetails: UserDetails, deviceId: String): String {
+        val claims = mapOf(
+            TOKEN_TYPE_CLAIM to REFRESH_TOKEN_TYPE,
+            DEVICE_ID_CLAIM to deviceId
+        )
         return buildToken(
             claims,
             userDetails,

@@ -17,7 +17,9 @@ The application has been significantly restructured with modern Spring Boot best
 
 - **Removed hardcoded credentials** - All AWS and sensitive configurations now use environment variables or IAM roles
 - **Enhanced JWT implementation** - Added proper token validation, refresh token support, and tenant-aware claims
+- **Multi-device authentication** - Support for multiple concurrent logins with device tracking and management
 - **Multi-tenant security** - JWT tokens now include tenant context and user roles
+- **Device-aware security** - JWT tokens include device_id for device-specific session management
 - **Comprehensive error handling** - Global exception handler with proper HTTP status codes and error responses
 
 ### Configuration Management
@@ -456,14 +458,53 @@ Workspace (1) ────── (N) User_Company ────── (N) User
 
 ### Security Architecture Details
 
-#### **Authentication Flow**
+#### **Multi-Device Authentication Flow**
 
 ```
-1. User Login Request → OTP Generation → SMS/Email Delivery
-2. OTP Verification → JWT Token Generation → Session Creation
-3. API Request → JWT Validation → Tenant Resolution → Authorization
-4. Token Refresh → New JWT Generation → Session Update
-5. Logout → Token Revocation → Session Cleanup
+1. User Login Request → Device Info Extraction → OTP Generation → SMS/Email Delivery
+2. OTP Verification → Device Session Creation → JWT Token Generation (with device_id)
+3. API Request → JWT Validation → Device Validation → Tenant Resolution → Authorization
+4. Token Refresh → Device Session Update → New JWT Generation
+5. Device Logout → Device Session Deactivation (other devices remain active)
+6. Logout All Devices → All Device Sessions Deactivated → All Tokens Revoked
+```
+
+#### **Device Session Management**
+
+The application supports multiple concurrent logins from different devices:
+
+- **Device Identification**: Each device gets a unique device_id (client-provided for mobile, server-generated for web)
+- **Device Tracking**: Comprehensive device information including browser, OS, IP address, and user agent
+- **Session Isolation**: Each device maintains its own session with independent refresh tokens
+- **Device-Specific Operations**: Login, logout, and token refresh are device-specific
+- **Security Monitoring**: Track login history, IP addresses, and suspicious activity per device
+
+**Device Session Entity Structure:**
+
+```kotlin
+DeviceSession {
+  deviceId: String           // Unique device identifier
+  deviceName: String         // Human-readable device name
+  deviceType: String         // mobile, desktop, tablet
+  platform: String           // iOS, Android, Web
+  browser: String            // Chrome, Safari, Mobile App
+  os: String                 // iOS 17.1, Windows 11, etc.
+  ipAddress: String          // Current IP address
+  userAgent: String          // Full user agent string
+  location: String?          // Optional location based on IP
+  lastActivity: LocalDateTime // Last API request timestamp
+  loginTime: LocalDateTime   // Initial login timestamp
+  isActive: Boolean          // Session status
+  refreshTokenHash: String   // Hashed refresh token
+}
+```
+
+**API Endpoints for Device Management:**
+```
+GET    /auth/v1/devices                    # List all active devices
+POST   /auth/v1/devices/{deviceId}/logout  # Logout specific device
+POST   /auth/v1/logout                     # Logout current device
+POST   /auth/v1/logout/all                 # Logout all devices
 ```
 
 #### **Authorization Matrix**
@@ -613,6 +654,154 @@ Each module follows DDD patterns:
 - Use proper HTTP status codes
 - Implement pagination for list endpoints
 - Include proper validation annotations
+
+### JSON Naming Convention
+
+**IMPORTANT: Always use snake_case for JSON properties in REST APIs**
+
+The application is configured with:
+
+```yaml
+spring:
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+```
+
+This means:
+
+- **All JSON requests/responses use snake_case** (e.g., `country_code`, `recaptcha_token`, `session_id`)
+- **Kotlin properties remain camelCase** (e.g., `countryCode`, `recaptchaToken`, `sessionId`)
+- **Use `@JsonProperty("snake_case_name")` annotations** on DTOs to map between JSON and Kotlin naming conventions
+
+Example DTO pattern:
+
+```kotlin
+data class AuthInitRequest(
+  @JsonProperty("country_code")
+  var countryCode: Int = 91,
+
+  @JsonProperty("recaptcha_token")
+  var recaptchaToken: String? = null,
+
+  var phone: String = ""  // No annotation needed - 'phone' is same in both cases
+)
+```
+
+Example JSON request:
+
+```json
+{
+  "phone": "9591781662",
+  "country_code": 91,
+  "recaptcha_token": "dev-dummy-token-1754245041724"
+}
+```
+
+This approach follows REST API industry standards and maintains consistency with database underscore naming convention.
+
+### Multi-Device Authentication Usage
+
+**Mobile App Login (Android/iOS):**
+
+```json
+POST /auth/v1/init
+{
+  "phone": "9591781662",
+  "country_code": 91,
+  "device_id": "MOBILE_ABC123_DEVICE_FINGERPRINT",
+  "device_name": "John's iPhone 15",
+  "recaptcha_token": "your_recaptcha_token"
+}
+
+POST /auth/v1/verify
+{
+  "session_id": "LSQ20250804100456522TBFOQ8U44LIBLX",
+  "otp": "123456",
+  "auth_mode": "SMS",
+  "device_id": "MOBILE_ABC123_DEVICE_FINGERPRINT",
+  "device_name": "John's iPhone 15"
+}
+```
+
+**Web Browser Login:**
+
+```json
+POST /auth/v1/init
+{
+  "phone": "9591781662",
+  "country_code": 91,
+  "recaptcha_token": "your_recaptcha_token"
+  // device_id will be auto-generated for web clients
+}
+
+POST /auth/v1/verify
+{
+  "session_id": "LSQ20250804100456522TBFOQ8U44LIBLX",
+  "otp": "123456",
+  "auth_mode": "SMS"
+}
+```
+
+**Device-Specific Refresh Token:**
+
+```json
+POST /auth/v1/refresh_token
+{
+  "refresh_token": "your_refresh_token",
+  "device_id": "MOBILE_ABC123_DEVICE_FINGERPRINT"
+}
+```
+
+**Device Management:**
+
+```json
+GET /auth/v1/devices
+Authorization: Bearer your_access_token
+
+Response:
+[
+{
+"device_id": "MOBILE_ABC123_DEVICE_FINGERPRINT",
+"device_name": "John's iPhone 15",
+"device_type": "Mobile",
+"platform": "iOS",
+"browser": "Mobile App",
+"os": "iOS 17.1",
+"ip_address": "192.168.1.100",
+"location": null,
+"last_activity": "2025-01-04T10:30:00",
+"login_time": "2025-01-04T09:00:00",
+"is_current_device": true
+},
+{
+"device_id": "WEB_DEF456_BROWSER_HASH",
+"device_name": "Chrome on Windows",
+"device_type": "Desktop",
+"platform": "Windows",
+"browser": "Google Chrome",
+"os": "Windows 11",
+"ip_address": "192.168.1.101",
+"location": null,
+"last_activity": "2025-01-04T08:45:00",
+"login_time": "2025-01-04T08:00:00",
+"is_current_device": false
+}
+]
+```
+
+**Logout from Specific Device:**
+
+```json
+POST /auth/v1/devices/WEB_DEF456_BROWSER_HASH/logout
+Authorization: Bearer your_access_token
+```
+
+**Logout from All Devices:**
+
+```json
+POST /auth/v1/logout/all
+Authorization: Bearer your_access_token
+```
 
 ### Testing
 

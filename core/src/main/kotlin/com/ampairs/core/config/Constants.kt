@@ -11,6 +11,7 @@ interface Constants {
         const val WORKSPACE_PREFIX = "WSP"
         const val USER_WORKSPACE_PREFIX = "UWS"
         const val TOKEN_PREFIX = "JWT"
+        const val DEVICE_SESSION_PREFIX = "DSS"
         const val FILE_ID_PREFIX = "FIL"
 
         // SeqId Prefixes

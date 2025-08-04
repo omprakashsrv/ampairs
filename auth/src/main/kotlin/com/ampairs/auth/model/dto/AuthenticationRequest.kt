@@ -10,4 +10,8 @@ data class AuthenticationRequest(
     val authMode: AuthMode,
     @JsonProperty("recaptcha_token")
     var recaptchaToken: String? = null,
+    @JsonProperty("device_id")
+    var deviceId: String? = null, // Should match the device_id from init request
+    @JsonProperty("device_name")
+    var deviceName: String? = null,
 )

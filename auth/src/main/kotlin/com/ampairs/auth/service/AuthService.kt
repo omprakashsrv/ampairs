@@ -1,10 +1,13 @@
 package com.ampairs.auth.service
 
+import com.ampairs.auth.model.DeviceSession
 import com.ampairs.auth.model.LoginSession
 import com.ampairs.auth.model.Token
 import com.ampairs.auth.model.dto.*
+import com.ampairs.auth.repository.DeviceSessionRepository
 import com.ampairs.auth.repository.LoginSessionRepository
 import com.ampairs.auth.repository.TokenRepository
+import com.ampairs.auth.utils.DeviceInfoExtractor
 import com.ampairs.core.domain.dto.GenericSuccessResponse
 import com.ampairs.core.utils.UniqueIdGenerators
 import com.ampairs.notification.service.NotificationService
@@ -15,6 +18,8 @@ import jakarta.transaction.Transactional
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Service
+import java.security.MessageDigest
+import java.time.LocalDateTime
 
 val OTP_LENGTH: Int = 6
 val SMS_VERIFICATION_VALIDITY = 10 * 60 * 1000
@@ -24,8 +29,10 @@ class AuthService @Autowired constructor(
     val userRepository: UserRepository,
     val tokenRepository: TokenRepository,
     val loginSessionRepository: LoginSessionRepository,
+    val deviceSessionRepository: DeviceSessionRepository,
     val jwtService: JwtService,
     val notificationService: NotificationService,
+    val deviceInfoExtractor: DeviceInfoExtractor,
 ) {
     @Transactional
     fun init(authInitRequest: AuthInitRequest): AuthInitResponse {
@@ -33,7 +40,7 @@ class AuthService @Autowired constructor(
         loginSession.phone = authInitRequest.phone
         loginSession.countryCode = authInitRequest.countryCode
         loginSession.code = UniqueIdGenerators.NUMERIC.generate(OTP_LENGTH)
-        loginSession.expiresAt = java.time.LocalDateTime.now().plusSeconds(SMS_VERIFICATION_VALIDITY.toLong())
+        loginSession.expiresAt = LocalDateTime.now().plusSeconds(SMS_VERIFICATION_VALIDITY.toLong())
         val savedSession = loginSessionRepository.save(loginSession)
         // Queue SMS for async sending
         notificationService.queueSms(
@@ -47,17 +54,32 @@ class AuthService @Autowired constructor(
     }
 
     @Transactional
-    fun authenticate(request: AuthenticationRequest): AuthenticationResponse {
+    fun authenticate(request: AuthenticationRequest, httpRequest: HttpServletRequest): AuthenticationResponse {
         val loginSession = loginSessionRepository.findBySeqIdAndVerifiedFalseAndExpiredFalse(request.sessionId)
             ?: throw Exception("Invalid session Id")
 
         if (loginSession.code == request.otp) {
             val user: User = userRepository.findByUserName(loginSession.userName())
                 .orElseThrow()
-            val jwtToken: String = jwtService.generateToken(user)
-            val refreshToken: String = jwtService.generateRefreshToken(user)
-            revokeAllUserTokens(user)
-            saveUserToken(user, jwtToken)
+
+            // Extract device information
+            val deviceInfo = deviceInfoExtractor.extractDeviceInfo(
+                httpRequest,
+                request.deviceId,
+                request.deviceName
+            )
+
+            // Create or update device session
+            val deviceSession = createOrUpdateDeviceSession(user, deviceInfo)
+
+            // Generate tokens with device information
+            val jwtToken: String = jwtService.generateTokenWithDevice(user, deviceSession.deviceId)
+            val refreshToken: String = jwtService.generateRefreshTokenWithDevice(user, deviceSession.deviceId)
+
+            // Update device session with refresh token hash
+            deviceSession.refreshTokenHash = hashToken(refreshToken)
+            deviceSessionRepository.save(deviceSession)
+            
             val authResponse = AuthenticationResponse()
             authResponse.accessToken = jwtToken
             authResponse.refreshToken = refreshToken
@@ -65,6 +87,50 @@ class AuthService @Autowired constructor(
         } else {
             throw Exception("Invalid otp")
         }
+    }
+
+    private fun createOrUpdateDeviceSession(user: User, deviceInfo: DeviceInfoExtractor.DeviceInfo): DeviceSession {
+        val existingSession = deviceSessionRepository.findByUserIdAndDeviceIdAndIsActiveTrue(
+            user.seqId, deviceInfo.deviceId
+        )
+
+        return if (existingSession.isPresent) {
+            // Update existing session
+            val session = existingSession.get()
+            session.deviceName = deviceInfo.deviceName
+            session.deviceType = deviceInfo.deviceType
+            session.platform = deviceInfo.platform
+            session.browser = deviceInfo.browser
+            session.os = deviceInfo.os
+            session.ipAddress = deviceInfo.ipAddress
+            session.userAgent = deviceInfo.userAgent
+            session.location = deviceInfo.location
+            session.updateActivity()
+            session
+        } else {
+            // Create new device session
+            val newSession = DeviceSession()
+            newSession.userId = user.seqId
+            newSession.deviceId = deviceInfo.deviceId
+            newSession.deviceName = deviceInfo.deviceName
+            newSession.deviceType = deviceInfo.deviceType
+            newSession.platform = deviceInfo.platform
+            newSession.browser = deviceInfo.browser
+            newSession.os = deviceInfo.os
+            newSession.ipAddress = deviceInfo.ipAddress
+            newSession.userAgent = deviceInfo.userAgent
+            newSession.location = deviceInfo.location
+            newSession.loginTime = LocalDateTime.now()
+            newSession.lastActivity = LocalDateTime.now()
+            newSession.isActive = true
+            newSession
+        }
+    }
+
+    private fun hashToken(token: String): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        val hashBytes = digest.digest(token.toByteArray())
+        return hashBytes.joinToString("") { "%02x".format(it) }
     }
 
     private fun saveUserToken(user: User, jwtToken: String) {
@@ -98,22 +164,44 @@ class AuthService @Autowired constructor(
     @Transactional
     fun refreshToken(
         refreshTokenRequest: RefreshTokenRequest,
+        httpRequest: HttpServletRequest,
     ): AuthenticationResponse {
         val refreshToken: String = refreshTokenRequest.refreshToken
             ?: throw IllegalArgumentException("Refresh token is required")
+
         val userName: String = jwtService.extractUsername(refreshToken)
+        val deviceId: String = jwtService.extractDeviceId(refreshToken)
+            ?: refreshTokenRequest.deviceId
+            ?: throw IllegalArgumentException("Device ID is required")
+        
         val user: User = this.userRepository.findByUserName(userName)
             .orElseThrow()
+
+        // Verify refresh token is valid and belongs to the device
         if (jwtService.isTokenValid(refreshToken, user)) {
-            val accessToken: String = jwtService.generateToken(user)
-            revokeAllUserTokens(user)
-            saveUserToken(user, accessToken)
+            val deviceSession = deviceSessionRepository.findByUserIdAndDeviceIdAndIsActiveTrue(user.seqId, deviceId)
+                .orElseThrow { Exception("Device session not found or inactive") }
+
+            // Verify refresh token hash matches
+            if (deviceSession.refreshTokenHash != hashToken(refreshToken)) {
+                throw Exception("Invalid refresh token for device")
+            }
+
+            // Update device session activity
+            deviceSession.updateActivity()
+
+            // Generate new access token
+            val accessToken: String = jwtService.generateTokenWithDevice(user, deviceId)
+
+            // Update device session
+            deviceSessionRepository.save(deviceSession)
+            
             val authResponse = AuthenticationResponse()
             authResponse.accessToken = accessToken
-            authResponse.refreshToken = refreshToken
+            authResponse.refreshToken = refreshToken // Keep same refresh token
             return authResponse
         }
-        throw Exception("Access Token not valid")
+        throw Exception("Refresh token not valid")
     }
 
     @Throws(Exception::class)
@@ -126,13 +214,43 @@ class AuthService @Autowired constructor(
             throw Exception("Access token not found")
         }
 
-        val refreshToken: String = authHeader.substring(7)
-        val userName: String = jwtService.extractUsername(refreshToken)
+        val accessToken: String = authHeader.substring(7)
+        val userName: String = jwtService.extractUsername(accessToken)
+        val deviceId: String = jwtService.extractDeviceId(accessToken)
+            ?: throw Exception("Device ID not found in token")
+            
         val user: User = this.userRepository.findByUserName(userName)
             .orElseThrow()
-        revokeAllUserTokens(user)
+
+        // Deactivate specific device session only
+        deviceSessionRepository.deactivateDeviceSession(user.seqId, deviceId)
+
         val genericSuccessResponse = GenericSuccessResponse()
-        genericSuccessResponse.message = "User logged out successfully"
+        genericSuccessResponse.message = "Device logged out successfully"
+        return genericSuccessResponse
+    }
+
+    @Throws(Exception::class)
+    @Transactional
+    fun logoutAllDevices(
+        request: HttpServletRequest,
+    ): GenericSuccessResponse {
+        val authHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw Exception("Access token not found")
+        }
+
+        val accessToken: String = authHeader.substring(7)
+        val userName: String = jwtService.extractUsername(accessToken)
+        val user: User = this.userRepository.findByUserName(userName)
+            .orElseThrow()
+
+        // Deactivate all device sessions for the user
+        deviceSessionRepository.deactivateAllUserSessions(user.seqId)
+        revokeAllUserTokens(user)
+
+        val genericSuccessResponse = GenericSuccessResponse()
+        genericSuccessResponse.message = "Logged out from all devices successfully"
         return genericSuccessResponse
     }
 
@@ -146,6 +264,66 @@ class AuthService @Autowired constructor(
         } else {
             SessionResponse("", 0, "", true)
         }
+    }
+
+    /**
+     * Get all active device sessions for a user
+     */
+    fun getUserDevices(request: HttpServletRequest): List<DeviceSessionDto> {
+        val authHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw Exception("Access token not found")
+        }
+
+        val accessToken: String = authHeader.substring(7)
+        val userName: String = jwtService.extractUsername(accessToken)
+        val user: User = this.userRepository.findByUserName(userName)
+            .orElseThrow()
+
+        val deviceSessions = deviceSessionRepository.findByUserIdAndIsActiveTrueOrderByLastActivityDesc(user.seqId)
+
+        return deviceSessions.map { session ->
+            DeviceSessionDto(
+                deviceId = session.deviceId,
+                deviceName = session.deviceName ?: "Unknown Device",
+                deviceType = session.deviceType ?: "Unknown",
+                platform = session.platform ?: "Unknown",
+                browser = session.browser ?: "Unknown",
+                os = session.os ?: "Unknown",
+                ipAddress = session.ipAddress ?: "Unknown",
+                location = session.location,
+                lastActivity = session.lastActivity,
+                loginTime = session.loginTime,
+                isCurrentDevice = session.deviceId == jwtService.extractDeviceId(accessToken)
+            )
+        }
+    }
+
+    /**
+     * Logout from a specific device
+     */
+    @Transactional
+    fun logoutFromDevice(request: HttpServletRequest, targetDeviceId: String): GenericSuccessResponse {
+        val authHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw Exception("Access token not found")
+        }
+
+        val accessToken: String = authHeader.substring(7)
+        val userName: String = jwtService.extractUsername(accessToken)
+        val user: User = this.userRepository.findByUserName(userName)
+            .orElseThrow()
+
+        // Deactivate specific device session
+        val deactivatedCount = deviceSessionRepository.deactivateDeviceSession(user.seqId, targetDeviceId)
+
+        if (deactivatedCount == 0) {
+            throw Exception("Device not found or already inactive")
+        }
+
+        val genericSuccessResponse = GenericSuccessResponse()
+        genericSuccessResponse.message = "Device logged out successfully"
+        return genericSuccessResponse
     }
 
 
