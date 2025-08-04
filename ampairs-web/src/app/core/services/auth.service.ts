@@ -6,17 +6,24 @@ import {Router} from '@angular/router';
 import Cookies from 'js-cookie';
 import {environment} from '../../../environments/environment';
 import {NotificationService} from './notification.service';
+import {DeviceService} from './device.service';
 
 export interface AuthInitRequest {
   phone: string;
-  countryCode: number;
-  tokenId?: string;
-  recaptchaToken?: string;
+  country_code: number;
+  token_id?: string;
+  recaptcha_token?: string;
+  device_id?: string;
+  device_name?: string;
+  device_type?: string;
+  platform?: string;
+  browser?: string;
+  os?: string;
 }
 
 export interface AuthInitResponse {
   success: boolean;
-  sessionId?: string;
+  session_id?: string;
   error?: {
     code: string;
     message: string;
@@ -24,10 +31,16 @@ export interface AuthInitResponse {
 }
 
 export interface OtpVerificationRequest {
-  sessionId: string;
+  session_id: string;
   otp: string;
-  authMode: string;
-  recaptchaToken?: string;
+  auth_mode: string;
+  recaptcha_token?: string;
+  device_id?: string;
+  device_name?: string;
+  device_type?: string;
+  platform?: string;
+  browser?: string;
+  os?: string;
 }
 
 export interface AuthResponse {
@@ -37,9 +50,23 @@ export interface AuthResponse {
 
 export interface User {
   id: string;
-  mobileNumber: string;
+  mobile_number: string;
   name?: string;
   email?: string;
+}
+
+export interface DeviceSession {
+  device_id: string;
+  device_name: string;
+  device_type: string;
+  platform: string;
+  browser: string;
+  os: string;
+  ip_address: string;
+  location?: string;
+  last_activity: string;
+  login_time: string;
+  is_current_device: boolean;
 }
 
 @Injectable({
@@ -57,7 +84,8 @@ export class AuthService {
   constructor(
     private http: HttpClient,
     private router: Router,
-    private notificationService: NotificationService
+    private notificationService: NotificationService,
+    private deviceService: DeviceService
   ) {
     this.checkAuthenticationStatus();
   }
@@ -67,11 +95,19 @@ export class AuthService {
    * Initialize authentication by sending mobile number
    */
   initAuth(mobileNumber: string, recaptchaToken?: string): Observable<AuthInitResponse> {
+    const deviceInfo = this.deviceService.getDeviceInfo();
+
     const request: AuthInitRequest = {
       phone: mobileNumber,
-      countryCode: 91,
-      tokenId: '',
-      recaptchaToken: recaptchaToken
+      country_code: 91,
+      token_id: '',
+      recaptcha_token: recaptchaToken,
+      device_id: deviceInfo.device_id,
+      device_name: deviceInfo.device_name,
+      device_type: deviceInfo.device_type,
+      platform: deviceInfo.platform,
+      browser: deviceInfo.browser,
+      os: deviceInfo.os
     };
 
     return this.http.post<AuthInitResponse>(`${this.AUTH_API_URL}/init`, request)
@@ -85,11 +121,19 @@ export class AuthService {
    * Verify OTP and complete authentication
    */
   verifyOtp(sessionId: string, otp: string, recaptchaToken?: string): Observable<AuthResponse> {
+    const deviceInfo = this.deviceService.getDeviceInfo();
+
     const request: OtpVerificationRequest = {
-      sessionId: sessionId,
+      session_id: sessionId,
       otp: otp,
-      authMode: 'OTP',
-      recaptchaToken: recaptchaToken
+      auth_mode: 'SMS',
+      recaptcha_token: recaptchaToken,
+      device_id: deviceInfo.device_id,
+      device_name: deviceInfo.device_name,
+      device_type: deviceInfo.device_type,
+      platform: deviceInfo.platform,
+      browser: deviceInfo.browser,
+      os: deviceInfo.os
     };
 
     return this.http.post<AuthResponse>(`${this.AUTH_API_URL}/verify`, request)
@@ -120,8 +164,11 @@ export class AuthService {
       return throwError(() => new Error('No refresh token available'));
     }
 
+    const deviceInfo = this.deviceService.getDeviceInfo();
+
     return this.http.post<AuthResponse>(`${this.AUTH_API_URL}/refresh_token`, {
-      refreshToken: refreshToken
+      refresh_token: refreshToken,
+      device_id: deviceInfo.device_id
     }).pipe(
       map(response => {
         if (response.access_token && response.refresh_token) {
@@ -224,6 +271,47 @@ export class AuthService {
    */
   getCurrentUser(): User | null {
     return this.currentUserSubject.value;
+  }
+
+  /**
+   * Get all active device sessions for the current user
+   */
+  getDeviceSessions(): Observable<DeviceSession[]> {
+    return this.http.get<DeviceSession[]>(`${this.AUTH_API_URL}/devices`)
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Logout from a specific device
+   */
+  logoutDevice(deviceId: string): Observable<any> {
+    return this.http.post(`${this.AUTH_API_URL}/devices/${deviceId}/logout`, {})
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
+
+  /**
+   * Logout from all devices
+   */
+  logoutAllDevices(): Observable<any> {
+    return this.http.post(`${this.AUTH_API_URL}/logout/all`, {})
+      .pipe(
+        map(() => {
+          // Clear local tokens and update state
+          this.clearAuthTokens();
+          this.currentUserSubject.next(null);
+          this.isAuthenticatedSubject.next(false);
+
+          // Navigate to login page
+          if (this.router.url !== '/login') {
+            this.router.navigate(['/login']);
+          }
+        }),
+        catchError(this.handleError)
+      );
   }
 
   /**

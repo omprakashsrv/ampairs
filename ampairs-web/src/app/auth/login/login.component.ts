@@ -128,9 +128,9 @@ export class LoginComponent implements OnInit {
     this.authService.initAuth(mobileNumber, recaptchaToken).subscribe({
       next: (response) => {
         this.isLoading = false;
-        if (response.success && response.sessionId) {
+        if (response.success && response.session_id) {
           // Store session ID for OTP verification
-          sessionStorage.setItem('auth_session_id', response.sessionId);
+          sessionStorage.setItem('auth_session_id', response.session_id);
           sessionStorage.setItem('mobile_number', mobileNumber);
 
           this.snackBar.open('OTP sent successfully!', 'Close', {

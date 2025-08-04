@@ -1,11 +1,16 @@
 package com.ampairs.auth.utils
 
+import com.ampairs.auth.model.dto.AuthInitRequest
+import com.ampairs.auth.model.dto.OtpVerificationRequest
 import com.ampairs.core.utils.UniqueIdGenerators
 import jakarta.servlet.http.HttpServletRequest
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 
 @Component
 class DeviceInfoExtractor {
+
+    private val logger = LoggerFactory.getLogger(DeviceInfoExtractor::class.java)
 
     data class DeviceInfo(
         val deviceId: String,
@@ -50,6 +55,159 @@ class DeviceInfoExtractor {
             userAgent = userAgent,
             location = null // Can be enhanced with IP geolocation service
         )
+    }
+
+    /**
+     * Extract device information from HTTP request with frontend device info for validation
+     */
+    fun extractDeviceInfoWithValidation(
+        request: HttpServletRequest,
+        authRequest: AuthInitRequest,
+    ): DeviceInfo {
+        val userAgent = request.getHeader("User-Agent") ?: "Unknown"
+        val ipAddress = extractClientIp(request)
+
+        // Generate device ID if not provided (for web clients)
+        val deviceId = authRequest.deviceId ?: generateWebDeviceId(request)
+
+        // Parse user agent to extract device information from server-side
+        val serverParsed = parseUserAgent(userAgent)
+
+        // Use provided device name or generate one
+        val deviceName = authRequest.deviceName ?: generateDeviceName(serverParsed)
+
+        // Validate frontend vs backend parsing
+        validateDeviceInfo(authRequest, serverParsed, userAgent)
+
+        return DeviceInfo(
+            deviceId = deviceId,
+            deviceName = deviceName,
+            deviceType = serverParsed.deviceType,
+            platform = serverParsed.platform,
+            browser = serverParsed.browser,
+            os = serverParsed.os,
+            ipAddress = ipAddress,
+            userAgent = userAgent,
+            location = null // Can be enhanced with IP geolocation service
+        )
+    }
+
+    /**
+     * Extract device information from HTTP request with OTP verification request
+     */
+    fun extractDeviceInfoWithValidation(
+        request: HttpServletRequest,
+        otpRequest: OtpVerificationRequest,
+    ): DeviceInfo {
+        val userAgent = request.getHeader("User-Agent") ?: "Unknown"
+        val ipAddress = extractClientIp(request)
+
+        // Generate device ID if not provided (for web clients)
+        val deviceId = otpRequest.deviceId ?: generateWebDeviceId(request)
+
+        // Parse user agent to extract device information from server-side
+        val serverParsed = parseUserAgent(userAgent)
+
+        // Use provided device name or generate one
+        val deviceName = otpRequest.deviceName ?: generateDeviceName(serverParsed)
+
+        // Validate frontend vs backend parsing
+        validateDeviceInfo(otpRequest, serverParsed, userAgent)
+
+        return DeviceInfo(
+            deviceId = deviceId,
+            deviceName = deviceName,
+            deviceType = serverParsed.deviceType,
+            platform = serverParsed.platform,
+            browser = serverParsed.browser,
+            os = serverParsed.os,
+            ipAddress = ipAddress,
+            userAgent = userAgent,
+            location = null // Can be enhanced with IP geolocation service
+        )
+    }
+
+    /**
+     * Validate frontend device info against server-side parsing
+     */
+    private fun validateDeviceInfo(authRequest: AuthInitRequest, serverParsed: ParsedUserAgent, userAgent: String) {
+        val frontendInfo = mapOf(
+            "device_type" to authRequest.deviceType,
+            "platform" to authRequest.platform,
+            "browser" to authRequest.browser,
+            "os" to authRequest.os
+        )
+
+        val serverInfo = mapOf(
+            "device_type" to serverParsed.deviceType,
+            "platform" to serverParsed.platform,
+            "browser" to serverParsed.browser,
+            "os" to serverParsed.os
+        )
+
+        validateAndWarnDiscrepancies(frontendInfo, serverInfo, "AuthInit", userAgent)
+    }
+
+    /**
+     * Validate frontend device info against server-side parsing for OTP verification
+     */
+    private fun validateDeviceInfo(
+        otpRequest: OtpVerificationRequest,
+        serverParsed: ParsedUserAgent,
+        userAgent: String,
+    ) {
+        val frontendInfo = mapOf(
+            "device_type" to otpRequest.deviceType,
+            "platform" to otpRequest.platform,
+            "browser" to otpRequest.browser,
+            "os" to otpRequest.os
+        )
+
+        val serverInfo = mapOf(
+            "device_type" to serverParsed.deviceType,
+            "platform" to serverParsed.platform,
+            "browser" to serverParsed.browser,
+            "os" to serverParsed.os
+        )
+
+        validateAndWarnDiscrepancies(frontendInfo, serverInfo, "OtpVerification", userAgent)
+    }
+
+    /**
+     * Compare frontend and backend device info and log warnings for discrepancies
+     */
+    private fun validateAndWarnDiscrepancies(
+        frontendInfo: Map<String, String?>,
+        serverInfo: Map<String, String?>,
+        context: String,
+        userAgent: String,
+    ) {
+        val discrepancies = mutableListOf<String>()
+
+        frontendInfo.forEach { (field, frontendValue) ->
+            val serverValue = serverInfo[field]
+
+            // Skip null/empty frontend values
+            if (frontendValue.isNullOrBlank()) return@forEach
+
+            // Compare values (case-insensitive for robustness)
+            if (frontendValue.lowercase() != serverValue?.lowercase()) {
+                discrepancies.add("$field: frontend='$frontendValue' vs server='$serverValue'")
+            }
+        }
+
+        if (discrepancies.isNotEmpty()) {
+            logger.warn(
+                "[$context] Device info discrepancies detected: {}. " +
+                        "Frontend detection: {} | Server detection: {} | User-Agent: '{}'",
+                discrepancies.joinToString(", "),
+                frontendInfo.filterValues { !it.isNullOrBlank() },
+                serverInfo,
+                userAgent
+            )
+        } else {
+            logger.debug("[$context] Device info validation passed - frontend and server parsing agree")
+        }
     }
 
     /**

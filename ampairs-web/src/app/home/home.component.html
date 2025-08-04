@@ -5,9 +5,9 @@
       <mat-icon class="logo-icon">business</mat-icon>
       Ampairs
     </span>
-    
+
     <span class="spacer"></span>
-    
+
     <!-- User Profile Menu -->
     <div class="user-profile" *ngIf="currentUser$ | async as user">
       <button mat-icon-button [matMenuTriggerFor]="userMenu" class="profile-button">
@@ -15,7 +15,7 @@
           <mat-icon>account_circle</mat-icon>
         </div>
       </button>
-      
+
       <mat-menu #userMenu="matMenu" class="user-menu">
         <div class="user-info">
           <div class="user-avatar-large">
@@ -23,25 +23,30 @@
           </div>
           <div class="user-details">
             <h3 class="user-name">{{user.name || 'User'}}</h3>
-            <p class="user-mobile">+91 {{user.mobileNumber}}</p>
+            <p class="user-mobile">+91 {{ user.mobile_number }}</p>
             <p class="user-email" *ngIf="user.email">{{user.email}}</p>
           </div>
         </div>
-        
+
         <mat-divider></mat-divider>
-        
+
         <button mat-menu-item (click)="editProfile()">
           <mat-icon>edit</mat-icon>
           <span>Edit Profile</span>
         </button>
-        
+
         <button mat-menu-item (click)="viewSettings()">
           <mat-icon>settings</mat-icon>
           <span>Settings</span>
         </button>
-        
+
+        <button (click)="viewDevices()" mat-menu-item>
+          <mat-icon>devices</mat-icon>
+          <span>Device Sessions</span>
+        </button>
+
         <mat-divider></mat-divider>
-        
+
         <button mat-menu-item (click)="logout()" class="logout-button">
           <mat-icon>logout</mat-icon>
           <span>Logout</span>
@@ -63,17 +68,17 @@
             You have successfully logged in to your account
           </mat-card-subtitle>
         </mat-card-header>
-        
+
         <mat-card-content>
           <div class="user-welcome" *ngIf="currentUser$ | async as user">
             <p class="greeting">
               Hello, <strong>{{user.name || 'User'}}</strong>! 👋
             </p>
             <p class="login-info">
-              You are logged in with mobile number: <strong>+91 {{user.mobileNumber}}</strong>
+              You are logged in with mobile number: <strong>+91 {{ user.mobile_number }}</strong>
             </p>
           </div>
-          
+
           <div class="features-grid">
             <div class="feature-card" *ngFor="let feature of features">
               <mat-icon class="feature-icon">{{feature.icon}}</mat-icon>
@@ -112,6 +117,11 @@
           </div>
         </mat-card-content>
       </mat-card>
+    </div>
+
+    <!-- Device Management Section -->
+    <div *ngIf="showDeviceManagement" class="device-section">
+      <app-device-management></app-device-management>
     </div>
   </div>
 </div>

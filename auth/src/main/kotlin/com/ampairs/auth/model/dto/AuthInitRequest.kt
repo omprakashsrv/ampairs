@@ -25,6 +25,19 @@ class AuthInitRequest {
     @JsonProperty("device_name")
     var deviceName: String? = null // e.g., "iPhone 15", "John's MacBook"
 
+    // Additional device information from frontend (optional, used for validation against server-side parsing)
+    @JsonProperty("device_type")
+    var deviceType: String? = null // "Mobile", "Tablet", "Desktop"
+
+    @JsonProperty("platform")
+    var platform: String? = null // "iOS", "Android", "Windows", "macOS", "Linux"
+
+    @JsonProperty("browser")
+    var browser: String? = null // "Google Chrome", "Safari", "Firefox", etc.
+
+    @JsonProperty("os")
+    var os: String? = null // "iOS 17.1", "Android 14", "Windows 11", etc.
+
     fun phoneNumber(): String {
         return this.countryCode.toString() + this.phone
     }

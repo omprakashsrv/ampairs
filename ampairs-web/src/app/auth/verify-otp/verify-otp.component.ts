@@ -187,10 +187,10 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
     this.authService.initAuth(mobileNumber, recaptchaToken).subscribe({
       next: (response) => {
         this.isResending = false;
-        if (response.success && response.sessionId) {
+        if (response.success && response.session_id) {
           // Update session ID
-          this.sessionId = response.sessionId;
-          sessionStorage.setItem('auth_session_id', response.sessionId);
+          this.sessionId = response.session_id;
+          sessionStorage.setItem('auth_session_id', response.session_id);
 
           this.snackBar.open('OTP resent successfully!', 'Close', {
             duration: 3000,

@@ -1,13 +1,14 @@
-import { Component, OnInit } from '@angular/core';
-import { MatToolbarModule } from '@angular/material/toolbar';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatMenuModule } from '@angular/material/menu';
-import { MatCardModule } from '@angular/material/card';
-import { MatDividerModule } from '@angular/material/divider';
-import { CommonModule } from '@angular/common';
-import { AuthService, User } from '../core/services/auth.service';
-import { Observable } from 'rxjs';
+import {Component, OnInit} from '@angular/core';
+import {MatToolbarModule} from '@angular/material/toolbar';
+import {MatButtonModule} from '@angular/material/button';
+import {MatIconModule} from '@angular/material/icon';
+import {MatMenuModule} from '@angular/material/menu';
+import {MatCardModule} from '@angular/material/card';
+import {MatDividerModule} from '@angular/material/divider';
+import {CommonModule} from '@angular/common';
+import {AuthService, User} from '../core/services/auth.service';
+import {DeviceManagementComponent} from '../shared/components/device-management/device-management.component';
+import {Observable} from 'rxjs';
 
 @Component({
   selector: 'app-home',
@@ -19,14 +20,16 @@ import { Observable } from 'rxjs';
     MatIconModule,
     MatMenuModule,
     MatCardModule,
-    MatDividerModule
+    MatDividerModule,
+    DeviceManagementComponent
   ],
   templateUrl: './home.component.html',
   styleUrl: './home.component.scss'
 })
 export class HomeComponent implements OnInit {
   currentUser$: Observable<User | null>;
-  
+  showDeviceManagement = false;
+
   features = [
     {
       icon: 'security',
@@ -66,6 +69,10 @@ export class HomeComponent implements OnInit {
   viewSettings(): void {
     // TODO: Implement settings page
     console.log('Settings clicked');
+  }
+
+  viewDevices(): void {
+    this.showDeviceManagement = !this.showDeviceManagement;
   }
 
   logout(): void {
