@@ -1,0 +1,202 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 1,
+    "identityHash": "42c3d1c713c602cc5aa535d40a29eb7d",
+    "entities": [
+      {
+        "tableName": "customerEntity",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`seq_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `company_id` TEXT NOT NULL, `name` TEXT NOT NULL, `email` TEXT NOT NULL, `gstin` TEXT NOT NULL, `address` TEXT NOT NULL, `pincode` TEXT NOT NULL, `state` TEXT NOT NULL, `latitude` REAL NOT NULL, `longitude` REAL NOT NULL, `country_code` INTEGER NOT NULL, `phone` TEXT NOT NULL, `landline` TEXT NOT NULL, `street` TEXT NOT NULL, `street2` TEXT NOT NULL, `city` TEXT NOT NULL, `country` TEXT NOT NULL, `billing_address` TEXT, `shipping_address` TEXT, `last_updated` INTEGER NOT NULL, `active` INTEGER NOT NULL, `billing_same_as_registered` INTEGER NOT NULL, `shipping_same_as_billing` INTEGER NOT NULL, `soft_deleted` INTEGER NOT NULL, `synced` INTEGER NOT NULL, `created_at` TEXT NOT NULL, `updated_at` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "seq_id",
+            "columnName": "seq_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "company_id",
+            "columnName": "company_id",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "email",
+            "columnName": "email",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "gstin",
+            "columnName": "gstin",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "address",
+            "columnName": "address",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "pincode",
+            "columnName": "pincode",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "state",
+            "columnName": "state",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "latitude",
+            "columnName": "latitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "longitude",
+            "columnName": "longitude",
+            "affinity": "REAL",
+            "notNull": true
+          },
+          {
+            "fieldPath": "country_code",
+            "columnName": "country_code",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "phone",
+            "columnName": "phone",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "landline",
+            "columnName": "landline",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "street",
+            "columnName": "street",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "street2",
+            "columnName": "street2",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "city",
+            "columnName": "city",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "country",
+            "columnName": "country",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "billing_address",
+            "columnName": "billing_address",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "shipping_address",
+            "columnName": "shipping_address",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "last_updated",
+            "columnName": "last_updated",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "active",
+            "columnName": "active",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "billing_same_as_registered",
+            "columnName": "billing_same_as_registered",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "shipping_same_as_billing",
+            "columnName": "shipping_same_as_billing",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "soft_deleted",
+            "columnName": "soft_deleted",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "synced",
+            "columnName": "synced",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "created_at",
+            "columnName": "created_at",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "updated_at",
+            "columnName": "updated_at",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "seq_id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_customerEntity_id",
+            "unique": true,
+            "columnNames": [
+              "id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_customerEntity_id` ON `${TABLE_NAME}` (`id`)"
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '42c3d1c713c602cc5aa535d40a29eb7d')"
+    ]
+  }
+}

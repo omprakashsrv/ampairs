@@ -1,0 +1,216 @@
+import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+
+plugins {
+    alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.androidApplication)
+    alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.jetbrainsCompose)
+    alias(libs.plugins.kotlinSerialization)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.room)
+}
+
+configurations.all {
+    exclude(group = "androidx.compose.ui", module = "ui-test-android")
+}
+
+kotlin {
+    androidTarget()
+
+    jvm("desktop")
+
+//    listOf(
+//        iosX64(),
+//        iosArm64(),
+//        iosSimulatorArm64()
+//    ).forEach { iosTarget ->
+//        iosTarget.binaries.framework {
+//            baseName = "ComposeApp"
+//            isStatic = true
+//        }
+//    }
+
+    sourceSets {
+
+        val androidMain by getting {
+            dependencies {
+                implementation(libs.androidx.activity.compose)
+                implementation(libs.koin.android)
+                implementation(libs.ktor.client.okHttp)
+                implementation(libs.splash.screen)
+                implementation(libs.aws.s3)
+                implementation("com.google.android.recaptcha:recaptcha:18.8.0-beta02")
+            }
+        }
+
+        val commonMain by getting {
+            dependencies {
+                implementation(compose.runtime)
+                implementation(compose.ui)
+                implementation(compose.foundation)
+                implementation(compose.animation)
+                implementation(compose.materialIconsExtended)
+                implementation(compose.material3)
+                implementation(compose.components.resources)
+
+                implementation(libs.kotlinx.dateTime)
+                implementation(libs.koin.core)
+                implementation(libs.koin.compose)
+
+                implementation(libs.bundles.ktor.common)
+
+                implementation(libs.paging.common)
+                implementation(libs.image.loader)
+
+                implementation(libs.file.picker)
+                implementation(libs.uuid)
+                implementation(libs.material3.adaptive)
+                implementation(libs.material3.adaptive.layout)
+                implementation(libs.material3.adaptive.navigation)
+                implementation(libs.navigation.compose)
+                implementation(libs.lifecycle.viewmodel)
+                implementation(libs.savedstate)
+                implementation(libs.savedstate.compose)
+                implementation(projects.thirdparty.androidx.paging.compose)
+                
+                implementation(libs.room.runtime)
+                implementation(libs.room.paging)
+                implementation(libs.sqlite.bundled)
+            }
+        }
+
+        val desktopMain by getting {
+            dependencies {
+                implementation(libs.koin.core)
+                implementation(compose.desktop.currentOs)
+                implementation(libs.ktor.client.okHttp)
+                implementation(libs.aws.s3)
+                implementation(project(":tallyModule"))
+            }
+        }
+
+
+//        val iosX64Main by getting
+//        val iosArm64Main by getting
+//        val iosSimulatorArm64Main by getting
+//        val iosMain by creating {
+//            dependsOn(commonMain)
+//            iosX64Main.dependsOn(this)
+//            iosArm64Main.dependsOn(this)
+//            iosSimulatorArm64Main.dependsOn(this)
+//            dependencies {
+//                implementation(libs.ktor.client.darwin)
+//                implementation(libs.sqlDelight.native)
+//            }
+//        }
+    }
+}
+
+android {
+
+    compileSdk = libs.versions.android.compileSdk.get().toInt()
+    namespace = "com.ampairs.app"
+
+//    sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
+//    sourceSets["main"].res.srcDirs("src/androidMain/res")
+//    sourceSets["main"].resources.srcDirs("src/commonMain/resources")
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+    kotlin {
+        jvmToolchain(17)
+    }
+    buildFeatures {
+        compose = true
+    }
+    packaging {
+        resources {
+            excludes += "/META-INF/versions/*"
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/versions/9/previous-compilation-data.bin"
+        }
+    }
+
+    defaultConfig {
+        applicationId = "com.ampairs.app"
+        minSdk = libs.versions.android.minSdk.get().toInt()
+        targetSdk = libs.versions.android.targetSdk.get().toInt()
+        versionCode = 1
+        versionName = "1.0"
+    }
+
+    signingConfigs {
+        val release by creating {
+            storeFile = file("$rootDir/ampairs.jks")
+            storePassword = "SKFNNFJ234329898g723g47823gr8"
+            keyPassword = "SKFNNFJ234329898g723g47823gr8"
+            keyAlias = "ampairs"
+        }
+    }
+    buildTypes {
+        val debug by getting {
+            signingConfig = signingConfigs["release"]
+        }
+        val release by getting {
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
+            )
+            signingConfig = signingConfigs["release"]
+        }
+    }
+}
+
+compose.desktop {
+    application {
+        mainClass = "MainKt"
+
+        nativeDistributions {
+            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            packageName = "Ampairs"
+            packageVersion = "1.0.0"
+            description = "Empowering Retail, One byte at a time"
+            copyright = "Copyright 2023 Ampairs. All rights reserved."
+            vendor = "Ampairs"
+            modules("java.sql")
+            windows {
+                dirChooser = true
+                upgradeUuid = "FEEF6607-E845-4EF5-B62B-B7F48D654796"
+                shortcut = true
+                menu = true
+                iconFile.set(rootProject.file("resources/icon.ico"))
+                menuGroup = packageName
+            }
+            macOS {
+                bundleID = "com.ampairs.app"
+                packageName = rootProject.name
+                iconFile.set(rootProject.file("resources/icon.icns"))
+            }
+            linux {
+                iconFile.set(rootProject.file("resources/icon.png"))
+            }
+        }
+
+        buildTypes.release {
+            proguard {
+                obfuscate.set(true)
+                optimize.set(true)
+                configurationFiles.from("compose-desktop.pro")
+            }
+        }
+    }
+}
+
+
+
+room {
+    schemaDirectory("$projectDir/schemas")
+}
+
+dependencies {
+    add("kspCommonMainMetadata", libs.room.compiler)
+    add("kspDesktop", libs.room.compiler)
+    add("kspAndroid", libs.room.compiler)
+}

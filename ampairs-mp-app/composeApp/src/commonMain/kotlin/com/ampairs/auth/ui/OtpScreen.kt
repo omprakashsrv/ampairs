@@ -1,0 +1,152 @@
+package com.ampairs.auth.ui
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.progressSemantics
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import com.ampairs.auth.viewmodel.LoginViewModel
+import com.ampairs.ui.components.Otp
+import kotlinx.coroutines.launch
+import org.koin.compose.koinInject
+import org.koin.core.scope.Scope
+
+@Composable
+fun OtpScreen(
+    scope: Scope,
+    onAuthSuccess: () -> Unit,
+) {
+    val viewModel = koinInject<LoginViewModel>(scope = scope)
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) {
+        if (viewModel.displayMessage.isNotEmpty()) {
+            coroutineScope.launch {
+                val result = snackbarHostState.showSnackbar(
+                    message = viewModel.displayMessage,
+                    duration = SnackbarDuration.Short
+                )
+                when (result) {
+                    SnackbarResult.Dismissed -> {
+                        viewModel.displayMessage = ""
+                    }
+
+                    SnackbarResult.ActionPerformed -> {
+                        viewModel.displayMessage = ""
+                    }
+                }
+            }
+        }
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.Bottom,
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .widthIn(0.dp, 360.dp)
+                    .fillMaxWidth(),
+                verticalArrangement = Arrangement.Center
+            ) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Otp(onValueChange = { viewModel.otp = it })
+                        
+                        // Show reCAPTCHA status message
+                        if (viewModel.recaptchaMessage.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                if (viewModel.recaptchaLoading) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        strokeWidth = 2.dp
+                                    )
+                                    Spacer(modifier = Modifier.size(8.dp))
+                                }
+                                Text(
+                                    text = viewModel.recaptchaMessage,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    }
+
+                }
+                Column(modifier = Modifier.padding(vertical = 16.dp)) {
+                    Button(
+                        onClick = { viewModel.completeAuthentication(onAuthSuccess) },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = viewModel.validPhoneNumber && !viewModel.loading
+                    ) {
+                        if (viewModel.loading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .progressSemantics()
+                                    .size(24.dp)
+                            )
+                        } else {
+                            Text("Verify OTP")
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    OutlinedButton(
+                        onClick = { 
+                            viewModel.resendOtp { sessionId ->
+                                viewModel.sessionId = sessionId
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !viewModel.loading
+                    ) {
+                        Text("Resend OTP")
+                    }
+                }
+            }
+        }
+    }
+}

@@ -4,6 +4,69 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
+Ampairs is a comprehensive business management system consisting of **three integrated applications**:
+
+### **🏗️ Three-Tier System Architecture**
+
+#### **1. Backend System (Spring Boot)**
+- **Technology**: Spring Boot with Kotlin
+- **Location**: `/ampairs_service` (main module) + domain modules (auth, workspace, customer, product, order, invoice)
+- **Role**: REST API server, business logic, database management, AWS integrations
+- **Port**: 8080 (development)
+
+#### **2. Web Frontend (Angular)**
+- **Technology**: Angular application  
+- **Role**: Web-based user interface for desktop/browser access
+- **Integration**: Consumes REST APIs from Spring Boot backend
+
+#### **3. Mobile/Desktop App (Kotlin Multiplatform)**
+- **Technology**: Kotlin Multiplatform with Compose Multiplatform
+- **Location**: `/ampairs-mp-app`
+- **Targets**: Android, iOS, Desktop (JVM)
+- **Role**: Native mobile and desktop applications
+- **Integration**: Consumes same REST APIs from Spring Boot backend
+
+### **🔄 System Integration Pattern**
+
+```
+┌─────────────────┐    ┌─────────────────────────────────┐    ┌─────────────────┐
+│   Angular Web   │    │        Spring Boot              │    │ Kotlin MP App   │
+│   Application   │◄──►│       Backend API               │◄──►│ (Android/iOS/   │
+│                 │    │                                 │    │    Desktop)     │
+└─────────────────┘    │  - REST API Endpoints           │    └─────────────────┘
+                       │  - JWT Authentication            │
+                       │  - Multi-tenant Support          │
+                       │  - Business Logic                │
+                       │  - Database Management           │
+                       │  - AWS S3, SNS Integration       │
+                       └─────────────────────────────────┘
+                                      │
+                                      ▼
+                               ┌─────────────┐
+                               │   MySQL     │
+                               │  Database   │
+                               └─────────────┘
+```
+
+### **📱 Shared Functionality Across All Platforms**
+
+Both the **Angular web app** and **Kotlin Multiplatform app** provide identical business features:
+
+- **Authentication**: Phone/OTP login with JWT tokens and multi-device support
+- **Company Management**: Multi-tenant workspace selection and configuration
+- **Customer Management**: Comprehensive CRM functionality with address handling
+- **Product Catalog**: Product management with categories, tax codes, and image storage
+- **Inventory Management**: Stock tracking, movement, and reporting
+- **Order Processing**: Order creation, management, status workflows, and pricing
+- **Invoice Generation**: Invoice creation, GST compliance, PDF generation, email delivery
+- **Tally Integration**: ERP system synchronization and data exchange
+
+This architecture ensures:
+- **Single source of truth** maintained in the Spring Boot backend
+- **Consistent APIs** serving both web and mobile clients  
+- **Platform-optimized UX** while maintaining feature parity
+- **Independent scaling** of backend, web frontend, and mobile applications
+
 Ampairs is a modern, multi-module Spring Boot application built with Kotlin that provides comprehensive business
 management functionality including authentication, customer management, product/inventory management, order processing,
 and invoice generation. The application features a secure, multi-tenant architecture with robust AWS cloud services

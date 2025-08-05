@@ -1,0 +1,67 @@
+package com.ampairs.auth.api
+
+import com.ampairs.auth.api.model.AuthComplete
+import com.ampairs.auth.api.model.AuthInit
+import com.ampairs.auth.api.model.AuthInitResponse
+import com.ampairs.auth.api.model.RefreshToken
+import com.ampairs.auth.api.model.Token
+import com.ampairs.auth.api.model.UserApiModel
+import com.ampairs.auth.domain.DeviceSession
+import com.ampairs.common.get
+import com.ampairs.common.httpClient
+import com.ampairs.common.post
+import com.ampairs.network.model.GenericSuccess
+import com.ampairs.network.model.Response
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.plugins.auth.authProvider
+import io.ktor.client.plugins.auth.providers.BearerAuthProvider
+
+const val AUTH_ENDPOINT = "http://localhost:8080"
+
+class AuthApiImpl(engine: HttpClientEngine, private val tokenRepository: TokenRepository) : AuthApi {
+
+    private val client = httpClient(engine, tokenRepository)
+
+    override suspend fun initAuth(authInit: AuthInit): Response<AuthInitResponse> {
+        return post(
+            client,
+            AUTH_ENDPOINT + "/auth/v1/init",
+            authInit
+        )
+    }
+
+    override suspend fun completeAuth(authComplete: AuthComplete): Response<Token> {
+        return post(
+            client, AUTH_ENDPOINT + "/auth/v1/verify",
+            authComplete
+        )
+    }
+
+    override suspend fun refreshToken(deviceId: String?): Response<Token> {
+        val refreshTokenModel = RefreshToken(
+            refreshToken = tokenRepository.getRefreshToken(),
+            deviceId = deviceId
+        )
+        return post(client, AUTH_ENDPOINT + "/auth/v1/refresh_token", refreshTokenModel)
+    }
+
+    override suspend fun getUser(): Response<UserApiModel> {
+        return get(client, AUTH_ENDPOINT + "/user/v1")
+    }
+
+    override suspend fun getDeviceSessions(): Response<List<DeviceSession>> {
+        return get(client, AUTH_ENDPOINT + "/auth/v1/devices")
+    }
+
+    override suspend fun logoutDevice(deviceId: String): Response<GenericSuccess> {
+        return post(client, AUTH_ENDPOINT + "/auth/v1/devices/$deviceId/logout", null)
+    }
+
+    override suspend fun logoutAllDevices(): Response<GenericSuccess> {
+        return post(client, AUTH_ENDPOINT + "/auth/v1/logout/all", null)
+    }
+
+    override fun clearToken() {
+        client.authProvider<BearerAuthProvider>()?.clearToken()
+    }
+}
