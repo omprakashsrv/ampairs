@@ -89,7 +89,7 @@ class LoginViewModel(
                     }
                 }
             }.onError {
-                displayMessage = this.message
+                displayMessage = this@onError.message
                 viewModelScope.launch(Dispatchers.Main) {
                     loading = false
                     recaptchaLoading = false
@@ -120,7 +120,7 @@ class LoginViewModel(
                     onAuthComplete()
                 }
             }.onError {
-                displayMessage = this.message
+                displayMessage = this@onError.message
                 viewModelScope.launch(Dispatchers.Main) {
                     loading = false
                     recaptchaLoading = false
@@ -136,20 +136,20 @@ class LoginViewModel(
         recaptchaMessage = "Preparing to resend OTP..."
         
         viewModelScope.launch(Dispatchers.IO) {
-            userRepository.resendOtp(phoneNumber).onSuccess { response ->
+            userRepository.resendOtp(phoneNumber).onSuccess {
                 viewModelScope.launch(Dispatchers.Main) {
                     loading = false
                     recaptchaLoading = false
                     recaptchaMessage = ""
-                    if (response.success && response.sessionId != null) {
-                        sessionId = response.sessionId
-                        onResendSuccess(response.sessionId)
+                    if (this@onSuccess.success && this@onSuccess.sessionId != null) {
+                        this@LoginViewModel.sessionId = this@onSuccess.sessionId!!
+                        onResendSuccess(this@onSuccess.sessionId!!)
                     } else {
-                        displayMessage = response.error?.message ?: "Failed to resend OTP"
+                        displayMessage = this@onSuccess.error?.message ?: "Failed to resend OTP"
                     }
                 }
             }.onError {
-                displayMessage = this.message
+                displayMessage = this@onError.message
                 viewModelScope.launch(Dispatchers.Main) {
                     loading = false
                     recaptchaLoading = false
