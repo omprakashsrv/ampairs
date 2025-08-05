@@ -56,10 +56,6 @@ class UserRepository(
                 recaptchaToken = recaptchaToken,
                 deviceId = deviceInfo.deviceId,
                 deviceName = deviceInfo.deviceName,
-                deviceType = deviceInfo.deviceType,
-                platform = deviceInfo.platform,
-                browser = deviceInfo.browser,
-                os = deviceInfo.os
             )
         )
         authApi.clearToken()

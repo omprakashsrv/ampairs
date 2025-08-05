@@ -84,6 +84,9 @@ dependencies {
     implementation("io.awspring.cloud:spring-cloud-aws-starter-s3")
     implementation("io.awspring.cloud:spring-cloud-aws-starter-sns")
 
+    // Jackson for JSON processing
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+
     // Observability
     implementation("io.micrometer:micrometer-registry-prometheus")
 

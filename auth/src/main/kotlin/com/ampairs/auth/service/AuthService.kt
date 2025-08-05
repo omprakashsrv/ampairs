@@ -60,7 +60,15 @@ class AuthService @Autowired constructor(
 
         if (loginSession.code == request.otp) {
             val user: User = userRepository.findByUserName(loginSession.userName())
-                .orElseThrow()
+                .orElseGet {
+                    // Create new user if doesn't exist
+                    val newUser = User()
+                    newUser.userName = loginSession.userName()
+                    newUser.countryCode = loginSession.countryCode
+                    newUser.phone = loginSession.phone
+                    newUser.active = true
+                    userRepository.save(newUser)
+                }
 
             // Extract device information
             val deviceInfo = deviceInfoExtractor.extractDeviceInfo(
@@ -79,10 +87,17 @@ class AuthService @Autowired constructor(
             // Update device session with refresh token hash
             deviceSession.refreshTokenHash = hashToken(refreshToken)
             deviceSessionRepository.save(deviceSession)
+
+            // Mark login session as verified to prevent reuse
+            loginSession.verified = true
+            loginSession.verifiedAt = LocalDateTime.now()
+            loginSessionRepository.save(loginSession)
             
             val authResponse = AuthenticationResponse()
             authResponse.accessToken = jwtToken
             authResponse.refreshToken = refreshToken
+            authResponse.accessTokenExpiresAt = jwtService.extractExpirationAsLocalDateTime(jwtToken)
+            authResponse.refreshTokenExpiresAt = jwtService.extractExpirationAsLocalDateTime(refreshToken)
             return authResponse
         } else {
             throw Exception("Invalid otp")
@@ -199,6 +214,8 @@ class AuthService @Autowired constructor(
             val authResponse = AuthenticationResponse()
             authResponse.accessToken = accessToken
             authResponse.refreshToken = refreshToken // Keep same refresh token
+            authResponse.accessTokenExpiresAt = jwtService.extractExpirationAsLocalDateTime(accessToken)
+            authResponse.refreshTokenExpiresAt = jwtService.extractExpirationAsLocalDateTime(refreshToken)
             return authResponse
         }
         throw Exception("Refresh token not valid")

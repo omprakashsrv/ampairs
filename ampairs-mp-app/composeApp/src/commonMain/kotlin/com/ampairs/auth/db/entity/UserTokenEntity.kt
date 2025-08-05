@@ -14,5 +14,8 @@ data class UserTokenEntity(
     val id: String,
     val refresh_token: String,
     val access_token: String,
-    val expires_at: Long?
+    val access_token_expires_at: Long? = null,
+    val refresh_token_expires_at: Long? = null,
+    @Deprecated("Use access_token_expires_at instead")
+    val expires_at: Long? = null,
 )

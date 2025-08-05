@@ -58,6 +58,21 @@ class SecurityConfiguration @Autowired constructor(
                         .jwtAuthenticationConverter(customJwtAuthenticationConverter)
                 }
                 oauth2.authenticationEntryPoint(unauthorizedHandler)
+                oauth2.bearerTokenResolver { request ->
+                    // Only resolve bearer tokens for authenticated endpoints
+                    val requestURI = request.requestURI
+                    if (requestURI.startsWith("/auth/v1/") || requestURI.startsWith("/actuator/")) {
+                        null // Skip JWT processing for public endpoints
+                    } else {
+                        // Use default bearer token resolution for protected endpoints
+                        val authorizationHeaderValue = request.getHeader("Authorization")
+                        if (authorizationHeaderValue != null && authorizationHeaderValue.startsWith("Bearer ")) {
+                            authorizationHeaderValue.substring(7)
+                        } else {
+                            null
+                        }
+                    }
+                }
             }
             .logout { logout ->
                 logout.addLogoutHandler(logoutHandler)

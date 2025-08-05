@@ -46,6 +46,8 @@ export interface OtpVerificationRequest {
 export interface AuthResponse {
   access_token: string;
   refresh_token: string;
+  access_token_expires_at?: string;
+  refresh_token_expires_at?: string;
 }
 
 export interface User {
@@ -140,7 +142,7 @@ export class AuthService {
       .pipe(
         map(response => {
           if (response.access_token && response.refresh_token) {
-            this.setAuthTokens(response.access_token, response.refresh_token);
+            this.setAuthTokens(response.access_token, response.refresh_token, response.access_token_expires_at, response.refresh_token_expires_at);
             this.isAuthenticatedSubject.next(true);
             // Get user profile after successful authentication
             this.getUserProfile().subscribe({
@@ -172,7 +174,7 @@ export class AuthService {
     }).pipe(
       map(response => {
         if (response.access_token && response.refresh_token) {
-          this.setAuthTokens(response.access_token, response.refresh_token);
+          this.setAuthTokens(response.access_token, response.refresh_token, response.access_token_expires_at, response.refresh_token_expires_at);
           this.isAuthenticatedSubject.next(true);
         } else {
           // If refresh fails, logout user
@@ -350,22 +352,57 @@ export class AuthService {
   /**
    * Store authentication tokens in secure cookies
    */
-  private setAuthTokens(accessToken: string, refreshToken: string): void {
+  private setAuthTokens(accessToken: string, refreshToken: string, accessTokenExpiresAt?: string, refreshTokenExpiresAt?: string): void {
     // Set cookies with secure options
     const cookieOptions = {
       secure: true, // Only send over HTTPS in production
       sameSite: 'strict' as const,
-      expires: 7 // 7 days for refresh token
     };
 
-    // Access token expires in 1 hour
+    // Calculate expires from server-provided dates or fallback to defaults
+    let accessTokenExpires = 1 / 24; // Default 1 hour
+    let refreshTokenExpires = 7; // Default 7 days
+
+    if (accessTokenExpiresAt) {
+      try {
+        const expiresDate = new Date(accessTokenExpiresAt);
+        const now = new Date();
+        const diffMs = expiresDate.getTime() - now.getTime();
+        const diffDays = diffMs / (1000 * 60 * 60 * 24);
+        if (diffDays > 0) {
+          accessTokenExpires = diffDays;
+        }
+      } catch (error) {
+        console.warn('Failed to parse access token expiry date, using default:', error);
+      }
+    }
+
+    if (refreshTokenExpiresAt) {
+      try {
+        const expiresDate = new Date(refreshTokenExpiresAt);
+        const now = new Date();
+        const diffMs = expiresDate.getTime() - now.getTime();
+        const diffDays = diffMs / (1000 * 60 * 60 * 24);
+        if (diffDays > 0) {
+          refreshTokenExpires = diffDays;
+        }
+      } catch (error) {
+        console.warn('Failed to parse refresh token expiry date, using default:', error);
+      }
+    }
+
+    // Set cookies with calculated expiry times
     Cookies.set('access_token', accessToken, {
       ...cookieOptions,
-      expires: 1/24 // 1 hour
+      expires: accessTokenExpires
     });
 
-    // Refresh token expires in 7 days
-    Cookies.set('refresh_token', refreshToken, cookieOptions);
+    Cookies.set('refresh_token', refreshToken, {
+      ...cookieOptions,
+      expires: refreshTokenExpires
+    });
+
+    console.log(`Tokens stored: access expires in ${(accessTokenExpires * 24).toFixed(1)} hours, refresh expires in ${refreshTokenExpires.toFixed(1)} days`);
   }
 
   /**

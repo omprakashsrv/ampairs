@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component
 import java.io.IOException
 
 @Component
-class AuthEntryPointJwt : AuthenticationEntryPoint {
+class AuthEntryPointJwt(private val objectMapper: ObjectMapper) : AuthenticationEntryPoint {
     @Throws(IOException::class, ServletException::class)
     override fun commence(
         request: HttpServletRequest,
@@ -23,13 +23,12 @@ class AuthEntryPointJwt : AuthenticationEntryPoint {
         logger.error("Unauthorized error", authException)
         response.contentType = MediaType.APPLICATION_JSON_VALUE
         response.status = HttpServletResponse.SC_UNAUTHORIZED
-        val mapper = ObjectMapper()
         val errorResponse = ApiResponse.error<Any>(
             code = "UNAUTHORIZED",
             message = "Unauthorized",
             path = request.requestURI
         )
-        mapper.writeValue(response.outputStream, errorResponse)
+        objectMapper.writeValue(response.outputStream, errorResponse)
     }
 
     companion object {

@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "fb4e7e928bc32db2a3e8a8e6cdff08b4",
+    "identityHash": "6399e7ad7b7fe09f2f74113f6e47ead8",
     "entities": [
       {
         "tableName": "userEntity",
@@ -71,7 +71,7 @@
       },
       {
         "tableName": "userTokenEntity",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`seq_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `refresh_token` TEXT NOT NULL, `access_token` TEXT NOT NULL, `expires_at` INTEGER)",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`seq_id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `id` TEXT NOT NULL, `refresh_token` TEXT NOT NULL, `access_token` TEXT NOT NULL, `access_token_expires_at` INTEGER, `refresh_token_expires_at` INTEGER, `expires_at` INTEGER)",
         "fields": [
           {
             "fieldPath": "seq_id",
@@ -96,6 +96,16 @@
             "columnName": "access_token",
             "affinity": "TEXT",
             "notNull": true
+          },
+          {
+            "fieldPath": "access_token_expires_at",
+            "columnName": "access_token_expires_at",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "refresh_token_expires_at",
+            "columnName": "refresh_token_expires_at",
+            "affinity": "INTEGER"
           },
           {
             "fieldPath": "expires_at",
@@ -124,7 +134,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'fb4e7e928bc32db2a3e8a8e6cdff08b4')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '6399e7ad7b7fe09f2f74113f6e47ead8')"
     ]
   }
 }

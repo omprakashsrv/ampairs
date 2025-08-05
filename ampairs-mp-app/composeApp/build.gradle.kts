@@ -39,7 +39,6 @@ kotlin {
                 implementation(libs.ktor.client.okHttp)
                 implementation(libs.splash.screen)
                 implementation(libs.aws.s3)
-                implementation("com.google.android.recaptcha:recaptcha:18.8.0-beta02")
             }
         }
 

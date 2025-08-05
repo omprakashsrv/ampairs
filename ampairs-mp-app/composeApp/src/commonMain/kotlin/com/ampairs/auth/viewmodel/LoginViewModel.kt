@@ -82,8 +82,8 @@ class LoginViewModel(
                     recaptchaLoading = false
                     recaptchaMessage = ""
                     if (this@onSuccess.success && this@onSuccess.sessionId != null) {
-                        this@LoginViewModel.sessionId = this@onSuccess.sessionId!!
-                        onAuthSuccess(this@onSuccess.sessionId!!)
+                        this@LoginViewModel.sessionId = this@onSuccess.sessionId
+                        onAuthSuccess(this@onSuccess.sessionId)
                     } else {
                         displayMessage = this@onSuccess.error?.message ?: "Authentication failed"
                     }

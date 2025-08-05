@@ -18,12 +18,4 @@ data class AuthComplete(
     val deviceId: String? = null,
     @SerialName("device_name")
     val deviceName: String? = null,
-    @SerialName("device_type")
-    val deviceType: String? = null,
-    @SerialName("platform")
-    val platform: String? = null,
-    @SerialName("browser")
-    val browser: String? = null,
-    @SerialName("os")
-    val os: String? = null
 )

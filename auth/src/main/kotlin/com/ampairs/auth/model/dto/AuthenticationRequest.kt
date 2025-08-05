@@ -7,7 +7,7 @@ data class AuthenticationRequest(
     var sessionId: String,
     var otp: String,
     @JsonProperty("auth_mode")
-    val authMode: AuthMode,
+    val authMode: AuthMode = AuthMode.OTP,
     @JsonProperty("recaptcha_token")
     var recaptchaToken: String? = null,
     @JsonProperty("device_id")

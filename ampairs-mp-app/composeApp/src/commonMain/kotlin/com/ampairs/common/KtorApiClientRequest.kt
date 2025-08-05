@@ -16,10 +16,10 @@ import io.ktor.http.content.PartData
 
 suspend inline fun <reified T> post(client: HttpClient, url: String, body: Any?): T {
     val responseBody = runCatching {
-        return client.post {
+        client.post {
             url(url)
             setBody(body)
-        }.body()
+        }.body<T>()
     }
     return handleResponseBody(responseBody)
 }
@@ -30,9 +30,9 @@ suspend inline fun <reified T> postMultiPart(
     parts: List<PartData>
 ): T {
     val responseBody = runCatching {
-        return client.submitFormWithBinaryData(formData = parts) {
+        client.submitFormWithBinaryData(formData = parts) {
             url(url)
-        }.body()
+        }.body<T>()
     }
     return handleResponseBody(responseBody)
 }
@@ -47,32 +47,46 @@ suspend inline fun <reified T> get(
     parameters: Map<String, Any>?
 ): T {
     val responseBody = runCatching {
-        return client.get {
+        client.get {
             url(url)
             parameters?.map {
                 parameter(it.key, it.value)
             }
-        }.body()
+        }.body<T>()
     }
     return handleResponseBody(responseBody)
 }
 
-suspend inline fun <reified T> handleResponseBody(responseBody: Result<Nothing>): T {
+suspend inline fun <reified T> handleResponseBody(responseBody: Result<T>): T {
     if (responseBody.isSuccess) {
-        return responseBody.getOrDefault(null) as T
+        return responseBody.getOrNull() ?: Response(
+            error = com.ampairs.network.model.Error(
+                code = 0,
+                message = "Null response body"
+            ),
+            response = null
+        ) as T
     }
-    if (responseBody.exceptionOrNull() is ServerResponseException) {
+
+    val exception = responseBody.exceptionOrNull()
+    if (exception is ServerResponseException) {
         val errorResponse = runCatching {
-            val response = (responseBody.exceptionOrNull() as ServerResponseException).response
-            val errorResponse = response.body<ErrorResponse>()
-            return errorResponse.toResponse() as T
+            val errorResponse = exception.response.body<ErrorResponse>()
+            errorResponse.toResponse()
         }
-        return errorResponse.getOrNull() as T
+        return errorResponse.getOrNull() as? T ?: Response(
+            error = com.ampairs.network.model.Error(
+                code = exception.response.status.value,
+                message = "Failed to parse error response"
+            ),
+            response = null
+        ) as T
     }
+
     return Response(
         error = com.ampairs.network.model.Error(
             code = 0,
-            message = responseBody.exceptionOrNull()?.message ?: ""
+            message = exception?.message ?: "Unknown error"
         ),
         response = null
     ) as T

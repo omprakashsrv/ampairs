@@ -34,6 +34,10 @@ logging:
 spring:
   jackson:
     property-naming-strategy: SNAKE_CASE
+    serialization:
+      write-dates-as-timestamps: false
+    deserialization:
+      fail-on-unknown-properties: false
   cache:
     type: caffeine
     caffeine:
@@ -196,7 +200,7 @@ google:
       resend-otp: ${RECAPTCHA_ACTION_RESEND_OTP:resend_otp}
     # Development token configuration
     development:
-      enabled: ${RECAPTCHA_DEV_MODE_ENABLED:false}
+      enabled: ${RECAPTCHA_DEV_MODE_ENABLED:true}
       tokenPatterns: ${RECAPTCHA_DEV_TOKEN_PATTERNS:dev-dummy-token-*,test-token-*}
     # IP whitelist configuration
     whitelist:

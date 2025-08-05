@@ -22,6 +22,7 @@ import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.request.url
+import io.ktor.client.statement.request
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
@@ -65,8 +66,18 @@ fun httpClient(engine: HttpClientEngine, tokenRepository: TokenRepository) = Htt
                 )
             }
             refreshTokens {
+                // Check if current request is an auth endpoint - if so, don't refresh
+                val currentUrl = response.request.url.toString()
+                if (currentUrl.contains("/auth/v1/init") ||
+                    currentUrl.contains("/auth/v1/verify") ||
+                    currentUrl.contains("/auth/v1/logout") ||
+                    currentUrl.contains("/auth/v1/refresh_token")
+                ) {
+                    return@refreshTokens null
+                }
+                
                 val tokenResponse: Response<Token> = client.post {
-                    url(AUTH_ENDPOINT + "/auth/v1/refresh_token")
+                    url("$AUTH_ENDPOINT/auth/v1/refresh_token")
                     contentType(ContentType.Application.Json)
                     setBody(
                         RefreshToken(
@@ -79,7 +90,14 @@ fun httpClient(engine: HttpClientEngine, tokenRepository: TokenRepository) = Htt
                 refreshTokens?.let { tokenRepository.updateToken(it.accessToken, it.refreshToken) }
                 refreshTokens
             }
+            // Exclude auth endpoints from bearer token authentication
+            sendWithoutRequest { request ->
+                val url = request.url.toString()
+                url.contains("/auth/v1/init") ||
+                        url.contains("/auth/v1/verify") ||
+                        url.contains("/auth/v1/logout") ||
+                        url.contains("/auth/v1/refresh_token")
+            }
         }
-
     }
 }

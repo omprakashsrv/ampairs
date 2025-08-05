@@ -195,6 +195,13 @@ class JwtService(
         return extractClaim(token) { claims: Claims -> claims.expiration }
     }
 
+    fun extractExpirationAsLocalDateTime(token: String): java.time.LocalDateTime {
+        val expirationDate = extractExpiration(token)
+        return expirationDate.toInstant()
+            .atZone(java.time.ZoneId.systemDefault())
+            .toLocalDateTime()
+    }
+
     private fun extractAllClaims(token: String): Claims {
         return try {
             Jwts.parserBuilder()
