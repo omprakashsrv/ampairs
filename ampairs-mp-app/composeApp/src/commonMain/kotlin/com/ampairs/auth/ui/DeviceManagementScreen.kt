@@ -45,6 +45,11 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.auth.viewmodel.DeviceManagementViewModel
+import org.jetbrains.compose.resources.stringResource
+import ampairsapp.composeapp.generated.resources.Res
+import ampairsapp.composeapp.generated.resources.device_sessions
+import ampairsapp.composeapp.generated.resources.loading_device_sessions
+import ampairsapp.composeapp.generated.resources.logout_all_devices
 import kotlinx.coroutines.flow.filterNotNull
 import org.koin.compose.koinInject
 
@@ -74,7 +79,7 @@ fun DeviceManagementScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Device Sessions") },
+                title = { Text(stringResource(Res.string.device_sessions)) },
                 actions = {
                     IconButton(
                         onClick = { viewModel.loadDeviceSessions() },
@@ -138,7 +143,7 @@ fun DeviceManagementScreen(
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                 }
-                                Text("Logout All Devices")
+                                Text(stringResource(Res.string.logout_all_devices))
                             }
                         }
                     }
@@ -159,7 +164,7 @@ private fun LoadingIndicator() {
         ) {
             CircularProgressIndicator()
             Spacer(modifier = Modifier.height(16.dp))
-            Text("Loading device sessions...")
+            Text(stringResource(Res.string.loading_device_sessions))
         }
     }
 }

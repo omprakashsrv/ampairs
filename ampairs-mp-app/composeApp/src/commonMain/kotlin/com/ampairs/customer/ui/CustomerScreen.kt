@@ -76,7 +76,6 @@ fun CustomerScreen(modifier: Modifier = Modifier, id: String?, onCustomerUpdate:
                                         },
                                     )
                                     Phone(
-                                        modifier = inputModifier,
                                         countryCode = customer.countryCode,
                                         phone = customer.phone.toString(),
                                         onValueChange = {

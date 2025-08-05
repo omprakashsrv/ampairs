@@ -50,7 +50,7 @@ class SecureKtorClientFactory(
             when (updateStatus) {
                 is AppUpdateStatus.Required -> {
                     appUpdateEnforcer.showUpdateDialog(updateStatus)
-                    throw SecurityException("App update required for security reasons")
+                    throw SecurityException("App update required for security reasons") // TODO: Use string resource
                 }
                 is AppUpdateStatus.Recommended -> {
                     appUpdateEnforcer.showUpdateDialog(updateStatus)
@@ -107,7 +107,7 @@ class SecureKtorClientFactory(
                         // Check if network requests are allowed before token refresh
                         runBlocking {
                             if (!appUpdateEnforcer.shouldAllowNetworkRequests()) {
-                                throw SecurityException("Network requests blocked due to security policy")
+                                throw SecurityException("Network requests blocked due to security policy") // TODO: Use string resource
                             }
                         }
                         
@@ -142,7 +142,7 @@ suspend fun HttpClient.secureRequest(
     block: suspend HttpClient.() -> Unit
 ) {
     if (!appUpdateEnforcer.shouldAllowNetworkRequests()) {
-        throw SecurityException("Network requests blocked due to security policy")
+        throw SecurityException("Network requests blocked due to security policy") // TODO: Use string resource
     }
     
     block()

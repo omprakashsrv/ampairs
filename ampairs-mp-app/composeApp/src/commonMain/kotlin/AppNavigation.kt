@@ -1,7 +1,7 @@
 import androidx.compose.foundation.background
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navOptions
@@ -19,7 +19,7 @@ fun AppNavigation() {
     val navController = rememberNavController()
 
     NavHost(
-        modifier = Modifier.background(Color.White),
+        modifier = Modifier.background(MaterialTheme.colorScheme.background),
         navController = navController, startDestination = Route.Login
     ) {
         authNavigation(navController) {

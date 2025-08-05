@@ -1,9 +1,9 @@
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import com.ampairs.ui.theme.PlatformAmpairsTheme
 
 @Composable
 fun App(onLoggedIn: (Boolean) -> Unit) {
-    MaterialTheme {
+    PlatformAmpairsTheme {
         AppNavigation()
     }
 }

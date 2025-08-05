@@ -40,7 +40,6 @@ fun AddressScreen(address: Address, onAddressChange: (Address) -> (Unit)) {
             },
         )
         Phone(
-            modifier = inputModifier,
             countryCode = 91,
             phone = addressState.phone,
             onValueChange = { value ->

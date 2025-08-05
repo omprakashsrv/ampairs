@@ -13,6 +13,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
+import org.jetbrains.compose.resources.stringResource
+import ampairsapp.composeapp.generated.resources.Res
+import ampairsapp.composeapp.generated.resources.enter_otp_instruction
+import ampairsapp.composeapp.generated.resources.otp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -30,8 +34,8 @@ fun Otp(onValueChange: (String) -> Unit) {
             },
             maxLines = 1,
             keyboardOptions = KeyboardOptions.Default.copy(keyboardType = KeyboardType.Number),
-            label = { Text("OTP") },
-            supportingText = { Text("Enter 6-digit OTP, received on phone") })
+            label = { Text(stringResource(Res.string.otp)) },
+            supportingText = { Text(stringResource(Res.string.enter_otp_instruction)) })
     }
 
 }

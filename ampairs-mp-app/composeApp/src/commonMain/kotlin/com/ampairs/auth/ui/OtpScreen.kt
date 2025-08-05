@@ -30,6 +30,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ampairs.auth.viewmodel.LoginViewModel
 import com.ampairs.ui.components.Otp
+import org.jetbrains.compose.resources.stringResource
+import ampairsapp.composeapp.generated.resources.Res
+import ampairsapp.composeapp.generated.resources.resend_otp
+import ampairsapp.composeapp.generated.resources.verify_otp
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 import org.koin.core.scope.Scope
@@ -128,7 +132,7 @@ fun OtpScreen(
                                     .size(24.dp)
                             )
                         } else {
-                            Text("Verify OTP")
+                            Text(stringResource(Res.string.verify_otp))
                         }
                     }
                     
@@ -143,7 +147,7 @@ fun OtpScreen(
                         modifier = Modifier.fillMaxWidth(),
                         enabled = !viewModel.loading
                     ) {
-                        Text("Resend OTP")
+                        Text(stringResource(Res.string.resend_otp))
                     }
                 }
             }
