@@ -60,14 +60,14 @@ class JwtAuthenticationTest {
             .get("response").get("session_id").asText()
 
         // Authenticate with hardcoded OTP
-        val authRequest = AuthenticationRequest().apply {
-            sessionId = sessionId
-            otp = "123456"
-            authMode = AuthMode.OTP
-            recaptchaToken = "test-token-12345"
-            deviceId = "TEST_DEVICE_001"
+        val authRequest = AuthenticationRequest(
+            sessionId = sessionId,
+            otp = "123456",
+            authMode = AuthMode.OTP,
+            recaptchaToken = "test-token-12345",
+            deviceId = "TEST_DEVICE_001",
             deviceName = "Test Device"
-        }
+        )
 
         val authResponse = mockMvc.perform(
             post("/auth/v1/verify")
@@ -132,14 +132,14 @@ class JwtAuthenticationTest {
         val sessionId = objectMapper.readTree(initResponse.response.contentAsString)
             .get("response").get("session_id").asText()
 
-        val authRequest = AuthenticationRequest().apply {
-            sessionId = sessionId
-            otp = "123456"
-            authMode = AuthMode.OTP
-            recaptchaToken = "test-token-12345"
-            deviceId = "TEST_DEVICE_002"
+        val authRequest = AuthenticationRequest(
+            sessionId = sessionId,
+            otp = "123456",
+            authMode = AuthMode.OTP,
+            recaptchaToken = "test-token-12345",
+            deviceId = "TEST_DEVICE_002",
             deviceName = "Test Device 2"
-        }
+        )
 
         val authResponse = mockMvc.perform(
             post("/auth/v1/verify")
@@ -153,10 +153,10 @@ class JwtAuthenticationTest {
         val refreshToken = authResponseBody.get("response").get("refresh_token").asText()
 
         // Now refresh the token
-        val refreshRequest = RefreshTokenRequest().apply {
-            refreshToken = refreshToken
+        val refreshRequest = RefreshTokenRequest(
+            refreshToken = refreshToken,
             deviceId = "TEST_DEVICE_002"
-        }
+        )
 
         mockMvc.perform(
             post("/auth/v1/refresh_token")
@@ -251,14 +251,14 @@ class JwtAuthenticationTest {
         val sessionId2 = objectMapper.readTree(initResponse2.response.contentAsString)
             .get("response").get("session_id").asText()
 
-        val authRequest2 = AuthenticationRequest().apply {
-            sessionId = sessionId2
-            otp = "123456"
-            authMode = AuthMode.OTP
-            recaptchaToken = "test-token-12345"
-            deviceId = "TEST_DEVICE_SECOND"
+        val authRequest2 = AuthenticationRequest(
+            sessionId = sessionId2,
+            otp = "123456",
+            authMode = AuthMode.OTP,
+            recaptchaToken = "test-token-12345",
+            deviceId = "TEST_DEVICE_SECOND",
             deviceName = "Test Device Second"
-        }
+        )
 
         val authResponse2 = mockMvc.perform(
             post("/auth/v1/verify")
