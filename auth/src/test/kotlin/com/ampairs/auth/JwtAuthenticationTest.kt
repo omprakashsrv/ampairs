@@ -42,11 +42,11 @@ class JwtAuthenticationTest {
 
     private fun authenticateTestUser(): String {
         // Initialize OTP session
-        val initRequest = AuthInitRequest().apply {
-            phone = "9591781662"
-            countryCode = 91
+        val initRequest = AuthInitRequest(
+            phone = "9591781662",
+            countryCode = 91,
             recaptchaToken = "test-token-12345"
-        }
+        )
 
         val initResponse = mockMvc.perform(
             post("/auth/v1/init")
@@ -115,11 +115,11 @@ class JwtAuthenticationTest {
     @Test
     fun `should refresh JWT token successfully`() {
         // First authenticate to get tokens
-        val initRequest = AuthInitRequest().apply {
-            phone = "9591781662"
-            countryCode = 91
+        val initRequest = AuthInitRequest(
+            phone = "9591781662",
+            countryCode = 91,
             recaptchaToken = "test-token-12345"
-        }
+        )
 
         val initResponse = mockMvc.perform(
             post("/auth/v1/init")
@@ -234,11 +234,11 @@ class JwtAuthenticationTest {
         val device1Token = authenticateTestUser()
 
         // Authenticate from second device with same phone number
-        val initRequest2 = AuthInitRequest().apply {
-            phone = "9591781662"
-            countryCode = 91
+        val initRequest2 = AuthInitRequest(
+            phone = "9591781662",
+            countryCode = 91,
             recaptchaToken = "test-token-12345"
-        }
+        )
 
         val initResponse2 = mockMvc.perform(
             post("/auth/v1/init")

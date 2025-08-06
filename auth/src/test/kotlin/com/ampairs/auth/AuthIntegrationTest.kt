@@ -37,11 +37,11 @@ class AuthIntegrationTest {
 
     @Test
     fun `should initialize OTP session successfully`() {
-        val request = AuthInitRequest().apply {
-            phone = "9591781662"
-            countryCode = 91
+        val request = AuthInitRequest(
+            phone = "9591781662",
+            countryCode = 91,
             recaptchaToken = "test-token-12345"
-        }
+        )
 
         mockMvc.perform(
             post("/auth/v1/init")
@@ -57,11 +57,11 @@ class AuthIntegrationTest {
     @Test
     fun `should authenticate with hardcoded OTP in test environment`() {
         // First, initialize OTP session
-        val initRequest = AuthInitRequest().apply {
-            phone = "9591781662"
-            countryCode = 91
+        val initRequest = AuthInitRequest(
+            phone = "9591781662",
+            countryCode = 91,
             recaptchaToken = "test-token-12345"
-        }
+        )
 
         val initResponse = mockMvc.perform(
             post("/auth/v1/init")
@@ -97,11 +97,11 @@ class AuthIntegrationTest {
     @Test
     fun `should reject invalid OTP`() {
         // Initialize OTP session
-        val initRequest = AuthInitRequest().apply {
-            phone = "9591781662"
-            countryCode = 91
+        val initRequest = AuthInitRequest(
+            phone = "9591781662",
+            countryCode = 91,
             recaptchaToken = "test-token-12345"
-        }
+        )
 
         val initResponse = mockMvc.perform(
             post("/auth/v1/init")
@@ -182,11 +182,11 @@ class AuthIntegrationTest {
     @Test
     fun `should validate session check endpoint`() {
         // Create a valid session
-        val initRequest = AuthInitRequest().apply {
-            phone = "9591781662"
-            countryCode = 91
+        val initRequest = AuthInitRequest(
+            phone = "9591781662",
+            countryCode = 91,
             recaptchaToken = "test-token-12345"
-        }
+        )
 
         val initResponse = mockMvc.perform(
             post("/auth/v1/init")
@@ -220,11 +220,11 @@ class AuthIntegrationTest {
 
     @Test
     fun `should handle missing recaptcha token`() {
-        val request = AuthInitRequest().apply {
-            phone = "9591781662"
-            countryCode = 91
+        val request = AuthInitRequest(
+            phone = "9591781662",
+            countryCode = 91,
             recaptchaToken = null // Missing recaptcha token
-        }
+        )
 
         mockMvc.perform(
             post("/auth/v1/init")
@@ -236,11 +236,11 @@ class AuthIntegrationTest {
 
     @Test
     fun `should handle invalid phone number format`() {
-        val request = AuthInitRequest().apply {
-            phone = "invalid" // Invalid phone format
-            countryCode = 91
+        val request = AuthInitRequest(
+            phone = "invalid", // Invalid phone format
+            countryCode = 91,
             recaptchaToken = "test-token-12345"
-        }
+        )
 
         mockMvc.perform(
             post("/auth/v1/init")
