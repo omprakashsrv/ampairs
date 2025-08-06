@@ -7,5 +7,5 @@ import java.util.*
 
 @Repository
 interface OrderItemRepository : CrudRepository<OrderItem, Long> {
-    fun findBySeqId(seqId: String): Optional<OrderItem>
+    fun findByUid(uid: String): Optional<OrderItem>
 }

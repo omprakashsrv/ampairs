@@ -19,17 +19,17 @@ class InventoryService(
         inventoryRequests.forEach {
             val inventory = it.asDatabaseModel()
             if (it.id?.isNotEmpty() == true) {
-                val group = inventoryRepository.findBySeqId(it.id)
+                val group = inventoryRepository.findByUid(it.id)
                 inventory.id = group?.id ?: 0
                 inventory.refId = group?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val group = inventoryRepository.findByRefId(it.refId)
                 inventory.id = group?.id ?: 0
-                inventory.seqId = group?.seqId ?: ""
+                inventory.uid = group?.uid ?: ""
             } else if (it.productId?.isNotEmpty() == true) {
                 val group = inventoryRepository.findByProductId(it.productId)
                 inventory.id = group?.id ?: 0
-                inventory.seqId = group?.seqId ?: ""
+                inventory.uid = group?.uid ?: ""
             }
             inventories.add(inventoryRepository.save(inventory))
         }

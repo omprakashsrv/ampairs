@@ -5,10 +5,10 @@ import com.ampairs.core.domain.model.BaseDomain
 import com.ampairs.workspace.model.enums.Role
 import jakarta.persistence.*
 
-@Entity(name = "user_company")
+@Entity(name = "user_workspace")
 class UserWorkspace : BaseDomain() {
 
-    @Column(name = "company_id", length = 200, updatable = false, nullable = false)
+    @Column(name = "workspace_id", length = 200, updatable = false, nullable = false)
     var companyId: String = ""
 
     @Column(name = "user_id", length = 200, updatable = false, nullable = false)
@@ -19,7 +19,7 @@ class UserWorkspace : BaseDomain() {
     var role: Role = Role.USER
 
     @OneToOne
-    @JoinColumn(name = "company_id", referencedColumnName = "id", updatable = false, insertable = false)
+    @JoinColumn(name = "workspace_id", referencedColumnName = "id", updatable = false, insertable = false)
     lateinit var company: Workspace
 
     override fun obtainSeqIdPrefix(): String {

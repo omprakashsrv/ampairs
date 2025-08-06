@@ -125,7 +125,7 @@ object ErrorCodes {
     const val PRODUCT_NOT_FOUND = "PRODUCT_001"
     const val ORDER_NOT_FOUND = "ORDER_001"
     const val INVOICE_NOT_FOUND = "INVOICE_001"
-    const val COMPANY_NOT_FOUND = "COMPANY_001"
+    const val WORKSPACE_NOT_FOUND = "WORKSPACE_001"
 
     // Data integrity
     const val DUPLICATE_ENTRY = "DATA_001"

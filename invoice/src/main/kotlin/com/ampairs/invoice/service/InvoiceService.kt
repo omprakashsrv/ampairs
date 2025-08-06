@@ -22,21 +22,21 @@ class InvoiceService @Autowired constructor(
 ) {
     @Transactional
     fun updateInvoice(invoice: Invoice, invoiceItems: List<InvoiceItem>): InvoiceResponse {
-        val existingInvoice = invoiceRepository.findBySeqId(invoice.seqId)
-        invoice.seqId = existingInvoice?.seqId ?: invoice.seqId
+        val existingInvoice = invoiceRepository.findByUid(invoice.uid)
+        invoice.uid = existingInvoice?.uid ?: invoice.uid
         invoice.invoiceNumber = existingInvoice?.invoiceNumber ?: ""
         if (invoice.invoiceNumber.isEmpty()) {
             val invoiceNumber = invoiceRepository.findMaxInvoiceNumber().getOrDefault("0").toIntOrNull() ?: 0
             invoice.invoiceNumber = (invoiceNumber + 1).toString()
         }
         val updatedInvoice = invoiceRepository.save(invoice)
-        invoice.seqId = updatedInvoice.seqId
+        invoice.uid = updatedInvoice.uid
         invoiceItems.forEach { invoiceItem ->
-            if (invoiceItem.seqId.isNotEmpty()) {
-                val existingInvoiceItem = invoiceItemRepository.findBySeqId(invoiceItem.seqId)
+            if (invoiceItem.uid.isNotEmpty()) {
+                val existingInvoiceItem = invoiceItemRepository.findByUid(invoiceItem.uid)
                 invoiceItem.id = existingInvoiceItem?.id ?: 0
             }
-            invoiceItem.invoiceId = invoice.seqId
+            invoiceItem.invoiceId = invoice.uid
             invoiceItemRepository.save(invoiceItem)
         }
         return invoice.toResponse(invoiceItems)
@@ -51,8 +51,8 @@ class InvoiceService @Autowired constructor(
         return invoices
     }
 
-    fun getInvoice(seqId: String): Invoice? {
-        return invoiceRepository.findBySeqId(seqId = seqId)
+    fun getInvoice(uid: String): Invoice? {
+        return invoiceRepository.findByUid(uid = uid)
     }
 
 

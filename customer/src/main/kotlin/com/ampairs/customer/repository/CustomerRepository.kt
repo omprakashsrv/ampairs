@@ -8,6 +8,6 @@ import org.springframework.stereotype.Repository
 interface CustomerRepository : CrudRepository<Customer, Long> {
     fun findByRefId(refId: String?): Customer?
 
-    fun findBySeqId(seqId: String): Customer?
+    fun findByUid(uid: String): Customer?
 
 }

@@ -6,7 +6,7 @@ import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import org.springframework.data.geo.Point
 
-@Entity(name = "company")
+@Entity(name = "workspace")
 class Workspace : BaseDomain() {
 
     @Column(name = "country_code", nullable = false)

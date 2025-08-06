@@ -12,9 +12,9 @@ interface LoginSessionRepository : JpaRepository<LoginSession, Long> {
 
     fun findByPhoneAndCountryCodeAndVerifiedFalse(phone: String, countryCode: Int): List<LoginSession>
 
-    fun findBySeqIdAndVerifiedFalseAndExpiredFalse(seqId: String): LoginSession?
+    fun findByUidAndVerifiedFalseAndExpiredFalse(uid: String): LoginSession?
 
-    fun findBySeqId(seqId: String): LoginSession?
+    fun findByUid(uid: String): LoginSession?
 
     @Modifying
     @Query(

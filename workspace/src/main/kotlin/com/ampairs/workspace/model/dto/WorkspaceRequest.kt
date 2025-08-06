@@ -29,7 +29,7 @@ fun List<Workspace>.toWorkspaceRequest(): List<WorkspaceRequest> {
 }
 
 fun Workspace.toWorkspaceRequest() = WorkspaceRequest(
-    id = this.seqId,
+    id = this.uid,
     name = this.name,
     countryCode = this.countryCode,
     phone = this.phone,
@@ -49,7 +49,7 @@ fun Workspace.toWorkspaceRequest() = WorkspaceRequest(
 
 fun WorkspaceRequest.toWorkspace(): Workspace {
     val company = Workspace()
-    company.seqId = this.id ?: ""
+    company.uid = this.id ?: ""
     company.name = this.name
     company.countryCode = this.countryCode
     company.email = this.email ?: ""

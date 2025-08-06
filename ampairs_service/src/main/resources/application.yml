@@ -42,6 +42,9 @@ spring:
     type: caffeine
     caffeine:
       spec: maximumSize=10000,expireAfterAccess=1800s
+    cache-names: userDetails
+    cache-specs:
+      userDetails: maximumSize=1000,expireAfterWrite=300s
   datasource:
     url: jdbc:mysql://localhost:3306/munsi_app
     username: root
@@ -138,6 +141,11 @@ bucket4j:
 application:
   multitenancy:
     enabled: true
+  auth:
+    otp:
+      development-mode: ${OTP_DEV_MODE:false}
+      hardcoded-otp: ${OTP_HARDCODED_VALUE:123456}
+      allow-hardcoded: ${OTP_ALLOW_HARDCODED:false}
   security:
     jwt:
       secret-key: ${JWT_SECRET_KEY:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}

@@ -14,7 +14,7 @@ data class ProductSubCategoryRequest(
 fun List<ProductSubCategoryRequest>.asDatabaseModel(): List<ProductSubCategory> {
     return map {
         val productCategory = ProductSubCategory()
-        productCategory.seqId = it.id
+        productCategory.uid = it.id
         productCategory.name = it.name
         productCategory.refId = it.refId
         productCategory.imageId = it.imageId

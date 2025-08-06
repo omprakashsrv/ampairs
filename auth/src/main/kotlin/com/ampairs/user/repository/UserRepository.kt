@@ -9,5 +9,12 @@ import java.util.*
 interface UserRepository : CrudRepository<User, Long> {
     fun findByUserName(userName: String): Optional<User>
 
-    fun findBySeqId(seqId: String): Optional<User>
+    fun findByUid(uid: String): Optional<User>
+
+    // Additional useful methods
+    fun existsByUserName(userName: String): Boolean
+
+    fun findByPhone(phone: String): Optional<User>
+
+    fun findByEmail(email: String): Optional<User>
 }

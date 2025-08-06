@@ -14,7 +14,7 @@ data class ProductCategoryResponse(
 fun List<ProductCategory>.asResponse(): List<ProductCategoryResponse> {
     return map {
         ProductCategoryResponse(
-            id = it.seqId,
+            id = it.uid,
             name = it.name,
             refId = it.refId,
             active = it.active,

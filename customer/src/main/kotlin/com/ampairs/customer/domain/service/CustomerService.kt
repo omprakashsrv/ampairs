@@ -26,14 +26,14 @@ class CustomerService @Autowired constructor(
     @Transactional
     fun updateCustomers(customers: List<Customer>): List<Customer> {
         customers.forEach { customer ->
-            if (customer.seqId.isNotEmpty()) {
-                val existingCustomer = customerRepository.findBySeqId(customer.seqId)
+            if (customer.uid.isNotEmpty()) {
+                val existingCustomer = customerRepository.findByUid(customer.uid)
                 customer.refId = existingCustomer?.refId ?: ""
                 customer.createdAt = existingCustomer?.createdAt ?: ""
                 customer.updatedAt = existingCustomer?.updatedAt ?: ""
             } else if (customer.refId?.isNotEmpty() == true) {
                 val existingCustomer = customerRepository.findByRefId(customer.refId)
-                customer.seqId = existingCustomer?.seqId ?: ""
+                customer.uid = existingCustomer?.uid ?: ""
                 customer.createdAt = existingCustomer?.createdAt ?: ""
                 customer.updatedAt = existingCustomer?.updatedAt ?: ""
             }

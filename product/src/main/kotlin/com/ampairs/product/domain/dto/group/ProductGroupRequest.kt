@@ -14,7 +14,7 @@ data class ProductGroupRequest(
 fun List<ProductGroupRequest>.asDatabaseModel(): List<ProductGroup> {
     return map {
         val productGroup = ProductGroup()
-        productGroup.seqId = it.id
+        productGroup.uid = it.id
         productGroup.name = it.name
         productGroup.refId = it.refId
         productGroup.imageId = it.imageId

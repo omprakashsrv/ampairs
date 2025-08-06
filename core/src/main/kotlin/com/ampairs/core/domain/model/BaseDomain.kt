@@ -11,8 +11,8 @@ abstract class BaseDomain {
     @Column(name = "id", updatable = false, nullable = false)
     var id: Long = 0
 
-    @Column(name = "seq_id", length = 200, updatable = false, nullable = false, unique = true)
-    var seqId: String = ""
+    @Column(name = "uid", length = 200, updatable = false, nullable = false, unique = true)
+    var uid: String = ""
 
     @Column(
         name = "created_at",
@@ -42,8 +42,8 @@ abstract class BaseDomain {
 
     @PrePersist
     protected fun prePersist() {
-        if (seqId == "") {
-            seqId = Helper.generateUniqueId(obtainSeqIdPrefix(), com.ampairs.core.config.Constants.ID_LENGTH)
+        if (uid == "") {
+            uid = Helper.generateUniqueId(obtainSeqIdPrefix(), com.ampairs.core.config.Constants.ID_LENGTH)
         }
         lastUpdated = System.currentTimeMillis()
     }

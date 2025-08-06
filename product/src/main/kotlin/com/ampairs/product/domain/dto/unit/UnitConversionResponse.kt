@@ -15,7 +15,7 @@ data class UnitConversionResponse(
 fun List<UnitConversion>.asUnitConversionResponse(): List<UnitConversionResponse> {
     return map {
         UnitConversionResponse(
-            id = it.seqId,
+            id = it.uid,
             baseUnit = it.baseUnit.asResponse(),
             derivedUnit = it.derivedUnit.asResponse(),
             multiplier = it.multiplier,

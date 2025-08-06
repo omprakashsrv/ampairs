@@ -28,10 +28,10 @@ class NotificationDatabaseService(
             notificationQueueRepository.save(notification)
             logger.debug(
                 "Database updated: notification {} marked as sent via {}",
-                notification.seqId, result.providerName
+                notification.uid, result.providerName
             )
         } catch (e: Exception) {
-            logger.error("Failed to update notification {} as sent in database", notification.seqId, e)
+            logger.error("Failed to update notification {} as sent in database", notification.uid, e)
             throw e // Re-throw to handle at caller level if needed
         }
     }
@@ -51,10 +51,10 @@ class NotificationDatabaseService(
             notificationQueueRepository.save(notification)
             logger.debug(
                 "Database updated: notification {} marked as failed via {}: {}",
-                notification.seqId, providerName, errorMessage
+                notification.uid, providerName, errorMessage
             )
         } catch (e: Exception) {
-            logger.error("Failed to update notification {} as failed in database", notification.seqId, e)
+            logger.error("Failed to update notification {} as failed in database", notification.uid, e)
             throw e // Re-throw to handle at caller level if needed
         }
     }
@@ -69,10 +69,10 @@ class NotificationDatabaseService(
             notificationQueueRepository.save(notification)
             logger.debug(
                 "Database updated: notification {} marked for retry (attempt {}/{})",
-                notification.seqId, notification.retryCount, notification.maxRetries
+                notification.uid, notification.retryCount, notification.maxRetries
             )
         } catch (e: Exception) {
-            logger.error("Failed to mark notification {} for retry in database", notification.seqId, e)
+            logger.error("Failed to mark notification {} for retry in database", notification.uid, e)
             throw e
         }
     }
@@ -85,9 +85,9 @@ class NotificationDatabaseService(
         try {
             notification.markAsExhausted()
             notificationQueueRepository.save(notification)
-            logger.debug("Database updated: notification {} marked as exhausted", notification.seqId)
+            logger.debug("Database updated: notification {} marked as exhausted", notification.uid)
         } catch (e: Exception) {
-            logger.error("Failed to mark notification {} as exhausted in database", notification.seqId, e)
+            logger.error("Failed to mark notification {} as exhausted in database", notification.uid, e)
             throw e
         }
     }

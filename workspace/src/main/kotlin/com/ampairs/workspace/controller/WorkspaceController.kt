@@ -26,7 +26,7 @@ class WorkspaceController @Autowired constructor(
     fun getCompanies(): List<WorkspaceResponse> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
         val user = auth.principal as User
-        return companyService.getCompanies(user.seqId).toWorkspaceResponse()
+        return companyService.getCompanies(user.uid).toWorkspaceResponse()
     }
 
 }

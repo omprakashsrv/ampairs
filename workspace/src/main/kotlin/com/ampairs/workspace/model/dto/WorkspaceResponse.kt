@@ -28,7 +28,7 @@ fun List<Workspace>.toWorkspaceResponse(): List<WorkspaceResponse> {
 }
 
 fun Workspace.toWorkspaceResponse() = WorkspaceResponse(
-    id = this.seqId,
+    id = this.uid,
     name = this.name,
     countryCode = this.countryCode,
     phone = this.phone,

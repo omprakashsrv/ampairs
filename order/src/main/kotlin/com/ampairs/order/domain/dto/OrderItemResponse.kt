@@ -26,7 +26,7 @@ data class OrderItemResponse(
 fun List<OrderItem>.toResponse(): List<OrderItemResponse> {
     return map {
         OrderItemResponse(
-            id = it.seqId,
+            id = it.uid,
             itemNo = it.index,
             description = it.description,
             quantity = it.quantity,

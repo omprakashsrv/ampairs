@@ -37,12 +37,12 @@ class OtpService @Autowired constructor(
         // Send OTP via SMS
         sendOtpSms(countryCode, phone, loginSession.code)
 
-        return savedSession.seqId
+        return savedSession.uid
     }
 
     @Transactional
     fun verifyOtp(sessionId: String, otp: String): LoginSession {
-        val session = loginSessionRepository.findBySeqId(sessionId)
+        val session = loginSessionRepository.findByUid(sessionId)
             ?: throw IllegalArgumentException("Invalid session")
 
         validateOtpSession(session, otp)

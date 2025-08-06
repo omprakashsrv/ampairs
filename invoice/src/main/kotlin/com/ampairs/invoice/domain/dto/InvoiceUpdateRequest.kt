@@ -30,7 +30,7 @@ data class InvoiceUpdateRequest(
 
 fun InvoiceUpdateRequest.toInvoice(): Invoice {
     val invoice = Invoice()
-    invoice.seqId = this.id
+    invoice.uid = this.id
     invoice.invoiceNumber = this.invoiceNumber
     invoice.orderRefId = this.orderRefId
     invoice.fromCustomerId = this.fromCustomerId

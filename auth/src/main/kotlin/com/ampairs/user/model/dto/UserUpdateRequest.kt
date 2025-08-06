@@ -1,14 +1,14 @@
 package com.ampairs.user.model.dto
 
-import jakarta.validation.constraints.NotEmpty
-import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.Size
 
-class UserUpdateRequest {
+data class UserUpdateRequest(
+    @field:NotBlank(message = "First name cannot be blank")
+    @field:Size(max = 100, message = "First name must not exceed 100 characters")
+    val firstName: String,
 
-    @NotNull
-    @NotEmpty
-    var firstName: String = ""
-
-    @NotNull
-    var lastName: String = ""
-}
+    @field:NotBlank(message = "Last name cannot be blank")
+    @field:Size(max = 100, message = "Last name must not exceed 100 characters")
+    val lastName: String,
+)

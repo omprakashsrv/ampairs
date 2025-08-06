@@ -82,9 +82,9 @@ class NotificationService @Autowired constructor(
         }
 
         val savedNotification = notificationQueueRepository.save(notificationQueue)
-        logger.info("Notification queued for {}: {} with ID: {}", channel, recipient, savedNotification.seqId)
+        logger.info("Notification queued for {}: {} with ID: {}", channel, recipient, savedNotification.uid)
 
-        return savedNotification.seqId
+        return savedNotification.uid
     }
 
     /**
@@ -108,10 +108,10 @@ class NotificationService @Autowired constructor(
         val savedNotification = notificationQueueRepository.save(notificationQueue)
         logger.info(
             "Notification queued for {}: {} with delay: {} minutes, ID: {}",
-            channel, recipient, delayMinutes, savedNotification.seqId
+            channel, recipient, delayMinutes, savedNotification.uid
         )
 
-        return savedNotification.seqId
+        return savedNotification.uid
     }
 
     /**
@@ -167,11 +167,11 @@ class NotificationService @Autowired constructor(
         try {
             logger.debug(
                 "Processing notification async: {} for {} via {}",
-                notification.seqId, notification.recipient, notification.channel
+                notification.uid, notification.recipient, notification.channel
             )
             processSingleNotification(notification)
         } catch (e: Exception) {
-            logger.error("Error processing notification async: {}", notification.seqId, e)
+            logger.error("Error processing notification async: {}", notification.uid, e)
         }
     }
 
@@ -214,15 +214,15 @@ class NotificationService @Autowired constructor(
                 notificationDatabaseService.markNotificationForRetry(notification, retryDelayMinutes)
                 logger.info(
                     "Notification marked for retry: {} (attempt {}/{})",
-                    notification.seqId, notification.retryCount, notification.maxRetries
+                    notification.uid, notification.retryCount, notification.maxRetries
                 )
             } else {
                 // Update database in separate short transaction
                 notificationDatabaseService.markNotificationAsExhausted(notification)
-                logger.warn("Notification retry exhausted: {}", notification.seqId)
+                logger.warn("Notification retry exhausted: {}", notification.uid)
             }
         } catch (e: Exception) {
-            logger.error("Error processing failed notification async: {}", notification.seqId, e)
+            logger.error("Error processing failed notification async: {}", notification.uid, e)
         }
     }
 
@@ -256,7 +256,7 @@ class NotificationService @Autowired constructor(
         try {
             logger.debug(
                 "Processing notification: {} for {} via {}",
-                notification.seqId, notification.recipient, notification.channel
+                notification.uid, notification.recipient, notification.channel
             )
 
             val providers = getProvidersForChannel(notification.channel)
@@ -271,7 +271,7 @@ class NotificationService @Autowired constructor(
                 logger.info(
                     "Attempting to send notification via {}: {}",
                     provider.getProviderName(),
-                    notification.seqId
+                    notification.uid
                 )
 
                 // Call external API outside of database transaction
@@ -281,12 +281,12 @@ class NotificationService @Autowired constructor(
                 if (result.success) {
                     // Update database in separate short transaction
                     notificationDatabaseService.updateNotificationAsSent(notification, result)
-                    logger.info("Notification sent successfully via {}: {}", result.providerName, notification.seqId)
+                    logger.info("Notification sent successfully via {}: {}", result.providerName, notification.uid)
                     return
                 } else {
                     logger.warn(
                         "Notification failed via {}: {} - {}",
-                        result.providerName, notification.seqId, result.errorMessage
+                        result.providerName, notification.uid, result.errorMessage
                     )
                 }
             }
@@ -308,10 +308,10 @@ class NotificationService @Autowired constructor(
                 )
             }
 
-            logger.error("Notification failed with all providers: {}", notification.seqId)
+            logger.error("Notification failed with all providers: {}", notification.uid)
 
         } catch (e: Exception) {
-            logger.error("Unexpected error processing notification: {}", notification.seqId, e)
+            logger.error("Unexpected error processing notification: {}", notification.uid, e)
             // Update database in separate transaction for system errors
             notificationDatabaseService.updateNotificationAsFailed(
                 notification,

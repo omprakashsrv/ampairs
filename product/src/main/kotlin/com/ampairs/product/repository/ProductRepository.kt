@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
 
 interface ProductRepository : CrudRepository<Product, Long> {
-    fun findBySeqId(seqId: String?): Product?
+    fun findByUid(uid: String?): Product?
     fun findByRefId(refId: String?): Product?
 
     @Query("SELECT p FROM product p WHERE p.groupId IN (:ids)")

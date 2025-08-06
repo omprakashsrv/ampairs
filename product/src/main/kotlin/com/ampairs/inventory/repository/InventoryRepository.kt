@@ -4,7 +4,7 @@ import com.ampairs.inventory.domain.model.Inventory
 import org.springframework.data.repository.CrudRepository
 
 interface InventoryRepository : CrudRepository<Inventory, Long> {
-    fun findBySeqId(seqId: String?): Inventory?
+    fun findByUid(uid: String?): Inventory?
     fun findByRefId(refId: String?): Inventory?
     fun findByProductId(productId: String?): Inventory?
 

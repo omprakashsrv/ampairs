@@ -7,6 +7,6 @@ import java.util.*
 
 @Repository
 interface UserWorkspaceRepository : CrudRepository<UserWorkspace, Long> {
-    fun findBySeqId(seqId: String): Optional<UserWorkspace>
+    fun findByUid(uid: String): Optional<UserWorkspace>
     fun findAllByUserId(userId: String): List<UserWorkspace>
 }

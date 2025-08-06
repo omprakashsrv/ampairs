@@ -21,7 +21,7 @@ import org.springframework.web.filter.OncePerRequestFilter
 
 @Component
 class SessionUserFilter @Autowired constructor(
-    val companyService: WorkspaceService,
+    val workspaceService: WorkspaceService,
 ) : OncePerRequestFilter() {
     override fun doFilterInternal(
         request: HttpServletRequest,
@@ -40,9 +40,9 @@ class SessionUserFilter @Autowired constructor(
         val user = auth.principal as User
         val companyId = request.getHeader("X-Workspace")
         if (!companyId.isNullOrEmpty()) {
-            val userCompanies = companyService.getUserCompanies(user.seqId)
+            val userCompanies = workspaceService.getUserCompanies(user.uid)
             if (userCompanies.isNotEmpty()) {
-                val userWorkspace = userCompanies.find { it.seqId == companyId }
+                val userWorkspace = userCompanies.find { it.uid == companyId }
                 if (userWorkspace != null) {
                     TenantContext.setCurrentTenant(userWorkspace.companyId)
                     val authToken = UsernamePasswordAuthenticationToken(

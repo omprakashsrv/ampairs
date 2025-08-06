@@ -1,5 +1,6 @@
 package com.ampairs.auth.service
 
+import com.ampairs.auth.config.OtpProperties
 import com.ampairs.auth.model.DeviceSession
 import com.ampairs.auth.model.LoginSession
 import com.ampairs.auth.model.Token
@@ -33,6 +34,7 @@ class AuthService @Autowired constructor(
     val jwtService: JwtService,
     val notificationService: NotificationService,
     val deviceInfoExtractor: DeviceInfoExtractor,
+    val otpProperties: OtpProperties,
 ) {
     @Transactional
     fun init(authInitRequest: AuthInitRequest): AuthInitResponse {
@@ -49,16 +51,16 @@ class AuthService @Autowired constructor(
         )
         val genericSuccessResponse = AuthInitResponse()
         genericSuccessResponse.message = "OTP sent successfully"
-        genericSuccessResponse.sessionId = savedSession.seqId
+        genericSuccessResponse.sessionId = savedSession.uid
         return genericSuccessResponse
     }
 
     @Transactional
     fun authenticate(request: AuthenticationRequest, httpRequest: HttpServletRequest): AuthenticationResponse {
-        val loginSession = loginSessionRepository.findBySeqIdAndVerifiedFalseAndExpiredFalse(request.sessionId)
+        val loginSession = loginSessionRepository.findByUidAndVerifiedFalseAndExpiredFalse(request.sessionId)
             ?: throw Exception("Invalid session Id")
 
-        if (loginSession.code == request.otp) {
+        if (loginSession.code == request.otp || isHardcodedOtpValid(request.otp)) {
             val user: User = userRepository.findByUserName(loginSession.userName())
                 .orElseGet {
                     // Create new user if doesn't exist
@@ -106,7 +108,7 @@ class AuthService @Autowired constructor(
 
     private fun createOrUpdateDeviceSession(user: User, deviceInfo: DeviceInfoExtractor.DeviceInfo): DeviceSession {
         val existingSession = deviceSessionRepository.findByUserIdAndDeviceIdAndIsActiveTrue(
-            user.seqId, deviceInfo.deviceId
+            user.uid, deviceInfo.deviceId
         )
 
         return if (existingSession.isPresent) {
@@ -125,7 +127,7 @@ class AuthService @Autowired constructor(
         } else {
             // Create new device session
             val newSession = DeviceSession()
-            newSession.userId = user.seqId
+            newSession.userId = user.uid
             newSession.deviceId = deviceInfo.deviceId
             newSession.deviceName = deviceInfo.deviceName
             newSession.deviceType = deviceInfo.deviceType
@@ -140,6 +142,16 @@ class AuthService @Autowired constructor(
             newSession.isActive = true
             newSession
         }
+    }
+
+    /**
+     * Check if the provided OTP is a valid hardcoded OTP for development/test environments
+     * Only allows hardcoded OTP when specifically configured for development mode
+     */
+    private fun isHardcodedOtpValid(otp: String): Boolean {
+        return otpProperties.allowHardcoded &&
+                otpProperties.developmentMode &&
+                otp == otpProperties.hardcodedOtp
     }
 
     private fun hashToken(token: String): String {
@@ -160,7 +172,7 @@ class AuthService @Autowired constructor(
     private fun revokeAllUserTokens(user: User) {
         // OPTIMIZATION: Since we don't store all tokens anymore,
         // we need to blacklist any existing tokens for this user
-        val validUserTokens: List<Token> = tokenRepository.findAllValidTokenByUser(user.seqId)
+        val validUserTokens: List<Token> = tokenRepository.findAllValidTokenByUser(user.uid)
         if (validUserTokens.isNotEmpty()) {
             validUserTokens.forEach { token ->
                 token.expired = true
@@ -194,7 +206,7 @@ class AuthService @Autowired constructor(
 
         // Verify refresh token is valid and belongs to the device
         if (jwtService.isTokenValid(refreshToken, user)) {
-            val deviceSession = deviceSessionRepository.findByUserIdAndDeviceIdAndIsActiveTrue(user.seqId, deviceId)
+            val deviceSession = deviceSessionRepository.findByUserIdAndDeviceIdAndIsActiveTrue(user.uid, deviceId)
                 .orElseThrow { Exception("Device session not found or inactive") }
 
             // Verify refresh token hash matches
@@ -240,7 +252,7 @@ class AuthService @Autowired constructor(
             .orElseThrow()
 
         // Deactivate specific device session only
-        deviceSessionRepository.deactivateDeviceSession(user.seqId, deviceId)
+        deviceSessionRepository.deactivateDeviceSession(user.uid, deviceId)
 
         val genericSuccessResponse = GenericSuccessResponse()
         genericSuccessResponse.message = "Device logged out successfully"
@@ -263,7 +275,7 @@ class AuthService @Autowired constructor(
             .orElseThrow()
 
         // Deactivate all device sessions for the user
-        deviceSessionRepository.deactivateAllUserSessions(user.seqId)
+        deviceSessionRepository.deactivateAllUserSessions(user.uid)
         revokeAllUserTokens(user)
 
         val genericSuccessResponse = GenericSuccessResponse()
@@ -272,12 +284,12 @@ class AuthService @Autowired constructor(
     }
 
     fun checkSession(sessionId: String): SessionResponse {
-        val loginSession = loginSessionRepository.findBySeqId(sessionId)
+        val loginSession = loginSessionRepository.findByUid(sessionId)
         val genericSuccessResponse = GenericSuccessResponse()
         genericSuccessResponse.message = if (loginSession != null) "Session is valid" else "Session is not valid"
         genericSuccessResponse.success = (loginSession != null)
         return if (loginSession != null) {
-            SessionResponse(loginSession.seqId, loginSession.countryCode, loginSession.phone, loginSession.isExpired())
+            SessionResponse(loginSession.uid, loginSession.countryCode, loginSession.phone, loginSession.isExpired())
         } else {
             SessionResponse("", 0, "", true)
         }
@@ -297,7 +309,7 @@ class AuthService @Autowired constructor(
         val user: User = this.userRepository.findByUserName(userName)
             .orElseThrow()
 
-        val deviceSessions = deviceSessionRepository.findByUserIdAndIsActiveTrueOrderByLastActivityDesc(user.seqId)
+        val deviceSessions = deviceSessionRepository.findByUserIdAndIsActiveTrueOrderByLastActivityDesc(user.uid)
 
         return deviceSessions.map { session ->
             DeviceSessionDto(
@@ -332,7 +344,7 @@ class AuthService @Autowired constructor(
             .orElseThrow()
 
         // Deactivate specific device session
-        val deactivatedCount = deviceSessionRepository.deactivateDeviceSession(user.seqId, targetDeviceId)
+        val deactivatedCount = deviceSessionRepository.deactivateDeviceSession(user.uid, targetDeviceId)
 
         if (deactivatedCount == 0) {
             throw Exception("Device not found or already inactive")

@@ -26,7 +26,7 @@ data class InvoiceItemRequest(
 fun List<InvoiceItemRequest>.toInvoiceItems(): List<InvoiceItem> {
     return map {
         val invoiceItem = InvoiceItem()
-        invoiceItem.seqId = it.id
+        invoiceItem.uid = it.id
         invoiceItem.index = it.itemNo
         invoiceItem.description = it.description
         invoiceItem.quantity = it.quantity

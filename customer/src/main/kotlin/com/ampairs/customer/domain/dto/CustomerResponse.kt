@@ -41,7 +41,7 @@ fun List<Customer>.asCustomersResponse(): List<CustomerResponse> {
 
 fun Customer.asCustomerResponse(): CustomerResponse {
     return CustomerResponse(
-        id = this.seqId,
+        id = this.uid,
         name = this.name,
         companyId = this.companyId,
         countryCode = this.countryCode,

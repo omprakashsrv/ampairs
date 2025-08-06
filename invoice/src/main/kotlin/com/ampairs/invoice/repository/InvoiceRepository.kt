@@ -9,8 +9,7 @@ import java.util.*
 @Repository
 interface InvoiceRepository : CrudRepository<Invoice, Long> {
 
-    @Query("SELECT co FROM invoice co WHERE co.seqId = :seqId")
-    fun findBySeqId(seqId: String): Invoice?
+    fun findByUid(uid: String): Invoice?
 
     @Query("SELECT MAX(CAST(co.invoiceNumber AS INTEGER)) FROM invoice co")
     fun findMaxInvoiceNumber(): Optional<String>

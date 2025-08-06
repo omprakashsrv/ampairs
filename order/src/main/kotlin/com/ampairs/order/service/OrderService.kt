@@ -27,8 +27,8 @@ class OrderService @Autowired constructor(
 ) {
     @Transactional
     fun updateOrder(order: Order, orderItems: List<OrderItem>): OrderResponse {
-        val existingOrder = orderRepository.findBySeqId(order.seqId).getOrNull()
-        order.seqId = existingOrder?.seqId.toString()
+        val existingOrder = orderRepository.findByUid(order.uid).getOrNull()
+        order.uid = existingOrder?.uid.toString()
         order.orderNumber = existingOrder?.orderNumber ?: ""
         if (order.orderNumber.isEmpty()) {
             val orderNumber = orderRepository.findMaxOrderNumber().getOrDefault("0").toIntOrNull() ?: 0
@@ -36,9 +36,9 @@ class OrderService @Autowired constructor(
         }
         orderRepository.save(order)
         orderItems.forEach { orderItem ->
-            if (orderItem.seqId.isNotEmpty()) {
-                val existingOrderItem = orderItemRepository.findBySeqId(orderItem.seqId).getOrNull()
-                orderItem.seqId = existingOrderItem?.seqId.toString()
+            if (orderItem.uid.isNotEmpty()) {
+                val existingOrderItem = orderItemRepository.findByUid(orderItem.uid).getOrNull()
+                orderItem.uid = existingOrderItem?.uid.toString()
             }
             orderItemRepository.save(orderItem)
         }
@@ -48,7 +48,7 @@ class OrderService @Autowired constructor(
     @Transactional
     fun createInvoice(order: Order, orderItems: List<OrderItem>): OrderResponse {
         val existingOrder = orderRepository.findById(order.id).getOrNull()
-        order.seqId = existingOrder?.seqId.toString()
+        order.uid = existingOrder?.uid.toString()
         order.orderNumber = existingOrder?.orderNumber ?: ""
         if (order.orderNumber.isEmpty()) {
             val orderNumber = orderRepository.findMaxOrderNumber().getOrDefault("0").toIntOrNull() ?: 0
@@ -56,9 +56,9 @@ class OrderService @Autowired constructor(
         }
         val savedOrder = orderRepository.save(order)
         val savedOrderItems = orderItems.map { orderItem ->
-            if (orderItem.seqId.isNotEmpty()) {
-                val existingOrderItem = orderItemRepository.findBySeqId(orderItem.seqId).getOrNull()
-                orderItem.seqId = existingOrderItem?.seqId.toString()
+            if (orderItem.uid.isNotEmpty()) {
+                val existingOrderItem = orderItemRepository.findByUid(orderItem.uid).getOrNull()
+                orderItem.uid = existingOrderItem?.uid.toString()
             }
             orderItemRepository.save(orderItem)
         }.toList()

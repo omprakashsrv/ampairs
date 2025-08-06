@@ -38,7 +38,7 @@ class ProductService(
         taxCodes.forEach {
             val taxCode = taxCodeRepository.findByCode(it.code)
             it.id = taxCode?.id ?: 0
-            it.seqId = taxCode?.seqId ?: ""
+            it.uid = taxCode?.uid ?: ""
             taxCodeRepository.save(it)
         }
         return taxCodes
@@ -47,14 +47,14 @@ class ProductService(
     @Transactional
     fun updateProducts(products: List<Product>): List<Product> {
         products.forEach {
-            if (it.seqId.isNotEmpty()) {
-                val group = productRepository.findBySeqId(it.seqId)
+            if (it.uid.isNotEmpty()) {
+                val group = productRepository.findByUid(it.uid)
                 it.id = group?.id ?: 0
                 it.refId = group?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val group = productRepository.findByRefId(it.refId)
                 it.id = group?.id ?: 0
-                it.seqId = group?.seqId ?: ""
+                it.uid = group?.uid ?: ""
             }
             productRepository.save(it)
         }
@@ -65,14 +65,14 @@ class ProductService(
     @Transactional
     fun updateUnits(units: List<Unit>): List<Unit> {
         units.forEach {
-            if (it.seqId.isNotEmpty()) {
-                val unit = unitRepository.findBySeqId(it.seqId)
+            if (it.uid.isNotEmpty()) {
+                val unit = unitRepository.findByUid(it.uid)
                 it.id = unit?.id ?: 0
                 it.refId = unit?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val unit = unitRepository.findByRefId(it.refId)
                 it.id = unit?.id ?: 0
-                it.seqId = unit?.seqId ?: ""
+                it.uid = unit?.uid ?: ""
             }
             unitRepository.save(it)
         }
@@ -82,14 +82,14 @@ class ProductService(
     @Transactional
     fun updateProductGroups(groups: List<ProductGroup>): List<ProductGroup> {
         groups.forEach {
-            if (it.seqId.isNotEmpty()) {
-                val group = productGroupRepository.findBySeqId(it.seqId)
+            if (it.uid.isNotEmpty()) {
+                val group = productGroupRepository.findByUid(it.uid)
                 it.id = group?.id ?: 0
                 it.refId = group?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val group = productGroupRepository.findByRefId(it.refId)
                 it.id = group?.id ?: 0
-                it.seqId = group?.seqId ?: ""
+                it.uid = group?.uid ?: ""
             }
             productGroupRepository.save(it)
         }
@@ -99,14 +99,14 @@ class ProductService(
     @Transactional
     fun updateProductBrands(brands: List<ProductBrand>): List<ProductBrand> {
         brands.forEach {
-            if (it.seqId.isNotEmpty()) {
-                val group = productBrandRepository.findBySeqId(it.seqId)
+            if (it.uid.isNotEmpty()) {
+                val group = productBrandRepository.findByUid(it.uid)
                 it.id = group?.id ?: 0
                 it.refId = group?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val group = productBrandRepository.findByRefId(it.refId)
                 it.id = group?.id ?: 0
-                it.seqId = group?.seqId ?: ""
+                it.uid = group?.uid ?: ""
             }
             it.lastUpdated = System.currentTimeMillis()
             productBrandRepository.save(it)
@@ -118,14 +118,14 @@ class ProductService(
     @Transactional
     fun updateProductCategories(productCategories: List<ProductCategory>): List<ProductCategory> {
         productCategories.forEach {
-            if (it.seqId.isNotEmpty()) {
-                val productCategory = productCategoryRepository.findBySeqId(it.seqId)
+            if (it.uid.isNotEmpty()) {
+                val productCategory = productCategoryRepository.findByUid(it.uid)
                 it.id = productCategory?.id ?: 0
                 it.refId = productCategory?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val productCategory = productCategoryRepository.findByRefId(it.refId)
                 it.id = productCategory?.id ?: 0
-                it.seqId = productCategory?.seqId ?: ""
+                it.uid = productCategory?.uid ?: ""
             }
             productCategoryRepository.save(it)
         }
@@ -136,14 +136,14 @@ class ProductService(
     @Transactional
     fun updateProductSubCategories(productSubCategories: List<ProductSubCategory>): List<ProductSubCategory> {
         productSubCategories.forEach {
-            if (it.seqId.isNotEmpty()) {
-                val productCategory = productSubCategoryRepository.findBySeqId(it.seqId)
+            if (it.uid.isNotEmpty()) {
+                val productCategory = productSubCategoryRepository.findByUid(it.uid)
                 it.id = productCategory?.id ?: 0
                 it.refId = productCategory?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val productCategory = productSubCategoryRepository.findByRefId(it.refId)
                 it.id = productCategory?.id ?: 0
-                it.seqId = productCategory?.seqId ?: ""
+                it.uid = productCategory?.uid ?: ""
             }
             productSubCategoryRepository.save(it)
         }

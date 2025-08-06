@@ -15,7 +15,7 @@ data class TaxInfoResponse(
 
 fun TaxInfo.asResponse(): TaxInfoResponse {
     return TaxInfoResponse(
-        id = this.seqId,
+        id = this.uid,
         name = this.name,
         formattedName = this.formattedName,
         percentage = this.percentage,

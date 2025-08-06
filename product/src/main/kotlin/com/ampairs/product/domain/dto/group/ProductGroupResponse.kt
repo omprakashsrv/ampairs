@@ -16,7 +16,7 @@ data class ProductGroupResponse(
 fun List<ProductGroup>.asResponse(): List<ProductGroupResponse> {
     return map {
         ProductGroupResponse(
-            id = it.seqId,
+            id = it.uid,
             name = it.name,
             refId = it.refId,
             active = it.active,

@@ -24,7 +24,7 @@ class UserController @Autowired constructor(
     @GetMapping("")
     fun getUser(): UserResponse {
         val sessionUser = userService.getSessionUser()
-        return userService.getUser(sessionUser.seqId).toUserResponse()
+        return sessionUser.toUserResponse()  // No need for additional DB call
     }
 
 }

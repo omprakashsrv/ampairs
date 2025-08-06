@@ -16,14 +16,14 @@ class TaxService(
     @Transactional
     fun updateTaxInfos(taxInfos: List<TaxInfo>): List<TaxInfo> {
         taxInfos.forEach {
-            if (it.seqId.isNotEmpty()) {
-                val taxInfo = taxInfoRepository.findBySeqId(it.seqId)
+            if (it.uid.isNotEmpty()) {
+                val taxInfo = taxInfoRepository.findByUid(it.uid)
                 it.id = taxInfo?.id ?: 0
                 it.refId = taxInfo?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val taxInfo = taxInfoRepository.findByRefId(it.refId)
                 it.id = taxInfo?.id ?: 0
-                it.seqId = taxInfo?.seqId ?: ""
+                it.uid = taxInfo?.uid ?: ""
             }
             taxInfoRepository.save(it)
         }
@@ -41,14 +41,14 @@ class TaxService(
     @Transactional
     fun updateTaxCodes(taxCodes: List<TaxCode>): List<TaxCode> {
         taxCodes.forEach {
-            if (it.seqId.isNotEmpty()) {
-                val taxCode = taxCodeRepository.findBySeqId(it.seqId)
+            if (it.uid.isNotEmpty()) {
+                val taxCode = taxCodeRepository.findByUid(it.uid)
                 it.id = taxCode?.id ?: 0
                 it.refId = taxCode?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val taxCode = taxCodeRepository.findByRefId(it.refId)
                 it.id = taxCode?.id ?: 0
-                it.seqId = taxCode?.seqId ?: ""
+                it.uid = taxCode?.uid ?: ""
             }
             taxCodeRepository.save(it)
         }

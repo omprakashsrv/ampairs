@@ -22,11 +22,11 @@ class WorkspaceExceptionHandler : BaseExceptionHandler() {
     ): ResponseEntity<ApiResponse<Any>> {
         return createErrorResponse(
             httpStatus = HttpStatus.NOT_FOUND,
-            errorCode = ErrorCodes.COMPANY_NOT_FOUND,
+            errorCode = ErrorCodes.WORKSPACE_NOT_FOUND,
             message = "Workspace not found",
-            details = ex.message ?: "The requested company was not found",
+            details = ex.message ?: "The requested workspace was not found",
             request = request,
-            moduleName = "company"
+            moduleName = "workspace"
         )
     }
 
@@ -38,10 +38,10 @@ class WorkspaceExceptionHandler : BaseExceptionHandler() {
         return createErrorResponse(
             httpStatus = HttpStatus.CONFLICT,
             errorCode = ErrorCodes.DUPLICATE_ENTRY,
-            message = "Duplicate company",
-            details = ex.message ?: "A company with the same details already exists",
+            message = "Duplicate workspace",
+            details = ex.message ?: "A workspace with the same details already exists",
             request = request,
-            moduleName = "company"
+            moduleName = "workspace"
         )
     }
 
@@ -53,10 +53,10 @@ class WorkspaceExceptionHandler : BaseExceptionHandler() {
         return createErrorResponse(
             httpStatus = HttpStatus.BAD_REQUEST,
             errorCode = ErrorCodes.VALIDATION_ERROR,
-            message = "Invalid company data",
-            details = ex.message ?: "The provided company data is invalid",
+            message = "Invalid workspace data",
+            details = ex.message ?: "The provided workspace data is invalid",
             request = request,
-            moduleName = "company"
+            moduleName = "workspace"
         )
     }
 
@@ -69,9 +69,9 @@ class WorkspaceExceptionHandler : BaseExceptionHandler() {
             httpStatus = HttpStatus.FORBIDDEN,
             errorCode = ErrorCodes.ACCESS_DENIED,
             message = "Workspace access denied",
-            details = ex.message ?: "You don't have permission to access this company",
+            details = ex.message ?: "You don't have permission to access this workspace",
             request = request,
-            moduleName = "company"
+            moduleName = "workspace"
         )
     }
 
@@ -83,10 +83,10 @@ class WorkspaceExceptionHandler : BaseExceptionHandler() {
         return createErrorResponse(
             httpStatus = HttpStatus.CONFLICT,
             errorCode = ErrorCodes.CONSTRAINT_VIOLATION,
-            message = "User company association error",
-            details = ex.message ?: "Failed to manage user-company association",
+            message = "User workspace association error",
+            details = ex.message ?: "Failed to manage user-workspace association",
             request = request,
-            moduleName = "company"
+            moduleName = "workspace"
         )
     }
 
@@ -99,9 +99,9 @@ class WorkspaceExceptionHandler : BaseExceptionHandler() {
             httpStatus = HttpStatus.BAD_REQUEST,
             errorCode = ErrorCodes.VALIDATION_ERROR,
             message = "Invalid role",
-            details = ex.message ?: "The specified role is not valid for this company",
+            details = ex.message ?: "The specified role is not valid for this workspace",
             request = request,
-            moduleName = "company"
+            moduleName = "workspace"
         )
     }
 
@@ -116,7 +116,7 @@ class WorkspaceExceptionHandler : BaseExceptionHandler() {
             message = "Tenant not found",
             details = ex.message ?: "The requested tenant was not found",
             request = request,
-            moduleName = "company"
+            moduleName = "workspace"
         )
     }
 
@@ -131,7 +131,7 @@ class WorkspaceExceptionHandler : BaseExceptionHandler() {
             message = "Tenant access denied",
             details = ex.message ?: "You don't have permission to access this tenant",
             request = request,
-            moduleName = "company"
+            moduleName = "workspace"
         )
     }
 
@@ -146,12 +146,12 @@ class WorkspaceExceptionHandler : BaseExceptionHandler() {
             message = "Invalid tenant context",
             details = ex.message ?: "The tenant context is invalid or missing",
             request = request,
-            moduleName = "company"
+            moduleName = "workspace"
         )
     }
 }
 
-// Custom company exceptions
+// Custom workspace exceptions
 class WorkspaceNotFoundException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
 class DuplicateWorkspaceException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
 class InvalidWorkspaceDataException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)

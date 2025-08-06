@@ -7,5 +7,5 @@ import java.util.*
 
 @Repository
 interface WorkspaceRepository : CrudRepository<Workspace, Long> {
-    fun findBySeqId(seqId: String): Optional<Workspace>
+    fun findByUid(uid: String): Optional<Workspace>
 }

@@ -72,6 +72,13 @@ logging:
 
 # Development-specific application settings
 application:
+  # Development OTP settings
+  auth:
+    otp:
+      development-mode: true
+      hardcoded-otp: "123456"  # Default hardcoded OTP for dev/test
+      allow-hardcoded: true    # Enable hardcoded OTP bypass
+  
   cors:
     allowed-origins:
       - "http://localhost:4200"  # Angular dev server

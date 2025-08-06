@@ -27,7 +27,7 @@ data class OrderItemRequest(
 fun List<OrderItemRequest>.toOrderItems(): List<OrderItem> {
     return map {
         val orderItem = OrderItem()
-        orderItem.seqId = it.id
+        orderItem.uid = it.id
         orderItem.index = it.itemNo
         orderItem.description = it.description
         orderItem.quantity = it.quantity
@@ -52,7 +52,7 @@ fun List<OrderItemRequest>.toOrderItems(): List<OrderItem> {
 fun List<OrderItem>.toInvoiceItems(): List<InvoiceItem> {
     return map {
         val orderItem = InvoiceItem()
-        orderItem.seqId = it.seqId
+        orderItem.uid = it.uid
         orderItem.index = it.index
         orderItem.description = it.description
         orderItem.quantity = it.quantity
