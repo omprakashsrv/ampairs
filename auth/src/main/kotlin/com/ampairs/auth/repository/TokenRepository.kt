@@ -13,7 +13,7 @@ import java.util.*
 interface TokenRepository : CrudRepository<Token, String> {
 
     @Query(value = """
-            select t from token t inner join user u 
+            select t from Token t inner join User u 
             on t.userId = u.uid 
             where u.uid = :userId and (t.expired = false or t.revoked = false)
             """)
@@ -23,7 +23,7 @@ interface TokenRepository : CrudRepository<Token, String> {
 
     @Query(
         value = """
-            select t from token t 
+            select t from Token t 
             where t.expired = true or t.revoked = true 
             or t.createdAt < :beforeDate
             """
@@ -32,7 +32,7 @@ interface TokenRepository : CrudRepository<Token, String> {
 
     @Query(
         value = """
-            select t from token t 
+            select t from Token t 
             where t.expired = true or t.revoked = true 
             or t.createdAt < :beforeDate
             order by t.createdAt asc
@@ -42,7 +42,7 @@ interface TokenRepository : CrudRepository<Token, String> {
 
     @Query(
         value = """
-            select count(t) from token t 
+            select count(t) from Token t 
             where t.expired = true or t.revoked = true 
             or t.createdAt < :beforeDate
             """
@@ -52,7 +52,7 @@ interface TokenRepository : CrudRepository<Token, String> {
     @Modifying
     @Query(
         value = """
-            delete from token t 
+            delete from Token t 
             where t.expired = true or t.revoked = true 
             or t.createdAt < :beforeDate
             """

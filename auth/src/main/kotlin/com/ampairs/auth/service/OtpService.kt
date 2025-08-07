@@ -7,7 +7,7 @@ import io.awspring.cloud.sns.sms.SnsSmsTemplate
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
+import java.util.*
 
 @Service
 class OtpService @Autowired constructor(
@@ -29,7 +29,7 @@ class OtpService @Autowired constructor(
             this.phone = phone
             this.countryCode = countryCode
             this.code = UniqueIdGenerators.NUMERIC.generate(OTP_LENGTH)
-            this.expiresAt = LocalDateTime.now().plusMinutes(OTP_VALIDITY_MINUTES)
+            this.expiresAt = Date(System.currentTimeMillis() + SMS_VERIFICATION_VALIDITY) // 10 minutes in milliseconds
         }
 
         val savedSession = loginSessionRepository.save(loginSession)
@@ -49,7 +49,7 @@ class OtpService @Autowired constructor(
 
         // Mark session as verified
         session.verified = true
-        session.verifiedAt = LocalDateTime.now()
+        session.verifiedAt = Date()
 
         return loginSessionRepository.save(session)
     }
@@ -59,7 +59,7 @@ class OtpService @Autowired constructor(
             throw IllegalStateException("OTP already verified")
         }
 
-        if (session.expiresAt?.isBefore(LocalDateTime.now()) == true) {
+        if (session.expiresAt?.before(Date()) == true) {
             throw IllegalStateException("OTP expired")
         }
 

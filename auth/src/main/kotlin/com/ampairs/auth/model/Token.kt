@@ -3,12 +3,10 @@ package com.ampairs.auth.model
 import com.ampairs.auth.model.enums.TokenType
 import com.ampairs.core.config.Constants
 import com.ampairs.core.domain.model.BaseDomain
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.EnumType
-import jakarta.persistence.Enumerated
+import jakarta.persistence.*
 
-@Entity(name = "token")
+@Entity
+@Table(name = "auth_token")
 class Token : BaseDomain() {
 
     @Column(name = "token", nullable = false)

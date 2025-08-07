@@ -3,6 +3,7 @@ package com.ampairs.auth.model.dto
 import com.fasterxml.jackson.annotation.JsonProperty
 import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.NotNull
+import jakarta.validation.constraints.Pattern
 
 
 data class AuthInitRequest(
@@ -13,6 +14,7 @@ data class AuthInitRequest(
 
     @field:NotNull
     @field:NotEmpty
+    @field:Pattern(regexp = "^[0-9]{10}$", message = "Phone number must be 10 digits")
     val phone: String = "",
 
     @JsonProperty("recaptcha_token")

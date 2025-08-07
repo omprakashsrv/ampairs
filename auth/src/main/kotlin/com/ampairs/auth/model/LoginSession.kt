@@ -3,9 +3,9 @@ package com.ampairs.auth.model
 import com.ampairs.core.domain.enums.VerificationStatus
 import com.ampairs.core.domain.model.BaseDomain
 import jakarta.persistence.*
-import java.time.LocalDateTime
+import java.util.*
 
-private const val LOGIN_SESSION_ID = "LGS"
+private const val LOGIN_SESSION_ID = "LSQ"
 
 @Entity
 @Table(name = "login_session")
@@ -20,8 +20,9 @@ class LoginSession : BaseDomain() {
     @Column(name = "user_agent", nullable = false, length = 255)
     var userAgent: String = ""
 
+    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "expiry_time", nullable = false)
-    var expiresAt: LocalDateTime? = null
+    var expiresAt: Date? = null
 
     @Column(name = "code")
     var code: String = ""
@@ -32,8 +33,9 @@ class LoginSession : BaseDomain() {
     @Column(name = "verified")
     var verified: Boolean = false
 
+    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "verified_at")
-    var verifiedAt: LocalDateTime? = null
+    var verifiedAt: Date? = null
 
     @Column(name = "expired")
     var expired: Boolean = false
@@ -43,11 +45,11 @@ class LoginSession : BaseDomain() {
     var status = VerificationStatus.NEW
 
     override fun obtainSeqIdPrefix(): String {
-        return "LSQ"
+        return LOGIN_SESSION_ID
     }
 
     fun isExpired(): Boolean {
-        return expiresAt?.isBefore(LocalDateTime.now()) ?: true
+        return expiresAt?.before(Date()) ?: true
     }
 
     fun userName(): String {

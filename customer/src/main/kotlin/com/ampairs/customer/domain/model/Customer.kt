@@ -12,7 +12,7 @@ import org.hibernate.annotations.Type
 import org.springframework.data.geo.Point
 
 @Entity(name = "customer")
-@Table(indexes = arrayOf(Index(name = "customer_ref_idx", columnList = "ref_id", unique = true)))
+@Table(indexes = [Index(name = "customer_ref_idx", columnList = "ref_id", unique = true)])
 class Customer : OwnableBaseDomain() {
 
     @Column(name = "country_code", nullable = false)

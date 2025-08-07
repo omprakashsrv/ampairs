@@ -37,6 +37,10 @@ class SessionUserFilter @Autowired constructor(
             return
         }
         val auth: Authentication = SecurityContextHolder.getContext().authentication
+        if (auth.principal !is User) {
+            chain.doFilter(request, response)
+            return
+        }
         val user = auth.principal as User
         val companyId = request.getHeader("X-Workspace")
         if (!companyId.isNullOrEmpty()) {

@@ -1,0 +1,78 @@
+# Test configuration for auth module
+spring:
+  # Test database settings - Local MySQL server
+  datasource:
+    url: jdbc:mysql://localhost:3306/ampairs_auth_test
+    username: root
+    password: pass
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # Test JPA settings - Drop and create schema for clean tests
+  jpa:
+    hibernate:
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+      ddl-auto: create-drop  # Drop and recreate schema for each test run
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        use_sql_comments: false
+        dialect: org.hibernate.dialect.MySQLDialect
+        hbm2ddl:
+          auto: create-drop
+
+  # Jackson configuration for consistent JSON naming
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+
+# Test-specific application settings
+application:
+  multitenancy:
+    enabled: false  # Disable multitenancy for simpler tests
+  
+  # Test OTP settings - hardcoded OTP enabled for tests
+  auth:
+    otp:
+      development-mode: true      # Enable development mode for tests
+      hardcoded-otp: "123456"     # Test hardcoded OTP
+      allow-hardcoded: true       # Allow hardcoded OTP bypass in tests
+  
+  # Test security settings
+  security:
+    jwt:
+      secret-key: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      expiration: PT1H  # 1 hour for tests
+      refresh-token:
+        expiration: P1D # 1 day for tests
+    cors:
+      allowed-origins: "*"
+      allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+      allowed-headers: "*"
+      allow-credentials: true
+      max-age: PT1H
+
+# Test server settings
+server:
+  port: 8080
+
+# Rate limiting - DISABLED for testing
+bucket4j:
+  enabled: false
+
+# reCAPTCHA - DISABLED for testing
+google:
+  recaptcha:
+    enabled: true
+    secret-key: 6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe  # Test secret key
+    site-key: 6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI    # Test site key
+    min-score: 0.0  # Always pass in tests
+
+# Logging for tests - less verbose
+logging:
+  level:
+    com.ampairs: DEBUG
+    org.springframework: WARN
+    org.hibernate: WARN
+    org.springframework.web: INFO
+    org.springframework.security: DEBUG

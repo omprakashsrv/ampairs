@@ -21,9 +21,10 @@ import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Service
 import java.security.MessageDigest
 import java.time.LocalDateTime
+import java.util.*
 
 val OTP_LENGTH: Int = 6
-val SMS_VERIFICATION_VALIDITY = 10 * 60 * 1000
+val SMS_VERIFICATION_VALIDITY = 10 * 60 * 1000L
 
 @Service
 class AuthService @Autowired constructor(
@@ -42,7 +43,8 @@ class AuthService @Autowired constructor(
         loginSession.phone = authInitRequest.phone
         loginSession.countryCode = authInitRequest.countryCode
         loginSession.code = UniqueIdGenerators.NUMERIC.generate(OTP_LENGTH)
-        loginSession.expiresAt = LocalDateTime.now().plusSeconds(SMS_VERIFICATION_VALIDITY.toLong())
+        // Create expiry time - 10 minutes from now
+        loginSession.expiresAt = Date(System.currentTimeMillis() + SMS_VERIFICATION_VALIDITY)
         val savedSession = loginSessionRepository.save(loginSession)
         // Queue SMS for async sending
         notificationService.queueSms(
@@ -92,7 +94,7 @@ class AuthService @Autowired constructor(
 
             // Mark login session as verified to prevent reuse
             loginSession.verified = true
-            loginSession.verifiedAt = LocalDateTime.now()
+            loginSession.verifiedAt = Date()
             loginSessionRepository.save(loginSession)
             
             val authResponse = AuthenticationResponse()

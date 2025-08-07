@@ -5,11 +5,13 @@ import com.ampairs.core.domain.model.BaseDomain
 import jakarta.persistence.Column
 import jakarta.persistence.ElementCollection
 import jakarta.persistence.Entity
+import jakarta.persistence.Table
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 
 
-@Entity(name = "user")
+@Entity
+@Table(name = "app_user")
 class User : BaseDomain(), UserDetails {
     @Column(name = "country_code", nullable = false)
     var countryCode: Int = 91
