@@ -113,64 +113,276 @@ com.ampairs.user/
 
 ## API Endpoints
 
+### Response Format
+
+All API endpoints follow a consistent response structure using `ApiResponse<T>`:
+
+#### Success Response Structure
+
+```json
+{
+  "success": true,
+  "data": {
+    // Actual response data based on endpoint
+  },
+  "timestamp": "2025-08-07T23:09:13.145+00:00"
+}
+```
+
+#### Error Response Structure
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Error description",
+    "details": {
+      // Additional error context
+    },
+    "timestamp": "2025-08-07T23:09:13.145+00:00"
+  }
+}
+```
+
 ### Authentication Endpoints
+
+#### Initialize Authentication Session
 
 ```http
 POST /auth/v1/init
 Content-Type: application/json
 {
-  "phoneNumber": "+1234567890",
-  "app": "WEB",
-  "clientType": "BROWSER"
+  "phone": "9591781662",
+  "country_code": 91,
+  "recaptcha_token": "your_recaptcha_token",
+  "device_id": "MOBILE_ABC123_DEVICE_FINGERPRINT",
+  "device_name": "John's iPhone 15"
 }
 ```
+
+**Success Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "session_id": "LSQ20250804100456522TBFOQ8U44LIBLX",
+    "otp_sent": true,
+    "expires_at": "2025-08-07T23:14:13.145+00:00"
+  },
+  "timestamp": "2025-08-07T23:09:13.145+00:00"
+}
+```
+
+#### Verify OTP and Authenticate
 
 ```http
 POST /auth/v1/verify
 Content-Type: application/json
 {
-  "sessionId": "session-uuid",
-  "otp": "123456"
+  "session_id": "LSQ20250804100456522TBFOQ8U44LIBLX",
+  "otp": "123456",
+  "auth_mode": "SMS",
+  "recaptcha_token": "your_recaptcha_token",
+  "device_id": "MOBILE_ABC123_DEVICE_FINGERPRINT",
+  "device_name": "John's iPhone 15"
 }
 ```
 
-```http
-POST /auth/v1/login
-Content-Type: application/json
+**Success Response:**
+
+```json
 {
-  "sessionId": "session-uuid",
-  "otp": "123456"
+  "success": true,
+  "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiJ9...",
+    "refresh_token": "eyJhbGciOiJIUzI1NiJ9...",
+    "access_token_expires_at": "2025-08-08T23:09:13.145+00:00",
+    "refresh_token_expires_at": "2025-08-14T23:09:13.145+00:00",
+    "user": {
+      "id": "user-uuid-123",
+      "phone": "9591781662",
+      "country_code": 91,
+      "first_name": "John",
+      "last_name": "Doe",
+      "email": "john.doe@example.com"
+    }
+  },
+  "timestamp": "2025-08-07T23:09:13.145+00:00"
 }
 ```
 
+#### Refresh Access Token
+
 ```http
-POST /auth/v1/refresh
+POST /auth/v1/refresh_token
 Content-Type: application/json
 {
-  "refreshToken": "refresh-token-jwt"
+  "refresh_token": "eyJhbGciOiJIUzI1NiJ9...",
+  "device_id": "MOBILE_ABC123_DEVICE_FINGERPRINT"
 }
 ```
+
+**Success Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiJ9...",
+    "refresh_token": "eyJhbGciOiJIUzI1NiJ9...",
+    "access_token_expires_at": "2025-08-08T23:09:13.145+00:00"
+  },
+  "timestamp": "2025-08-07T23:09:13.145+00:00"
+}
+```
+
+#### Logout from Current Device
 
 ```http
 POST /auth/v1/logout
 Authorization: Bearer <access-token>
 ```
 
-### User Management Endpoints
+**Success Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Device logged out successfully"
+  },
+  "timestamp": "2025-08-07T23:09:13.145+00:00"
+}
+```
+
+#### Logout from All Devices
 
 ```http
-GET /user/v1/profile
+POST /auth/v1/logout/all
 Authorization: Bearer <access-token>
 ```
 
+**Success Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Logged out from all devices successfully"
+  },
+  "timestamp": "2025-08-07T23:09:13.145+00:00"
+}
+```
+
+#### Get User Devices
+
 ```http
-PUT /user/v1/profile
+GET /auth/v1/devices
+Authorization: Bearer <access-token>
+```
+
+**Success Response:**
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "device_id": "MOBILE_ABC123_DEVICE_FINGERPRINT",
+      "device_name": "John's iPhone 15",
+      "device_type": "Mobile",
+      "platform": "iOS",
+      "browser": "Mobile App",
+      "os": "iOS 17.1",
+      "ip_address": "192.168.1.100",
+      "location": null,
+      "last_activity": "2025-08-07T22:30:00.000+00:00",
+      "login_time": "2025-08-07T21:00:00.000+00:00",
+      "is_current_device": true
+    }
+  ],
+  "timestamp": "2025-08-07T23:09:13.145+00:00"
+}
+```
+
+#### Logout from Specific Device
+
+```http
+POST /auth/v1/devices/{deviceId}/logout
+Authorization: Bearer <access-token>
+```
+
+**Success Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Device logged out successfully"
+  },
+  "timestamp": "2025-08-07T23:09:13.145+00:00"
+}
+```
+
+### User Management Endpoints
+
+#### Get Current User Profile
+
+```http
+GET /user/v1
+Authorization: Bearer <access-token>
+```
+
+**Success Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "user-uuid-123",
+    "phone": "9591781662",
+    "country_code": 91,
+    "first_name": "John",
+    "last_name": "Doe",
+    "email": "john.doe@example.com",
+    "created_at": "2025-08-01T10:00:00.000+00:00",
+    "updated_at": "2025-08-07T23:09:13.145+00:00"
+  },
+  "timestamp": "2025-08-07T23:09:13.145+00:00"
+}
+```
+
+#### Update User Profile
+
+```http
+POST /user/v1/update
 Authorization: Bearer <access-token>
 Content-Type: application/json
 {
-  "firstName": "John",
-  "lastName": "Doe",
+  "first_name": "John",
+  "last_name": "Doe",
   "email": "john.doe@example.com"
+}
+```
+
+**Success Response:**
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": "user-uuid-123",
+    "phone": "9591781662",
+    "country_code": 91,
+    "first_name": "John",
+    "last_name": "Doe",
+    "email": "john.doe@example.com",
+    "created_at": "2025-08-01T10:00:00.000+00:00",
+    "updated_at": "2025-08-07T23:09:13.145+00:00"
+  },
+  "timestamp": "2025-08-07T23:09:13.145+00:00"
 }
 ```
 
@@ -274,13 +486,43 @@ aws:
 
 ### Authentication Errors
 
-- Invalid OTP
-- Expired sessions
-- Invalid tokens
-- Rate limit exceeded
-- User not found
+All error responses follow the consistent `ApiResponse<T>` format:
 
-### Response Format
+#### Common Error Codes and Responses
+
+| Error Code              | HTTP Status | Description               | Example Scenario                               |
+|-------------------------|-------------|---------------------------|------------------------------------------------|
+| `VALIDATION_ERROR`      | 400         | Request validation failed | Missing required fields, invalid format        |
+| `INVALID_OTP`           | 401         | OTP is invalid or expired | Wrong OTP code provided                        |
+| `SESSION_EXPIRED`       | 401         | Login session has expired | OTP session timeout (5 minutes)                |
+| `INVALID_TOKEN`         | 401         | JWT token is invalid      | Malformed or expired access token              |
+| `INVALID_REFRESH_TOKEN` | 401         | Refresh token is invalid  | Expired or revoked refresh token               |
+| `RATE_LIMIT_EXCEEDED`   | 429         | Too many requests         | Exceeded rate limits (1 req/20s for auth init) |
+| `USER_NOT_FOUND`        | 404         | User not found            | Phone number not registered                    |
+| `DEVICE_NOT_FOUND`      | 404         | Device not found          | Device logout with invalid device_id           |
+| `SESSION_NOT_FOUND`     | 404         | Login session not found   | Invalid session_id provided                    |
+| `UNAUTHORIZED`          | 401         | Authentication required   | Missing Authorization header                   |
+| `FORBIDDEN`             | 403         | Access denied             | Insufficient permissions                       |
+| `INTERNAL_SERVER_ERROR` | 500         | Server error              | Unexpected system failure                      |
+
+#### Validation Error Example
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Validation failed for request parameters",
+    "details": {
+      "field": "phone",
+      "issue": "Phone number is required and must be 10 digits"
+    },
+    "timestamp": "2025-08-07T23:09:13.145+00:00"
+  }
+}
+```
+
+#### Invalid OTP Error Example
 
 ```json
 {
@@ -288,7 +530,79 @@ aws:
   "error": {
     "code": "INVALID_OTP",
     "message": "The provided OTP is invalid or expired",
-    "timestamp": "2023-01-01T12:00:00Z"
+    "details": {
+      "session_id": "LSQ20250804100456522TBFOQ8U44LIBLX",
+      "attempts_remaining": 2
+    },
+    "timestamp": "2025-08-07T23:09:13.145+00:00"
+  }
+}
+```
+
+#### Rate Limit Exceeded Error Example
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "RATE_LIMIT_EXCEEDED",
+    "message": "Too many requests. Please try again later.",
+    "details": {
+      "retry_after_seconds": 20,
+      "limit_type": "auth_init"
+    },
+    "timestamp": "2025-08-07T23:09:13.145+00:00"
+  }
+}
+```
+
+#### Invalid Token Error Example
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "INVALID_TOKEN",
+    "message": "JWT token is invalid or expired",
+    "details": {
+      "token_type": "access_token",
+      "reason": "Token signature verification failed"
+    },
+    "timestamp": "2025-08-07T23:09:13.145+00:00"
+  }
+}
+```
+
+#### Session Expired Error Example
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "SESSION_EXPIRED",
+    "message": "Login session has expired. Please initiate authentication again.",
+    "details": {
+      "session_id": "LSQ20250804100456522TBFOQ8U44LIBLX",
+      "expired_at": "2025-08-07T23:04:13.145+00:00"
+    },
+    "timestamp": "2025-08-07T23:09:13.145+00:00"
+  }
+}
+```
+
+#### User Not Found Error Example
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "USER_NOT_FOUND",
+    "message": "No user found with the provided phone number",
+    "details": {
+      "phone": "9591781662",
+      "country_code": 91
+    },
+    "timestamp": "2025-08-07T23:09:13.145+00:00"
   }
 }
 ```

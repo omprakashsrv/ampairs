@@ -13,8 +13,6 @@ import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.oauth2.jwt.JwtDecoder
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import org.springframework.security.web.SecurityFilterChain
-import org.springframework.security.web.authentication.logout.LogoutHandler
-import org.springframework.security.web.authentication.logout.LogoutSuccessHandler
 import javax.crypto.spec.SecretKeySpec
 
 @Configuration
@@ -24,8 +22,6 @@ import javax.crypto.spec.SecretKeySpec
 class SecurityConfiguration @Autowired constructor(
     val jwtService: JwtService,
     val customJwtAuthenticationConverter: CustomJwtAuthenticationConverter,
-    val logoutHandler: LogoutHandler,
-    val logoutSuccessHandler: LogoutSuccessHandler,
     val unauthorizedHandler: AuthEntryPointJwt,
 ) {
 
@@ -75,9 +71,7 @@ class SecurityConfiguration @Autowired constructor(
                 }
             }
             .logout { logout ->
-                logout.addLogoutHandler(logoutHandler)
-                    .logoutUrl("/auth/v1/logout")
-                    .logoutSuccessHandler(logoutSuccessHandler)
+                logout.disable() // Disable Spring Security logout - handled by AuthController
             }
         return http.build()
     }

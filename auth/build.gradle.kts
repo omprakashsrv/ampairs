@@ -66,6 +66,7 @@ dependencies {
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation(project(":ampairs_service"))
     testImplementation("com.mysql:mysql-connector-j")
+    testImplementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 }
 
 tasks.withType<Test> {

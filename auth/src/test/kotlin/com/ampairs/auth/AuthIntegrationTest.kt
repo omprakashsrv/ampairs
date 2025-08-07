@@ -100,9 +100,9 @@ class AuthIntegrationTest {
                 .content(objectMapper.writeValueAsString(request))
         )
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.response.success").value(true))
-            .andExpect(jsonPath("$.response.message").value("OTP sent successfully"))
-            .andExpect(jsonPath("$.response.session_id").exists())
+            .andExpect(jsonPath("$.data.success").value(true))
+            .andExpect(jsonPath("$.data.message").value("OTP sent successfully"))
+            .andExpect(jsonPath("$.data.session_id").exists())
     }
 
     @Test
@@ -123,7 +123,7 @@ class AuthIntegrationTest {
             .andReturn()
 
         val initResponseBody = objectMapper.readTree(initResponse.response.contentAsString)
-        val sessionId = initResponseBody.get("response").get("session_id").asText()
+        val sessionId = initResponseBody.get("data").get("session_id").asText()
 
         // Then authenticate with hardcoded OTP
         val authRequest = AuthenticationRequest(
@@ -139,10 +139,10 @@ class AuthIntegrationTest {
                 .content(objectMapper.writeValueAsString(authRequest))
         )
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.response.access_token").exists())
-            .andExpect(jsonPath("$.response.refresh_token").exists())
-            .andExpect(jsonPath("$.response.access_token_expires_at").exists())
-            .andExpect(jsonPath("$.response.refresh_token_expires_at").exists())
+            .andExpect(jsonPath("$.data.access_token").exists())
+            .andExpect(jsonPath("$.data.refresh_token").exists())
+            .andExpect(jsonPath("$.data.access_token_expires_at").exists())
+            .andExpect(jsonPath("$.data.refresh_token_expires_at").exists())
     }
 
     @Test
@@ -163,7 +163,7 @@ class AuthIntegrationTest {
             .andReturn()
 
         val initResponseBody = objectMapper.readTree(initResponse.response.contentAsString)
-        val sessionId = initResponseBody.get("response").get("session_id").asText()
+        val sessionId = initResponseBody.get("data").get("session_id").asText()
 
         // Try to authenticate with wrong OTP
         val authRequest = AuthenticationRequest(
@@ -206,7 +206,7 @@ class AuthIntegrationTest {
             .andReturn()
 
         val sessionId = objectMapper.readTree(initResponse.response.contentAsString)
-            .get("response").get("session_id").asText()
+            .get("data").get("session_id").asText()
 
         val authRequest = AuthenticationRequest(
             sessionId = sessionId,
@@ -248,25 +248,25 @@ class AuthIntegrationTest {
             .andReturn()
 
         val sessionId = objectMapper.readTree(initResponse.response.contentAsString)
-            .get("response").get("session_id").asText()
+            .get("data").get("session_id").asText()
 
         // Check valid session
         mockMvc.perform(
             get("/auth/v1/session/{sessionId}", sessionId)
         )
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.response.id").value(sessionId))
-            .andExpect(jsonPath("$.response.phone").value("9591781662"))
-            .andExpect(jsonPath("$.response.country_code").value(91))
-            .andExpect(jsonPath("$.response.valid").value(false))
+            .andExpect(jsonPath("$.data.id").value(sessionId))
+            .andExpect(jsonPath("$.data.phone").value("9591781662"))
+            .andExpect(jsonPath("$.data.country_code").value(91))
+            .andExpect(jsonPath("$.data.valid").value(false))
 
         // Check invalid session
         mockMvc.perform(
             get("/auth/v1/session/{sessionId}", "invalid-session-id")
         )
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.response.id").value(""))
-            .andExpect(jsonPath("$.response.valid").value(true))
+            .andExpect(jsonPath("$.data.id").value(""))
+            .andExpect(jsonPath("$.data.valid").value(true))
     }
 
     @Test

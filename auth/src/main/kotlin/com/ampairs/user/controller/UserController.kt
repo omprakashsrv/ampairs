@@ -1,5 +1,6 @@
 package com.ampairs.user.controller
 
+import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.user.model.User
 import com.ampairs.user.model.dto.UserResponse
 import com.ampairs.user.model.dto.UserUpdateRequest
@@ -16,15 +17,15 @@ class UserController @Autowired constructor(
 ) {
 
     @PostMapping("/update")
-    fun updateUser(@RequestBody @Valid userUpdateRequest: UserUpdateRequest): UserResponse {
+    fun updateUser(@RequestBody @Valid userUpdateRequest: UserUpdateRequest): ApiResponse<UserResponse> {
         val user: User = userService.updateUser(userUpdateRequest)
-        return user.toUserResponse()
+        return ApiResponse.success(user.toUserResponse())
     }
 
     @GetMapping("")
-    fun getUser(): UserResponse {
+    fun getUser(): ApiResponse<UserResponse> {
         val sessionUser = userService.getSessionUser()
-        return sessionUser.toUserResponse()  // No need for additional DB call
+        return ApiResponse.success(sessionUser.toUserResponse())  // No need for additional DB call
     }
 
 }

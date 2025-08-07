@@ -17,7 +17,7 @@ class LogoutService @Autowired constructor(val tokenRepository: TokenRepository)
 
     @Transactional
     override fun logout(
-        request: HttpServletRequest, response: HttpServletResponse, authentication: Authentication
+        request: HttpServletRequest, response: HttpServletResponse, authentication: Authentication?,
     ) {
         val authHeader = request.getHeader("Authorization")
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
@@ -38,7 +38,7 @@ class LogoutService @Autowired constructor(val tokenRepository: TokenRepository)
             blacklistToken.token = jwt
             blacklistToken.expired = true
             blacklistToken.revoked = true
-            blacklistToken.userId = authentication.name ?: "unknown"
+            blacklistToken.userId = authentication?.name ?: "unknown"
             blacklistToken.tokenType = com.ampairs.auth.model.enums.TokenType.BEARER
             tokenRepository.save(blacklistToken)
         }

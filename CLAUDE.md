@@ -325,43 +325,223 @@ This is a Gradle multi-module project organized by domain boundaries:
 
 #### **API Response Format**
 
+All API endpoints return a standardized `ApiResponse<T>` structure to ensure consistency across the entire application.
+
+**Success Response Structure:**
 ```json
 {
   "success": true,
   "data": {
+    // Actual response data of type T
     "id": "12345",
     "name": "Sample Resource",
-    "createdAt": "2023-01-01T12:00:00Z"
+    "created_at": "2023-01-01T12:00:00Z"
   },
-  "pagination": {
-    "page": 0,
-    "size": 20,
-    "totalElements": 150,
-    "totalPages": 8
+  "error": null,
+  "timestamp": "2023-01-01T12:00:00Z",
+  "path": "/api/v1/resource/12345",
+  "trace_id": "abc123-def456-ghi789"
+}
+```
+
+**Success Response Examples:**
+
+*Single Object Response:*
+
+```json
+{
+  "success": true,
+  "data": {
+    "access_token": "eyJhbGciOiJIUzI1NiJ9...",
+    "refresh_token": "def456-ghi789-jkl012",
+    "access_token_expires_at": "2023-01-01T13:00:00Z",
+    "refresh_token_expires_at": "2023-01-08T12:00:00Z"
   },
-  "metadata": {
-    "timestamp": "2023-01-01T12:00:00Z",
-    "version": "v1"
-  }
+  "timestamp": "2023-01-01T12:00:00Z"
+}
+```
+
+*List/Array Response:*
+
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "device_id": "MOBILE_ABC123",
+      "device_name": "John's iPhone",
+      "device_type": "Mobile",
+      "platform": "iOS",
+      "last_activity": "2023-01-01T12:00:00Z",
+      "is_current_device": true
+    },
+    {
+      "device_id": "WEB_DEF456",
+      "device_name": "Chrome on Windows",
+      "device_type": "Desktop",
+      "platform": "Windows",
+      "last_activity": "2023-01-01T11:30:00Z",
+      "is_current_device": false
+    }
+  ],
+  "timestamp": "2023-01-01T12:00:00Z"
+}
+```
+
+*Simple Message Response:*
+
+```json
+{
+  "success": true,
+  "data": {
+    "message": "OTP sent successfully",
+    "session_id": "LSQ20250804100456522TBFOQ8U44LIBLX"
+  },
+  "timestamp": "2023-01-01T12:00:00Z"
 }
 ```
 
 #### **Error Response Format**
 
+All error responses follow a standardized structure with detailed error information and proper HTTP status codes.
+
+**Error Response Structure:**
+
+```json
+{
+  "success": false,
+  "data": null,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human-readable error message",
+    "details": "Optional detailed description or context",
+    "validation_errors": {
+      // Optional field validation errors
+      "field_name": "Field-specific error message"
+    },
+    "module": "auth"
+  },
+  "timestamp": "2023-01-01T12:00:00Z",
+  "path": "/auth/v1/init",
+  "trace_id": "abc123-def456-ghi789"
+}
+```
+
+**Error Response Examples:**
+
+*Validation Error (HTTP 400):*
 ```json
 {
   "success": false,
   "error": {
     "code": "VALIDATION_ERROR",
     "message": "Invalid input data",
-    "details": {
-      "field": "email",
-      "issue": "Invalid email format"
+    "details": "Request validation failed",
+    "validation_errors": {
+      "phone": "Phone number is required",
+      "country_code": "Invalid country code"
     },
-    "timestamp": "2023-01-01T12:00:00Z"
-  }
+    "module": "auth"
+  },
+  "timestamp": "2023-01-01T12:00:00Z",
+  "path": "/auth/v1/init"
 }
 ```
+
+*Authentication Error (HTTP 401):*
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "TOKEN_EXPIRED",
+    "message": "Token expired",
+    "details": "JWT token has expired. Please refresh your token.",
+    "module": "auth"
+  },
+  "timestamp": "2023-01-01T12:00:00Z",
+  "path": "/user/v1"
+}
+```
+
+*Authorization Error (HTTP 403):*
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ACCESS_DENIED",
+    "message": "Workspace access denied",
+    "details": "You don't have permission to access this company or no company header provided",
+    "module": "workspace"
+  },
+  "timestamp": "2023-01-01T12:00:00Z",
+  "path": "/customer/v1/list"
+}
+```
+
+*Resource Not Found (HTTP 404):*
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "User not found",
+    "details": "The requested user was not found",
+    "module": "auth"
+  },
+  "timestamp": "2023-01-01T12:00:00Z",
+  "path": "/user/v1/12345"
+}
+```
+
+*Business Logic Error (HTTP 422):*
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "INVALID_SESSION",
+    "message": "Invalid session",
+    "details": "Session is invalid or expired",
+    "module": "auth"
+  },
+  "timestamp": "2023-01-01T12:00:00Z",
+  "path": "/auth/v1/verify"
+}
+```
+
+*Internal Server Error (HTTP 500):*
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "TOKEN_GENERATION_FAILED",
+    "message": "Token generation failed",
+    "details": "Unable to generate authentication token",
+    "module": "auth"
+  },
+  "timestamp": "2023-01-01T12:00:00Z",
+  "path": "/auth/v1/verify"
+}
+```
+
+**Common Error Codes:**
+
+| Code                      | HTTP Status | Description                 | Module |
+|---------------------------|-------------|-----------------------------|--------|
+| `VALIDATION_ERROR`        | 400         | Request validation failed   | All    |
+| `BAD_REQUEST`             | 400         | Invalid request format      | All    |
+| `AUTHENTICATION_FAILED`   | 401         | Authentication required     | Auth   |
+| `TOKEN_EXPIRED`           | 401         | JWT token expired           | Auth   |
+| `TOKEN_INVALID`           | 401         | JWT token invalid/malformed | Auth   |
+| `ACCESS_DENIED`           | 403         | Insufficient permissions    | All    |
+| `NOT_FOUND`               | 404         | Resource not found          | All    |
+| `INVALID_SESSION`         | 422         | Session invalid/expired     | Auth   |
+| `INTERNAL_SERVER_ERROR`   | 500         | Unexpected server error     | All    |
+| `TOKEN_GENERATION_FAILED` | 500         | JWT token generation failed | Auth   |
 
 ### Technology Stack
 

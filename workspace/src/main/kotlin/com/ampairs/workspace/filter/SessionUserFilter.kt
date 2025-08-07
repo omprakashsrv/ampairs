@@ -28,19 +28,16 @@ class SessionUserFilter @Autowired constructor(
         response: HttpServletResponse,
         chain: FilterChain,
     ) {
-        if (request.servletPath.contains("/auth/v1")
-            || request.servletPath.contains("/user/v1")
-            || request.servletPath.contains("/company/v1")
-            || request.servletPath.contains("/actuator/health")
+        val requestPath = request.requestURI ?: request.servletPath
+        if (requestPath.contains("/auth/v1")
+            || requestPath.contains("/user/v1")
+            || requestPath.contains("/company/v1")
+            || requestPath.contains("/actuator/health")
         ) {
             chain.doFilter(request, response)
             return
         }
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        if (auth.principal !is User) {
-            chain.doFilter(request, response)
-            return
-        }
         val user = auth.principal as User
         val companyId = request.getHeader("X-Workspace")
         if (!companyId.isNullOrEmpty()) {

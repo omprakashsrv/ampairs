@@ -2,7 +2,7 @@ package com.ampairs.core.domain.dto
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
-import java.time.LocalDateTime
+import java.util.*
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class ApiResponse<T>(
@@ -16,7 +16,7 @@ data class ApiResponse<T>(
     val error: ErrorDetails? = null,
 
     @JsonProperty("timestamp")
-    val timestamp: LocalDateTime = LocalDateTime.now(),
+    val timestamp: Date = Date(),
 
     @JsonProperty("path")
     val path: String? = null,
