@@ -2,12 +2,12 @@
 # This profile is designed for automated testing with database recreation
 
 spring:
-  # Test database settings
+  # Test database settings - H2 in-memory for tests
   datasource:
-    url: jdbc:mysql://localhost:3306/munsi_app_test
-    username: root
-    password: pass
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
     hikari:
       pool-name: test-db-pool
       maximum-pool-size: 10

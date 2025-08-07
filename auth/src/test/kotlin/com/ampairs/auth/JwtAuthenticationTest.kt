@@ -1,5 +1,6 @@
 package com.ampairs.auth
 
+import com.ampairs.AmpairsApplication
 import com.ampairs.auth.model.dto.AuthInitRequest
 import com.ampairs.auth.model.dto.AuthMode
 import com.ampairs.auth.model.dto.AuthenticationRequest
@@ -10,7 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
@@ -21,8 +22,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.transaction.annotation.Transactional
 
-@SpringBootTest
-@AutoConfigureWebMvc
+@SpringBootTest(classes = [AmpairsApplication::class])
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Transactional

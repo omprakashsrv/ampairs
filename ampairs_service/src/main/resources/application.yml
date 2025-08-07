@@ -1,3 +1,8 @@
+# Ampairs Application Configuration
+# This configuration serves as the development environment by default
+# Use environment variables to override settings for production deployment
+# Example: export OTP_DEV_MODE=false for production
+
 server:
   compression:
     enabled: true
@@ -26,10 +31,16 @@ logging:
       max-file-size: 1000MB
   file:
     path: logs/
-    name: ${logging.file.path}production.log
+    name: ${logging.file.path}application.log
+  level:
+    com.ampairs: ${LOG_LEVEL_AMPAIRS:DEBUG}
+    org.springframework.web: ${LOG_LEVEL_SPRING_WEB:INFO}
+    org.springframework.security: ${LOG_LEVEL_SPRING_SECURITY:INFO}
+    org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:INFO}
+    org.hibernate.type.descriptor.sql.BasicBinder: ${LOG_LEVEL_HIBERNATE_BINDER:INFO}
   pattern:
     file: "%highlight(%-5level) [%date] [%thread] [%X{traceId:-}] [%cyan(%logger{0})] : %message%n"
-    console: "%highlight(%-5level) [%date] [%thread] [%X{traceId:-}] [%cyan(%logger{0})]: %message%n"
+    console: "%highlight(%-5level) [%date{HH:mm:ss.SSS}] [%thread] [%cyan(%logger{36})]: %message%n"
 
 spring:
   jackson:
@@ -41,10 +52,10 @@ spring:
   cache:
     type: caffeine
     caffeine:
-      spec: maximumSize=10000,expireAfterAccess=1800s
+      spec: maximumSize=1000,expireAfterAccess=${CACHE_EXPIRE_AFTER_ACCESS:300s}  # 5 minutes for development
     cache-names: userDetails
     cache-specs:
-      userDetails: maximumSize=1000,expireAfterWrite=300s
+      userDetails: maximumSize=1000,expireAfterWrite=${CACHE_USER_DETAILS_EXPIRE:300s}
   datasource:
     url: jdbc:mysql://localhost:3306/munsi_app
     username: root
@@ -64,6 +75,11 @@ spring:
       naming:
         physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
       ddl-auto: update
+    show-sql: ${JPA_SHOW_SQL:true}
+    properties:
+      hibernate:
+        format_sql: ${JPA_FORMAT_SQL:true}
+        use_sql_comments: ${JPA_USE_SQL_COMMENTS:true}
   # Spring Cloud AWS Auto-configuration
   cloud:
     aws:
@@ -71,9 +87,9 @@ spring:
         static: ${AWS_REGION:ap-south-1}
         auto: ${AWS_AUTO_REGION:true}
       credentials:
-        access-key: ${AWS_ACCESS_KEY:}
-        secret-key: ${AWS_SECRET_KEY:}
-        instance-profile: ${AWS_USE_IAM_ROLE:true}
+        access-key: ${AWS_ACCESS_KEY:test}
+        secret-key: ${AWS_SECRET_KEY:test}
+        instance-profile: ${AWS_USE_IAM_ROLE:false}
         profile-name: ${AWS_PROFILE_NAME:}
         profile-path: ${AWS_PROFILE_PATH:}
       s3:
@@ -100,11 +116,11 @@ ampairs:
       max-file-size: ${AWS_S3_MAX_FILE_SIZE:10MB}
       allowed-content-types: ${AWS_S3_ALLOWED_CONTENT_TYPES:image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain,application/json}
     sns:
-      enabled: ${AWS_SNS_ENABLED:true}
+      enabled: ${AWS_SNS_ENABLED:false}
       default-sender-id: ${AWS_SNS_SENDER_ID:AMPAIR}
       sms-type: ${AWS_SNS_SMS_TYPE:Transactional}
 bucket4j:
-  enabled: ${BUCKET4J_ENABLED:true}  # Rate limiting enabled
+  enabled: ${BUCKET4J_ENABLED:false}  # Rate limiting disabled for development
   cache-to-use: caffeine
   filters:
     - cache-name: rate-limit-bucket
@@ -143,9 +159,9 @@ application:
     enabled: true
   auth:
     otp:
-      development-mode: ${OTP_DEV_MODE:false}
+      development-mode: ${OTP_DEV_MODE:true}
       hardcoded-otp: ${OTP_HARDCODED_VALUE:123456}
-      allow-hardcoded: ${OTP_ALLOW_HARDCODED:false}
+      allow-hardcoded: ${OTP_ALLOW_HARDCODED:true}
   security:
     jwt:
       secret-key: ${JWT_SECRET_KEY:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
@@ -153,7 +169,7 @@ application:
       refresh-token:
         expiration: ${JWT_REFRESH_EXPIRATION:P180D} # 180 days
     cors:
-      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001}
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:3000,http://127.0.0.1:4200,http://127.0.0.1:3000}
       allowed-methods: ${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,OPTIONS}
       allowed-headers: ${CORS_ALLOWED_HEADERS:*}
       allow-credentials: ${CORS_ALLOW_CREDENTIALS:true}
@@ -186,12 +202,12 @@ application:
           batch-size: ${TALLY_SYNC_PRODUCTS_BATCH_SIZE:100}
     notifications:
       email:
-        enabled: ${NOTIFICATIONS_EMAIL_ENABLED:true}
+        enabled: ${NOTIFICATIONS_EMAIL_ENABLED:false}
         from: ${NOTIFICATIONS_EMAIL_FROM:noreply@ampairs.com}
       sms:
         enabled: ${NOTIFICATIONS_SMS_ENABLED:true}
         provider: ${NOTIFICATIONS_SMS_PROVIDER:aws-sns}
-debug: false
+debug: ${DEBUG_MODE:true}
 
 # Google reCAPTCHA v3 Configuration
 google:
@@ -209,12 +225,12 @@ google:
     # Development token configuration
     development:
       enabled: ${RECAPTCHA_DEV_MODE_ENABLED:true}
-      tokenPatterns: ${RECAPTCHA_DEV_TOKEN_PATTERNS:dev-dummy-token-*,test-token-*}
+      tokenPatterns: ${RECAPTCHA_DEV_TOKEN_PATTERNS:dev-dummy-token-*,test-token-*,local-test-*}
     # IP whitelist configuration
     whitelist:
-      enabled: ${RECAPTCHA_WHITELIST_ENABLED:false}
-      ipAddresses: ${RECAPTCHA_WHITELIST_IPS:127.0.0.1,::1}
-      validateWithGoogle: ${RECAPTCHA_WHITELIST_VALIDATE_WITH_GOOGLE:true}
+      enabled: ${RECAPTCHA_WHITELIST_ENABLED:true}
+      ipAddresses: ${RECAPTCHA_WHITELIST_IPS:127.0.0.1,::1,192.168.1.*,10.0.0.*}
+      validateWithGoogle: ${RECAPTCHA_WHITELIST_VALIDATE_WITH_GOOGLE:false}
 
 # Notification Configuration
 notification:
@@ -261,3 +277,15 @@ notification:
   whatsapp:
     enabled: ${WHATSAPP_ENABLED:false}
     primary-provider: ${WHATSAPP_PRIMARY_PROVIDER:TWILIO}
+
+# Spring Boot Management Endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS_INCLUDE:health,info,env,metrics,caches}
+  endpoint:
+    health:
+      show-details: ${MANAGEMENT_HEALTH_SHOW_DETAILS:when_authorized}
+    env:
+      show-values: ${MANAGEMENT_ENV_SHOW_VALUES:when_authorized}

@@ -64,6 +64,8 @@ dependencies {
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
+    testImplementation(project(":ampairs_service"))
+    testImplementation("com.h2database:h2")
 }
 
 tasks.withType<Test> {
