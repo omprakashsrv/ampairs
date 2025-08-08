@@ -5,7 +5,6 @@ import Route
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
-import androidx.navigation.navOptions
 import androidx.navigation.navigation
 import com.ampairs.auth.domain.LoginStatus
 import com.ampairs.auth.ui.LoginScope
@@ -21,10 +20,15 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
 
         val loginScope = GlobalContext.get().createScope<LoginScope>()
         composable<AuthRoute.LoginRoot> {
-            LoginScreen(loginScope) {
-                if (it == LoginStatus.LOGGED_IN) {
-                    loginScope.close()
-                    onLoginSuccess()
+            LoginScreen(loginScope) { loginStatus, userEntity ->
+                if (loginStatus == LoginStatus.LOGGED_IN) {
+                    // Check if user's first name is empty, then navigate to UserUpdate screen
+                    if (userEntity?.first_name.isNullOrBlank()) {
+                        navigator.navigate(AuthRoute.UserUpdate)
+                    } else {
+                        loginScope.close()
+                        onLoginSuccess()
+                    }
                 } else {
                     navigator.navigate(AuthRoute.Phone)
                 }
@@ -42,12 +46,6 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
         }
         composable<AuthRoute.UserUpdate> {
             UserUpdateScreen {
-                val options = navOptions {
-                    popUpTo<AuthRoute.LoginRoot> {
-                        this.inclusive = true
-                    }
-                    launchSingleTop = true // Avoid multiple instances of the same destination
-                }
                 loginScope.close()
                 onLoginSuccess()
             }

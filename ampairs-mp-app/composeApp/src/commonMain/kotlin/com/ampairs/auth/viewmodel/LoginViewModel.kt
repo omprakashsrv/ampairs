@@ -32,7 +32,7 @@ class LoginViewModel(
         LoginStatus.INIT
     )
 
-    fun checkUserLogin(onLoginStatus: (LoginStatus) -> Unit) {
+    fun checkUserLogin(onLoginStatus: (LoginStatus, userEntity: com.ampairs.auth.db.entity.UserEntity?) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             val token = userRepository.getToken()
             if (token != null) {
@@ -43,28 +43,29 @@ class LoginViewModel(
                         val userData = this
                         viewModelScope.launch(Dispatchers.IO) {
                             userRepository.saveUser(userData)
+                            val savedUserEntity = userRepository.getUser()
                             delay(1000)
                             viewModelScope.launch(Dispatchers.Main) {
                                 loginStatus = LoginStatus.LOGGED_IN
-                                onLoginStatus(loginStatus)
+                                onLoginStatus(loginStatus, savedUserEntity)
                             }
                         }
                     }.onError {
                         viewModelScope.launch(Dispatchers.Main) {
                             loginStatus = LoginStatus.LOGIN_FAILED
-                            onLoginStatus(loginStatus)
+                            onLoginStatus(loginStatus, null)
                         }
                     }
                 } else {
                     viewModelScope.launch(Dispatchers.Main) {
                         loginStatus = LoginStatus.LOGGED_IN
-                        onLoginStatus(loginStatus)
+                        onLoginStatus(loginStatus, userEntity)
                     }
                 }
             } else {
                 viewModelScope.launch(Dispatchers.Main) {
                     loginStatus = LoginStatus.NOT_LOGGED_IN
-                    onLoginStatus(loginStatus)
+                    onLoginStatus(loginStatus, null)
                 }
             }
         }

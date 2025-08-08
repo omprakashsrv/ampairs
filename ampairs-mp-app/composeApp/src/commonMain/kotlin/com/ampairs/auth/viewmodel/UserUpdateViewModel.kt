@@ -57,8 +57,8 @@ class UserUpdateViewModel(
     }
 
     fun updateUser(onSuccess: () -> Unit) {
-        if (firstName.isBlank() || lastName.isBlank()) {
-            displayMessage = "First name and last name are required"
+        if (firstName.isBlank()) {
+            displayMessage = "First name is required"
             return
         }
 
@@ -87,5 +87,5 @@ class UserUpdateViewModel(
         get() = userState is UiState.Loading || updateUserState is UiState.Loading
 
     val isFormValid: Boolean
-        get() = firstName.isNotBlank() && lastName.isNotBlank()
+        get() = firstName.isNotBlank()
 }

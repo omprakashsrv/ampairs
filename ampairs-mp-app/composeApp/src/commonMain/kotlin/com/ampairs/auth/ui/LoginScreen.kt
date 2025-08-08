@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.ampairs.auth.db.entity.UserEntity
 import com.ampairs.auth.domain.LoginStatus
 import com.ampairs.auth.viewmodel.LoginViewModel
 import org.koin.compose.koinInject
@@ -18,7 +19,7 @@ import org.koin.core.scope.Scope
 fun LoginScreen(
     scope: Scope,
     viewModel: LoginViewModel = koinInject<LoginViewModel>(scope = scope),
-    onLoginStatus: (LoginStatus) -> Unit,
+    onLoginStatus: (LoginStatus, userEntity: UserEntity?) -> Unit,
 ) {
     viewModel.checkUserLogin(onLoginStatus)
     Column(

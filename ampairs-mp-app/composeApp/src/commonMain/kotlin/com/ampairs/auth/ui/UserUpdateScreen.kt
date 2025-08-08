@@ -47,7 +47,6 @@ fun UserUpdateScreen(
 ) {
     val viewModel: UserUpdateViewModel = koinInject()
     val snackbarHostState = remember { SnackbarHostState() }
-    val coroutineScope = rememberCoroutineScope()
 
     // Show error/success messages
     LaunchedEffect(viewModel.displayMessage) {
@@ -94,42 +93,53 @@ fun UserUpdateScreen(
                 is UiState.Success -> {
                     Column(
                         modifier = Modifier
-                            .widthIn(0.dp, 400.dp)
-                            .fillMaxWidth(),
+                            .fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text(
-                            text = stringResource(Res.string.update_your_profile),
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(bottom = 32.dp)
-                        )
+                        // Content area
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .widthIn(max = 400.dp)
+                                .fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.Center
+                        ) {
+                            Text(
+                                text = stringResource(Res.string.update_your_profile),
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(bottom = 32.dp)
+                            )
 
-                        OutlinedTextField(
-                            value = viewModel.firstName,
-                            onValueChange = viewModel::updateFirstName,
-                            label = { Text(stringResource(Res.string.first_name)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            enabled = !viewModel.isLoading
-                        )
+                            OutlinedTextField(
+                                value = viewModel.firstName,
+                                onValueChange = viewModel::updateFirstName,
+                                label = { Text(stringResource(Res.string.first_name)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                enabled = !viewModel.isLoading
+                            )
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
 
-                        OutlinedTextField(
-                            value = viewModel.lastName,
-                            onValueChange = viewModel::updateLastName,
-                            label = { Text(stringResource(Res.string.last_name)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true,
-                            enabled = !viewModel.isLoading
-                        )
+                            OutlinedTextField(
+                                value = viewModel.lastName,
+                                onValueChange = viewModel::updateLastName,
+                                label = { Text(stringResource(Res.string.last_name)) },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                enabled = !viewModel.isLoading
+                            )
+                        }
 
-                        Spacer(modifier = Modifier.height(32.dp))
-
+                        // Bottom-aligned button
                         Button(
                             onClick = { viewModel.updateUser(onUpdateSuccess) },
-                            modifier = Modifier.fillMaxWidth(),
+                            modifier = Modifier
+                                .widthIn(max = 400.dp)
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp),
                             enabled = viewModel.isFormValid && !viewModel.isLoading
                         ) {
                             if (viewModel.updateUserState is UiState.Loading) {
