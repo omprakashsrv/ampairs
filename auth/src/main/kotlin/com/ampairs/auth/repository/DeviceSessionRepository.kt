@@ -84,4 +84,38 @@ interface DeviceSessionRepository : JpaRepository<DeviceSession, String> {
      * Check if device ID exists for user (to prevent duplicate device IDs)
      */
     fun existsByUserIdAndDeviceId(userId: String, deviceId: String): Boolean
+
+    /**
+     * Find active sessions for a user ordered by last activity (oldest first)
+     */
+    fun findByUserIdAndIsActiveTrueOrderByLastActivityAsc(userId: String): List<DeviceSession>
+
+    /**
+     * Find active sessions that need cleanup (limited batch size)
+     */
+    @Query(
+        value = "SELECT * FROM device_session WHERE is_active = true ORDER BY last_activity ASC LIMIT ?1",
+        nativeQuery = true
+    )
+    fun findActiveSessionsForCleanup(limit: Int): List<DeviceSession>
+
+    /**
+     * Count total active sessions
+     */
+    fun countByIsActiveTrue(): Long
+
+    /**
+     * Count active sessions by device type
+     */
+    @Query("SELECT d.deviceType, COUNT(d) FROM DeviceSession d WHERE d.isActive = true GROUP BY d.deviceType")
+    fun countActiveSessionsByDeviceType(): List<Array<Any>>
+
+    /**
+     * Find the oldest active session
+     */
+    @Query(
+        value = "SELECT * FROM device_session WHERE is_active = true ORDER BY login_time ASC LIMIT 1",
+        nativeQuery = true
+    )
+    fun findOldestActiveSession(): DeviceSession?
 }

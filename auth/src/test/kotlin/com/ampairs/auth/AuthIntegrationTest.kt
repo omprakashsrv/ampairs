@@ -116,7 +116,13 @@ class AuthIntegrationTest {
         val initRequest = AuthInitRequest(
             phone = "9591781662",
             countryCode = 91,
-            recaptchaToken = TEST_RECAPTCHA_TOKEN
+            recaptchaToken = TEST_RECAPTCHA_TOKEN,
+            deviceId = "TEST_DEVICE_ID",
+            deviceName = "Test Device",
+            deviceType = "Desktop",
+            platform = "Test",
+            browser = "Test Browser",
+            os = "Test OS"
         )
 
         val initResponse = mockMvc.perform(
@@ -156,7 +162,13 @@ class AuthIntegrationTest {
         val initRequest = AuthInitRequest(
             phone = "9591781662",
             countryCode = 91,
-            recaptchaToken = TEST_RECAPTCHA_TOKEN
+            recaptchaToken = TEST_RECAPTCHA_TOKEN,
+            deviceId = "TEST_DEVICE_ID",
+            deviceName = "Test Device",
+            deviceType = "Desktop",
+            platform = "Test",
+            browser = "Test Browser",
+            os = "Test OS"
         )
 
         val initResponse = mockMvc.perform(
@@ -241,7 +253,13 @@ class AuthIntegrationTest {
         val initRequest = AuthInitRequest(
             phone = "9591781662",
             countryCode = 91,
-            recaptchaToken = TEST_RECAPTCHA_TOKEN
+            recaptchaToken = TEST_RECAPTCHA_TOKEN,
+            deviceId = "TEST_DEVICE_ID",
+            deviceName = "Test Device",
+            deviceType = "Desktop",
+            platform = "Test",
+            browser = "Test Browser",
+            os = "Test OS"
         )
 
         val initResponse = mockMvc.perform(

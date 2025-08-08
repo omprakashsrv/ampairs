@@ -15,15 +15,37 @@ data class ApplicationProperties(
         val jwt: JwtProperties = JwtProperties(),
         val cors: CorsProperties = CorsProperties(),
         val tokenCleanup: TokenCleanupProperties = TokenCleanupProperties(),
+        val sessionManagement: SessionManagementProperties = SessionManagementProperties(),
+        val accountLockout: AccountLockoutProperties = AccountLockoutProperties(),
         val rateLimiting: RateLimitingProperties = RateLimitingProperties(),
     ) {
         data class JwtProperties(
-            val secretKey: String = "",
+            val secretKey: String = "", // Legacy HS256 support - will be deprecated
+            val algorithm: String = "RS256", // Default to RS256 for new implementations
             val expiration: Duration = Duration.ofDays(1),
             val refreshToken: RefreshTokenProperties = RefreshTokenProperties(),
+            val keyStorage: KeyStorageProperties = KeyStorageProperties(),
+            val keyRotation: KeyRotationProperties = KeyRotationProperties(),
         ) {
             data class RefreshTokenProperties(
                 val expiration: Duration = Duration.ofDays(180),
+            )
+
+            data class KeyStorageProperties(
+                val privateKeyPath: String? = "keys/private.pem",
+                val publicKeyPath: String? = "keys/public.pem",
+                val metadataPath: String? = "keys/metadata.json",
+                val storeInDatabase: Boolean = false, // Future: store keys in database
+                val encryptPrivateKey: Boolean = true, // Encrypt private key at rest
+                val keyStorePassword: String? = null, // For encrypted storage
+            )
+
+            data class KeyRotationProperties(
+                val enabled: Boolean = true,
+                val rotationInterval: Duration = Duration.ofDays(30), // Rotate every 30 days
+                val keyLifetime: Duration? = Duration.ofDays(90), // Keys valid for 90 days
+                val scheduledRotation: Boolean = true, // Enable automatic rotation
+                val rotationCron: String = "0 0 2 1 * ?", // Monthly at 2 AM on 1st day
             )
         }
 
@@ -40,6 +62,42 @@ data class ApplicationProperties(
             val cron: String = "0 0 2 * * ?", // Daily at 2 AM
             val batchSize: Int = 100, // Process tokens in batches to avoid memory/transaction issues
         )
+
+        data class SessionManagementProperties(
+            val deviceSessionTimeout: Duration = Duration.ofDays(7), // 7 days default
+            val idleSessionTimeout: Duration = Duration.ofHours(24), // 24 hours of inactivity
+            val maxConcurrentSessionsPerUser: Int = 10, // Max 10 devices per user
+            val maxConcurrentSessionsPerDeviceType: Int = 3, // Max 3 sessions per device type
+            val expiredSessionCleanup: ExpiredSessionCleanupProperties = ExpiredSessionCleanupProperties(),
+        ) {
+            data class ExpiredSessionCleanupProperties(
+                val enabled: Boolean = true,
+                val cron: String = "0 */30 * * * ?", // Every 30 minutes
+                val batchSize: Int = 100,
+            )
+        }
+
+        data class AccountLockoutProperties(
+            val enabled: Boolean = true,
+            val maxFailedAttempts: Int = 8, // Soft limit for business users
+            val lockoutDuration: Duration = Duration.ofMinutes(15), // Short 15min lockout
+            val failureWindow: Duration = Duration.ofMinutes(30), // Count failures in 30min window
+            val progressiveLockout: ProgressiveLockoutProperties = ProgressiveLockoutProperties(),
+            val cleanup: LockoutCleanupProperties = LockoutCleanupProperties(),
+        ) {
+            data class ProgressiveLockoutProperties(
+                val enabled: Boolean = true,
+                val durationMultiplier: Double = 2.0, // Double lockout time for repeated offenses
+                val maxDuration: Duration = Duration.ofHours(2), // Max 2 hours for business app
+                val resetPeriod: Duration = Duration.ofHours(24), // Reset counter after 24h
+            )
+
+            data class LockoutCleanupProperties(
+                val enabled: Boolean = true,
+                val cron: String = "0 */10 * * * ?", // Every 10 minutes
+                val batchSize: Int = 50,
+            )
+        }
 
         data class RateLimitingProperties(
             val enabled: Boolean = true,

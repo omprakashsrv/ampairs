@@ -53,6 +53,9 @@ class DeviceSession : BaseDomain() {
     @Column(name = "refresh_token_hash", length = 500)
     var refreshTokenHash: String? = null // Hash of refresh token for this device
 
+    @Column(name = "expired_at")
+    var expiredAt: LocalDateTime? = null // When the session was expired (if expired)
+
     override fun obtainSeqIdPrefix(): String {
         return Constants.DEVICE_SESSION_PREFIX
     }

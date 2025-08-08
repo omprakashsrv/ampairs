@@ -1,6 +1,8 @@
 package com.ampairs.config
 
 import com.ampairs.auth.service.JwtService
+import com.ampairs.auth.service.RsaKeyManager
+import com.ampairs.core.config.ApplicationProperties
 import com.ampairs.core.exception.AuthEntryPointJwt
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
@@ -21,14 +23,31 @@ import javax.crypto.spec.SecretKeySpec
 @ComponentScan(value = ["com.ampairs.core"])
 class SecurityConfiguration @Autowired constructor(
     val jwtService: JwtService,
+    val rsaKeyManager: RsaKeyManager,
+    val applicationProperties: ApplicationProperties,
     val customJwtAuthenticationConverter: CustomJwtAuthenticationConverter,
     val unauthorizedHandler: AuthEntryPointJwt,
 ) {
 
     @Bean
     fun jwtDecoder(): JwtDecoder {
-        val secretKey = SecretKeySpec(jwtService.getSignInKey(), "HmacSHA256")
-        return NimbusJwtDecoder.withSecretKey(secretKey).build()
+        return when (val algorithm = applicationProperties.security.jwt.algorithm) {
+            "RS256" -> {
+                // Use RSA public key for RS256
+                val currentKeyPair = rsaKeyManager.getCurrentKeyPair()
+                NimbusJwtDecoder.withPublicKey(currentKeyPair.publicKey).build()
+            }
+
+            "HS256" -> {
+                // Legacy HS256 support
+                val secretKey = SecretKeySpec(jwtService.getSignInKey(), "HmacSHA256")
+                NimbusJwtDecoder.withSecretKey(secretKey).build()
+            }
+
+            else -> {
+                throw IllegalArgumentException("Unsupported JWT algorithm: $algorithm")
+            }
+        }
     }
 
     @Bean

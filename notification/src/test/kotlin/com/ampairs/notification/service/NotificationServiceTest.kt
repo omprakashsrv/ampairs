@@ -62,7 +62,7 @@ class NotificationServiceTest {
         val recipient = "+919876543210"
         val message = "Test OTP: 123456"
         val notificationQueue = NotificationQueue().apply {
-            seqId = "test-id-123"
+            uid = "test-id-123"
             this.recipient = recipient
             this.message = message
             this.channel = NotificationChannel.SMS
@@ -85,7 +85,7 @@ class NotificationServiceTest {
         val phoneNumber = "+919876543210"
         val message = "Test OTP: 123456"
         val notificationQueue = NotificationQueue().apply {
-            seqId = "test-id-123"
+            uid = "test-id-123"
             this.recipient = phoneNumber
             this.message = message
             this.channel = NotificationChannel.SMS
@@ -106,7 +106,7 @@ class NotificationServiceTest {
     fun `should process SMS notification with primary provider success`() {
         // Given
         val notificationQueue = NotificationQueue().apply {
-            seqId = "test-id-123"
+            uid = "test-id-123"
             recipient = "+919876543210"
             message = "Test OTP: 123456"
             channel = NotificationChannel.SMS
@@ -138,7 +138,7 @@ class NotificationServiceTest {
     fun `should fallback to secondary provider when primary fails`() {
         // Given
         val notificationQueue = NotificationQueue().apply {
-            seqId = "test-id-123"
+            uid = "test-id-123"
             recipient = "+919876543210"
             message = "Test OTP: 123456"
             channel = NotificationChannel.SMS
@@ -180,7 +180,7 @@ class NotificationServiceTest {
     fun `should mark notification as failed when all providers fail`() {
         // Given
         val notificationQueue = NotificationQueue().apply {
-            seqId = "test-id-123"
+            uid = "test-id-123"
             recipient = "+919876543210"
             message = "Test OTP: 123456"
             channel = NotificationChannel.SMS

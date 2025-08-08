@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicLong
 @Service
 class RateLimitingService(
     private val applicationProperties: ApplicationProperties,
+    private val securityAuditService: SecurityAuditService,
 ) {
 
     private val logger = LoggerFactory.getLogger(RateLimitingService::class.java)
@@ -66,12 +67,12 @@ class RateLimitingService(
         val progressiveConfig = applyProgressiveThrottling(clientIp, rateLimitConfig, endpoint)
 
         // Check IP-based rate limit
-        checkRateLimit("auth:$endpoint:ip:$clientIp", progressiveConfig, "IP-based authentication")
+        checkRateLimit("auth:$endpoint:ip:$clientIp", progressiveConfig, "IP-based authentication", request)
 
         // Check user-based rate limit if authenticated
         val userId = getCurrentUserId()
         if (userId != null) {
-            checkRateLimit("auth:$endpoint:user:$userId", progressiveConfig, "User-based authentication")
+            checkRateLimit("auth:$endpoint:user:$userId", progressiveConfig, "User-based authentication", request)
         }
 
         logger.debug("Rate limit check passed for endpoint: {}, IP: {}, User: {}", endpoint, clientIp, userId)
@@ -93,23 +94,23 @@ class RateLimitingService(
         }
 
         // Check IP-based rate limit
-        checkRateLimit("api:ip:$clientIp", rateLimitConfig, "API IP-based")
+        checkRateLimit("api:ip:$clientIp", rateLimitConfig, "API IP-based", request)
 
         // Check user-based rate limit if authenticated
         if (isAuthenticated) {
             val userId = getCurrentUserId()
             if (userId != null) {
-                checkRateLimit("api:user:$userId", rateLimitConfig, "API user-based")
+                checkRateLimit("api:user:$userId", rateLimitConfig, "API user-based", request)
             }
         }
 
         // Global rate limits
         val globalConfig = applicationProperties.security.rateLimiting.global
-        checkRateLimit("global:ip:$clientIp", globalConfig.perIp, "Global IP-based")
+        checkRateLimit("global:ip:$clientIp", globalConfig.perIp, "Global IP-based", request)
 
         val userId = getCurrentUserId()
         if (userId != null) {
-            checkRateLimit("global:user:$userId", globalConfig.perUser, "Global user-based")
+            checkRateLimit("global:user:$userId", globalConfig.perUser, "Global user-based", request)
         }
     }
 
@@ -125,6 +126,13 @@ class RateLimitingService(
 
         logger.warn(
             "Authentication failure recorded: IP={}, endpoint={}, reason={}, total_failures={}",
+            clientIp, endpoint, reason, tracker.getFailureCount()
+        )
+
+        // Log security event for monitoring
+        // Note: We don't have the HttpServletRequest here, so we create a minimal audit log
+        logger.info(
+            "SECURITY_AUDIT: AUTH_FAILURE - IP={}, endpoint={}, reason={}, failures={}",
             clientIp, endpoint, reason, tracker.getFailureCount()
         )
     }
@@ -211,6 +219,11 @@ class RateLimitingService(
             clientIp, endpoint, failureCount, baseConfig.capacity, throttledCapacity
         )
 
+        // Log progressive throttling event for security monitoring
+        securityAuditService.logProgressiveThrottling(
+            clientIp, endpoint, failureCount, baseConfig.capacity, throttledCapacity
+        )
+
         return ApplicationProperties.SecurityProperties.RateLimitingProperties.RateLimitConfig(
             capacity = throttledCapacity,
             windowMinutes = baseConfig.windowMinutes * 2, // Also increase window
@@ -225,6 +238,7 @@ class RateLimitingService(
         key: String,
         config: ApplicationProperties.SecurityProperties.RateLimitingProperties.RateLimitConfig,
         limitType: String,
+        request: HttpServletRequest? = null,
     ) {
         val bucket = rateLimitBuckets.get(key) {
             RateLimitBucket(config.capacity, config.windowMinutes, config.burstCapacity)
@@ -232,14 +246,26 @@ class RateLimitingService(
 
         if (!bucket.allowRequest()) {
             val resetTime = bucket.windowStart.plusMinutes(config.windowMinutes.toLong())
+            val remainingSeconds = Duration.between(LocalDateTime.now(), resetTime).seconds
+            
             logger.warn(
                 "Rate limit exceeded: key={}, type={}, remaining_time={}",
-                key, limitType, Duration.between(LocalDateTime.now(), resetTime)
+                key, limitType, remainingSeconds
             )
+
+            // Log rate limit violation for security monitoring
+            if (request != null) {
+                securityAuditService.logRateLimitViolation(
+                    limitType = limitType,
+                    endpoint = request.requestURI,
+                    request = request,
+                    remainingTime = remainingSeconds
+                )
+            }
 
             throw RateLimitExceededException(
                 message = "$limitType rate limit exceeded",
-                retryAfterSeconds = Duration.between(LocalDateTime.now(), resetTime).seconds,
+                retryAfterSeconds = remainingSeconds,
                 limitType = limitType,
                 resetTime = resetTime
             )

@@ -17,6 +17,7 @@ import java.util.function.Function
 @Service
 class JwtService(
     private val applicationProperties: ApplicationProperties,
+    private val rsaKeyManager: RsaKeyManager,
 ) {
     private val logger = LoggerFactory.getLogger(JwtService::class.java)
 
@@ -28,6 +29,9 @@ class JwtService(
         const val DEVICE_ID_CLAIM = "deviceId"
         const val ACCESS_TOKEN_TYPE = "access"
         const val REFRESH_TOKEN_TYPE = "refresh"
+        const val KEY_ID_CLAIM = "kid"
+        const val ISSUER_CLAIM = "iss"
+        const val AUDIENCE_CLAIM = "aud"
     }
 
     fun extractUsername(token: String): String {
@@ -135,25 +139,42 @@ class JwtService(
     ): String {
         val now = Instant.now()
         val expiryDate = Date.from(now.plusMillis(expiration))
+        val algorithm = applicationProperties.security.jwt.algorithm
 
         return try {
-            Jwts.builder()
+            val jwtBuilder = Jwts.builder()
                 .setClaims(claims)
                 .setSubject(userDetails.username)
                 .setIssuedAt(Date.from(now))
                 .setExpiration(expiryDate)
-                .signWith(signInKey, SignatureAlgorithm.HS256)
-                .compact()
-                .also {
-                    logger.debug(
-                        "Generated {} token for user: {}, expires: {}",
-                        tokenType,
-                        userDetails.username,
-                        expiryDate
-                    )
-                }
+
+            // Add standard claims for RS256
+            if (algorithm == "RS256") {
+                val currentKeyPair = rsaKeyManager.getCurrentKeyPair()
+                jwtBuilder
+                    .setHeaderParam("kid", currentKeyPair.keyId) // Key ID in header
+                    .setIssuer("ampairs-auth") // Issuer claim
+                    .setAudience("ampairs-api") // Audience claim
+                    .signWith(currentKeyPair.privateKey, SignatureAlgorithm.RS256)
+            } else {
+                // Legacy HS256 support
+                jwtBuilder.signWith(signInKey, SignatureAlgorithm.HS256)
+            }
+
+            jwtBuilder.compact().also {
+                logger.debug(
+                    "Generated {} token with {} algorithm for user: {}, expires: {}",
+                    tokenType,
+                    algorithm,
+                    userDetails.username,
+                    expiryDate
+                )
+            }
         } catch (e: Exception) {
-            logger.error("Failed to generate {} token for user: {}", tokenType, userDetails.username, e)
+            logger.error(
+                "Failed to generate {} token for user: {} with algorithm {}",
+                tokenType, userDetails.username, algorithm, e
+            )
             throw JwtTokenGenerationException("Failed to generate $tokenType token", e)
         }
     }
@@ -204,9 +225,27 @@ class JwtService(
 
     private fun extractAllClaims(token: String): Claims {
         return try {
-            Jwts.parserBuilder()
-                .setSigningKey(signInKey)
-                .build()
+            val algorithm = applicationProperties.security.jwt.algorithm
+            val parser = Jwts.parserBuilder()
+
+            if (algorithm == "RS256") {
+                // For RS256, we need to determine which public key to use
+                val keyId = extractKeyIdFromHeader(token)
+                val publicKey = if (keyId != null) {
+                    rsaKeyManager.getPublicKey(keyId)
+                        ?: throw SignatureException("Unknown key ID: $keyId")
+                } else {
+                    // Fallback to current key if no kid in header
+                    rsaKeyManager.getCurrentKeyPair().publicKey
+                }
+
+                parser.setSigningKey(publicKey)
+            } else {
+                // Legacy HS256 support
+                parser.setSigningKey(signInKey)
+            }
+
+            parser.build()
                 .parseClaimsJws(token)
                 .body
         } catch (e: ExpiredJwtException) {
@@ -224,6 +263,24 @@ class JwtService(
         } catch (e: IllegalArgumentException) {
             logger.error("JWT token compact of handler are invalid: {}", e.message)
             throw e
+        }
+    }
+
+    /**
+     * Extract Key ID from JWT header
+     */
+    private fun extractKeyIdFromHeader(token: String): String? {
+        return try {
+            val headerBase64 = token.split('.')[0]
+            val headerBytes = Base64.getUrlDecoder().decode(headerBase64)
+            val headerJson = String(headerBytes)
+
+            // Simple JSON parsing for kid claim
+            val kidMatch = """"kid"\s*:\s*"([^"]+)"""".toRegex().find(headerJson)
+            kidMatch?.groupValues?.get(1)
+        } catch (e: Exception) {
+            logger.debug("Could not extract key ID from token header: {}", e.message)
+            null
         }
     }
 

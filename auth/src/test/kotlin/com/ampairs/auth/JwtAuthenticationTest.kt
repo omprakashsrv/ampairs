@@ -5,8 +5,6 @@ import com.ampairs.auth.model.dto.AuthInitRequest
 import com.ampairs.auth.model.dto.AuthMode
 import com.ampairs.auth.model.dto.AuthenticationRequest
 import com.ampairs.auth.model.dto.RefreshTokenRequest
-import com.ampairs.auth.service.JwtService
-import com.ampairs.user.repository.UserRepository
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
@@ -89,12 +87,6 @@ class JwtAuthenticationTest {
 
     @Autowired
     private lateinit var objectMapper: ObjectMapper
-
-    @Autowired
-    private lateinit var userRepository: UserRepository
-
-    @Autowired
-    private lateinit var jwtService: JwtService
 
     private fun authenticateTestUser(): String {
         // Initialize OTP session
@@ -374,7 +366,7 @@ class JwtAuthenticationTest {
     fun `should handle init with negative country code`() {
         val requestWithNegativeCountryCode = AuthInitRequest(
             phone = "9591781662",
-            countryCode = -1,  // Negative country code - application accepts this
+            countryCode = -1,  // Negative country code
             recaptchaToken = TEST_RECAPTCHA_TOKEN
         )
 
@@ -383,8 +375,8 @@ class JwtAuthenticationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(requestWithNegativeCountryCode))
         )
-            .andExpect(status().isOk)  // Application accepts negative country codes
-            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(status().isBadRequest)  // Application does not accept negative country codes
+            .andExpect(jsonPath("$.success").value(false))
     }
 
     @Test
@@ -415,13 +407,13 @@ class JwtAuthenticationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(invalidRequest))
         )
+            .andExpect(status().isBadRequest)
             .andExpect { result ->
                 // Empty session ID causes internal server error (status 500)
-                assert(result.response.status == 500)
                 val responseBody = result.response.contentAsString
                 val jsonResponse = objectMapper.readTree(responseBody)
                 assert(jsonResponse.get("success").asBoolean() == false)
-                assert(jsonResponse.get("error").get("code").asText() == "INTERNAL_SERVER_ERROR")
+                assert(jsonResponse.get("error").get("code").asText() == "VALIDATION_ERROR")
             }
     }
 

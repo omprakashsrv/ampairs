@@ -32,7 +32,7 @@ class AuthController @Autowired constructor(
         // Validate reCAPTCHA if token is provided
         validateRecaptcha(authInitRequest.recaptchaToken, "login", getClientIp(request))
 
-        return ApiResponse.success(authService.init(authInitRequest))
+        return ApiResponse.success(authService.init(authInitRequest, request))
     }
 
     @GetMapping("/session/{sessionId}")

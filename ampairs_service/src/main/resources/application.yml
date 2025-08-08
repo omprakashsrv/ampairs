@@ -38,6 +38,11 @@ logging:
     org.springframework.security: ${LOG_LEVEL_SPRING_SECURITY:INFO}
     org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:INFO}
     org.hibernate.type.descriptor.sql.BasicBinder: ${LOG_LEVEL_HIBERNATE_BINDER:INFO}
+    # Security audit loggers
+    SECURITY_AUDIT: ${LOG_LEVEL_SECURITY_AUDIT:INFO}
+    AUTH_EVENTS: ${LOG_LEVEL_AUTH_EVENTS:INFO}
+    RATE_LIMIT_EVENTS: ${LOG_LEVEL_RATE_LIMIT_EVENTS:WARN}
+    ACCESS_EVENTS: ${LOG_LEVEL_ACCESS_EVENTS:WARN}
   pattern:
     file: "%highlight(%-5level) [%date] [%thread] [%X{traceId:-}] [%cyan(%logger{0})] : %message%n"
     console: "%highlight(%-5level) [%date{HH:mm:ss.SSS}] [%thread] [%cyan(%logger{36})]: %message%n"
@@ -122,8 +127,6 @@ ampairs:
 # bucket4j configuration removed - using custom comprehensive rate limiting service instead
 
 application:
-  multitenancy:
-    enabled: true
   auth:
     otp:
       development-mode: ${OTP_DEV_MODE:true}
@@ -135,6 +138,12 @@ application:
       expiration: ${JWT_EXPIRATION:PT24H} # 24 hours
       refresh-token:
         expiration: ${JWT_REFRESH_EXPIRATION:P180D} # 180 days
+      key-rotation:
+        enabled: ${JWT_KEY_ROTATION_ENABLED:true}
+        rotation-interval: ${JWT_KEY_ROTATION_INTERVAL:P30D} # 30 days
+        key-lifetime: ${JWT_KEY_LIFETIME:P90D} # 90 days
+        scheduled-rotation: ${JWT_SCHEDULED_ROTATION:true}
+        rotation-cron: ${JWT_ROTATION_CRON:0 0 2 1 * ?} # Monthly at 2 AM on 1st day
     cors:
       allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200,http://localhost:3000,http://127.0.0.1:4200,http://127.0.0.1:3000}
       allowed-methods: ${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,OPTIONS}
@@ -145,6 +154,37 @@ application:
       enabled: ${TOKEN_CLEANUP_ENABLED:true}
       cron: ${TOKEN_CLEANUP_CRON:0 0 2 * * ?} # Daily at 2 AM
       batch-size: ${TOKEN_CLEANUP_BATCH_SIZE:100} # Process tokens in batches
+    session-management:
+      # Session timeout settings
+      device-session-timeout: ${DEVICE_SESSION_TIMEOUT:P7D} # 7 days default
+      idle-session-timeout: ${IDLE_SESSION_TIMEOUT:PT24H} # 24 hours of inactivity
+      # Concurrent session limits
+      max-concurrent-sessions-per-user: ${MAX_CONCURRENT_SESSIONS:10} # Max 10 devices per user
+      max-concurrent-sessions-per-device-type: ${MAX_CONCURRENT_SESSIONS_PER_TYPE:3} # Max 3 sessions per device type
+      # Session cleanup settings
+      expired-session-cleanup:
+        enabled: ${SESSION_CLEANUP_ENABLED:true}
+        cron: ${SESSION_CLEANUP_CRON:0 */30 * * * ?} # Every 30 minutes
+        batch-size: ${SESSION_CLEANUP_BATCH_SIZE:100}
+    # Soft account lockout - designed for business apps, not banking
+    account-lockout:
+      enabled: ${ACCOUNT_LOCKOUT_ENABLED:true}
+      # Soft thresholds - not too aggressive for business users
+      max-failed-attempts: ${LOCKOUT_MAX_FAILED_ATTEMPTS:8} # Allow 8 failed attempts
+      lockout-duration: ${LOCKOUT_DURATION:PT15M} # Lock for 15 minutes (soft)
+      failure-window: ${LOCKOUT_FAILURE_WINDOW:PT30M} # Count failures in 30min window
+      # Progressive lockout - increases with repeated lockouts
+      progressive-lockout:
+        enabled: ${PROGRESSIVE_LOCKOUT_ENABLED:true}
+        # Multiplier for repeated lockouts within 24 hours
+        duration-multiplier: ${LOCKOUT_DURATION_MULTIPLIER:2.0} # Double each time
+        max-duration: ${LOCKOUT_MAX_DURATION:PT2H} # Max 2 hours lockout
+        reset-period: ${LOCKOUT_RESET_PERIOD:PT24H} # Reset counter after 24h
+      # Cleanup expired lockouts
+      cleanup:
+        enabled: ${LOCKOUT_CLEANUP_ENABLED:true}
+        cron: ${LOCKOUT_CLEANUP_CRON:0 */10 * * * ?} # Every 10 minutes
+        batch-size: ${LOCKOUT_CLEANUP_BATCH_SIZE:50}
     rate-limiting:
       enabled: ${RATE_LIMITING_ENABLED:true}
       auth:

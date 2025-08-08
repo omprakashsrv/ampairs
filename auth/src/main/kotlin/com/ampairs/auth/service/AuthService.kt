@@ -11,6 +11,7 @@ import com.ampairs.auth.repository.TokenRepository
 import com.ampairs.auth.utils.DeviceInfoExtractor
 import com.ampairs.core.domain.dto.GenericSuccessResponse
 import com.ampairs.core.service.RateLimitingService
+import com.ampairs.core.service.SecurityAuditService
 import com.ampairs.core.utils.UniqueIdGenerators
 import com.ampairs.notification.service.NotificationService
 import com.ampairs.user.model.User
@@ -38,9 +39,22 @@ class AuthService @Autowired constructor(
     val deviceInfoExtractor: DeviceInfoExtractor,
     val otpProperties: OtpProperties,
     val rateLimitingService: RateLimitingService,
+    val securityAuditService: SecurityAuditService,
+    val sessionManagementService: SessionManagementService,
+    val accountLockoutService: AccountLockoutService,
 ) {
     @Transactional
-    fun init(authInitRequest: AuthInitRequest): AuthInitResponse {
+    fun init(authInitRequest: AuthInitRequest, httpRequest: HttpServletRequest): AuthInitResponse {
+        // Check if account is locked before generating OTP
+        if (accountLockoutService.isAccountLocked(authInitRequest.phone, authInitRequest.countryCode)) {
+            val lockoutStatus =
+                accountLockoutService.getLockoutStatus(authInitRequest.phone, authInitRequest.countryCode)
+            val remainingMinutes = if (lockoutStatus.lockedUntil != null) {
+                java.time.Duration.between(LocalDateTime.now(), lockoutStatus.lockedUntil).toMinutes()
+            } else 0
+
+            throw Exception("Account temporarily locked due to multiple failed attempts. Please try again in $remainingMinutes minutes.")
+        }
         val loginSession = LoginSession()
         loginSession.phone = authInitRequest.phone
         loginSession.countryCode = authInitRequest.countryCode
@@ -48,6 +62,17 @@ class AuthService @Autowired constructor(
         // Create expiry time - 10 minutes from now
         loginSession.expiresAt = Date(System.currentTimeMillis() + SMS_VERIFICATION_VALIDITY)
         val savedSession = loginSessionRepository.save(loginSession)
+
+        // Log OTP generation event
+        securityAuditService.logOtpEvent(
+            phone = authInitRequest.phone,
+            eventType = SecurityAuditService.OtpEventType.GENERATION,
+            success = true,
+            sessionId = savedSession.id!!.toString(),
+            request = httpRequest,
+            reason = null
+        )
+        
         // Queue SMS for async sending
         notificationService.queueSms(
             ("+" + authInitRequest.countryCode.toString() + authInitRequest.phone),
@@ -67,8 +92,29 @@ class AuthService @Autowired constructor(
             ?: run {
                 // Record failure for invalid session ID
                 rateLimitingService.recordAuthFailure(clientIp, "verify", "Invalid session ID")
+
+                // Log authentication failure
+                securityAuditService.logAuthenticationAttempt(
+                    phone = "unknown",
+                    countryCode = 0,
+                    success = false,
+                    reason = "Invalid session ID",
+                    request = httpRequest,
+                    sessionId = request.sessionId
+                )
+                
                 throw Exception("Invalid session Id")
             }
+
+        // Check if account is locked before OTP verification
+        if (accountLockoutService.isAccountLocked(loginSession.phone, loginSession.countryCode)) {
+            val lockoutStatus = accountLockoutService.getLockoutStatus(loginSession.phone, loginSession.countryCode)
+            val remainingMinutes = if (lockoutStatus.lockedUntil != null) {
+                java.time.Duration.between(LocalDateTime.now(), lockoutStatus.lockedUntil).toMinutes()
+            } else 0
+
+            throw Exception("Account temporarily locked due to multiple failed attempts. Please try again in $remainingMinutes minutes.")
+        }
 
         if (loginSession.code == request.otp || isHardcodedOtpValid(request.otp)) {
             val user: User = userRepository.findByUserName(loginSession.userName())
@@ -89,6 +135,9 @@ class AuthService @Autowired constructor(
                 request.deviceName
             )
 
+            // Enforce concurrent session limits before creating new session
+            sessionManagementService.enforceConcurrentSessionLimits(user.uid)
+
             // Create or update device session
             val deviceSession = createOrUpdateDeviceSession(user, deviceInfo)
 
@@ -107,6 +156,31 @@ class AuthService @Autowired constructor(
 
             // Record successful authentication
             rateLimitingService.recordAuthSuccess(clientIp, "verify")
+            accountLockoutService.recordAuthenticationSuccess(loginSession.phone, loginSession.countryCode)
+
+            // Log successful authentication
+            securityAuditService.logAuthenticationAttempt(
+                phone = loginSession.phone,
+                countryCode = loginSession.countryCode,
+                success = true,
+                reason = null,
+                request = httpRequest,
+                sessionId = request.sessionId,
+                deviceInfo = mapOf<String, Any>(
+                    "device_id" to deviceSession.deviceId,
+                    "device_name" to (deviceSession.deviceName ?: "Unknown"),
+                    "platform" to (deviceSession.platform ?: "Unknown"),
+                    "browser" to (deviceSession.browser ?: "Unknown")
+                )
+            )
+
+            // Log JWT token generation
+            securityAuditService.logTokenEvent(
+                eventType = SecurityAuditService.TokenEventType.GENERATED,
+                userId = user.id!!.toString(),
+                deviceId = deviceSession.deviceId,
+                request = httpRequest
+            )
             
             val authResponse = AuthenticationResponse()
             authResponse.accessToken = jwtToken
@@ -117,6 +191,33 @@ class AuthService @Autowired constructor(
         } else {
             // Record failure for invalid OTP
             rateLimitingService.recordAuthFailure(clientIp, "verify", "Invalid OTP")
+            accountLockoutService.recordAuthenticationFailure(
+                loginSession.phone,
+                loginSession.countryCode,
+                "Invalid OTP",
+                httpRequest
+            )
+
+            // Log OTP verification failure
+            securityAuditService.logOtpEvent(
+                phone = loginSession.phone,
+                eventType = SecurityAuditService.OtpEventType.VERIFICATION,
+                success = false,
+                sessionId = request.sessionId,
+                request = httpRequest,
+                reason = "Invalid OTP"
+            )
+
+            // Log authentication failure
+            securityAuditService.logAuthenticationAttempt(
+                phone = loginSession.phone,
+                countryCode = loginSession.countryCode,
+                success = false,
+                reason = "Invalid OTP",
+                request = httpRequest,
+                sessionId = request.sessionId
+            )
+            
             throw Exception("Invalid otp")
         }
     }
@@ -241,19 +342,29 @@ class AuthService @Autowired constructor(
             val deviceSession = deviceSessionRepository.findByUserIdAndDeviceIdAndIsActiveTrue(user.uid, deviceId)
                 .orElseThrow { Exception("Device session not found or inactive") }
 
+            // Validate session hasn't expired due to timeout rules
+            if (!sessionManagementService.validateAndExpireIfNeeded(deviceSession)) {
+                throw Exception("Device session has expired")
+            }
+
             // Verify refresh token hash matches
             if (deviceSession.refreshTokenHash != hashToken(refreshToken)) {
                 throw Exception("Invalid refresh token for device")
             }
 
             // Update device session activity
-            deviceSession.updateActivity()
+            sessionManagementService.updateSessionActivity(deviceSession, httpRequest)
 
             // Generate new access token
             val accessToken: String = jwtService.generateTokenWithDevice(user, deviceId)
 
-            // Update device session
-            deviceSessionRepository.save(deviceSession)
+            // Log token refresh event
+            securityAuditService.logTokenEvent(
+                eventType = SecurityAuditService.TokenEventType.REFRESHED,
+                userId = user.id!!.toString(),
+                deviceId = deviceId,
+                request = httpRequest
+            )
             
             val authResponse = AuthenticationResponse()
             authResponse.accessToken = accessToken
