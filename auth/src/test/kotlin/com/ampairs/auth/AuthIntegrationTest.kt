@@ -29,10 +29,11 @@ class DatabaseInitializer : ApplicationContextInitializer<ConfigurableApplicatio
     override fun initialize(applicationContext: ConfigurableApplicationContext) {
         // Create the test database before Spring context starts
         try {
+            val dbPassword = System.getenv("DB_PASSWORD") ?: "pass"
             val connection = DriverManager.getConnection(
                 "jdbc:mysql://localhost:3306/",
                 "root",
-                "pass"
+                dbPassword
             )
             val statement = connection.createStatement()
             statement.executeUpdate("DROP DATABASE IF EXISTS ampairs_auth_test")
@@ -56,6 +57,10 @@ class DatabaseInitializer : ApplicationContextInitializer<ConfigurableApplicatio
 class AuthIntegrationTest {
 
     companion object {
+        // Test constants - should be configured via environment variables
+        private val TEST_RECAPTCHA_TOKEN = System.getenv("TEST_RECAPTCHA_TOKEN") ?: "test-token-12345"
+        private val TEST_DB_PASSWORD = System.getenv("DB_PASSWORD") ?: "pass"
+
         @JvmStatic
         @AfterAll
         fun cleanupDatabase() {
@@ -64,7 +69,7 @@ class AuthIntegrationTest {
                 val connection = DriverManager.getConnection(
                     "jdbc:mysql://localhost:3306/",
                     "root",
-                    "pass"
+                    TEST_DB_PASSWORD
                 )
                 val statement = connection.createStatement()
                 statement.executeUpdate("DROP DATABASE IF EXISTS ampairs_auth_test")
@@ -91,7 +96,7 @@ class AuthIntegrationTest {
         val request = AuthInitRequest(
             phone = "9591781662",
             countryCode = 91,
-            recaptchaToken = "test-token-12345"
+            recaptchaToken = TEST_RECAPTCHA_TOKEN
         )
 
         mockMvc.perform(
@@ -111,7 +116,7 @@ class AuthIntegrationTest {
         val initRequest = AuthInitRequest(
             phone = "9591781662",
             countryCode = 91,
-            recaptchaToken = "test-token-12345"
+            recaptchaToken = TEST_RECAPTCHA_TOKEN
         )
 
         val initResponse = mockMvc.perform(
@@ -130,7 +135,7 @@ class AuthIntegrationTest {
             sessionId = sessionId,
             otp = "123456", // Hardcoded OTP for tests
             authMode = AuthMode.OTP,
-            recaptchaToken = "test-token-12345"
+            recaptchaToken = TEST_RECAPTCHA_TOKEN
         )
 
         mockMvc.perform(
@@ -151,7 +156,7 @@ class AuthIntegrationTest {
         val initRequest = AuthInitRequest(
             phone = "9591781662",
             countryCode = 91,
-            recaptchaToken = "test-token-12345"
+            recaptchaToken = TEST_RECAPTCHA_TOKEN
         )
 
         val initResponse = mockMvc.perform(
@@ -170,7 +175,7 @@ class AuthIntegrationTest {
             sessionId = sessionId,
             otp = "999999", // Wrong OTP
             authMode = AuthMode.OTP,
-            recaptchaToken = "test-token-12345"
+            recaptchaToken = TEST_RECAPTCHA_TOKEN
         )
 
         mockMvc.perform(
@@ -194,7 +199,7 @@ class AuthIntegrationTest {
         val initRequest = AuthInitRequest(
             phone = phone,
             countryCode = countryCode,
-            recaptchaToken = "test-token-12345",
+            recaptchaToken = TEST_RECAPTCHA_TOKEN,
         )
 
         val initResponse = mockMvc.perform(
@@ -212,7 +217,7 @@ class AuthIntegrationTest {
             sessionId = sessionId,
             otp = "123456",
             authMode = AuthMode.OTP,
-            recaptchaToken = "test-token-12345"
+            recaptchaToken = TEST_RECAPTCHA_TOKEN
         )
 
         mockMvc.perform(
@@ -236,7 +241,7 @@ class AuthIntegrationTest {
         val initRequest = AuthInitRequest(
             phone = "9591781662",
             countryCode = 91,
-            recaptchaToken = "test-token-12345"
+            recaptchaToken = TEST_RECAPTCHA_TOKEN
         )
 
         val initResponse = mockMvc.perform(
@@ -290,7 +295,7 @@ class AuthIntegrationTest {
         val request = AuthInitRequest(
             phone = "invalid", // Invalid phone format
             countryCode = 91,
-            recaptchaToken = "test-token-12345"
+            recaptchaToken = TEST_RECAPTCHA_TOKEN
         )
 
         mockMvc.perform(

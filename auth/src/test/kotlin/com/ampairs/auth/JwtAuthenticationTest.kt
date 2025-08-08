@@ -31,10 +31,11 @@ class JwtDatabaseInitializer : ApplicationContextInitializer<ConfigurableApplica
     override fun initialize(applicationContext: ConfigurableApplicationContext) {
         // Create the test database before Spring context starts
         try {
+            val dbPassword = System.getenv("DB_PASSWORD") ?: "pass"
             val connection = DriverManager.getConnection(
                 "jdbc:mysql://localhost:3306/",
                 "root",
-                "pass"
+                dbPassword
             )
             val statement = connection.createStatement()
             statement.executeUpdate("DROP DATABASE IF EXISTS ampairs_auth_test")
@@ -58,6 +59,10 @@ class JwtDatabaseInitializer : ApplicationContextInitializer<ConfigurableApplica
 class JwtAuthenticationTest {
 
     companion object {
+        // Test constants - should be configured via environment variables
+        private val TEST_RECAPTCHA_TOKEN = System.getenv("TEST_RECAPTCHA_TOKEN") ?: "test-token-12345"
+        private val TEST_DB_PASSWORD = System.getenv("DB_PASSWORD") ?: "pass"
+
         @JvmStatic
         @AfterAll
         fun cleanupDatabase() {
@@ -66,7 +71,7 @@ class JwtAuthenticationTest {
                 val connection = DriverManager.getConnection(
                     "jdbc:mysql://localhost:3306/",
                     "root",
-                    "pass"
+                    TEST_DB_PASSWORD
                 )
                 val statement = connection.createStatement()
                 statement.executeUpdate("DROP DATABASE IF EXISTS ampairs_auth_test")
@@ -96,7 +101,7 @@ class JwtAuthenticationTest {
         val initRequest = AuthInitRequest(
             phone = "9591781662",
             countryCode = 91,
-            recaptchaToken = "test-token-12345"
+            recaptchaToken = TEST_RECAPTCHA_TOKEN
         )
 
         val initResponse = mockMvc.perform(
@@ -115,7 +120,7 @@ class JwtAuthenticationTest {
             sessionId = sessionId,
             otp = "123456",
             authMode = AuthMode.OTP,
-            recaptchaToken = "test-token-12345",
+            recaptchaToken = TEST_RECAPTCHA_TOKEN,
             deviceId = "TEST_DEVICE_001",
             deviceName = "Test Device"
         )
@@ -169,7 +174,7 @@ class JwtAuthenticationTest {
         val initRequest = AuthInitRequest(
             phone = "9591781662",
             countryCode = 91,
-            recaptchaToken = "test-token-12345"
+            recaptchaToken = TEST_RECAPTCHA_TOKEN
         )
 
         val initResponse = mockMvc.perform(
@@ -187,7 +192,7 @@ class JwtAuthenticationTest {
             sessionId = sessionId,
             otp = "123456",
             authMode = AuthMode.OTP,
-            recaptchaToken = "test-token-12345",
+            recaptchaToken = TEST_RECAPTCHA_TOKEN,
             deviceId = "TEST_DEVICE_002",
             deviceName = "Test Device 2"
         )
@@ -288,7 +293,7 @@ class JwtAuthenticationTest {
         val initRequest2 = AuthInitRequest(
             phone = "9591781662",
             countryCode = 91,
-            recaptchaToken = "test-token-12345"
+            recaptchaToken = TEST_RECAPTCHA_TOKEN
         )
 
         val initResponse2 = mockMvc.perform(
@@ -306,7 +311,7 @@ class JwtAuthenticationTest {
             sessionId = sessionId2,
             otp = "123456",
             authMode = AuthMode.OTP,
-            recaptchaToken = "test-token-12345",
+            recaptchaToken = TEST_RECAPTCHA_TOKEN,
             deviceId = "TEST_DEVICE_SECOND",
             deviceName = "Test Device Second"
         )
@@ -351,7 +356,7 @@ class JwtAuthenticationTest {
         val invalidRequest = AuthInitRequest(
             phone = "",
             countryCode = 91,
-            recaptchaToken = "test-token-12345"
+            recaptchaToken = TEST_RECAPTCHA_TOKEN
         )
 
         mockMvc.perform(
@@ -370,7 +375,7 @@ class JwtAuthenticationTest {
         val requestWithNegativeCountryCode = AuthInitRequest(
             phone = "9591781662",
             countryCode = -1,  // Negative country code - application accepts this
-            recaptchaToken = "test-token-12345"
+            recaptchaToken = TEST_RECAPTCHA_TOKEN
         )
 
         mockMvc.perform(
@@ -400,7 +405,7 @@ class JwtAuthenticationTest {
             sessionId = "",  // Empty session ID
             otp = "123456",
             authMode = AuthMode.OTP,
-            recaptchaToken = "test-token-12345",
+            recaptchaToken = TEST_RECAPTCHA_TOKEN,
             deviceId = "TEST_DEVICE_001",
             deviceName = "Test Device"
         )
@@ -426,7 +431,7 @@ class JwtAuthenticationTest {
             sessionId = "INVALID_SESSION_ID_123",
             otp = "123456",
             authMode = AuthMode.OTP,
-            recaptchaToken = "test-token-12345",
+            recaptchaToken = TEST_RECAPTCHA_TOKEN,
             deviceId = "TEST_DEVICE_001",
             deviceName = "Test Device"
         )
@@ -451,7 +456,7 @@ class JwtAuthenticationTest {
         val initRequest = AuthInitRequest(
             phone = "9591781662",
             countryCode = 91,
-            recaptchaToken = "test-token-12345"
+            recaptchaToken = TEST_RECAPTCHA_TOKEN
         )
 
         val initResponse = mockMvc.perform(
@@ -470,7 +475,7 @@ class JwtAuthenticationTest {
             sessionId = sessionId,
             otp = "999999",  // Wrong OTP
             authMode = AuthMode.OTP,
-            recaptchaToken = "test-token-12345",
+            recaptchaToken = TEST_RECAPTCHA_TOKEN,
             deviceId = "TEST_DEVICE_001",
             deviceName = "Test Device"
         )
@@ -574,7 +579,7 @@ class JwtAuthenticationTest {
         val initRequest = AuthInitRequest(
             phone = "+91 959 178 1662",
             countryCode = 91,
-            recaptchaToken = "test-token-12345"
+            recaptchaToken = TEST_RECAPTCHA_TOKEN
         )
 
         // This should either normalize the phone number or return a validation error
@@ -596,7 +601,7 @@ class JwtAuthenticationTest {
         val initRequest = AuthInitRequest(
             phone = "9591781662",
             countryCode = 91,
-            recaptchaToken = "test-token-12345"
+            recaptchaToken = TEST_RECAPTCHA_TOKEN
         )
 
         val response1 = mockMvc.perform(

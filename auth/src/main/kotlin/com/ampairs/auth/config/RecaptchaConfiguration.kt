@@ -84,8 +84,9 @@ data class RecaptchaConfiguration(
          * Comma-separated list of token patterns that should bypass Google validation
          * Supports wildcards (*) at the end of patterns
          * Example: "dev-dummy-token-*,test-token-*"
+         * NOTE: Configure via environment variable RECAPTCHA_DEV_TOKEN_PATTERNS
          */
-        var tokenPatterns: String = "dev-dummy-token-*,test-token-*",
+        var tokenPatterns: String = "",
     )
 
     data class Whitelist(

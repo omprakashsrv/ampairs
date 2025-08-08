@@ -3,8 +3,8 @@ spring:
   # Test database settings - Local MySQL server
   datasource:
     url: jdbc:mysql://localhost:3306/ampairs_auth_test
-    username: root
-    password: pass
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   # Test JPA settings - Drop and create schema for clean tests
@@ -37,14 +37,14 @@ application:
   # Test OTP settings - hardcoded OTP enabled for tests
   auth:
     otp:
-      development-mode: true      # Enable development mode for tests
-      hardcoded-otp: "123456"     # Test hardcoded OTP
-      allow-hardcoded: true       # Allow hardcoded OTP bypass in tests
+      development-mode: ${TEST_DEVELOPMENT_MODE:true}      # Enable development mode for tests
+      hardcoded-otp: ${TEST_OTP:123456}                    # Test hardcoded OTP from environment
+      allow-hardcoded: ${ALLOW_HARDCODED_OTP:true}         # Allow hardcoded OTP bypass in tests
   
   # Test security settings
   security:
     jwt:
-      secret-key: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      secret-key: ${JWT_SECRET_KEY:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
       expiration: PT1H  # 1 hour for tests
       refresh-token:
         expiration: P1D # 1 day for tests
@@ -66,10 +66,10 @@ bucket4j:
 # reCAPTCHA - DISABLED for testing
 google:
   recaptcha:
-    enabled: true
-    secret-key: 6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe  # Test secret key
-    site-key: 6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI    # Test site key
-    min-score: 0.0  # Always pass in tests
+    enabled: ${RECAPTCHA_ENABLED:true}
+    secret-key: ${RECAPTCHA_SECRET_KEY:6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe}  # Test secret key from environment
+    site-key: ${RECAPTCHA_SITE_KEY:6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI}    # Test site key from environment
+    min-score: ${RECAPTCHA_MIN_SCORE:0.0}  # Always pass in tests
 
 # Logging for tests - less verbose
 logging:

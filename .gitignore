@@ -40,3 +40,17 @@ bin/
 
 ### Mac OS ###
 .DS_Store
+
+### Security - Exclude sensitive files ###
+*.pem
+*.key
+*.p12
+*.keystore
+*.jks
+logs/
+*.log
+.env
+.env.local
+.env.production
+secrets/
+credentials/
