@@ -64,7 +64,7 @@ fun PhoneScreen(
                 )
 
                 // Show reCAPTCHA status message
-                if (viewModel.recaptchaMessage.isNotEmpty()) {
+                if (viewModel.progressMessage.isNotEmpty()) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -76,7 +76,7 @@ fun PhoneScreen(
                             )
                         }
                         Text(
-                            text = viewModel.recaptchaMessage,
+                            text = viewModel.progressMessage,
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center

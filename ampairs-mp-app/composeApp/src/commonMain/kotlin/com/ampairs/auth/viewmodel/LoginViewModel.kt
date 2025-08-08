@@ -27,7 +27,7 @@ class LoginViewModel(
     var displayMessage by mutableStateOf("")
     var loading by mutableStateOf(false)
     var recaptchaLoading by mutableStateOf(false)
-    var recaptchaMessage by mutableStateOf("")
+    var progressMessage by mutableStateOf("")
     var loginStatus by mutableStateOf(
         LoginStatus.INIT
     )
@@ -73,14 +73,14 @@ class LoginViewModel(
     fun authenticate(onAuthSuccess: (String) -> Unit) {
         loading = true
         recaptchaLoading = true
-        recaptchaMessage = "Verifying reCAPTCHA..."
+        progressMessage = "Verifying reCAPTCHA..."
         
         viewModelScope.launch(Dispatchers.IO) {
             userRepository.initAuth(phoneNumber).onSuccess {
                 viewModelScope.launch(Dispatchers.Main) {
                     loading = false
                     recaptchaLoading = false
-                    recaptchaMessage = ""
+                    progressMessage = ""
                     if (this@onSuccess.success && this@onSuccess.sessionId != null) {
                         this@LoginViewModel.sessionId = this@onSuccess.sessionId
                         onAuthSuccess(this@onSuccess.sessionId)
@@ -93,7 +93,7 @@ class LoginViewModel(
                 viewModelScope.launch(Dispatchers.Main) {
                     loading = false
                     recaptchaLoading = false
-                    recaptchaMessage = ""
+                    progressMessage = ""
                 }
             }
         }
@@ -107,24 +107,24 @@ class LoginViewModel(
     fun completeAuthentication(onAuthComplete: () -> Unit) {
         loading = true
         recaptchaLoading = true
-        recaptchaMessage = "Verifying reCAPTCHA..."
+        progressMessage = "Verifying reCAPTCHA..."
         
         viewModelScope.launch(Dispatchers.IO) {
             userRepository.completeAuth(sessionId, otp).onSuccess {
                 tokenRepository.updateToken(this.accessToken, this.refreshToken)
                 viewModelScope.launch(Dispatchers.Main) {
                     delay(1000)
+                    onAuthComplete()
                     loading = false
                     recaptchaLoading = false
-                    recaptchaMessage = ""
-                    onAuthComplete()
+                    progressMessage = ""
                 }
             }.onError {
                 displayMessage = this@onError.message
                 viewModelScope.launch(Dispatchers.Main) {
                     loading = false
                     recaptchaLoading = false
-                    recaptchaMessage = ""
+                    progressMessage = ""
                 }
             }
         }
@@ -133,17 +133,17 @@ class LoginViewModel(
     fun resendOtp(onResendSuccess: (String) -> Unit) {
         loading = true
         recaptchaLoading = true
-        recaptchaMessage = "Preparing to resend OTP..."
+        progressMessage = "Preparing to resend OTP..."
         
         viewModelScope.launch(Dispatchers.IO) {
             userRepository.resendOtp(phoneNumber).onSuccess {
                 viewModelScope.launch(Dispatchers.Main) {
                     loading = false
                     recaptchaLoading = false
-                    recaptchaMessage = ""
+                    progressMessage = ""
                     if (this@onSuccess.success && this@onSuccess.sessionId != null) {
-                        this@LoginViewModel.sessionId = this@onSuccess.sessionId!!
-                        onResendSuccess(this@onSuccess.sessionId!!)
+                        this@LoginViewModel.sessionId = this@onSuccess.sessionId
+                        onResendSuccess(this@onSuccess.sessionId)
                     } else {
                         displayMessage = this@onSuccess.error?.message ?: "Failed to resend OTP"
                     }
@@ -153,7 +153,7 @@ class LoginViewModel(
                 viewModelScope.launch(Dispatchers.Main) {
                     loading = false
                     recaptchaLoading = false
-                    recaptchaMessage = ""
+                    progressMessage = ""
                 }
             }
         }

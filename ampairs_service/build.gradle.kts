@@ -88,6 +88,9 @@ dependencies {
     // Observability
     implementation("io.micrometer:micrometer-registry-prometheus")
 
+    // OpenAPI/Swagger Documentation
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")
+
     // Development
     developmentOnly("org.springframework.boot:spring-boot-devtools")
 

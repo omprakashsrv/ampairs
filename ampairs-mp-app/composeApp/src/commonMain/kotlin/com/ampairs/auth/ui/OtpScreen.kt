@@ -94,7 +94,7 @@ fun OtpScreen(
                         Otp(onValueChange = { viewModel.otp = it })
                         
                         // Show reCAPTCHA status message
-                        if (viewModel.recaptchaMessage.isNotEmpty()) {
+                        if (viewModel.progressMessage.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(16.dp))
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
@@ -109,7 +109,7 @@ fun OtpScreen(
                                     Spacer(modifier = Modifier.size(8.dp))
                                 }
                                 Text(
-                                    text = viewModel.recaptchaMessage,
+                                    text = viewModel.progressMessage,
                                     style = MaterialTheme.typography.bodySmall,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     textAlign = TextAlign.Center

@@ -63,7 +63,12 @@ class SecurityConfiguration @Autowired constructor(
                 requests
                     .requestMatchers(
                         "/auth/v1/**",
-                        "/actuator/**"
+                        "/actuator/**",
+                        "/swagger-ui/**",
+                        "/swagger-ui.html",
+                        "/v3/api-docs/**",
+                        "/v3/api-docs",
+                        "/swagger-resources/**"
                     ).permitAll()
                     .anyRequest().authenticated()
             }
@@ -76,7 +81,13 @@ class SecurityConfiguration @Autowired constructor(
                 oauth2.bearerTokenResolver { request ->
                     // Only resolve bearer tokens for authenticated endpoints
                     val requestURI = request.requestURI
-                    if (requestURI.startsWith("/auth/v1/") || requestURI.startsWith("/actuator/")) {
+                    if (requestURI.startsWith("/auth/v1/") ||
+                        requestURI.startsWith("/actuator/") ||
+                        requestURI.startsWith("/swagger-ui/") ||
+                        requestURI == "/swagger-ui.html" ||
+                        requestURI.startsWith("/v3/api-docs") ||
+                        requestURI.startsWith("/swagger-resources/")
+                    ) {
                         null // Skip JWT processing for public endpoints
                     } else {
                         // Use default bearer token resolution for protected endpoints

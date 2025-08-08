@@ -28,7 +28,12 @@ class SecurityWebConfiguration(
                 "/css/**",
                 "/js/**",
                 "/images/**",
-                "/webjars/**"
+                "/webjars/**",
+                "/swagger-ui/**",
+                "/swagger-ui.html",
+                "/v3/api-docs/**",
+                "/v3/api-docs",
+                "/swagger-resources/**"
             )
             .order(1) // Execute early in the interceptor chain
     }
