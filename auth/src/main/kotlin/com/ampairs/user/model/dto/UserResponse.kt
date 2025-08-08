@@ -5,7 +5,7 @@ import com.ampairs.user.model.User
 data class UserResponse(
     val id: String,
     val firstName: String,
-    val lastName: String,
+    val lastName: String?,
     val userName: String,
     val countryCode: Int,
     val phone: String,

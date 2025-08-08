@@ -32,7 +32,7 @@ class User : BaseDomain(), UserDetails {
     var firstName = ""
 
     @Column(name = "last_name", nullable = false, columnDefinition = "varchar(100) default ''")
-    var lastName = ""
+    var lastName: String? = ""
 
     @Column(name = "active", nullable = false)
     var active: Boolean = true

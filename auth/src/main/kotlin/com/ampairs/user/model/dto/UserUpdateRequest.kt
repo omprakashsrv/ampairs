@@ -8,7 +8,6 @@ data class UserUpdateRequest(
     @field:Size(max = 100, message = "First name must not exceed 100 characters")
     val firstName: String,
 
-    @field:NotBlank(message = "Last name cannot be blank")
     @field:Size(max = 100, message = "Last name must not exceed 100 characters")
-    val lastName: String,
+    val lastName: String? = null,
 )
