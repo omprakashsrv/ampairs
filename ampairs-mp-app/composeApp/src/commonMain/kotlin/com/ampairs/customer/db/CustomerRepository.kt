@@ -58,7 +58,7 @@ class CustomerRepository(
                 while (fetchSize == 1000) {
                     val lastUpdated = customerDao.getLastUpdated() ?: 0L
                     val customers = customerApi.getCustomers(lastUpdated)
-                    fetchSize = customers.response?.size ?: 0
+                    fetchSize = customers.data?.size ?: 0
                     sharedFlow.emit(customers)
                 }
                 sharedFlow

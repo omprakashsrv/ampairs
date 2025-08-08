@@ -33,7 +33,7 @@ logging:
     path: logs/
     name: ${logging.file.path}application.log
   level:
-    com.ampairs: ${LOG_LEVEL_AMPAIRS:DEBUG}
+    com.ampairs: ${LOG_LEVEL_AMPAIRS:INFO}
     org.springframework.web: ${LOG_LEVEL_SPRING_WEB:INFO}
     org.springframework.security: ${LOG_LEVEL_SPRING_SECURITY:INFO}
     org.hibernate.SQL: ${LOG_LEVEL_HIBERNATE_SQL:INFO}
@@ -80,7 +80,7 @@ spring:
       naming:
         physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
       ddl-auto: update
-    show-sql: ${JPA_SHOW_SQL:true}
+    show-sql: ${JPA_SHOW_SQL:false}
     properties:
       hibernate:
         format_sql: ${JPA_FORMAT_SQL:true}
@@ -255,7 +255,7 @@ application:
       sms:
         enabled: ${NOTIFICATIONS_SMS_ENABLED:true}
         provider: ${NOTIFICATIONS_SMS_PROVIDER:aws-sns}
-debug: ${DEBUG_MODE:true}
+debug: ${DEBUG_MODE:false}
 
 # Google reCAPTCHA v3 Configuration
 google:

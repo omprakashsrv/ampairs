@@ -244,7 +244,7 @@ class ProductRepository(
         productDao.insert(product.asDatabaseModel())
         val products = productDao.unSyncedProducts()
         val updatedProducts = updateProducts(products.asProductApiModel())
-        updatedProducts.response?.map {
+        updatedProducts.data?.map {
             it.lastUpdated = 0
             it
         }?.asDatabaseModel()?.let {
@@ -261,7 +261,7 @@ class ProductRepository(
     }
 
     suspend fun uploadImage(fileName: String, file: ByteArray, path: String): Image? {
-        val imageApiModel = productApi.uploadImage(fileName, file, path).response
+        val imageApiModel = productApi.uploadImage(fileName, file, path).data
         val image = imageApiModel?.asImageDomainModel()
         image?.url = image?.let { it1 -> s3Client.getPreSignedUrl(it1.bucket, it1.objectKey) }
         return image
@@ -282,27 +282,27 @@ class ProductRepository(
         when (groupType) {
             GroupType.GROUP -> {
                 val groups: List<GroupEntity> = groupDao.unSyncedGroups()
-                val updatedGroups = updateGroups(groups.asGroupApiModel()).response
+                val updatedGroups = updateGroups(groups.asGroupApiModel()).data
                 updatedGroups?.asGroupDatabaseEntity()?.let { groupDao.insertGroups(it) }
             }
 
             GroupType.CATEGORY -> {
                 val groups: List<CategoryEntity> = categoryDao.unSyncedCategories()
-                val updatedGroups = updateCategories(groups.asCategoryApiModel()).response
+                val updatedGroups = updateCategories(groups.asCategoryApiModel()).data
                 updatedGroups?.asCategoryDatabaseEntity()?.let { categoryDao.insertCategories(it) }
             }
 
             GroupType.SUBCATEGORY -> {
                 val groups: List<SubCategoryEntity> = subCategoryDao.unSyncedSubCategories()
                 val updatedGroups =
-                    productApi.updateSubCategories(groups.asSubCategoryApiModel()).response
+                    productApi.updateSubCategories(groups.asSubCategoryApiModel()).data
                 updatedGroups?.asSubCategoryDatabaseEntity()
                     ?.let { subCategoryDao.insertSubCategories(it) }
             }
 
             GroupType.BRAND -> {
                 val groups: List<BrandEntity> = brandDao.unSyncedBrands()
-                val updatedGroups = productApi.updateBrands(groups.asBrandApiModel()).response
+                val updatedGroups = productApi.updateBrands(groups.asBrandApiModel()).data
                 updatedGroups?.asBrandDatabaseEntity()?.let { brandDao.insertBrands(it) }
             }
         }
@@ -318,7 +318,7 @@ class ProductRepository(
                 while (fetchSize == 1000) {
                     val lastUpdated = productDao.getMaxLastUpdated() ?: 0
                     val products = productApi.getProducts(lastUpdated, "")
-                    val apiModels = products.response
+                    val apiModels = products.data
                     apiModels?.asDatabaseModel()?.let {
                         productDao.updateProducts(it)
                     }

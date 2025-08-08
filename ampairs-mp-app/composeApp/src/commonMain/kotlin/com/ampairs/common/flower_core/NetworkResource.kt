@@ -36,7 +36,7 @@ inline fun <REMOTE> networkResource(
     emit(Resource.loading(data = null))
     if (shouldMakeNetworkRequest()) {
         makeNetworkRequest().collect { remoteResponse ->
-            val response = remoteResponse.response
+            val response = remoteResponse.data
             if (remoteResponse.error != null || response == null) {
                 emit(
                     Resource.error(

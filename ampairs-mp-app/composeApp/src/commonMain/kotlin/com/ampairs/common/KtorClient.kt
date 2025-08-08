@@ -86,7 +86,7 @@ fun httpClient(engine: HttpClientEngine, tokenRepository: TokenRepository) = Htt
                     )
                     markAsRefreshTokenRequest()
                 }.body()
-                val refreshTokens = tokenResponse.response?.asRefreshTokens()
+                val refreshTokens = tokenResponse.data?.asRefreshTokens()
                 refreshTokens?.let { tokenRepository.updateToken(it.accessToken, it.refreshToken) }
                 refreshTokens
             }

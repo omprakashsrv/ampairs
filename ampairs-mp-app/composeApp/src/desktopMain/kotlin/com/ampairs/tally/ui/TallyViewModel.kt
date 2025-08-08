@@ -42,7 +42,7 @@ class TallyViewModel(
                     ?.toCustomers()
                     ?.let {
                         val updateCustomers = customerRepository.updateCustomers(it)
-                        onSyncComplete(updateCustomers.response?.size ?: 0)
+                        onSyncComplete(updateCustomers.data?.size ?: 0)
                         updateCustomers
                     }
             } catch (e: Exception) {
@@ -59,13 +59,13 @@ class TallyViewModel(
                 val units = tallyXMLUnits.body?.data?.collection?.units?.asUnitApiModel()
                 units?.let {
                     val updateUnits = productRepository.updateUnits(it)
-                    onSyncComplete(updateUnits.response?.size ?: 0)
+                    onSyncComplete(updateUnits.data?.size ?: 0)
                     updateUnits
                 }
             } catch (e: Exception) {
                 onSyncComplete(0)
             }
-            val units = productRepository.getUnits().response
+            val units = productRepository.getUnits().data
             if (units != null) {
                 productRepository.saveUnits(units)
             }
@@ -79,7 +79,7 @@ class TallyViewModel(
                 val groups = tallyXMLGroups.body?.data?.collection?.stockGroups?.asStockGroupModel()
                 groups?.let {
                     val updateGroups = productRepository.updateGroups(groups)
-                    onSyncComplete(updateGroups.response?.size ?: 0)
+                    onSyncComplete(updateGroups.data?.size ?: 0)
                     updateGroups
                 }
             } catch (e: Exception) {
@@ -99,7 +99,7 @@ class TallyViewModel(
                 categories?.let {
                     val updateCategories =
                         productRepository.updateCategories(categories)
-                    onSyncComplete(updateCategories.response?.size ?: 0)
+                    onSyncComplete(updateCategories.data?.size ?: 0)
                     updateCategories
                 }
             } catch (e: Exception) {
@@ -147,7 +147,7 @@ class TallyViewModel(
                 }
                 inventories.chunked(200).forEach {
                     val updateInventories = inventoryRepository.updateInventories(it)
-                    onSyncComplete(updateInventories.response?.size ?: 0)
+                    onSyncComplete(updateInventories.data?.size ?: 0)
                 }
 
             } catch (e: Exception) {
@@ -159,7 +159,7 @@ class TallyViewModel(
 
     private suspend fun syncAllGroups() {
         val allGroups = productRepository.getAllGroups()
-        allGroups.response?.let { productRepository.saveAllGroups(it) }
+        allGroups.data?.let { productRepository.saveAllGroups(it) }
     }
 
     fun syncStockItems(onSyncComplete: (Int) -> Unit) {
@@ -312,7 +312,7 @@ class TallyViewModel(
                 }
                 products.chunked(200).forEach {
                     val updateProducts = productRepository.updateProducts(it)
-                    onSyncComplete(updateProducts.response?.size ?: 0)
+                    onSyncComplete(updateProducts.data?.size ?: 0)
                 }
             } catch (e: Exception) {
                 onSyncComplete(0)

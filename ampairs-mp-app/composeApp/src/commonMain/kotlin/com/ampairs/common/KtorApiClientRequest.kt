@@ -64,7 +64,7 @@ suspend inline fun <reified T> handleResponseBody(responseBody: Result<T>): T {
                 code = 0,
                 message = "Null response body"
             ),
-            response = null
+            data = null
         ) as T
     }
 
@@ -79,7 +79,7 @@ suspend inline fun <reified T> handleResponseBody(responseBody: Result<T>): T {
                 code = exception.response.status.value,
                 message = "Failed to parse error response"
             ),
-            response = null
+            data = null
         ) as T
     }
 
@@ -88,6 +88,6 @@ suspend inline fun <reified T> handleResponseBody(responseBody: Result<T>): T {
             code = 0,
             message = exception?.message ?: "Unknown error"
         ),
-        response = null
+        data = null
     ) as T
 }

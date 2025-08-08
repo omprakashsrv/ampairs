@@ -106,11 +106,11 @@ class TaxRepository(
     }
 
     suspend fun updateTaxInfos(taxInfos: List<TaxInfoApiModel>): List<TaxInfoApiModel>? {
-        return productApi.updateTaxInfos(taxInfos).response
+        return productApi.updateTaxInfos(taxInfos).data
     }
 
     suspend fun updateTaxCodes(taxCodes: List<TaxCodeApiModel>): List<TaxCodeApiModel>? {
-        return productApi.updateTaxCodes(taxCodes).response
+        return productApi.updateTaxCodes(taxCodes).data
     }
 
 }

@@ -48,7 +48,7 @@ inline fun <DB, REMOTE> dbBoundResource(
     if (shouldMakeNetworkRequest(localData)) {
         emit(Resource.loading(data = localData))
         makeNetworkRequest().collect { remoteResponse ->
-            val response = remoteResponse.response
+            val response = remoteResponse.data
             if (remoteResponse.error != null || response == null) {
                 emit(
                     Resource.error(

@@ -44,7 +44,7 @@ class OrderRepository(
     suspend fun saveOrder(order: Order?) {
         order?.toApiModel()?.let {
             val orderResponse = orderApi.updateOrder(it)
-            val updatedOrder = orderResponse.response
+            val updatedOrder = orderResponse.data
             updatedOrder?.toOrderDatabaseModel()?.let { it1 -> orderDao.insert(it1) }
             orderResponse
         }
@@ -53,7 +53,7 @@ class OrderRepository(
     suspend fun createInvoice(order: Order?) {
         order?.toApiModel()?.let {
             val orderResponse = orderApi.createInvoice(it)
-            val updatedOrder = orderResponse.response
+            val updatedOrder = orderResponse.data
             updatedOrder?.toOrderDatabaseModel()?.let { it1 -> orderDao.insert(it1) }
             orderResponse
         }
@@ -90,13 +90,13 @@ class OrderRepository(
             while (fetchSize == 1000) {
                 val lastUpdated = orderDao.getMaxLastUpdated() ?: 0
                 val ordersResponse = orderApi.getOrders(lastUpdated)
-                val orders = ordersResponse.response
+                val orders = ordersResponse.data
                 if (orders != null) {
                     orderDao.updateOrders(
                         orders.asDatabaseModel(), orders.asItemDatabaseModel()
                     )
                 }
-                fetchSize = ordersResponse.response?.size ?: 0
+                fetchSize = ordersResponse.data?.size ?: 0
                 sharedFlow.emit(ordersResponse)
             }
             sharedFlow

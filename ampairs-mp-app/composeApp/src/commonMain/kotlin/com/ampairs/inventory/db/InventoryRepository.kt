@@ -36,7 +36,7 @@ class InventoryRepository(
         inventoryDao.insert(inventory)
         val inventories = inventoryDao.getUnSyncedInventory()
         val updatedProducts = updateInventories(inventories.asInventoryApiModel())
-        updatedProducts.response?.map {
+        updatedProducts.data?.map {
             it.lastUpdated = 0
             it
         }?.asDatabaseModel()?.let {
