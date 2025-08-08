@@ -119,40 +119,7 @@ ampairs:
       enabled: ${AWS_SNS_ENABLED:false}
       default-sender-id: ${AWS_SNS_SENDER_ID:AMPAIR}
       sms-type: ${AWS_SNS_SMS_TYPE:Transactional}
-bucket4j:
-  enabled: ${BUCKET4J_ENABLED:false}  # Rate limiting disabled for development
-  cache-to-use: caffeine
-  filters:
-    - cache-name: rate-limit-bucket
-      url: /auth/v1/init
-      http-content-type: application/json
-      rate-limits:
-        - cache-key: "getRemoteAddr()"
-          bandwidths:
-            - capacity: 1
-              time: 20
-              unit: seconds
-      http-response-body: '{"success": false, "error": {"code": "RATE_LIMIT_EXCEEDED", "message": "Too many requests. Please try again later.", "details": "Rate limit exceeded for your IP address"}, "timestamp": "${timestamp}", "path": "${path}"}'
-    - cache-name: rate-limit-bucket
-      url: /api/.*
-      http-content-type: application/json
-      rate-limits:
-        - cache-key: "getRemoteAddr()"
-          bandwidths:
-            - capacity: 20
-              time: 1
-              unit: minutes
-      http-response-body: '{"success": false, "error": {"code": "RATE_LIMIT_EXCEEDED", "message": "Too many requests. Please try again later.", "details": "Rate limit exceeded for your IP address"}, "timestamp": "${timestamp}", "path": "${path}"}'
-    - cache-name: rate-limit-bucket
-      url: /.*
-      http-content-type: application/json
-      rate-limits:
-        - cache-key: "getRemoteAddr()"
-          bandwidths:
-            - capacity: 60
-              time: 1
-              unit: minutes
-      http-response-body: '{"success": false, "error": {"code": "RATE_LIMIT_EXCEEDED", "message": "Too many requests. Please try again later.", "details": "Rate limit exceeded for your IP address"}, "timestamp": "${timestamp}", "path": "${path}"}'
+# bucket4j configuration removed - using custom comprehensive rate limiting service instead
 
 application:
   multitenancy:
@@ -178,6 +145,47 @@ application:
       enabled: ${TOKEN_CLEANUP_ENABLED:true}
       cron: ${TOKEN_CLEANUP_CRON:0 0 2 * * ?} # Daily at 2 AM
       batch-size: ${TOKEN_CLEANUP_BATCH_SIZE:100} # Process tokens in batches
+    rate-limiting:
+      enabled: ${RATE_LIMITING_ENABLED:true}
+      auth:
+        init:
+          capacity: ${RATE_LIMIT_AUTH_INIT_CAPACITY:3}
+          window-minutes: ${RATE_LIMIT_AUTH_INIT_WINDOW:5}
+          burst-capacity: ${RATE_LIMIT_AUTH_INIT_BURST:1}
+        verify:
+          capacity: ${RATE_LIMIT_AUTH_VERIFY_CAPACITY:5}
+          window-minutes: ${RATE_LIMIT_AUTH_VERIFY_WINDOW:5}
+          burst-capacity: ${RATE_LIMIT_AUTH_VERIFY_BURST:2}
+        refresh-token:
+          capacity: ${RATE_LIMIT_AUTH_REFRESH_CAPACITY:10}
+          window-minutes: ${RATE_LIMIT_AUTH_REFRESH_WINDOW:1}
+          burst-capacity: ${RATE_LIMIT_AUTH_REFRESH_BURST:5}
+        logout:
+          capacity: ${RATE_LIMIT_AUTH_LOGOUT_CAPACITY:5}
+          window-minutes: ${RATE_LIMIT_AUTH_LOGOUT_WINDOW:1}
+          burst-capacity: ${RATE_LIMIT_AUTH_LOGOUT_BURST:3}
+        device-management:
+          capacity: ${RATE_LIMIT_AUTH_DEVICE_CAPACITY:10}
+          window-minutes: ${RATE_LIMIT_AUTH_DEVICE_WINDOW:1}
+          burst-capacity: ${RATE_LIMIT_AUTH_DEVICE_BURST:5}
+      api:
+        authenticated:
+          capacity: ${RATE_LIMIT_API_AUTH_CAPACITY:100}
+          window-minutes: ${RATE_LIMIT_API_AUTH_WINDOW:1}
+          burst-capacity: ${RATE_LIMIT_API_AUTH_BURST:20}
+        public:
+          capacity: ${RATE_LIMIT_API_PUBLIC_CAPACITY:50}
+          window-minutes: ${RATE_LIMIT_API_PUBLIC_WINDOW:1}
+          burst-capacity: ${RATE_LIMIT_API_PUBLIC_BURST:10}
+      global:
+        per-ip:
+          capacity: ${RATE_LIMIT_GLOBAL_IP_CAPACITY:200}
+          window-minutes: ${RATE_LIMIT_GLOBAL_IP_WINDOW:1}
+          burst-capacity: ${RATE_LIMIT_GLOBAL_IP_BURST:50}
+        per-user:
+          capacity: ${RATE_LIMIT_GLOBAL_USER_CAPACITY:150}
+          window-minutes: ${RATE_LIMIT_GLOBAL_USER_WINDOW:1}
+          burst-capacity: ${RATE_LIMIT_GLOBAL_USER_BURST:30}
   cache:
     default-ttl: ${CACHE_DEFAULT_TTL:PT30M}
     max-size: ${CACHE_MAX_SIZE:10000}

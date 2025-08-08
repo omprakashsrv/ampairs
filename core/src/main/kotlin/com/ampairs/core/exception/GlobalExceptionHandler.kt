@@ -157,6 +157,32 @@ class GlobalExceptionHandler : BaseExceptionHandler() {
         )
     }
 
+    // Rate Limiting Exception
+    @ExceptionHandler(RateLimitExceededException::class)
+    fun handleRateLimitExceededException(
+        ex: RateLimitExceededException,
+        request: HttpServletRequest,
+    ): ResponseEntity<ApiResponse<Any>> {
+        val detailsText =
+            "Limit type: ${ex.limitType}, retry after: ${ex.retryAfterSeconds}s, resets at: ${ex.resetTime}"
+
+        val response = createErrorResponse<Any>(
+            httpStatus = HttpStatus.TOO_MANY_REQUESTS,
+            errorCode = RateLimitExceededException.ERROR_CODE,
+            message = ex.message ?: "Rate limit exceeded",
+            details = detailsText,
+            request = request,
+            moduleName = "global"
+        )
+
+        // Add Retry-After header as per HTTP standard
+        response.headers.add("Retry-After", ex.retryAfterSeconds.toString())
+        response.headers.add("X-RateLimit-Limit-Type", ex.limitType)
+        response.headers.add("X-RateLimit-Reset", ex.resetTime.toString())
+
+        return response
+    }
+
     // Generic Exception Handler - catches all other exceptions
     @ExceptionHandler(Exception::class)
     fun handleGenericException(

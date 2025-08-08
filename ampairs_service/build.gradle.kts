@@ -72,9 +72,7 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:$jwt")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:$jwt")
 
-    // Rate limiting
-    val bucket4j = "0.9.0"
-    implementation("com.giffing.bucket4j.spring.boot.starter:bucket4j-spring-boot-starter:$bucket4j")
+    // Rate limiting - using custom comprehensive rate limiting service from core module
 
     // Database
     runtimeOnly("com.mysql:mysql-connector-j")

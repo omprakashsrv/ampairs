@@ -54,10 +54,6 @@ spring:
       sns:
         endpoint: http://localhost:4566  # LocalStack endpoint for tests
 
-# Rate limiting - DISABLED for testing
-bucket4j:
-  enabled: false
-
 # reCAPTCHA - DISABLED for testing
 google:
   recaptcha:
@@ -78,9 +74,6 @@ logging:
 
 # Test-specific application settings
 application:
-  multitenancy:
-    enabled: true
-  
   # Test OTP settings - hardcoded OTP enabled for tests
   auth:
     otp:
@@ -101,6 +94,9 @@ application:
       allowed-headers: "*"
       allow-credentials: true
       max-age: PT1H
+    # Rate limiting - DISABLED for testing (using custom rate limiting service)
+    rate-limiting:
+      enabled: false  # Disabled for testing
 
   # Test cache settings
   cache:
@@ -114,7 +110,6 @@ application:
         enabled: false  # Disable actual SMS in tests
       email:
         enabled: false  # Disable actual email in tests
-
 
 # Application-specific AWS settings for tests
 ampairs:

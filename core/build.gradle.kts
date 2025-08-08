@@ -70,9 +70,7 @@ dependencies {
     implementation("com.github.ben-manes.caffeine:caffeine:3.2.0")
     implementation("com.github.ben-manes.caffeine:jcache:3.2.0")
 
-    // Rate limiting
-    val bucket4j = "0.9.0"
-    implementation("com.giffing.bucket4j.spring.boot.starter:bucket4j-spring-boot-starter:$bucket4j")
+    // Rate limiting - using custom comprehensive rate limiting service (no external dependencies needed)
 
     // Observability
     implementation("io.micrometer:micrometer-registry-prometheus")

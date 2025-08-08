@@ -62,26 +62,8 @@ spring:
     jcache:
       provider: com.github.benmanes.caffeine.jcache.spi.CaffeineCachingProvider
     type: jcache
-bucket4j:
-  enabled: true
-  cache-to-use: jcache
-  filters:
-    - cache-name: rate-limit-bucket
-      url: /auth/v1/init
-      rate-limits:
-        - cache-key: "getRemoteAddr()"
-          bandwidths:
-            - capacity: 1
-              time: 20
-              unit: seconds
-    - cache-name: rate-limit-bucket
-      url: .*
-      rate-limits:
-        - cache-key: "getRemoteAddr()" # IP based filter
-          bandwidths:
-            - capacity: 20
-              time: 1
-              unit: minutes
+# bucket4j configuration removed - using custom comprehensive rate limiting service instead
+# Rate limiting is now configured in application.security.rate-limiting section below
 application:
   security:
     jwt:

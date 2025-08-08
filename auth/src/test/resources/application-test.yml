@@ -54,14 +54,14 @@ application:
       allowed-headers: "*"
       allow-credentials: true
       max-age: PT1H
+    rate-limiting:
+      enabled: false  # Disabled for testing
 
 # Test server settings
 server:
   port: 8080
 
-# Rate limiting - DISABLED for testing
-bucket4j:
-  enabled: false
+# Rate limiting is configured above in the application.security section
 
 # reCAPTCHA - DISABLED for testing
 google:

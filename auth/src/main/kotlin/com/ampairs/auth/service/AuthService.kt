@@ -10,6 +10,7 @@ import com.ampairs.auth.repository.LoginSessionRepository
 import com.ampairs.auth.repository.TokenRepository
 import com.ampairs.auth.utils.DeviceInfoExtractor
 import com.ampairs.core.domain.dto.GenericSuccessResponse
+import com.ampairs.core.service.RateLimitingService
 import com.ampairs.core.utils.UniqueIdGenerators
 import com.ampairs.notification.service.NotificationService
 import com.ampairs.user.model.User
@@ -36,6 +37,7 @@ class AuthService @Autowired constructor(
     val notificationService: NotificationService,
     val deviceInfoExtractor: DeviceInfoExtractor,
     val otpProperties: OtpProperties,
+    val rateLimitingService: RateLimitingService,
 ) {
     @Transactional
     fun init(authInitRequest: AuthInitRequest): AuthInitResponse {
@@ -59,8 +61,14 @@ class AuthService @Autowired constructor(
 
     @Transactional
     fun authenticate(request: AuthenticationRequest, httpRequest: HttpServletRequest): AuthenticationResponse {
+        val clientIp = getClientIp(httpRequest)
+        
         val loginSession = loginSessionRepository.findByUidAndVerifiedFalseAndExpiredFalse(request.sessionId)
-            ?: throw Exception("Invalid session Id")
+            ?: run {
+                // Record failure for invalid session ID
+                rateLimitingService.recordAuthFailure(clientIp, "verify", "Invalid session ID")
+                throw Exception("Invalid session Id")
+            }
 
         if (loginSession.code == request.otp || isHardcodedOtpValid(request.otp)) {
             val user: User = userRepository.findByUserName(loginSession.userName())
@@ -96,6 +104,9 @@ class AuthService @Autowired constructor(
             loginSession.verified = true
             loginSession.verifiedAt = Date()
             loginSessionRepository.save(loginSession)
+
+            // Record successful authentication
+            rateLimitingService.recordAuthSuccess(clientIp, "verify")
             
             val authResponse = AuthenticationResponse()
             authResponse.accessToken = jwtToken
@@ -104,6 +115,8 @@ class AuthService @Autowired constructor(
             authResponse.refreshTokenExpiresAt = jwtService.extractExpirationAsLocalDateTime(refreshToken)
             return authResponse
         } else {
+            // Record failure for invalid OTP
+            rateLimitingService.recordAuthFailure(clientIp, "verify", "Invalid OTP")
             throw Exception("Invalid otp")
         }
     }
@@ -160,6 +173,23 @@ class AuthService @Autowired constructor(
         val digest = MessageDigest.getInstance("SHA-256")
         val hashBytes = digest.digest(token.toByteArray())
         return hashBytes.joinToString("") { "%02x".format(it) }
+    }
+
+    /**
+     * Extract client IP address from HTTP request
+     */
+    private fun getClientIp(request: HttpServletRequest): String {
+        val xForwardedFor = request.getHeader("X-Forwarded-For")
+        if (!xForwardedFor.isNullOrBlank()) {
+            return xForwardedFor.split(",")[0].trim()
+        }
+
+        val xRealIp = request.getHeader("X-Real-IP")
+        if (!xRealIp.isNullOrBlank()) {
+            return xRealIp
+        }
+
+        return request.remoteAddr ?: "unknown"
     }
 
     private fun saveUserToken(user: User, jwtToken: String) {
