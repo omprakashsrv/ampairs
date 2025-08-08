@@ -13,6 +13,12 @@
     <string name="otp">OTP</string>
     <string name="enter_otp_instruction">Enter 6-digit OTP, received on phone</string>
     <string name="phone">Phone</string>
+    <string name="loading_user_details">Loading user details...</string>
+    <string name="update_your_profile">Update Your Profile</string>
+    <string name="first_name">First Name</string>
+    <string name="last_name">Last Name</string>
+    <string name="update_profile">Update Profile</string>
+    <string name="error_colon">Error: </string>
     
     <!-- Common Action Words -->
     <string name="search">Search</string>

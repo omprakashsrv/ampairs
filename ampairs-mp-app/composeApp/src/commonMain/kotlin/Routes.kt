@@ -45,6 +45,9 @@ sealed interface AuthRoute {
     
     @Serializable
     data object Otp : AuthRoute
+    
+    @Serializable
+    data object UserUpdate : AuthRoute
 }
 
 // Company routes

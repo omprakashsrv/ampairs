@@ -13,6 +13,12 @@
     <string name="otp">OTP</string>
     <string name="enter_otp_instruction">फोन पर प्राप्त 6-अंकीय OTP दर्ज करें</string>
     <string name="phone">फोन</string>
+    <string name="loading_user_details">उपयोगकर्ता विवरण लोड हो रहे हैं...</string>
+    <string name="update_your_profile">अपनी प्रोफाइल अपडेट करें</string>
+    <string name="first_name">पहला नाम</string>
+    <string name="last_name">अंतिम नाम</string>
+    <string name="update_profile">प्रोफाइल अपडेट करें</string>
+    <string name="error_colon">त्रुटि: </string>
     
     <!-- Common Action Words -->
     <string name="search">खोजें</string>

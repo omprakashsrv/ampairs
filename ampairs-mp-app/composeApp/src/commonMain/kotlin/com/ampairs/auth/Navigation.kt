@@ -12,6 +12,7 @@ import com.ampairs.auth.ui.LoginScope
 import com.ampairs.auth.ui.LoginScreen
 import com.ampairs.auth.ui.OtpScreen
 import com.ampairs.auth.ui.PhoneScreen
+import com.ampairs.auth.ui.UserUpdateScreen
 import org.koin.core.context.GlobalContext
 
 fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () -> Unit) {
@@ -36,13 +37,19 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
         }
         composable<AuthRoute.Otp> {
             OtpScreen(scope = loginScope) {
+                navigator.navigate(AuthRoute.UserUpdate)
+            }
+        }
+        composable<AuthRoute.UserUpdate> {
+            UserUpdateScreen {
                 val options = navOptions {
                     popUpTo<AuthRoute.LoginRoot> {
                         this.inclusive = true
                     }
                     launchSingleTop = true // Avoid multiple instances of the same destination
                 }
-                navigator.navigate(AuthRoute.LoginRoot, navOptions = options)
+                loginScope.close()
+                onLoginSuccess()
             }
         }
     }

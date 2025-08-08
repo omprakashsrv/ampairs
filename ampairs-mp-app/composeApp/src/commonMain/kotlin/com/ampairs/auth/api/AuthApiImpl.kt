@@ -6,6 +6,7 @@ import com.ampairs.auth.api.model.AuthInitResponse
 import com.ampairs.auth.api.model.RefreshToken
 import com.ampairs.auth.api.model.Token
 import com.ampairs.auth.api.model.UserApiModel
+import com.ampairs.auth.api.model.UserUpdateRequest
 import com.ampairs.auth.domain.DeviceSession
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
@@ -47,6 +48,10 @@ class AuthApiImpl(engine: HttpClientEngine, private val tokenRepository: TokenRe
 
     override suspend fun getUser(): Response<UserApiModel> {
         return get(client, AUTH_ENDPOINT + "/user/v1")
+    }
+
+    override suspend fun updateUser(userUpdateRequest: UserUpdateRequest): Response<UserApiModel> {
+        return post(client, AUTH_ENDPOINT + "/user/v1/update", userUpdateRequest)
     }
 
     override suspend fun getDeviceSessions(): Response<List<DeviceSession>> {

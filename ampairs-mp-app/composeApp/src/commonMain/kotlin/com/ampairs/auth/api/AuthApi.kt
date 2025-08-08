@@ -5,6 +5,7 @@ import com.ampairs.auth.api.model.AuthInit
 import com.ampairs.auth.api.model.AuthInitResponse
 import com.ampairs.auth.api.model.Token
 import com.ampairs.auth.api.model.UserApiModel
+import com.ampairs.auth.api.model.UserUpdateRequest
 import com.ampairs.auth.domain.DeviceSession
 import com.ampairs.network.model.GenericSuccess
 import com.ampairs.network.model.Response
@@ -18,6 +19,8 @@ interface AuthApi {
     suspend fun refreshToken(deviceId: String? = null): Response<Token>
 
     suspend fun getUser(): Response<UserApiModel>
+
+    suspend fun updateUser(userUpdateRequest: UserUpdateRequest): Response<UserApiModel>
 
     suspend fun getDeviceSessions(): Response<List<DeviceSession>>
 

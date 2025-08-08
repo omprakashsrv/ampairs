@@ -41,10 +41,10 @@ class SecurityWebConfiguration(
     @Bean
     fun requestLoggingFilter(): CommonsRequestLoggingFilter {
         val loggingFilter = CommonsRequestLoggingFilter()
-        loggingFilter.isIncludeClientInfo = true
-        loggingFilter.isIncludeQueryString = true
-        loggingFilter.isIncludePayload = false // Don't log payload for security
-        loggingFilter.isIncludeHeaders = false // Don't log headers for security
+        loggingFilter.setIncludeClientInfo(true)
+        loggingFilter.setIncludeQueryString(true)
+        loggingFilter.setIncludePayload(false) // Don't log payload for security
+        loggingFilter.setIncludeHeaders(false) // Don't log headers for security
         loggingFilter.setMaxPayloadLength(0) // No payload logging
         return loggingFilter
     }
