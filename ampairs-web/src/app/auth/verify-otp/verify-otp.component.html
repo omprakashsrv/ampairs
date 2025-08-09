@@ -25,15 +25,15 @@
             [disabled]="isLoading"
             (input)="onOtpInput($event)">
           <mat-icon matSuffix>lock</mat-icon>
-          <mat-error *ngIf="otpForm.get('otp')?.hasError('required')">
-            OTP is required
-          </mat-error>
-          <mat-error *ngIf="otpForm.get('otp')?.hasError('pattern')">
-            Please enter a valid 6-digit OTP
-          </mat-error>
-          <mat-error *ngIf="otpForm.get('otp')?.hasError('minlength') || otpForm.get('otp')?.hasError('maxlength')">
-            OTP must be exactly 6 digits
-          </mat-error>
+          @if (otpForm.get('otp')?.hasError('required')) {
+            <mat-error>OTP is required</mat-error>
+          }
+          @if (otpForm.get('otp')?.hasError('pattern')) {
+            <mat-error>Please enter a valid 6-digit OTP</mat-error>
+          }
+          @if (otpForm.get('otp')?.hasError('minlength') || otpForm.get('otp')?.hasError('maxlength')) {
+            <mat-error>OTP must be exactly 6 digits</mat-error>
+          }
         </mat-form-field>
 
         <button 
@@ -42,32 +42,46 @@
           type="submit" 
           class="auth-button full-width"
           [disabled]="otpForm.invalid || isLoading">
-          <mat-spinner diameter="20" *ngIf="isLoading" class="button-spinner"></mat-spinner>
-          <span *ngIf="!isLoading">Verify & Continue</span>
-          <span *ngIf="isLoading">Verifying...</span>
+          @if (isLoading) {
+            <mat-spinner diameter="20" class="button-spinner"></mat-spinner>
+          }
+          @if (!isLoading) {
+            <span>Verify & Continue</span>
+          }
+          @if (isLoading) {
+            <span>Verifying...</span>
+          }
         </button>
       </form>
     </mat-card-content>
 
     <mat-card-actions class="card-actions">
-      <div class="resend-section" *ngIf="!canResend">
-        <p class="timer-text">
-          <mat-icon class="timer-icon">schedule</mat-icon>
-          Resend OTP in {{remainingTime}}s
-        </p>
-      </div>
+      @if (!canResend) {
+        <div class="resend-section">
+          <p class="timer-text">
+            <mat-icon class="timer-icon">schedule</mat-icon>
+            Resend OTP in {{remainingTime}}s
+          </p>
+        </div>
+      }
       
-      <div class="resend-section" *ngIf="canResend">
-        <button 
-          mat-button 
-          color="accent" 
-          (click)="resendOtp()"
-          [disabled]="isResending">
-          <mat-spinner diameter="16" *ngIf="isResending" class="button-spinner"></mat-spinner>
-          <mat-icon *ngIf="!isResending">refresh</mat-icon>
-          {{isResending ? 'Resending...' : 'Resend OTP'}}
-        </button>
-      </div>
+      @if (canResend) {
+        <div class="resend-section">
+          <button 
+            mat-button 
+            color="accent" 
+            (click)="resendOtp()"
+            [disabled]="isResending">
+            @if (isResending) {
+              <mat-spinner diameter="16" class="button-spinner"></mat-spinner>
+            }
+            @if (!isResending) {
+              <mat-icon>refresh</mat-icon>
+            }
+            {{isResending ? 'Resending...' : 'Resend OTP'}}
+          </button>
+        </div>
+      }
 
       <button 
         mat-button 

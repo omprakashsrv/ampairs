@@ -38,20 +38,25 @@ import {DeviceService} from '../../../core/services/device.service';
       </mat-card-header>
 
       <mat-card-content>
-        <div *ngIf="isLoading" class="loading-container">
-          <mat-spinner diameter="40"></mat-spinner>
-          <p>Loading device sessions...</p>
-        </div>
+        @if (isLoading) {
+          <div class="loading-container">
+            <mat-spinner diameter="40"></mat-spinner>
+            <p>Loading device sessions...</p>
+          </div>
+        }
 
-        <div *ngIf="!isLoading && deviceSessions.length === 0" class="no-devices">
-          <mat-icon>device_unknown</mat-icon>
-          <p>No active device sessions found</p>
-        </div>
+        @if (!isLoading && deviceSessions.length === 0) {
+          <div class="no-devices">
+            <mat-icon>device_unknown</mat-icon>
+            <p>No active device sessions found</p>
+          </div>
+        }
 
-        <div *ngIf="!isLoading && deviceSessions.length > 0" class="devices-container">
-          <div *ngFor="let device of deviceSessions"
-               class="device-item"
-               [class.current-device]="device.is_current_device">
+        @if (!isLoading && deviceSessions.length > 0) {
+          <div class="devices-container">
+            @for (device of deviceSessions; track device.device_id) {
+              <div class="device-item"
+                   [class.current-device]="device.is_current_device">
 
             <div class="device-header">
               <div class="device-icon">
@@ -62,22 +67,26 @@ import {DeviceService} from '../../../core/services/device.service';
                 <h3 class="device-name">{{ device.device_name }}</h3>
                 <div class="device-details">
                   <mat-chip-set>
-                    <mat-chip *ngIf="device.is_current_device" color="accent">Current Device</mat-chip>
+                    @if (device.is_current_device) {
+                      <mat-chip color="accent">Current Device</mat-chip>
+                    }
                     <mat-chip>{{ device.platform }}</mat-chip>
                     <mat-chip>{{ device.browser }}</mat-chip>
                   </mat-chip-set>
                 </div>
               </div>
 
-              <div class="device-actions" *ngIf="!device.is_current_device">
-                <button mat-icon-button
-                        color="warn"
-                        (click)="logoutDevice(device.device_id)"
-                        matTooltip="Logout from this device"
-                        [disabled]="isLoggingOut">
-                  <mat-icon>logout</mat-icon>
-                </button>
-              </div>
+              @if (!device.is_current_device) {
+                <div class="device-actions">
+                  <button mat-icon-button
+                          color="warn"
+                          (click)="logoutDevice(device.device_id)"
+                          matTooltip="Logout from this device"
+                          [disabled]="isLoggingOut">
+                    <mat-icon>logout</mat-icon>
+                  </button>
+                </div>
+              }
             </div>
 
             <div class="device-metadata">
@@ -94,7 +103,9 @@ import {DeviceService} from '../../../core/services/device.service';
               <div class="metadata-item">
                 <mat-icon>location_on</mat-icon>
                 <span>IP: {{ device.ip_address }}</span>
-                <span *ngIf="device.location"> • {{ device.location }}</span>
+                @if (device.location) {
+                  <span> • {{ device.location }}</span>
+                }
               </div>
 
               <div class="metadata-item">
@@ -103,17 +114,21 @@ import {DeviceService} from '../../../core/services/device.service';
               </div>
             </div>
           </div>
-        </div>
+        }
+          </div>
+        }
 
-        <div class="actions-container" *ngIf="deviceSessions.length > 1">
-          <button mat-raised-button
-                  color="warn"
-                  (click)="logoutAllDevices()"
-                  [disabled]="isLoggingOut">
-            <mat-icon>logout</mat-icon>
-            Logout All Devices
-          </button>
-        </div>
+        @if (deviceSessions.length > 1) {
+          <div class="actions-container">
+            <button mat-raised-button
+                    color="warn"
+                    (click)="logoutAllDevices()"
+                    [disabled]="isLoggingOut">
+              <mat-icon>logout</mat-icon>
+              Logout All Devices
+            </button>
+          </div>
+        }
       </mat-card-content>
 
       <mat-card-actions>
@@ -130,19 +145,21 @@ import {DeviceService} from '../../../core/services/device.service';
     </mat-card>
 
     <!-- Debug Info Dialog -->
-    <div *ngIf="showDebugModal" class="debug-modal-overlay" (click)="closeDebugInfo()">
-      <div class="debug-modal" (click)="$event.stopPropagation()">
-        <div class="debug-header">
-          <h3>Current Device Debug Information</h3>
-          <button mat-icon-button (click)="closeDebugInfo()">
-            <mat-icon>close</mat-icon>
-          </button>
-        </div>
-        <div class="debug-content">
-          <pre>{{ debugInfo | json }}</pre>
+    @if (showDebugModal) {
+      <div class="debug-modal-overlay" (click)="closeDebugInfo()">
+        <div class="debug-modal" (click)="$event.stopPropagation()">
+          <div class="debug-header">
+            <h3>Current Device Debug Information</h3>
+            <button mat-icon-button (click)="closeDebugInfo()">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+          <div class="debug-content">
+            <pre>{{ debugInfo | json }}</pre>
+          </div>
         </div>
       </div>
-    </div>
+    }
   `,
   styles: [`
     .device-management-card {

@@ -23,15 +23,15 @@
             type="tel"
             [disabled]="isLoading">
           <mat-icon matSuffix>phone</mat-icon>
-          <mat-error *ngIf="loginForm.get('mobileNumber')?.hasError('required')">
-            Mobile number is required
-          </mat-error>
-          <mat-error *ngIf="loginForm.get('mobileNumber')?.hasError('pattern')">
-            Please enter a valid 10-digit mobile number
-          </mat-error>
-          <mat-error *ngIf="loginForm.get('mobileNumber')?.hasError('minlength') || loginForm.get('mobileNumber')?.hasError('maxlength')">
-            Mobile number must be exactly 10 digits
-          </mat-error>
+          @if (loginForm.get('mobileNumber')?.hasError('required')) {
+            <mat-error>Mobile number is required</mat-error>
+          }
+          @if (loginForm.get('mobileNumber')?.hasError('pattern')) {
+            <mat-error>Please enter a valid 10-digit mobile number</mat-error>
+          }
+          @if (loginForm.get('mobileNumber')?.hasError('minlength') || loginForm.get('mobileNumber')?.hasError('maxlength')) {
+            <mat-error>Mobile number must be exactly 10 digits</mat-error>
+          }
         </mat-form-field>
 
         <button 
@@ -40,9 +40,15 @@
           type="submit" 
           class="auth-button full-width"
           [disabled]="loginForm.invalid || isLoading">
-          <mat-spinner diameter="20" *ngIf="isLoading" class="button-spinner"></mat-spinner>
-          <span *ngIf="!isLoading">Send OTP</span>
-          <span *ngIf="isLoading">Sending OTP...</span>
+          @if (isLoading) {
+            <mat-spinner diameter="20" class="button-spinner"></mat-spinner>
+          }
+          @if (!isLoading) {
+            <span>Send OTP</span>
+          }
+          @if (isLoading) {
+            <span>Sending OTP...</span>
+          }
         </button>
       </form>
     </mat-card-content>

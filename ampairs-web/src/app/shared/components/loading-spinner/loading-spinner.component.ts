@@ -9,12 +9,14 @@ import { Observable } from 'rxjs';
   standalone: true,
   imports: [CommonModule, MatProgressSpinnerModule],
   template: `
-    <div class="loading-overlay" *ngIf="loading$ | async">
-      <div class="loading-container">
-        <mat-spinner diameter="50"></mat-spinner>
-        <p class="loading-text">Loading...</p>
+    @if (loading$ | async) {
+      <div class="loading-overlay">
+        <div class="loading-container">
+          <mat-spinner diameter="50"></mat-spinner>
+          <p class="loading-text">Loading...</p>
+        </div>
       </div>
-    </div>
+    }
   `,
   styles: [`
     .loading-overlay {

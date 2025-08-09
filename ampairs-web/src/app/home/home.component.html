@@ -9,24 +9,27 @@
     <span class="spacer"></span>
 
     <!-- User Profile Menu -->
-    <div class="user-profile" *ngIf="currentUser$ | async as user">
-      <button mat-icon-button [matMenuTriggerFor]="userMenu" class="profile-button">
-        <div class="profile-avatar">
-          <mat-icon>account_circle</mat-icon>
-        </div>
-      </button>
-
-      <mat-menu #userMenu="matMenu" class="user-menu">
-        <div class="user-info">
-          <div class="user-avatar-large">
+    @if (currentUser$ | async; as user) {
+      <div class="user-profile">
+        <button mat-icon-button [matMenuTriggerFor]="userMenu" class="profile-button">
+          <div class="profile-avatar">
             <mat-icon>account_circle</mat-icon>
           </div>
-          <div class="user-details">
-            <h3 class="user-name">{{user.fullName || 'User'}}</h3>
-            <p class="user-mobile">+91 {{ user.phone }}</p>
-            <p class="user-email" *ngIf="user.email">{{user.email}}</p>
+        </button>
+
+        <mat-menu #userMenu="matMenu" class="user-menu">
+          <div class="user-info">
+            <div class="user-avatar-large">
+              <mat-icon>account_circle</mat-icon>
+            </div>
+            <div class="user-details">
+              <h3 class="user-name">{{user.fullName || 'User'}}</h3>
+              <p class="user-mobile">+91 {{ user.phone }}</p>
+              @if (user.email) {
+                <p class="user-email">{{user.email}}</p>
+              }
+            </div>
           </div>
-        </div>
 
         <mat-divider></mat-divider>
 
@@ -51,8 +54,9 @@
           <mat-icon>logout</mat-icon>
           <span>Logout</span>
         </button>
-      </mat-menu>
-    </div>
+        </mat-menu>
+      </div>
+    }
   </mat-toolbar>
 
   <!-- Main Content -->
@@ -70,21 +74,25 @@
         </mat-card-header>
 
         <mat-card-content>
-          <div class="user-welcome" *ngIf="currentUser$ | async as user">
-            <p class="greeting">
-              Hello, <strong>{{user.fullName || 'User'}}</strong>! 👋
-            </p>
-            <p class="login-info">
-              You are logged in with mobile number: <strong>+91 {{ user.phone }}</strong>
-            </p>
-          </div>
+          @if (currentUser$ | async; as user) {
+            <div class="user-welcome">
+              <p class="greeting">
+                Hello, <strong>{{user.fullName || 'User'}}</strong>! 👋
+              </p>
+              <p class="login-info">
+                You are logged in with mobile number: <strong>+91 {{ user.phone }}</strong>
+              </p>
+            </div>
+          }
 
           <div class="features-grid">
-            <div class="feature-card" *ngFor="let feature of features">
-              <mat-icon class="feature-icon">{{feature.icon}}</mat-icon>
-              <h4>{{feature.title}}</h4>
-              <p>{{feature.description}}</p>
-            </div>
+            @for (feature of features; track feature.title) {
+              <div class="feature-card">
+                <mat-icon class="feature-icon">{{feature.icon}}</mat-icon>
+                <h4>{{feature.title}}</h4>
+                <p>{{feature.description}}</p>
+              </div>
+            }
           </div>
         </mat-card-content>
       </mat-card>
@@ -120,8 +128,10 @@
     </div>
 
     <!-- Device Management Section -->
-    <div *ngIf="showDeviceManagement" class="device-section">
-      <app-device-management></app-device-management>
-    </div>
+    @if (showDeviceManagement) {
+      <div class="device-section">
+        <app-device-management></app-device-management>
+      </div>
+    }
   </div>
 </div>
