@@ -63,32 +63,32 @@ class WorkspaceSettingsService(
         // Update individual setting sections
         request.branding?.let {
             settings.branding = objectMapper.writeValueAsString(it)
-            activityService.logSettingsUpdated(workspaceId, "branding", updatedBy)
+            activityService.logSettingsUpdated(workspaceId, "branding", updatedBy, "Unknown User")
         }
 
         request.notifications?.let {
             settings.notifications = objectMapper.writeValueAsString(it)
-            activityService.logSettingsUpdated(workspaceId, "notifications", updatedBy)
+            activityService.logSettingsUpdated(workspaceId, "notifications", updatedBy, "Unknown User")
         }
 
         request.integrations?.let {
             settings.integrations = objectMapper.writeValueAsString(it)
-            activityService.logSettingsUpdated(workspaceId, "integrations", updatedBy)
+            activityService.logSettingsUpdated(workspaceId, "integrations", updatedBy, "Unknown User")
         }
 
         request.security?.let {
             settings.security = objectMapper.writeValueAsString(it)
-            activityService.logSettingsUpdated(workspaceId, "security", updatedBy)
+            activityService.logSettingsUpdated(workspaceId, "security", updatedBy, "Unknown User")
         }
 
         request.features?.let {
             settings.features = objectMapper.writeValueAsString(it)
-            activityService.logSettingsUpdated(workspaceId, "features", updatedBy)
+            activityService.logSettingsUpdated(workspaceId, "features", updatedBy, "Unknown User")
         }
 
         request.preferences?.let {
             settings.preferences = objectMapper.writeValueAsString(it)
-            activityService.logSettingsUpdated(workspaceId, "preferences", updatedBy)
+            activityService.logSettingsUpdated(workspaceId, "preferences", updatedBy, "Unknown User")
         }
 
         settings.lastModifiedBy = updatedBy
@@ -120,7 +120,7 @@ class WorkspaceSettingsService(
         settingsRepository.save(settings)
 
         // Log activity
-        activityService.logSettingsUpdated(workspaceId, "branding", updatedBy)
+        activityService.logSettingsUpdated(workspaceId, "branding", updatedBy, "Unknown User")
 
         return BrandingResponse(
             logoUrl = currentBranding["logo_url"] as? String,
@@ -158,7 +158,7 @@ class WorkspaceSettingsService(
         settingsRepository.save(settings)
 
         // Log activity
-        activityService.logSettingsUpdated(workspaceId, "notifications", updatedBy)
+        activityService.logSettingsUpdated(workspaceId, "notifications", updatedBy, "Unknown User")
 
         return NotificationResponse(
             emailNotifications = currentNotifications["email_notifications"] as? Boolean ?: true,
@@ -191,7 +191,7 @@ class WorkspaceSettingsService(
         settingsRepository.save(settings)
 
         // Log activity
-        activityService.logSettingsUpdated(workspaceId, "security", updatedBy)
+        activityService.logSettingsUpdated(workspaceId, "security", updatedBy, "Unknown User")
 
         return SecurityResponse(
             twoFactorRequired = currentSecurity["two_factor_required"] as? Boolean ?: false,
@@ -224,7 +224,7 @@ class WorkspaceSettingsService(
         settingsRepository.save(settings)
 
         // Log activity
-        activityService.logSettingsUpdated(workspaceId, "features", updatedBy)
+        activityService.logSettingsUpdated(workspaceId, "features", updatedBy, "Unknown User")
 
         return FeaturesResponse(
             fileSharingEnabled = currentFeatures["file_sharing_enabled"] as? Boolean ?: true,
@@ -244,27 +244,27 @@ class WorkspaceSettingsService(
         when (section) {
             "branding" -> {
                 settings.branding = getDefaultBranding()
-                activityService.logSettingsReset(workspaceId, "branding", resetBy)
+                activityService.logSettingsReset(workspaceId, "branding", resetBy, "Unknown User")
             }
 
             "notifications" -> {
                 settings.notifications = getDefaultNotifications()
-                activityService.logSettingsReset(workspaceId, "notifications", resetBy)
+                activityService.logSettingsReset(workspaceId, "notifications", resetBy, "Unknown User")
             }
 
             "security" -> {
                 settings.security = getDefaultSecurity()
-                activityService.logSettingsReset(workspaceId, "security", resetBy)
+                activityService.logSettingsReset(workspaceId, "security", resetBy, "Unknown User")
             }
 
             "features" -> {
                 settings.features = getDefaultFeatures()
-                activityService.logSettingsReset(workspaceId, "features", resetBy)
+                activityService.logSettingsReset(workspaceId, "features", resetBy, "Unknown User")
             }
 
             "preferences" -> {
                 settings.preferences = getDefaultPreferences()
-                activityService.logSettingsReset(workspaceId, "preferences", resetBy)
+                activityService.logSettingsReset(workspaceId, "preferences", resetBy, "Unknown User")
             }
 
             null -> {
@@ -275,7 +275,7 @@ class WorkspaceSettingsService(
                 settings.security = getDefaultSecurity()
                 settings.features = getDefaultFeatures()
                 settings.preferences = getDefaultPreferences()
-                activityService.logSettingsReset(workspaceId, "all", resetBy)
+                activityService.logSettingsReset(workspaceId, "all", resetBy, "Unknown User")
             }
 
             else -> throw IllegalArgumentException("Invalid settings section: $section")

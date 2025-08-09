@@ -2,6 +2,7 @@ package com.ampairs.core.domain.model
 
 import com.ampairs.core.utils.Helper
 import jakarta.persistence.*
+import java.time.LocalDateTime
 
 @MappedSuperclass
 abstract class BaseDomain {
@@ -19,7 +20,7 @@ abstract class BaseDomain {
         columnDefinition = "TIMESTAMP default CURRENT_TIMESTAMP",
         insertable = false, updatable = false, nullable = false
     )
-    var createdAt: String? = null
+    var createdAt: LocalDateTime? = null
 
     @Column(
         name = "updated_at",
@@ -28,7 +29,7 @@ abstract class BaseDomain {
         updatable = false,
         nullable = false
     )
-    var updatedAt: String? = null
+    var updatedAt: LocalDateTime? = null
 
     @Column(
         name = "last_updated",

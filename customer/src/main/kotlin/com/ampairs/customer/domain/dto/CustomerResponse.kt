@@ -2,6 +2,7 @@ package com.ampairs.customer.domain.dto
 
 import com.ampairs.core.domain.model.Address
 import com.ampairs.customer.domain.model.Customer
+import java.time.LocalDateTime
 
 data class CustomerResponse(
     var id: String,
@@ -28,8 +29,8 @@ data class CustomerResponse(
     var billingSameAsRegistered: Boolean,
     var shippingSameAsBilling: Boolean,
     var lastUpdated: Long?,
-    var createdAt: String?,
-    var updatedAt: String?,
+    var createdAt: LocalDateTime?,
+    var updatedAt: LocalDateTime?,
 )
 
 

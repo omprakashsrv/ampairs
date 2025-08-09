@@ -83,11 +83,11 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
      */
     @Query(
         """
-        SELECT wm FROM workspace_members wm
+        SELECT wm FROM com.ampairs.workspace.model.WorkspaceMember wm
         WHERE wm.workspaceId = :workspaceId 
         AND wm.isActive = true
         AND wm.userId IN (
-            SELECT u.id FROM users u 
+            SELECT u.uid FROM com.ampairs.user.model.User u 
             WHERE LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
             OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
             OR LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
@@ -104,14 +104,14 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
      * Update last active timestamp for member
      */
     @Modifying
-    @Query("UPDATE workspace_members wm SET wm.lastActiveAt = :timestamp WHERE wm.id = :memberId")
+    @Query("UPDATE com.ampairs.workspace.model.WorkspaceMember wm SET wm.lastActiveAt = :timestamp WHERE wm.uid = :memberId")
     fun updateLastActivity(@Param("memberId") memberId: String, @Param("timestamp") timestamp: LocalDateTime)
 
     /**
      * Update member role
      */
     @Modifying
-    @Query("UPDATE workspace_members wm SET wm.role = :role WHERE wm.id = :memberId")
+    @Query("UPDATE com.ampairs.workspace.model.WorkspaceMember wm SET wm.role = :role WHERE wm.uid = :memberId")
     fun updateMemberRole(@Param("memberId") memberId: String, @Param("role") role: WorkspaceRole)
 
     /**
@@ -120,12 +120,12 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
     @Modifying
     @Query(
         """
-        UPDATE workspace_members wm 
+        UPDATE com.ampairs.workspace.model.WorkspaceMember wm 
         SET wm.isActive = false, 
             wm.deactivatedAt = :deactivatedAt,
             wm.deactivatedBy = :deactivatedBy,
             wm.deactivationReason = :reason
-        WHERE wm.id = :memberId
+        WHERE wm.uid = :memberId
     """
     )
     fun deactivateMember(
@@ -146,7 +146,7 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
             COUNT(CASE WHEN wm.role = :ownerRole AND wm.isActive = true THEN 1 END) as owners,
             COUNT(CASE WHEN wm.role = :adminRole AND wm.isActive = true THEN 1 END) as admins,
             COUNT(CASE WHEN wm.role = :memberRole AND wm.isActive = true THEN 1 END) as members
-        FROM workspace_members wm 
+        FROM com.ampairs.workspace.model.WorkspaceMember wm 
         WHERE wm.workspaceId = :workspaceId
     """
     )
@@ -162,7 +162,7 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
      */
     @Query(
         """
-        SELECT wm FROM workspace_members wm
+        SELECT wm FROM com.ampairs.workspace.model.WorkspaceMember wm
         WHERE wm.workspaceId = :workspaceId 
         AND wm.isActive = true
         AND wm.role IN :roles
@@ -177,7 +177,7 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
      * Delete inactive members (hard delete for cleanup)
      */
     @Modifying
-    @Query("DELETE FROM workspace_members wm WHERE wm.isActive = false AND wm.deactivatedAt < :cleanupDate")
+    @Query("DELETE FROM com.ampairs.workspace.model.WorkspaceMember wm WHERE wm.isActive = false AND wm.deactivatedAt < :cleanupDate")
     fun deleteInactiveMembers(@Param("cleanupDate") cleanupDate: LocalDateTime): Int
 
     /**
@@ -185,7 +185,7 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
      */
     @Query(
         """
-        SELECT wm FROM workspace_members wm
+        SELECT wm FROM com.ampairs.workspace.model.WorkspaceMember wm
         WHERE wm.isActive = true 
         AND (wm.lastActiveAt IS NULL OR wm.lastActiveAt < :inactiveDate)
         AND wm.joinedAt < :joinedBefore
@@ -233,7 +233,7 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
     @Query(
         """
         SELECT wm.role as role, COUNT(wm) as count 
-        FROM workspace_members wm 
+        FROM com.ampairs.workspace.model.WorkspaceMember wm 
         WHERE wm.workspaceId = :workspaceId AND wm.isActive = true
         GROUP BY wm.role
     """
@@ -250,12 +250,12 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
      */
     @Query(
         """
-        SELECT wm FROM workspace_members wm
+        SELECT wm FROM com.ampairs.workspace.model.WorkspaceMember wm
         WHERE wm.workspaceId = :workspaceId 
         AND wm.isActive = true
         AND wm.role = :role
         AND wm.userId IN (
-            SELECT u.id FROM users u 
+            SELECT u.uid FROM com.ampairs.user.model.User u 
             WHERE LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
             OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
             OR LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
@@ -274,11 +274,11 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
      */
     @Query(
         """
-        SELECT wm FROM workspace_members wm
+        SELECT wm FROM com.ampairs.workspace.model.WorkspaceMember wm
         WHERE wm.workspaceId = :workspaceId 
         AND wm.isActive = true
         AND wm.userId IN (
-            SELECT u.id FROM users u 
+            SELECT u.uid FROM com.ampairs.user.model.User u 
             WHERE LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
             OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
             OR LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
@@ -295,6 +295,6 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
      * Delete all members by workspace ID
      */
     @Modifying
-    @Query("DELETE FROM workspace_members wm WHERE wm.workspaceId = :workspaceId")
+    @Query("DELETE FROM com.ampairs.workspace.model.WorkspaceMember wm WHERE wm.workspaceId = :workspaceId")
     fun deleteByWorkspaceId(@Param("workspaceId") workspaceId: String)
 }

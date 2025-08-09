@@ -3,7 +3,7 @@ package com.ampairs.product.controller
 import com.ampairs.core.domain.dto.FileResponse
 import com.ampairs.core.domain.dto.toFileResponse
 import com.ampairs.core.domain.service.FileService
-import com.ampairs.core.multitenancy.TenantContext
+import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.product.domain.dto.group.*
 import com.ampairs.product.domain.dto.product.ProductRequest
 import com.ampairs.product.domain.dto.product.ProductResponse
@@ -137,7 +137,7 @@ class ProductController(val productService: ProductService, val fileService: Fil
             bytes = file.inputStream.readAllBytes(),
             name = file.originalFilename ?: "unnamed_file",
             contentType = file.contentType ?: "application/octet-stream",
-            folder = "products/${TenantContext.getCurrentTenant()}$path"
+            folder = "products/${TenantContextHolder.getCurrentTenant()}$path"
         ).toFileResponse()
     }
 }

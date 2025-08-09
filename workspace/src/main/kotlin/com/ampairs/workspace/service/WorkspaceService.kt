@@ -71,7 +71,7 @@ class WorkspaceService(
         settingsService.initializeDefaultSettings(savedWorkspace.uid)
 
         // Log activity
-        activityService.logWorkspaceCreated(savedWorkspace.uid, createdBy)
+        activityService.logWorkspaceCreated(savedWorkspace.uid, createdBy, "Unknown User")
 
         logger.info("Successfully created workspace: ${savedWorkspace.uid}")
         return savedWorkspace.toResponse(memberCount = 1)
@@ -133,7 +133,7 @@ class WorkspaceService(
         val updatedWorkspace = workspaceRepository.save(workspace)
 
         // Log activity
-        activityService.logWorkspaceUpdated(workspaceId, updatedBy)
+        activityService.logWorkspaceUpdated(workspaceId, updatedBy, "Unknown User")
 
         val memberCount = memberService.getActiveMemberCount(workspace.uid)
         return updatedWorkspace.toResponse(memberCount = memberCount)
@@ -189,7 +189,7 @@ class WorkspaceService(
         invitationService.cancelAllPendingInvitations(workspaceId, archivedBy, "Workspace archived")
 
         // Log activity
-        activityService.logWorkspaceArchived(workspaceId, archivedBy)
+        activityService.logWorkspaceArchived(workspaceId, archivedBy, "Unknown User")
 
         logger.info("Workspace archived: $workspaceId by user: $archivedBy")
         return "Workspace archived successfully"

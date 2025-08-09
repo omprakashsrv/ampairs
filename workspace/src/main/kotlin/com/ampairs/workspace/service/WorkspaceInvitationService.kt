@@ -77,7 +77,14 @@ class WorkspaceInvitationService(
         }
 
         // Log activity
-        activityService.logInvitationSent(workspaceId, request.email, request.role.name, invitedBy)
+        activityService.logInvitationSent(
+            workspaceId,
+            request.email,
+            request.role.name,
+            invitedBy,
+            "Unknown User",
+            savedInvitation.uid
+        )
 
         logger.info("Successfully created invitation: ${savedInvitation.id}")
         return savedInvitation.toResponse()
@@ -106,7 +113,13 @@ class WorkspaceInvitationService(
         val updatedInvitation = invitationRepository.save(invitation)
 
         // Log activity
-        activityService.logInvitationAccepted(invitation.workspaceId, invitation.email, userId)
+        activityService.logInvitationAccepted(
+            invitation.workspaceId,
+            invitation.email,
+            userId,
+            "Unknown User",
+            invitation.uid
+        )
 
         logger.info("Invitation accepted: ${invitation.id} by user: $userId")
         return updatedInvitation.toResponse()
@@ -128,7 +141,7 @@ class WorkspaceInvitationService(
         val updatedInvitation = invitationRepository.save(invitation)
 
         // Log activity
-        activityService.logInvitationDeclined(invitation.workspaceId, invitation.email, reason)
+        activityService.logInvitationDeclined(invitation.workspaceId, invitation.email, reason, invitation.uid)
 
         logger.info("Invitation declined: ${invitation.id}")
         return updatedInvitation.toResponse()
@@ -165,7 +178,13 @@ class WorkspaceInvitationService(
         logger.info("Invitation email would be resent to: ${invitation.email}")
 
         // Log activity
-        activityService.logInvitationResent(invitation.workspaceId, invitation.email, resentBy)
+        activityService.logInvitationResent(
+            invitation.workspaceId,
+            invitation.email,
+            resentBy,
+            "Unknown User",
+            invitation.uid
+        )
 
         logger.info("Invitation resent: ${invitation.id}")
         return updatedInvitation.toResponse()
@@ -189,7 +208,14 @@ class WorkspaceInvitationService(
         invitationRepository.save(invitation)
 
         // Log activity
-        activityService.logInvitationCancelled(invitation.workspaceId, invitation.email, cancelledBy, reason)
+        activityService.logInvitationCancelled(
+            invitation.workspaceId,
+            invitation.email,
+            cancelledBy,
+            "Unknown User",
+            reason,
+            invitation.uid
+        )
 
         logger.info("Invitation cancelled: $invitationId")
         return "Invitation cancelled successfully"
@@ -316,7 +342,12 @@ class WorkspaceInvitationService(
                 }
                 invitationRepository.saveAll(pendingInvitations)
                 // TODO: Send bulk emails
-                activityService.logBulkInvitationResend(workspaceId, pendingInvitations.size, operatedBy)
+                activityService.logBulkInvitationResend(
+                    workspaceId,
+                    pendingInvitations.size,
+                    operatedBy,
+                    "Unknown User"
+                )
             }
 
             "cancel" -> {
@@ -328,7 +359,12 @@ class WorkspaceInvitationService(
                     invitation.cancellationReason = request.reason
                 }
                 invitationRepository.saveAll(pendingInvitations)
-                activityService.logBulkInvitationCancellation(workspaceId, pendingInvitations.size, operatedBy)
+                activityService.logBulkInvitationCancellation(
+                    workspaceId,
+                    pendingInvitations.size,
+                    operatedBy,
+                    "Unknown User"
+                )
             }
 
             "revoke" -> {
@@ -339,7 +375,7 @@ class WorkspaceInvitationService(
                     invitation.cancellationReason = request.reason ?: "Bulk revoke operation"
                 }
                 invitationRepository.saveAll(invitations)
-                activityService.logBulkInvitationRevoke(workspaceId, invitations.size, operatedBy)
+                activityService.logBulkInvitationRevoke(workspaceId, invitations.size, operatedBy, "Unknown User")
             }
 
             else -> throw BusinessException("INVALID_ACTION", "Invalid bulk action: ${request.action}")

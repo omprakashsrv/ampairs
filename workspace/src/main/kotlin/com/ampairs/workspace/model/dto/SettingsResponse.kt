@@ -146,7 +146,7 @@ fun WorkspaceSettings.toResponse(): SettingsResponse {
         preferences = this.getPreferencesMap(),
         lastModifiedBy = this.lastModifiedBy,
         lastModifiedAt = this.lastModifiedAt,
-        createdAt = LocalDateTime.parse(this.createdAt ?: "2023-01-01T00:00:00"),
-        updatedAt = LocalDateTime.parse(this.updatedAt ?: "2023-01-01T00:00:00")
+        createdAt = this.createdAt ?: LocalDateTime.now(),
+        updatedAt = this.updatedAt ?: LocalDateTime.now(),
     )
 }

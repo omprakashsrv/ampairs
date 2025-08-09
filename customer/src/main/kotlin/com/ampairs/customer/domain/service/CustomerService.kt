@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 @Service
 class CustomerService @Autowired constructor(
@@ -29,13 +30,13 @@ class CustomerService @Autowired constructor(
             if (customer.uid.isNotEmpty()) {
                 val existingCustomer = customerRepository.findByUid(customer.uid)
                 customer.refId = existingCustomer?.refId ?: ""
-                customer.createdAt = existingCustomer?.createdAt ?: ""
-                customer.updatedAt = existingCustomer?.updatedAt ?: ""
+                customer.createdAt = existingCustomer?.createdAt ?: LocalDateTime.now()
+                customer.updatedAt = existingCustomer?.updatedAt ?: LocalDateTime.now()
             } else if (customer.refId?.isNotEmpty() == true) {
                 val existingCustomer = customerRepository.findByRefId(customer.refId)
                 customer.uid = existingCustomer?.uid ?: ""
-                customer.createdAt = existingCustomer?.createdAt ?: ""
-                customer.updatedAt = existingCustomer?.updatedAt ?: ""
+                customer.createdAt = existingCustomer?.createdAt ?: LocalDateTime.now()
+                customer.updatedAt = existingCustomer?.updatedAt ?: LocalDateTime.now()
             }
             customer.lastUpdated = System.currentTimeMillis()
             customerRepository.save(customer)

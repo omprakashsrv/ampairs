@@ -65,7 +65,7 @@ class WorkspaceMemberService(
         val savedMember = memberRepository.save(member)
 
         // Log activity
-        activityService.logMemberAdded(workspaceId, userId, role.name)
+        activityService.logMemberAdded(workspaceId, userId, "Unknown User", role.name, "SYSTEM", "System")
 
         logger.info("Added member to workspace: $workspaceId, user: $userId, role: $role")
         return savedMember
@@ -94,7 +94,15 @@ class WorkspaceMemberService(
 
             // Log role change
             if (oldRole != it) {
-                activityService.logMemberRoleChanged(workspaceId, member.userId, oldRole.name, it.name, updatedBy)
+                activityService.logMemberRoleChanged(
+                    workspaceId,
+                    member.userId,
+                    "Unknown User",
+                    oldRole.name,
+                    it.name,
+                    updatedBy,
+                    "Unknown User"
+                )
             }
         }
 
@@ -109,9 +117,21 @@ class WorkspaceMemberService(
             // Log activation/deactivation
             if (wasActive != it) {
                 if (it) {
-                    activityService.logMemberActivated(workspaceId, member.userId, updatedBy)
+                    activityService.logMemberActivated(
+                        workspaceId,
+                        member.userId,
+                        "Unknown User",
+                        updatedBy,
+                        "Unknown User"
+                    )
                 } else {
-                    activityService.logMemberDeactivated(workspaceId, member.userId, updatedBy)
+                    activityService.logMemberDeactivated(
+                        workspaceId,
+                        member.userId,
+                        "Unknown User",
+                        updatedBy,
+                        "Unknown User"
+                    )
                 }
             }
         }
@@ -142,7 +162,7 @@ class WorkspaceMemberService(
         memberRepository.delete(member)
 
         // Log activity
-        activityService.logMemberRemoved(workspaceId, member.userId, removedBy)
+        activityService.logMemberRemoved(workspaceId, member.userId, "Unknown User", removedBy, "Unknown User")
 
         logger.info("Removed member from workspace: $workspaceId, user: ${member.userId}")
         return "Member removed successfully"
@@ -288,13 +308,18 @@ class WorkspaceMemberService(
             "activate" -> {
                 members.forEach { it.isActive = true }
                 memberRepository.saveAll(members)
-                activityService.logBulkMemberActivation(workspaceId, request.memberIds.size, operatedBy)
+                activityService.logBulkMemberActivation(workspaceId, request.memberIds.size, operatedBy, "Unknown User")
             }
 
             "deactivate" -> {
                 members.forEach { it.isActive = false }
                 memberRepository.saveAll(members)
-                activityService.logBulkMemberDeactivation(workspaceId, request.memberIds.size, operatedBy)
+                activityService.logBulkMemberDeactivation(
+                    workspaceId,
+                    request.memberIds.size,
+                    operatedBy,
+                    "Unknown User"
+                )
             }
 
             "remove" -> {
@@ -308,14 +333,20 @@ class WorkspaceMemberService(
                 }
 
                 memberRepository.deleteAll(members)
-                activityService.logBulkMemberRemoval(workspaceId, request.memberIds.size, operatedBy)
+                activityService.logBulkMemberRemoval(workspaceId, request.memberIds.size, operatedBy, "Unknown User")
             }
 
             "update_role" -> {
                 request.role?.let { newRole ->
                     members.forEach { it.role = newRole }
                     memberRepository.saveAll(members)
-                    activityService.logBulkRoleUpdate(workspaceId, request.memberIds.size, newRole.name, operatedBy)
+                    activityService.logBulkRoleUpdate(
+                        workspaceId,
+                        request.memberIds.size,
+                        newRole.name,
+                        operatedBy,
+                        "Unknown User"
+                    )
                 } ?: throw BusinessException("ROLE_REQUIRED", "Role is required for update_role action")
             }
 

@@ -128,8 +128,8 @@ fun Workspace.toResponse(memberCount: Int? = null): WorkspaceResponse {
         timezone = this.timezone,
         language = this.language,
         createdBy = this.ownerId, // Use ownerId instead of createdBy
-        createdAt = LocalDateTime.parse(this.createdAt ?: "2023-01-01T00:00:00"),
-        updatedAt = LocalDateTime.parse(this.updatedAt ?: "2023-01-01T00:00:00"),
+        createdAt = this.createdAt ?: LocalDateTime.now(),
+        updatedAt = this.updatedAt ?: LocalDateTime.now(),
         lastActivityAt = this.lastActivityAt,
         trialExpiresAt = this.trialExpiresAt,
         memberCount = memberCount,
@@ -152,6 +152,6 @@ fun Workspace.toListResponse(memberCount: Int): WorkspaceListResponse {
         subscriptionPlan = this.subscriptionPlan,
         memberCount = memberCount,
         lastActivityAt = this.lastActivityAt,
-        createdAt = LocalDateTime.parse(this.createdAt ?: "2023-01-01T00:00:00")
+        createdAt = this.createdAt ?: LocalDateTime.now(),
     )
 }

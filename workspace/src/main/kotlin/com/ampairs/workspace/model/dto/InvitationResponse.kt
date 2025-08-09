@@ -187,8 +187,8 @@ fun WorkspaceInvitation.toResponse(): InvitationResponse {
         cancellationReason = this.cancellationReason,
         sendCount = this.sendCount,
         lastSentAt = this.lastSentAt,
-        createdAt = LocalDateTime.parse(this.createdAt ?: "2023-01-01T00:00:00"),
-        updatedAt = LocalDateTime.parse(this.updatedAt ?: "2023-01-01T00:00:00"),
+        createdAt = this.createdAt ?: LocalDateTime.now(),
+        updatedAt = this.updatedAt ?: LocalDateTime.now(),
         isExpired = this.isExpired(),
         daysUntilExpiry = this.getDaysUntilExpiry()
     )
@@ -206,7 +206,7 @@ fun WorkspaceInvitation.toListResponse(): InvitationListResponse {
         invitedBy = this.invitedBy,
         inviterName = null, // Will be populated from User entity if needed
         expiresAt = this.expiresAt,
-        createdAt = LocalDateTime.parse(this.createdAt ?: "2023-01-01T00:00:00"),
+        createdAt = this.createdAt ?: LocalDateTime.now(),
         isExpired = this.isExpired()
     )
 }

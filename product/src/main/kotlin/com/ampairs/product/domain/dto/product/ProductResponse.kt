@@ -11,6 +11,7 @@ import com.ampairs.product.domain.dto.unit.UnitResponse
 import com.ampairs.product.domain.dto.unit.asResponse
 import com.ampairs.product.domain.dto.unit.asUnitConversionResponse
 import com.ampairs.product.domain.model.Product
+import java.time.LocalDateTime
 
 data class ProductResponse(
     val id: String,
@@ -29,8 +30,8 @@ data class ProductResponse(
     val taxCodes: List<TaxCodeResponse>,
     val unitConversions: List<UnitConversionResponse>,
     val lastUpdated: Long?,
-    val createdAt: String?,
-    val updatedAt: String?,
+    val createdAt: LocalDateTime?,
+    val updatedAt: LocalDateTime?,
     val baseUnit: UnitResponse?,
     val baseUnitId: String?,
     val images: List<FileResponse>?,

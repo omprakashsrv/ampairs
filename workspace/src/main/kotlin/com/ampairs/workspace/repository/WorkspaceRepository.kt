@@ -30,14 +30,14 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
     fun existsBySlug(slug: String): Boolean
 
     /**
-     * Find workspaces by owner (created_by)
+     * Find workspaces by owner (owner_id)
      */
-    fun findByCreatedBy(ownerId: String, pageable: Pageable): Page<Workspace>
+    fun findByOwnerId(ownerId: String, pageable: Pageable): Page<Workspace>
 
     /**
      * Find active workspaces by type
      */
-    fun findByWorkspaceTypeAndIsActiveTrue(workspaceType: WorkspaceType, pageable: Pageable): Page<Workspace>
+    fun findByWorkspaceTypeAndActiveTrue(workspaceType: WorkspaceType, pageable: Pageable): Page<Workspace>
 
     /**
      * Find workspaces by subscription plan
@@ -54,7 +54,7 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
      */
     @Query(
         """
-        SELECT w FROM workspaces w 
+        SELECT w FROM com.ampairs.workspace.model.Workspace w 
         WHERE w.trialExpiresAt IS NOT NULL 
         AND w.trialExpiresAt < :currentDate
         AND w.subscriptionPlan = :freePlan
@@ -70,8 +70,8 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
      */
     @Query(
         """
-        SELECT w FROM workspaces w 
-        WHERE w.isActive = true 
+        SELECT w FROM com.ampairs.workspace.model.Workspace w 
+        WHERE w.active = true 
         AND (w.storageUsedGb * 100.0 / w.storageLimitGb) >= :percentage
     """
     )
@@ -80,20 +80,20 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
     /**
      * Count workspaces by owner
      */
-    fun countByCreatedBy(ownerId: String): Long
+    fun countByOwnerId(ownerId: String): Long
 
     /**
      * Count active workspaces by type
      */
-    fun countByWorkspaceTypeAndIsActiveTrue(workspaceType: WorkspaceType): Long
+    fun countByWorkspaceTypeAndActiveTrue(workspaceType: WorkspaceType): Long
 
     /**
      * Search workspaces by name or description
      */
     @Query(
         """
-        SELECT w FROM workspaces w 
-        WHERE w.isActive = true 
+        SELECT w FROM com.ampairs.workspace.model.Workspace w 
+        WHERE w.active = true 
         AND (LOWER(w.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) 
              OR LOWER(w.description) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
     """
@@ -106,10 +106,10 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
     @Query(
         """
         SELECT DISTINCT w FROM workspaces w 
-        INNER JOIN workspace_members wm ON w.id = wm.workspaceId 
+        INNER JOIN com.ampairs.workspace.model.WorkspaceMember wm ON w.uid = wm.workspaceId 
         WHERE wm.userId = :userId 
         AND wm.isActive = true 
-        AND w.isActive = true
+        AND w.active = true
         ORDER BY wm.lastActiveAt DESC, w.lastActivityAt DESC
     """
     )
@@ -121,10 +121,10 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
     @Query(
         """
         SELECT DISTINCT w FROM workspaces w 
-        INNER JOIN workspace_members wm ON w.id = wm.workspaceId 
+        INNER JOIN com.ampairs.workspace.model.WorkspaceMember wm ON w.uid = wm.workspaceId 
         WHERE wm.userId = :userId 
         AND wm.isActive = true 
-        AND w.isActive = true
+        AND w.active = true
     """
     )
     fun findWorkspacesByUserId(@Param("userId") userId: String, pageable: Pageable): Page<Workspace>
@@ -150,10 +150,10 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
         """
         SELECT 
             COUNT(w) as totalWorkspaces,
-            COUNT(CASE WHEN w.isActive = true THEN 1 END) as activeWorkspaces,
+            COUNT(CASE WHEN w.active = true THEN 1 END) as activeWorkspaces,
             COUNT(CASE WHEN w.subscriptionPlan = :freePlan THEN 1 END) as freeWorkspaces,
             COUNT(CASE WHEN w.subscriptionPlan != :freePlan THEN 1 END) as paidWorkspaces
-        FROM workspaces w
+        FROM com.ampairs.workspace.model.Workspace w
     """
     )
     fun getWorkspaceStatistics(@Param("freePlan") freePlan: SubscriptionPlan = SubscriptionPlan.FREE): Map<String, Long>
@@ -164,10 +164,10 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
     @Modifying
     @Query(
         """
-        UPDATE workspaces w 
-        SET w.isActive = false, w.updatedAt = :currentDate 
+        UPDATE com.ampairs.workspace.model.Workspace w 
+        SET w.active = false, w.updatedAt = :currentDate 
         WHERE w.lastActivityAt < :inactiveDate
-        AND w.isActive = true
+        AND w.active = true
     """
     )
     fun deactivateInactiveWorkspaces(
