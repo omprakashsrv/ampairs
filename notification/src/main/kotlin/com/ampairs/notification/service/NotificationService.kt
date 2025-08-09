@@ -84,7 +84,7 @@ class NotificationService @Autowired constructor(
         recipient: String,
         message: String,
         channel: NotificationChannel = NotificationChannel.SMS,
-        tenantId: String? = null,
+        tenantId: String? = null
     ): String {
         // Use default tenant for notifications when no tenant context is available
         val effectiveTenantId = tenantId
@@ -103,10 +103,8 @@ class NotificationService @Autowired constructor(
             }
 
             val savedNotification = notificationQueueRepository.save(notificationQueue)
-            logger.info(
-                "Notification queued for {}: {} with ID: {} (tenant: {})",
-                channel, recipient, savedNotification.uid, effectiveTenantId
-            )
+            logger.info("Notification queued for {}: {} with ID: {} (tenant: {})",
+                channel, recipient, savedNotification.uid, effectiveTenantId)
 
             savedNotification.uid
         }

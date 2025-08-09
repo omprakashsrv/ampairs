@@ -22,12 +22,8 @@ export interface AuthInitRequest {
 }
 
 export interface AuthInitResponse {
-    success: boolean;
-    session_id?: string;
-    error?: {
-        code: string;
-        message: string;
-    };
+    message: string;
+    session_id: string;
 }
 
 export interface OtpVerificationRequest {
@@ -37,10 +33,6 @@ export interface OtpVerificationRequest {
     recaptcha_token?: string;
     device_id?: string;
     device_name?: string;
-    device_type?: string;
-    platform?: string;
-    browser?: string;
-    os?: string;
 }
 
 export interface AuthResponse {
@@ -98,9 +90,9 @@ export class AuthService {
     }
 
 
-  /**
-   * Initialize authentication by sending mobile number
-   */
+    /**
+     * Initialize authentication by sending mobile number
+     */
     initAuth(mobileNumber: string, recaptchaToken?: string): Observable<AuthInitResponse> {
         const deviceInfo = this.deviceService.getDeviceInfo();
 
@@ -117,53 +109,49 @@ export class AuthService {
             os: deviceInfo.os
         };
 
-    return this.http.post<AuthInitResponse>(`${this.AUTH_API_URL}/init`, request)
-      .pipe(
-            catchError(this.handleError)
-        );
+        return this.http.post<AuthInitResponse>(`${this.AUTH_API_URL}/init`, request)
+            .pipe(
+                catchError(this.handleError)
+            );
     }
 
 
-  /**
-   * Verify OTP and complete authentication
-   */
+    /**
+     * Verify OTP and complete authentication
+     */
     verifyOtp(sessionId: string, otp: string, recaptchaToken?: string): Observable<AuthResponse> {
         const deviceInfo = this.deviceService.getDeviceInfo();
 
         const request: OtpVerificationRequest = {
             session_id: sessionId,
             otp: otp,
-            auth_mode: 'SMS',
+            auth_mode: 'OTP',
             recaptcha_token: recaptchaToken,
             device_id: deviceInfo.device_id,
-            device_name: deviceInfo.device_name,
-            device_type: deviceInfo.device_type,
-            platform: deviceInfo.platform,
-            browser: deviceInfo.browser,
-            os: deviceInfo.os
+            device_name: deviceInfo.device_name
         };
 
-    return this.http.post<AuthResponse>(`${this.AUTH_API_URL}/verify`, request)
-      .pipe(
-            map(response => {
-                if (response.access_token && response.refresh_token) {
-                    this.setAuthTokens(response.access_token, response.refresh_token, response.access_token_expires_at, response.refresh_token_expires_at);
-                    this.isAuthenticatedSubject.next(true);
-            // Get user profile after successful authentication
-                    this.getUserProfile().subscribe({
-                        next: (user) => this.currentUserSubject.next(user),
-                        error: (error) => console.error('Failed to get user profile:', error)
-                    });
-                }
-                return response;
-            }),
-            catchError(this.handleError)
-        );
+        return this.http.post<AuthResponse>(`${this.AUTH_API_URL}/verify`, request)
+            .pipe(
+                map(response => {
+                    if (response.access_token && response.refresh_token) {
+                        this.setAuthTokens(response.access_token, response.refresh_token, response.access_token_expires_at, response.refresh_token_expires_at);
+                        this.isAuthenticatedSubject.next(true);
+                        // Get user profile after successful authentication
+                        this.getUserProfile().subscribe({
+                            next: (user) => this.currentUserSubject.next(user),
+                            error: (error) => console.error('Failed to get user profile:', error)
+                        });
+                    }
+                    return response;
+                }),
+                catchError(this.handleError)
+            );
     }
 
-  /**
-   * Refresh access token using refresh token
-   */
+    /**
+     * Refresh access token using refresh token
+     */
     refreshToken(): Observable<AuthResponse> {
         const refreshToken = this.getRefreshToken();
         if (!refreshToken) {
@@ -178,18 +166,18 @@ export class AuthService {
             device_id: deviceInfo.device_id
         }).pipe(
             map(response => {
-                if (response.access_token && response.refresh_token) {
+                if (response && response.access_token && response.refresh_token) {
                     this.setAuthTokens(response.access_token, response.refresh_token, response.access_token_expires_at, response.refresh_token_expires_at);
                     this.isAuthenticatedSubject.next(true);
                 } else {
-          // If refresh fails, logout user
+                    // If refresh fails, logout user
                     this.logout('Token refresh failed');
                     throw new Error('Token refresh failed');
                 }
                 return response;
             }),
             catchError((error: any) => {
-        // Handle different types of refresh token failures
+                // Handle different types of refresh token failures
                 let logoutReason = 'Token refresh error';
                 if (error.status === 401) {
                     logoutReason = 'Refresh token expired or invalid';
@@ -204,15 +192,15 @@ export class AuthService {
         );
     }
 
-  /**
-   * Logout user and clear all tokens
-   */
+    /**
+     * Logout user and clear all tokens
+     */
     logout(reason?: string): void {
-    // Log the reason for logout for debugging
+        // Log the reason for logout for debugging
         if (reason) {
             console.log('Logout reason:', reason);
 
-      // Show appropriate notification based on reason
+            // Show appropriate notification based on reason
             if (reason.includes('expired') || reason.includes('invalid')) {
                 this.notificationService.showSessionExpired();
             } else if (reason.includes('refresh')) {
@@ -220,10 +208,10 @@ export class AuthService {
             }
         }
 
-    // Call logout endpoint to invalidate session on server
+        // Call logout endpoint to invalidate session on server
         const accessToken = this.getAccessToken();
         if (accessToken) {
-      this.http.post(`${this.AUTH_API_URL}/logout`, {}).subscribe({
+            this.http.post(`${this.AUTH_API_URL}/logout`, {}).subscribe({
                 error: (error) => console.error('Logout error:', error)
             });
         }
@@ -232,98 +220,98 @@ export class AuthService {
         this.currentUserSubject.next(null);
         this.isAuthenticatedSubject.next(false);
 
-    // Only navigate if not already on login page to avoid navigation loops
+        // Only navigate if not already on login page to avoid navigation loops
         if (this.router.url !== '/login') {
             this.router.navigate(['/login']);
         }
     }
 
-  /**
-   * Get current access token
-   */
+    /**
+     * Get current access token
+     */
     getAccessToken(): string | null {
         return Cookies.get('access_token') || null;
     }
 
-  /**
-   * Get current refresh token
-   */
+    /**
+     * Get current refresh token
+     */
     getRefreshToken(): string | null {
         return Cookies.get('refresh_token') || null;
     }
 
-  /**
-   * Check if user is currently authenticated
-   */
+    /**
+     * Check if user is currently authenticated
+     */
     isAuthenticated(): boolean {
         const token = this.getAccessToken();
         if (!token) {
             return false;
         }
         try {
-      // Check if token is expired (basic JWT expiration check)
+            // Check if token is expired (basic JWT expiration check)
             const payload = JSON.parse(atob(token.split('.')[1]));
             const currentTime = Math.floor(Date.now() / 1000);
             return payload.exp > currentTime;
-    } catch (error) {
+        } catch (error) {
             return false;
         }
     }
 
-  /**
-   * Get current user information
-   */
+    /**
+     * Get current user information
+     */
     getCurrentUser(): User | null {
         return this.currentUserSubject.value;
     }
 
-  /**
-   * Get all active device sessions for the current user
-   */
+    /**
+     * Get all active device sessions for the current user
+     */
     getDeviceSessions(): Observable<DeviceSession[]> {
-    return this.http.get<DeviceSession[]>(`${this.AUTH_API_URL}/devices`)
-      .pipe(
-            catchError(this.handleError)
-        );
+        return this.http.get<DeviceSession[]>(`${this.AUTH_API_URL}/devices`)
+            .pipe(
+                catchError(this.handleError)
+            );
     }
 
-  /**
-   * Logout from a specific device
-   */
+    /**
+     * Logout from a specific device
+     */
     logoutDevice(deviceId: string): Observable<any> {
-    return this.http.post(`${this.AUTH_API_URL}/devices/${deviceId}/logout`, {})
-      .pipe(
-            catchError(this.handleError)
-        );
+        return this.http.post(`${this.AUTH_API_URL}/devices/${deviceId}/logout`, {})
+            .pipe(
+                catchError(this.handleError)
+            );
     }
 
-  /**
-   * Logout from all devices
-   */
+    /**
+     * Logout from all devices
+     */
     logoutAllDevices(): Observable<any> {
-    return this.http.post(`${this.AUTH_API_URL}/logout/all`, {})
-      .pipe(
-            map(() => {
-          // Clear local tokens and update state
-                this.clearAuthTokens();
-                this.currentUserSubject.next(null);
-                this.isAuthenticatedSubject.next(false);
+        return this.http.post(`${this.AUTH_API_URL}/logout/all`, {})
+            .pipe(
+                map(() => {
+                    // Clear local tokens and update state
+                    this.clearAuthTokens();
+                    this.currentUserSubject.next(null);
+                    this.isAuthenticatedSubject.next(false);
 
-          // Navigate to login page
-                if (this.router.url !== '/login') {
-                    this.router.navigate(['/login']);
-                }
-            }),
-            catchError(this.handleError)
-        );
+                    // Navigate to login page
+                    if (this.router.url !== '/login') {
+                        this.router.navigate(['/login']);
+                    }
+                }),
+                catchError(this.handleError)
+            );
     }
 
-  // Make user profile API public and add update name API
+    // Make user profile API public and add update name API
     public getUserProfile(): Observable<User> {
-    return this.http.get<User>(`${this.USER_API_URL}`)
-      .pipe(
-            catchError(this.handleError)
-        );
+        return this.http.get<User>(`${this.USER_API_URL}`)
+            .pipe(
+                catchError(this.handleError)
+            );
     }
 
     public isProfileIncomplete(user: User | null): boolean {
@@ -331,30 +319,30 @@ export class AuthService {
     }
 
     public updateUserName(firstName: string, lastName: string): Observable<User> {
-        const body = { firstName, lastName };
-    return this.http.post<User>(`${this.USER_API_URL}/update`, body)
-      .pipe(
-            map((updated: User) => {
-                this.currentUserSubject.next(updated);
-                return updated;
-            }),
-            catchError(this.handleError)
-        );
+        const body = {firstName, lastName};
+        return this.http.post<User>(`${this.USER_API_URL}/update`, body)
+            .pipe(
+                map((updated: User) => {
+                    this.currentUserSubject.next(updated);
+                    return updated;
+                }),
+                catchError(this.handleError)
+            );
     }
 
-  /**
-   * Check authentication status on service initialization
-   */
+    /**
+     * Check authentication status on service initialization
+     */
     private checkAuthenticationStatus(): void {
         if (this.isAuthenticated()) {
-      // If we have a valid token, try to get user info
+            // If we have a valid token, try to get user info
             this.getUserProfile().subscribe({
                 next: (user) => {
                     this.currentUserSubject.next(user);
                     this.isAuthenticatedSubject.next(true);
                 },
                 error: () => {
-          // If getting user profile fails, try to refresh token
+                    // If getting user profile fails, try to refresh token
                     this.refreshToken().subscribe({
                         error: () => {
                             this.logout();
@@ -365,19 +353,19 @@ export class AuthService {
         }
     }
 
-  /**
-   * Store authentication tokens in secure cookies
-   */
+    /**
+     * Store authentication tokens in secure cookies
+     */
     private setAuthTokens(accessToken: string, refreshToken: string, accessTokenExpiresAt?: string, refreshTokenExpiresAt?: string): void {
-    // Set cookies with secure options
-    const cookieOptions = {
-      secure: true, // Only send over HTTPS in production
-      sameSite: 'strict' as const,
-    };
+        // Set cookies with secure options
+        const cookieOptions = {
+            secure: true, // Only send over HTTPS in production
+            sameSite: 'strict' as const,
+        };
 
-    // Calculate expires from server-provided dates or fallback to defaults
-    let accessTokenExpires = 1 / 24; // Default 1 hour
-    let refreshTokenExpires = 7; // Default 7 days
+        // Calculate expires from server-provided dates or fallback to defaults
+        let accessTokenExpires = 1 / 24; // Default 1 hour
+        let refreshTokenExpires = 7; // Default 7 days
 
         if (accessTokenExpiresAt) {
             try {
@@ -385,13 +373,13 @@ export class AuthService {
                 const now = new Date();
                 const diffMs = expiresDate.getTime() - now.getTime();
                 const diffDays = diffMs / (1000 * 60 * 60 * 24);
-        if (diffDays > 0) {
-          accessTokenExpires = diffDays;
+                if (diffDays > 0) {
+                    accessTokenExpires = diffDays;
+                }
+            } catch (error) {
+                console.warn('Failed to parse access token expiry date, using default:', error);
+            }
         }
-      } catch (error) {
-        console.warn('Failed to parse access token expiry date, using default:', error);
-        }
-    }
 
         if (refreshTokenExpiresAt) {
             try {
@@ -399,44 +387,45 @@ export class AuthService {
                 const now = new Date();
                 const diffMs = expiresDate.getTime() - now.getTime();
                 const diffDays = diffMs / (1000 * 60 * 60 * 24);
-        if (diffDays > 0) {
-          refreshTokenExpires = diffDays;
+                if (diffDays > 0) {
+                    refreshTokenExpires = diffDays;
+                }
+            } catch (error) {
+                console.warn('Failed to parse refresh token expiry date, using default:', error);
+            }
         }
-      } catch (error) {
-        console.warn('Failed to parse refresh token expiry date, using default:', error);
-      }
+
+        // Set cookies with calculated expiry times
+        Cookies.set('access_token', accessToken, {
+            ...cookieOptions,
+            expires: accessTokenExpires
+        });
+
+        Cookies.set('refresh_token', refreshToken, {
+            ...cookieOptions,
+            expires: refreshTokenExpires
+        });
+
+        console.log(`Tokens stored: access expires in ${(accessTokenExpires * 24).toFixed(1)} hours, refresh expires in ${refreshTokenExpires.toFixed(1)} days`);
     }
 
-    // Set cookies with calculated expiry times
-    Cookies.set('access_token', accessToken, {
-      ...cookieOptions,
-      expires: accessTokenExpires
-    });
-
-    Cookies.set('refresh_token', refreshToken, {
-      ...cookieOptions,
-      expires: refreshTokenExpires
-    });
-
-    console.log(`Tokens stored: access expires in ${(accessTokenExpires * 24).toFixed(1)} hours, refresh expires in ${refreshTokenExpires.toFixed(1)} days`);
-  }
-
-  /**
-   * Clear all authentication tokens
-   */
+    /**
+     * Clear all authentication tokens
+     */
     private clearAuthTokens(): void {
         Cookies.remove('access_token');
         Cookies.remove('refresh_token');
     }
 
-  /**
-   * Handle HTTP errors
-   */
+    /**
+     * Handle HTTP errors
+     */
     private handleError(error: any): Observable<never> {
         console.error('Auth Service Error:', error);
         let errorMessage = 'An unexpected error occurred';
-        if (error.error && error.error.error && error.error.error.message) {
-            errorMessage = error.error.error.message;
+        // Extract error message from interceptor-formatted error
+        if (error.error && error.error.message) {
+            errorMessage = error.error.message;
         } else if (error.message) {
             errorMessage = error.message;
         }

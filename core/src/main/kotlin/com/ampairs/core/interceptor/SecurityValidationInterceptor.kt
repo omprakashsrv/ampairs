@@ -155,47 +155,38 @@ class SecurityValidationInterceptor(
                 // Common accept header patterns
                 headerValue.matches(Regex("^[\\w\\-*/,;=. ]+$"))
             }
-
             "accept-encoding" -> {
                 // Common encoding patterns
                 headerValue.matches(Regex("^[\\w\\-,; ]+$"))
             }
-
             "accept-language" -> {
                 // Language patterns
                 headerValue.matches(Regex("^[\\w\\-,;=. ]+$"))
             }
-
             "user-agent" -> {
                 // User agent strings are complex but generally safe
                 headerValue.length <= 512 && !headerValue.contains("<script")
             }
-
             "referer", "referrer" -> {
                 // URL patterns
                 headerValue.matches(Regex("^https?://[\\w\\-./:%?&=]+$"))
             }
-
             "origin" -> {
                 // Origin patterns
                 headerValue.matches(Regex("^https?://[\\w\\-.:]+$"))
             }
-
             "content-type" -> {
                 // Content type patterns
                 headerValue.matches(Regex("^[\\w\\-/;=. ]+$"))
             }
-
             "authorization" -> {
                 // Bearer tokens, basic auth, etc.
                 headerValue.matches(Regex("^(Bearer|Basic|Digest) [\\w\\-=+/]+$"))
             }
-
             "cache-control", "pragma", "expires" -> {
                 // Cache control patterns
                 true
             }
-
             else -> false
         }
     }
