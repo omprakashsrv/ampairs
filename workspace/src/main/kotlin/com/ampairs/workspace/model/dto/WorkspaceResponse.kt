@@ -1,46 +1,157 @@
 package com.ampairs.workspace.model.dto
 
 import com.ampairs.workspace.model.Workspace
+import com.ampairs.workspace.model.enums.SubscriptionPlan
+import com.ampairs.workspace.model.enums.WorkspaceType
+import com.fasterxml.jackson.annotation.JsonProperty
+import java.time.LocalDateTime
 
+/**
+ * Response DTO for workspace information
+ */
+data class WorkspaceResponse(
+    @JsonProperty("id")
+    val id: String,
 
-class WorkspaceResponse(
-    var id: String,
-    var countryCode: Int,
-    var name: String,
-    var phone: String,
-    var landline: String,
-    var email: String?,
-    var gstin: String?,
-    var address: String?,
-    var pincode: String?,
-    var state: String?,
-    var latitude: Double?,
-    var longitude: Double?,
-    var lastUpdated: Long,
-    var createdAt: String?,
-    var updatedAt: String?,
+    @JsonProperty("name")
+    val name: String,
+
+    @JsonProperty("slug")
+    val slug: String,
+
+    @JsonProperty("description")
+    val description: String?,
+
+    @JsonProperty("workspace_type")
+    val workspaceType: WorkspaceType,
+
+    @JsonProperty("avatar_url")
+    val avatarUrl: String?,
+
+    @JsonProperty("is_active")
+    val isActive: Boolean,
+
+    @JsonProperty("subscription_plan")
+    val subscriptionPlan: SubscriptionPlan,
+
+    @JsonProperty("max_members")
+    val maxMembers: Int,
+
+    @JsonProperty("storage_limit_gb")
+    val storageLimitGb: Int,
+
+    @JsonProperty("storage_used_gb")
+    val storageUsedGb: Int,
+
+    @JsonProperty("timezone")
+    val timezone: String,
+
+    @JsonProperty("language")
+    val language: String,
+
+    @JsonProperty("created_by")
+    val createdBy: String,
+
+    @JsonProperty("created_at")
+    val createdAt: LocalDateTime,
+
+    @JsonProperty("updated_at")
+    val updatedAt: LocalDateTime,
+
+    @JsonProperty("last_activity_at")
+    val lastActivityAt: LocalDateTime?,
+
+    @JsonProperty("trial_expires_at")
+    val trialExpiresAt: LocalDateTime?,
+
+    @JsonProperty("member_count")
+    val memberCount: Int? = null,
+
+    @JsonProperty("is_trial")
+    val isTrial: Boolean? = null,
+
+    @JsonProperty("storage_percentage")
+    val storagePercentage: Double? = null,
 )
 
-fun List<Workspace>.toWorkspaceResponse(): List<WorkspaceResponse> {
-    return map {
-        it.toWorkspaceResponse()
-    }
+/**
+ * Simplified workspace response for lists
+ */
+data class WorkspaceListResponse(
+    @JsonProperty("id")
+    val id: String,
+
+    @JsonProperty("name")
+    val name: String,
+
+    @JsonProperty("slug")
+    val slug: String,
+
+    @JsonProperty("description")
+    val description: String?,
+
+    @JsonProperty("workspace_type")
+    val workspaceType: WorkspaceType,
+
+    @JsonProperty("avatar_url")
+    val avatarUrl: String?,
+
+    @JsonProperty("subscription_plan")
+    val subscriptionPlan: SubscriptionPlan,
+
+    @JsonProperty("member_count")
+    val memberCount: Int,
+
+    @JsonProperty("last_activity_at")
+    val lastActivityAt: LocalDateTime?,
+
+    @JsonProperty("created_at")
+    val createdAt: LocalDateTime,
+)
+
+/**
+ * Extension function to convert Workspace entity to WorkspaceResponse
+ */
+fun Workspace.toResponse(memberCount: Int? = null): WorkspaceResponse {
+    return WorkspaceResponse(
+        id = this.uid, // Use uid instead of id
+        name = this.name,
+        slug = this.slug,
+        description = this.description,
+        workspaceType = this.workspaceType,
+        avatarUrl = this.avatarUrl,
+        isActive = this.active,
+        subscriptionPlan = this.subscriptionPlan,
+        maxMembers = this.maxMembers,
+        storageLimitGb = this.storageLimitGb,
+        storageUsedGb = this.storageUsedGb,
+        timezone = this.timezone,
+        language = this.language,
+        createdBy = this.ownerId, // Use ownerId instead of createdBy
+        createdAt = LocalDateTime.parse(this.createdAt ?: "2023-01-01T00:00:00"),
+        updatedAt = LocalDateTime.parse(this.updatedAt ?: "2023-01-01T00:00:00"),
+        lastActivityAt = this.lastActivityAt,
+        trialExpiresAt = this.trialExpiresAt,
+        memberCount = memberCount,
+        isTrial = this.isInTrial(),
+        storagePercentage = if (storageLimitGb > 0) (storageUsedGb.toDouble() / storageLimitGb * 100) else 0.0
+    )
 }
 
-fun Workspace.toWorkspaceResponse() = WorkspaceResponse(
-    id = this.uid,
-    name = this.name,
-    countryCode = this.countryCode,
-    phone = this.phone,
-    email = this.email,
-    gstin = this.gstin,
-    address = this.address,
-    pincode = this.pincode,
-    state = this.state,
-    latitude = this.location?.x,
-    longitude = this.location?.y,
-    lastUpdated = this.lastUpdated,
-    createdAt = this.createdAt,
-    updatedAt = this.updatedAt,
-    landline = this.landline
-)
+/**
+ * Extension function to convert Workspace entity to WorkspaceListResponse
+ */
+fun Workspace.toListResponse(memberCount: Int): WorkspaceListResponse {
+    return WorkspaceListResponse(
+        id = this.uid, // Use uid instead of id
+        name = this.name,
+        slug = this.slug,
+        description = this.description,
+        workspaceType = this.workspaceType,
+        avatarUrl = this.avatarUrl,
+        subscriptionPlan = this.subscriptionPlan,
+        memberCount = memberCount,
+        lastActivityAt = this.lastActivityAt,
+        createdAt = LocalDateTime.parse(this.createdAt ?: "2023-01-01T00:00:00")
+    )
+}

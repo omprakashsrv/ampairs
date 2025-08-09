@@ -2,7 +2,7 @@ package com.ampairs.auth.service
 
 import com.ampairs.core.config.ApplicationProperties
 import com.ampairs.core.multitenancy.TenantAware
-import com.ampairs.core.multitenancy.TenantContext
+import com.ampairs.core.multitenancy.TenantContextHolder
 import io.jsonwebtoken.*
 import io.jsonwebtoken.io.Decoders
 import io.jsonwebtoken.security.Keys
@@ -109,7 +109,7 @@ class JwtService(
         claims.putAll(extraClaims)
 
         // Add tenant information if available
-        TenantContext.getCurrentTenant()?.let { tenant ->
+        TenantContextHolder.getCurrentTenant()?.let { tenant ->
             claims[TENANT_CLAIM] = tenant
         }
 
