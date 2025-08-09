@@ -22,8 +22,8 @@
             <mat-icon>account_circle</mat-icon>
           </div>
           <div class="user-details">
-            <h3 class="user-name">{{user.name || 'User'}}</h3>
-            <p class="user-mobile">+91 {{ user.mobile_number }}</p>
+            <h3 class="user-name">{{user.fullName || 'User'}}</h3>
+            <p class="user-mobile">+91 {{ user.phone }}</p>
             <p class="user-email" *ngIf="user.email">{{user.email}}</p>
           </div>
         </div>
@@ -72,10 +72,10 @@
         <mat-card-content>
           <div class="user-welcome" *ngIf="currentUser$ | async as user">
             <p class="greeting">
-              Hello, <strong>{{user.name || 'User'}}</strong>! 👋
+              Hello, <strong>{{user.fullName || 'User'}}</strong>! 👋
             </p>
             <p class="login-info">
-              You are logged in with mobile number: <strong>+91 {{ user.mobile_number }}</strong>
+              You are logged in with mobile number: <strong>+91 {{ user.phone }}</strong>
             </p>
           </div>
 
