@@ -130,6 +130,11 @@ class SecurityValidationInterceptor(
                     return false
                 }
 
+                // Skip validation for standard HTTP headers that commonly contain patterns that might trigger false positives
+                if (isStandardHttpHeader(headerName, headerValue)) {
+                    continue
+                }
+
                 if (validationService.containsSqlInjection(headerValue) ||
                     validationService.containsXss(headerValue)
                 ) {
@@ -140,6 +145,59 @@ class SecurityValidationInterceptor(
         }
 
         return true
+    }
+
+    private fun isStandardHttpHeader(headerName: String, headerValue: String): Boolean {
+        val normalizedHeaderName = headerName.lowercase()
+
+        return when (normalizedHeaderName) {
+            "accept" -> {
+                // Common accept header patterns
+                headerValue.matches(Regex("^[\\w\\-*/,;=. ]+$"))
+            }
+
+            "accept-encoding" -> {
+                // Common encoding patterns
+                headerValue.matches(Regex("^[\\w\\-,; ]+$"))
+            }
+
+            "accept-language" -> {
+                // Language patterns
+                headerValue.matches(Regex("^[\\w\\-,;=. ]+$"))
+            }
+
+            "user-agent" -> {
+                // User agent strings are complex but generally safe
+                headerValue.length <= 512 && !headerValue.contains("<script")
+            }
+
+            "referer", "referrer" -> {
+                // URL patterns
+                headerValue.matches(Regex("^https?://[\\w\\-./:%?&=]+$"))
+            }
+
+            "origin" -> {
+                // Origin patterns
+                headerValue.matches(Regex("^https?://[\\w\\-.:]+$"))
+            }
+
+            "content-type" -> {
+                // Content type patterns
+                headerValue.matches(Regex("^[\\w\\-/;=. ]+$"))
+            }
+
+            "authorization" -> {
+                // Bearer tokens, basic auth, etc.
+                headerValue.matches(Regex("^(Bearer|Basic|Digest) [\\w\\-=+/]+$"))
+            }
+
+            "cache-control", "pragma", "expires" -> {
+                // Cache control patterns
+                true
+            }
+
+            else -> false
+        }
     }
 
     private fun validateParameters(request: HttpServletRequest): Boolean {

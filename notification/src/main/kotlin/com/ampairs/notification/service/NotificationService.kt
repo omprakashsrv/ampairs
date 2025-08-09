@@ -73,18 +73,43 @@ class NotificationService @Autowired constructor(
         message: String,
         channel: NotificationChannel = NotificationChannel.SMS,
     ): String {
-        val notificationQueue = NotificationQueue().apply {
-            this.recipient = recipient
-            this.message = message
-            this.channel = channel
-            this.status = NotificationStatus.PENDING
-            this.scheduledAt = LocalDateTime.now()
+        return queueNotificationWithTenant(recipient, message, channel, null)
+    }
+
+    /**
+     * Queue notification with specific tenant context
+     */
+    @Transactional
+    fun queueNotificationWithTenant(
+        recipient: String,
+        message: String,
+        channel: NotificationChannel = NotificationChannel.SMS,
+        tenantId: String? = null,
+    ): String {
+        // Use default tenant for notifications when no tenant context is available
+        val effectiveTenantId = tenantId
+            ?: com.ampairs.core.multitenancy.TenantContextHolder.getCurrentTenant()
+            ?: "default"
+
+        return com.ampairs.core.multitenancy.TenantContextHolder.withTenant(effectiveTenantId) {
+            val notificationQueue = NotificationQueue().apply {
+                this.recipient = recipient
+                this.message = message
+                this.channel = channel
+                this.status = NotificationStatus.PENDING
+                this.scheduledAt = LocalDateTime.now()
+                // Explicitly set the tenant ID to match current context
+                this.ownerId = effectiveTenantId
+            }
+
+            val savedNotification = notificationQueueRepository.save(notificationQueue)
+            logger.info(
+                "Notification queued for {}: {} with ID: {} (tenant: {})",
+                channel, recipient, savedNotification.uid, effectiveTenantId
+            )
+
+            savedNotification.uid
         }
-
-        val savedNotification = notificationQueueRepository.save(notificationQueue)
-        logger.info("Notification queued for {}: {} with ID: {}", channel, recipient, savedNotification.uid)
-
-        return savedNotification.uid
     }
 
     /**
@@ -97,21 +122,29 @@ class NotificationService @Autowired constructor(
         channel: NotificationChannel = NotificationChannel.SMS,
         delayMinutes: Long,
     ): String {
-        val notificationQueue = NotificationQueue().apply {
-            this.recipient = recipient
-            this.message = message
-            this.channel = channel
-            this.status = NotificationStatus.PENDING
-            this.scheduledAt = LocalDateTime.now().plusMinutes(delayMinutes)
+        // Use default tenant for delayed notifications when no tenant context is available  
+        val effectiveTenantId = com.ampairs.core.multitenancy.TenantContextHolder.getCurrentTenant()
+            ?: "default"
+
+        return com.ampairs.core.multitenancy.TenantContextHolder.withTenant(effectiveTenantId) {
+            val notificationQueue = NotificationQueue().apply {
+                this.recipient = recipient
+                this.message = message
+                this.channel = channel
+                this.status = NotificationStatus.PENDING
+                this.scheduledAt = LocalDateTime.now().plusMinutes(delayMinutes)
+                // Explicitly set the tenant ID to match current context
+                this.ownerId = effectiveTenantId
+            }
+
+            val savedNotification = notificationQueueRepository.save(notificationQueue)
+            logger.info(
+                "Notification queued for {}: {} with delay: {} minutes, ID: {} (tenant: {})",
+                channel, recipient, delayMinutes, savedNotification.uid, effectiveTenantId
+            )
+
+            savedNotification.uid
         }
-
-        val savedNotification = notificationQueueRepository.save(notificationQueue)
-        logger.info(
-            "Notification queued for {}: {} with delay: {} minutes, ID: {}",
-            channel, recipient, delayMinutes, savedNotification.uid
-        )
-
-        return savedNotification.uid
     }
 
     /**
