@@ -52,9 +52,14 @@ export interface AuthResponse {
 
 export interface User {
   id: string;
-  mobile_number: string;
-  name?: string;
+  firstName: string;
+  lastName: string;
+  userName: string;
+  countryCode: number;
+  phone: string;
   email?: string;
+  fullName: string;
+  active: boolean;
 }
 
 export interface DeviceSession {
@@ -316,6 +321,30 @@ export class AuthService {
       );
   }
 
+  // Make user profile API public and add update name API
+  public getUserProfile(): Observable<User> {
+    return this.http.get<User>(`${this.USER_API_URL}`)
+      .pipe(
+        catchError(this.handleError)
+      );
+  }
+
+  public isProfileIncomplete(user: User | null): boolean {
+    return !user || !user.firstName || user.firstName.trim() === '';
+  }
+
+  public updateUserName(firstName: string, lastName: string): Observable<User> {
+    const body = { firstName, lastName };
+    return this.http.post<User>(`${this.USER_API_URL}/update`, body)
+      .pipe(
+        map((updated: User) => {
+          this.currentUserSubject.next(updated);
+          return updated;
+        }),
+        catchError(this.handleError)
+      );
+  }
+
   /**
    * Check authentication status on service initialization
    */
@@ -337,16 +366,6 @@ export class AuthService {
         }
       });
     }
-  }
-
-  /**
-   * Get user profile from server
-   */
-  private getUserProfile(): Observable<User> {
-    return this.http.get<User>(`${this.USER_API_URL}`)
-      .pipe(
-        catchError(this.handleError)
-      );
   }
 
   /**

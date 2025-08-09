@@ -16,6 +16,11 @@ export const routes: Routes = [
     loadComponent: () => import('./auth/verify-otp/verify-otp.component').then(m => m.VerifyOtpComponent)
   },
   {
+    path: 'complete-profile',
+    loadComponent: () => import('./auth/complete-profile/complete-profile.component').then(m => m.CompleteProfileComponent),
+    canActivate: [AuthGuard]
+  },
+  {
     path: 'home',
     loadComponent: () => import('./home/home.component').then(m => m.HomeComponent),
     canActivate: [AuthGuard]

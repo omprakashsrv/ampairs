@@ -168,8 +168,18 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
             panelClass: ['success-snackbar']
           });
 
-          // Navigate to home page
-          this.router.navigate(['/home']);
+          this.authService.getUserProfile().subscribe({
+            next: (user) => {
+              if (this.authService.isProfileIncomplete(user)) {
+                this.router.navigate(['/complete-profile']);
+              } else {
+                this.router.navigate(['/home']);
+              }
+            },
+            error: () => {
+              this.router.navigate(['/home']);
+            }
+          });
         } else {
           this.showError('Invalid OTP. Please try again.');
           this.otpForm.get('otp')?.setValue('');
