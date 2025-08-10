@@ -31,7 +31,7 @@ class User : BaseDomain(), UserDetails {
     @Column(name = "first_name", nullable = false, columnDefinition = "varchar(100) default ''")
     var firstName = ""
 
-    @Column(name = "last_name", nullable = false, columnDefinition = "varchar(100) default ''")
+    @Column(name = "last_name", nullable = true, columnDefinition = "varchar(100) default ''")
     var lastName: String? = ""
 
     @Column(name = "active", nullable = false)

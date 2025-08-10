@@ -54,7 +54,7 @@ class SecurityConfiguration @Autowired constructor(
     @Throws(Exception::class)
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http.csrf { csrf -> csrf.disable() }
-            .cors { cors -> cors.disable() }
+            .cors { /* Use default CORS configuration from CorsConfig */ }
             .exceptionHandling { exception ->
                 exception.authenticationEntryPoint(unauthorizedHandler)
             }

@@ -44,13 +44,13 @@ export interface AuthResponse {
 
 export interface User {
     id: string;
-    firstName: string;
-    lastName: string;
-    userName: string;
-    countryCode: number;
+  first_name: string;
+  last_name?: string;
+  user_name: string;
+  country_code: number;
     phone: string;
     email?: string;
-    fullName: string;
+  full_name: string;
     active: boolean;
 }
 
@@ -75,7 +75,7 @@ export class AuthService {
     private readonly AUTH_API_URL = `${environment.apiBaseUrl}/auth/v1`;
     private readonly USER_API_URL = `${environment.apiBaseUrl}/user/v1`;
     private currentUserSubject = new BehaviorSubject<User | null>(null);
-    private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
+  private isAuthenticatedSubject = new BehaviorSubject<boolean | null>(null);
 
     public currentUser$ = this.currentUserSubject.asObservable();
     public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
@@ -315,11 +315,14 @@ export class AuthService {
     }
 
     public isProfileIncomplete(user: User | null): boolean {
-        return !user || !user.firstName || user.firstName.trim() === '';
+      return !user || !user.first_name || user.first_name.trim() === '';
     }
 
-    public updateUserName(firstName: string, lastName: string): Observable<User> {
-        const body = {firstName, lastName};
+  public updateUserName(firstName: string, lastName?: string): Observable<User> {
+    const body: any = {first_name: firstName};
+    if (lastName && lastName.trim()) {
+      body.last_name = lastName;
+    }
         return this.http.post<User>(`${this.USER_API_URL}/update`, body)
             .pipe(
                 map((updated: User) => {
@@ -334,22 +337,52 @@ export class AuthService {
      * Check authentication status on service initialization
      */
     private checkAuthenticationStatus(): void {
-        if (this.isAuthenticated()) {
-            // If we have a valid token, try to get user info
+      const accessToken = this.getAccessToken();
+      const refreshToken = this.getRefreshToken();
+
+      if (accessToken && this.isAuthenticated()) {
+        // If we have a valid access token, set authenticated state and get user info
+        this.isAuthenticatedSubject.next(true);
+
             this.getUserProfile().subscribe({
                 next: (user) => {
                     this.currentUserSubject.next(user);
-                    this.isAuthenticatedSubject.next(true);
                 },
-                error: () => {
-                    // If getting user profile fails, try to refresh token
-                    this.refreshToken().subscribe({
-                        error: () => {
-                            this.logout();
-                        }
+              error: (error) => {
+                // If getting user profile fails, try to refresh token
+                this.refreshToken().subscribe({
+                  next: () => {
+                    // After successful refresh, try to get user profile again
+                    this.getUserProfile().subscribe({
+                      next: (user) => this.currentUserSubject.next(user),
+                      error: () => this.logout('Failed to get user profile after token refresh')
                     });
+                  },
+                  error: () => {
+                    this.logout('Token refresh failed during authentication check');
+                  }
+                });
+              }
+            });
+      } else if (refreshToken) {
+        // If we only have refresh token, try to refresh
+        this.refreshToken().subscribe({
+          next: () => {
+            this.isAuthenticatedSubject.next(true);
+            // After successful refresh, get user profile
+            this.getUserProfile().subscribe({
+              next: (user) => this.currentUserSubject.next(user),
+              error: () => this.logout('Failed to get user profile after token refresh')
+            });
+          },
+          error: () => {
+            this.logout('Refresh token expired or invalid');
                 }
             });
+      } else {
+        // No tokens available, ensure logged out state
+        this.isAuthenticatedSubject.next(false);
+        this.currentUserSubject.next(null);
         }
     }
 
@@ -359,8 +392,8 @@ export class AuthService {
     private setAuthTokens(accessToken: string, refreshToken: string, accessTokenExpiresAt?: string, refreshTokenExpiresAt?: string): void {
         // Set cookies with secure options
         const cookieOptions = {
-            secure: true, // Only send over HTTPS in production
-            sameSite: 'strict' as const,
+          secure: location.protocol === 'https:', // Only secure in production HTTPS
+          sameSite: 'lax' as const, // Changed from strict to lax for better compatibility
         };
 
         // Calculate expires from server-provided dates or fallback to defaults
@@ -406,7 +439,6 @@ export class AuthService {
             expires: refreshTokenExpires
         });
 
-        console.log(`Tokens stored: access expires in ${(accessTokenExpires * 24).toFixed(1)} hours, refresh expires in ${refreshTokenExpires.toFixed(1)} days`);
     }
 
     /**

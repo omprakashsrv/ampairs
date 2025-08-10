@@ -1,18 +1,27 @@
-import { Injectable } from '@angular/core';
-import { HttpInterceptor, HttpRequest, HttpHandler, HttpEvent, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError, BehaviorSubject } from 'rxjs';
-import { catchError, switchMap, filter, take } from 'rxjs/operators';
-import { AuthService } from '../services/auth.service';
-import { NotificationService } from '../services/notification.service';
-import { Router } from '@angular/router';
+import {Injectable, Injector} from '@angular/core';
+import {
+  HttpClient,
+  HttpErrorResponse,
+  HttpEvent,
+  HttpHandler,
+  HttpInterceptor,
+  HttpRequest
+} from '@angular/common/http';
+import {BehaviorSubject, Observable, throwError} from 'rxjs';
+import {catchError, filter, map, switchMap, take} from 'rxjs/operators';
+import {NotificationService} from '../services/notification.service';
+import {Router} from '@angular/router';
+import {environment} from '../../../environments/environment';
+import Cookies from 'js-cookie';
 
 @Injectable()
 export class AuthInterceptor implements HttpInterceptor {
   private isRefreshing = false;
   private refreshTokenSubject: BehaviorSubject<any> = new BehaviorSubject<any>(null);
+  private readonly AUTH_API_URL = `${environment.apiBaseUrl}/auth/v1`;
 
   constructor(
-    private authService: AuthService,
+    private injector: Injector,
     private notificationService: NotificationService,
     private router: Router
   ) {}
@@ -40,15 +49,23 @@ export class AuthInterceptor implements HttpInterceptor {
   }
 
   private addTokenHeader(request: HttpRequest<any>): HttpRequest<any> {
-    const token = this.authService.getAccessToken();
-    
+    const token = this.getAccessToken();
+
     if (token) {
       return request.clone({
         headers: request.headers.set('Authorization', `Bearer ${token}`)
       });
     }
-    
+
     return request;
+  }
+
+  private getAccessToken(): string | null {
+    return Cookies.get('access_token') || null;
+  }
+
+  private getRefreshToken(): string | null {
+    return Cookies.get('refresh_token') || null;
   }
 
   private handle401Error(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
@@ -56,15 +73,16 @@ export class AuthInterceptor implements HttpInterceptor {
       this.isRefreshing = true;
       this.refreshTokenSubject.next(null);
 
-      const refreshToken = this.authService.getRefreshToken();
-      
+      const refreshToken = this.getRefreshToken();
+
       if (refreshToken) {
-        return this.authService.refreshToken().pipe(
-          switchMap((response: any) => {
+        return this.performTokenRefresh(refreshToken).pipe(
+          switchMap((tokenData: any) => {
             this.isRefreshing = false;
-            
-            if (response.access_token && response.refresh_token) {
-              this.refreshTokenSubject.next(response.access_token);
+
+            if (tokenData && tokenData.access_token && tokenData.refresh_token) {
+              this.setAuthTokens(tokenData.access_token, tokenData.refresh_token);
+              this.refreshTokenSubject.next(tokenData.access_token);
               // Retry the failed request with new token
               return next.handle(this.addTokenHeader(request));
             } else {
@@ -72,14 +90,15 @@ export class AuthInterceptor implements HttpInterceptor {
               console.log('Token refresh failed, redirecting to login');
               this.refreshTokenSubject.next('REFRESH_FAILED');
               this.notificationService.showSessionExpired();
-              // AuthService.logout() already handles navigation
+              this.clearAuthTokens();
+              this.router.navigate(['/login']);
               return throwError(() => new Error('Token refresh failed - redirecting to login'));
             }
           }),
           catchError((error) => {
             this.isRefreshing = false;
             console.log('Token refresh error:', error);
-            
+
             // Check if error is due to refresh token expiration
             if (error.status === 401 || error.status === 403) {
               console.log('Refresh token expired, redirecting to login');
@@ -87,10 +106,11 @@ export class AuthInterceptor implements HttpInterceptor {
             } else {
               this.notificationService.showTokenRefreshFailed();
             }
-            
+
             // Notify waiting requests that refresh failed
             this.refreshTokenSubject.next('REFRESH_FAILED');
-            // AuthService.logout() already handles navigation
+            this.clearAuthTokens();
+            this.router.navigate(['/login']);
             return throwError(() => new Error('Authentication failed - redirecting to login'));
           })
         );
@@ -99,7 +119,7 @@ export class AuthInterceptor implements HttpInterceptor {
         console.log('No refresh token available, redirecting to login');
         this.isRefreshing = false;
         this.notificationService.showSessionExpired();
-        this.authService.logout();
+        this.clearAuthTokens();
         this.router.navigate(['/login']);
         return throwError(() => new Error('No refresh token available - redirecting to login'));
       }
@@ -120,6 +140,64 @@ export class AuthInterceptor implements HttpInterceptor {
     }
   }
 
+  private performTokenRefresh(refreshToken: string): Observable<any> {
+    // Get HttpClient lazily to avoid circular dependency
+    const http = this.injector.get(HttpClient);
+
+    return http.post<any>(`${this.AUTH_API_URL}/refresh_token`, {
+      refresh_token: refreshToken,
+      device_id: this.getDeviceId()
+    }).pipe(
+      map(response => {
+        // Handle wrapped API response structure
+        if (response && response.success && response.data) {
+          return response.data;
+        }
+        return response;
+      })
+    );
+  }
+
+  private getDeviceId(): string {
+    // Simple device ID based on user agent and screen properties
+    const userAgent = navigator.userAgent;
+    const screenProps = `${screen.width}x${screen.height}`;
+    const deviceString = userAgent + screenProps;
+
+    // Create a simple hash
+    let hash = 0;
+    for (let i = 0; i < deviceString.length; i++) {
+      const char = deviceString.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash; // Convert to 32-bit integer
+    }
+
+    return `WEB_${Math.abs(hash).toString(36).toUpperCase()}`;
+  }
+
+  private setAuthTokens(accessToken: string, refreshToken: string): void {
+    const cookieOptions = {
+      secure: location.protocol === 'https:',
+      sameSite: 'lax' as const,
+    };
+
+    // Set cookies with default expiry times
+    Cookies.set('access_token', accessToken, {
+      ...cookieOptions,
+      expires: 1 / 24 // 1 hour
+    });
+
+    Cookies.set('refresh_token', refreshToken, {
+      ...cookieOptions,
+      expires: 7 // 7 days
+    });
+  }
+
+  private clearAuthTokens(): void {
+    Cookies.remove('access_token');
+    Cookies.remove('refresh_token');
+  }
+
   private isAuthEndpoint(url: string): boolean {
     // List of endpoints that should not trigger token refresh
     const authEndpoints = [
@@ -128,7 +206,7 @@ export class AuthInterceptor implements HttpInterceptor {
       '/auth/v1/refresh_token',
       '/auth/v1/logout'
     ];
-    
+
     return authEndpoints.some(endpoint => url.includes(endpoint));
   }
 }
