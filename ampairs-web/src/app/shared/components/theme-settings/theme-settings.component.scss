@@ -1,0 +1,326 @@
+// M3 Material Design Theme Settings Component  
+@use '../../styles/variables' as vars;
+@use '../../styles/mixins' as mixins;
+
+.theme-settings-container {
+  max-width: 600px;
+  min-width: 480px;
+  padding: 0;
+  background-color: var(--surface-container-color);
+  border: 1px solid var(--outline-variant-color);
+
+  @include mixins.tablet {
+    min-width: 320px;
+    max-width: 100vw;
+  }
+}
+
+.settings-header {
+  padding: 24px 24px 0;
+  text-align: center;
+  border-bottom: 1px solid var(--outline-variant-color);
+
+  @include mixins.tablet {
+    padding: 16px 16px 0;
+  }
+}
+
+.settings-title {
+  @include mixins.flex-center;
+  gap: 8px;
+  margin: 0 0 8px 0;
+  font-size: 1.5rem;
+  font-weight: 400;
+  color: var(--on-surface-color);
+}
+
+.settings-icon {
+  font-size: 1.5rem;
+  color: var(--primary-color);
+}
+
+.settings-subtitle {
+  margin: 0 0 16px 0;
+  color: var(--on-surface-variant-color);
+  font-size: 0.875rem;
+}
+
+.settings-content {
+  padding: 0 24px;
+  max-height: 70vh;
+  overflow-y: auto;
+
+  @include mixins.tablet {
+    padding: 0 16px;
+    max-height: 60vh;
+  }
+}
+
+.settings-tabs .mat-mdc-tab-group {
+  --mat-tab-header-inactive-label-text-color: var(--on-surface-variant-color);
+  --mat-tab-header-active-label-text-color: var(--primary-color);
+  --mat-tab-header-indicator-color: var(--primary-color);
+}
+
+.tab-content {
+  padding: 24px 0;
+  @include mixins.tablet { padding: 16px 0; }
+}
+
+.setting-section {
+  margin-bottom: 32px;
+  &:last-child { margin-bottom: 0; }
+}
+
+.section-title {
+  margin: 0 0 8px 0;
+  font-size: 1rem;
+  font-weight: 500;
+  color: var(--on-surface-color);
+}
+
+.section-description {
+  margin: 0 0 16px 0;
+  font-size: 0.875rem;
+  color: var(--on-surface-variant-color);
+  line-height: 1.25rem;
+}
+
+// M3 Theme selection
+.theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.theme-card {
+  position: relative;
+  padding: 12px;
+  border: 2px solid var(--outline-variant-color);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: var(--surface-container-color);
+
+  &:hover {
+    border-color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-2);
+  }
+
+  &.selected {
+    border-color: var(--primary-color);
+    background-color: var(--primary-container-color);
+    box-shadow: var(--shadow-2);
+
+    &::after {
+      content: '✓';
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 16px;
+      height: 16px;
+      background-color: var(--primary-color);
+      border-radius: 50%;
+      color: var(--on-primary-color);
+      font-size: 10px;
+      font-weight: bold;
+      @include mixins.flex-center;
+    }
+  }
+}
+
+.theme-preview {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 8px;
+  height: 24px;
+}
+
+.color-swatch {
+  flex: 1;
+  border-radius: 4px;
+  border: 1px solid var(--outline-variant-color);
+  &.primary { flex: 2; }
+}
+
+.theme-info {
+  @include mixins.flex-between;
+  font-size: 0.75rem;
+  color: var(--on-surface-color);
+}
+
+.theme-name { font-weight: 500; }
+
+.dark-icon, .light-icon { font-size: 14px; }
+.dark-icon { color: var(--on-surface-variant-color); }
+.light-icon { color: var(--tertiary-color); }
+
+.quick-actions { @include mixins.flex-center; }
+
+.toggle-button {
+  @include mixins.flex-center;
+  gap: 8px;
+  color: var(--primary-color);
+  border-color: var(--primary-color);
+  &:hover { background-color: var(--primary-container-color); }
+}
+
+// M3 Density & Typography controls
+.density-control, .typography-select { margin-bottom: 24px; }
+
+.slider-container {
+  @include mixins.flex-center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.slider-label {
+  font-size: 0.75rem;
+  color: var(--on-surface-variant-color);
+  white-space: nowrap;
+}
+
+.density-slider {
+  flex: 1;
+  .mat-mdc-slider {
+    --mdc-slider-active-track-color: var(--primary-color);
+    --mdc-slider-inactive-track-color: var(--outline-variant-color);
+    --mdc-slider-handle-color: var(--primary-color);
+  }
+}
+
+.density-info { text-align: center; }
+
+.density-level {
+  font-weight: 500;
+  color: var(--on-surface-color);
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.875rem;
+}
+
+.density-description { 
+  color: var(--on-surface-variant-color);
+  font-size: 0.75rem;
+}
+
+.density-preview { margin-top: 16px; }
+
+.preview-card {
+  max-width: 300px;
+  margin: 0 auto;
+  background-color: var(--surface-container-low-color);
+  border: 1px solid var(--outline-variant-color);
+}
+
+.preview-buttons {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.typography-select {
+  width: 100%;
+  .mat-mdc-form-field {
+    --mdc-outlined-text-field-label-text-color: var(--on-surface-variant-color);
+    --mdc-outlined-text-field-input-text-color: var(--on-surface-color);
+    --mdc-outlined-text-field-outline-color: var(--outline-color);
+    --mdc-outlined-text-field-focus-outline-color: var(--primary-color);
+  }
+}
+
+.typography-preview {
+  background-color: var(--surface-container-low-color);
+  border: 1px solid var(--outline-variant-color);
+  border-radius: 8px;
+  padding: 24px;
+}
+
+.text-samples > * {
+  margin: 0 0 16px 0;
+  color: var(--on-surface-color);
+  &:last-child { margin-bottom: 0; }
+}
+
+// Configuration & Settings
+.config-actions {
+  @include mixins.flex-column;
+  gap: 12px;
+  margin-bottom: 24px;
+  @media (min-width: 600px) { flex-direction: row; flex-wrap: wrap; }
+}
+
+.config-button {
+  @include mixins.flex-center;
+  gap: 8px;
+  flex: 1;
+  border: 1px solid var(--outline-color);
+  background-color: var(--surface-container-color);
+  color: var(--on-surface-color);
+  &:hover {
+    background-color: var(--surface-container-high-color);
+    border-color: var(--primary-color);
+  }
+  @media (min-width: 600px) { flex: none; min-width: 160px; }
+}
+
+.reset-button {
+  color: var(--error-color);
+  border-color: var(--error-color);
+  &:hover {
+    background-color: var(--error-container-color);
+    color: var(--on-error-container-color);
+  }
+}
+
+.import-wrapper { display: contents; }
+
+.current-settings { @include mixins.flex-column; gap: 12px; }
+
+.setting-item {
+  @include mixins.flex-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--outline-variant-color);
+  &:last-child { border-bottom: none; }
+}
+
+.setting-label, .setting-value { font-size: 0.875rem; }
+.setting-label { font-weight: 500; color: var(--on-surface-variant-color); }
+.setting-value { font-weight: 500; color: var(--on-surface-color); }
+
+.settings-actions {
+  padding: 16px 24px 24px;
+  @include mixins.flex-between;
+  gap: 12px;
+  border-top: 1px solid var(--outline-variant-color);
+  @include mixins.tablet { padding: 16px; @include mixins.flex-column; }
+}
+
+.cancel-button {
+  color: var(--on-surface-variant-color);
+  border-color: var(--outline-color);
+  &:hover { background-color: var(--surface-container-high-color); }
+}
+
+.apply-button {
+  @include mixins.flex-center;
+  gap: 8px;
+  min-width: 120px;
+  background-color: var(--primary-color);
+  color: var(--on-primary-color);
+  &:hover:not(:disabled) { box-shadow: var(--shadow-2); }
+  @include mixins.tablet { order: -1; }
+}
+
+// Responsive
+@include mixins.mobile {
+  .theme-grid { grid-template-columns: repeat(2, 1fr); }
+  .slider-container { 
+    @include mixins.flex-column; 
+    gap: 8px; 
+    .density-slider { width: 100%; }
+  }
+  .preview-buttons { @include mixins.flex-column; align-items: stretch; }
+}

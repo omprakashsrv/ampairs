@@ -42,7 +42,7 @@ class User : BaseDomain(), UserDetails {
     }
 
     val fullName: String
-        get() = "$firstName $lastName"
+        get() = if (lastName.isNullOrEmpty()) firstName else "$firstName $lastName"
 
     @ElementCollection
     override fun getAuthorities(): List<SimpleGrantedAuthority> {

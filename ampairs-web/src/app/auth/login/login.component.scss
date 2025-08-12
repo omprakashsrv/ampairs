@@ -1,59 +1,78 @@
+// M3 Material Design Login Component
+@use '../../shared/styles/variables' as vars;
+@use '../../shared/styles/mixins' as mixins;
+
 .auth-container {
   min-height: 100vh;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 16px;
+  @include mixins.flex-center;
+  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  padding: var(--spacing-md, 16px);
 }
 
 .auth-card {
   width: 100%;
   max-width: 400px;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border-radius: vars.$border-radius-lg;
+  box-shadow: var(--shadow-4);
+  background-color: var(--surface-container-color);
+  border: 1px solid var(--outline-variant-color);
 }
 
 .logo-icon {
   font-size: 48px;
   width: 48px;
   height: 48px;
-  color: #3f51b5;
-  margin-bottom: 8px;
+  color: var(--primary-color);
+  margin-bottom: var(--spacing-sm, 8px);
 }
 
 .auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  margin-top: 16px;
+  @include mixins.flex-column;
+  gap: var(--spacing-md, 16px);
+  margin-top: var(--spacing-md, 16px);
 }
 
 .auth-button {
-  margin-top: 16px;
+  margin-top: var(--spacing-md, 16px);
   height: 48px;
-  font-size: 16px;
-  font-weight: 500;
+  font-size: var(--font-label-large-size, 0.875rem);
+  font-weight: var(--font-label-large-weight, 500);
+  background-color: var(--primary-color);
+  color: var(--on-primary-color);
+
+  &:hover:not(:disabled) {
+    background-color: var(--primary-color);
+    box-shadow: var(--shadow-2);
+  }
+
+  &:disabled {
+    background-color: var(--surface-container-color);
+    color: var(--on-surface-variant-color);
+    opacity: 0.38;
+  }
 }
 
 .button-spinner {
-  margin-right: 8px;
+  margin-right: var(--spacing-sm, 8px);
+  
+  ::ng-deep circle {
+    stroke: var(--on-primary-color);
+  }
 }
 
 .help-text {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  color: #666;
-  font-size: 14px;
-  margin: 16px 0 0 0;
+  @include mixins.flex-center;
+  gap: var(--spacing-sm, 8px);
+  color: var(--on-surface-variant-color);
+  font-size: var(--font-body-small-size, 0.875rem);
+  margin: var(--spacing-md, 16px) 0 0 0;
 }
 
 .info-icon {
   font-size: 18px;
   width: 18px;
   height: 18px;
+  color: var(--primary-color);
 }
 
 .text-center {
@@ -65,26 +84,43 @@
 }
 
 mat-card-header {
-  margin-bottom: 8px;
+  margin-bottom: var(--spacing-sm, 8px);
 }
 
 mat-card-title h1 {
-  margin: 8px 0;
-  font-size: 24px;
-  font-weight: 500;
+  margin: var(--spacing-sm, 8px) 0;
+  font-size: var(--font-headline-small-size, 1.5rem);
+  font-weight: var(--font-headline-small-weight, 400);
+  color: var(--on-surface-color);
 }
 
 mat-card-actions {
   padding-top: 0;
 }
 
-/* Responsive design */
-@media (max-width: 480px) {
+// M3 form field styling
+.auth-form mat-form-field {
+  &.mat-mdc-form-field {
+    --mdc-outlined-text-field-label-text-color: var(--on-surface-variant-color);
+    --mdc-outlined-text-field-input-text-color: var(--on-surface-color);
+    --mdc-outlined-text-field-outline-color: var(--outline-color);
+    --mdc-outlined-text-field-focus-outline-color: var(--primary-color);
+    --mdc-outlined-text-field-hover-outline-color: var(--on-surface-color);
+  }
+}
+
+/* M3 Responsive design */
+@include mixins.mobile {
   .auth-container {
-    padding: 8px;
+    padding: var(--spacing-sm, 8px);
   }
   
   .auth-card {
     margin: 0;
+    border-radius: vars.$border-radius-md;
+  }
+  
+  mat-card-title h1 {
+    font-size: var(--font-title-large-size, 1.375rem);
   }
 }

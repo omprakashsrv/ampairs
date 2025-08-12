@@ -1,26 +1,28 @@
-@import 'variables';
+// Material 3 Compatible Mixins
+// Updated to use CSS custom properties from M3 theme system
+@use 'variables' as vars;
 
 // Responsive Mixins
 @mixin mobile {
-  @media (max-width: #{$breakpoint-sm - 1px}) {
+  @media (max-width: #{vars.$breakpoint-sm - 1px}) {
     @content;
   }
 }
 
 @mixin tablet {
-  @media (min-width: $breakpoint-sm) and (max-width: #{$breakpoint-md - 1px}) {
+  @media (min-width: vars.$breakpoint-sm) and (max-width: #{vars.$breakpoint-md - 1px}) {
     @content;
   }
 }
 
 @mixin desktop {
-  @media (min-width: $breakpoint-md) {
+  @media (min-width: vars.$breakpoint-md) {
     @content;
   }
 }
 
 @mixin large-desktop {
-  @media (min-width: $breakpoint-lg) {
+  @media (min-width: vars.$breakpoint-lg) {
     @content;
   }
 }
@@ -48,85 +50,13 @@
   align-items: center;
 }
 
-// Card Mixin
-@mixin card($padding: $spacing-md, $radius: $border-radius-lg) {
-  background: $card-background;
-  border-radius: $radius;
-  box-shadow: 0 4px 16px $shadow-light;
-  padding: $padding;
-}
-
-// Button Mixins
-@mixin button-base {
-  border: none;
-  border-radius: $border-radius-md;
-  cursor: pointer;
-  font-weight: $font-weight-medium;
-  text-transform: none;
-  transition: all $transition-normal ease;
-  
-  &:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-}
-
-@mixin button-primary {
-  @include button-base;
-  background-color: $primary-color;
-  color: white;
-  
-  &:hover:not(:disabled) {
-    background-color: $primary-dark;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 12px rgba($primary-color, 0.3);
-  }
-}
-
-@mixin button-secondary {
-  @include button-base;
-  background-color: transparent;
-  color: $primary-color;
-  border: 1px solid $primary-color;
-  
-  &:hover:not(:disabled) {
-    background-color: rgba($primary-color, 0.1);
-  }
-}
-
-// Form Mixins
-@mixin form-field {
-  width: 100%;
-  margin-bottom: $spacing-md;
-  
-  .mat-mdc-form-field-flex {
-    border-radius: $border-radius-md;
-  }
-}
-
-@mixin input-error {
-  border-color: $warn-color !important;
-  
-  .mat-mdc-form-field-error {
-    color: $warn-color;
-    font-size: $font-size-xs;
-  }
-}
-
-// Loading Spinner Mixin
-@mixin loading-spinner($size: 40px) {
-  width: $size;
-  height: $size;
-  border: 3px solid rgba($primary-color, 0.3);
-  border-top: 3px solid $primary-color;
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
+// Note: Card, Button, Form, and Loading Spinner mixins removed
+// Use Angular Material M3 components instead:
+// - mat-card for cards
+// - mat-button, mat-raised-button, mat-stroked-button for buttons  
+// - mat-form-field for forms
+// - mat-progress-spinner for loading indicators
+// All can be customized via M3 design tokens
 
 // Text Mixins
 @mixin text-truncate {
@@ -142,29 +72,20 @@
   overflow: hidden;
 }
 
-// Shadow Mixins
-@mixin shadow-light {
-  box-shadow: 0 2px 8px $shadow-light;
-}
-
-@mixin shadow-medium {
-  box-shadow: 0 4px 16px $shadow-medium;
-}
-
-@mixin shadow-dark {
-  box-shadow: 0 8px 32px $shadow-dark;
-}
+// Note: Shadow mixins removed - use M3 elevation tokens instead:
+// var(--shadow-1), var(--shadow-2), var(--shadow-3), var(--shadow-4)
+// Apply directly via CSS: box-shadow: var(--shadow-2);
 
 // Animation Mixins
-@mixin fade-in($duration: $transition-normal) {
+@mixin fade-in($duration: vars.$transition-normal) {
   animation: fadeIn $duration ease-in forwards;
 }
 
-@mixin slide-up($duration: $transition-normal) {
+@mixin slide-up($duration: vars.$transition-normal) {
   animation: slideUp $duration ease-out forwards;
 }
 
-@mixin scale-in($duration: $transition-normal) {
+@mixin scale-in($duration: vars.$transition-normal) {
   animation: scaleIn $duration ease-out forwards;
 }
 
