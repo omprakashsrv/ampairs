@@ -537,6 +537,10 @@ export class ThemeService {
   }
 
   private updateBodyClass(prefix: string, newClass: string): void {
+    // Remove both light-theme and dark-theme classes specifically
+    this.document.body.classList.remove('light-theme', 'dark-theme');
+    
+    // Also remove any classes that start with the prefix (for other use cases)
     this.document.body.className = this.document.body.className
       .split(' ')
       .filter(className => !className.startsWith(prefix))

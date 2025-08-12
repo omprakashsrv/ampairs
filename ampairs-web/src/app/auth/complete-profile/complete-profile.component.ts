@@ -7,7 +7,8 @@ import {MatInputModule} from '@angular/material/input';
 import {MatButtonModule} from '@angular/material/button';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatSnackBar, MatSnackBarModule} from '@angular/material/snack-bar';
-import {Router} from '@angular/router';
+import {MatIconModule} from '@angular/material/icon';
+import {Router, ActivatedRoute} from '@angular/router';
 import {Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
 import {AuthService, User} from '../../core/services/auth.service';
@@ -23,7 +24,8 @@ import {AuthService, User} from '../../core/services/auth.service';
     MatInputModule,
     MatButtonModule,
     MatProgressSpinnerModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatIconModule
   ],
   templateUrl: './complete-profile.component.html',
   styleUrl: './complete-profile.component.scss'
@@ -32,18 +34,27 @@ export class CompleteProfileComponent implements OnInit, OnDestroy {
   profileForm: FormGroup;
   isSubmitting = false;
   currentUser: User | null = null;
+  isEditMode = false;
   private destroy$ = new Subject<void>();
 
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router,
+    private route: ActivatedRoute,
     private snackBar: MatSnackBar
   ) {
     this.profileForm = this.createForm();
   }
 
   ngOnInit(): void {
+    // Check if this is edit mode from query params
+    this.route.queryParams
+      .pipe(takeUntil(this.destroy$))
+      .subscribe(params => {
+        this.isEditMode = params['edit'] === 'true';
+      });
+
     // Subscribe to current user changes
     this.authService.currentUser$
       .pipe(takeUntil(this.destroy$))
@@ -52,8 +63,8 @@ export class CompleteProfileComponent implements OnInit, OnDestroy {
         if (user) {
           this.updateFormWithUserData(user);
 
-          // If user already has complete profile, redirect to home
-          if (!this.authService.isProfileIncomplete(user)) {
+          // If user already has complete profile and NOT in edit mode, redirect to home
+          if (!this.isEditMode && !this.authService.isProfileIncomplete(user)) {
             this.router.navigate(['/home']).catch(error =>
               console.error('Navigation error:', error)
             );
@@ -65,6 +76,10 @@ export class CompleteProfileComponent implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
+  }
+
+  goBack(): void {
+    this.router.navigate(['/home']);
   }
 
   onSubmit(): void {
@@ -85,14 +100,24 @@ export class CompleteProfileComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (_updatedUser) => {
           this.isSubmitting = false;
-          this.showSuccessMessage('Profile completed successfully!');
-
-          // Navigate to home page after a short delay
-          setTimeout(() => {
-            this.router.navigate(['/home']).catch(error =>
-              console.error('Navigation error:', error)
-            );
-          }, 1000);
+          
+          if (this.isEditMode) {
+            this.showSuccessMessage('Profile updated successfully!');
+            // Navigate back to home page after a short delay
+            setTimeout(() => {
+              this.router.navigate(['/home']).catch(error =>
+                console.error('Navigation error:', error)
+              );
+            }, 1000);
+          } else {
+            this.showSuccessMessage('Profile completed successfully!');
+            // Navigate to home page after a short delay
+            setTimeout(() => {
+              this.router.navigate(['/home']).catch(error =>
+                console.error('Navigation error:', error)
+              );
+            }, 1000);
+          }
         },
         error: (error) => {
           this.isSubmitting = false;

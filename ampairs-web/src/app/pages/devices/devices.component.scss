@@ -1,0 +1,45 @@
+// M3 Material Design Devices Page
+@use '../../shared/styles/variables' as vars;
+@use '../../shared/styles/mixins' as mixins;
+
+.devices-page {
+  min-height: 100vh;
+  background-color: var(--background-color);
+  @include mixins.flex-column;
+}
+
+.page-toolbar {
+  background-color: var(--surface-color);
+  color: var(--on-surface-color);
+  box-shadow: var(--shadow-1);
+  position: sticky;
+  top: 0;
+  z-index: vars.$z-index-sticky;
+}
+
+.page-title {
+  font-size: var(--font-title-large-size, 1.375rem);
+  font-weight: var(--font-title-large-weight, 400);
+  color: var(--on-surface-color);
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.page-content {
+  flex: 1;
+  padding: var(--spacing-lg, 24px);
+  max-width: 1200px;
+  width: 100%;
+  margin: 0 auto;
+
+  @include mixins.mobile {
+    padding: var(--spacing-md, 16px);
+  }
+}
+
+// Override device management card margin since it's now in a dedicated page
+.page-content ::ng-deep .device-management-card {
+  margin: 0;
+}

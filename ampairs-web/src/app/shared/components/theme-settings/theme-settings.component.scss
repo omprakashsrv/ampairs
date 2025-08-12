@@ -162,9 +162,6 @@
 .toggle-button {
   @include mixins.flex-center;
   gap: 8px;
-  color: var(--primary-color);
-  border-color: var(--primary-color);
-  &:hover { background-color: var(--primary-container-color); }
 }
 
 // M3 Density & Typography controls
@@ -256,23 +253,11 @@
   @include mixins.flex-center;
   gap: 8px;
   flex: 1;
-  border: 1px solid var(--outline-color);
-  background-color: var(--surface-container-color);
-  color: var(--on-surface-color);
-  &:hover {
-    background-color: var(--surface-container-high-color);
-    border-color: var(--primary-color);
-  }
   @media (min-width: 600px) { flex: none; min-width: 160px; }
 }
 
 .reset-button {
   color: var(--error-color);
-  border-color: var(--error-color);
-  &:hover {
-    background-color: var(--error-container-color);
-    color: var(--on-error-container-color);
-  }
 }
 
 .import-wrapper { display: contents; }
@@ -300,17 +285,11 @@
 
 .cancel-button {
   color: var(--on-surface-variant-color);
-  border-color: var(--outline-color);
-  &:hover { background-color: var(--surface-container-high-color); }
 }
 
 .apply-button {
   @include mixins.flex-center;
   gap: 8px;
-  min-width: 120px;
-  background-color: var(--primary-color);
-  color: var(--on-primary-color);
-  &:hover:not(:disabled) { box-shadow: var(--shadow-2); }
   @include mixins.tablet { order: -1; }
 }
 

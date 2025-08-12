@@ -1,4 +1,4 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, OnDestroy} from '@angular/core';
 import {Router} from '@angular/router';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {MatCardModule} from '@angular/material/card';
@@ -30,9 +30,10 @@ import {environment} from '../../../environments/environment';
     templateUrl: './login.component.html',
     styleUrl: './login.component.scss'
 })
-export class LoginComponent implements OnInit {
+export class LoginComponent implements OnInit, OnDestroy {
     loginForm: FormGroup;
     isLoading = false;
+    private recaptchaScript: HTMLScriptElement | null = null;
 
     constructor(
         private fb: FormBuilder,
@@ -58,9 +59,11 @@ export class LoginComponent implements OnInit {
                 this.router.navigate(['/home']);
             }
         });
+    }
 
-        // Initialize reCAPTCHA by adding script to head if not already present
-        this.initializeRecaptcha();
+    ngOnDestroy(): void {
+        // Clean up reCAPTCHA when component is destroyed
+        this.cleanupRecaptcha();
     }
 
     onSubmit(): void {
@@ -76,51 +79,85 @@ export class LoginComponent implements OnInit {
                 return;
             }
 
-            // Add a small delay to ensure reCAPTCHA is ready
-            setTimeout(() => {
-                // Get reCAPTCHA token using ng-recaptcha-2
-                console.log('Attempting to execute reCAPTCHA...');
-                this.recaptchaV3Service.execute('login').subscribe({
-                    next: (recaptchaToken: string) => {
-                        console.log('Received reCAPTCHA token:', recaptchaToken);
-                        console.log('Token length:', recaptchaToken ? recaptchaToken.length : 'null/undefined');
-
-                        if (!recaptchaToken) {
-                            console.error('reCAPTCHA token is null or empty');
-                            this.isLoading = false;
-                            this.showError('Security verification failed. Please try again.');
-                            return;
-                        }
-
-                        this.handleAuthRequest(mobileNumber, recaptchaToken);
-                    },
-                    error: (recaptchaError) => {
-                        console.error('reCAPTCHA error:', recaptchaError);
-                        this.isLoading = false;
-                        this.showError('Security verification failed. Please try again.');
-                    }
-                });
-            }, 1000); // 1 second delay to ensure reCAPTCHA is ready
+            // Load reCAPTCHA dynamically and execute
+            this.loadRecaptchaAndExecute(mobileNumber);
         }
     }
 
-    private initializeRecaptcha(): void {
-        // Check if reCAPTCHA script is already loaded
-        if (!document.querySelector('script[src*="recaptcha"]')) {
-            console.log('Loading reCAPTCHA script manually...');
-            const script = document.createElement('script');
-            script.src = `https://www.google.com/recaptcha/api.js?render=6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI`;
-            script.async = true;
-            script.defer = true;
-            script.onload = () => {
-                console.log('reCAPTCHA script loaded successfully');
-            };
-            script.onerror = () => {
-                console.error('Failed to load reCAPTCHA script');
-            };
-            document.head.appendChild(script);
-        } else {
-            console.log('reCAPTCHA script already loaded');
+    private loadRecaptchaAndExecute(mobileNumber: string): void {
+        console.log('Loading reCAPTCHA dynamically...');
+        
+        // Create and load the reCAPTCHA script
+        this.recaptchaScript = document.createElement('script');
+        this.recaptchaScript.src = `https://www.google.com/recaptcha/api.js?render=${environment.recaptcha.siteKey}`;
+        this.recaptchaScript.async = true;
+        this.recaptchaScript.defer = true;
+        
+        this.recaptchaScript.onload = () => {
+            console.log('reCAPTCHA script loaded successfully');
+            
+            // Wait a bit for reCAPTCHA to initialize, then execute
+            setTimeout(() => {
+                this.executeRecaptcha(mobileNumber);
+            }, 1000);
+        };
+        
+        this.recaptchaScript.onerror = () => {
+            console.error('Failed to load reCAPTCHA script');
+            this.isLoading = false;
+            this.showError('Security verification failed. Please try again.');
+        };
+        
+        document.head.appendChild(this.recaptchaScript);
+    }
+
+    private executeRecaptcha(mobileNumber: string): void {
+        console.log('Attempting to execute reCAPTCHA...');
+        this.recaptchaV3Service.execute('login').subscribe({
+            next: (recaptchaToken: string) => {
+                console.log('Received reCAPTCHA token:', recaptchaToken);
+                
+                if (!recaptchaToken) {
+                    console.error('reCAPTCHA token is null or empty');
+                    this.isLoading = false;
+                    this.showError('Security verification failed. Please try again.');
+                    return;
+                }
+
+                this.handleAuthRequest(mobileNumber, recaptchaToken);
+                
+                // Clean up reCAPTCHA after successful token generation
+                this.cleanupRecaptcha();
+            },
+            error: (recaptchaError) => {
+                console.error('reCAPTCHA error:', recaptchaError);
+                this.isLoading = false;
+                this.showError('Security verification failed. Please try again.');
+                this.cleanupRecaptcha();
+            }
+        });
+    }
+
+    private cleanupRecaptcha(): void {
+        console.log('Cleaning up reCAPTCHA...');
+        
+        // Remove the script
+        if (this.recaptchaScript && this.recaptchaScript.parentNode) {
+            this.recaptchaScript.parentNode.removeChild(this.recaptchaScript);
+            this.recaptchaScript = null;
+        }
+        
+        // Remove all reCAPTCHA related elements
+        const recaptchaElements = document.querySelectorAll('.grecaptcha-badge, iframe[src*="recaptcha"]');
+        recaptchaElements.forEach(element => {
+            if (element.parentNode) {
+                element.parentNode.removeChild(element);
+            }
+        });
+        
+        // Clean up global reCAPTCHA object
+        if ((window as any).grecaptcha) {
+            delete (window as any).grecaptcha;
         }
     }
 

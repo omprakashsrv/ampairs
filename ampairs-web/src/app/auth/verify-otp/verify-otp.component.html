@@ -1,96 +1,96 @@
 <div class="auth-container">
-  <mat-card class="auth-card">
-    <mat-card-header>
-      <mat-card-title class="text-center">
-        <mat-icon class="logo-icon">sms</mat-icon>
-        <h1>Verify OTP</h1>
-      </mat-card-title>
-      <mat-card-subtitle class="text-center">
-        Enter the 6-digit code sent to<br>
-        <strong>+91 {{maskedMobileNumber}}</strong>
-      </mat-card-subtitle>
-    </mat-card-header>
-    
-    <mat-card-content>
-      <form [formGroup]="otpForm" (ngSubmit)="onSubmit()" class="auth-form">
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Enter OTP</mat-label>
-          <input 
-            matInput 
-            formControlName="otp"
-            placeholder="Enter 6-digit OTP"
-            maxlength="6"
-            type="tel"
-            class="otp-input"
-            [disabled]="isLoading"
-            (input)="onOtpInput($event)">
-          <mat-icon matSuffix>lock</mat-icon>
-          @if (otpForm.get('otp')?.hasError('required')) {
-            <mat-error>OTP is required</mat-error>
-          }
-          @if (otpForm.get('otp')?.hasError('pattern')) {
-            <mat-error>Please enter a valid 6-digit OTP</mat-error>
-          }
-          @if (otpForm.get('otp')?.hasError('minlength') || otpForm.get('otp')?.hasError('maxlength')) {
-            <mat-error>OTP must be exactly 6 digits</mat-error>
-          }
-        </mat-form-field>
+    <mat-card class="auth-card">
+        <mat-card-header>
+            <mat-card-title class="text-center">
+                <mat-icon class="logo-icon">sms</mat-icon>
+                <h3>Verify OTP</h3>
+            </mat-card-title>
+            <mat-card-subtitle class="text-center">
+                Enter the 6-digit code sent to<br>
+                <strong>+91 {{ maskedMobileNumber }}</strong>
+            </mat-card-subtitle>
+        </mat-card-header>
 
-        <button 
-          mat-raised-button 
-          color="primary" 
-          type="submit" 
-          class="auth-button full-width"
-          [disabled]="otpForm.invalid || isLoading">
-          @if (isLoading) {
-            <mat-spinner diameter="20" class="button-spinner"></mat-spinner>
-          }
-          @if (!isLoading) {
-            <span>Verify & Continue</span>
-          }
-          @if (isLoading) {
-            <span>Verifying...</span>
-          }
-        </button>
-      </form>
-    </mat-card-content>
+        <mat-card-content>
+            <form [formGroup]="otpForm" (ngSubmit)="onSubmit()" class="auth-form">
+                <mat-form-field appearance="outline">
+                    <mat-label>Enter OTP</mat-label>
+                    <input
+                            matInput
+                            formControlName="otp"
+                            placeholder="Enter 6-digit OTP"
+                            maxlength="6"
+                            type="tel"
+                            class="otp-input"
+                            [disabled]="isLoading"
+                            (input)="onOtpInput($event)">
+                    <mat-icon matSuffix>lock</mat-icon>
+                    @if (otpForm.get('otp')?.hasError('required')) {
+                        <mat-error>OTP is required</mat-error>
+                    }
+                    @if (otpForm.get('otp')?.hasError('pattern')) {
+                        <mat-error>Please enter a valid 6-digit OTP</mat-error>
+                    }
+                    @if (otpForm.get('otp')?.hasError('minlength') || otpForm.get('otp')?.hasError('maxlength')) {
+                        <mat-error>OTP must be exactly 6 digits</mat-error>
+                    }
+                </mat-form-field>
 
-    <mat-card-actions class="card-actions">
-      @if (!canResend) {
-        <div class="resend-section">
-          <p class="timer-text">
-            <mat-icon class="timer-icon">schedule</mat-icon>
-            Resend OTP in {{remainingTime}}s
-          </p>
-        </div>
-      }
-      
-      @if (canResend) {
-        <div class="resend-section">
-          <button 
-            mat-button 
-            color="accent" 
-            (click)="resendOtp()"
-            [disabled]="isResending">
-            @if (isResending) {
-              <mat-spinner diameter="16" class="button-spinner"></mat-spinner>
+                <button
+                        mat-raised-button
+                        color="primary"
+                        type="submit"
+                        class="auth-button"
+                        [disabled]="otpForm.invalid || isLoading">
+                    @if (isLoading) {
+                        <mat-spinner diameter="20" class="button-spinner"></mat-spinner>
+                    }
+                    @if (!isLoading) {
+                        <span>Verify & Continue</span>
+                    }
+                    @if (isLoading) {
+                        <span>Verifying...</span>
+                    }
+                </button>
+            </form>
+        </mat-card-content>
+
+        <mat-card-actions class="card-actions">
+            @if (!canResend) {
+                <div class="resend-section">
+                    <p class="timer-text">
+                        <mat-icon class="timer-icon">schedule</mat-icon>
+                        Resend OTP in {{ remainingTime }}s
+                    </p>
+                </div>
             }
-            @if (!isResending) {
-              <mat-icon>refresh</mat-icon>
-            }
-            {{isResending ? 'Resending...' : 'Resend OTP'}}
-          </button>
-        </div>
-      }
 
-      <button 
-        mat-button 
-        color="warn" 
-        (click)="goBack()"
-        class="back-button">
-        <mat-icon>arrow_back</mat-icon>
-        Change Number
-      </button>
-    </mat-card-actions>
-  </mat-card>
+            @if (canResend) {
+                <div class="resend-section">
+                    <button
+                            mat-button
+                            color="accent"
+                            (click)="resendOtp()"
+                            [disabled]="isResending">
+                        @if (isResending) {
+                            <mat-spinner diameter="16" class="button-spinner"></mat-spinner>
+                        }
+                        @if (!isResending) {
+                            <mat-icon>refresh</mat-icon>
+                        }
+                        {{ isResending ? 'Resending...' : 'Resend OTP' }}
+                    </button>
+                </div>
+            }
+
+            <button
+                    mat-button
+                    color="warn"
+                    (click)="goBack()"
+                    class="back-button">
+                <mat-icon>arrow_back</mat-icon>
+                Change Number
+            </button>
+        </mat-card-actions>
+    </mat-card>
 </div>

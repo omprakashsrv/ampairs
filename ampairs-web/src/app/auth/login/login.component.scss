@@ -12,10 +12,6 @@
 .auth-card {
   width: 100%;
   max-width: 400px;
-  border-radius: vars.$border-radius-lg;
-  box-shadow: var(--shadow-4);
-  background-color: var(--surface-container-color);
-  border: 1px solid var(--outline-variant-color);
 }
 
 .logo-icon {
@@ -34,30 +30,11 @@
 
 .auth-button {
   margin-top: var(--spacing-md, 16px);
-  height: 48px;
-  font-size: var(--font-label-large-size, 0.875rem);
-  font-weight: var(--font-label-large-weight, 500);
-  background-color: var(--primary-color);
-  color: var(--on-primary-color);
-
-  &:hover:not(:disabled) {
-    background-color: var(--primary-color);
-    box-shadow: var(--shadow-2);
-  }
-
-  &:disabled {
-    background-color: var(--surface-container-color);
-    color: var(--on-surface-variant-color);
-    opacity: 0.38;
-  }
+  align-self: center;
 }
 
 .button-spinner {
   margin-right: var(--spacing-sm, 8px);
-  
-  ::ng-deep circle {
-    stroke: var(--on-primary-color);
-  }
 }
 
 .help-text {
@@ -94,19 +71,10 @@ mat-card-title h1 {
   color: var(--on-surface-color);
 }
 
-mat-card-actions {
-  padding-top: 0;
-}
-
-// M3 form field styling
-.auth-form mat-form-field {
-  &.mat-mdc-form-field {
-    --mdc-outlined-text-field-label-text-color: var(--on-surface-variant-color);
-    --mdc-outlined-text-field-input-text-color: var(--on-surface-color);
-    --mdc-outlined-text-field-outline-color: var(--outline-color);
-    --mdc-outlined-text-field-focus-outline-color: var(--primary-color);
-    --mdc-outlined-text-field-hover-outline-color: var(--on-surface-color);
-  }
+.country-code {
+  padding: var(--spacing-sm, 8px);
+  color: var(--on-surface-variant-color);
+  font-weight: 500;
 }
 
 /* M3 Responsive design */
@@ -114,12 +82,12 @@ mat-card-actions {
   .auth-container {
     padding: var(--spacing-sm, 8px);
   }
-  
+
   .auth-card {
     margin: 0;
     border-radius: vars.$border-radius-md;
   }
-  
+
   mat-card-title h1 {
     font-size: var(--font-title-large-size, 1.375rem);
   }

@@ -1,0 +1,15 @@
+<div class="devices-page">
+  <!-- Header with back navigation -->
+  <mat-toolbar class="page-toolbar">
+    <button mat-icon-button (click)="goBack()" matTooltip="Back to Home">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+    <span class="page-title">Device Sessions</span>
+    <span class="spacer"></span>
+  </mat-toolbar>
+
+  <!-- Main content -->
+  <div class="page-content">
+    <app-device-management></app-device-management>
+  </div>
+</div>

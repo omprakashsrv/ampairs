@@ -49,54 +49,9 @@
   line-height: var(--font-body-small-line-height, 1.25rem);
 }
 
-mat-card-header {
-  padding: var(--spacing-lg, 24px) var(--spacing-lg, 24px) var(--spacing-md, 16px) var(--spacing-lg, 24px);
-  text-align: center;
-
-  @include mixins.mobile {
-    padding: var(--spacing-md, 16px) var(--spacing-md, 16px) var(--spacing-sm, 12px) var(--spacing-md, 16px);
-  }
-}
-
-mat-card-content {
-  padding: 0 var(--spacing-lg, 24px) var(--spacing-lg, 24px) var(--spacing-lg, 24px);
-
-  @include mixins.mobile {
-    padding: 0 var(--spacing-md, 16px) var(--spacing-md, 16px) var(--spacing-md, 16px);
-  }
-}
-
 .profile-form {
   @include mixins.flex-column;
   gap: var(--spacing-md, 16px);
-}
-
-.form-field {
-  width: 100%;
-  
-  mat-label {
-    font-weight: var(--font-label-medium-weight, 500);
-    color: var(--on-surface-variant-color);
-  }
-
-  input {
-    font-size: var(--font-body-large-size, 1rem); // Prevents zoom on iOS
-    color: var(--on-surface-color);
-    
-    &::placeholder {
-      color: var(--on-surface-variant-color);
-      opacity: 0.6;
-    }
-  }
-
-  // M3 form field styling
-  &.mat-mdc-form-field {
-    --mdc-outlined-text-field-label-text-color: var(--on-surface-variant-color);
-    --mdc-outlined-text-field-input-text-color: var(--on-surface-color);
-    --mdc-outlined-text-field-outline-color: var(--outline-color);
-    --mdc-outlined-text-field-focus-outline-color: var(--primary-color);
-    --mdc-outlined-text-field-hover-outline-color: var(--on-surface-color);
-  }
 }
 
 .form-actions {
@@ -105,63 +60,17 @@ mat-card-content {
 }
 
 .submit-button {
-  width: 100%;
-  height: 48px;
-  font-size: var(--font-label-large-size, 0.875rem);
-  font-weight: var(--font-label-large-weight, 500);
-  border-radius: vars.$border-radius-md;
-  background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-  border: none;
-  color: var(--on-primary-color);
-  transition: all vars.$transition-normal cubic-bezier(0.4, 0, 0.2, 1);
   @include mixins.flex-center;
   gap: var(--spacing-sm, 8px);
 
-  &:hover:not(:disabled) {
-    background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-3);
-  }
-
-  &:disabled {
-    background-color: var(--surface-container-color);
-    color: var(--on-surface-variant-color);
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
-    opacity: 0.38;
-  }
-
   .button-spinner {
     margin-right: var(--spacing-sm, 8px);
-    
-    ::ng-deep circle {
-      stroke: var(--on-primary-color);
-    }
   }
-}
-
-// M3 Animation for form validation errors
-mat-error {
-  font-size: var(--font-body-small-size, 0.75rem);
-  color: var(--error-color);
-  @include mixins.slide-up(vars.$transition-normal);
-}
-
-// Loading state styles
-.loading-state {
-  pointer-events: none;
-  opacity: 0.7;
 }
 
 // Success state animation
 .form-success {
   @include mixins.scale-in(0.6s);
-}
-
-// Focus indicators for accessibility
-.form-field input:focus {
-  outline: none;
 }
 
 // High contrast mode support
@@ -170,19 +79,13 @@ mat-error {
     border: 2px solid var(--outline-color);
     background: var(--surface-color);
   }
-  
+
   .profile-title {
     color: var(--on-surface-color);
   }
-  
+
   .submit-button {
-    background-color: var(--on-surface-color);
-    color: var(--surface-color);
     border: 2px solid var(--outline-color);
-    
-    &:hover:not(:disabled) {
-      background-color: var(--on-surface-variant-color);
-    }
   }
 }
 
@@ -193,8 +96,5 @@ mat-error {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-  
-  .submit-button:hover:not(:disabled) {
-    transform: none;
-  }
+
 }

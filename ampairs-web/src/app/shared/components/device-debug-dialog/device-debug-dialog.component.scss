@@ -1,0 +1,42 @@
+// M3 Material Design Device Debug Dialog Component
+.debug-content {
+  min-width: 500px;
+  max-width: 80vw;
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.debug-content pre {
+  background-color: var(--surface-container-low-color);
+  padding: var(--spacing-md, 16px);
+  border-radius: 4px;
+  font-size: var(--font-body-small-size, 0.75rem);
+  line-height: var(--font-body-small-line-height, 1.4);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  margin: 0;
+  color: var(--on-surface-color);
+  border: 1px solid var(--outline-variant-color);
+}
+
+h2[mat-dialog-title] {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm, 8px);
+  color: var(--on-surface-color);
+}
+
+h2[mat-dialog-title] mat-icon {
+  color: var(--primary-color);
+}
+
+@media (max-width: 768px) {
+  .debug-content {
+    min-width: 300px;
+    max-width: 95vw;
+  }
+
+  .debug-content pre {
+    font-size: var(--font-body-small-size, 0.625rem);
+  }
+}

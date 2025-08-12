@@ -1,4 +1,4 @@
-// M3 Material Design Verify OTP Component  
+// M3 Material Design Verify OTP Component
 @use '../../shared/styles/variables' as vars;
 @use '../../shared/styles/mixins' as mixins;
 
@@ -42,30 +42,10 @@
 
 .auth-button {
   margin-top: var(--spacing-md, 16px);
-  height: 48px;
-  font-size: var(--font-label-large-size, 0.875rem);
-  font-weight: var(--font-label-large-weight, 500);
-  background-color: var(--primary-color);
-  color: var(--on-primary-color);
-
-  &:hover:not(:disabled) {
-    background-color: var(--primary-color);
-    box-shadow: var(--shadow-2);
-  }
-
-  &:disabled {
-    background-color: var(--surface-container-color);
-    color: var(--on-surface-variant-color);
-    opacity: 0.38;
-  }
 }
 
 .button-spinner {
   margin-right: var(--spacing-sm, 8px);
-  
-  ::ng-deep circle {
-    stroke: var(--on-primary-color);
-  }
 }
 
 .card-actions {
@@ -95,49 +75,10 @@
 
 .back-button {
   margin-top: var(--spacing-sm, 8px);
-  color: var(--on-surface-variant-color);
-  border-color: var(--outline-color);
-
-  &:hover {
-    background-color: var(--surface-container-high-color);
-    border-color: var(--primary-color);
-  }
 }
 
 .text-center {
   text-align: center;
-}
-
-.full-width {
-  width: 100%;
-}
-
-mat-card-header {
-  margin-bottom: var(--spacing-sm, 8px);
-}
-
-mat-card-title h1 {
-  margin: var(--spacing-sm, 8px) 0;
-  font-size: var(--font-headline-small-size, 1.5rem);
-  font-weight: var(--font-headline-small-weight, 400);
-  color: var(--on-surface-color);
-}
-
-mat-card-subtitle strong {
-  color: var(--primary-color);
-  font-size: var(--font-body-large-size, 1rem);
-  font-weight: var(--font-label-medium-weight, 500);
-}
-
-// M3 form field styling for OTP input
-.auth-form mat-form-field {
-  &.mat-mdc-form-field {
-    --mdc-outlined-text-field-label-text-color: var(--on-surface-variant-color);
-    --mdc-outlined-text-field-input-text-color: var(--on-surface-color);
-    --mdc-outlined-text-field-outline-color: var(--outline-color);
-    --mdc-outlined-text-field-focus-outline-color: var(--primary-color);
-    --mdc-outlined-text-field-hover-outline-color: var(--on-surface-color);
-  }
 }
 
 /* M3 Responsive design */
@@ -145,18 +86,15 @@ mat-card-subtitle strong {
   .auth-container {
     padding: var(--spacing-sm, 8px);
   }
-  
+
   .auth-card {
     margin: 0;
     border-radius: vars.$border-radius-md;
   }
-  
+
   .otp-input {
     font-size: var(--font-title-medium-size, 1rem);
     letter-spacing: 4px;
   }
-  
-  mat-card-title h1 {
-    font-size: var(--font-title-large-size, 1.375rem);
-  }
+
 }

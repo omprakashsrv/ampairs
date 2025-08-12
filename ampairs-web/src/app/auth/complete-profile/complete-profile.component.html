@@ -1,9 +1,11 @@
 <div class="complete-profile-container">
   <mat-card class="profile-card">
     <mat-card-header>
-      <mat-card-title class="profile-title">Complete Your Profile</mat-card-title>
+      <mat-card-title class="profile-title">
+        {{ isEditMode ? 'Edit Profile' : 'Complete Your Profile' }}
+      </mat-card-title>
       <mat-card-subtitle class="profile-subtitle">
-        Please provide your name to complete your account setup
+        {{ isEditMode ? 'Update your profile information' : 'Please provide your name to complete your account setup' }}
       </mat-card-subtitle>
     </mat-card-header>
 
@@ -44,6 +46,18 @@
         </mat-form-field>
 
         <div class="form-actions">
+          @if (isEditMode) {
+            <button 
+              mat-button 
+              type="button" 
+              (click)="goBack()"
+              [disabled]="isSubmitting"
+            >
+              <mat-icon>arrow_back</mat-icon>
+              Back to Home
+            </button>
+          }
+
           <button 
             mat-raised-button 
             color="primary" 
@@ -53,9 +67,9 @@
           >
             @if (isSubmitting) {
               <mat-spinner diameter="20" class="button-spinner"></mat-spinner>
-              Saving...
+              {{ isEditMode ? 'Updating...' : 'Saving...' }}
             } @else {
-              Complete Profile
+              {{ isEditMode ? 'Update Profile' : 'Complete Profile' }}
             }
           </button>
         </div>

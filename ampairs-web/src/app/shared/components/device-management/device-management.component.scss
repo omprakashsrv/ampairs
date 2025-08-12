@@ -1,0 +1,119 @@
+// M3 Material Design Device Management Component
+@use '../../styles/variables' as vars;
+@use '../../styles/mixins' as mixins;
+
+.device-management-card {
+  max-width: 800px;
+  margin: var(--spacing-lg, 20px) auto;
+  background-color: var(--surface-container-color);
+  color: var(--on-surface-color);
+}
+
+.loading-container {
+  @include mixins.flex-column-center;
+  padding: var(--spacing-xl, 40px);
+  gap: var(--spacing-md, 16px);
+}
+
+.loading-container p {
+  color: var(--on-surface-variant-color);
+  font-size: var(--font-body-medium-size, 0.875rem);
+}
+
+.no-devices {
+  @include mixins.flex-column-center;
+  padding: var(--spacing-xl, 40px);
+  gap: var(--spacing-md, 16px);
+  color: var(--on-surface-variant-color);
+}
+
+.no-devices mat-icon {
+  font-size: 48px;
+  width: 48px;
+  height: 48px;
+  color: var(--on-surface-variant-color);
+}
+
+.devices-container {
+  @include mixins.flex-column;
+  gap: var(--spacing-md, 16px);
+}
+
+.device-item {
+  background-color: var(--surface-container-color);
+  transition: all vars.$transition-normal ease-in-out;
+  border: 1px solid var(--outline-variant-color);
+
+  &.current-device {
+    border-color: var(--primary-color);
+    background-color: var(--primary-container-color);
+
+    .device-icon {
+      background-color: var(--primary-color);
+      color: var(--on-primary-color);
+    }
+  }
+}
+
+.device-icon {
+  background-color: var(--surface-container-high-color);
+  color: var(--on-surface-variant-color);
+  font-size: 24px;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+}
+
+.device-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1;
+}
+
+.device-metadata {
+  @include mixins.flex-column;
+  gap: var(--spacing-sm, 8px);
+  margin-top: var(--spacing-md, 16px);
+  padding-left: var(--spacing-md, 16px);
+  padding-right: var(--spacing-md, 16px);
+}
+
+.metadata-item {
+  @include mixins.flex-center;
+  justify-content: flex-start;
+  gap: var(--spacing-sm, 8px);
+  font-size: var(--font-body-small-size, 0.875rem);
+  color: var(--on-surface-variant-color);
+}
+
+.metadata-item mat-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: var(--on-surface-variant-color);
+}
+
+.actions-container {
+  @include mixins.flex-center;
+  margin-top: var(--spacing-lg, 24px);
+  padding-top: var(--spacing-md, 16px);
+  border-top: 1px solid var(--outline-variant-color);
+}
+
+
+/* M3 Responsive Design */
+@include mixins.tablet {
+  .device-metadata {
+    padding-left: 0;
+  }
+}
+
+@include mixins.mobile {
+  .device-management-card {
+    margin: var(--spacing-sm, 8px);
+  }
+}
