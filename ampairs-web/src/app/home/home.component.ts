@@ -1,5 +1,5 @@
 import {Component, OnInit} from '@angular/core';
-import {Router} from '@angular/router';
+import {Router, RouterOutlet} from '@angular/router';
 import {MatToolbarModule} from '@angular/material/toolbar';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
@@ -20,6 +20,7 @@ import {Observable} from 'rxjs';
     standalone: true,
     imports: [
         CommonModule,
+        RouterOutlet,
         MatToolbarModule,
         MatButtonModule,
         MatIconModule,
@@ -50,7 +51,7 @@ export class HomeComponent implements OnInit {
     }
 
     editProfile(): void {
-        this.router.navigate(['/complete-profile'], {queryParams: {edit: 'true'}});
+        this.router.navigate(['/home/profile'], {queryParams: {edit: 'true'}});
     }
 
     viewSettings(): void {
@@ -78,7 +79,7 @@ export class HomeComponent implements OnInit {
     }
 
     viewDevices(): void {
-        this.router.navigate(['/devices']);
+        this.router.navigate(['/home/devices']);
     }
 
     logout(): void {

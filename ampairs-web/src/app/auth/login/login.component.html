@@ -40,15 +40,14 @@
                         type="submit"
                         class="auth-button"
                         [disabled]="loginForm.invalid || isLoading">
-                    @if (isLoading) {
-                        <mat-spinner diameter="20" class="button-spinner"></mat-spinner>
-                    }
-                    @if (!isLoading) {
-                        <span>Send OTP</span>
-                    }
-                    @if (isLoading) {
-                        <span>Sending OTP...</span>
-                    }
+                    <div class="button-content">
+                        @if (isLoading) {
+                            <mat-spinner diameter="20" class="button-spinner"></mat-spinner>
+                            <span>Sending OTP...</span>
+                        } @else {
+                            <span>Send OTP</span>
+                        }
+                    </div>
                 </button>
             </form>
         </mat-card-content>

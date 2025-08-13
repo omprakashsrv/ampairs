@@ -42,15 +42,14 @@
                         type="submit"
                         class="auth-button"
                         [disabled]="otpForm.invalid || isLoading">
-                    @if (isLoading) {
-                        <mat-spinner diameter="20" class="button-spinner"></mat-spinner>
-                    }
-                    @if (!isLoading) {
-                        <span>Verify & Continue</span>
-                    }
-                    @if (isLoading) {
-                        <span>Verifying...</span>
-                    }
+                    <div class="button-content">
+                        @if (isLoading) {
+                            <mat-spinner diameter="20" class="button-spinner"></mat-spinner>
+                            <span>Verifying...</span>
+                        } @else {
+                            <span>Verify & Continue</span>
+                        }
+                    </div>
                 </button>
             </form>
         </mat-card-content>
@@ -72,13 +71,14 @@
                             color="accent"
                             (click)="resendOtp()"
                             [disabled]="isResending">
-                        @if (isResending) {
-                            <mat-spinner diameter="16" class="button-spinner"></mat-spinner>
-                        }
-                        @if (!isResending) {
-                            <mat-icon>refresh</mat-icon>
-                        }
-                        {{ isResending ? 'Resending...' : 'Resend OTP' }}
+                        <div class="button-content">
+                            @if (isResending) {
+                                <mat-spinner diameter="16" class="button-spinner"></mat-spinner>
+                            } @else {
+                                <mat-icon>refresh</mat-icon>
+                            }
+                            <span>{{ isResending ? 'Resending...' : 'Resend OTP' }}</span>
+                        </div>
                     </button>
                 </div>
             }

@@ -35,6 +35,7 @@ export class CompleteProfileComponent implements OnInit, OnDestroy {
   isSubmitting = false;
   currentUser: User | null = null;
   isEditMode = false;
+  isInLayout = false;
   private destroy$ = new Subject<void>();
 
   constructor(
@@ -48,6 +49,9 @@ export class CompleteProfileComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    // Check if component is loaded within home layout
+    this.isInLayout = this.router.url.includes('/home/profile');
+    
     // Check if this is edit mode from query params
     this.route.queryParams
       .pipe(takeUntil(this.destroy$))

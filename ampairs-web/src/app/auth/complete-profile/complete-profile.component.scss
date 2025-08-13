@@ -4,14 +4,27 @@
 
 .complete-profile-container {
   @include mixins.flex-center;
-  min-height: 100vh;
   padding: var(--spacing-md, 16px);
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+
+  // Full height only for standalone usage (not within home layout)
+  &:not(.in-layout) {
+    min-height: 100vh;
+    background-color: var(--surface-dim-color, var(--background-color));
+  }
+
+  // When used within home layout, just center content
+  &.in-layout {
+    min-height: calc(100vh - 64px); // Account for toolbar height
+    background-color: var(--surface-dim-color, var(--background-color));
+  }
 
   @include mixins.tablet {
     padding: var(--spacing-sm, 8px);
-    align-items: flex-start;
-    padding-top: 20vh;
+
+    &:not(.in-layout) {
+      align-items: flex-start;
+      padding-top: 20vh;
+    }
   }
 }
 

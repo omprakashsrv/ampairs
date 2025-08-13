@@ -5,17 +5,13 @@
 .auth-container {
   min-height: 100vh;
   @include mixins.flex-center;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  background-color: var(--surface-dim-color, var(--background-color));
   padding: var(--spacing-md, 16px);
 }
 
 .auth-card {
   width: 100%;
   max-width: 400px;
-  border-radius: vars.$border-radius-lg;
-  box-shadow: var(--shadow-4);
-  background-color: var(--surface-container-color);
-  border: 1px solid var(--outline-variant-color);
 }
 
 .logo-icon {
@@ -42,10 +38,18 @@
 
 .auth-button {
   margin-top: var(--spacing-md, 16px);
+  align-self: center;
+}
+
+.button-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm, 8px);
 }
 
 .button-spinner {
-  margin-right: var(--spacing-sm, 8px);
+  margin: 0;
 }
 
 .card-actions {
@@ -89,7 +93,6 @@
 
   .auth-card {
     margin: 0;
-    border-radius: vars.$border-radius-md;
   }
 
   .otp-input {

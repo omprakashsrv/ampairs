@@ -5,7 +5,7 @@
 .auth-container {
   min-height: 100vh;
   @include mixins.flex-center;
-  background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+  background-color: var(--surface-dim-color, var(--background-color));
   padding: var(--spacing-md, 16px);
 }
 
@@ -33,8 +33,15 @@
   align-self: center;
 }
 
+.button-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--spacing-sm, 8px);
+}
+
 .button-spinner {
-  margin-right: var(--spacing-sm, 8px);
+  margin: 0;
 }
 
 .help-text {
@@ -85,7 +92,6 @@ mat-card-title h1 {
 
   .auth-card {
     margin: 0;
-    border-radius: vars.$border-radius-md;
   }
 
   mat-card-title h1 {

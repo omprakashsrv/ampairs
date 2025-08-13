@@ -40,9 +40,7 @@
 }
 
 .device-item {
-  background-color: var(--surface-container-color);
   transition: all vars.$transition-normal ease-in-out;
-  border: 1px solid var(--outline-variant-color);
 
   &.current-device {
     border-color: var(--primary-color);
