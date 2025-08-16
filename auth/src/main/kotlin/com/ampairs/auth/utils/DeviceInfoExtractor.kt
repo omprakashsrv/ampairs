@@ -264,7 +264,7 @@ class DeviceInfoExtractor {
             ua.contains("windows nt 6.2") -> "Windows 8"
             ua.contains("windows nt 6.1") -> "Windows 7"
             ua.contains("windows") -> "Windows"
-            ua.contains("mac os x") -> extractMacOSVersion(ua)
+            ua.contains("mac os x") || ua.contains("macintosh") -> extractMacOSVersion(ua)
             ua.contains("iphone os") -> extractiOSVersion(ua)
             ua.contains("android") -> extractAndroidVersion(ua)
             ua.contains("linux") -> "Linux"
@@ -276,7 +276,7 @@ class DeviceInfoExtractor {
             ua.contains("iphone") || ua.contains("ipad") -> "iOS"
             ua.contains("android") -> "Android"
             ua.contains("windows") -> "Windows"
-            ua.contains("mac os") -> "macOS"
+            ua.contains("mac os") || ua.contains("macintosh") -> "macOS"
             ua.contains("linux") -> "Linux"
             else -> "Web"
         }

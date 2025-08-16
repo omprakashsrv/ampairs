@@ -561,39 +561,104 @@ export class DeviceService {
   private detectOSUsingCDK(): string {
     const userAgent = navigator.userAgent;
 
-    // Use Angular CDK for mobile OS detection
+    // Debug log for troubleshooting
+    if (!environment.production) {
+      console.log('🔍 OS Detection Debug:', {
+        userAgent,
+        platform: navigator.platform,
+        cdkFlags: {
+          IOS: this.platform.IOS,
+          ANDROID: this.platform.ANDROID,
+          WEBKIT: this.platform.WEBKIT,
+          SAFARI: this.platform.SAFARI,
+          EDGE: this.platform.EDGE,
+          TRIDENT: this.platform.TRIDENT
+        }
+      });
+    }
+
+    // Use Angular CDK Platform service for comprehensive OS detection
     if (this.platform.IOS) {
-      const match = userAgent.match(/OS (\d+_\d+)/);
-      return match ? `iOS ${match[1].replace('_', '.')}` : 'iOS';
+      const match = userAgent.match(/OS (\d+_\d+_?\d*)/);
+      return match ? `iOS ${match[1].replace(/_/g, '.')}` : 'iOS';
     }
 
     if (this.platform.ANDROID) {
-      const match = userAgent.match(/Android (\d+\.?\d*)/);
+      const match = userAgent.match(/Android (\d+\.?\d*\.?\d*)/);
       return match ? `Android ${match[1]}` : 'Android';
     }
 
-    // Desktop OS detection with enhanced Windows version detection
+    // Primary OS detection using user agent patterns (more reliable than CDK for desktop)
     if (userAgent.includes('Windows')) {
-      if (userAgent.includes('Windows NT 10.0')) {
-        // Simple Windows 10/11 detection
-        return 'Windows 10/11';
+      let windowsOS = this.getWindowsVersion(userAgent);
+
+      // Add browser context if available from CDK
+      if (this.platform.EDGE) {
+        windowsOS += ' (Edge)';
+      } else if (this.platform.TRIDENT) {
+        windowsOS += ' (IE)';
       }
-      if (userAgent.includes('Windows NT 6.3')) return 'Windows 8.1';
-      if (userAgent.includes('Windows NT 6.2')) return 'Windows 8';
-      if (userAgent.includes('Windows NT 6.1')) return 'Windows 7';
-      return 'Windows';
+
+      return windowsOS;
     }
 
-    // macOS detection using CDK
-    if (this.platform.WEBKIT && userAgent.includes('Mac OS X')) {
-      const match = userAgent.match(/Mac OS X (\d+_\d+)/);
-      return match ? `macOS ${match[1].replace('_', '.')}` : 'macOS';
+    // macOS detection - check user agent first, then CDK
+    if (userAgent.includes('Mac OS X') || userAgent.includes('Macintosh')) {
+      const match = userAgent.match(/Mac OS X (\d+_\d+_?\d*)/);
+      return match ? `macOS ${match[1].replace(/_/g, '.')}` : 'macOS';
     }
 
-    if (userAgent.includes('Linux')) return 'Linux';
+    // Additional CDK-based detection for Edge cases
+    if (this.platform.WEBKIT && userAgent.includes('Mac')) {
+      return 'macOS';
+    }
+
+    // Linux variants detection
     if (userAgent.includes('CrOS')) return 'ChromeOS';
+    if (userAgent.includes('Ubuntu')) return 'Ubuntu';
+    if (userAgent.includes('Fedora')) return 'Fedora';
+    if (userAgent.includes('Debian')) return 'Debian';
+    if (userAgent.includes('Red Hat')) return 'Red Hat Linux';
+    if (userAgent.includes('SUSE')) return 'SUSE Linux';
+    if (userAgent.includes('Linux')) return 'Linux';
+
+    // Other Unix-like systems
+    if (userAgent.includes('FreeBSD')) return 'FreeBSD';
+    if (userAgent.includes('OpenBSD')) return 'OpenBSD';
+    if (userAgent.includes('NetBSD')) return 'NetBSD';
+    if (userAgent.includes('SunOS') || userAgent.includes('Solaris')) return 'Solaris';
+
+    // Mobile OS fallback checks
+    if (userAgent.includes('iPhone') || userAgent.includes('iPad')) return 'iOS';
+    if (userAgent.includes('Android')) return 'Android';
+
+    // Use navigator.platform as additional fallback
+    const platform = navigator.platform.toLowerCase();
+    if (platform.includes('win')) return 'Windows';
+    if (platform.includes('mac')) return 'macOS';
+    if (platform.includes('linux')) return 'Linux';
+    if (platform.includes('freebsd')) return 'FreeBSD';
+    if (platform.includes('openbsd')) return 'OpenBSD';
 
     return 'Unknown OS';
+  }
+
+  private getWindowsVersion(userAgent: string): string {
+    if (userAgent.includes('Windows NT 10.0')) {
+      // More specific Windows 10/11 detection
+      if (userAgent.includes('Edg/') || userAgent.includes('Edge/')) {
+        return 'Windows 11'; // Edge on Windows 11 has specific indicators
+      }
+      return 'Windows 10/11';
+    }
+    if (userAgent.includes('Windows NT 6.3')) return 'Windows 8.1';
+    if (userAgent.includes('Windows NT 6.2')) return 'Windows 8';
+    if (userAgent.includes('Windows NT 6.1')) return 'Windows 7';
+    if (userAgent.includes('Windows NT 6.0')) return 'Windows Vista';
+    if (userAgent.includes('Windows NT 5.2')) return 'Windows XP x64';
+    if (userAgent.includes('Windows NT 5.1')) return 'Windows XP';
+    if (userAgent.includes('Windows NT 5.0')) return 'Windows 2000';
+    return 'Windows';
   }
 
   /**
