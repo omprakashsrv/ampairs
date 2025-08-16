@@ -4,6 +4,7 @@ import com.ampairs.core.config.Constants
 import com.ampairs.core.domain.model.BaseDomain
 import com.ampairs.workspace.model.enums.InvitationStatus
 import com.ampairs.workspace.model.enums.WorkspaceRole
+import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.persistence.*
 import java.time.LocalDateTime
 import java.util.*
@@ -128,6 +129,16 @@ class WorkspaceInvitation : BaseDomain() {
      */
     @Column(name = "cancellation_reason", length = 500)
     var cancellationReason: String? = null
+
+    // JPA Relationships
+
+    /**
+     * Reference to the workspace
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "workspace_id", referencedColumnName = "id", insertable = false, updatable = false)
+    @JsonIgnore
+    var workspace: Workspace? = null
 
     override fun obtainSeqIdPrefix(): String {
         return Constants.WORKSPACE_INVITATION_PREFIX

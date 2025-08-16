@@ -53,7 +53,7 @@ inline fun <DB, REMOTE> dbBoundResource(
                 emit(
                     Resource.error(
                         errorMessage = remoteResponse.error?.message ?: "",
-                        httpStatusCode = remoteResponse.error?.code ?: 0,
+                        errorCode = remoteResponse.error?.code ?: "",
                         data = localData
                     )
                 )

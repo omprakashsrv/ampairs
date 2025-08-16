@@ -1,6 +1,7 @@
 package com.ampairs.workspace.model.dto
 
 import com.ampairs.workspace.model.WorkspaceMember
+import com.ampairs.workspace.model.enums.Permission
 import com.ampairs.workspace.model.enums.WorkspaceRole
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.LocalDateTime
@@ -33,11 +34,8 @@ data class MemberResponse(
     @JsonProperty("role")
     val role: WorkspaceRole,
 
-    @JsonProperty("custom_permissions")
-    val customPermissions: List<String>,
-
-    @JsonProperty("effective_permissions")
-    val effectivePermissions: List<String>,
+    @JsonProperty("permissions")
+    val permissions: Set<Permission>,
 
     @JsonProperty("is_active")
     val isActive: Boolean,
@@ -126,8 +124,7 @@ fun WorkspaceMember.toResponse(): MemberResponse {
         lastName = null, // Will be populated from User entity if needed
         avatarUrl = null, // Will be populated from User entity if needed
         role = this.role,
-        customPermissions = this.getCustomPermissionsList(),
-        effectivePermissions = this.getEffectivePermissions().map { it.name },
+        permissions = this.permissions,
         isActive = this.isActive,
         joinedAt = this.joinedAt ?: LocalDateTime.now(),
         lastActivityAt = this.lastActivityAt,

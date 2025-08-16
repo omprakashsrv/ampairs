@@ -28,7 +28,7 @@ data class CreateWorkspaceRequest(
     val description: String? = null,
 
     @JsonProperty("workspace_type")
-    val workspaceType: WorkspaceType = WorkspaceType.TEAM,
+    val workspaceType: WorkspaceType = WorkspaceType.BUSINESS,
 
     @JsonProperty("avatar_url")
     val avatarUrl: String? = null,

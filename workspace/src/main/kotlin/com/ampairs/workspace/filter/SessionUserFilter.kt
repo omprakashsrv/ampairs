@@ -20,13 +20,15 @@ import org.springframework.web.filter.OncePerRequestFilter
 @Component
 class SessionUserFilter @Autowired constructor(
     private val memberService: WorkspaceMemberService,
+    private val objectMapper: ObjectMapper,
 ) : OncePerRequestFilter() {
 
     companion object {
         private val log = LoggerFactory.getLogger(SessionUserFilter::class.java)
         private const val WORKSPACE_HEADER = "X-Workspace"
     }
-    
+
+
     override fun doFilterInternal(
         request: HttpServletRequest,
         response: HttpServletResponse,
@@ -107,8 +109,7 @@ class SessionUserFilter @Autowired constructor(
             path = requestPath
         )
 
-        val mapper = ObjectMapper()
-        mapper.writeValue(response.outputStream, errorResponse)
+        objectMapper.writeValue(response.outputStream, errorResponse)
     }
 
     /**

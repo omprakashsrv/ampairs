@@ -1,5 +1,8 @@
 package com.ampairs.workspace.model.dto
 
+import com.ampairs.workspace.model.MaterialColors
+import com.ampairs.workspace.model.MaterialTheme
+import com.ampairs.workspace.model.MaterialTypography
 import com.ampairs.workspace.model.WorkspaceSettings
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.LocalDateTime
@@ -14,23 +17,20 @@ data class SettingsResponse(
     @JsonProperty("workspace_id")
     val workspaceId: String,
 
-    @JsonProperty("branding")
-    val branding: Map<String, Any>,
+    @JsonProperty("logo_url")
+    val logoUrl: String?,
 
-    @JsonProperty("notifications")
-    val notifications: Map<String, Any>,
+    @JsonProperty("material_theme")
+    val materialTheme: MaterialTheme,
 
-    @JsonProperty("integrations")
-    val integrations: Map<String, Any>,
+    @JsonProperty("material_colors")
+    val materialColors: MaterialColors,
 
-    @JsonProperty("security")
-    val security: Map<String, Any>,
+    @JsonProperty("material_typography")
+    val materialTypography: MaterialTypography,
 
-    @JsonProperty("features")
-    val features: Map<String, Any>,
-
-    @JsonProperty("preferences")
-    val preferences: Map<String, Any>,
+    @JsonProperty("business_settings")
+    val businessSettings: Map<String, Any>,
 
     @JsonProperty("last_modified_by")
     val lastModifiedBy: String?,
@@ -135,15 +135,15 @@ data class FeaturesResponse(
  * Extension function to convert WorkspaceSettings entity to SettingsResponse
  */
 fun WorkspaceSettings.toResponse(): SettingsResponse {
+
     return SettingsResponse(
-        id = this.uid, // Use uid instead of id
+        id = this.uid,
         workspaceId = this.workspaceId,
-        branding = this.getBrandingMap(),
-        notifications = this.getNotificationsMap(),
-        integrations = this.getIntegrationsMap(),
-        security = this.getSecurityMap(),
-        features = this.getFeaturesMap(),
-        preferences = this.getPreferencesMap(),
+        logoUrl = this.logoUrl,
+        materialTheme = this.materialTheme,
+        materialColors = this.materialColors,
+        materialTypography = this.materialTypography,
+        businessSettings = this.businessSettings,
         lastModifiedBy = this.lastModifiedBy,
         lastModifiedAt = this.lastModifiedAt,
         createdAt = this.createdAt ?: LocalDateTime.now(),

@@ -4,15 +4,18 @@ import com.ampairs.core.config.Constants
 import com.ampairs.core.domain.model.BaseDomain
 import com.ampairs.workspace.model.enums.Permission
 import com.ampairs.workspace.model.enums.WorkspaceRole
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.persistence.*
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 import java.time.LocalDateTime
 
 /**
- * Represents a user's membership in a workspace with their role and permissions
+ * Represents a user's membership in a workspace with their role and permissions.
+ * This entity consolidates both active members and invitation/membership history.
  */
-@Entity(name = "workspace_members")
+@Entity
 @Table(
     name = "workspace_members",
     indexes = [
@@ -20,7 +23,9 @@ import java.time.LocalDateTime
         Index(name = "idx_member_user", columnList = "user_id"),
         Index(name = "idx_member_role", columnList = "role"),
         Index(name = "idx_member_active", columnList = "is_active"),
-        Index(name = "idx_member_workspace_user", columnList = "workspace_id, user_id", unique = true)
+        Index(name = "idx_member_workspace_user", columnList = "workspace_id, user_id", unique = true),
+        Index(name = "idx_member_invited_by", columnList = "invited_by"),
+        Index(name = "idx_member_joined_at", columnList = "joined_at")
     ]
 )
 class WorkspaceMember : BaseDomain() {
@@ -38,6 +43,18 @@ class WorkspaceMember : BaseDomain() {
     var userId: String = ""
 
     /**
+     * Display name of the member at time of joining
+     */
+    @Column(name = "member_name", length = 255)
+    var memberName: String? = null
+
+    /**
+     * Email of the member at time of joining
+     */
+    @Column(name = "member_email", length = 255)
+    var memberEmail: String? = null
+
+    /**
      * Role of the user within this workspace
      */
     @Column(name = "role", nullable = false)
@@ -48,8 +65,9 @@ class WorkspaceMember : BaseDomain() {
      * Custom permissions specific to this member (JSON array)
      * Used for fine-grained permission overrides beyond role defaults
      */
-    @Column(name = "custom_permissions", columnDefinition = "TEXT")
-    var customPermissions: String = "[]"
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "permissions", columnDefinition = "JSON")
+    var permissions: Set<Permission> = setOf()
 
     /**
      * ID of the user who invited this member
@@ -58,13 +76,19 @@ class WorkspaceMember : BaseDomain() {
     var invitedBy: String? = null
 
     /**
+     * Name of the user who invited this member
+     */
+    @Column(name = "invited_by_name", length = 255)
+    var invitedByName: String? = null
+
+    /**
      * When the invitation was sent
      */
     @Column(name = "invited_at")
     var invitedAt: LocalDateTime? = null
 
     /**
-     * When the member joined the workspace
+     * When the member joined the workspace (accepted invitation)
      */
     @Column(name = "joined_at")
     var joinedAt: LocalDateTime? = null
@@ -82,7 +106,7 @@ class WorkspaceMember : BaseDomain() {
     var lastActiveAt: LocalDateTime? = null
 
     /**
-     * Notes about this member (e.g., reason for specific permissions)
+     * Administrative notes about this member
      */
     @Column(name = "notes", columnDefinition = "TEXT")
     var notes: String? = null
@@ -100,73 +124,60 @@ class WorkspaceMember : BaseDomain() {
     var deactivatedBy: String? = null
 
     /**
+     * Name of the user who deactivated this member
+     */
+    @Column(name = "deactivated_by_name", length = 255)
+    var deactivatedByName: String? = null
+
+    /**
      * Reason for deactivation
      */
-    @Column(name = "deactivation_reason", length = 255)
+    @Column(name = "deactivation_reason", length = 500)
     var deactivationReason: String? = null
+
+    /**
+     * Department or team this member belongs to
+     */
+    @Column(name = "department", length = 100)
+    var department: String? = null
+
+    /**
+     * Job title of this member
+     */
+    @Column(name = "job_title", length = 100)
+    var jobTitle: String? = null
+
+    /**
+     * Member's phone number
+     */
+    @Column(name = "phone", length = 20)
+    var phone: String? = null
+
+    /**
+     * Access level restrictions (JSON)
+     */
+    @Column(name = "access_restrictions", columnDefinition = "TEXT")
+    var accessRestrictions: String = "{}"
+
+    // JPA Relationships
+
+    /**
+     * Reference to the workspace
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "workspace_id", referencedColumnName = "id", insertable = false, updatable = false)
+    @JsonIgnore
+    var workspace: Workspace? = null
 
     override fun obtainSeqIdPrefix(): String {
         return Constants.WORKSPACE_MEMBER_PREFIX
     }
 
     /**
-     * Get the combined permissions for this member (role + custom permissions)
-     */
-    fun getEffectivePermissions(): Set<Permission> {
-        val objectMapper = ObjectMapper()
-        val rolePermissions = Permission.getDefaultPermissions(role)
-
-        return try {
-            val customPerms = objectMapper.readValue(
-                customPermissions,
-                object : TypeReference<Set<Permission>>() {}
-            )
-            rolePermissions + customPerms
-        } catch (e: Exception) {
-            rolePermissions
-        }
-    }
-
-    /**
-     * Add a custom permission to this member
-     */
-    fun addCustomPermission(permission: Permission) {
-        val objectMapper = ObjectMapper()
-        try {
-            val currentPerms = objectMapper.readValue(
-                customPermissions,
-                object : TypeReference<MutableSet<Permission>>() {}
-            )
-            currentPerms.add(permission)
-            customPermissions = objectMapper.writeValueAsString(currentPerms)
-        } catch (e: Exception) {
-            customPermissions = objectMapper.writeValueAsString(setOf(permission))
-        }
-    }
-
-    /**
-     * Remove a custom permission from this member
-     */
-    fun removeCustomPermission(permission: Permission) {
-        val objectMapper = ObjectMapper()
-        try {
-            val currentPerms = objectMapper.readValue(
-                customPermissions,
-                object : TypeReference<MutableSet<Permission>>() {}
-            )
-            currentPerms.remove(permission)
-            customPermissions = objectMapper.writeValueAsString(currentPerms)
-        } catch (e: Exception) {
-            // If parsing fails, reset to empty array
-            customPermissions = "[]"
-        }
-    }
-
-    /**
      * Check if this member has a specific permission
      */
     fun hasPermission(permission: Permission): Boolean {
-        return getEffectivePermissions().contains(permission)
+        return permissions.contains(permission)
     }
 
     /**
@@ -178,22 +189,6 @@ class WorkspaceMember : BaseDomain() {
             return hasPermission(permission)
         } catch (e: IllegalArgumentException) {
             return false
-        }
-    }
-
-    /**
-     * Get custom permissions as list of strings
-     */
-    fun getCustomPermissionsList(): List<String> {
-        val objectMapper = ObjectMapper()
-        return try {
-            val permissions = objectMapper.readValue(
-                customPermissions,
-                object : TypeReference<Set<Permission>>() {}
-            )
-            permissions.map { it.name }
-        } catch (e: Exception) {
-            emptyList()
         }
     }
 
@@ -241,5 +236,100 @@ class WorkspaceMember : BaseDomain() {
      */
     fun canManage(otherMember: WorkspaceMember): Boolean {
         return role.hasPermissionLevel(otherMember.role) && role != otherMember.role
+    }
+
+    /**
+     * Get member display name (memberName or email or userId)
+     */
+    fun getDisplayName(): String {
+        return when {
+            !memberName.isNullOrBlank() -> memberName!!
+            !memberEmail.isNullOrBlank() -> memberEmail!!
+            else -> userId
+        }
+    }
+
+    /**
+     * Check if member is owner of workspace
+     */
+    fun isOwner(): Boolean {
+        return role == WorkspaceRole.OWNER
+    }
+
+    /**
+     * Check if member is admin level or higher
+     */
+    fun isAdminLevel(): Boolean {
+        return role.level >= WorkspaceRole.ADMIN.level
+    }
+
+    /**
+     * Check if member can invite others
+     */
+    fun canInviteMembers(): Boolean {
+        return hasPermission(Permission.MEMBER_INVITE)
+    }
+
+    /**
+     * Check if member can manage workspace settings
+     */
+    fun canManageSettings(): Boolean {
+        return hasPermission(Permission.WORKSPACE_SETTINGS)
+    }
+
+    /**
+     * Get days since joined
+     */
+    fun getDaysSinceJoined(): Long? {
+        return joinedAt?.let {
+            java.time.Duration.between(it, LocalDateTime.now()).toDays()
+        }
+    }
+
+    /**
+     * Get days since last active
+     */
+    fun getDaysSinceLastActive(): Long? {
+        return lastActiveAt?.let {
+            java.time.Duration.between(it, LocalDateTime.now()).toDays()
+        }
+    }
+
+    /**
+     * Check if member is recently active (within last 7 days)
+     */
+    fun isRecentlyActive(): Boolean {
+        return getDaysSinceLastActive()?.let { it <= 7 } ?: false
+    }
+
+    /**
+     * Accept workspace invitation and activate membership
+     */
+    fun acceptInvitation(userName: String? = null, userEmail: String? = null) {
+        isActive = true
+        joinedAt = LocalDateTime.now()
+        lastActiveAt = LocalDateTime.now()
+        memberName = userName
+        memberEmail = userEmail
+    }
+
+    /**
+     * Update member role with audit info
+     */
+    fun updateRole(newRole: WorkspaceRole, updatedByUserId: String, updatedByName: String? = null) {
+        role = newRole
+        // Could log this change in workspace activity
+    }
+
+    /**
+     * Get member summary for display
+     */
+    fun getSummary(): String {
+        val parts = mutableListOf<String>()
+        parts.add(getDisplayName())
+        parts.add(role.displayName)
+        if (department != null) parts.add(department!!)
+        if (jobTitle != null) parts.add(jobTitle!!)
+        return parts.joinToString(" • ")
     }
 }

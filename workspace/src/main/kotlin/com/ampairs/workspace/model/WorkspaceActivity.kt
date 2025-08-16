@@ -2,6 +2,7 @@ package com.ampairs.workspace.model
 
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.workspace.model.enums.WorkspaceActivityType
+import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
 import jakarta.persistence.*
 
@@ -106,6 +107,16 @@ data class WorkspaceActivity(
     var severity: String = "INFO",
 
     ) : OwnableBaseDomain() {
+
+    // JPA Relationships
+
+    /**
+     * Reference to the workspace
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id", referencedColumnName = "id", insertable = false, updatable = false)
+    @JsonIgnore
+    var workspace: Workspace? = null
 
     /**
      * Implementation of abstract method from OwnableBaseDomain

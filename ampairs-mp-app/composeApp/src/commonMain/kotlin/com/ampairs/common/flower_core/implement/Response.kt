@@ -18,7 +18,7 @@ package com.ampairs.common.flower_core.implement
 
 interface Response<T> {
     val isSuccessful: Boolean
-    val code: Int
+    val code: String
     val description: String
 
     fun body(): T?

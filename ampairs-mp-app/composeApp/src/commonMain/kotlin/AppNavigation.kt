@@ -1,11 +1,14 @@
+
 import androidx.compose.foundation.background
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navOptions
 import com.ampairs.auth.authNavigation
+import com.ampairs.common.UnauthenticatedHandler
 import com.ampairs.company.companyNavigation
 import com.ampairs.customer.customerNavigation
 import com.ampairs.home.homeNavigation
@@ -13,10 +16,19 @@ import com.ampairs.inventory.inventoryNavigation
 import com.ampairs.invoice.invoiceNavigation
 import com.ampairs.order.orderNavigation
 import com.ampairs.product.productNavigation
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun AppNavigation() {
     val navController = rememberNavController()
+
+    LaunchedEffect(Unit) {
+        UnauthenticatedHandler.onUnauthenticated.collectLatest {
+            navController.navigate(Route.Login) {
+                popUpTo(0)
+            }
+        }
+    }
 
     NavHost(
         modifier = Modifier.background(MaterialTheme.colorScheme.background),

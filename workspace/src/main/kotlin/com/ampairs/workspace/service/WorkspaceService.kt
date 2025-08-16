@@ -127,7 +127,6 @@ class WorkspaceService(
         request.timezone?.let { workspace.timezone = it }
         request.language?.let { workspace.language = it }
 
-        workspace.updatedBy = updatedBy
         workspace.lastActivityAt = LocalDateTime.now()
 
         val updatedWorkspace = workspaceRepository.save(workspace)
@@ -182,7 +181,6 @@ class WorkspaceService(
 
         workspace.status = WorkspaceStatus.ARCHIVED
         workspace.active = false
-        workspace.updatedBy = archivedBy
         workspaceRepository.save(workspace)
 
         // Cancel all pending invitations

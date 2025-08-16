@@ -54,7 +54,7 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
      */
     @Query(
         """
-        SELECT w FROM com.ampairs.workspace.model.Workspace w 
+        SELECT w FROM Workspace w 
         WHERE w.trialExpiresAt IS NOT NULL 
         AND w.trialExpiresAt < :currentDate
         AND w.subscriptionPlan = :freePlan
@@ -70,7 +70,7 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
      */
     @Query(
         """
-        SELECT w FROM com.ampairs.workspace.model.Workspace w 
+        SELECT w FROM Workspace w 
         WHERE w.active = true 
         AND (w.storageUsedGb * 100.0 / w.storageLimitGb) >= :percentage
     """
@@ -92,7 +92,7 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
      */
     @Query(
         """
-        SELECT w FROM com.ampairs.workspace.model.Workspace w 
+        SELECT w FROM Workspace w 
         WHERE w.active = true 
         AND (LOWER(w.name) LIKE LOWER(CONCAT('%', :searchTerm, '%')) 
              OR LOWER(w.description) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
@@ -105,8 +105,8 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
      */
     @Query(
         """
-        SELECT DISTINCT w FROM workspaces w 
-        INNER JOIN com.ampairs.workspace.model.WorkspaceMember wm ON w.uid = wm.workspaceId 
+        SELECT DISTINCT w FROM Workspace w 
+        INNER JOIN WorkspaceMember wm ON w.uid = wm.workspaceId 
         WHERE wm.userId = :userId 
         AND wm.isActive = true 
         AND w.active = true
@@ -120,8 +120,8 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
      */
     @Query(
         """
-        SELECT DISTINCT w FROM workspaces w 
-        INNER JOIN com.ampairs.workspace.model.WorkspaceMember wm ON w.uid = wm.workspaceId 
+        SELECT DISTINCT w FROM Workspace w 
+        INNER JOIN  WorkspaceMember wm ON w.uid = wm.workspaceId 
         WHERE wm.userId = :userId 
         AND wm.isActive = true 
         AND w.active = true
@@ -133,14 +133,14 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
      * Update last activity timestamp for a workspace
      */
     @Modifying
-    @Query("UPDATE workspaces w SET w.lastActivityAt = :timestamp WHERE w.id = :workspaceId")
+    @Query("UPDATE Workspace w SET w.lastActivityAt = :timestamp WHERE w.id = :workspaceId")
     fun updateLastActivity(@Param("workspaceId") workspaceId: String, @Param("timestamp") timestamp: LocalDateTime)
 
     /**
      * Update storage usage for a workspace
      */
     @Modifying
-    @Query("UPDATE workspaces w SET w.storageUsedGb = :storageUsedGb WHERE w.id = :workspaceId")
+    @Query("UPDATE Workspace w SET w.storageUsedGb = :storageUsedGb WHERE w.id = :workspaceId")
     fun updateStorageUsage(@Param("workspaceId") workspaceId: String, @Param("storageUsedGb") storageUsedGb: Int)
 
     /**
@@ -153,7 +153,7 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
             COUNT(CASE WHEN w.active = true THEN 1 END) as activeWorkspaces,
             COUNT(CASE WHEN w.subscriptionPlan = :freePlan THEN 1 END) as freeWorkspaces,
             COUNT(CASE WHEN w.subscriptionPlan != :freePlan THEN 1 END) as paidWorkspaces
-        FROM com.ampairs.workspace.model.Workspace w
+        FROM Workspace w
     """
     )
     fun getWorkspaceStatistics(@Param("freePlan") freePlan: SubscriptionPlan = SubscriptionPlan.FREE): Map<String, Long>
@@ -164,7 +164,7 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
     @Modifying
     @Query(
         """
-        UPDATE com.ampairs.workspace.model.Workspace w 
+        UPDATE Workspace w 
         SET w.active = false, w.updatedAt = :currentDate 
         WHERE w.lastActivityAt < :inactiveDate
         AND w.active = true

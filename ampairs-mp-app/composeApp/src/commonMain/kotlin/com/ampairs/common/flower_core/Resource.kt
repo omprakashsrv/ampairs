@@ -28,7 +28,7 @@ class Resource<out T> private constructor(
 
         data class Error<out T>(
             val errorMessage: String,
-            val httpStatusCode: Int,
+            val httpCode: String,
             val data: T?,
         ) : Status<T>()
     }
@@ -46,13 +46,13 @@ class Resource<out T> private constructor(
 
         fun <T> error(
             errorMessage: String,
-            httpStatusCode: Int,
+            errorCode: String,
             data: T?,
         ): Resource<T> {
             return Resource(
                 status = Status.Error(
                     errorMessage = errorMessage,
-                    httpStatusCode = httpStatusCode,
+                    httpCode = errorCode,
                     data = data
                 )
             )

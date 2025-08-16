@@ -23,7 +23,7 @@ sealed class ApiResponse<T> {
         fun <T> create(error: Throwable): ApiErrorResponse<T> {
             return ApiErrorResponse(
                 errorMessage = error.message ?: "Unknown error",
-                httpStatusCode = 0
+                errorCode = "0"
             )
         }
 
@@ -31,7 +31,7 @@ sealed class ApiResponse<T> {
             return if (response.isSuccessful) {
                 val body = response.body()
                 val headers = response.headers()
-                if (body == null || response.code == 204) {
+                if (body == null) {
                     ApiEmptyResponse()
                 } else {
                     ApiSuccessResponse(body, headers)
@@ -39,7 +39,7 @@ sealed class ApiResponse<T> {
             } else {
                 ApiErrorResponse(
                     errorMessage = response.description,
-                    httpStatusCode = response.code
+                    errorCode = response.code
                 )
             }
         }
@@ -58,7 +58,7 @@ class ApiEmptyResponse<T> : ApiResponse<T>()
 
 data class ApiErrorResponse<T>(
     val errorMessage: String,
-    val httpStatusCode: Int,
+    val errorCode: String,
 ) : ApiResponse<T>()
 
 //@JvmInline

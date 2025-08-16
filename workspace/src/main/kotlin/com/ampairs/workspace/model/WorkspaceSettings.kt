@@ -2,17 +2,104 @@ package com.ampairs.workspace.model
 
 import com.ampairs.core.config.Constants
 import com.ampairs.core.domain.model.BaseDomain
-import com.fasterxml.jackson.databind.ObjectMapper
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.Index
-import jakarta.persistence.Table
+import com.fasterxml.jackson.annotation.JsonIgnore
+import jakarta.persistence.*
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 import java.time.LocalDateTime
 
 /**
- * Workspace-specific settings and customizations
+ * Material Design 3 theme configuration
  */
-@Entity(name = "workspace_settings")
+data class MaterialTheme(
+    var mode: String = "light", // light, dark, auto
+    var colorScheme: String = "static", // static, dynamic (Material You)
+    var seedColor: String? = null, // For dynamic theming
+    var highContrast: Boolean = false
+)
+
+/**
+ * Material Design 3 color palette
+ */
+data class MaterialColors(
+    var primary: String = "#6750A4",
+    var onPrimary: String = "#FFFFFF",
+    var primaryContainer: String = "#EADDFF",
+    var onPrimaryContainer: String = "#21005D",
+    
+    var secondary: String = "#625B71",
+    var onSecondary: String = "#FFFFFF",
+    var secondaryContainer: String = "#E8DEF8",
+    var onSecondaryContainer: String = "#1D192B",
+    
+    var tertiary: String = "#7D5260",
+    var onTertiary: String = "#FFFFFF",
+    var tertiaryContainer: String = "#FFD8E4",
+    var onTertiaryContainer: String = "#31111D",
+    
+    var error: String = "#BA1A1A",
+    var onError: String = "#FFFFFF",
+    var errorContainer: String = "#FFDAD6",
+    var onErrorContainer: String = "#410002",
+    
+    var background: String = "#FFFBFE",
+    var onBackground: String = "#1C1B1F",
+    var surface: String = "#FFFBFE",
+    var onSurface: String = "#1C1B1F",
+    var surfaceVariant: String = "#E7E0EC",
+    var onSurfaceVariant: String = "#49454F",
+    
+    var outline: String = "#79747E",
+    var outlineVariant: String = "#CAC4D0",
+    var scrim: String = "#000000"
+)
+
+/**
+ * Material Design 3 typography scale
+ */
+data class MaterialTypography(
+    var displayFont: String = "Roboto",
+    var headlineFont: String = "Roboto",
+    var titleFont: String = "Roboto",
+    var bodyFont: String = "Roboto",
+    var labelFont: String = "Roboto",
+    
+    var displayLarge: TypographyStyle = TypographyStyle(size = 57, weight = 400, lineHeight = 64),
+    var displayMedium: TypographyStyle = TypographyStyle(size = 45, weight = 400, lineHeight = 52),
+    var displaySmall: TypographyStyle = TypographyStyle(size = 36, weight = 400, lineHeight = 44),
+    
+    var headlineLarge: TypographyStyle = TypographyStyle(size = 32, weight = 400, lineHeight = 40),
+    var headlineMedium: TypographyStyle = TypographyStyle(size = 28, weight = 400, lineHeight = 36),
+    var headlineSmall: TypographyStyle = TypographyStyle(size = 24, weight = 400, lineHeight = 32),
+    
+    var titleLarge: TypographyStyle = TypographyStyle(size = 22, weight = 400, lineHeight = 28),
+    var titleMedium: TypographyStyle = TypographyStyle(size = 16, weight = 500, lineHeight = 24),
+    var titleSmall: TypographyStyle = TypographyStyle(size = 14, weight = 500, lineHeight = 20),
+    
+    var bodyLarge: TypographyStyle = TypographyStyle(size = 16, weight = 400, lineHeight = 24),
+    var bodyMedium: TypographyStyle = TypographyStyle(size = 14, weight = 400, lineHeight = 20),
+    var bodySmall: TypographyStyle = TypographyStyle(size = 12, weight = 400, lineHeight = 16),
+    
+    var labelLarge: TypographyStyle = TypographyStyle(size = 14, weight = 500, lineHeight = 20),
+    var labelMedium: TypographyStyle = TypographyStyle(size = 12, weight = 500, lineHeight = 16),
+    var labelSmall: TypographyStyle = TypographyStyle(size = 11, weight = 500, lineHeight = 16)
+)
+
+/**
+ * Typography style definition
+ */
+data class TypographyStyle(
+    var size: Int = 14,
+    var weight: Int = 400,
+    var lineHeight: Int = 20,
+    var letterSpacing: Double = 0.0
+)
+
+/**
+ * Workspace-specific settings and customizations.
+ * Simplified structure with commonly used settings as direct fields.
+ */
+@Entity
 @Table(
     name = "workspace_settings",
     indexes = [
@@ -27,54 +114,58 @@ class WorkspaceSettings : BaseDomain() {
     @Column(name = "workspace_id", nullable = false, unique = true, length = 36)
     var workspaceId: String = ""
 
+    // Material Design 3 Theme Settings
+    
     /**
-     * Branding settings (JSON)
-     * Contains: logo_url, primary_color, secondary_color, theme, etc.
+     * Company logo URL
      */
-    @Column(name = "branding", columnDefinition = "TEXT")
-    var branding: String = "{}"
+    @Column(name = "logo_url", length = 500)
+    var logoUrl: String? = null
 
     /**
-     * Notification preferences (JSON)
-     * Contains: email_notifications, in_app_notifications, notification_types, etc.
+     * Material Design 3 theme configuration (JSON)
      */
-    @Column(name = "notifications", columnDefinition = "TEXT")
-    var notifications: String = "{}"
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "material_theme", columnDefinition = "JSON")
+    var materialTheme: MaterialTheme = MaterialTheme()
 
     /**
-     * Third-party integrations configuration (JSON)
-     * Contains: enabled_integrations, api_keys, webhook_urls, etc.
+     * Material Design 3 color palette (JSON)
      */
-    @Column(name = "integrations", columnDefinition = "TEXT")
-    var integrations: String = "{}"
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "material_colors", columnDefinition = "JSON")
+    var materialColors: MaterialColors = MaterialColors()
 
     /**
-     * Security policies and settings (JSON)
-     * Contains: password_policy, session_timeout, ip_restrictions, etc.
+     * Material Design 3 typography configuration (JSON)
      */
-    @Column(name = "security", columnDefinition = "TEXT")
-    var security: String = "{}"
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "material_typography", columnDefinition = "JSON")
+    var materialTypography: MaterialTypography = MaterialTypography()
+
+    // Business Settings
 
     /**
-     * Feature flags and enabled features (JSON)
-     * Contains: enabled_features, feature_limits, beta_features, etc.
+     * Business operation settings (JSON)
+     * Contains: working hours, document prefixes, auto-generation settings
      */
-    @Column(name = "features", columnDefinition = "TEXT")
-    var features: String = "{}"
-
-    /**
-     * General workspace preferences (JSON)
-     * Contains: default_language, timezone, date_format, number_format, etc.
-     */
-    @Column(name = "preferences", columnDefinition = "TEXT")
-    var preferences: String = "{}"
-
-    /**
-     * Custom fields and metadata (JSON)
-     * Contains: custom_fields, metadata, tags, etc.
-     */
-    @Column(name = "custom_data", columnDefinition = "TEXT")
-    var customData: String = "{}"
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "business_settings", columnDefinition = "JSON")
+    var businessSettings: Map<String, Any> = mapOf(
+        "workingHours" to mapOf(
+            "start" to "09:00",
+            "end" to "17:00",
+            "days" to listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
+        ),
+        "prefixes" to mapOf(
+            "invoice" to "INV",
+            "order" to "ORD"
+        ),
+        "autoGenerate" to mapOf(
+            "invoices" to true,
+            "orders" to true
+        )
+    )
 
     /**
      * When settings were last modified
@@ -88,225 +179,215 @@ class WorkspaceSettings : BaseDomain() {
     @Column(name = "last_modified_by", length = 36)
     var lastModifiedBy: String? = null
 
+    /**
+     * Name of user who last modified settings
+     */
+    @Column(name = "last_modified_by_name", length = 255)
+    var lastModifiedByName: String? = null
+
+    // JPA Relationships
+
+    /**
+     * Reference to the workspace
+     */
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "workspace_id", referencedColumnName = "id", insertable = false, updatable = false)
+    @JsonIgnore
+    var workspace: Workspace? = null
+
     override fun obtainSeqIdPrefix(): String {
         return Constants.WORKSPACE_SETTINGS_PREFIX
     }
 
-    private val objectMapper = ObjectMapper()
-
-    /**
-     * Get a branding setting value
-     */
-    fun getBrandingSetting(key: String): String? {
-        return getJsonValue(branding, key)
-    }
-
-    /**
-     * Set a branding setting value
-     */
-    fun setBrandingSetting(key: String, value: Any, modifiedBy: String? = null) {
-        branding = setJsonValue(branding, key, value)
-        updateModification(modifiedBy)
-    }
-
-    /**
-     * Get a notification setting value
-     */
-    fun getNotificationSetting(key: String): String? {
-        return getJsonValue(notifications, key)
-    }
-
-    /**
-     * Set a notification setting value
-     */
-    fun setNotificationSetting(key: String, value: Any, modifiedBy: String? = null) {
-        notifications = setJsonValue(notifications, key, value)
-        updateModification(modifiedBy)
-    }
-
-    /**
-     * Get an integration setting value
-     */
-    fun getIntegrationSetting(key: String): String? {
-        return getJsonValue(integrations, key)
-    }
-
-    /**
-     * Set an integration setting value
-     */
-    fun setIntegrationSetting(key: String, value: Any, modifiedBy: String? = null) {
-        integrations = setJsonValue(integrations, key, value)
-        updateModification(modifiedBy)
-    }
-
-    /**
-     * Get a security setting value
-     */
-    fun getSecuritySetting(key: String): String? {
-        return getJsonValue(security, key)
-    }
-
-    /**
-     * Set a security setting value
-     */
-    fun setSecuritySetting(key: String, value: Any, modifiedBy: String? = null) {
-        security = setJsonValue(security, key, value)
-        updateModification(modifiedBy)
-    }
-
-    /**
-     * Get a feature setting value
-     */
-    fun getFeatureSetting(key: String): String? {
-        return getJsonValue(features, key)
-    }
-
-    /**
-     * Set a feature setting value
-     */
-    fun setFeatureSetting(key: String, value: Any, modifiedBy: String? = null) {
-        features = setJsonValue(features, key, value)
-        updateModification(modifiedBy)
-    }
-
-    /**
-     * Get a preference setting value
-     */
-    fun getPreferenceSetting(key: String): String? {
-        return getJsonValue(preferences, key)
-    }
-
-    /**
-     * Set a preference setting value
-     */
-    fun setPreferenceSetting(key: String, value: Any, modifiedBy: String? = null) {
-        preferences = setJsonValue(preferences, key, value)
-        updateModification(modifiedBy)
-    }
-
-    /**
-     * Check if a feature is enabled
-     */
-    fun isFeatureEnabled(feature: String): Boolean {
-        return try {
-            val featuresMap = objectMapper.readValue(features, Map::class.java)
-            featuresMap[feature] as? Boolean ?: false
-        } catch (e: Exception) {
-            false
-        }
-    }
-
-    /**
-     * Enable or disable a feature
-     */
-    fun setFeatureEnabled(feature: String, enabled: Boolean, modifiedBy: String? = null) {
-        setFeatureSetting(feature, enabled, modifiedBy)
-    }
-
-    /**
-     * Get all branding settings as a map
-     */
-    fun getAllBrandingSettings(): Map<String, Any> {
-        return getJsonAsMap(branding)
-    }
-
-    /**
-     * Get all notification settings as a map
-     */
-    fun getAllNotificationSettings(): Map<String, Any> {
-        return getJsonAsMap(notifications)
-    }
-
-    /**
-     * Get all security settings as a map
-     */
-    fun getAllSecuritySettings(): Map<String, Any> {
-        return getJsonAsMap(security)
-    }
-
-    /**
-     * Helper method to get value from JSON string
-     */
-    private fun getJsonValue(jsonString: String, key: String): String? {
-        return try {
-            val map = objectMapper.readValue(jsonString, Map::class.java)
-            map[key]?.toString()
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    /**
-     * Helper method to set value in JSON string
-     */
-    private fun setJsonValue(jsonString: String, key: String, value: Any): String {
-        return try {
-            val map = objectMapper.readValue(jsonString, HashMap::class.java) as HashMap<String, Any>
-            map[key] = value
-            objectMapper.writeValueAsString(map)
-        } catch (e: Exception) {
-            objectMapper.writeValueAsString(mapOf(key to value))
-        }
-    }
-
-    /**
-     * Helper method to get JSON as Map
-     */
-    private fun getJsonAsMap(jsonString: String): Map<String, Any> {
-        return try {
-            objectMapper.readValue(jsonString, Map::class.java) as Map<String, Any>
-        } catch (e: Exception) {
-            emptyMap()
-        }
-    }
 
     /**
      * Update modification tracking
      */
-    private fun updateModification(modifiedBy: String?) {
+    fun updateModification(modifiedBy: String?, modifiedByName: String? = null) {
         lastModifiedAt = LocalDateTime.now()
         lastModifiedBy = modifiedBy
+        lastModifiedByName = modifiedByName
+    }
+
+    // Business Settings Helper Methods
+
+    /**
+     * Get business setting value
+     */
+    fun getBusinessSetting(key: String): Any? {
+        return businessSettings[key]
     }
 
     /**
-     * Get branding settings as map
+     * Set business setting value
      */
-    fun getBrandingMap(): Map<String, Any> {
-        return getJsonAsMap(branding)
+    fun setBusinessSetting(key: String, value: Any, modifiedBy: String? = null, modifiedByName: String? = null) {
+        businessSettings = businessSettings.toMutableMap().apply { put(key, value) }
+        updateModification(modifiedBy, modifiedByName)
     }
 
     /**
-     * Get notification settings as map
+     * Get working hours start time
      */
-    fun getNotificationsMap(): Map<String, Any> {
-        return getJsonAsMap(notifications)
+    fun getWorkingHoursStart(): String {
+        return try {
+            val workingHours = businessSettings["workingHours"] as? Map<String, Any>
+            workingHours?.get("start") as? String ?: "09:00"
+        } catch (e: Exception) {
+            "09:00"
+        }
     }
 
     /**
-     * Get integration settings as map
+     * Get working hours end time
      */
-    fun getIntegrationsMap(): Map<String, Any> {
-        return getJsonAsMap(integrations)
+    fun getWorkingHoursEnd(): String {
+        return try {
+            val workingHours = businessSettings["workingHours"] as? Map<String, Any>
+            workingHours?.get("end") as? String ?: "17:00"
+        } catch (e: Exception) {
+            "17:00"
+        }
     }
 
     /**
-     * Get security settings as map
+     * Get working days
      */
-    fun getSecurityMap(): Map<String, Any> {
-        return getJsonAsMap(security)
+    fun getWorkingDays(): List<String> {
+        return try {
+            val workingHours = businessSettings["workingHours"] as? Map<String, Any>
+            workingHours?.get("days") as? List<String> ?: listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
+        } catch (e: Exception) {
+            listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
+        }
     }
 
     /**
-     * Get features settings as map
+     * Get invoice prefix
      */
-    fun getFeaturesMap(): Map<String, Any> {
-        return getJsonAsMap(features)
+    fun getInvoicePrefix(): String {
+        return try {
+            val prefixes = businessSettings["prefixes"] as? Map<String, Any>
+            prefixes?.get("invoice") as? String ?: "INV"
+        } catch (e: Exception) {
+            "INV"
+        }
     }
 
     /**
-     * Get preferences settings as map
+     * Get order prefix
      */
-    fun getPreferencesMap(): Map<String, Any> {
-        return getJsonAsMap(preferences)
+    fun getOrderPrefix(): String {
+        return try {
+            val prefixes = businessSettings["prefixes"] as? Map<String, Any>
+            prefixes?.get("order") as? String ?: "ORD"
+        } catch (e: Exception) {
+            "ORD"
+        }
+    }
+
+    /**
+     * Check if auto-generate invoices is enabled
+     */
+    fun isAutoGenerateInvoicesEnabled(): Boolean {
+        return try {
+            val autoGenerate = businessSettings["autoGenerate"] as? Map<String, Any>
+            autoGenerate?.get("invoices") as? Boolean ?: true
+        } catch (e: Exception) {
+            true
+        }
+    }
+
+    /**
+     * Check if auto-generate orders is enabled
+     */
+    fun isAutoGenerateOrdersEnabled(): Boolean {
+        return try {
+            val autoGenerate = businessSettings["autoGenerate"] as? Map<String, Any>
+            autoGenerate?.get("orders") as? Boolean ?: true
+        } catch (e: Exception) {
+            true
+        }
+    }
+
+    // Note: JSON helper methods no longer needed with direct object mapping
+
+    // Material Design 3 Helper Methods
+
+    /**
+     * Set Material Theme configuration
+     */
+    fun setMaterialTheme(theme: MaterialTheme, modifiedBy: String? = null, modifiedByName: String? = null) {
+        materialTheme = theme
+        updateModification(modifiedBy, modifiedByName)
+    }
+
+    /**
+     * Set Material Colors configuration
+     */
+    fun setMaterialColors(colors: MaterialColors, modifiedBy: String? = null, modifiedByName: String? = null) {
+        materialColors = colors
+        updateModification(modifiedBy, modifiedByName)
+    }
+
+    /**
+     * Set Material Typography configuration
+     */
+    fun setMaterialTypography(typography: MaterialTypography, modifiedBy: String? = null, modifiedByName: String? = null) {
+        materialTypography = typography
+        updateModification(modifiedBy, modifiedByName)
+    }
+
+    /**
+     * Update theme mode only
+     */
+    fun updateThemeMode(mode: String, modifiedBy: String? = null, modifiedByName: String? = null) {
+        materialTheme.mode = mode
+        updateModification(modifiedBy, modifiedByName)
+    }
+
+    /**
+     * Update color scheme preference
+     */
+    fun updateColorScheme(colorScheme: String, seedColor: String? = null, modifiedBy: String? = null, modifiedByName: String? = null) {
+        materialTheme.colorScheme = colorScheme
+        materialTheme.seedColor = seedColor
+        updateModification(modifiedBy, modifiedByName)
+    }
+
+    /**
+     * Update primary color
+     */
+    fun updatePrimaryColor(primaryColor: String, modifiedBy: String? = null, modifiedByName: String? = null) {
+        materialColors.primary = primaryColor
+        updateModification(modifiedBy, modifiedByName)
+    }
+
+    /**
+     * Check if dark theme is enabled
+     */
+    fun isDarkTheme(): Boolean {
+        return materialTheme.mode == "dark"
+    }
+
+    /**
+     * Check if Material You (dynamic colors) is enabled
+     */
+    fun isMaterialYouEnabled(): Boolean {
+        return materialTheme.colorScheme == "dynamic"
+    }
+
+    /**
+     * Get primary color for current theme
+     */
+    fun getPrimaryColor(): String {
+        return materialColors.primary
+    }
+
+    /**
+     * Get surface color for current theme
+     */
+    fun getSurfaceColor(): String {
+        return materialColors.surface
     }
 }

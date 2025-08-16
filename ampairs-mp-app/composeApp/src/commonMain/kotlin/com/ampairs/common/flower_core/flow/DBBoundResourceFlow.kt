@@ -51,7 +51,7 @@ inline fun <DB, REMOTE> dbBoundResourceFlow(
     crossinline makeNetworkRequest: () -> Flow<ApiResponse<REMOTE>>,
     crossinline processNetworkResponse: (response: ApiSuccessResponse<REMOTE>) -> Unit = { },
     crossinline saveResponseData: suspend (REMOTE) -> Unit = { },
-    crossinline onNetworkRequestFailed: (errorMessage: String, httpStatusCode: Int) -> Unit = { _: String, _: Int -> },
+    crossinline onNetworkRequestFailed: (errorMessage: String, errorCode: String) -> Unit = { _: String, _: String -> },
 ) = flow<Resource<DB>> {
     emit(Resource.loading(data = null))
     val localData = fetchFromLocal().first()
@@ -73,12 +73,12 @@ inline fun <DB, REMOTE> dbBoundResourceFlow(
                 }
 
                 is ApiErrorResponse -> {
-                    onNetworkRequestFailed(apiResponse.errorMessage, apiResponse.httpStatusCode)
+                    onNetworkRequestFailed(apiResponse.errorMessage, apiResponse.errorCode)
                     emitAll(
                         fetchFromLocal().map { dbData ->
                             Resource.error(
                                 errorMessage = apiResponse.errorMessage,
-                                httpStatusCode = apiResponse.httpStatusCode,
+                                errorCode = apiResponse.errorCode,
                                 data = dbData
                             )
                         }

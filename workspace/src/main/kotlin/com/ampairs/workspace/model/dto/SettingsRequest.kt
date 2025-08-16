@@ -1,28 +1,28 @@
 package com.ampairs.workspace.model.dto
 
+import com.ampairs.workspace.model.MaterialColors
+import com.ampairs.workspace.model.MaterialTheme
+import com.ampairs.workspace.model.MaterialTypography
 import com.fasterxml.jackson.annotation.JsonProperty
 
 /**
  * Request DTO for updating workspace settings
  */
 data class UpdateSettingsRequest(
-    @JsonProperty("branding")
-    val branding: Map<String, Any>? = null,
+    @JsonProperty("logo_url")
+    val logoUrl: String? = null,
 
-    @JsonProperty("notifications")
-    val notifications: Map<String, Any>? = null,
+    @JsonProperty("material_theme")
+    val materialTheme: MaterialTheme? = null,
 
-    @JsonProperty("integrations")
-    val integrations: Map<String, Any>? = null,
+    @JsonProperty("material_colors")
+    val materialColors: MaterialColors? = null,
 
-    @JsonProperty("security")
-    val security: Map<String, Any>? = null,
+    @JsonProperty("material_typography")
+    val materialTypography: MaterialTypography? = null,
 
-    @JsonProperty("features")
-    val features: Map<String, Any>? = null,
-
-    @JsonProperty("preferences")
-    val preferences: Map<String, Any>? = null,
+    @JsonProperty("business_settings")
+    val businessSettings: Map<String, Any>? = null,
 )
 
 /**

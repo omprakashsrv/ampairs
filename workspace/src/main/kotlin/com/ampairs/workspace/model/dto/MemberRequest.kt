@@ -1,5 +1,6 @@
 package com.ampairs.workspace.model.dto
 
+import com.ampairs.workspace.model.enums.Permission
 import com.ampairs.workspace.model.enums.WorkspaceRole
 import com.fasterxml.jackson.annotation.JsonProperty
 import jakarta.validation.constraints.Email
@@ -31,8 +32,8 @@ data class UpdateMemberRequest(
     @JsonProperty("role")
     val role: WorkspaceRole? = null,
 
-    @JsonProperty("custom_permissions")
-    val customPermissions: List<String>? = null,
+    @JsonProperty("permissions")
+    val customPermissions: Set<Permission>? = null,
 
     @JsonProperty("is_active")
     val isActive: Boolean? = null,

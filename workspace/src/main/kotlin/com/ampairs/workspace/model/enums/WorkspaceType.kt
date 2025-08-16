@@ -1,32 +1,92 @@
 package com.ampairs.workspace.model.enums
 
 /**
- * Represents different types of workspaces in the system.
- * Each type defines the intended use case and collaboration model.
+ * Represents different types of business workspaces in the Ampairs system.
+ * Each type defines the business model and operational structure.
  */
-enum class WorkspaceType {
+enum class WorkspaceType(
+    val displayName: String,
+    val description: String,
+    val maxUsers: Int = 50,
+    val features: List<String> = emptyList()
+) {
     /**
-     * Individual workspace for personal projects and data
+     * Small business or startup
      */
-    PERSONAL,
+    BUSINESS(
+        "Business",
+        "Small to medium business with basic needs",
+        50,
+        listOf("basic_inventory", "customer_management", "order_processing", "invoice_generation")
+    ),
 
     /**
-     * Team-based workspace for collaborative projects
+     * E-commerce business
      */
-    TEAM,
+    ECOMMERCE(
+        "E-commerce",
+        "Online retail business with advanced e-commerce features",
+        100,
+        listOf("online_catalog", "payment_integration", "shipping_management", "marketplace_sync")
+    ),
 
     /**
-     * Organization-wide workspace for large enterprises
+     * Retail store
      */
-    ORGANIZATION,
+    RETAIL(
+        "Retail",
+        "Physical retail store with POS integration",
+        25,
+        listOf("pos_integration", "in_store_inventory", "loyalty_programs", "staff_management")
+    ),
 
     /**
-     * Client-specific workspace for external stakeholder collaboration
+     * Wholesale distributor
      */
-    CLIENT,
+    WHOLESALE(
+        "Wholesale",
+        "Wholesale distribution business with bulk operations",
+        200,
+        listOf("bulk_pricing", "supplier_management", "distribution_tracking", "multi_location")
+    ),
 
     /**
-     * Project-specific workspace with defined scope and timeline
+     * Manufacturing business
      */
-    PROJECT
+    MANUFACTURING(
+        "Manufacturing",
+        "Manufacturing business with production tracking",
+        500,
+        listOf("production_planning", "raw_materials", "quality_control", "supply_chain")
+    ),
+
+    /**
+     * Service-based business
+     */
+    SERVICE(
+        "Service",
+        "Service-based business with project and time tracking",
+        30,
+        listOf("time_tracking", "project_management", "service_billing", "client_portal")
+    ),
+
+    /**
+     * Enterprise organization
+     */
+    ENTERPRISE(
+        "Enterprise",
+        "Large enterprise with advanced features and integrations",
+        Int.MAX_VALUE,
+        listOf("advanced_analytics", "custom_integrations", "multi_tenant", "enterprise_security")
+    ),
+
+    /**
+     * Franchise business
+     */
+    FRANCHISE(
+        "Franchise",
+        "Franchise business with multi-location management",
+        100,
+        listOf("multi_location", "franchise_reporting", "centralized_inventory", "brand_compliance")
+    )
 }

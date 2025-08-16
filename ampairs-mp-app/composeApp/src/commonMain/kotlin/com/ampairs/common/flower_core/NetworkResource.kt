@@ -31,7 +31,7 @@ import kotlinx.coroutines.flow.flow
 inline fun <REMOTE> networkResource(
     crossinline shouldMakeNetworkRequest: () -> Boolean = { true },
     crossinline makeNetworkRequest: suspend () -> Flow<Response<REMOTE>>,
-    crossinline processNetworkResponse:suspend (response: REMOTE) -> Unit = { },
+    crossinline processNetworkResponse: suspend (response: REMOTE) -> Unit = { },
 ) = flow<Resource<REMOTE>> {
     emit(Resource.loading(data = null))
     if (shouldMakeNetworkRequest()) {
@@ -41,7 +41,7 @@ inline fun <REMOTE> networkResource(
                 emit(
                     Resource.error(
                         errorMessage = remoteResponse.error?.message ?: "",
-                        httpStatusCode = remoteResponse.error?.code ?: 0,
+                        errorCode = remoteResponse.error?.code ?: "",
                         data = null
                     )
                 )

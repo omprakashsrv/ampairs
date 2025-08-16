@@ -1,3 +1,4 @@
+
 package com.ampairs.network.security
 
 import com.ampairs.auth.api.AUTH_ENDPOINT
@@ -5,6 +6,7 @@ import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.model.RefreshToken
 import com.ampairs.auth.api.model.Token
 import com.ampairs.auth.domain.asRefreshTokens
+import com.ampairs.common.UnauthenticatedHandler
 import com.ampairs.network.model.Response
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -35,18 +37,18 @@ class SecureKtorClientFactory(
     private val certificatePinningService: CertificatePinningService,
     private val appUpdateEnforcer: AppUpdateEnforcer
 ) {
-    
+
     /**
      * Create an HttpClient with certificate pinning and security checks
      */
     fun createSecureHttpClient(
-        engine: HttpClientEngine, 
+        engine: HttpClientEngine,
         tokenRepository: TokenRepository
     ): HttpClient {
         // Check certificate status before creating client
         runBlocking {
             val updateStatus = certificatePinningService.checkAppUpdateRequired()
-            
+
             when (updateStatus) {
                 is AppUpdateStatus.Required -> {
                     appUpdateEnforcer.showUpdateDialog(updateStatus)
@@ -60,17 +62,17 @@ class SecureKtorClientFactory(
                 }
             }
         }
-        
+
         return HttpClient(engine) {
             expectSuccess = true
-            
+
             defaultRequest {
                 if (tokenRepository.getCompanyId().isNotEmpty()) {
                     header("X-Company", tokenRepository.getCompanyId())
                 }
                 contentType(ContentType.Application.Json)
             }
-            
+
             install(ContentNegotiation) {
                 json(
                     Json {
@@ -78,7 +80,7 @@ class SecureKtorClientFactory(
                     }
                 )
             }
-            
+
             install(Logging) {
                 logger = object : Logger {
                     override fun log(message: String) {
@@ -87,14 +89,14 @@ class SecureKtorClientFactory(
                 }
                 level = LogLevel.INFO
             }
-            
+
             install(HttpTimeout) {
                 val timeout = 30000L
                 connectTimeoutMillis = timeout
                 requestTimeoutMillis = timeout
                 socketTimeoutMillis = timeout
             }
-            
+
             install(Auth) {
                 bearer {
                     loadTokens {
@@ -104,29 +106,33 @@ class SecureKtorClientFactory(
                         )
                     }
                     refreshTokens {
-                        // Check if network requests are allowed before token refresh
                         runBlocking {
                             if (!appUpdateEnforcer.shouldAllowNetworkRequests()) {
                                 throw SecurityException("Network requests blocked due to security policy") // TODO: Use string resource
                             }
                         }
-                        
-                        val tokenResponse: Response<Token> = client.post {
-                            url(AUTH_ENDPOINT + "/auth/v1/refresh_token")
-                            contentType(ContentType.Application.Json)
-                            setBody(
-                                RefreshToken(
-                                    oldTokens?.refreshToken ?: tokenRepository.getRefreshToken()
-                                )
-                            )
-                            markAsRefreshTokenRequest()
-                        }.body()
 
-                        val refreshTokens = tokenResponse.data?.asRefreshTokens()
-                        refreshTokens?.let { 
-                            tokenRepository.updateToken(it.accessToken, it.refreshToken) 
+                        try {
+                            val tokenResponse: Response<Token> = client.post {
+                                url(AUTH_ENDPOINT + "/auth/v1/refresh_token")
+                                contentType(ContentType.Application.Json)
+                                setBody(
+                                    RefreshToken(
+                                        oldTokens?.refreshToken ?: tokenRepository.getRefreshToken()
+                                    )
+                                )
+                                markAsRefreshTokenRequest()
+                            }.body()
+
+                            val refreshTokens = tokenResponse.data?.asRefreshTokens()
+                            refreshTokens?.let {
+                                tokenRepository.updateToken(it.accessToken, it.refreshToken)
+                            }
+                            refreshTokens
+                        } catch (e: Exception) {
+                            UnauthenticatedHandler.onUnauthenticated()
+                            null
                         }
-                        refreshTokens
                     }
                 }
             }
@@ -144,6 +150,6 @@ suspend fun HttpClient.secureRequest(
     if (!appUpdateEnforcer.shouldAllowNetworkRequests()) {
         throw SecurityException("Network requests blocked due to security policy") // TODO: Use string resource
     }
-    
+
     block()
 }

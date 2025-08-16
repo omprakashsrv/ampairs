@@ -107,7 +107,7 @@ class WorkspaceMemberService(
         }
 
         request.customPermissions?.let { permissions ->
-            member.customPermissions = permissions.joinToString(",")
+            member.permissions = permissions
         }
 
         request.isActive?.let {

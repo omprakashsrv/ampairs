@@ -31,6 +31,20 @@ class TokenRepositoryImpl(val userTokenDao: UserTokenDao) : TokenRepository {
         }
     }
 
+    override fun clearTokens() {
+        runBlocking {
+            userTokenDao.insertUserToken(
+                UserTokenEntity(
+                    seq_id = 0, 
+                    id = "1", 
+                    refresh_token = "", 
+                    access_token = "", 
+                    expires_at = 0
+                )
+            )
+        }
+    }
+
     override fun getCompanyId(): String {
         return this.companyIdTemp
     }
