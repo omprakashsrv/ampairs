@@ -4,6 +4,7 @@ import com.ampairs.workspace.api.WorkspaceApi
 import com.ampairs.workspace.api.model.CreateWorkspaceRequest
 import com.ampairs.workspace.db.dao.WorkspaceDao
 import com.ampairs.workspace.domain.Workspace
+import com.ampairs.common.model.PageResult
 import com.ampairs.workspace.domain.asDatabaseModel
 import com.ampairs.workspace.domain.asDomainModel
 import kotlinx.coroutines.flow.Flow
@@ -15,20 +16,21 @@ class WorkspaceRepository(
 ) {
 
     /**
-     * Get user's workspaces from API
+     * Get user's workspaces from API with pagination info
      */
     suspend fun getUserWorkspaces(
         page: Int = 0,
         size: Int = 10,
         sortBy: String = "createdAt",
         sortDir: String = "desc",
-    ): List<Workspace> {
+    ): PageResult<Workspace> {
         val response = workspaceApi.getUserWorkspaces(page, size, sortBy, sortDir)
 
         return if (response.error == null && response.data != null) {
+            val pagedResponse = response.data!!
+            
             // Convert WorkspaceListApiModel to Workspace for consistency
-            val workspaceData = response.data!!
-            val workspaces = workspaceData.map { workspaceListItem ->
+            val workspaces = pagedResponse.content.map { workspaceListItem ->
                 Workspace(
                     id = workspaceListItem.id,
                     name = workspaceListItem.name,
@@ -60,7 +62,16 @@ class WorkspaceRepository(
                 workspaceDao.insertWorkspace(workspaceEntity)
             }
 
-            workspaces
+            PageResult(
+                content = workspaces,
+                totalElements = pagedResponse.totalElements,
+                totalPages = pagedResponse.totalPages,
+                currentPage = pagedResponse.number,
+                pageSize = pagedResponse.size,
+                isFirst = pagedResponse.first,
+                isLast = pagedResponse.last,
+                isEmpty = pagedResponse.empty
+            )
         } else {
             throw Exception(response.error?.message ?: "Failed to fetch workspaces")
         }

@@ -9,7 +9,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navOptions
 import com.ampairs.auth.authNavigation
 import com.ampairs.common.UnauthenticatedHandler
-import com.ampairs.company.companyNavigation
+import com.ampairs.workspace.workspaceNavigation
 import com.ampairs.customer.customerNavigation
 import com.ampairs.home.homeNavigation
 import com.ampairs.inventory.inventoryNavigation
@@ -17,6 +17,7 @@ import com.ampairs.invoice.invoiceNavigation
 import com.ampairs.order.orderNavigation
 import com.ampairs.product.productNavigation
 import kotlinx.coroutines.flow.collectLatest
+import org.koin.compose.koinInject
 
 @Composable
 fun AppNavigation() {
@@ -42,11 +43,11 @@ fun AppNavigation() {
                 launchSingleTop = true // Avoid multiple instances of the same destination
             }
             navController.navigate(
-                route = Route.Company,
+                route = Route.Workspace,
                 navOptions = options
             )
         }
-        companyNavigation(navController) {
+        workspaceNavigation(navController) {
             navController.navigate(Route.Home)
         }
         homeNavigation(navController) {

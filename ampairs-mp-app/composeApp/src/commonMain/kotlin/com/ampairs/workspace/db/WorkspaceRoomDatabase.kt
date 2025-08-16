@@ -18,11 +18,3 @@ abstract class WorkspaceRoomDatabase : RoomDatabase() {
     abstract fun workspaceDao(): WorkspaceDao
 }
 
-// Extension function to get database instance
-fun getWorkspaceDatabase(databasePath: String): WorkspaceRoomDatabase {
-    return Room.databaseBuilder<WorkspaceRoomDatabase>(
-        name = databasePath,
-    ).setDriver(BundledSQLiteDriver())
-        .setQueryCoroutineContext(Dispatchers.IO)
-        .build()
-}

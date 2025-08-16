@@ -21,12 +21,12 @@ interface WorkspaceActivityRepository : JpaRepository<WorkspaceActivity, String>
     /**
      * Find activities by workspace (tenant) ID with pagination
      */
-    fun findByOwnerIdOrderByCreatedAtDesc(workspaceId: String, pageable: Pageable): Page<WorkspaceActivity>
+    fun findByWorkspaceIdOrderByCreatedAtDesc(workspaceId: String, pageable: Pageable): Page<WorkspaceActivity>
 
     /**
      * Find activities by workspace ID and activity type
      */
-    fun findByOwnerIdAndActivityTypeOrderByCreatedAtDesc(
+    fun findByWorkspaceIdAndActivityTypeOrderByCreatedAtDesc(
         workspaceId: String,
         activityType: WorkspaceActivityType,
         pageable: Pageable,
@@ -35,7 +35,7 @@ interface WorkspaceActivityRepository : JpaRepository<WorkspaceActivity, String>
     /**
      * Find activities by workspace ID and actor
      */
-    fun findByOwnerIdAndActorIdOrderByCreatedAtDesc(
+    fun findByWorkspaceIdAndActorIdOrderByCreatedAtDesc(
         workspaceId: String,
         actorId: String,
         pageable: Pageable,
@@ -44,8 +44,8 @@ interface WorkspaceActivityRepository : JpaRepository<WorkspaceActivity, String>
     /**
      * Find activities by workspace ID within date range
      */
-    @Query("SELECT wa FROM com.ampairs.workspace.model.WorkspaceActivity wa WHERE wa.ownerId = :workspaceId AND wa.createdAt BETWEEN :startDate AND :endDate ORDER BY wa.createdAt DESC")
-    fun findByOwnerIdAndCreatedAtBetweenOrderByCreatedAtDesc(
+    @Query("SELECT wa FROM com.ampairs.workspace.model.WorkspaceActivity wa WHERE wa.workspaceId = :workspaceId AND wa.createdAt BETWEEN :startDate AND :endDate ORDER BY wa.createdAt DESC")
+    fun findByWorkspaceIdAndCreatedAtBetweenOrderByCreatedAtDesc(
         @Param("workspaceId") workspaceId: String,
         @Param("startDate") startDate: LocalDateTime,
         @Param("endDate") endDate: LocalDateTime,
@@ -55,7 +55,7 @@ interface WorkspaceActivityRepository : JpaRepository<WorkspaceActivity, String>
     /**
      * Find activities by workspace ID and severity level
      */
-    fun findByOwnerIdAndSeverityOrderByCreatedAtDesc(
+    fun findByWorkspaceIdAndSeverityOrderByCreatedAtDesc(
         workspaceId: String,
         severity: String,
         pageable: Pageable,
@@ -64,18 +64,18 @@ interface WorkspaceActivityRepository : JpaRepository<WorkspaceActivity, String>
     /**
      * Count activities by workspace and activity type
      */
-    fun countByOwnerIdAndActivityType(workspaceId: String, activityType: WorkspaceActivityType): Long
+    fun countByWorkspaceIdAndActivityType(workspaceId: String, activityType: WorkspaceActivityType): Long
 
     /**
      * Count activities by workspace and actor
      */
-    fun countByOwnerIdAndActorId(workspaceId: String, actorId: String): Long
+    fun countByWorkspaceIdAndActorId(workspaceId: String, actorId: String): Long
 
     /**
      * Count activities by workspace within date range
      */
-    @Query("SELECT COUNT(wa) FROM com.ampairs.workspace.model.WorkspaceActivity wa WHERE wa.ownerId = :workspaceId AND wa.createdAt BETWEEN :startDate AND :endDate")
-    fun countByOwnerIdAndCreatedAtBetween(
+    @Query("SELECT COUNT(wa) FROM com.ampairs.workspace.model.WorkspaceActivity wa WHERE wa.workspaceId = :workspaceId AND wa.createdAt BETWEEN :startDate AND :endDate")
+    fun countByWorkspaceIdAndCreatedAtBetween(
         @Param("workspaceId") workspaceId: String,
         @Param("startDate") startDate: LocalDateTime,
         @Param("endDate") endDate: LocalDateTime,
@@ -88,7 +88,7 @@ interface WorkspaceActivityRepository : JpaRepository<WorkspaceActivity, String>
         """
         SELECT wa.activityType, COUNT(wa)
         FROM com.ampairs.workspace.model.WorkspaceActivity wa
-        WHERE wa.ownerId = :workspaceId
+        WHERE wa.workspaceId = :workspaceId
         AND wa.createdAt >= :sinceDate
         GROUP BY wa.activityType
         ORDER BY COUNT(wa) DESC
@@ -106,7 +106,7 @@ interface WorkspaceActivityRepository : JpaRepository<WorkspaceActivity, String>
         """
         SELECT wa.actorId, wa.actorName, COUNT(wa)
         FROM com.ampairs.workspace.model.WorkspaceActivity wa
-        WHERE wa.ownerId = :workspaceId
+        WHERE wa.workspaceId = :workspaceId
         AND wa.createdAt >= :sinceDate
         GROUP BY wa.actorId, wa.actorName
         ORDER BY COUNT(wa) DESC
@@ -125,7 +125,7 @@ interface WorkspaceActivityRepository : JpaRepository<WorkspaceActivity, String>
         """
         SELECT wa
         FROM com.ampairs.workspace.model.WorkspaceActivity wa
-        WHERE wa.ownerId = :workspaceId
+        WHERE wa.workspaceId = :workspaceId
         AND wa.createdAt >= :sinceDate
         ORDER BY wa.createdAt DESC
     """
@@ -143,7 +143,7 @@ interface WorkspaceActivityRepository : JpaRepository<WorkspaceActivity, String>
         """
         SELECT wa
         FROM com.ampairs.workspace.model.WorkspaceActivity wa
-        WHERE wa.ownerId = :workspaceId
+        WHERE wa.workspaceId = :workspaceId
         AND (
             LOWER(wa.description) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
             OR LOWER(wa.targetEntityName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
@@ -161,7 +161,7 @@ interface WorkspaceActivityRepository : JpaRepository<WorkspaceActivity, String>
     /**
      * Find activities by target entity
      */
-    fun findByOwnerIdAndTargetEntityTypeAndTargetEntityIdOrderByCreatedAtDesc(
+    fun findByWorkspaceIdAndTargetEntityTypeAndTargetEntityIdOrderByCreatedAtDesc(
         workspaceId: String,
         targetEntityType: String,
         targetEntityId: String,
@@ -175,7 +175,7 @@ interface WorkspaceActivityRepository : JpaRepository<WorkspaceActivity, String>
         """
         SELECT wa
         FROM com.ampairs.workspace.model.WorkspaceActivity wa
-        WHERE wa.ownerId = :workspaceId
+        WHERE wa.workspaceId = :workspaceId
         AND wa.targetEntityType = :entityType
         AND wa.targetEntityId = :entityId
         ORDER BY wa.createdAt ASC
@@ -191,8 +191,8 @@ interface WorkspaceActivityRepository : JpaRepository<WorkspaceActivity, String>
      * Delete activities older than specified date for a workspace
      */
     @Modifying
-    @Query("DELETE FROM com.ampairs.workspace.model.WorkspaceActivity wa WHERE wa.ownerId = :workspaceId AND wa.createdAt < :cutoffDate")
-    fun deleteByOwnerIdAndCreatedAtBefore(
+    @Query("DELETE FROM com.ampairs.workspace.model.WorkspaceActivity wa WHERE wa.workspaceId = :workspaceId AND wa.createdAt < :cutoffDate")
+    fun deleteByWorkspaceIdAndCreatedAtBefore(
         @Param("workspaceId") workspaceId: String,
         @Param("cutoffDate") cutoffDate: LocalDateTime,
     ): Long
@@ -201,13 +201,13 @@ interface WorkspaceActivityRepository : JpaRepository<WorkspaceActivity, String>
      * Delete all activities for a workspace (used during workspace deletion)
      */
     @Modifying
-    @Query("DELETE FROM com.ampairs.workspace.model.WorkspaceActivity wa WHERE wa.ownerId = :workspaceId")
-    fun deleteByOwnerId(@Param("workspaceId") workspaceId: String): Long
+    @Query("DELETE FROM com.ampairs.workspace.model.WorkspaceActivity wa WHERE wa.workspaceId = :workspaceId")
+    fun deleteByWorkspaceId(@Param("workspaceId") workspaceId: String): Long
 
     /**
      * Check if there are any activities for a workspace
      */
-    fun existsByOwnerId(workspaceId: String): Boolean
+    fun existsByWorkspaceId(workspaceId: String): Boolean
 
     /**
      * Get activity count by severity for monitoring
@@ -216,7 +216,7 @@ interface WorkspaceActivityRepository : JpaRepository<WorkspaceActivity, String>
         """
         SELECT wa.severity, COUNT(wa)
         FROM com.ampairs.workspace.model.WorkspaceActivity wa
-        WHERE wa.ownerId = :workspaceId
+        WHERE wa.workspaceId = :workspaceId
         AND wa.createdAt >= :sinceDate
         GROUP BY wa.severity
     """
@@ -233,7 +233,7 @@ interface WorkspaceActivityRepository : JpaRepository<WorkspaceActivity, String>
         """
         SELECT DATE(wa.createdAt), COUNT(wa)
         FROM com.ampairs.workspace.model.WorkspaceActivity wa
-        WHERE wa.ownerId = :workspaceId
+        WHERE wa.workspaceId = :workspaceId
         AND wa.createdAt >= :sinceDate
         GROUP BY DATE(wa.createdAt)
         ORDER BY DATE(wa.createdAt) DESC

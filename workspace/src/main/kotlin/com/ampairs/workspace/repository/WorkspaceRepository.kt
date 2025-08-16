@@ -30,11 +30,6 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
     fun existsBySlug(slug: String): Boolean
 
     /**
-     * Find workspaces by owner (owner_id)
-     */
-    fun findByOwnerId(ownerId: String, pageable: Pageable): Page<Workspace>
-
-    /**
      * Find active workspaces by type
      */
     fun findByWorkspaceTypeAndActiveTrue(workspaceType: WorkspaceType, pageable: Pageable): Page<Workspace>
@@ -76,11 +71,6 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
     """
     )
     fun findWorkspacesApproachingStorageLimit(@Param("percentage") percentage: Double): List<Workspace>
-
-    /**
-     * Count workspaces by owner
-     */
-    fun countByOwnerId(ownerId: String): Long
 
     /**
      * Count active workspaces by type

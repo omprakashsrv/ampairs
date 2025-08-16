@@ -9,6 +9,7 @@ import com.ampairs.workspace.api.model.CreateWorkspaceRequest
 import com.ampairs.workspace.api.model.UpdateWorkspaceRequest
 import com.ampairs.workspace.api.model.WorkspaceApiModel
 import com.ampairs.workspace.api.model.WorkspaceListApiModel
+import com.ampairs.workspace.api.model.PagedWorkspaceResponse
 import io.ktor.client.engine.HttpClientEngine
 
 const val WORKSPACE_ENDPOINT = "http://localhost:8080"
@@ -22,7 +23,7 @@ class WorkspaceApiImpl(engine: HttpClientEngine, private val tokenRepository: To
         size: Int,
         sortBy: String,
         sortDir: String,
-    ): Response<List<WorkspaceListApiModel>> {
+    ): Response<PagedWorkspaceResponse> {
         val params = mapOf(
             "page" to page,
             "size" to size,

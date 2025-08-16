@@ -80,7 +80,7 @@ actual val awsModule: Module = module {
 }
 
 actual val authPlatformModule: Module = com.ampairs.auth.authPlatformModule
-actual val companyPlatformModule: Module = com.ampairs.company.companyPlatformModule
+actual val workspacePlatformModule: Module = com.ampairs.workspace.workspacePlatformModule
 actual val customerPlatformModule: Module = com.ampairs.customer.customerPlatformModule
 actual val productPlatformModule: Module = com.ampairs.product.productPlatformModule
 actual val orderPlatformModule: Module = com.ampairs.order.orderPlatformModule

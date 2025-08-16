@@ -1,6 +1,6 @@
 package com.ampairs.workspace.model
 
-import com.ampairs.core.domain.model.OwnableBaseDomain
+import com.ampairs.core.domain.model.BaseDomain
 import com.ampairs.workspace.model.enums.WorkspaceActivityType
 import com.fasterxml.jackson.annotation.JsonIgnore
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -14,7 +14,7 @@ import jakarta.persistence.*
 @Table(
     name = "workspace_activities",
     indexes = [
-        Index(name = "idx_workspace_activity_owner_type", columnList = "owner_id, activity_type"),
+        Index(name = "idx_workspace_activity_workspace_type", columnList = "workspace_id, activity_type"),
         Index(name = "idx_workspace_activity_created_at", columnList = "created_at"),
         Index(name = "idx_workspace_activity_actor", columnList = "actor_id"),
         Index(name = "idx_workspace_activity_target", columnList = "target_entity_type, target_entity_id")
@@ -106,7 +106,13 @@ data class WorkspaceActivity(
     @Column(name = "severity", length = 10, nullable = false)
     var severity: String = "INFO",
 
-    ) : OwnableBaseDomain() {
+    ) : BaseDomain() {
+
+    /**
+     * ID of the workspace this activity belongs to
+     */
+    @Column(name = "workspace_id", nullable = false, length = 36)
+    var workspaceId: String = ""
 
     // JPA Relationships
 
@@ -114,12 +120,12 @@ data class WorkspaceActivity(
      * Reference to the workspace
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id", referencedColumnName = "id", insertable = false, updatable = false)
+    @JoinColumn(name = "workspace_id", referencedColumnName = "uid", insertable = false, updatable = false)
     @JsonIgnore
     var workspace: Workspace? = null
 
     /**
-     * Implementation of abstract method from OwnableBaseDomain
+     * Implementation of abstract method from BaseDomain
      */
     override fun obtainSeqIdPrefix(): String {
         return "WA" // WorkspaceActivity prefix
@@ -153,6 +159,7 @@ class WorkspaceActivityBuilder(
     private var userAgent: String? = null
     private var sessionId: String? = null
     private var severity: String = "INFO"
+    private var workspaceId: String = ""
 
     fun activityType(type: WorkspaceActivityType) = apply { this.activityType = type }
     fun description(desc: String) = apply { this.description = desc }
@@ -167,6 +174,7 @@ class WorkspaceActivityBuilder(
     fun userAgent(ua: String?) = apply { this.userAgent = ua }
     fun sessionId(sessionId: String?) = apply { this.sessionId = sessionId }
     fun severity(level: String) = apply { this.severity = level }
+    fun workspaceId(id: String) = apply { this.workspaceId = id }
 
     fun build(): WorkspaceActivity {
         return WorkspaceActivity(
@@ -182,6 +190,8 @@ class WorkspaceActivityBuilder(
             userAgent = userAgent,
             sessionId = sessionId,
             severity = severity
-        )
+        ).apply {
+            this.workspaceId = this@WorkspaceActivityBuilder.workspaceId
+        }
     }
 }

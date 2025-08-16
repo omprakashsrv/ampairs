@@ -26,7 +26,6 @@ import org.jetbrains.compose.resources.stringResource
 import ampairsapp.composeapp.generated.resources.Res
 import ampairsapp.composeapp.generated.resources.code
 import ampairsapp.composeapp.generated.resources.phone
-import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.material3.TextFieldDefaults
 
 @Composable
@@ -94,7 +93,6 @@ fun Phone(
 }
 
 @Composable
-@Preview
 fun PhonePreview() {
     AmpairsTheme {
         Column(

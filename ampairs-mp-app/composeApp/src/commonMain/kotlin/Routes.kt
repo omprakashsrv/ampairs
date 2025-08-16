@@ -6,7 +6,7 @@ sealed interface Route {
     data object Login : Route
     
     @Serializable
-    data object Company : Route
+    data object Workspace : Route
     
     @Serializable
     data object Home : Route
@@ -50,16 +50,19 @@ sealed interface AuthRoute {
     data object UserUpdate : AuthRoute
 }
 
-// Company routes
+// Workspace routes
 @Serializable
-sealed interface CompanyRoute {
+sealed interface WorkspaceRoute {
     @Serializable
-    data object Root : CompanyRoute
+    data object Root : WorkspaceRoute
     
     @Serializable
-    data class Update(
-        val id: String = ""
-    ) : CompanyRoute
+    data object Create : WorkspaceRoute
+
+    @Serializable
+    data class Detail(
+        val workspaceId: String = "",
+    ) : WorkspaceRoute
 }
 
 // Product routes

@@ -88,10 +88,19 @@ class SessionUserFilter @Autowired constructor(
         return requestPath.contains("/auth/v1") ||
                 requestPath.contains("/user/v1") ||
                 requestPath.contains("/workspace/v1/check-slug") ||
+                requestPath.contains("/workspace/v1/search") ||
+                requestPath.contains("/workspace/v1/invitations/") && requestPath.contains("/accept") ||
+                isWorkspaceListEndpoint(requestPath) ||
                 requestPath.contains("/actuator/health") ||
                 requestPath.contains("/actuator/info") ||
                 requestPath.contains("/swagger") ||
                 requestPath.contains("/api-docs")
+    }
+
+    private fun isWorkspaceListEndpoint(requestPath: String): Boolean {
+        // Match exact path /workspace/v1 or /workspace/v1/ for GET requests (getUserWorkspaces)
+        // and POST requests (createWorkspace)
+        return requestPath.matches(Regex("^/workspace/v1/?$"))
     }
 
     private fun sendAccessDeniedResponse(
@@ -139,10 +148,8 @@ class SessionUserFilter @Autowired constructor(
                     else -> {
                         // For other authentication types, try to set details directly
                         authentication.also {
-                            if (it is Authentication) {
-                                // This may not work for all authentication types, but TenantContextHolder fallback will handle it
-                                log.debug("Cannot set details on authentication type: ${it::class.simpleName}")
-                            }
+                            // This may not work for all authentication types, but TenantContextHolder fallback will handle it
+                            log.debug("Cannot set details on authentication type: ${it::class.simpleName}")
                         }
                     }
                 }

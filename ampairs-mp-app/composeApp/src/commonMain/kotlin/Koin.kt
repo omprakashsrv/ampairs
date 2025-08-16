@@ -1,5 +1,5 @@
 import com.ampairs.auth.authModule
-import com.ampairs.company.companyModule
+import com.ampairs.workspace.workspaceModule
 import com.ampairs.customer.customerModule
 import com.ampairs.inventory.inventoryModule
 import com.ampairs.invoice.invoiceModule
@@ -17,7 +17,7 @@ fun initKoin(koinApplication: KoinApplication): KoinApplication {
             awsModule,
             // Platform-specific Room database modules
             authPlatformModule,
-            companyPlatformModule,
+            workspacePlatformModule,
             customerPlatformModule,
             productPlatformModule,
             orderPlatformModule,
@@ -27,7 +27,7 @@ fun initKoin(koinApplication: KoinApplication): KoinApplication {
             // Common feature modules
             menuModule(),
             authModule(),
-            companyModule(),
+            workspaceModule(),
             customerModule(),
             productModule(),
             inventoryModule(),
@@ -41,7 +41,7 @@ fun initKoin(koinApplication: KoinApplication): KoinApplication {
 expect val platformModule: Module
 expect val awsModule: Module
 expect val authPlatformModule: Module
-expect val companyPlatformModule: Module
+expect val workspacePlatformModule: Module
 expect val customerPlatformModule: Module
 expect val productPlatformModule: Module
 expect val orderPlatformModule: Module

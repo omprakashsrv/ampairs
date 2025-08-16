@@ -29,7 +29,6 @@ import com.ampairs.ui.theme.AmpairsTheme
 import org.jetbrains.compose.resources.stringResource
 import ampairsapp.composeapp.generated.resources.Res
 import ampairsapp.composeapp.generated.resources.login
-import androidx.compose.desktop.ui.tooling.preview.Preview
 import org.koin.compose.koinInject
 import org.koin.core.scope.Scope
 
@@ -115,7 +114,6 @@ fun PhoneScreen(
 }
 
 @Composable
-@Preview
 fun PhoneScreenPreview() {
     AmpairsTheme {
         // Mock ViewModel state for preview

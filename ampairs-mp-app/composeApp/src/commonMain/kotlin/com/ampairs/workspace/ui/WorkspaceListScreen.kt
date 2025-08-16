@@ -20,7 +20,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import com.ampairs.workspace.domain.Workspace
 import com.ampairs.workspace.viewmodel.WorkspaceListViewModel
 import org.koin.compose.koinInject
@@ -32,7 +32,7 @@ fun WorkspaceListScreen(
     onWorkspaceSelected: (String) -> Unit,
     viewModel: WorkspaceListViewModel = koinInject(),
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
+    val state by viewModel.state.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
 
     LaunchedEffect(searchQuery) {

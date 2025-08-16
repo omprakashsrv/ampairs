@@ -55,7 +55,7 @@ class WorkspaceService(
             this.avatarUrl = request.avatarUrl
             this.timezone = request.timezone
             this.language = request.language
-            this.ownerId = createdBy // Use ownerId from OwnableBaseDomain
+            this.createdBy = createdBy
             this.status = WorkspaceStatus.ACTIVE
             this.subscriptionPlan = SubscriptionPlan.FREE
             this.active = true

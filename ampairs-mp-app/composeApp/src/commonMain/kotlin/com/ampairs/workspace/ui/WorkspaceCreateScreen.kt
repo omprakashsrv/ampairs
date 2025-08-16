@@ -13,7 +13,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import com.ampairs.workspace.viewmodel.WorkspaceCreateViewModel
 import org.koin.compose.koinInject
 
@@ -24,7 +24,7 @@ fun WorkspaceCreateScreen(
     onWorkspaceCreated: (String) -> Unit,
     viewModel: WorkspaceCreateViewModel = koinInject(),
 ) {
-    val state by viewModel.state.collectAsStateWithLifecycle()
+    val state by viewModel.state.collectAsState()
     val scrollState = rememberScrollState()
 
     // Handle successful workspace creation

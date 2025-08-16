@@ -5,7 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.ampairs.common.id_generator.IdUtils
 import com.ampairs.common.model.DateTimeAdapter
-import com.ampairs.company.domain.Company
+import com.ampairs.workspace.domain.Workspace
 import com.ampairs.customer.domain.Customer
 import com.ampairs.order.db.entity.OrderEntity
 import com.ampairs.order.db.model.OrderModel
@@ -208,9 +208,9 @@ fun OrderModel.asDomainModel(): Order {
 }
 
 
-fun Order.toWhatsAppMsg(company: Company): String {
+fun Order.toWhatsAppMsg(workspace: Workspace): String {
     val msg = StringBuilder()
-    msg.append("*").append(company.name).append("*").append("\n")
+    msg.append("*").append(workspace.name).append("*").append("\n")
     msg.append("To : " + fromCustomer?.name)
     if (!fromCustomer?.address.isNullOrEmpty()) {
         msg.append("Address : " + fromCustomer?.address).append("\n")

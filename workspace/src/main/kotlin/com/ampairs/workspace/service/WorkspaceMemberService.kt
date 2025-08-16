@@ -31,6 +31,23 @@ class WorkspaceMemberService(
      * Add member as owner (used during workspace creation)
      */
     fun addMemberAsOwner(workspaceId: String, userId: String): WorkspaceMember {
+        // Check if member already exists
+        val existingMember = memberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
+        if (existingMember.isPresent) {
+            val member = existingMember.get()
+            logger.warn("Member already exists for workspace: $workspaceId, user: $userId. Updating to owner role.")
+
+            // Update existing member to owner role if not already
+            if (member.role != WorkspaceRole.OWNER) {
+                member.role = WorkspaceRole.OWNER
+                member.isActive = true
+                member.joinedAt = member.joinedAt ?: LocalDateTime.now()
+                return memberRepository.save(member)
+            }
+
+            return member
+        }
+
         val member = WorkspaceMember().apply {
             this.workspaceId = workspaceId
             this.userId = userId

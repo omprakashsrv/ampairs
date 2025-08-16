@@ -5,6 +5,7 @@ import com.ampairs.workspace.api.model.CreateWorkspaceRequest
 import com.ampairs.workspace.api.model.UpdateWorkspaceRequest
 import com.ampairs.workspace.api.model.WorkspaceApiModel
 import com.ampairs.workspace.api.model.WorkspaceListApiModel
+import com.ampairs.workspace.api.model.PagedWorkspaceResponse
 
 interface WorkspaceApi {
 
@@ -16,7 +17,7 @@ interface WorkspaceApi {
         size: Int = 10,
         sortBy: String = "createdAt",
         sortDir: String = "desc",
-    ): Response<List<WorkspaceListApiModel>>
+    ): Response<PagedWorkspaceResponse>
 
     /**
      * Get workspace by ID

@@ -1,7 +1,7 @@
 package com.ampairs.workspace.model
 
 import com.ampairs.core.config.Constants
-import com.ampairs.core.domain.model.OwnableBaseDomain
+import com.ampairs.core.domain.model.BaseDomain
 import com.ampairs.workspace.model.enums.SubscriptionPlan
 import com.ampairs.workspace.model.enums.WorkspaceStatus
 import com.ampairs.workspace.model.enums.WorkspaceType
@@ -25,7 +25,7 @@ import java.time.LocalDateTime
         Index(name = "idx_workspace_active", columnList = "last_activity_at")
     ]
 )
-class Workspace : OwnableBaseDomain() {
+class Workspace : BaseDomain() {
 
     /**
      * Business name of the workspace/company
@@ -233,6 +233,18 @@ class Workspace : OwnableBaseDomain() {
      */
     @Column(name = "features", columnDefinition = "TEXT")
     var features: String = "{}"
+
+    /**
+     * Whether this workspace is active
+     */
+    @Column(name = "active", nullable = false)
+    var active: Boolean = true
+
+    /**
+     * ID of the user who created this workspace
+     */
+    @Column(name = "created_by", length = 36)
+    var createdBy: String? = null
 
     // JPA Relationships
     

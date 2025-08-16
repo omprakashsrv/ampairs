@@ -30,12 +30,24 @@ class ValidationService {
 
         // Dangerous patterns that should be blocked
         private val SQL_INJECTION_PATTERNS = listOf(
-            Pattern.compile("(?i).*(union|select|insert|update|delete|drop|create|alter|exec|execute).*"),
+            // SQL keywords in suspicious contexts (preceded/followed by whitespace or SQL operators)
+            Pattern.compile("(?i).*(\\s|^|;|'|\")(union|select|insert|update|delete|drop|alter|exec|execute)(\\s|$|;|'|\").*"),
             Pattern.compile("(?i).*(script|javascript|vbscript|onload|onerror|onclick).*"),
             Pattern.compile(".*['\";].*--.*"),
             Pattern.compile(".*(/\\*|\\*/).*"),
             Pattern.compile(".*(<|>|&lt|&gt).*script.*"),
-            Pattern.compile(".*\\b(xp_|sp_).*")
+            Pattern.compile(".*\\b(xp_|sp_).*"),
+            // Standalone SQL keywords that are dangerous
+            Pattern.compile("(?i)^\\s*(union|select|insert|update|delete|drop|alter|exec|execute)\\s*$")
+        )
+
+        // Legitimate field names and sorting parameters that contain SQL keywords but are safe
+        private val LEGITIMATE_PARAMETER_PATTERNS = listOf(
+            Pattern.compile("^(createdAt|updatedAt|created_at|updated_at)$", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("^(name|email|phone|address|description|title|slug)$", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("^(asc|desc|ascending|descending)$", Pattern.CASE_INSENSITIVE),
+            Pattern.compile("^[a-zA-Z][a-zA-Z0-9_]*$"), // Simple field names (alphanumeric + underscore)
+            Pattern.compile("^\\d+$") // Numeric values
         )
 
         private val XSS_PATTERNS = listOf(
@@ -115,9 +127,18 @@ class ValidationService {
     fun containsSqlInjection(input: String?): Boolean {
         if (input.isNullOrBlank()) return false
 
-        val lowercaseInput = input.lowercase()
+        // First check if it's a legitimate parameter pattern
+        val isLegitimate = LEGITIMATE_PARAMETER_PATTERNS.any { pattern ->
+            pattern.matcher(input).matches()
+        }
+
+        if (isLegitimate) {
+            return false // Skip SQL injection check for legitimate patterns
+        }
+
+        // Now check for actual SQL injection patterns
         return SQL_INJECTION_PATTERNS.any { pattern ->
-            pattern.matcher(lowercaseInput).matches()
+            pattern.matcher(input).matches()
         }
     }
 

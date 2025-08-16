@@ -31,13 +31,13 @@ class WorkspaceListViewModel(
             try {
                 if (forceRefresh) {
                     // Fetch from network
-                    val workspaces = workspaceRepository.getUserWorkspaces()
+                    val result = workspaceRepository.getUserWorkspaces()
                     _state.value = _state.value.copy(
-                        workspaces = workspaces,
+                        workspaces = result.content,
                         isLoading = false,
                         isRefreshing = false,
                         error = null,
-                        hasNoWorkspaces = workspaces.isEmpty()
+                        hasNoWorkspaces = result.content.isEmpty()
                     )
                 } else {
                     // Load from local database first
@@ -72,13 +72,13 @@ class WorkspaceListViewModel(
             _state.value = _state.value.copy(isRefreshing = true, error = null)
 
             try {
-                val workspaces = workspaceRepository.getUserWorkspaces()
+                val result = workspaceRepository.getUserWorkspaces()
                 _state.value = _state.value.copy(
-                    workspaces = workspaces,
+                    workspaces = result.content,
                     isLoading = false,
                     isRefreshing = false,
                     error = null,
-                    hasNoWorkspaces = workspaces.isEmpty()
+                    hasNoWorkspaces = result.content.isEmpty()
                 )
             } catch (e: Exception) {
                 _state.value = _state.value.copy(

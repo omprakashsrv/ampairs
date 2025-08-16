@@ -41,9 +41,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .description("Workspace '$workspaceId' was created")
                 .targetEntity("workspace", workspaceId, workspaceId)
                 .severity("INFO")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -73,9 +73,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .targetEntity("workspace", workspaceId)
                 .contextData(contextData)
                 .severity("INFO")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -100,9 +100,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .targetEntity("workspace", workspaceId)
                 .contextData(contextData)
                 .severity("WARN")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -138,9 +138,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .targetEntity("subscription", workspaceId)
                 .contextData(contextData)
                 .severity("INFO")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -177,9 +177,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .targetEntity("member", userId, userName)
                 .contextData(contextData)
                 .severity("INFO")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -218,9 +218,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .targetEntity("member", userId, userName)
                 .contextData(contextData)
                 .severity("INFO")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -248,9 +248,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .description("Member '$userName' was activated")
                 .targetEntity("member", userId, userName)
                 .severity("INFO")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -278,9 +278,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .description("Member '$userName' was deactivated")
                 .targetEntity("member", userId, userName)
                 .severity("WARN")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -312,9 +312,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .targetEntity("member", userId, userName)
                 .contextData(contextData)
                 .severity("WARN")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -338,9 +338,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .description("Bulk activation of $memberCount members")
                 .contextData(contextData)
                 .severity("INFO")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -369,9 +369,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .description("Bulk deactivation of $memberCount members")
                 .contextData(contextData)
                 .severity("WARN")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -406,9 +406,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .description("Bulk removal of $memberCount members")
                 .contextData(contextData)
                 .severity("WARN")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -445,9 +445,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .description("Bulk role update for $memberCount members to $newRole")
                 .contextData(contextData)
                 .severity("INFO")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -485,9 +485,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .targetEntity("invitation", invitationId ?: "UNKNOWN", email)
                 .contextData(contextData)
                 .severity("INFO")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -523,9 +523,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .targetEntity("invitation", invitationId ?: "UNKNOWN", email)
                 .contextData(contextData)
                 .severity("INFO")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -556,9 +556,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .targetEntity("invitation", invitationId ?: "UNKNOWN", email)
                 .contextData(contextData)
                 .severity("WARN")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -594,9 +594,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .targetEntity("invitation", invitationId ?: "UNKNOWN", email)
                 .contextData(contextData)
                 .severity("INFO")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -634,9 +634,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .targetEntity("invitation", invitationId ?: "UNKNOWN", email)
                 .contextData(contextData)
                 .severity("WARN")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -660,9 +660,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .description("Bulk resend of $invitationCount invitations")
                 .contextData(contextData)
                 .severity("INFO")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -691,9 +691,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .description("Bulk cancellation of $invitationCount invitations")
                 .contextData(contextData)
                 .severity("WARN")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -717,9 +717,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .description("Bulk revocation of $invitationCount invitations")
                 .contextData(contextData)
                 .severity("WARN")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -755,9 +755,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .targetEntity("settings", section, section)
                 .contextData(contextData)
                 .severity("INFO")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -782,9 +782,9 @@ class WorkspaceActivityService @Autowired constructor(
                 .targetEntity("settings", section, section)
                 .contextData(contextData)
                 .severity("WARN")
+                .workspaceId(workspaceId)
                 .build()
                 .apply {
-                    ownerId = workspaceId
                     addRequestContext(this)
                 }
 
@@ -818,7 +818,7 @@ class WorkspaceActivityService @Autowired constructor(
                 )
             }
 
-            val totalActivities = activityRepository.countByOwnerIdAndCreatedAtBetween(
+            val totalActivities = activityRepository.countByWorkspaceIdAndCreatedAtBetween(
                 workspaceId, sinceDate, LocalDateTime.now()
             )
 
@@ -853,7 +853,7 @@ class WorkspaceActivityService @Autowired constructor(
     @Transactional
     fun deleteActivities(workspaceId: String) {
         try {
-            val deletedCount = activityRepository.deleteByOwnerId(workspaceId)
+            val deletedCount = activityRepository.deleteByWorkspaceId(workspaceId)
             logger.info("ACTIVITY: Deleted $deletedCount activities for workspace: $workspaceId")
         } catch (e: Exception) {
             logger.error("Failed to delete activities for workspace: $workspaceId", e)
@@ -866,7 +866,7 @@ class WorkspaceActivityService @Autowired constructor(
     @Transactional(readOnly = true)
     fun getWorkspaceActivities(workspaceId: String, pageable: Pageable): Page<WorkspaceActivity> {
         return try {
-            activityRepository.findByOwnerIdOrderByCreatedAtDesc(workspaceId, pageable)
+            activityRepository.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId, pageable)
         } catch (e: Exception) {
             logger.error("Failed to get workspace activities for workspace: $workspaceId", e)
             throw e
