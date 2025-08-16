@@ -8,6 +8,7 @@ import com.ampairs.workspace.model.dto.WorkspaceListResponse
 import com.ampairs.workspace.model.dto.WorkspaceResponse
 import com.ampairs.workspace.model.enums.SubscriptionPlan
 import com.ampairs.workspace.model.enums.WorkspaceType
+import com.ampairs.workspace.service.WorkspaceMemberService
 import com.ampairs.workspace.service.WorkspaceService
 import jakarta.validation.Valid
 import org.springframework.data.domain.Page
@@ -19,12 +20,13 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 
 /**
- * REST controller for workspace management operations
+ * REST controller for workspace CRUD operations and management
  */
 @RestController
 @RequestMapping("/workspace/v1")
 class WorkspaceController(
     private val workspaceService: WorkspaceService,
+    private val memberService: WorkspaceMemberService,
 ) {
 
     /**
@@ -65,7 +67,7 @@ class WorkspaceController(
     }
 
     /**
-     * Update workspace
+     * Update workspace (requires WORKSPACE_UPDATE permission)
      */
     @PutMapping("/{workspaceId}")
     fun updateWorkspace(
@@ -74,6 +76,11 @@ class WorkspaceController(
     ): ApiResponse<WorkspaceResponse> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
         val user = auth.principal as User
+
+        // Check if user has permission to update workspace
+        if (!memberService.hasPermission(workspaceId, user.uid, "WORKSPACE_UPDATE")) {
+            return ApiResponse.error("ACCESS_DENIED", "Insufficient permissions to update workspace", "workspace")
+        }
 
         val workspace = workspaceService.updateWorkspace(workspaceId, request, user.uid)
         return ApiResponse.success(workspace)
@@ -119,24 +126,55 @@ class WorkspaceController(
     }
 
     /**
-     * Archive workspace
+     * Archive workspace (requires WORKSPACE_SETTINGS permission)
      */
     @PostMapping("/{workspaceId}/archive")
     fun archiveWorkspace(@PathVariable workspaceId: String): ApiResponse<String> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
         val user = auth.principal as User
 
+        // Check if user has permission to archive workspace
+        if (!memberService.hasPermission(workspaceId, user.uid, "WORKSPACE_SETTINGS")) {
+            return ApiResponse.error("ACCESS_DENIED", "Insufficient permissions to archive workspace", "workspace")
+        }
+
         val result = workspaceService.archiveWorkspace(workspaceId, user.uid)
         return ApiResponse.success(result)
     }
 
     /**
-     * Delete workspace permanently
+     * Soft delete workspace (requires OWNER role)
      */
     @DeleteMapping("/{workspaceId}")
     fun deleteWorkspace(@PathVariable workspaceId: String): ApiResponse<String> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
         val user = auth.principal as User
+
+        // Check if user is workspace owner
+        if (!memberService.isWorkspaceOwner(workspaceId, user.uid)) {
+            return ApiResponse.error("ACCESS_DENIED", "Only workspace owners can delete workspaces", "workspace")
+        }
+
+        val result = workspaceService.archiveWorkspace(workspaceId, user.uid)
+        return ApiResponse.success(result)
+    }
+
+    /**
+     * Permanently delete workspace (requires OWNER role)
+     */
+    @DeleteMapping("/{workspaceId}/permanent")
+    fun permanentlyDeleteWorkspace(@PathVariable workspaceId: String): ApiResponse<String> {
+        val auth: Authentication = SecurityContextHolder.getContext().authentication
+        val user = auth.principal as User
+
+        // Check if user is workspace owner
+        if (!memberService.isWorkspaceOwner(workspaceId, user.uid)) {
+            return ApiResponse.error(
+                "ACCESS_DENIED",
+                "Only workspace owners can permanently delete workspaces",
+                "workspace"
+            )
+        }
 
         val result = workspaceService.deleteWorkspace(workspaceId, user.uid)
         return ApiResponse.success(result)

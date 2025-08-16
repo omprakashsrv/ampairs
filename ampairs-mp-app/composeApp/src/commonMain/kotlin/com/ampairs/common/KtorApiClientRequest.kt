@@ -236,8 +236,16 @@ suspend fun refreshTokens(tokenRepository: com.ampairs.auth.api.TokenRepository)
                 return true
             }
         }
-        
+
+        // Log more details about the failure
         println("❌ Token refresh failed - Status: ${response.status}")
+        try {
+            val errorBody = response.body<String>()
+            println("❌ Error response body: $errorBody")
+        } catch (e: Exception) {
+            println("❌ Could not read error response body: ${e.message}")
+        }
+        
         refreshClient.close()
         false
         
