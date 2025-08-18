@@ -1,5 +1,6 @@
 import {Routes} from '@angular/router';
 import {AuthGuard} from './core/guards/auth.guard';
+import {WorkspaceGuard} from './core/guards/workspace.guard';
 
 export const routes: Routes = [
     {
@@ -21,9 +22,19 @@ export const routes: Routes = [
         canActivate: [AuthGuard]
     },
     {
-        path: 'home',
+      path: 'workspaces',
+      canActivate: [AuthGuard],
+      loadComponent: () => import('./pages/workspace/workspace-select/workspace-select.component').then(m => m.WorkspaceSelectComponent)
+    },
+  {
+    path: 'workspace/create',
+    canActivate: [AuthGuard],
+    loadComponent: () => import('./pages/workspace/workspace-create/workspace-create.component').then(m => m.WorkspaceCreateComponent)
+  },
+  {
+    path: 'w/:slug',
         loadComponent: () => import('./home/home.component').then(m => m.HomeComponent),
-        canActivate: [AuthGuard],
+    canActivate: [AuthGuard, WorkspaceGuard],
         children: [
             {
                 path: '',

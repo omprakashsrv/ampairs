@@ -30,6 +30,82 @@
   flex: 1 1 auto;
 }
 
+.workspace-info {
+  margin-left: var(--spacing-lg, 24px);
+}
+
+.workspace-button {
+  @include mixins.flex-center;
+  gap: var(--spacing-xs, 4px);
+  color: var(--on-primary-color);
+  background-color: transparent;
+  border: 1px solid var(--outline-variant-color);
+  border-radius: var(--border-radius-sm, 8px);
+  padding: var(--spacing-xs, 6px) var(--spacing-sm, 12px);
+  min-width: 150px;
+  transition: var(--transition-standard);
+
+  &:hover {
+    background-color: var(--primary-container-color);
+    color: var(--on-primary-container-color);
+    border-color: var(--outline-color);
+  }
+}
+
+.workspace-name {
+  font-size: var(--font-body-medium-size, 0.875rem);
+  font-weight: var(--font-body-medium-weight, 400);
+  max-width: 150px;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.dropdown-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+}
+
+.workspace-menu {
+  min-width: 280px;
+}
+
+.workspace-details {
+  padding: var(--spacing-md, 16px);
+}
+
+.workspace-header {
+  @include mixins.flex-center;
+  gap: var(--spacing-sm, 12px);
+  align-items: flex-start;
+}
+
+.workspace-info-text {
+  flex: 1;
+}
+
+.workspace-title {
+  margin: 0 0 4px 0;
+  font-size: var(--font-body-large-size, 1rem);
+  font-weight: var(--font-title-medium-weight, 500);
+  color: var(--on-surface-color);
+}
+
+.workspace-slug {
+  margin: 0 0 8px 0;
+  font-size: var(--font-body-small-size, 0.875rem);
+  color: var(--on-surface-variant-color);
+  font-family: monospace;
+}
+
+.workspace-description {
+  margin: 8px 0 0 0;
+  font-size: var(--font-body-small-size, 0.875rem);
+  color: var(--on-surface-variant-color);
+  line-height: var(--font-body-small-line-height, 1.25rem);
+}
+
 .profile-avatar mat-icon {
   font-size: 32px;
   width: 32px;
@@ -179,6 +255,19 @@
 @include mixins.mobile {
   .logo {
     font-size: var(--font-body-large-size, 1rem);
+  }
+
+  .workspace-info {
+    margin-left: var(--spacing-sm, 8px);
+  }
+
+  .workspace-button {
+    min-width: 120px;
+    padding: var(--spacing-xs, 4px) var(--spacing-xs, 8px);
+  }
+
+  .workspace-name {
+    max-width: 100px;
   }
 
   .actions-grid {

@@ -8,6 +8,7 @@ import {routes} from './app.routes';
 import {ApiResponseInterceptor} from './core/interceptors/api-response.interceptor';
 import {AuthInterceptor} from './core/interceptors/auth.interceptor';
 import {LoadingInterceptor} from './core/interceptors/loading.interceptor';
+import {WorkspaceInterceptor} from './core/interceptors/workspace.interceptor';
 import {environment} from '../environments/environment';
 
 export const appConfig: ApplicationConfig = {
@@ -31,6 +32,11 @@ export const appConfig: ApplicationConfig = {
             provide: HTTP_INTERCEPTORS,
             useClass: AuthInterceptor,
             multi: true
+        },
+      {
+        provide: HTTP_INTERCEPTORS,
+        useClass: WorkspaceInterceptor,
+        multi: true
         },
         {
             provide: RECAPTCHA_V3_SITE_KEY,

@@ -1,0 +1,242 @@
+<div class="workspace-create-container">
+  <!-- M3 App Bar with Back Navigation -->
+  <mat-toolbar class="header-toolbar" color="primary">
+    <button (click)="goBack()" mat-icon-button matTooltip="Back to workspace selection">
+      <mat-icon>arrow_back</mat-icon>
+    </button>
+
+    <span class="header-title">
+      <mat-icon class="header-icon">add_business</mat-icon>
+      Create Workspace
+    </span>
+
+    <span class="spacer"></span>
+
+    <!-- M3 Stepper Indicator -->
+    <div class="step-indicator">
+      <span class="step-text">{{ currentStep + 1 }} of {{ totalSteps }}</span>
+    </div>
+  </mat-toolbar>
+
+  <!-- M3 Content Container -->
+  <div class="content-container">
+    <!-- M3 Horizontal Stepper -->
+    <mat-stepper #stepper [selectedIndex]="currentStep" class="workspace-stepper" orientation="horizontal">
+
+      <!-- Step 1: Basic Information -->
+      <mat-step [optional]="false" [stepControl]="getStepFormGroup(0)" label="Basic Info">
+        <ng-template matStepContent>
+          <mat-card class="step-card">
+            <mat-card-header>
+              <div class="step-avatar" mat-card-avatar>
+                <mat-icon>info</mat-icon>
+              </div>
+              <mat-card-title>Basic Information</mat-card-title>
+              <mat-card-subtitle>Set up the foundation of your workspace</mat-card-subtitle>
+            </mat-card-header>
+
+            <mat-card-content>
+              <form [formGroup]="step1FormGroup" class="step-form">
+                <!-- M3 Workspace Name Field -->
+                <mat-form-field appearance="outline" class="full-width-field">
+                  <mat-label>Workspace Name</mat-label>
+                  <input formControlName="name" matInput placeholder="Enter workspace name">
+                  <mat-icon matSuffix>business</mat-icon>
+                  <mat-error *ngIf="nameField?.hasError('required')">
+                    Workspace name is required
+                  </mat-error>
+                  <mat-error *ngIf="nameField?.hasError('minlength')">
+                    Name must be at least 2 characters long
+                  </mat-error>
+                  <mat-error *ngIf="nameField?.hasError('maxlength')">
+                    Name cannot exceed 100 characters
+                  </mat-error>
+                </mat-form-field>
+
+                <!-- M3 Workspace URL Field -->
+                <mat-form-field appearance="outline" class="full-width-field">
+                  <mat-label>Workspace URL</mat-label>
+                  <input formControlName="slug" matInput placeholder="workspace-url">
+                  <mat-icon [class]="getSlugIconClass()" matSuffix>
+                    {{ getSlugIcon() }}
+                  </mat-icon>
+                  <mat-hint>{{ getSlugPreview() }}</mat-hint>
+                  <mat-error *ngIf="slugField?.hasError('required')">
+                    URL is required
+                  </mat-error>
+                  <mat-error *ngIf="slugField?.hasError('pattern')">
+                    URL can only contain lowercase letters, numbers, and hyphens
+                  </mat-error>
+                  <mat-error *ngIf="slugField?.hasError('minlength')">
+                    URL must be at least 3 characters long
+                  </mat-error>
+                  <mat-error *ngIf="slugField?.hasError('unavailable')">
+                    This URL is already taken
+                  </mat-error>
+                </mat-form-field>
+
+                <!-- M3 Workspace Type Selection -->
+                <mat-form-field appearance="outline" class="full-width-field">
+                  <mat-label>Workspace Type</mat-label>
+                  <mat-select formControlName="workspace_type">
+                    <mat-option *ngFor="let type of workspaceTypes" [value]="type.value">
+                      <div class="type-option">
+                        <mat-icon>{{ type.icon }}</mat-icon>
+                        <div class="type-content">
+                          <span class="type-name">{{ type.label }}</span>
+                          <span class="type-desc">{{ type.description }}</span>
+                        </div>
+                      </div>
+                    </mat-option>
+                  </mat-select>
+                  <mat-error *ngIf="workspaceTypeField?.hasError('required')">
+                    Please select a workspace type
+                  </mat-error>
+                </mat-form-field>
+              </form>
+            </mat-card-content>
+
+            <mat-card-actions class="step-actions">
+              <button (click)="goBack()" mat-button type="button">Cancel</button>
+              <span class="action-spacer"></span>
+              <button (click)="nextStep()" [disabled]="!isStepValid(0)" color="primary" mat-raised-button>
+                Next
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        </ng-template>
+      </mat-step>
+
+      <!-- Step 2: Details -->
+      <mat-step [optional]="true" [stepControl]="getStepFormGroup(1)" label="Details">
+        <ng-template matStepContent>
+          <mat-card class="step-card">
+            <mat-card-header>
+              <div class="step-avatar" mat-card-avatar>
+                <mat-icon>description</mat-icon>
+              </div>
+              <mat-card-title>Workspace Details</mat-card-title>
+              <mat-card-subtitle>Add more information about your workspace (optional)</mat-card-subtitle>
+            </mat-card-header>
+
+            <mat-card-content>
+              <form [formGroup]="step2FormGroup" class="step-form">
+                <!-- M3 Description Field -->
+                <mat-form-field appearance="outline" class="full-width-field">
+                  <mat-label>Description</mat-label>
+                  <textarea formControlName="description" matInput placeholder="Brief description of your workspace..."
+                            rows="4"></textarea>
+                  <mat-hint>{{ descriptionField?.value?.length || 0 }}/500 characters</mat-hint>
+                  <mat-error *ngIf="descriptionField?.hasError('maxlength')">
+                    Description cannot exceed 500 characters
+                  </mat-error>
+                </mat-form-field>
+
+                <!-- M3 Info Card -->
+                <mat-card appearance="outlined" class="info-card">
+                  <mat-card-content>
+                    <div class="info-content">
+                      <mat-icon color="primary">info</mat-icon>
+                      <div class="info-text">
+                        <h4>Optional Step</h4>
+                        <p>You can skip this step and add a description later in workspace settings.</p>
+                      </div>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+              </form>
+            </mat-card-content>
+
+            <mat-card-actions class="step-actions">
+              <button (click)="prevStep()" mat-button type="button">
+                <mat-icon>arrow_back</mat-icon>
+                Previous
+              </button>
+              <span class="action-spacer"></span>
+              <button (click)="nextStep()" mat-button type="button">Skip</button>
+              <button (click)="nextStep()" color="primary" mat-raised-button type="button">
+                Next
+                <mat-icon>arrow_forward</mat-icon>
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        </ng-template>
+      </mat-step>
+
+      <!-- Step 3: Preferences -->
+      <mat-step [optional]="false" [stepControl]="getStepFormGroup(2)" label="Preferences">
+        <ng-template matStepContent>
+          <mat-card class="step-card">
+            <mat-card-header>
+              <div class="step-avatar" mat-card-avatar>
+                <mat-icon>settings</mat-icon>
+              </div>
+              <mat-card-title>Preferences</mat-card-title>
+              <mat-card-subtitle>Configure your workspace settings</mat-card-subtitle>
+            </mat-card-header>
+
+            <mat-card-content>
+              <form [formGroup]="step3FormGroup" class="step-form">
+                <!-- M3 Timezone Field -->
+                <mat-form-field appearance="outline" class="full-width-field">
+                  <mat-label>Timezone</mat-label>
+                  <mat-select formControlName="timezone">
+                    <mat-option *ngFor="let tz of timezones" [value]="tz.value">
+                      {{ tz.label }}
+                    </mat-option>
+                  </mat-select>
+                  <mat-icon matSuffix>schedule</mat-icon>
+                  <mat-error *ngIf="timezoneField?.hasError('required')">
+                    Please select a timezone
+                  </mat-error>
+                </mat-form-field>
+
+                <!-- M3 Language Field -->
+                <mat-form-field appearance="outline" class="full-width-field">
+                  <mat-label>Language</mat-label>
+                  <mat-select formControlName="language">
+                    <mat-option *ngFor="let lang of languages" [value]="lang.value">
+                      {{ lang.label }}
+                    </mat-option>
+                  </mat-select>
+                  <mat-icon matSuffix>language</mat-icon>
+                  <mat-error *ngIf="languageField?.hasError('required')">
+                    Please select a language
+                  </mat-error>
+                </mat-form-field>
+
+                <!-- M3 Success Info Card -->
+                <mat-card appearance="outlined" class="success-card">
+                  <mat-card-content>
+                    <div class="info-content">
+                      <mat-icon color="primary">check_circle</mat-icon>
+                      <div class="info-text">
+                        <h4>Ready to Create!</h4>
+                        <p>You can change these preferences anytime in your workspace settings.</p>
+                      </div>
+                    </div>
+                  </mat-card-content>
+                </mat-card>
+              </form>
+            </mat-card-content>
+
+            <mat-card-actions class="step-actions">
+              <button (click)="prevStep()" mat-button type="button">
+                <mat-icon>arrow_back</mat-icon>
+                Previous
+              </button>
+              <span class="action-spacer"></span>
+              <button (click)="onSubmit()" [disabled]="!workspaceForm.valid || isLoading || !slugAvailable" color="primary" extended
+                      mat-fab>
+                <mat-icon *ngIf="!isLoading">add</mat-icon>
+                <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+                Create Workspace
+              </button>
+            </mat-card-actions>
+          </mat-card>
+        </ng-template>
+      </mat-step>
+    </mat-stepper>
+  </div>
+</div>

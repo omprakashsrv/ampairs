@@ -23,6 +23,7 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
      * Find workspace by slug (URL-friendly identifier)
      */
     fun findBySlug(slug: String): Optional<Workspace>
+    fun findByUid(uid: String): Optional<Workspace>
 
     /**
      * Check if a slug is available

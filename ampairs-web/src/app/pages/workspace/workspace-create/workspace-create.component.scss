@@ -1,0 +1,239 @@
+// M3 Material Design Workspace Create Component
+@use '../../../shared/styles/variables' as vars;
+@use '../../../shared/styles/mixins' as mixins;
+
+.workspace-create-container {
+  min-height: 100vh;
+  background-color: var(--background-color);
+  display: flex;
+  flex-direction: column;
+}
+
+// M3 Toolbar Header
+.header-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: vars.$z-index-sticky;
+  box-shadow: var(--shadow-1);
+}
+
+.header-title {
+  @include mixins.flex-center;
+  gap: var(--spacing-sm, 8px);
+  font-size: var(--font-title-large-size, 1.375rem);
+  font-weight: var(--font-title-large-weight, 400);
+}
+
+.header-icon {
+  font-size: var(--font-title-large-size, 1.375rem);
+  width: 24px;
+  height: 24px;
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.step-indicator {
+  @include mixins.flex-center;
+  gap: var(--spacing-xs, 4px);
+}
+
+.step-text {
+  font-size: var(--font-body-small-size, 0.875rem);
+  color: var(--on-primary-color);
+  opacity: 0.9;
+}
+
+// M3 Content Container
+.content-container {
+  flex: 1;
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--spacing-xl, 32px);
+  width: 100%;
+}
+
+// M3 Stepper
+.workspace-stepper {
+  background-color: transparent;
+
+  .mat-stepper-horizontal-line {
+    background-color: var(--outline-variant-color);
+  }
+}
+
+// M3 Step Card
+.step-card {
+  margin: var(--spacing-lg, 24px) 0;
+  background-color: var(--surface-container-color);
+  border-radius: var(--border-radius-lg, 16px);
+  box-shadow: var(--shadow-1);
+}
+
+.step-avatar {
+  @include mixins.flex-center;
+  width: 40px;
+  height: 40px;
+  background-color: var(--primary-container-color);
+  color: var(--on-primary-container-color);
+  border-radius: var(--border-radius-full, 50%);
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+// M3 Form Styling
+.step-form {
+  @include mixins.flex-column;
+  gap: var(--spacing-lg, 24px);
+}
+
+.full-width-field {
+  width: 100%;
+}
+
+// M3 Type Option Styling
+.type-option {
+  @include mixins.flex-center;
+  gap: var(--spacing-sm, 12px);
+  align-items: flex-start;
+  padding: var(--spacing-xs, 4px) 0;
+}
+
+.type-content {
+  @include mixins.flex-column;
+  gap: var(--spacing-xs, 2px);
+}
+
+.type-name {
+  font-size: var(--font-body-medium-size, 0.875rem);
+  font-weight: var(--font-body-medium-weight, 500);
+  color: var(--on-surface-color);
+}
+
+.type-desc {
+  font-size: var(--font-body-small-size, 0.75rem);
+  color: var(--on-surface-variant-color);
+  line-height: var(--font-body-small-line-height, 1rem);
+}
+
+// M3 Info Cards
+.info-card,
+.success-card {
+  margin-top: var(--spacing-lg, 24px);
+  background-color: var(--surface-container-low-color);
+  border: 1px solid var(--outline-variant-color);
+}
+
+.info-content {
+  @include mixins.flex-center;
+  gap: var(--spacing-sm, 12px);
+  align-items: flex-start;
+}
+
+.info-text {
+  flex: 1;
+
+  h4 {
+    margin: 0 0 var(--spacing-xs, 4px) 0;
+    font-size: var(--font-body-medium-size, 0.875rem);
+    font-weight: var(--font-body-medium-weight, 500);
+    color: var(--on-surface-color);
+  }
+
+  p {
+    margin: 0;
+    font-size: var(--font-body-small-size, 0.75rem);
+    color: var(--on-surface-variant-color);
+    line-height: var(--font-body-small-line-height, 1.25rem);
+  }
+}
+
+// M3 Card Actions
+.step-actions {
+  @include mixins.flex-between;
+  padding: var(--spacing-md, 16px) var(--spacing-lg, 24px);
+  border-top: 1px solid var(--outline-variant-color);
+}
+
+.action-spacer {
+  flex: 1;
+}
+
+// M3 Slug Status Icons
+.slug-checking mat-icon {
+  animation: spin 1s linear infinite;
+  color: var(--on-surface-variant-color);
+}
+
+.slug-available mat-icon {
+  color: var(--success-color, #4caf50);
+}
+
+.slug-unavailable mat-icon {
+  color: var(--error-color);
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// M3 Responsive Design
+@include mixins.tablet {
+  .content-container {
+    padding: var(--spacing-lg, 24px);
+  }
+
+  .step-card {
+    margin: var(--spacing-md, 16px) 0;
+  }
+
+  .header-title {
+    font-size: var(--font-title-medium-size, 1.125rem);
+  }
+}
+
+@include mixins.mobile {
+  .content-container {
+    padding: var(--spacing-md, 16px);
+  }
+
+  .step-form {
+    gap: var(--spacing-md, 16px);
+  }
+
+  .step-actions {
+    flex-direction: column;
+    gap: var(--spacing-sm, 8px);
+    align-items: stretch;
+
+    button {
+      width: 100%;
+    }
+
+    .action-spacer {
+      display: none;
+    }
+  }
+
+  .info-content {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--spacing-sm, 8px);
+  }
+
+  .type-option {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--spacing-xs, 8px);
+  }
+}

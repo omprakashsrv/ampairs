@@ -11,6 +11,7 @@ import {MatTooltipModule} from '@angular/material/tooltip';
 import {MatGridListModule} from '@angular/material/grid-list';
 import {CommonModule} from '@angular/common';
 import {AuthService, User} from '../core/services/auth.service';
+import {Workspace, WorkspaceService} from '../core/services/workspace.service';
 import {ThemeService} from '../core/services/theme.service';
 import {ThemeSettingsComponent} from '../shared/components/theme-settings/theme-settings.component';
 import {Observable} from 'rxjs';
@@ -36,14 +37,17 @@ import {Observable} from 'rxjs';
 })
 export class HomeComponent implements OnInit {
     currentUser$: Observable<User | null>;
+  currentWorkspace$: Observable<Workspace | null>;
 
     constructor(
         private authService: AuthService,
+        private workspaceService: WorkspaceService,
         private themeService: ThemeService,
         private dialog: MatDialog,
         private router: Router
     ) {
         this.currentUser$ = this.authService.currentUser$;
+      this.currentWorkspace$ = this.workspaceService.currentWorkspace$;
     }
 
     ngOnInit(): void {
@@ -51,7 +55,10 @@ export class HomeComponent implements OnInit {
     }
 
     editProfile(): void {
-        this.router.navigate(['/home/profile'], {queryParams: {edit: 'true'}});
+      const currentWorkspace = this.workspaceService.getCurrentWorkspace();
+      if (currentWorkspace) {
+        this.router.navigate(['/w', currentWorkspace.slug, 'profile'], {queryParams: {edit: 'true'}});
+      }
     }
 
     viewSettings(): void {
@@ -79,10 +86,19 @@ export class HomeComponent implements OnInit {
     }
 
     viewDevices(): void {
-        this.router.navigate(['/home/devices']);
+      const currentWorkspace = this.workspaceService.getCurrentWorkspace();
+      if (currentWorkspace) {
+        this.router.navigate(['/w', currentWorkspace.slug, 'devices']);
+      }
+    }
+
+  switchWorkspace(): void {
+    this.router.navigate(['/workspaces']);
     }
 
     logout(): void {
+      // Clear workspace data when logging out
+      this.workspaceService.clearCurrentWorkspace();
         this.authService.logout();
     }
 }

@@ -247,7 +247,7 @@ class WorkspaceService(
     // Private helper methods
 
     private fun findWorkspaceById(workspaceId: String): Workspace {
-        return workspaceRepository.findById(workspaceId)
+        return workspaceRepository.findByUid(workspaceId)
             .orElseThrow { NotFoundException("Workspace not found: $workspaceId") }
     }
 

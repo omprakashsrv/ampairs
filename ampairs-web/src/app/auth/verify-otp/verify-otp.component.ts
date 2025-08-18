@@ -173,14 +173,16 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
                             if (this.authService.isProfileIncomplete(user)) {
                                 this.router.navigate(['/complete-profile']);
                             } else {
-                                this.router.navigate(['/home']);
+                              // Redirect to workspace selection
+                              this.router.navigate(['/workspaces']);
                             }
                         },
                         error: (profileError) => {
                             // Extract error message from interceptor-formatted error
                             const errorMessage = profileError.error?.message || profileError.message || 'Failed to load profile.';
                             console.error('Profile load error:', errorMessage);
-                            this.router.navigate(['/home']);
+                          // Still redirect to workspace selection even if profile load fails
+                          this.router.navigate(['/workspaces']);
                         }
                     });
                 } else {

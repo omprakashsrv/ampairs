@@ -1,0 +1,143 @@
+<div class="workspace-select-container">
+  <!-- M3 Header with User Profile -->
+  <mat-toolbar class="header-toolbar" color="primary">
+    <span class="header-title">
+      <mat-icon class="header-icon">business</mat-icon>
+      Select Workspace
+    </span>
+
+    <span class="spacer"></span>
+
+    <!-- User Profile Menu -->
+    <ng-container *ngIf="currentUser$ | async as user">
+      <button [matMenuTriggerFor]="userMenu" class="user-avatar-button" mat-icon-button>
+        <mat-icon>account_circle</mat-icon>
+      </button>
+
+      <mat-menu #userMenu="matMenu" class="user-menu">
+        <div class="user-info">
+          <mat-icon>account_circle</mat-icon>
+          <div class="user-details">
+            <h3 class="user-name">{{ user.full_name || 'User' }}</h3>
+            <p class="user-mobile">+91 {{ user.phone }}</p>
+            <p *ngIf="user.email" class="user-email">{{ user.email }}</p>
+          </div>
+        </div>
+
+        <mat-divider></mat-divider>
+
+        <button (click)="logout()" mat-menu-item>
+          <mat-icon>logout</mat-icon>
+          <span>Logout</span>
+        </button>
+      </mat-menu>
+    </ng-container>
+  </mat-toolbar>
+
+  <!-- M3 Content Container -->
+  <div class="content-container">
+    <!-- M3 Loading State -->
+    <div *ngIf="isLoading" class="loading-state">
+      <mat-spinner diameter="48"></mat-spinner>
+      <span class="loading-text">Loading your workspaces...</span>
+    </div>
+
+    <!-- M3 Workspaces Grid -->
+    <div *ngIf="!isLoading && workspaces.length > 0" class="workspaces-section">
+      <div class="section-header">
+        <h2 class="section-title">Your Workspaces</h2>
+        <p class="section-subtitle">Choose the workspace you want to work with</p>
+      </div>
+
+      <div class="workspaces-grid">
+        <mat-card
+          (click)="selectWorkspace(workspace)"
+          *ngFor="let workspace of workspaces"
+          [class.selected]="selectedWorkspaceId === workspace.id"
+          appearance="outlined"
+          class="workspace-card"
+          matRipple>
+
+          <mat-card-header>
+            <!-- M3 Avatar -->
+            <div class="workspace-avatar" mat-card-avatar>
+              <img *ngIf="workspace.avatar_url" [alt]="workspace.name" [src]="workspace.avatar_url">
+              <mat-icon *ngIf="!workspace.avatar_url">{{ getWorkspaceTypeIcon(workspace.workspace_type) }}</mat-icon>
+            </div>
+
+            <mat-card-title>{{ workspace.name }}</mat-card-title>
+            <mat-card-subtitle>
+              <mat-chip-set>
+                <mat-chip>{{ workspace.workspace_type | titlecase }}</mat-chip>
+                <mat-chip [color]="getSubscriptionColor(workspace.subscription_plan)">
+                  {{ workspace.subscription_plan | titlecase }}
+                </mat-chip>
+              </mat-chip-set>
+            </mat-card-subtitle>
+          </mat-card-header>
+
+          <mat-card-content>
+            <p *ngIf="workspace.description" class="workspace-description">
+              {{ workspace.description }}
+            </p>
+
+            <!-- M3 Stats List -->
+            <mat-list class="workspace-stats">
+              <mat-list-item>
+                <mat-icon matListItemIcon>group</mat-icon>
+                <div matListItemTitle>{{ workspace.member_count }}member{{ workspace.member_count !== 1 ? 's' : '' }}
+                </div>
+              </mat-list-item>
+              <mat-list-item>
+                <mat-icon matListItemIcon>schedule</mat-icon>
+                <div matListItemTitle>{{ formatLastActivity(workspace.last_activity_at) }}</div>
+              </mat-list-item>
+            </mat-list>
+          </mat-card-content>
+
+          <!-- M3 Selection State -->
+          <mat-card-actions *ngIf="selectedWorkspaceId === workspace.id" class="selection-actions">
+            <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+            <div class="selection-feedback">
+              <mat-icon>check_circle</mat-icon>
+              <span>Selecting workspace...</span>
+            </div>
+          </mat-card-actions>
+        </mat-card>
+      </div>
+    </div>
+
+    <!-- M3 Empty State -->
+    <div *ngIf="!isLoading && workspaces.length === 0" class="empty-state">
+      <mat-card class="empty-state-card">
+        <mat-card-content>
+          <div class="empty-state-content">
+            <mat-icon class="empty-state-icon" color="primary">workspace_premium</mat-icon>
+            <h2 class="empty-state-title">No Workspaces Found</h2>
+            <p class="empty-state-description">
+              You don't have any workspaces yet. Create your first workspace to get started with Ampairs.
+            </p>
+
+            <button (click)="createNewWorkspace()" class="create-first-btn" color="primary" extended mat-fab>
+              <mat-icon>add</mat-icon>
+              Create Your First Workspace
+            </button>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <!-- M3 Create New Workspace FAB -->
+    <div *ngIf="!isLoading && workspaces.length > 0" class="create-new-section">
+      <mat-divider class="section-divider"></mat-divider>
+
+      <div class="create-new-content">
+        <p class="create-new-text">Need a new workspace?</p>
+        <button (click)="createNewWorkspace()" class="create-new-btn" color="primary" mat-stroked-button>
+          <mat-icon>add</mat-icon>
+          Create New Workspace
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

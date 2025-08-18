@@ -6,7 +6,40 @@
       Ampairs
     </span>
 
-        <span class="spacer"></span>
+      <!-- Workspace Info -->
+      @if (currentWorkspace$ | async; as workspace) {
+        <div class="workspace-info">
+          <button mat-button [matMenuTriggerFor]="workspaceMenu" class="workspace-button">
+            <mat-icon>business</mat-icon>
+            <span class="workspace-name">{{ workspace.name }}</span>
+            <mat-icon class="dropdown-icon">arrow_drop_down</mat-icon>
+          </button>
+
+          <mat-menu #workspaceMenu="matMenu" class="workspace-menu">
+            <div class="workspace-details">
+              <div class="workspace-header">
+                <mat-icon>business</mat-icon>
+                <div class="workspace-info-text">
+                  <h3 class="workspace-title">{{ workspace.name }}</h3>
+                  <p class="workspace-slug">@{{ workspace.slug }}</p>
+                </div>
+              </div>
+              @if (workspace.description) {
+                <p class="workspace-description">{{ workspace.description }}</p>
+              }
+            </div>
+
+            <mat-divider></mat-divider>
+
+            <button mat-menu-item (click)="switchWorkspace()">
+              <mat-icon>swap_horiz</mat-icon>
+              <span>Switch Workspace</span>
+            </button>
+          </mat-menu>
+        </div>
+      }
+
+      <span class="spacer"></span>
 
         <!-- Theme Toggle Button -->
         <button mat-icon-button (click)="toggleTheme()" matTooltip="Toggle Theme">

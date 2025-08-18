@@ -8,7 +8,7 @@ import {MatButtonModule} from '@angular/material/button';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatSnackBar, MatSnackBarModule} from '@angular/material/snack-bar';
 import {MatIconModule} from '@angular/material/icon';
-import {Router, ActivatedRoute} from '@angular/router';
+import {ActivatedRoute, Router} from '@angular/router';
 import {Subject} from 'rxjs';
 import {takeUntil} from 'rxjs/operators';
 import {AuthService, User} from '../../core/services/auth.service';
@@ -51,7 +51,7 @@ export class CompleteProfileComponent implements OnInit, OnDestroy {
   ngOnInit(): void {
     // Check if component is loaded within home layout
     this.isInLayout = this.router.url.includes('/home/profile');
-    
+
     // Check if this is edit mode from query params
     this.route.queryParams
       .pipe(takeUntil(this.destroy$))
@@ -67,9 +67,9 @@ export class CompleteProfileComponent implements OnInit, OnDestroy {
         if (user) {
           this.updateFormWithUserData(user);
 
-          // If user already has complete profile and NOT in edit mode, redirect to home
+          // If user already has complete profile and NOT in edit mode, redirect to workspace selection
           if (!this.isEditMode && !this.authService.isProfileIncomplete(user)) {
-            this.router.navigate(['/home']).catch(error =>
+            this.router.navigate(['/workspaces']).catch(error =>
               console.error('Navigation error:', error)
             );
           }
@@ -104,7 +104,7 @@ export class CompleteProfileComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (_updatedUser) => {
           this.isSubmitting = false;
-          
+
           if (this.isEditMode) {
             this.showSuccessMessage('Profile updated successfully!');
             // Navigate back to home page after a short delay
@@ -115,9 +115,9 @@ export class CompleteProfileComponent implements OnInit, OnDestroy {
             }, 1000);
           } else {
             this.showSuccessMessage('Profile completed successfully!');
-            // Navigate to home page after a short delay
+            // Navigate to workspace selection after a short delay
             setTimeout(() => {
-              this.router.navigate(['/home']).catch(error =>
+              this.router.navigate(['/workspaces']).catch(error =>
                 console.error('Navigation error:', error)
               );
             }, 1000);

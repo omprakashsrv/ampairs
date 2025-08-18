@@ -15,7 +15,10 @@ Ampairs is a comprehensive business management system consisting of **three inte
 - **Port**: 8080 (development)
 
 #### **2. Web Frontend (Angular)**
-- **Technology**: Angular application  
+
+- **Technology**: Angular application with Material Design 3 (M3)
+- **Design System**: Angular Material 3 (M3) components and design tokens exclusively
+- **UI Framework**: Material Design 3 with Angular Material CDK
 - **Role**: Web-based user interface for desktop/browser access
 - **Integration**: Consumes REST APIs from Spring Boot backend
 
@@ -877,6 +880,75 @@ Each module follows DDD patterns:
 - Separate log files per service module
 
 ## Development Guidelines
+
+### Angular Web Application (ampairs-web) Design System
+
+**CRITICAL REQUIREMENT: Use Angular Material 3 (M3) Design System Exclusively**
+
+For the Angular web application (`ampairs-web`), you MUST adhere to the following design system requirements:
+
+#### **Material Design 3 (M3) Only**
+
+- **Components**: Use ONLY Angular Material 3 components (`@angular/material`)
+- **Design Tokens**: Follow Material Design 3 design tokens for colors, typography, spacing, and elevation
+- **Theme System**: Implement M3 theming with proper color schemes (light/dark mode support)
+- **Typography**: Use Material Design 3 typography scale and font definitions
+- **Icons**: Use Material Design Icons (`@angular/material/icon`) exclusively
+- **Layout**: Follow Material Design 3 layout principles and breakpoints
+
+#### **Prohibited UI Frameworks**
+
+- **NO** Bootstrap, Tailwind CSS, or other CSS frameworks
+- **NO** custom CSS that conflicts with Material Design principles
+- **NO** third-party component libraries (PrimeNG, Ant Design, etc.)
+- **NO** custom component styling that deviates from M3 guidelines
+
+#### **Required M3 Implementation**
+
+- **Color System**: Use M3 color roles (primary, secondary, tertiary, surface, etc.)
+- **Component Variants**: Utilize M3 component variants (filled, outlined, text buttons, etc.)
+- **State Layers**: Implement proper hover, focus, and pressed states per M3 specifications
+- **Accessibility**: Follow M3 accessibility guidelines (contrast ratios, focus indicators, etc.)
+- **Responsive Design**: Use M3 breakpoints and responsive layout patterns
+
+#### **Code Standards for M3**
+
+```typescript
+// ✅ CORRECT: Using Angular Material 3 components
+import { MatButtonModule } from '@angular/material/button';
+import { MatCardModule } from '@angular/material/card';
+import { MatFormFieldModule } from '@angular/material/form-field';
+
+// ❌ INCORRECT: Using non-M3 components
+import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import { NzButtonModule } from 'ng-zorro-antd/button';
+```
+
+#### **SCSS/CSS Guidelines**
+
+- Use Material Design 3 design tokens and CSS custom properties
+- Follow M3 naming conventions for CSS classes
+- Implement M3 color scheme with proper CSS custom properties
+- Use M3 elevation and shadow tokens
+- Follow M3 spacing scale (4dp, 8dp, 12dp, 16dp, 24dp, etc.)
+
+#### **Theme Configuration**
+
+```typescript
+// Required M3 theme structure
+const theme = {
+  color: {
+    primary: 'M3 primary color palette',
+    secondary: 'M3 secondary color palette',
+    tertiary: 'M3 tertiary color palette',
+    surface: 'M3 surface color palette',
+    // ... other M3 color roles
+  },
+  typography: 'M3 typography scale',
+  elevation: 'M3 elevation tokens',
+  shape: 'M3 shape tokens'
+};
+```
 
 ### Code Organization
 
