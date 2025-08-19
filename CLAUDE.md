@@ -56,7 +56,7 @@ Ampairs is a comprehensive business management system consisting of **three inte
 Both the **Angular web app** and **Kotlin Multiplatform app** provide identical business features:
 
 - **Authentication**: Phone/OTP login with JWT tokens and multi-device support
-- **Company Management**: Multi-tenant workspace selection and configuration
+- **Workspace Management**: Multi-tenant workspace selection and configuration
 - **Customer Management**: Comprehensive CRM functionality with address handling
 - **Product Catalog**: Product management with categories, tax codes, and image storage
 - **Inventory Management**: Stock tracking, movement, and reporting

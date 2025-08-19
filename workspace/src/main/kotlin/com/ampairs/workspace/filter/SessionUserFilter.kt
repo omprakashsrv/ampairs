@@ -91,6 +91,7 @@ class SessionUserFilter @Autowired constructor(
                 requestPath.contains("/workspace/v1/search") ||
                 requestPath.contains("/workspace/v1/invitations/") && requestPath.contains("/accept") ||
                 isWorkspaceListEndpoint(requestPath) ||
+                isWorkspaceDetailEndpoint(requestPath) ||
                 requestPath.contains("/actuator/health") ||
                 requestPath.contains("/actuator/info") ||
                 requestPath.contains("/swagger") ||
@@ -101,6 +102,12 @@ class SessionUserFilter @Autowired constructor(
         // Match exact path /workspace/v1 or /workspace/v1/ for GET requests (getUserWorkspaces)
         // and POST requests (createWorkspace)
         return requestPath.matches(Regex("^/workspace/v1/?$"))
+    }
+
+    private fun isWorkspaceDetailEndpoint(requestPath: String): Boolean {
+        // Match workspace detail endpoints like /workspace/v1/{workspaceId}
+        // These endpoints are used to fetch workspace details before setting workspace context
+        return requestPath.matches(Regex("^/workspace/v1/[A-Z0-9]+$"))
     }
 
     private fun sendAccessDeniedResponse(

@@ -172,9 +172,16 @@ export class WorkspaceService {
    * Get workspace by ID
    */
   getWorkspaceById(workspaceId: string): Observable<Workspace> {
-    return this.http.get<ApiResponse<Workspace>>(`${this.WORKSPACE_API_URL}/${workspaceId}`)
+    return this.http.get<Workspace>(`${this.WORKSPACE_API_URL}/${workspaceId}`)
       .pipe(
-        map(response => response.data),
+        map(response => {
+          console.log('getWorkspaceById response:', response);
+          // ApiResponseInterceptor already unwrapped the data, so response is directly the workspace
+          if (!response || !response.id) {
+            throw new Error('Invalid workspace data received');
+          }
+          return response;
+        }),
         catchError(this.handleError)
       );
   }
@@ -238,6 +245,11 @@ export class WorkspaceService {
    * Set current workspace and store in localStorage
    */
   setCurrentWorkspace(workspace: Workspace): void {
+    if (!workspace || !workspace.id) {
+      console.error('Invalid workspace provided to setCurrentWorkspace:', workspace);
+      return;
+    }
+    
     this.currentWorkspaceSubject.next(workspace);
     localStorage.setItem('selected_workspace', JSON.stringify(workspace));
     // Set workspace header for API requests
