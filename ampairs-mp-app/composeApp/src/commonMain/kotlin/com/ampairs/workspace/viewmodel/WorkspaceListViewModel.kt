@@ -3,6 +3,7 @@ package com.ampairs.workspace.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.auth.db.UserRepository
 import com.ampairs.workspace.db.WorkspaceRepository
 import com.ampairs.workspace.ui.WorkspaceListState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,13 +16,40 @@ import kotlinx.coroutines.launch
 class WorkspaceListViewModel(
     private val workspaceRepository: WorkspaceRepository,
     private val tokenRepository: TokenRepository,
+    private val userRepository: UserRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(WorkspaceListState())
     val state: StateFlow<WorkspaceListState> = _state.asStateFlow()
 
     init {
+        loadUserData()
         loadWorkspaces()
+    }
+
+    private fun loadUserData() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isUserLoading = true)
+
+            try {
+                val user = userRepository.getUser()
+                val fullName = if (user != null) {
+                    "${user.first_name} ${user.last_name}".trim()
+                } else {
+                    "User"
+                }
+
+                _state.value = _state.value.copy(
+                    userFullName = fullName,
+                    isUserLoading = false
+                )
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    userFullName = "User",
+                    isUserLoading = false
+                )
+            }
+        }
     }
 
     fun loadWorkspaces(forceRefresh: Boolean = false) {
@@ -126,6 +154,7 @@ class WorkspaceListViewModel(
     fun logout() {
         viewModelScope.launch {
             tokenRepository.clearTokens()
+            tokenRepository.setCompanyId("") // Clear selected workspace
             workspaceRepository.clearLocalWorkspaces()
         }
     }

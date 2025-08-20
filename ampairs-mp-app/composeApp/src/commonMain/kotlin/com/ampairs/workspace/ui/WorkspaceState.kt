@@ -9,6 +9,8 @@ data class WorkspaceListState(
     val searchQuery: String = "",
     val isRefreshing: Boolean = false,
     val hasNoWorkspaces: Boolean = false,
+    val userFullName: String = "",
+    val isUserLoading: Boolean = false,
 )
 
 data class WorkspaceCreateState(

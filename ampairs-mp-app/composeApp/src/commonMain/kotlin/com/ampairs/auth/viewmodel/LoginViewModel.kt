@@ -6,7 +6,9 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.auth.api.isAuthenticated
 import com.ampairs.auth.db.UserRepository
+import com.ampairs.auth.db.entity.UserEntity
 import com.ampairs.auth.domain.LoginStatus
 import com.ampairs.common.DeviceService
 import com.ampairs.network.model.onError
@@ -32,10 +34,17 @@ class LoginViewModel(
         LoginStatus.INIT
     )
 
-    fun checkUserLogin(onLoginStatus: (LoginStatus, userEntity: com.ampairs.auth.db.entity.UserEntity?) -> Unit) {
+    fun checkUserLogin(onLoginStatus: (LoginStatus, userEntity: UserEntity?) -> Unit) {
         viewModelScope.launch(Dispatchers.IO) {
             val token = userRepository.getToken()
             if (token != null) {
+                if (token.refreshToken.isEmpty() || token.accessToken.isEmpty()) {
+                    viewModelScope.launch(Dispatchers.Main) {
+                        loginStatus = LoginStatus.NOT_LOGGED_IN
+                        onLoginStatus(loginStatus, null)
+                    }
+                    return@launch
+                }
                 val userEntity = userRepository.getUser()
                 if (userEntity == null) {
                     val userApiResponse = userRepository.getUserApi()
@@ -75,7 +84,7 @@ class LoginViewModel(
         loading = true
         recaptchaLoading = true
         progressMessage = "Verifying reCAPTCHA..."
-        
+
         viewModelScope.launch(Dispatchers.IO) {
             userRepository.initAuth(phoneNumber).onSuccess {
                 viewModelScope.launch(Dispatchers.Main) {
@@ -109,7 +118,7 @@ class LoginViewModel(
         loading = true
         recaptchaLoading = true
         progressMessage = "Verifying reCAPTCHA..."
-        
+
         viewModelScope.launch(Dispatchers.IO) {
             userRepository.completeAuth(sessionId, otp).onSuccess {
                 tokenRepository.updateToken(this.accessToken, this.refreshToken)
@@ -135,7 +144,7 @@ class LoginViewModel(
         loading = true
         recaptchaLoading = true
         progressMessage = "Preparing to resend OTP..."
-        
+
         viewModelScope.launch(Dispatchers.IO) {
             userRepository.resendOtp(phoneNumber).onSuccess {
                 viewModelScope.launch(Dispatchers.Main) {

@@ -8,3 +8,12 @@ interface TokenRepository {
     fun getCompanyId(): String
     fun setCompanyId(companyId: String)
 }
+
+/**
+ * Extension function to check if user is authenticated
+ */
+fun TokenRepository.isAuthenticated(): Boolean {
+    val accessToken = getAccessToken()
+    val refreshToken = getRefreshToken()
+    return !accessToken.isNullOrBlank() || !refreshToken.isNullOrBlank()
+}

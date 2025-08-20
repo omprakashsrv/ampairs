@@ -1,5 +1,6 @@
 package com.ampairs.workspace
 
+import AuthRoute
 import Route
 import WorkspaceRoute
 import androidx.navigation.NavController
@@ -19,6 +20,15 @@ fun NavGraphBuilder.workspaceNavigation(navController: NavController, onWorkspac
                 onWorkspaceSelected = { workspaceId ->
                     // Call the callback to navigate to main app
                     onWorkspaceSelected()
+                },
+                onEditProfile = {
+                    navController.navigate(AuthRoute.UserUpdate)
+                },
+                onLogout = {
+                    // Clear navigation stack and go to login
+                    navController.navigate(Route.Login) {
+                        popUpTo(0) { inclusive = true }
+                    }
                 }
             )
         }

@@ -1,6 +1,7 @@
 import com.ampairs.auth.authModule
 import com.ampairs.workspace.workspaceModule
 import com.ampairs.customer.customerModule
+import com.ampairs.home.homeModule
 import com.ampairs.inventory.inventoryModule
 import com.ampairs.invoice.invoiceModule
 import com.ampairs.menu.menuModule
@@ -29,6 +30,7 @@ fun initKoin(koinApplication: KoinApplication): KoinApplication {
             authModule(),
             workspaceModule(),
             customerModule(),
+            homeModule(),
             productModule(),
             inventoryModule(),
             orderModule(),

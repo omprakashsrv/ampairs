@@ -30,6 +30,8 @@ import org.koin.compose.koinInject
 fun WorkspaceListScreen(
     onNavigateToCreateWorkspace: () -> Unit,
     onWorkspaceSelected: (String) -> Unit,
+    onEditProfile: () -> Unit = {},
+    onLogout: () -> Unit = {},
     viewModel: WorkspaceListViewModel = koinInject(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -44,6 +46,15 @@ fun WorkspaceListScreen(
             TopAppBar(
                 title = { Text("Select Workspace") },
                 actions = {
+                    ProfileMenu(
+                        userFullName = state.userFullName,
+                        isLoading = state.isUserLoading,
+                        onEditProfile = onEditProfile,
+                        onLogout = {
+                            viewModel.logout()
+                            onLogout()
+                        }
+                    )
                     IconButton(onClick = onNavigateToCreateWorkspace) {
                         Icon(Icons.Default.Add, contentDescription = "Create Workspace")
                     }

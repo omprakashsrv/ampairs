@@ -1,4 +1,3 @@
-
 import androidx.compose.foundation.background
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -9,15 +8,14 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navOptions
 import com.ampairs.auth.authNavigation
 import com.ampairs.common.UnauthenticatedHandler
-import com.ampairs.workspace.workspaceNavigation
 import com.ampairs.customer.customerNavigation
 import com.ampairs.home.homeNavigation
 import com.ampairs.inventory.inventoryNavigation
 import com.ampairs.invoice.invoiceNavigation
 import com.ampairs.order.orderNavigation
 import com.ampairs.product.productNavigation
+import com.ampairs.workspace.workspaceNavigation
 import kotlinx.coroutines.flow.collectLatest
-import org.koin.compose.koinInject
 
 @Composable
 fun AppNavigation() {
