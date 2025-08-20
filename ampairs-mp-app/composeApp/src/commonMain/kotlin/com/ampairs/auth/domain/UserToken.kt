@@ -15,10 +15,11 @@ data class UserToken(
 )
 
 @OptIn(ExperimentalTime::class)
-fun Token.asDatabaseModel(): UserTokenEntity {
+fun Token.asDatabaseModel(userId: String = "legacy_user"): UserTokenEntity {
     return UserTokenEntity(
         seq_id = 0,
         id = "1",
+        user_id = userId,
         refresh_token = refreshToken,
         access_token = accessToken,
         access_token_expires_at = accessTokenExpiresAt?.toInstant(TimeZone.currentSystemDefault())

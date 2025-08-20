@@ -41,6 +41,9 @@ sealed interface AuthRoute {
     data object LoginRoot : AuthRoute
     
     @Serializable
+    data object UserSelection : AuthRoute
+    
+    @Serializable
     data object Phone : AuthRoute
     
     @Serializable

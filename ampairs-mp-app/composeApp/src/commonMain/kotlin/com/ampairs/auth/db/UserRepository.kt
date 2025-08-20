@@ -73,9 +73,21 @@ class UserRepository(
     suspend fun getUser(): UserEntity? {
         return userDao.selectAll().firstOrNull()
     }
+    
+    suspend fun getUserById(userId: String): UserEntity? {
+        return userDao.selectById(userId)
+    }
+    
+    suspend fun getAllUsers(): List<UserEntity> {
+        return userDao.selectAll()
+    }
 
     suspend fun saveUser(user: UserApiModel) {
         userDao.insert(user.asDatabaseModel())
+    }
+    
+    suspend fun deleteUser(userId: String) {
+        userDao.deleteById(userId)
     }
 
     suspend fun getDeviceSessions(): Response<List<DeviceSession>> {
