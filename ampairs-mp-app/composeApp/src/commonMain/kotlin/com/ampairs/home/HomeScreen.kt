@@ -1,18 +1,14 @@
 package com.ampairs.home
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -24,6 +20,8 @@ import org.koin.compose.koinInject
 fun HomeScreen(onNavItemClick: (NavItem) -> Unit) {
     val viewModel: HomeScreenViewModel = koinInject<HomeScreenViewModel>()
 
+    // For now, keep the original layout as the header integration 
+    // will be handled at the navigation level
     val navItems = viewModel.navItems
     LazyVerticalGrid(
         modifier = Modifier.fillMaxSize(),
@@ -50,7 +48,6 @@ fun HomeScreen(onNavItemClick: (NavItem) -> Unit) {
                     maxLines = 2,
                 )
             }
-
         }
     }
 }

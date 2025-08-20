@@ -47,7 +47,7 @@ sealed interface AuthRoute {
     data object Phone : AuthRoute
     
     @Serializable
-    data object Otp : AuthRoute
+    data class Otp(val sessionId: String) : AuthRoute
     
     @Serializable
     data object UserUpdate : AuthRoute

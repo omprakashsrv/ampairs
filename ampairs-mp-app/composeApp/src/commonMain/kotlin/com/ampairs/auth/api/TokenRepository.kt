@@ -20,7 +20,9 @@ interface TokenRepository {
     // User session management
     suspend fun getCurrentUserId(): String?
     suspend fun setCurrentUser(userId: String)
+    suspend fun clearCurrentUser()
     suspend fun getActiveUsers(): List<String>
+    suspend fun getAllAuthenticatedUsers(): List<String>
     suspend fun isUserAuthenticated(userId: String): Boolean
     suspend fun logoutUser(userId: String)
     suspend fun addAuthenticatedUser(userId: String, accessToken: String, refreshToken: String?)

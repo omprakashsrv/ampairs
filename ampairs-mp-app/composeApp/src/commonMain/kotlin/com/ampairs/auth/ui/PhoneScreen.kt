@@ -30,12 +30,10 @@ import org.jetbrains.compose.resources.stringResource
 import ampairsapp.composeapp.generated.resources.Res
 import ampairsapp.composeapp.generated.resources.login
 import org.koin.compose.koinInject
-import org.koin.core.scope.Scope
 
 @Composable
 fun PhoneScreen(
-    scope: Scope,
-    viewModel: LoginViewModel = koinInject<LoginViewModel>(scope = scope),
+    viewModel: LoginViewModel = koinInject<LoginViewModel>(),
     onAuthSuccess: (String) -> Unit,
 ) {
     Box(

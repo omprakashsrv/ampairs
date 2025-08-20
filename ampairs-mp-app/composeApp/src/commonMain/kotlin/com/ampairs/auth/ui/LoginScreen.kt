@@ -13,12 +13,10 @@ import com.ampairs.auth.db.entity.UserEntity
 import com.ampairs.auth.domain.LoginStatus
 import com.ampairs.auth.viewmodel.LoginViewModel
 import org.koin.compose.koinInject
-import org.koin.core.scope.Scope
 
 @Composable
 fun LoginScreen(
-    scope: Scope,
-    viewModel: LoginViewModel = koinInject<LoginViewModel>(scope = scope),
+    viewModel: LoginViewModel = koinInject<LoginViewModel>(),
     onLoginStatus: (LoginStatus, userEntity: UserEntity?) -> Unit,
 ) {
     viewModel.checkUserLogin(onLoginStatus)

@@ -6,9 +6,9 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
+import androidx.navigation.toRoute
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.domain.LoginStatus
-import com.ampairs.auth.ui.LoginScope
 import com.ampairs.auth.ui.LoginScreen
 import com.ampairs.auth.ui.OtpScreen
 import com.ampairs.auth.ui.PhoneScreen
@@ -20,7 +20,6 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
 
     navigation<Route.Login>(startDestination = AuthRoute.UserSelection) {
 
-        val loginScope = GlobalContext.get().createScope<LoginScope>()
         val tokenRepository = GlobalContext.get().get<TokenRepository>()
         
         composable<AuthRoute.UserSelection> {
@@ -42,7 +41,8 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
                     }
                 },
                 onAddNewUser = {
-                    navigator.navigate(AuthRoute.LoginRoot)
+                    // Navigate directly to phone screen to add new user
+                    navigator.navigate(AuthRoute.Phone)
                 },
                 onNoUsers = {
                     // If no users, go directly to login
@@ -54,14 +54,12 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
         }
         
         composable<AuthRoute.LoginRoot> {
-            LoginScreen(loginScope) { loginStatus, userEntity ->
+            LoginScreen { loginStatus, userEntity ->
                 if (loginStatus == LoginStatus.LOGGED_IN) {
                     // Check if user's first name is empty, then navigate to UserUpdate screen
                     if (userEntity?.first_name.isNullOrBlank()) {
                         navigator.navigate(AuthRoute.UserUpdate)
                     } else {
-                        loginScope.close()
-                        
                         kotlinx.coroutines.runBlocking {
                             // Add user to multi-user system if they have tokens
                             val accessToken = tokenRepository.getAccessToken()
@@ -95,19 +93,21 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
             }
         }
         composable<AuthRoute.Phone> {
-            PhoneScreen(loginScope) {
-                navigator.navigate(AuthRoute.Otp)
+            PhoneScreen { sessionId ->
+                navigator.navigate(AuthRoute.Otp(sessionId))
             }
         }
-        composable<AuthRoute.Otp> {
-            OtpScreen(scope = loginScope) {
-                navigator.navigate(AuthRoute.UserUpdate)
-            }
+        composable<AuthRoute.Otp> { backStackEntry ->
+            val otp = backStackEntry.toRoute<AuthRoute.Otp>()
+            OtpScreen(
+                sessionId = otp.sessionId,
+                onAuthSuccess = {
+                    navigator.navigate(AuthRoute.UserUpdate)
+                }
+            )
         }
         composable<AuthRoute.UserUpdate> {
             UserUpdateScreen {
-                loginScope.close()
-                
                 kotlinx.coroutines.runBlocking {
                     // Add user to multi-user system after profile update
                     val accessToken = tokenRepository.getAccessToken()

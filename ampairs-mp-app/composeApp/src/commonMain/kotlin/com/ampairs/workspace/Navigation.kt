@@ -3,46 +3,52 @@ package com.ampairs.workspace
 import AuthRoute
 import Route
 import WorkspaceRoute
+import androidx.compose.foundation.layout.*
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
+import com.ampairs.common.ui.AppScreenWithHeader
 import com.ampairs.workspace.ui.WorkspaceCreateScreen
 import com.ampairs.workspace.ui.WorkspaceListScreen
 
 fun NavGraphBuilder.workspaceNavigation(navController: NavController, onWorkspaceSelected: () -> Unit) {
     navigation<Route.Workspace>(startDestination = WorkspaceRoute.Root) {
         composable<WorkspaceRoute.Root> {
-            WorkspaceListScreen(
-                onNavigateToCreateWorkspace = {
-                    navController.navigate(WorkspaceRoute.Create)
-                },
-                onWorkspaceSelected = { workspaceId ->
-                    // Call the callback to navigate to main app
-                    onWorkspaceSelected()
-                },
-                onEditProfile = {
-                    navController.navigate(AuthRoute.UserUpdate)
-                },
-                onLogout = {
-                    // Clear navigation stack and go to login
-                    navController.navigate(Route.Login) {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
-            )
+            AppScreenWithHeader(
+                navController = navController,
+                isWorkspaceSelection = true
+            ) { paddingValues ->
+                WorkspaceListScreen(
+                    onNavigateToCreateWorkspace = {
+                        navController.navigate(WorkspaceRoute.Create)
+                    },
+                    onWorkspaceSelected = { workspaceId ->
+                        // Call the callback to navigate to main app
+                        onWorkspaceSelected()
+                    },
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
         }
 
         composable<WorkspaceRoute.Create> {
-            WorkspaceCreateScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
-                },
-                onWorkspaceCreated = { workspaceId ->
-                    // Call the callback to navigate to main app after creation
-                    onWorkspaceSelected()
-                }
-            )
+            AppScreenWithHeader(
+                navController = navController,
+                isWorkspaceSelection = true
+            ) { paddingValues ->
+                WorkspaceCreateScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onWorkspaceCreated = { workspaceId ->
+                        // Call the callback to navigate to main app after creation
+                        onWorkspaceSelected()
+                    },
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
         }
 
         composable<WorkspaceRoute.Detail> { backStackEntry ->

@@ -30,8 +30,7 @@ import org.koin.compose.koinInject
 fun WorkspaceListScreen(
     onNavigateToCreateWorkspace: () -> Unit,
     onWorkspaceSelected: (String) -> Unit,
-    onEditProfile: () -> Unit = {},
-    onLogout: () -> Unit = {},
+    modifier: Modifier = Modifier,
     viewModel: WorkspaceListViewModel = koinInject(),
 ) {
     val state by viewModel.state.collectAsState()
@@ -41,39 +40,12 @@ fun WorkspaceListScreen(
         viewModel.searchWorkspaces(searchQuery)
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Select Workspace") },
-                actions = {
-                    ProfileMenu(
-                        userFullName = state.userFullName,
-                        isLoading = state.isUserLoading,
-                        onEditProfile = onEditProfile,
-                        onLogout = {
-                            viewModel.logout()
-                            onLogout()
-                        }
-                    )
-                    IconButton(onClick = onNavigateToCreateWorkspace) {
-                        Icon(Icons.Default.Add, contentDescription = "Create Workspace")
-                    }
-                }
-            )
-        },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = onNavigateToCreateWorkspace,
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Create Workspace")
-            }
-        }
-    ) { paddingValues ->
+    Box(
+        modifier = modifier.fillMaxSize()
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
                 .padding(horizontal = 16.dp)
         ) {
             // Search Bar
@@ -214,6 +186,16 @@ fun WorkspaceListScreen(
                     }
                 }
             }
+        }
+        
+        // Floating Action Button
+        FloatingActionButton(
+            onClick = onNavigateToCreateWorkspace,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
+            Icon(Icons.Default.Add, contentDescription = "Create Workspace")
         }
     }
 

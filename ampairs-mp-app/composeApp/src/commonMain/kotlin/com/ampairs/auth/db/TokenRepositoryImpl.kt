@@ -150,8 +150,19 @@ class TokenRepositoryImpl(
         currentUserId = userId
     }
 
+    override suspend fun clearCurrentUser() {
+        userSessionDao.clearCurrentUser()
+        currentUserId = null
+    }
+
     override suspend fun getActiveUsers(): List<String> {
         return userTokenDao.selectActiveUsers().map { it.user_id }
+    }
+
+    override suspend fun getAllAuthenticatedUsers(): List<String> {
+        return userTokenDao.selectAll()
+            .filter { it.access_token.isNotBlank() || it.refresh_token.isNotBlank() }
+            .map { it.user_id }
     }
 
     override suspend fun isUserAuthenticated(userId: String): Boolean {

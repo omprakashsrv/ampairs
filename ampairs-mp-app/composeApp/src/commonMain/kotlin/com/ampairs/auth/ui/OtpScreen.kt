@@ -22,6 +22,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -36,14 +37,18 @@ import ampairsapp.composeapp.generated.resources.resend_otp
 import ampairsapp.composeapp.generated.resources.verify_otp
 import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
-import org.koin.core.scope.Scope
 
 @Composable
 fun OtpScreen(
-    scope: Scope,
+    sessionId: String,
     onAuthSuccess: () -> Unit,
 ) {
-    val viewModel = koinInject<LoginViewModel>(scope = scope)
+    val viewModel = koinInject<LoginViewModel>()
+    
+    // Set the sessionId from navigation parameter
+    LaunchedEffect(sessionId) {
+        viewModel.sessionId = sessionId
+    }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) {
