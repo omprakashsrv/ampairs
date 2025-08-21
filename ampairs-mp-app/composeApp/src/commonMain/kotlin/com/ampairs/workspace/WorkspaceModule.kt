@@ -18,10 +18,10 @@ fun workspaceModule() = module {
     // API
     singleOf(::WorkspaceApiImpl) bind WorkspaceApi::class
 
-    // Repository
-    singleOf(::WorkspaceRepository)
+    // Repository (with TokenRepository dependency)
+    single { WorkspaceRepository(get(), get(), get()) }
 
     // ViewModels
-    factoryOf(::WorkspaceListViewModel)
+    factory { WorkspaceListViewModel(get(), get(), get()) }
     factoryOf(::WorkspaceCreateViewModel)
 }

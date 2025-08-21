@@ -23,7 +23,7 @@ val authModule: Module = module {
     single { get<AuthRoomDatabase>().userTokenDao() }
     single { get<AuthRoomDatabase>().userSessionDao() }
     // DeviceService and RecaptchaService are provided by platform-specific modules
-    single { UserRepository(get(), get(), get(), get(), get()) }
+    single { UserRepository(get(), get(), get(), get(), get(), get()) }
     
     // Direct ViewModel injection
     factory { LoginViewModel(get(), get(), get()) }

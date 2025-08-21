@@ -6,12 +6,20 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "workspaceEntity",
-    indices = [Index(value = ["id"], unique = true)]
+    indices = [
+        Index(
+            value = ["id"],
+            unique = false
+        ), // Remove unique constraint to allow multiple users to have same workspace
+        Index(value = ["user_id"], unique = false),
+        Index(value = ["user_id", "id"], unique = true) // Unique per user
+    ]
 )
 data class WorkspaceEntity(
     @PrimaryKey(autoGenerate = true)
     val seq_id: Long = 0,
     val id: String,
+    val user_id: String = "", // Associate workspace with user
     val name: String,
     val slug: String,
     val description: String = "",

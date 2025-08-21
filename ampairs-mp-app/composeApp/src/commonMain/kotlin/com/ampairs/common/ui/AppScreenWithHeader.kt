@@ -25,9 +25,27 @@ fun AppScreenWithHeader(
     val tokenRepository: TokenRepository = koinInject()
     val headerStateManager = remember { AppHeaderStateManager.instance }
     val headerState by headerStateManager.headerState.collectAsState()
-    
-    // Initialize header data on first composition
+
+    // Track workspace selection changes and refresh header accordingly
+    var currentWorkspaceId by remember { mutableStateOf("") }
+
+    // Poll for workspace selection changes
     LaunchedEffect(Unit) {
+        while (true) {
+            try {
+                val selectedWorkspaceId = tokenRepository.getCompanyId()
+                if (selectedWorkspaceId != currentWorkspaceId) {
+                    currentWorkspaceId = selectedWorkspaceId
+                }
+            } catch (e: Exception) {
+                // Ignore polling errors
+            }
+            kotlinx.coroutines.delay(1000) // Check every second
+        }
+    }
+
+    // Initialize header data on first composition and when workspace changes
+    LaunchedEffect(currentWorkspaceId) {
         try {
             // Load current user
             userRepository.getUser()?.let { userEntity ->
@@ -45,10 +63,12 @@ fun AppScreenWithHeader(
                 )
                 headerStateManager.updateUser(userInfo)
             }
-            
-            // Load current workspace (first one from local storage as a fallback)
-            workspaceRepository.getLocalWorkspaces().firstOrNull()?.let { workspaces ->
-                workspaces.firstOrNull()?.let { workspace ->
+
+            // Load currently selected workspace
+            val selectedWorkspaceId = tokenRepository.getCompanyId()
+            if (selectedWorkspaceId.isNotEmpty()) {
+                // Load the selected workspace by ID
+                workspaceRepository.getWorkspaceById(selectedWorkspaceId)?.let { workspace ->
                     val workspaceList = WorkspaceList(
                         id = workspace.id,
                         name = workspace.name,
@@ -62,6 +82,25 @@ fun AppScreenWithHeader(
                         createdAt = workspace.createdAt
                     )
                     headerStateManager.updateWorkspace(workspaceList)
+                }
+            } else {
+                // Fallback: load first workspace if no workspace is selected
+                workspaceRepository.getLocalWorkspaces().firstOrNull()?.let { workspaces ->
+                    workspaces.firstOrNull()?.let { workspace ->
+                        val workspaceList = WorkspaceList(
+                            id = workspace.id,
+                            name = workspace.name,
+                            slug = workspace.slug,
+                            description = workspace.description,
+                            workspaceType = workspace.workspaceType,
+                            avatarUrl = workspace.avatarUrl,
+                            subscriptionPlan = workspace.subscriptionPlan,
+                            memberCount = workspace.memberCount ?: 1,
+                            lastActivityAt = workspace.lastActivityAt,
+                            createdAt = workspace.createdAt
+                        )
+                        headerStateManager.updateWorkspace(workspaceList)
+                    }
                 }
             }
         } catch (e: Exception) {

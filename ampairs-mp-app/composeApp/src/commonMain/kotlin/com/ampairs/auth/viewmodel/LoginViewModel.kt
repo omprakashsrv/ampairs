@@ -51,8 +51,18 @@ class LoginViewModel(
                     userApiResponse.onSuccess {
                         val userData = this
                         viewModelScope.launch(Dispatchers.IO) {
+                            // Save the new user
                             userRepository.saveUser(userData)
-                            val savedUserEntity = userRepository.getUser()
+
+                            // Associate the current token with this user
+                            tokenRepository.addAuthenticatedUser(userData.id, token.accessToken, token.refreshToken)
+
+                            // Set this user as the current user
+                            tokenRepository.setCurrentUser(userData.id)
+
+                            // Get the saved user entity
+                            val savedUserEntity = userRepository.getUserById(userData.id)
+                            
                             delay(1000)
                             viewModelScope.launch(Dispatchers.Main) {
                                 loginStatus = LoginStatus.LOGGED_IN
@@ -66,9 +76,13 @@ class LoginViewModel(
                         }
                     }
                 } else {
-                    viewModelScope.launch(Dispatchers.Main) {
-                        loginStatus = LoginStatus.LOGGED_IN
-                        onLoginStatus(loginStatus, userEntity)
+                    // User exists, make sure they're set as current user
+                    viewModelScope.launch(Dispatchers.IO) {
+                        tokenRepository.setCurrentUser(userEntity.id)
+                        viewModelScope.launch(Dispatchers.Main) {
+                            loginStatus = LoginStatus.LOGGED_IN
+                            onLoginStatus(loginStatus, userEntity)
+                        }
                     }
                 }
             } else {
@@ -121,13 +135,50 @@ class LoginViewModel(
 
         viewModelScope.launch(Dispatchers.IO) {
             userRepository.completeAuth(sessionId, otp).onSuccess {
+                // First, store the token using legacy method for immediate access
                 tokenRepository.updateToken(this.accessToken, this.refreshToken)
-                viewModelScope.launch(Dispatchers.Main) {
-                    delay(1000)
-                    onAuthComplete()
-                    loading = false
-                    recaptchaLoading = false
-                    progressMessage = ""
+
+                // Store the token response for later use
+                val authResponse = this
+
+                // Then fetch and save user information
+                viewModelScope.launch(Dispatchers.IO) {
+                    val userApiResponse = userRepository.getUserApi()
+                    userApiResponse.onSuccess {
+                        val userData = this
+                        viewModelScope.launch(Dispatchers.IO) {
+                            // Save user to database
+                            userRepository.saveUser(userData)
+
+                            // Associate token with this specific user for multi-user support
+                            tokenRepository.addAuthenticatedUser(
+                                userData.id,
+                                authResponse.accessToken,
+                                authResponse.refreshToken
+                            )
+
+                            // Set as current user
+                            tokenRepository.setCurrentUser(userData.id)
+
+                            viewModelScope.launch(Dispatchers.Main) {
+                                delay(1000)
+                                onAuthComplete()
+                                loading = false
+                                recaptchaLoading = false
+                                progressMessage = ""
+                            }
+                        }
+                    }.onError {
+                        // Even if user fetch fails, continue with authentication complete
+                        // The user will be fetched later in checkUserLogin()
+                        viewModelScope.launch(Dispatchers.Main) {
+                            delay(1000)
+                            onAuthComplete()
+                            loading = false
+                            recaptchaLoading = false
+                            progressMessage = ""
+                        }
+                    }
                 }
             }.onError {
                 displayMessage = this@onError.message

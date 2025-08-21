@@ -1,6 +1,7 @@
 package com.ampairs.auth.db
 
 import com.ampairs.auth.api.AuthApi
+import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.model.AuthComplete
 import com.ampairs.auth.api.model.AuthInit
 import com.ampairs.auth.api.model.AuthInitResponse
@@ -24,6 +25,7 @@ class UserRepository(
     val userDao: UserDao,
     val deviceService: DeviceService,
     val recaptchaService: RecaptchaService,
+    val tokenRepository: TokenRepository,
 ) {
     suspend fun initAuth(phoneNumber: String): Response<AuthInitResponse> {
         val deviceInfo = deviceService.getDeviceInfo()
@@ -71,7 +73,19 @@ class UserRepository(
     }
 
     suspend fun getUser(): UserEntity? {
-        return userDao.selectAll().firstOrNull()
+        // Get current user from session management, fallback to first user for legacy support
+        val currentUserId = getCurrentUserId()
+        return if (currentUserId != null) {
+            userDao.selectById(currentUserId)
+        } else {
+            // Fallback to first user for legacy compatibility
+            userDao.selectAll().firstOrNull()
+        }
+    }
+
+    private suspend fun getCurrentUserId(): String? {
+        // Use TokenRepository to get current user ID instead of parsing JWT tokens
+        return tokenRepository.getCurrentUserId()
     }
     
     suspend fun getUserById(userId: String): UserEntity? {

@@ -69,7 +69,8 @@ class WorkspaceListViewModel(
                     )
                 } else {
                     // Load from local database first
-                    workspaceRepository.getLocalWorkspaces()
+                    val localWorkspacesFlow = workspaceRepository.getLocalWorkspaces()
+                    localWorkspacesFlow
                         .onEach { workspaces ->
                             _state.value = _state.value.copy(
                                 workspaces = workspaces,
@@ -125,7 +126,8 @@ class WorkspaceListViewModel(
             loadWorkspaces()
         } else {
             viewModelScope.launch {
-                workspaceRepository.searchWorkspacesLocally(query)
+                val searchFlow = workspaceRepository.searchWorkspacesLocally(query)
+                searchFlow
                     .onEach { workspaces ->
                         _state.value = _state.value.copy(
                             workspaces = workspaces,
