@@ -27,6 +27,7 @@ data class WorkspaceCreateState(
     val isSlugAvailable: Boolean = true,
     val isSlugModified: Boolean = false,
     val validationErrors: Map<String, String> = emptyMap(),
+    val createdWorkspaceId: String? = null,
 )
 
 data class WorkspaceDetailState(

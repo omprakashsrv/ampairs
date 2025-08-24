@@ -28,10 +28,9 @@ fun WorkspaceCreateScreen(
     val scrollState = rememberScrollState()
 
     // Handle successful workspace creation
-    LaunchedEffect(state) {
-        if (!state.isLoading && state.error == null && state.name.isNotEmpty()) {
-            // This is a simple check - in real implementation you'd have a success state
-            // For now, we'll navigate when the form would be successfully submitted
+    LaunchedEffect(state.createdWorkspaceId) {
+        state.createdWorkspaceId?.let { workspaceId ->
+            onWorkspaceCreated(workspaceId)
         }
     }
 
@@ -133,7 +132,9 @@ fun WorkspaceCreateScreen(
                         )
                     }
 
-                    state.slug.length >= 2 && state.isSlugAvailable && !state.validationErrors.containsKey("slug") -> {
+                    state.slug.length >= 2 && state.isSlugAvailable && !state.validationErrors.containsKey(
+                        "slug"
+                    ) -> {
                         Icon(
                             Icons.Default.Check,
                             contentDescription = "Available",

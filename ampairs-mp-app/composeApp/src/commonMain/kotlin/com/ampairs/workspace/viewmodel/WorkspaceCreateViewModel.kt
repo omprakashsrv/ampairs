@@ -122,7 +122,8 @@ class WorkspaceCreateViewModel(
 
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    error = null
+                    error = null,
+                    createdWorkspaceId = workspace.id
                 )
 
                 // Navigation will be handled in the UI
