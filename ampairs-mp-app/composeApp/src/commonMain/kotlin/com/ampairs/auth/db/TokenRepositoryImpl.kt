@@ -12,12 +12,11 @@ class TokenRepositoryImpl(
     val userSessionDao: UserSessionDao
 ) : TokenRepository {
 
-    var companyIdTemp: String = ""
     private var currentUserId: String? = null
 
     // Legacy single-user methods (for backward compatibility)
     override fun getRefreshToken(): String? {
-        return runBlocking { 
+        return runBlocking {
             getCurrentUserId()?.let { userId ->
                 getRefreshTokenForUser(userId)
             } ?: userTokenDao.selectById()?.refresh_token
@@ -25,7 +24,7 @@ class TokenRepositoryImpl(
     }
 
     override fun getAccessToken(): String? {
-        return runBlocking { 
+        return runBlocking {
             getCurrentUserId()?.let { userId ->
                 getAccessTokenForUser(userId)
             } ?: userTokenDao.selectById()?.access_token
@@ -36,18 +35,6 @@ class TokenRepositoryImpl(
         runBlocking {
             getCurrentUserId()?.let { userId ->
                 updateTokenForUser(userId, accessToken, refreshToken)
-            } ?: run {
-                // Fallback to legacy behavior
-                userTokenDao.insertUserToken(
-                    UserTokenEntity(
-                        seq_id = 0, 
-                        id = "1", 
-                        user_id = "legacy_user",
-                        refresh_token = refreshToken ?: "", 
-                        access_token = accessToken, 
-                        expires_at = 0
-                    )
-                )
             }
         }
     }
@@ -56,39 +43,10 @@ class TokenRepositoryImpl(
         runBlocking {
             getCurrentUserId()?.let { userId ->
                 clearTokensForUser(userId)
-            } ?: run {
-                // Fallback to legacy behavior
-                userTokenDao.insertUserToken(
-                    UserTokenEntity(
-                        seq_id = 0, 
-                        id = "1", 
-                        user_id = "legacy_user",
-                        refresh_token = "", 
-                        access_token = "", 
-                        expires_at = 0
-                    )
-                )
             }
         }
     }
 
-    override fun getCompanyId(): String {
-        return runBlocking {
-            getCurrentUserId()?.let { userId ->
-                getCompanyIdForUser(userId)
-            } ?: companyIdTemp
-        }
-    }
-
-    override fun setCompanyId(companyId: String) {
-        runBlocking {
-            getCurrentUserId()?.let { userId ->
-                setCompanyIdForUser(userId, companyId)
-            } ?: run {
-                companyIdTemp = companyId
-            }
-        }
-    }
 
     // New multi-user methods
     override suspend fun getRefreshTokenForUser(userId: String): String? {
@@ -99,7 +57,11 @@ class TokenRepositoryImpl(
         return userTokenDao.selectByUserId(userId)?.access_token
     }
 
-    override suspend fun updateTokenForUser(userId: String, accessToken: String, refreshToken: String?) {
+    override suspend fun updateTokenForUser(
+        userId: String,
+        accessToken: String,
+        refreshToken: String?,
+    ) {
         userTokenDao.insertUserToken(
             UserTokenEntity(
                 seq_id = 0,
@@ -117,24 +79,6 @@ class TokenRepositoryImpl(
         userTokenDao.clearTokensForUser(userId)
     }
 
-    override suspend fun getCompanyIdForUser(userId: String): String {
-        return userSessionDao.selectByUserId(userId)?.company_id ?: ""
-    }
-
-    override suspend fun setCompanyIdForUser(userId: String, companyId: String) {
-        val existingSession = userSessionDao.selectByUserId(userId)
-        if (existingSession != null) {
-            userSessionDao.updateCompanyId(userId, companyId)
-        } else {
-            userSessionDao.insert(
-                UserSessionEntity(
-                    user_id = userId,
-                    company_id = companyId,
-                    is_current = userId == currentUserId
-                )
-            )
-        }
-    }
 
     override suspend fun getCurrentUserId(): String? {
         if (currentUserId == null) {
@@ -167,9 +111,9 @@ class TokenRepositoryImpl(
 
     override suspend fun isUserAuthenticated(userId: String): Boolean {
         val token = userTokenDao.selectByUserId(userId)
-        return token != null && 
-               (token.access_token.isNotBlank() || token.refresh_token.isNotBlank()) &&
-               token.is_active
+        return token != null &&
+                (token.access_token.isNotBlank() || token.refresh_token.isNotBlank()) &&
+                token.is_active
     }
 
     override suspend fun logoutUser(userId: String) {
@@ -180,9 +124,13 @@ class TokenRepositoryImpl(
         }
     }
 
-    override suspend fun addAuthenticatedUser(userId: String, accessToken: String, refreshToken: String?) {
+    override suspend fun addAuthenticatedUser(
+        userId: String,
+        accessToken: String,
+        refreshToken: String?,
+    ) {
         updateTokenForUser(userId, accessToken, refreshToken)
-        
+
         // Create or update user session
         val existingSession = userSessionDao.selectByUserId(userId)
         if (existingSession != null) {
@@ -192,6 +140,7 @@ class TokenRepositoryImpl(
                 UserSessionEntity(
                     user_id = userId,
                     is_current = false,
+                    workspace_id = "",
                     last_login = System.currentTimeMillis()
                 )
             )

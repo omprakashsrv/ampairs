@@ -13,7 +13,7 @@ data class UserSessionEntity(
     val seq_id: Long = 0,
     val user_id: String,  // Link to UserEntity.id
     val is_current: Boolean = false,  // True for the currently active user
-    val company_id: String = "",  // Selected workspace for this user
+    val workspace_id: String = "",  // Selected workspace for this user
     val last_login: Long = System.currentTimeMillis(),
     val login_count: Int = 1,
     val device_info: String = "",  // Device information

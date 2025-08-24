@@ -6,16 +6,12 @@ interface TokenRepository {
     fun getAccessToken(): String?
     fun updateToken(accessToken: String, refreshToken: String?)
     fun clearTokens()
-    fun getCompanyId(): String
-    fun setCompanyId(companyId: String)
     
     // New multi-user methods
     suspend fun getRefreshTokenForUser(userId: String): String?
     suspend fun getAccessTokenForUser(userId: String): String?
     suspend fun updateTokenForUser(userId: String, accessToken: String, refreshToken: String?)
     suspend fun clearTokensForUser(userId: String)
-    suspend fun getCompanyIdForUser(userId: String): String
-    suspend fun setCompanyIdForUser(userId: String, companyId: String)
     
     // User session management
     suspend fun getCurrentUserId(): String?

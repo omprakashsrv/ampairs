@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
@@ -34,6 +35,7 @@ fun WorkspaceListScreen(
     viewModel: WorkspaceListViewModel = koinInject(),
 ) {
     val state by viewModel.state.collectAsState()
+    val coroutineScope = rememberCoroutineScope()
     var searchQuery by remember { mutableStateOf("") }
 
     LaunchedEffect(searchQuery) {
@@ -175,7 +177,12 @@ fun WorkspaceListScreen(
                         items(state.workspaces) { workspace ->
                             WorkspaceCard(
                                 workspace = workspace,
-                                onClick = { onWorkspaceSelected(workspace.id) }
+                                onClick = {
+                                    coroutineScope.launch {
+                                        viewModel.selectWorkSpace(workspace.id)
+                                        onWorkspaceSelected(workspace.id)
+                                    }
+                                }
                             )
                         }
 

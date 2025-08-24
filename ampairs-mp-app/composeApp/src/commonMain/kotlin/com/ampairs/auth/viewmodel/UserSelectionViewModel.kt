@@ -3,6 +3,7 @@ package com.ampairs.auth.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.UserRepository
 import com.ampairs.auth.domain.UserInfo
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,6 +20,7 @@ data class UserSelectionState(
 class UserSelectionViewModel(
     private val userRepository: UserRepository,
     private val tokenRepository: TokenRepository,
+    private val userWorkspaceRepository: UserWorkspaceRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(UserSelectionState())
@@ -35,7 +37,7 @@ class UserSelectionViewModel(
                 for (userId in activeUserIds) {
                     val user = userRepository.getUserById(userId)
                     val isAuthenticated = tokenRepository.isUserAuthenticated(userId)
-                    val companyId = tokenRepository.getCompanyIdForUser(userId)
+                    val workspaceId = userWorkspaceRepository.getWorkspaceIdForUser(userId)
                     
                     if (user != null) {
                         userInfoList.add(
@@ -47,7 +49,7 @@ class UserSelectionViewModel(
                                 countryCode = user.country_code,
                                 phone = user.phone,
                                 isAuthenticated = isAuthenticated,
-                                hasSelectedWorkspace = companyId.isNotBlank()
+                                hasSelectedWorkspace = workspaceId.isNotBlank()
                             )
                         )
                     }

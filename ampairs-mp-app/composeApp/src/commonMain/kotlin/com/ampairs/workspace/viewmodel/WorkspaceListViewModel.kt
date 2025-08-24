@@ -3,6 +3,7 @@ package com.ampairs.workspace.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.UserRepository
 import com.ampairs.workspace.db.WorkspaceRepository
 import com.ampairs.workspace.ui.WorkspaceListState
@@ -15,6 +16,7 @@ import kotlinx.coroutines.launch
 
 class WorkspaceListViewModel(
     private val workspaceRepository: WorkspaceRepository,
+    private val userWorkspaceRepository: UserWorkspaceRepository,
     private val tokenRepository: TokenRepository,
     private val userRepository: UserRepository,
 ) : ViewModel() {
@@ -49,6 +51,13 @@ class WorkspaceListViewModel(
                     isUserLoading = false
                 )
             }
+        }
+    }
+
+    suspend fun selectWorkSpace(workspaceId: String) {
+        val currentUserId = tokenRepository.getCurrentUserId()
+        if (currentUserId != null) {
+            userWorkspaceRepository.setWorkspaceIdForUser(currentUserId, workspaceId)
         }
     }
 
@@ -140,24 +149,14 @@ class WorkspaceListViewModel(
         }
     }
 
-    fun selectWorkspace(workspaceId: String) {
-        viewModelScope.launch {
-            // Store selected workspace ID for API calls
-            tokenRepository.setCompanyId(workspaceId)
-
-            // Navigation will be handled in the UI
-        }
-    }
-
     fun clearError() {
         _state.value = _state.value.copy(error = null)
     }
 
     fun logout() {
         viewModelScope.launch {
-            tokenRepository.clearTokens()
-            tokenRepository.setCompanyId("") // Clear selected workspace
             workspaceRepository.clearLocalWorkspaces()
+            tokenRepository.clearTokens()
         }
     }
 }

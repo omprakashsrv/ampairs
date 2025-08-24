@@ -22,6 +22,6 @@ fun workspaceModule() = module {
     single { WorkspaceRepository(get(), get(), get()) }
 
     // ViewModels
-    factory { WorkspaceListViewModel(get(), get(), get()) }
+    factory { WorkspaceListViewModel(get(), get(), get(), get()) }
     factoryOf(::WorkspaceCreateViewModel)
 }

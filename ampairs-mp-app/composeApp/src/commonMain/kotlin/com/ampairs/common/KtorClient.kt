@@ -49,10 +49,10 @@ fun httpClient(engine: HttpClientEngine, tokenRepository: TokenRepository) = Htt
     // Default request configuration
     defaultRequest {
         // Add company header if available
-        val companyId = tokenRepository.getCompanyId()
-        if (companyId.isNotEmpty()) {
-            header("X-Company", companyId)
-        }
+//        val companyId = tokenRepository.getWorkspaceId()
+//        if (companyId.isNotEmpty()) {
+//            header("X-Company", companyId)
+//        }
         
         // Add bearer token if available
         val accessToken = tokenRepository.getAccessToken()

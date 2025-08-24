@@ -5,6 +5,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.UserRepository
 import com.ampairs.auth.domain.UserInfo
 import com.ampairs.common.state.AppHeaderStateManager
@@ -22,30 +23,13 @@ fun AppScreenWithHeader(
 ) {
     val userRepository: UserRepository = koinInject()
     val workspaceRepository: WorkspaceRepository = koinInject()
+    val userWorkspaceRepository: UserWorkspaceRepository = koinInject()
     val tokenRepository: TokenRepository = koinInject()
     val headerStateManager = remember { AppHeaderStateManager.instance }
     val headerState by headerStateManager.headerState.collectAsState()
 
-    // Track workspace selection changes and refresh header accordingly
-    var currentWorkspaceId by remember { mutableStateOf("") }
-
-    // Poll for workspace selection changes
-    LaunchedEffect(Unit) {
-        while (true) {
-            try {
-                val selectedWorkspaceId = tokenRepository.getCompanyId()
-                if (selectedWorkspaceId != currentWorkspaceId) {
-                    currentWorkspaceId = selectedWorkspaceId
-                }
-            } catch (e: Exception) {
-                // Ignore polling errors
-            }
-            kotlinx.coroutines.delay(1000) // Check every second
-        }
-    }
-
     // Initialize header data on first composition and when workspace changes
-    LaunchedEffect(currentWorkspaceId) {
+    LaunchedEffect(Unit) {
         try {
             // Load current user
             userRepository.getUser()?.let { userEntity ->
@@ -65,7 +49,9 @@ fun AppScreenWithHeader(
             }
 
             // Load currently selected workspace
-            val selectedWorkspaceId = tokenRepository.getCompanyId()
+            val selectedWorkspaceId = userWorkspaceRepository.getWorkspaceIdForUser(
+                userId = headerState.currentUser?.id ?: ""
+            )
             if (selectedWorkspaceId.isNotEmpty()) {
                 // Load the selected workspace by ID
                 workspaceRepository.getWorkspaceById(selectedWorkspaceId)?.let { workspace ->
@@ -108,10 +94,11 @@ fun AppScreenWithHeader(
             println("Error loading header data: ${e.message}")
         }
     }
-    
+
     AppScreenLayout(
         currentWorkspaceName = if (isWorkspaceSelection) null else headerState.currentWorkspace?.name,
-        userFullName = "${headerState.currentUser?.firstName ?: ""} ${headerState.currentUser?.lastName ?: ""}".trim().ifEmpty { "User" },
+        userFullName = "${headerState.currentUser?.firstName ?: ""} ${headerState.currentUser?.lastName ?: ""}".trim()
+            .ifEmpty { "User" },
         isUserLoading = headerState.isUserLoading,
         isWorkspaceLoading = headerState.isWorkspaceLoading,
         onWorkspaceClick = {

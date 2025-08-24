@@ -125,9 +125,6 @@ class WorkspaceCreateViewModel(
                     error = null
                 )
 
-                // Set the newly created workspace as selected
-                tokenRepository.setCompanyId(workspace.id)
-
                 // Navigation will be handled in the UI
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
@@ -176,7 +173,10 @@ class WorkspaceCreateViewModel(
             }
 
             !isValidSlug(slug) -> {
-                updateValidationError("slug", "Slug can only contain lowercase letters, numbers, and hyphens")
+                updateValidationError(
+                    "slug",
+                    "Slug can only contain lowercase letters, numbers, and hyphens"
+                )
             }
 
             else -> {

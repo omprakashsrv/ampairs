@@ -38,7 +38,9 @@ class CustomersViewModel(
 
     private fun loadDefaultCustomer() {
         viewModelScope.launch(Dispatchers.IO) {
-            company = customerRepository.getDefaultCustomer(tokenRepository.getCompanyId())
+//            val workspaceId = tokenRepository.getWorkspaceId()
+            val workspaceId = ""
+            company = customerRepository.getDefaultCustomer(workspaceId)
                 ?.asDomainModel()
         }
     }
@@ -73,13 +75,14 @@ class CustomersViewModel(
         }
     }
 
-    val customers = Pager(config = PagingConfig(
-        pageSize = PAGE_SIZE,
-        prefetchDistance = 10,
-        initialLoadSize = PAGE_SIZE,
-    ), pagingSourceFactory = {
-        customerRepository.getCustomerPaging(searchText)
-    }).flow.map { pagingData -> pagingData.map { it.asDomainModel() } }
+    val customers = Pager(
+        config = PagingConfig(
+            pageSize = PAGE_SIZE,
+            prefetchDistance = 10,
+            initialLoadSize = PAGE_SIZE,
+        ), pagingSourceFactory = {
+            customerRepository.getCustomerPaging(searchText)
+        }).flow.map { pagingData -> pagingData.map { it.asDomainModel() } }
         .cachedIn(viewModelScope)
 
 }

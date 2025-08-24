@@ -8,6 +8,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.domain.LoginStatus
 import com.ampairs.auth.ui.LoginScreen
 import com.ampairs.auth.ui.OtpScreen
@@ -21,14 +22,16 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
     navigation<Route.Login>(startDestination = AuthRoute.UserSelection) {
 
         val tokenRepository = GlobalContext.get().get<TokenRepository>()
-        
+        val userWorkspaceRepository = GlobalContext.get().get<UserWorkspaceRepository>()
+
         composable<AuthRoute.UserSelection> {
             UserSelectionScreen(
                 onUserSelected = { userId ->
                     // Set the selected user as current and check their state
                     kotlinx.coroutines.runBlocking {
                         tokenRepository.setCurrentUser(userId)
-                        val hasSelectedWorkspace = tokenRepository.getCompanyIdForUser(userId).isNotBlank()
+                        val hasSelectedWorkspace =
+                            userWorkspaceRepository.getWorkspaceIdForUser(userId).isNotBlank()
                         if (hasSelectedWorkspace) {
                             // User has selected workspace, go to main app
                             onLoginSuccess()
@@ -52,7 +55,7 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
                 }
             )
         }
-        
+
         composable<AuthRoute.LoginRoot> {
             LoginScreen { loginStatus, userEntity ->
                 if (loginStatus == LoginStatus.LOGGED_IN) {
@@ -64,8 +67,8 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
                             // Add user to multi-user system if they have tokens
                             val accessToken = tokenRepository.getAccessToken()
                             val refreshToken = tokenRepository.getRefreshToken()
-                            
-                            if (userEntity != null && !accessToken.isNullOrBlank()) {
+
+                            if (!accessToken.isNullOrBlank()) {
                                 tokenRepository.addAuthenticatedUser(
                                     userId = userEntity.id,
                                     accessToken = accessToken,
@@ -73,9 +76,11 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
                                 )
                                 tokenRepository.setCurrentUser(userEntity.id)
                             }
-                            
+
                             // Check if user has selected a workspace
-                            val hasSelectedWorkspace = tokenRepository.getCompanyId().isNotBlank()
+                            val hasSelectedWorkspace =
+                                userWorkspaceRepository.getWorkspaceIdForUser(userId = userEntity.id)
+                                    .isNotBlank()
                             if (hasSelectedWorkspace) {
                                 // User has selected workspace, go to main app
                                 onLoginSuccess()
@@ -112,7 +117,7 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
                     // Add user to multi-user system after profile update
                     val accessToken = tokenRepository.getAccessToken()
                     val refreshToken = tokenRepository.getRefreshToken()
-                    
+
                     // Get current user after update (should be available from the UserUpdateScreen)
                     if (!accessToken.isNullOrBlank()) {
                         val currentUserId = tokenRepository.getCurrentUserId()
@@ -122,18 +127,20 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
                                 accessToken = accessToken,
                                 refreshToken = refreshToken
                             )
-                        }
-                    }
-                    
-                    // After user update, check if workspace is selected
-                    val hasSelectedWorkspace = tokenRepository.getCompanyId().isNotBlank()
-                    if (hasSelectedWorkspace) {
-                        // User has selected workspace, go to main app
-                        onLoginSuccess()
-                    } else {
-                        // User needs to select workspace, go to workspace selection
-                        navigator.navigate(Route.Workspace) {
-                            popUpTo(Route.Login) { inclusive = true }
+
+                            // After user update, check if workspace is selected
+                            val hasSelectedWorkspace =
+                                userWorkspaceRepository.getWorkspaceIdForUser(currentUserId)
+                                    .isNotBlank()
+                            if (hasSelectedWorkspace) {
+                                // User has selected workspace, go to main app
+                                onLoginSuccess()
+                            } else {
+                                // User needs to select workspace, go to workspace selection
+                                navigator.navigate(Route.Workspace) {
+                                    popUpTo(Route.Login) { inclusive = true }
+                                }
+                            }
                         }
                     }
                 }

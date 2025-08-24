@@ -30,9 +30,9 @@ interface UserSessionDao {
     
     @Query("UPDATE userSessionEntity SET is_current = 1 WHERE user_id = :userId")
     suspend fun setCurrentUser(userId: String)
-    
-    @Query("UPDATE userSessionEntity SET company_id = :companyId WHERE user_id = :userId")
-    suspend fun updateCompanyId(userId: String, companyId: String)
+
+    @Query("UPDATE userSessionEntity SET workspace_id = :workspaceId WHERE user_id = :userId")
+    suspend fun updateWorkspaceId(userId: String, workspaceId: String)
     
     @Query("UPDATE userSessionEntity SET last_login = :lastLogin, login_count = login_count + 1 WHERE user_id = :userId")
     suspend fun updateLoginInfo(userId: String, lastLogin: Long = System.currentTimeMillis())

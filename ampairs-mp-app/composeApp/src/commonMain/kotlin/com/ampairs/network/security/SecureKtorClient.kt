@@ -67,9 +67,9 @@ class SecureKtorClientFactory(
             expectSuccess = true
 
             defaultRequest {
-                if (tokenRepository.getCompanyId().isNotEmpty()) {
-                    header("X-Company", tokenRepository.getCompanyId())
-                }
+//                if (tokenRepository.getWorkspaceId().isNotEmpty()) {
+//                    header("X-Company", tokenRepository.getWorkspaceId())
+//                }
                 contentType(ContentType.Application.Json)
             }
 
