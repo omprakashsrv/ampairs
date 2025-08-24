@@ -16,10 +16,12 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppHeader(
+    navController: NavController,
     currentWorkspaceName: String?,
     userFullName: String,
     isUserLoading: Boolean = false,
@@ -29,7 +31,6 @@ fun AppHeader(
     onLogout: () -> Unit,
     onSwitchUser: () -> Unit,
     modifier: Modifier = Modifier,
-    isWorkspaceSelection: Boolean = false
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -40,18 +41,35 @@ fun AppHeader(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp, vertical = 12.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Left side - Workspace selector
+            // Back button (conditionally shown)
+            val canNavigateBack = navController.previousBackStackEntry != null
+            if (canNavigateBack) {
+                IconButton(
+                    onClick = { navController.popBackStack() },
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+
+            // Center - Workspace selector
             WorkspaceSelector(
                 workspaceName = currentWorkspaceName,
                 isLoading = isWorkspaceLoading,
                 onWorkspaceClick = onWorkspaceClick,
-                modifier = Modifier.weight(1f, fill = false)
+                modifier = Modifier.widthIn(min = 120.dp, max = 200.dp)
             )
-            
-            Spacer(modifier = Modifier.width(16.dp))
+
+            // Spacer to push user profile to the right
+            Spacer(modifier = Modifier.weight(1f))
             
             // Right side - User profile menu
             UserProfileMenu(
@@ -72,12 +90,9 @@ private fun WorkspaceSelector(
     onWorkspaceClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var expanded by remember { mutableStateOf(false) }
-    
     Card(
         modifier = modifier
-            .clickable { onWorkspaceClick() }
-            .widthIn(min = 120.dp, max = 200.dp),
+            .clickable { onWorkspaceClick() },
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant

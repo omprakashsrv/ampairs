@@ -4,10 +4,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.navigation.NavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AppScreenLayout(
+    navController: NavController,
     currentWorkspaceName: String?,
     userFullName: String,
     isUserLoading: Boolean = false,
@@ -17,13 +19,13 @@ fun AppScreenLayout(
     onLogout: () -> Unit,
     onSwitchUser: () -> Unit,
     modifier: Modifier = Modifier,
-    isWorkspaceSelection: Boolean = false,
-    content: @Composable (PaddingValues) -> Unit
+    content: @Composable (PaddingValues) -> Unit,
 ) {
     Scaffold(
         modifier = modifier,
         topBar = {
             AppHeader(
+                navController = navController,
                 currentWorkspaceName = currentWorkspaceName,
                 userFullName = userFullName,
                 isUserLoading = isUserLoading,
@@ -32,7 +34,6 @@ fun AppScreenLayout(
                 onEditProfile = onEditProfile,
                 onLogout = onLogout,
                 onSwitchUser = onSwitchUser,
-                isWorkspaceSelection = isWorkspaceSelection
             )
         }
     ) { paddingValues ->

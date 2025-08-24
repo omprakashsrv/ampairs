@@ -1,5 +1,7 @@
 package com.ampairs.common.ui
 
+import AuthRoute
+import Route
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
@@ -8,6 +10,7 @@ import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.UserRepository
 import com.ampairs.auth.domain.UserInfo
+import com.ampairs.common.navigation.BackNavigationHandler
 import com.ampairs.common.state.AppHeaderStateManager
 import com.ampairs.workspace.db.WorkspaceRepository
 import com.ampairs.workspace.domain.WorkspaceList
@@ -95,7 +98,15 @@ fun AppScreenWithHeader(
         }
     }
 
+    // Global back navigation handler
+    BackNavigationHandler(
+        navController = navController,
+        enabled = true,
+        fallbackRoute = if (isWorkspaceSelection) Route.Login else Route.Home
+    )
+
     AppScreenLayout(
+        navController = navController,
         currentWorkspaceName = if (isWorkspaceSelection) null else headerState.currentWorkspace?.name,
         userFullName = "${headerState.currentUser?.firstName ?: ""} ${headerState.currentUser?.lastName ?: ""}".trim()
             .ifEmpty { "User" },
@@ -103,7 +114,14 @@ fun AppScreenWithHeader(
         isWorkspaceLoading = headerState.isWorkspaceLoading,
         onWorkspaceClick = {
             if (!isWorkspaceSelection) {
-                navController.navigate(Route.Workspace)
+                navController.navigate(Route.Workspace) {
+                    // Clear back stack up to workspace selection screen
+                    // This removes any deep navigation within the current workspace
+                    popUpTo(Route.Workspace) {
+                        inclusive = true  // Include the workspace route itself
+                    }
+                    launchSingleTop = true
+                }
             }
         },
         onEditProfile = {
@@ -125,12 +143,12 @@ fun AppScreenWithHeader(
             // Clear header state before navigation to prevent scope issues
             headerStateManager.reset()
             navController.navigate(AuthRoute.UserSelection) {
-                // Clear the back stack to prevent navigation issues
-                popUpTo(0) { inclusive = false }
+                // Clear the ENTIRE back stack for user switching - complete reset
+                popUpTo(0) { inclusive = true }
+                launchSingleTop = true
             }
         },
         modifier = modifier,
-        isWorkspaceSelection = isWorkspaceSelection,
         content = content
     )
 }
