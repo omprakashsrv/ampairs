@@ -156,6 +156,16 @@ class WorkspaceRepository(
     }
 
     /**
+     * Insert multiple workspaces to local database
+     */
+    suspend fun insertWorkspaces(workspaceEntities: List<com.ampairs.workspace.db.entity.WorkspaceEntity>) {
+        val currentUserId = getCurrentUserId() ?: "unknown_user"
+        workspaceEntities.forEach { entity ->
+            workspaceDao.insertWorkspace(entity.copy(user_id = currentUserId))
+        }
+    }
+
+    /**
      * Clear local workspaces for current user
      */
     suspend fun clearLocalWorkspaces() {

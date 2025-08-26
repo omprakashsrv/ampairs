@@ -352,7 +352,8 @@ class AuthService @Autowired constructor(
                 throw Exception("Invalid refresh token for device")
             }
 
-            // Update device session activity
+            // CRITICAL: Update device session activity to prevent expiration
+            // This ensures the session remains active when refresh tokens are used
             sessionManagementService.updateSessionActivity(deviceSession, httpRequest)
 
             // Generate new access token

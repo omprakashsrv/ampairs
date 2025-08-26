@@ -60,6 +60,9 @@ sealed interface WorkspaceRoute {
     data object Root : WorkspaceRoute
     
     @Serializable
+    data object StoreRoot : WorkspaceRoute
+    
+    @Serializable
     data object Create : WorkspaceRoute
 
     @Serializable

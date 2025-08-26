@@ -12,15 +12,36 @@ import androidx.navigation.navigation
 import com.ampairs.common.ui.AppScreenWithHeader
 import com.ampairs.workspace.ui.WorkspaceCreateScreen
 import com.ampairs.workspace.ui.WorkspaceListScreen
+import com.ampairs.workspace.ui.OfflineFirstWorkspaceListScreen
 
 fun NavGraphBuilder.workspaceNavigation(navController: NavController, onWorkspaceSelected: () -> Unit) {
-    navigation<Route.Workspace>(startDestination = WorkspaceRoute.Root) {
+    navigation<Route.Workspace>(startDestination = WorkspaceRoute.StoreRoot) {
+        // Original workspace list screen
         composable<WorkspaceRoute.Root> {
             AppScreenWithHeader(
                 navController = navController,
                 isWorkspaceSelection = true
             ) { paddingValues ->
                 WorkspaceListScreen(
+                    onNavigateToCreateWorkspace = {
+                        navController.navigate(WorkspaceRoute.Create)
+                    },
+                    onWorkspaceSelected = { workspaceId ->
+                        // Call the callback to navigate to main app
+                        onWorkspaceSelected()
+                    },
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
+        }
+        
+        // New offline-first workspace list screen (default)
+        composable<WorkspaceRoute.StoreRoot> {
+            AppScreenWithHeader(
+                navController = navController,
+                isWorkspaceSelection = true
+            ) { paddingValues ->
+                OfflineFirstWorkspaceListScreen(
                     onNavigateToCreateWorkspace = {
                         navController.navigate(WorkspaceRoute.Create)
                     },

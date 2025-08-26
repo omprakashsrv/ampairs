@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Duration
 import java.time.LocalDateTime
 
 /**
@@ -25,29 +26,35 @@ class SessionManagementService(
 
     /**
      * Check if a device session is still valid (not expired by timeout rules)
+     * Device sessions should remain active as long as refresh tokens are valid
      */
     fun isSessionValid(deviceSession: DeviceSession): Boolean {
         val now = LocalDateTime.now()
         val sessionConfig = applicationProperties.security.sessionManagement
+        val jwtConfig = applicationProperties.security.jwt
 
-        // Check if session has exceeded maximum lifetime
-        val maxLifetime = sessionConfig.deviceSessionTimeout
-        val sessionAge = java.time.Duration.between(deviceSession.loginTime, now)
-        if (sessionAge > maxLifetime) {
+        // Device sessions should align with refresh token lifetime (180 days)
+        // This ensures sessions remain active as long as refresh tokens are valid
+        val refreshTokenLifetime = jwtConfig.refreshToken.expiration
+        val sessionAge = Duration.between(deviceSession.loginTime, now)
+        
+        if (sessionAge > refreshTokenLifetime) {
             logger.debug(
-                "Session {} exceeded maximum lifetime: {} > {}",
-                deviceSession.deviceId, sessionAge, maxLifetime
+                "Session {} exceeded refresh token lifetime: {} > {}",
+                deviceSession.deviceId, sessionAge, refreshTokenLifetime
             )
             return false
         }
 
-        // Check if session has been idle too long
-        val idleTimeout = sessionConfig.idleSessionTimeout
+        // For idle timeout, use a much longer period for refresh token scenarios
+        // Only expire due to inactivity after 30 days of complete inactivity
+        val extendedIdleTimeout = Duration.ofDays(30)
         val idleTime = java.time.Duration.between(deviceSession.lastActivity, now)
-        if (idleTime > idleTimeout) {
+        
+        if (idleTime > extendedIdleTimeout) {
             logger.debug(
-                "Session {} exceeded idle timeout: {} > {}",
-                deviceSession.deviceId, idleTime, idleTimeout
+                "Session {} exceeded extended idle timeout: {} > {}",
+                deviceSession.deviceId, idleTime, extendedIdleTimeout
             )
             return false
         }
@@ -148,15 +155,16 @@ class SessionManagementService(
     fun validateAndExpireIfNeeded(deviceSession: DeviceSession): Boolean {
         if (!isSessionValid(deviceSession)) {
             val now = LocalDateTime.now()
-            val sessionConfig = applicationProperties.security.sessionManagement
+            val jwtConfig = applicationProperties.security.jwt
+            val extendedIdleTimeout = Duration.ofDays(30)
 
-            // Determine expiry reason
-            val sessionAge = java.time.Duration.between(deviceSession.loginTime, now)
-            val idleTime = java.time.Duration.between(deviceSession.lastActivity, now)
+            // Determine expiry reason based on refresh token alignment
+            val sessionAge = Duration.between(deviceSession.loginTime, now)
+            val idleTime = Duration.between(deviceSession.lastActivity, now)
 
             val reason = when {
-                sessionAge > sessionConfig.deviceSessionTimeout -> "Session exceeded maximum lifetime"
-                idleTime > sessionConfig.idleSessionTimeout -> "Session exceeded idle timeout"
+                sessionAge > jwtConfig.refreshToken.expiration -> "Session exceeded refresh token lifetime (${jwtConfig.refreshToken.expiration.toDays()} days)"
+                idleTime > extendedIdleTimeout -> "Session exceeded extended idle timeout (${extendedIdleTimeout.toDays()} days)"
                 else -> "Session invalid"
             }
 
@@ -229,14 +237,15 @@ class SessionManagementService(
             activeSessions.forEach { session ->
                 if (!isSessionValid(session)) {
                     val now = LocalDateTime.now()
-                    val sessionConfig = applicationProperties.security.sessionManagement
+                    val jwtConfig = applicationProperties.security.jwt
+                    val extendedIdleTimeout = Duration.ofDays(30)
 
                     val sessionAge = java.time.Duration.between(session.loginTime, now)
                     val idleTime = java.time.Duration.between(session.lastActivity, now)
 
                     val reason = when {
-                        sessionAge > sessionConfig.deviceSessionTimeout -> "Maximum lifetime exceeded"
-                        idleTime > sessionConfig.idleSessionTimeout -> "Idle timeout exceeded"
+                        sessionAge > jwtConfig.refreshToken.expiration -> "Refresh token lifetime exceeded (${jwtConfig.refreshToken.expiration.toDays()} days)"
+                        idleTime > extendedIdleTimeout -> "Extended idle timeout exceeded (${extendedIdleTimeout.toDays()} days)"
                         else -> "Session invalid"
                     }
 

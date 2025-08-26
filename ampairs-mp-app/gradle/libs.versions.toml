@@ -42,6 +42,7 @@ moko-permissions = "0.18.1"
 datastore = "1.1.7"
 material-kolor = "2.1.1"
 androidx-work-runtime = "2.10.2"
+store5 = "5.1.0-alpha06"
 
 
 [libraries]
@@ -111,6 +112,8 @@ haze = { module = "dev.chrisbanes.haze:haze", version.ref = "haze" }
 material-kolor = { module = "com.materialkolor:material-kolor", version.ref = "material-kolor" }
 
 androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "androidx-work-runtime" }
+
+store5 = { module = "org.mobilenativefoundation.store:store5", version.ref = "store5" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
