@@ -28,6 +28,8 @@ Ampairs is a comprehensive business management system consisting of **three inte
 - **Targets**: Android, iOS, Desktop (JVM)
 - **Role**: Native mobile and desktop applications
 - **Integration**: Consumes same REST APIs from Spring Boot backend
+- **Data Architecture**: Offline-first with Store5 for caching and synchronization
+- **State Management**: MVI (Model-View-Intent) pattern with reactive data flows
 
 ### **🔄 System Integration Pattern**
 
@@ -69,6 +71,193 @@ This architecture ensures:
 - **Consistent APIs** serving both web and mobile clients  
 - **Platform-optimized UX** while maintaining feature parity
 - **Independent scaling** of backend, web frontend, and mobile applications
+
+### **🔄 Kotlin Multiplatform Offline-First Architecture**
+
+The Kotlin Multiplatform app implements an **offline-first architecture** using **Store5** for robust caching, synchronization, and state management:
+
+#### **Store5 Data Flow Architecture**
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                 Kotlin Multiplatform App                       │
+│                    (Android, iOS, Desktop)                     │
+│                                                                 │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │                    Presentation Layer                       │ │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │ │
+│  │  │   Compose   │  │     MVI     │  │  UI State   │        │ │
+│  │  │ Multiplatform │  │  Actions   │  │ Management  │        │ │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘        │ │
+│  └─────────────────────┬───────────────────────────────────────┘ │
+│                        │                                         │
+│  ┌─────────────────────▼───────────────────────────────────────┐ │
+│  │                   Store5 Layer                              │ │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │ │
+│  │  │   Store     │  │  Fetcher    │  │ SourceOfTruth│       │ │
+│  │  │ Controller  │  │ (Network)   │  │ (Local DB)   │       │ │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘        │ │
+│  └─────────────────────┬───────────────────────────────────────┘ │
+│                        │                                         │
+│  ┌─────────────────────▼───────────────────────────────────────┐ │
+│  │                   Data Layer                                │ │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │ │
+│  │  │   Room/     │  │    Ktor     │  │   Cache     │        │ │
+│  │  │   CoreData  │  │ HTTP Client │  │ Management  │        │ │
+│  │  └─────────────┘  └─────────────┘  └─────────────┘        │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+└─────────────────┬───────────────────────────────────────────────┘
+                  │ Network API Calls
+┌─────────────────▼───────────────────────────────────────────────┐
+│              Spring Boot Backend                                │
+│                 (REST APIs)                                     │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+#### **Store5 Implementation Pattern**
+
+Each domain module in the KMP app implements the following Store5 pattern:
+
+```kotlin
+// Example: Customer Store Implementation
+class CustomerStore {
+    private val store = StoreBuilder
+        .from(
+            fetcher = Fetcher.of { key: CustomerKey ->
+                // Network call to Spring Boot API
+                customerApi.getCustomers(
+                    tenantId = key.tenantId,
+                    page = key.page,
+                    size = key.size
+                )
+            },
+            sourceOfTruth = SourceOfTruth.of(
+                reader = { key: CustomerKey ->
+                    // Read from local database (Room for Android, CoreData for iOS)
+                    customerRepository
+                        .getCustomers(key.tenantId, key.page, key.size)
+                        .asFlow()
+                },
+                writer = { key: CustomerKey, customers: List<Customer> ->
+                    // Write to local database
+                    customerRepository.insertOrReplaceCustomers(customers)
+                }
+            )
+        )
+        .build()
+
+    // Reactive data stream with offline capability
+    fun stream(key: CustomerKey): Flow<StoreReadResponse<List<Customer>>> = 
+        store.stream(StoreReadRequest.cached(key, refresh = false))
+
+    // Force refresh from network
+    suspend fun refresh(key: CustomerKey) = 
+        store.stream(StoreReadRequest.fresh(key)).first()
+}
+```
+
+#### **Key Offline-First Benefits**
+
+- **Seamless Offline Experience**: App functions fully when network is unavailable
+- **Automatic Sync**: Data automatically syncs when network connection is restored
+- **Consistent State**: Store5 manages cache invalidation and data consistency
+- **Performance**: Local-first reads provide instant UI updates
+- **Conflict Resolution**: Automatic handling of data conflicts during sync
+
+#### **Multi-Platform Data Persistence**
+
+The KMP app uses platform-specific database solutions for local data storage:
+
+**Android**: Room Database with SQLite
+```kotlin
+@Entity(tableName = "customer")
+data class CustomerEntity(
+    @PrimaryKey val id: String,
+    val tenantId: String,
+    val name: String,
+    val email: String?,
+    val phone: String?,
+    val addressLine1: String?,
+    val addressLine2: String?,
+    val city: String?,
+    val state: String?,
+    val country: String?,
+    val pincode: String?,
+    val gstNumber: String?,
+    val createdAt: Long,
+    val updatedAt: Long,
+    val syncStatus: String = "SYNCED" // SYNCED, PENDING_UPLOAD, PENDING_DELETE
+)
+```
+
+**iOS**: Core Data with SwiftData integration
+```swift
+@Model
+class Customer {
+    var id: String
+    var tenantId: String
+    var name: String
+    var email: String?
+    var phone: String?
+    var addressLine1: String?
+    var addressLine2: String?
+    var city: String?
+    var state: String?
+    var country: String?
+    var pincode: String?
+    var gstNumber: String?
+    var createdAt: Date
+    var updatedAt: Date
+    var syncStatus: String = "SYNCED"
+    
+    init(id: String, tenantId: String, name: String, /* ... other params */) {
+        // Initialize properties
+    }
+}
+```
+
+#### **Synchronization Strategy**
+
+- **Bidirectional Sync**: Changes flow both ways between local storage and backend
+- **Conflict Resolution**: Last-write-wins with timestamp-based conflict resolution
+- **Incremental Sync**: Only sync changed data since last successful sync
+- **Background Sync**: Automatic sync when app is backgrounded or network restored
+- **Manual Sync**: User-initiated sync with progress indicators
+
+#### **Platform-Specific Adaptations**
+
+```kotlin
+// Android: WorkManager for background sync
+expect class SyncWorker {
+    fun schedulePeriodicSync()
+    fun scheduleSyncOnNetworkAvailable()
+}
+
+// iOS: Background App Refresh for sync
+expect class BackgroundSyncManager {
+    fun handleBackgroundRefresh()
+    fun scheduleBackgroundSync()
+}
+
+// Desktop: Timer-based sync coordination
+expect class DesktopSyncScheduler {
+    fun startPeriodicSync()
+    fun handleNetworkStateChange()
+}
+```
+
+#### **Data Flow States**
+
+Store5 manages the following data states throughout the app:
+
+1. **Loading**: Initial data fetch from network/cache
+2. **Cached**: Data available from local storage (offline capability)
+3. **Fresh**: Fresh data fetched from network
+4. **Error**: Network/parsing errors with cached fallback
+5. **Syncing**: Background synchronization in progress
+6. **Conflict**: Data conflicts requiring resolution
+
+This offline-first approach ensures that the Ampairs mobile application provides a robust, reliable experience regardless of network conditions while maintaining data consistency with the Spring Boot backend.
 
 Ampairs is a modern, multi-module Spring Boot application built with Kotlin that provides comprehensive business
 management functionality including authentication, customer management, product/inventory management, order processing,
@@ -585,6 +774,20 @@ All error responses follow a standardized structure with detailed error informat
 - **Logging**: Logback with structured JSON logging
 - **Deployment**: Docker containers with systemd services
 - **Monitoring**: Spring Boot Actuator with health checks
+
+#### **Kotlin Multiplatform Mobile Technologies**
+
+- **Language**: Kotlin 2.2.0 with multiplatform support
+- **UI Framework**: Compose Multiplatform for native UI across platforms
+- **Data Management**: Store5 for offline-first caching and synchronization
+- **Database**: Platform-specific solutions (Room for Android, Core Data for iOS)
+- **Networking**: Ktor HTTP client for REST API communication
+- **Serialization**: Kotlinx Serialization for JSON parsing
+- **Dependency Injection**: Koin for multiplatform dependency injection
+- **State Management**: MVI (Model-View-Intent) with reactive data flows
+- **Asynchronous**: Kotlin Coroutines and Flow for reactive programming
+- **Build System**: Kotlin Multiplatform Gradle plugin with shared code
+- **Platform Integration**: expect/actual pattern for platform-specific implementations
 
 ### Deployment Architecture
 
