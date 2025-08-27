@@ -12,7 +12,9 @@ import androidx.room.PrimaryKey
             unique = false
         ), // Remove unique constraint to allow multiple users to have same workspace
         Index(value = ["user_id"], unique = false),
-        Index(value = ["user_id", "id"], unique = true) // Unique per user
+        Index(value = ["user_id", "id"], unique = true), // Unique per user
+        Index(value = ["sync_state"], unique = false),
+        Index(value = ["last_synced_at"], unique = false)
     ]
 )
 data class WorkspaceEntity(
@@ -40,4 +42,13 @@ data class WorkspaceEntity(
     val memberCount: Int = 1,
     val isTrial: Boolean = false,
     val storagePercentage: Double = 0.0,
+    
+    // Sync metadata for offline-first functionality
+    val sync_state: String = "SYNCED", // SYNCED, PENDING_UPLOAD, PENDING_DOWNLOAD, CONFLICTED, FAILED
+    val last_synced_at: Long = 0L, // Timestamp of last successful sync
+    val local_updated_at: Long = System.currentTimeMillis(), // When locally modified
+    val server_updated_at: Long = 0L, // Server's updatedAt timestamp
+    val pending_changes: String = "", // JSON of pending field changes
+    val conflict_data: String = "", // JSON of conflicted fields
+    val retry_count: Int = 0, // Number of sync retry attempts
 )

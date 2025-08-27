@@ -75,6 +75,9 @@ kotlin {
                 implementation(libs.room.runtime)
                 implementation(libs.room.paging)
                 implementation(libs.sqlite.bundled)
+                
+                // Store5 for offline-first caching
+                implementation(libs.store5)
             }
         }
 

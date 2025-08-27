@@ -3,6 +3,7 @@ package com.ampairs.workspace
 import com.ampairs.workspace.api.WorkspaceApi
 import com.ampairs.workspace.api.WorkspaceApiImpl
 import com.ampairs.workspace.db.WorkspaceRepository
+import com.ampairs.workspace.db.OfflineFirstWorkspaceRepository
 import com.ampairs.workspace.manager.WorkspaceDataManager
 import com.ampairs.workspace.viewmodel.WorkspaceCreateViewModel
 import com.ampairs.workspace.viewmodel.WorkspaceListViewModel
@@ -18,9 +19,10 @@ fun workspaceModule() = module {
 
     // API
     singleOf(::WorkspaceApiImpl) bind WorkspaceApi::class
-
-    // Repository (with TokenRepository dependency)
-    single { WorkspaceRepository(get(), get(), get()) }
+    
+    // Repositories
+    single { WorkspaceRepository(get(), get(), get()) } // Legacy repository
+    single { OfflineFirstWorkspaceRepository(get(), get(), get()) } // Simplified offline-first repository
     
     // Data manager for offline-first workspace synchronization
     single { WorkspaceDataManager(get(), get()) }

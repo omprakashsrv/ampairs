@@ -57,4 +57,23 @@ interface WorkspaceDao {
 
     @Query("SELECT COUNT(*) FROM workspaceEntity WHERE user_id = :userId")
     suspend fun getWorkspaceCountForUser(userId: String): Int
+    
+    // Store5 specific methods
+    @Query("SELECT * FROM workspaceEntity WHERE id = :id AND user_id = :userId")
+    fun getWorkspaceByIdForUserFlow(id: String, userId: String): Flow<WorkspaceEntity?>
+    
+    @Query("SELECT * FROM workspaceEntity WHERE user_id = :userId AND sync_state IN (:syncStates)")
+    fun getWorkspacesWithSyncState(userId: String, syncStates: List<String>): Flow<List<WorkspaceEntity>>
+    
+    @Query("SELECT * FROM workspaceEntity WHERE sync_state = 'PENDING_UPLOAD' OR sync_state = 'FAILED'")
+    fun getAllPendingSyncWorkspaces(): Flow<List<WorkspaceEntity>>
+    
+    @Query("SELECT * FROM workspaceEntity WHERE sync_state = 'CONFLICTED'")
+    fun getAllConflictedWorkspaces(): Flow<List<WorkspaceEntity>>
+    
+    @Query("UPDATE workspaceEntity SET sync_state = :syncState WHERE id = :id AND user_id = :userId")
+    suspend fun updateSyncState(id: String, userId: String, syncState: String)
+    
+    @Query("UPDATE workspaceEntity SET retry_count = :retryCount WHERE id = :id AND user_id = :userId")
+    suspend fun updateRetryCount(id: String, userId: String, retryCount: Int)
 }
