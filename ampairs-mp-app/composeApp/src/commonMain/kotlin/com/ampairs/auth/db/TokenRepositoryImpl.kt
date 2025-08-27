@@ -35,6 +35,19 @@ class TokenRepositoryImpl(
         runBlocking {
             getCurrentUserId()?.let { userId ->
                 updateTokenForUser(userId, accessToken, refreshToken)
+            } ?: run {
+                // Fallback: store token with legacy ID for backward compatibility
+                userTokenDao.insertUserToken(
+                    UserTokenEntity(
+                        seq_id = 0,
+                        id = "1", // Legacy token ID
+                        user_id = "", // Empty user_id for legacy tokens
+                        refresh_token = refreshToken ?: "",
+                        access_token = accessToken,
+                        is_active = true,
+                        last_used = System.currentTimeMillis()
+                    )
+                )
             }
         }
     }
@@ -149,5 +162,76 @@ class TokenRepositoryImpl(
 
     private fun generateTokenId(userId: String): String {
         return "token_${userId}_${System.currentTimeMillis()}"
+    }
+
+    /**
+     * Creates a dummy user session for authentication flow
+     * This allows getCurrentUserId() to work during the auth process
+     */
+    override suspend fun createDummyUserSession(): String {
+        val dummyUserId = "temp_user_${System.currentTimeMillis()}"
+
+        // Clear any existing dummy sessions (previous login attempts)
+        clearDummySessions()
+
+        // Create new dummy session
+        userSessionDao.insert(
+            UserSessionEntity(
+                user_id = dummyUserId,
+                is_current = true,
+                workspace_id = "",
+                last_login = System.currentTimeMillis()
+            )
+        )
+
+        // Set as current user for token operations
+        currentUserId = dummyUserId
+        return dummyUserId
+    }
+
+    /**
+     * Updates the dummy session with real user data
+     */
+    override suspend fun updateDummySessionWithRealUser(
+        realUserId: String,
+        accessToken: String,
+        refreshToken: String?,
+    ) {
+        val currentDummyId = getCurrentUserId()
+        if (currentDummyId != null && currentDummyId.startsWith("temp_user_")) {
+            // Delete the dummy session
+            userSessionDao.deleteByUserId(currentDummyId)
+
+            // Delete dummy tokens
+            userTokenDao.deleteByUserId(currentDummyId)
+
+            // Create real user session
+            userSessionDao.insert(
+                UserSessionEntity(
+                    user_id = realUserId,
+                    is_current = true,
+                    workspace_id = "",
+                    last_login = System.currentTimeMillis()
+                )
+            )
+
+            // Store tokens for real user
+            updateTokenForUser(realUserId, accessToken, refreshToken)
+
+            // Update current user
+            currentUserId = realUserId
+        }
+    }
+
+    /**
+     * Clears any existing dummy sessions from previous login attempts
+     */
+    private suspend fun clearDummySessions() {
+        val allSessions = userSessionDao.selectAll()
+        allSessions.filter { it.user_id.startsWith("temp_user_") }
+            .forEach { dummySession ->
+                userSessionDao.deleteByUserId(dummySession.user_id)
+                userTokenDao.deleteByUserId(dummySession.user_id)
+            }
     }
 }

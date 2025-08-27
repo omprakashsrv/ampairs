@@ -100,6 +100,9 @@ class LoginViewModel(
         progressMessage = "Verifying reCAPTCHA..."
 
         viewModelScope.launch(Dispatchers.IO) {
+            // Create dummy user session for token operations during auth flow
+            tokenRepository.createDummyUserSession()
+            
             userRepository.initAuth(phoneNumber).onSuccess {
                 viewModelScope.launch(Dispatchers.Main) {
                     loading = false
@@ -135,13 +138,13 @@ class LoginViewModel(
 
         viewModelScope.launch(Dispatchers.IO) {
             userRepository.completeAuth(sessionId, otp).onSuccess {
-                // First, store the token using legacy method for immediate access
+                // Store tokens to dummy session (now getCurrentUserId() will work)
                 tokenRepository.updateToken(this.accessToken, this.refreshToken)
 
                 // Store the token response for later use
                 val authResponse = this
 
-                // Then fetch and save user information
+                // Now fetch user information (API call will work because dummy session has tokens)
                 viewModelScope.launch(Dispatchers.IO) {
                     val userApiResponse = userRepository.getUserApi()
                     userApiResponse.onSuccess {
@@ -150,15 +153,11 @@ class LoginViewModel(
                             // Save user to database
                             userRepository.saveUser(userData)
 
-                            // Associate token with this specific user for multi-user support
-                            tokenRepository.addAuthenticatedUser(
+                            // Replace dummy session with real user session and tokens
+                            tokenRepository.updateDummySessionWithRealUser(
                                 userData.id,
-                                authResponse.accessToken,
-                                authResponse.refreshToken
+                                authResponse.accessToken, authResponse.refreshToken
                             )
-
-                            // Set as current user
-                            tokenRepository.setCurrentUser(userData.id)
 
                             viewModelScope.launch(Dispatchers.Main) {
                                 delay(1000)

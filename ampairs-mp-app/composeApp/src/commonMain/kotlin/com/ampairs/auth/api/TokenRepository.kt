@@ -6,13 +6,13 @@ interface TokenRepository {
     fun getAccessToken(): String?
     fun updateToken(accessToken: String, refreshToken: String?)
     fun clearTokens()
-    
+
     // New multi-user methods
     suspend fun getRefreshTokenForUser(userId: String): String?
     suspend fun getAccessTokenForUser(userId: String): String?
     suspend fun updateTokenForUser(userId: String, accessToken: String, refreshToken: String?)
     suspend fun clearTokensForUser(userId: String)
-    
+
     // User session management
     suspend fun getCurrentUserId(): String?
     suspend fun setCurrentUser(userId: String)
@@ -22,6 +22,12 @@ interface TokenRepository {
     suspend fun isUserAuthenticated(userId: String): Boolean
     suspend fun logoutUser(userId: String)
     suspend fun addAuthenticatedUser(userId: String, accessToken: String, refreshToken: String?)
+    suspend fun createDummyUserSession(): String
+    suspend fun updateDummySessionWithRealUser(
+        realUserId: String,
+        accessToken: String,
+        refreshToken: String?
+    )
 }
 
 /**
