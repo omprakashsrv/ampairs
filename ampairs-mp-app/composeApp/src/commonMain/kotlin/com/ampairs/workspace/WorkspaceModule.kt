@@ -3,9 +3,8 @@ package com.ampairs.workspace
 import com.ampairs.workspace.api.WorkspaceApi
 import com.ampairs.workspace.api.WorkspaceApiImpl
 import com.ampairs.workspace.db.WorkspaceRepository
-import com.ampairs.workspace.manager.OfflineFirstWorkspaceManager
+import com.ampairs.workspace.manager.WorkspaceDataManager
 import com.ampairs.workspace.viewmodel.WorkspaceCreateViewModel
-import com.ampairs.workspace.viewmodel.OfflineFirstWorkspaceListViewModel
 import com.ampairs.workspace.viewmodel.WorkspaceListViewModel
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
@@ -23,11 +22,10 @@ fun workspaceModule() = module {
     // Repository (with TokenRepository dependency)
     single { WorkspaceRepository(get(), get(), get()) }
     
-    // Offline-first data manager
-    single { OfflineFirstWorkspaceManager(get(), get()) }
+    // Data manager for offline-first workspace synchronization
+    single { WorkspaceDataManager(get(), get()) }
 
     // ViewModels
     factory { WorkspaceListViewModel(get(), get(), get(), get()) }
-    factory { OfflineFirstWorkspaceListViewModel(get(), get(), get(), get()) }
     factoryOf(::WorkspaceCreateViewModel)
 }

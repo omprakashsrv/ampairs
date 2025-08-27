@@ -21,16 +21,25 @@ import org.koin.compose.koinInject
 fun WorkspaceCreateScreen(
     onNavigateBack: () -> Unit,
     onWorkspaceCreated: (String) -> Unit,
+    workspaceId: String? = null,
     modifier: Modifier = Modifier,
     viewModel: WorkspaceCreateViewModel = koinInject(),
 ) {
     val state by viewModel.state.collectAsState()
     val scrollState = rememberScrollState()
+    val isEditMode = workspaceId != null
 
-    // Handle successful workspace creation
+    // Initialize workspace data for edit mode
+    LaunchedEffect(workspaceId) {
+        workspaceId?.let { id ->
+            viewModel.loadWorkspaceForEdit(id)
+        }
+    }
+
+    // Handle successful workspace creation/update
     LaunchedEffect(state.createdWorkspaceId) {
-        state.createdWorkspaceId?.let { workspaceId ->
-            onWorkspaceCreated(workspaceId)
+        state.createdWorkspaceId?.let { id ->
+            onWorkspaceCreated(id)
         }
     }
 
@@ -43,13 +52,16 @@ fun WorkspaceCreateScreen(
     ) {
         // Header
         Text(
-            text = "Create a new workspace",
+            text = if (isEditMode) "Edit workspace" else "Create a new workspace",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
 
         Text(
-            text = "Set up your workspace with basic information. You can always change these settings later.",
+            text = if (isEditMode) 
+                "Update your workspace information. Changes will be saved automatically."
+            else 
+                "Set up your workspace with basic information. You can always change these settings later.",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.outline
         )
@@ -212,9 +224,15 @@ fun WorkspaceCreateScreen(
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        // Create Button
+        // Create/Update Button
         Button(
-            onClick = { viewModel.createWorkspace() },
+            onClick = { 
+                if (isEditMode) {
+                    viewModel.updateWorkspace()
+                } else {
+                    viewModel.createWorkspace()
+                }
+            },
             enabled = !state.isLoading && state.name.isNotEmpty() && state.slug.isNotEmpty() && state.isSlugAvailable,
             modifier = Modifier.fillMaxWidth()
         ) {
@@ -225,9 +243,9 @@ fun WorkspaceCreateScreen(
                     color = MaterialTheme.colorScheme.onPrimary
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Creating...")
+                Text(if (isEditMode) "Updating..." else "Creating...")
             } else {
-                Text("Create Workspace")
+                Text(if (isEditMode) "Update Workspace" else "Create Workspace")
             }
         }
 

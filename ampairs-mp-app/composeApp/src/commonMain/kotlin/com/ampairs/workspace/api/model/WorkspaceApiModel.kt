@@ -63,35 +63,17 @@ data class UpdateWorkspaceRequest(
     @SerialName("language") val language: String? = null,
 )
 
-// Paginated response models matching Spring Boot Page structure
-@Serializable
-data class PageSort(
-    @SerialName("empty") val empty: Boolean,
-    @SerialName("unsorted") val unsorted: Boolean,
-    @SerialName("sorted") val sorted: Boolean,
-)
-
-@Serializable
-data class PageableInfo(
-    @SerialName("page_number") val pageNumber: Int,
-    @SerialName("page_size") val pageSize: Int,
-    @SerialName("sort") val sort: PageSort,
-    @SerialName("offset") val offset: Int,
-    @SerialName("unpaged") val unpaged: Boolean,
-    @SerialName("paged") val paged: Boolean,
-)
 
 @Serializable
 data class PagedWorkspaceResponse(
     @SerialName("content") val content: List<WorkspaceListApiModel>,
-    @SerialName("pageable") val pageable: PageableInfo,
-    @SerialName("last") val last: Boolean,
+    @SerialName("page_number") val pageNumber: Int,
+    @SerialName("page_size") val pageSize: Int,
     @SerialName("total_elements") val totalElements: Int,
     @SerialName("total_pages") val totalPages: Int,
     @SerialName("first") val first: Boolean,
-    @SerialName("size") val size: Int,
-    @SerialName("number") val number: Int,
-    @SerialName("sort") val sort: PageSort,
-    @SerialName("number_of_elements") val numberOfElements: Int,
+    @SerialName("last") val last: Boolean,
+    @SerialName("has_next") val hasNext: Boolean,
+    @SerialName("has_previous") val hasPrevious: Boolean,
     @SerialName("empty") val empty: Boolean,
 )

@@ -10,14 +10,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -32,13 +35,20 @@ fun WorkspaceListScreen(
     onNavigateToCreateWorkspace: () -> Unit,
     onWorkspaceSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
+    onWorkspaceEdit: (String) -> Unit = {},
     viewModel: WorkspaceListViewModel = koinInject(),
 ) {
     val state by viewModel.state.collectAsState()
     val coroutineScope = rememberCoroutineScope()
     var searchQuery by remember { mutableStateOf("") }
 
+    LaunchedEffect(Unit) {
+        // Load workspaces only once when screen loads
+        viewModel.loadWorkspaces()
+    }
+
     LaunchedEffect(searchQuery) {
+        // Search when query changes (including empty to show all workspaces)
         viewModel.searchWorkspaces(searchQuery)
     }
 
@@ -50,41 +60,115 @@ fun WorkspaceListScreen(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
-            // Search Bar
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                label = { Text("Search workspaces...") },
-                leadingIcon = {
-                    Icon(Icons.Default.Search, contentDescription = "Search")
-                },
+            // Search Bar with offline/online indicator
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 16.dp),
-                singleLine = true
-            )
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    label = { Text("Search workspaces...") },
+                    leadingIcon = {
+                        Icon(Icons.Default.Search, contentDescription = "Search")
+                    },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true
+                )
+                
+                // Offline Mode Indicator (only show when offline)
+                if (state.isOfflineMode) {
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Surface(
+                        color = MaterialTheme.colorScheme.errorContainer,
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.WifiOff,
+                                contentDescription = "Offline",
+                                tint = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Offline",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onErrorContainer
+                            )
+                        }
+                    }
+                }
+            }
 
-            // Error message
+            // Error message with retry option
             state.error?.let { error ->
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+                    colors = CardDefaults.cardColors(
+                        containerColor = if (state.isOfflineMode && state.workspaces.isNotEmpty())
+                            MaterialTheme.colorScheme.secondaryContainer
+                        else 
+                            MaterialTheme.colorScheme.errorContainer
+                    )
                 ) {
                     Row(
                         modifier = Modifier.padding(16.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = error,
-                            color = MaterialTheme.colorScheme.onErrorContainer,
-                            modifier = Modifier.weight(1f)
+                        Icon(
+                            imageVector = if (state.isOfflineMode) Icons.Default.CloudOff else Icons.Default.Refresh,
+                            contentDescription = null,
+                            tint = if (state.isOfflineMode && state.workspaces.isNotEmpty())
+                                MaterialTheme.colorScheme.onSecondaryContainer
+                            else 
+                                MaterialTheme.colorScheme.onErrorContainer
                         )
-                        TextButton(
-                            onClick = { viewModel.clearError() }
-                        ) {
-                            Text("Dismiss")
+                        
+                        Spacer(modifier = Modifier.width(8.dp))
+                        
+                        Text(
+                            text = if (state.isOfflineMode && state.workspaces.isNotEmpty()) 
+                                "Showing cached data • $error"
+                            else 
+                                error,
+                            color = if (state.isOfflineMode && state.workspaces.isNotEmpty())
+                                MaterialTheme.colorScheme.onSecondaryContainer
+                            else 
+                                MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.weight(1f),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        
+                        Row {
+                            // Retry button for network errors
+                            if (!state.isRefreshing) {
+                                IconButton(
+                                    onClick = { viewModel.refreshWorkspaces() }
+                                ) {
+                                    Icon(
+                                        Icons.Default.Refresh,
+                                        contentDescription = "Retry",
+                                        tint = if (state.isOfflineMode && state.workspaces.isNotEmpty())
+                                            MaterialTheme.colorScheme.onSecondaryContainer
+                                        else 
+                                            MaterialTheme.colorScheme.onErrorContainer
+                                    )
+                                }
+                            }
+                            
+                            TextButton(
+                                onClick = { viewModel.clearError() }
+                            ) {
+                                Text("Dismiss")
+                            }
                         }
                     }
                 }
@@ -169,19 +253,48 @@ fun WorkspaceListScreen(
                 }
 
                 else -> {
-                    // Workspace list
+                    // Workspace list with pull-to-refresh indicator
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                         modifier = Modifier.fillMaxSize()
                     ) {
+                        // Pull-to-refresh indicator
+                        if (state.isRefreshing) {
+                            item {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(16.dp),
+                                            strokeWidth = 2.dp
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            "Refreshing...",
+                                            style = MaterialTheme.typography.labelMedium,
+                                            color = MaterialTheme.colorScheme.outline
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                        
                         items(state.workspaces) { workspace ->
                             WorkspaceCard(
                                 workspace = workspace,
+                                isOfflineMode = state.isOfflineMode,
                                 onClick = {
                                     coroutineScope.launch {
                                         viewModel.selectWorkSpace(workspace.id)
                                         onWorkspaceSelected(workspace.id)
                                     }
+                                },
+                                onEdit = {
+                                    onWorkspaceEdit(workspace.id)
                                 }
                             )
                         }
@@ -205,26 +318,27 @@ fun WorkspaceListScreen(
             Icon(Icons.Default.Add, contentDescription = "Create Workspace")
         }
     }
-
-    // Pull to refresh
-    if (state.isRefreshing) {
-        LaunchedEffect(Unit) {
-            viewModel.refreshWorkspaces()
-        }
-    }
 }
 
 @Composable
 private fun WorkspaceCard(
     workspace: Workspace,
+    isOfflineMode: Boolean = false,
     onClick: () -> Unit,
+    onEdit: () -> Unit = {},
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isOfflineMode) 
+                MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.8f)
+            else 
+                MaterialTheme.colorScheme.surface
+        )
     ) {
         Row(
             modifier = Modifier
@@ -232,7 +346,7 @@ private fun WorkspaceCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Avatar
+            // Avatar with enhanced visual indicators
             Box(
                 modifier = Modifier
                     .size(48.dp)
@@ -259,7 +373,7 @@ private fun WorkspaceCard(
 
             Spacer(modifier = Modifier.width(16.dp))
 
-            // Content
+            // Content with improved layout
             Column(
                 modifier = Modifier.weight(1f)
             ) {
@@ -287,7 +401,7 @@ private fun WorkspaceCard(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(top = 4.dp)
                 ) {
-                    // Workspace type
+                    // Workspace type with enhanced styling
                     Surface(
                         color = MaterialTheme.colorScheme.secondaryContainer,
                         shape = RoundedCornerShape(4.dp)
@@ -308,7 +422,48 @@ private fun WorkspaceCard(
                             color = MaterialTheme.colorScheme.outline
                         )
                     }
+                    
+                    // Offline sync indicator
+                    if (isOfflineMode) {
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Surface(
+                            color = MaterialTheme.colorScheme.tertiaryContainer,
+                            shape = RoundedCornerShape(4.dp),
+                            modifier = Modifier.padding(0.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.CloudOff,
+                                    contentDescription = "Offline",
+                                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                    modifier = Modifier.size(12.dp)
+                                )
+                                Spacer(modifier = Modifier.width(2.dp))
+                                Text(
+                                    text = "Cached",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onTertiaryContainer
+                                )
+                            }
+                        }
+                    }
                 }
+            }
+            
+            // Edit button
+            IconButton(
+                onClick = onEdit,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    Icons.Default.Edit,
+                    contentDescription = "Edit workspace",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(20.dp)
+                )
             }
         }
     }

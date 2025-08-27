@@ -7,11 +7,11 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.coroutineScope
 
 /**
- * Simplified offline-first data manager for workspace data synchronization.
+ * Data manager for workspace data synchronization with offline-first approach.
  * This implementation provides automatic synchronization between network API 
- * and local Room database without using the Store library.
+ * and local Room database.
  */
-class OfflineFirstWorkspaceManager(
+class WorkspaceDataManager(
     private val workspaceApi: WorkspaceApi,
     private val workspaceRepository: WorkspaceRepository,
 ) {
@@ -32,24 +32,23 @@ class OfflineFirstWorkspaceManager(
                 // Emit loading state
                 emit(WorkspaceDataState.Loading)
                 
-                // First, emit cached data if available
-                workspaceRepository.getLocalWorkspaces().collect { cachedWorkspaces ->
+                // First, get cached data without using collect
+                val cachedWorkspaces = workspaceRepository.getLocalWorkspaces().firstOrNull() ?: emptyList()
+                if (cachedWorkspaces.isNotEmpty()) {
+                    emit(WorkspaceDataState.Success(cachedWorkspaces, isFromCache = true))
+                }
+                
+                // Then try to fetch fresh data from network
+                try {
+                    val networkResult = workspaceRepository.getUserWorkspaces(page, size, sortBy, sortDir)
+                    emit(WorkspaceDataState.Success(networkResult.content, isFromCache = false))
+                } catch (networkError: Exception) {
+                    // If network fails but we have cached data, keep the cached data
                     if (cachedWorkspaces.isNotEmpty()) {
-                        emit(WorkspaceDataState.Success(cachedWorkspaces, isFromCache = true))
-                    }
-                    
-                    // Then try to fetch fresh data from network
-                    try {
-                        val networkResult = workspaceRepository.getUserWorkspaces(page, size, sortBy, sortDir)
-                        emit(WorkspaceDataState.Success(networkResult.content, isFromCache = false))
-                    } catch (networkError: Exception) {
-                        // If network fails but we have cached data, keep the cached data
-                        if (cachedWorkspaces.isNotEmpty()) {
-                            emit(WorkspaceDataState.Success(cachedWorkspaces, isFromCache = true, networkError = networkError.message))
-                        } else {
-                            // No cached data and network failed
-                            emit(WorkspaceDataState.Error(networkError.message ?: "Failed to load workspaces"))
-                        }
+                        emit(WorkspaceDataState.Success(cachedWorkspaces, isFromCache = true, networkError = networkError.message))
+                    } else {
+                        // No cached data and network failed
+                        emit(WorkspaceDataState.Error(networkError.message ?: "Failed to load workspaces"))
                     }
                 }
             } else {
@@ -60,12 +59,11 @@ class OfflineFirstWorkspaceManager(
                     emit(WorkspaceDataState.Success(networkResult.content, isFromCache = false))
                 } catch (networkError: Exception) {
                     // Fallback to cached data on network error
-                    workspaceRepository.getLocalWorkspaces().collect { cachedWorkspaces ->
-                        if (cachedWorkspaces.isNotEmpty()) {
-                            emit(WorkspaceDataState.Success(cachedWorkspaces, isFromCache = true, networkError = networkError.message))
-                        } else {
-                            emit(WorkspaceDataState.Error(networkError.message ?: "Failed to refresh workspaces"))
-                        }
+                    val cachedWorkspaces = workspaceRepository.getLocalWorkspaces().firstOrNull() ?: emptyList()
+                    if (cachedWorkspaces.isNotEmpty()) {
+                        emit(WorkspaceDataState.Success(cachedWorkspaces, isFromCache = true, networkError = networkError.message))
+                    } else {
+                        emit(WorkspaceDataState.Error(networkError.message ?: "Failed to refresh workspaces"))
                     }
                 }
             }
@@ -102,12 +100,12 @@ class OfflineFirstWorkspaceManager(
      */
     fun getCachedWorkspaces(): Flow<WorkspaceDataState> = flow {
         try {
-            workspaceRepository.getLocalWorkspaces().collect { workspaces ->
-                if (workspaces.isNotEmpty()) {
-                    emit(WorkspaceDataState.Success(workspaces, isFromCache = true))
-                } else {
-                    emit(WorkspaceDataState.Error("No cached data available"))
-                }
+            emit(WorkspaceDataState.Loading)
+            val workspaces = workspaceRepository.getLocalWorkspaces().firstOrNull() ?: emptyList()
+            if (workspaces.isNotEmpty()) {
+                emit(WorkspaceDataState.Success(workspaces, isFromCache = true))
+            } else {
+                emit(WorkspaceDataState.Error("No cached data available"))
             }
         } catch (error: Exception) {
             emit(WorkspaceDataState.Error(error.message ?: "Failed to load cached data"))
@@ -130,9 +128,8 @@ class OfflineFirstWorkspaceManager(
      */
     suspend fun searchWorkspaces(query: String): Flow<List<Workspace>> = flow {
         try {
-            workspaceRepository.searchWorkspacesLocally(query).collect { workspaces ->
-                emit(workspaces)
-            }
+            val workspaces = workspaceRepository.searchWorkspacesLocally(query).firstOrNull() ?: emptyList()
+            emit(workspaces)
         } catch (error: Exception) {
             emit(emptyList())
         }

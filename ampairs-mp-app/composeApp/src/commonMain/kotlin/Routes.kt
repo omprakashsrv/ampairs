@@ -60,10 +60,12 @@ sealed interface WorkspaceRoute {
     data object Root : WorkspaceRoute
     
     @Serializable
-    data object StoreRoot : WorkspaceRoute
+    data object Create : WorkspaceRoute
     
     @Serializable
-    data object Create : WorkspaceRoute
+    data class Edit(
+        val workspaceId: String = "",
+    ) : WorkspaceRoute
 
     @Serializable
     data class Detail(

@@ -5,15 +5,17 @@ import com.ampairs.workspace.domain.Workspace
 data class WorkspaceListState(
     val workspaces: List<Workspace> = emptyList(),
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val error: String? = null,
     val searchQuery: String = "",
-    val isRefreshing: Boolean = false,
     val hasNoWorkspaces: Boolean = false,
-    val userFullName: String = "",
+    val userFullName: String = "User",
     val isUserLoading: Boolean = false,
+    val isOfflineMode: Boolean = false // Indicates if we're in offline mode due to network issues
 )
 
 data class WorkspaceCreateState(
+    val workspaceId: String? = null, // For edit mode
     val name: String = "",
     val slug: String = "",
     val description: String = "",
@@ -28,6 +30,7 @@ data class WorkspaceCreateState(
     val isSlugModified: Boolean = false,
     val validationErrors: Map<String, String> = emptyMap(),
     val createdWorkspaceId: String? = null,
+    val isLoadingWorkspace: Boolean = false, // For loading workspace data in edit mode
 )
 
 data class WorkspaceDetailState(

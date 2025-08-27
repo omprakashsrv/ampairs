@@ -9,14 +9,15 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
+import androidx.navigation.toRoute
 import com.ampairs.common.ui.AppScreenWithHeader
 import com.ampairs.workspace.ui.WorkspaceCreateScreen
 import com.ampairs.workspace.ui.WorkspaceListScreen
-import com.ampairs.workspace.ui.OfflineFirstWorkspaceListScreen
 
 fun NavGraphBuilder.workspaceNavigation(navController: NavController, onWorkspaceSelected: () -> Unit) {
-    navigation<Route.Workspace>(startDestination = WorkspaceRoute.StoreRoot) {
-        // Original workspace list screen
+    navigation<Route.Workspace>(startDestination = WorkspaceRoute.Root) {
+        
+        // Workspace list screen (with offline-first data synchronization)
         composable<WorkspaceRoute.Root> {
             AppScreenWithHeader(
                 navController = navController,
@@ -26,28 +27,12 @@ fun NavGraphBuilder.workspaceNavigation(navController: NavController, onWorkspac
                     onNavigateToCreateWorkspace = {
                         navController.navigate(WorkspaceRoute.Create)
                     },
-                    onWorkspaceSelected = { workspaceId ->
+                    onWorkspaceSelected = { workspaceId: String ->
                         // Call the callback to navigate to main app
                         onWorkspaceSelected()
                     },
-                    modifier = Modifier.padding(paddingValues)
-                )
-            }
-        }
-        
-        // New offline-first workspace list screen (default)
-        composable<WorkspaceRoute.StoreRoot> {
-            AppScreenWithHeader(
-                navController = navController,
-                isWorkspaceSelection = true
-            ) { paddingValues ->
-                OfflineFirstWorkspaceListScreen(
-                    onNavigateToCreateWorkspace = {
-                        navController.navigate(WorkspaceRoute.Create)
-                    },
-                    onWorkspaceSelected = { workspaceId ->
-                        // Call the callback to navigate to main app
-                        onWorkspaceSelected()
+                    onWorkspaceEdit = { workspaceId: String ->
+                        navController.navigate(WorkspaceRoute.Edit(workspaceId))
                     },
                     modifier = Modifier.padding(paddingValues)
                 )
@@ -67,6 +52,26 @@ fun NavGraphBuilder.workspaceNavigation(navController: NavController, onWorkspac
                         // Call the callback to navigate to main app after creation
                         onWorkspaceSelected()
                     },
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
+        }
+        
+        composable<WorkspaceRoute.Edit> { backStackEntry ->
+            val editRoute = backStackEntry.toRoute<WorkspaceRoute.Edit>()
+            AppScreenWithHeader(
+                navController = navController,
+                isWorkspaceSelection = true
+            ) { paddingValues ->
+                WorkspaceCreateScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onWorkspaceCreated = { workspaceId ->
+                        // After update, go back to the list
+                        navController.popBackStack()
+                    },
+                    workspaceId = editRoute.workspaceId,
                     modifier = Modifier.padding(paddingValues)
                 )
             }

@@ -116,13 +116,9 @@ data class WorkspaceActivity(
 
     // JPA Relationships
 
-    /**
-     * Reference to the workspace
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "workspace_id", referencedColumnName = "uid", insertable = false, updatable = false)
-    @JsonIgnore
-    var workspace: Workspace? = null
+    // JPA Relationships
+    // Note: Removed workspace relationship mapping to avoid column conflict
+    // The workspaceId string field above is used instead of entity relationship
 
     /**
      * Implementation of abstract method from BaseDomain

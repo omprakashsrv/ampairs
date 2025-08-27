@@ -79,24 +79,12 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
     fun findByJoinedAtAfterAndIsActiveTrue(joinedAfter: LocalDateTime): List<WorkspaceMember>
 
     /**
-     * Search members by partial user information (this would need to join with user table)
+     * Search members by user ID (simplified to avoid cross-module JPA queries)
+     * Note: User search functionality moved to service layer to avoid cross-module dependencies
      */
-    @Query(
-        """
-        SELECT wm FROM com.ampairs.workspace.model.WorkspaceMember wm
-        WHERE wm.workspaceId = :workspaceId 
-        AND wm.isActive = true
-        AND wm.userId IN (
-            SELECT u.uid FROM com.ampairs.user.model.User u 
-            WHERE LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
-            OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
-            OR LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
-        )
-    """
-    )
-    fun searchMembersByUserInfo(
-        @Param("workspaceId") workspaceId: String,
-        @Param("searchTerm") searchTerm: String,
+    fun findByWorkspaceIdAndUserIdContainingAndIsActiveTrue(
+        workspaceId: String,
+        userIdPattern: String,
         pageable: Pageable,
     ): Page<WorkspaceMember>
 
@@ -246,48 +234,21 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
     fun countByWorkspaceIdAndJoinedAtAfter(workspaceId: String, joinedAfter: LocalDateTime): Long
 
     /**
-     * Search members by role with search term
+     * Find members by role (simplified to avoid cross-module JPA queries)
+     * Note: User search functionality moved to service layer
      */
-    @Query(
-        """
-        SELECT wm FROM com.ampairs.workspace.model.WorkspaceMember wm
-        WHERE wm.workspaceId = :workspaceId 
-        AND wm.isActive = true
-        AND wm.role = :role
-        AND wm.userId IN (
-            SELECT u.uid FROM com.ampairs.user.model.User u 
-            WHERE LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
-            OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
-            OR LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
-        )
-    """
-    )
-    fun searchMembersByRole(
-        @Param("workspaceId") workspaceId: String,
-        @Param("role") role: WorkspaceRole,
-        @Param("searchTerm") searchTerm: String,
+    fun findByWorkspaceIdAndRoleAndIsActiveTrue(
+        workspaceId: String,
+        role: WorkspaceRole,
         pageable: Pageable,
     ): Page<WorkspaceMember>
 
     /**
-     * Search all members with search term
+     * Find all active members (simplified to avoid cross-module JPA queries)
+     * Note: User search functionality moved to service layer
      */
-    @Query(
-        """
-        SELECT wm FROM com.ampairs.workspace.model.WorkspaceMember wm
-        WHERE wm.workspaceId = :workspaceId 
-        AND wm.isActive = true
-        AND wm.userId IN (
-            SELECT u.uid FROM com.ampairs.user.model.User u 
-            WHERE LOWER(u.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
-            OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
-            OR LOWER(u.email) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
-        )
-    """
-    )
-    fun searchMembers(
-        @Param("workspaceId") workspaceId: String,
-        @Param("searchTerm") searchTerm: String,
+    fun findByWorkspaceIdAndIsActiveTrueOrderByJoinedAtDesc(
+        workspaceId: String,
         pageable: Pageable,
     ): Page<WorkspaceMember>
 

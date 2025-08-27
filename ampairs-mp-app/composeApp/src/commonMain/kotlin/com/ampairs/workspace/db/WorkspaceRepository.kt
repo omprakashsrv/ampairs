@@ -73,8 +73,8 @@ class WorkspaceRepository(
                 content = workspaces,
                 totalElements = pagedResponse.totalElements,
                 totalPages = pagedResponse.totalPages,
-                currentPage = pagedResponse.number,
-                pageSize = pagedResponse.size,
+                currentPage = pagedResponse.pageNumber,
+                pageSize = pagedResponse.pageSize,
                 isFirst = pagedResponse.first,
                 isLast = pagedResponse.last,
                 isEmpty = pagedResponse.empty
@@ -101,6 +101,26 @@ class WorkspaceRepository(
             workspace
         } else {
             throw Exception(response.error?.message ?: "Failed to create workspace")
+        }
+    }
+    
+    /**
+     * Update an existing workspace
+     */
+    suspend fun updateWorkspace(workspaceId: String, request: com.ampairs.workspace.api.model.UpdateWorkspaceRequest): Workspace {
+        val response = workspaceApi.updateWorkspace(workspaceId, request)
+
+        return if (response.error == null && response.data != null) {
+            val workspaceData = response.data!!
+            val workspace = workspaceData.asDomainModel()
+
+            // Update in local database with current user association
+            val currentUserId = getCurrentUserId() ?: "unknown_user"
+            workspaceDao.insertWorkspace(workspace.asDatabaseModel().copy(user_id = currentUserId))
+
+            workspace
+        } else {
+            throw Exception(response.error?.message ?: "Failed to update workspace")
         }
     }
 

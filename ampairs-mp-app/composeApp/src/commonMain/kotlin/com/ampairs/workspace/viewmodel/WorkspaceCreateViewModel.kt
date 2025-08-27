@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.workspace.api.model.CreateWorkspaceRequest
+import com.ampairs.workspace.api.model.UpdateWorkspaceRequest
 import com.ampairs.workspace.db.WorkspaceRepository
 import com.ampairs.workspace.ui.WorkspaceCreateState
 import kotlinx.coroutines.Job
@@ -226,5 +227,90 @@ class WorkspaceCreateViewModel(
 
     fun resetForm() {
         _state.value = WorkspaceCreateState()
+    }
+    
+    /**
+     * Load workspace data for editing
+     */
+    fun loadWorkspaceForEdit(workspaceId: String) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(
+                isLoadingWorkspace = true,
+                error = null
+            )
+            
+            try {
+                val workspace = workspaceRepository.getWorkspaceById(workspaceId)
+                if (workspace != null) {
+                    _state.value = _state.value.copy(
+                        workspaceId = workspaceId,
+                        name = workspace.name,
+                        slug = workspace.slug,
+                        description = workspace.description ?: "",
+                        workspaceType = workspace.workspaceType,
+                        avatarUrl = workspace.avatarUrl,
+                        timezone = workspace.timezone,
+                        language = workspace.language,
+                        isLoadingWorkspace = false,
+                        isSlugModified = true, // Don't auto-generate slug from name in edit mode
+                        isSlugAvailable = true // Current slug is available (it's the workspace's own slug)
+                    )
+                } else {
+                    _state.value = _state.value.copy(
+                        isLoadingWorkspace = false,
+                        error = "Workspace not found"
+                    )
+                }
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    isLoadingWorkspace = false,
+                    error = e.message ?: "Failed to load workspace"
+                )
+            }
+        }
+    }
+    
+    /**
+     * Update existing workspace
+     */
+    fun updateWorkspace() {
+        val currentWorkspaceId = _state.value.workspaceId
+        if (currentWorkspaceId == null) {
+            _state.value = _state.value.copy(error = "No workspace ID provided for update")
+            return
+        }
+        
+        if (!validateForm()) return
+
+        val request = UpdateWorkspaceRequest(
+            name = _state.value.name.trim(),
+            description = _state.value.description.trim().ifEmpty { null },
+            workspaceType = _state.value.workspaceType,
+            avatarUrl = _state.value.avatarUrl,
+            timezone = _state.value.timezone,
+            language = _state.value.language
+        )
+
+        viewModelScope.launch {
+            _state.value = _state.value.copy(
+                isLoading = true,
+                error = null
+            )
+
+            try {
+                val updatedWorkspace = workspaceRepository.updateWorkspace(currentWorkspaceId, request)
+
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    error = null,
+                    createdWorkspaceId = updatedWorkspace.id // Reuse this field to signal completion
+                )
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    error = e.message ?: "Failed to update workspace"
+                )
+            }
+        }
     }
 }

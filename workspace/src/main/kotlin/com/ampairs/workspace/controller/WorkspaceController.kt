@@ -1,6 +1,7 @@
 package com.ampairs.workspace.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.user.model.User
 import com.ampairs.workspace.model.dto.CreateWorkspaceRequest
 import com.ampairs.workspace.model.dto.UpdateWorkspaceRequest
@@ -8,13 +9,13 @@ import com.ampairs.workspace.model.dto.WorkspaceListResponse
 import com.ampairs.workspace.model.dto.WorkspaceResponse
 import com.ampairs.workspace.model.enums.SubscriptionPlan
 import com.ampairs.workspace.model.enums.WorkspaceType
-import com.ampairs.workspace.service.WorkspaceMemberService
+import com.ampairs.workspace.security.WorkspacePermission
 import com.ampairs.workspace.service.WorkspaceService
 import jakarta.validation.Valid
-import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.http.HttpStatus
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
@@ -26,7 +27,6 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/workspace/v1")
 class WorkspaceController(
     private val workspaceService: WorkspaceService,
-    private val memberService: WorkspaceMemberService,
 ) {
 
     /**
@@ -43,9 +43,10 @@ class WorkspaceController(
     }
 
     /**
-     * Get workspace by ID
+     * Get workspace by ID (requires workspace membership)
      */
     @GetMapping("/{workspaceId}")
+    @PreAuthorize("@workspaceAuthorizationService.isWorkspaceMember(authentication, #workspaceId)")
     fun getWorkspace(@PathVariable workspaceId: String): ApiResponse<WorkspaceResponse> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
         val user = auth.principal as User
@@ -55,7 +56,7 @@ class WorkspaceController(
     }
 
     /**
-     * Get workspace by slug
+     * Get workspace by slug (requires workspace membership)
      */
     @GetMapping("/by-slug/{slug}")
     fun getWorkspaceBySlug(@PathVariable slug: String): ApiResponse<WorkspaceResponse> {
@@ -67,9 +68,10 @@ class WorkspaceController(
     }
 
     /**
-     * Update workspace (requires WORKSPACE_UPDATE permission)
+     * Update workspace (requires WORKSPACE_MANAGE permission)
      */
     @PutMapping("/{workspaceId}")
+    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).WORKSPACE_MANAGE)")
     fun updateWorkspace(
         @PathVariable workspaceId: String,
         @RequestBody @Valid request: UpdateWorkspaceRequest,
@@ -77,11 +79,7 @@ class WorkspaceController(
         val auth: Authentication = SecurityContextHolder.getContext().authentication
         val user = auth.principal as User
 
-        // Check if user has permission to update workspace
-        if (!memberService.hasPermission(workspaceId, user.uid, "WORKSPACE_UPDATE")) {
-            return ApiResponse.error("ACCESS_DENIED", "Insufficient permissions to update workspace", "workspace")
-        }
-
+        // Authorization handled by @PreAuthorize - no manual permission check needed
         val workspace = workspaceService.updateWorkspace(workspaceId, request, user.uid)
         return ApiResponse.success(workspace)
     }
@@ -95,7 +93,7 @@ class WorkspaceController(
         @RequestParam(defaultValue = "10") size: Int,
         @RequestParam(defaultValue = "createdAt") sortBy: String,
         @RequestParam(defaultValue = "desc") sortDir: String,
-    ): ApiResponse<Page<WorkspaceListResponse>> {
+    ): ApiResponse<PageResponse<WorkspaceListResponse>> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
         val user = auth.principal as User
 
@@ -103,7 +101,7 @@ class WorkspaceController(
         val pageable = PageRequest.of(page, size, sort)
 
         val workspaces = workspaceService.getUserWorkspaces(user.uid, pageable)
-        return ApiResponse.success(workspaces)
+        return ApiResponse.success(PageResponse.from(workspaces))
     }
 
     /**
@@ -116,65 +114,49 @@ class WorkspaceController(
         @RequestParam(required = false) subscriptionPlan: SubscriptionPlan?,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "10") size: Int,
-    ): ApiResponse<Page<WorkspaceListResponse>> {
+    ): ApiResponse<PageResponse<WorkspaceListResponse>> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
         val user = auth.principal as User
 
         val pageable = PageRequest.of(page, size)
         val workspaces = workspaceService.searchWorkspaces(query, workspaceType, subscriptionPlan, user.uid, pageable)
-        return ApiResponse.success(workspaces)
+        return ApiResponse.success(PageResponse.from(workspaces))
     }
 
     /**
-     * Archive workspace (requires WORKSPACE_SETTINGS permission)
+     * Archive workspace (requires WORKSPACE_DELETE permission)
      */
     @PostMapping("/{workspaceId}/archive")
+    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).WORKSPACE_DELETE)")
     fun archiveWorkspace(@PathVariable workspaceId: String): ApiResponse<String> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
         val user = auth.principal as User
 
-        // Check if user has permission to archive workspace
-        if (!memberService.hasPermission(workspaceId, user.uid, "WORKSPACE_SETTINGS")) {
-            return ApiResponse.error("ACCESS_DENIED", "Insufficient permissions to archive workspace", "workspace")
-        }
-
         val result = workspaceService.archiveWorkspace(workspaceId, user.uid)
         return ApiResponse.success(result)
     }
 
     /**
-     * Soft delete workspace (requires OWNER role)
+     * Soft delete workspace (requires WORKSPACE_DELETE permission)
      */
     @DeleteMapping("/{workspaceId}")
+    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).WORKSPACE_DELETE)")
     fun deleteWorkspace(@PathVariable workspaceId: String): ApiResponse<String> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
         val user = auth.principal as User
 
-        // Check if user is workspace owner
-        if (!memberService.isWorkspaceOwner(workspaceId, user.uid)) {
-            return ApiResponse.error("ACCESS_DENIED", "Only workspace owners can delete workspaces", "workspace")
-        }
-
         val result = workspaceService.archiveWorkspace(workspaceId, user.uid)
         return ApiResponse.success(result)
     }
 
     /**
-     * Permanently delete workspace (requires OWNER role)
+     * Permanently delete workspace (requires WORKSPACE_DELETE permission)
      */
     @DeleteMapping("/{workspaceId}/permanent")
+    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).WORKSPACE_DELETE)")
     fun permanentlyDeleteWorkspace(@PathVariable workspaceId: String): ApiResponse<String> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
         val user = auth.principal as User
-
-        // Check if user is workspace owner
-        if (!memberService.isWorkspaceOwner(workspaceId, user.uid)) {
-            return ApiResponse.error(
-                "ACCESS_DENIED",
-                "Only workspace owners can permanently delete workspaces",
-                "workspace"
-            )
-        }
 
         val result = workspaceService.deleteWorkspace(workspaceId, user.uid)
         return ApiResponse.success(result)

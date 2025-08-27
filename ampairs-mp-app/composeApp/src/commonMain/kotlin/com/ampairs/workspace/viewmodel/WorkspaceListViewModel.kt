@@ -5,7 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.UserRepository
-import com.ampairs.workspace.db.WorkspaceRepository
+import com.ampairs.workspace.manager.WorkspaceDataManager
+import com.ampairs.workspace.manager.WorkspaceDataState
 import com.ampairs.workspace.ui.WorkspaceListState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +16,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 class WorkspaceListViewModel(
-    private val workspaceRepository: WorkspaceRepository,
+    private val workspaceManager: WorkspaceDataManager,
     private val userWorkspaceRepository: UserWorkspaceRepository,
     private val tokenRepository: TokenRepository,
     private val userRepository: UserRepository,
@@ -26,7 +27,6 @@ class WorkspaceListViewModel(
 
     init {
         loadUserData()
-        loadWorkspaces()
     }
 
     private fun loadUserData() {
@@ -63,67 +63,72 @@ class WorkspaceListViewModel(
 
     fun loadWorkspaces(forceRefresh: Boolean = false) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, error = null)
+            _state.value = _state.value.copy(error = null)
 
-            try {
-                if (forceRefresh) {
-                    // Fetch from network
-                    val result = workspaceRepository.getUserWorkspaces()
-                    _state.value = _state.value.copy(
-                        workspaces = result.content,
-                        isLoading = false,
-                        isRefreshing = false,
-                        error = null,
-                        hasNoWorkspaces = result.content.isEmpty()
-                    )
-                } else {
-                    // Load from local database first
-                    val localWorkspacesFlow = workspaceRepository.getLocalWorkspaces()
-                    localWorkspacesFlow
-                        .onEach { workspaces ->
-                            _state.value = _state.value.copy(
-                                workspaces = workspaces,
-                                isLoading = false,
-                                error = null,
-                                hasNoWorkspaces = workspaces.isEmpty()
-                            )
-
-                            // If no local data, fetch from network
-                            if (workspaces.isEmpty()) {
-                                refreshWorkspaces()
-                            }
+            workspaceManager.getWorkspaces(
+                page = 0,
+                size = 100, // Load more workspaces for better offline experience
+                forceRefresh = forceRefresh
+            ).onEach { dataState ->
+                when (dataState) {
+                    is WorkspaceDataState.Loading -> {
+                        // Show loading only when we don't have any cached data
+                        if (_state.value.workspaces.isEmpty()) {
+                            _state.value = _state.value.copy(isLoading = true)
                         }
-                        .launchIn(this)
+                    }
+                    is WorkspaceDataState.Success -> {
+                        _state.value = _state.value.copy(
+                            workspaces = dataState.workspaces,
+                            isLoading = false,
+                            isRefreshing = false,
+                            error = dataState.networkError, // Show network error if exists but keep data
+                            hasNoWorkspaces = dataState.workspaces.isEmpty(),
+                            isOfflineMode = dataState.isFromCache && dataState.networkError != null
+                        )
+                    }
+                    is WorkspaceDataState.Error -> {
+                        _state.value = _state.value.copy(
+                            error = dataState.message,
+                            isLoading = false,
+                            isRefreshing = false,
+                            isOfflineMode = true
+                        )
+                    }
                 }
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    error = e.message ?: "Failed to load workspaces",
-                    isLoading = false,
-                    isRefreshing = false
-                )
-            }
+            }.launchIn(this)
         }
     }
 
     fun refreshWorkspaces() {
         viewModelScope.launch {
             _state.value = _state.value.copy(isRefreshing = true, error = null)
-
-            try {
-                val result = workspaceRepository.getUserWorkspaces()
-                _state.value = _state.value.copy(
-                    workspaces = result.content,
-                    isLoading = false,
-                    isRefreshing = false,
-                    error = null,
-                    hasNoWorkspaces = result.content.isEmpty()
-                )
-            } catch (e: Exception) {
-                _state.value = _state.value.copy(
-                    error = e.message ?: "Failed to refresh workspaces",
-                    isLoading = false,
-                    isRefreshing = false
-                )
+            
+            val dataState = workspaceManager.refreshWorkspaces()
+            
+            when (dataState) {
+                is WorkspaceDataState.Success -> {
+                    _state.value = _state.value.copy(
+                        workspaces = dataState.workspaces,
+                        isLoading = false,
+                        isRefreshing = false,
+                        error = dataState.networkError,
+                        hasNoWorkspaces = dataState.workspaces.isEmpty(),
+                        isOfflineMode = dataState.isFromCache && dataState.networkError != null
+                    )
+                }
+                is WorkspaceDataState.Error -> {
+                    _state.value = _state.value.copy(
+                        error = dataState.message,
+                        isLoading = false,
+                        isRefreshing = false,
+                        isOfflineMode = true
+                    )
+                }
+                is WorkspaceDataState.Loading -> {
+                    // Should not happen in refreshWorkspaces but handle anyway
+                    _state.value = _state.value.copy(isRefreshing = true)
+                }
             }
         }
     }
@@ -131,21 +136,16 @@ class WorkspaceListViewModel(
     fun searchWorkspaces(query: String) {
         _state.value = _state.value.copy(searchQuery = query)
 
-        if (query.isEmpty()) {
-            loadWorkspaces()
-        } else {
-            viewModelScope.launch {
-                val searchFlow = workspaceRepository.searchWorkspacesLocally(query)
-                searchFlow
-                    .onEach { workspaces ->
-                        _state.value = _state.value.copy(
-                            workspaces = workspaces,
-                            isLoading = false,
-                            error = null
-                        )
-                    }
-                    .launchIn(this)
-            }
+        viewModelScope.launch {
+            workspaceManager.searchWorkspaces(query)
+                .onEach { workspaces ->
+                    _state.value = _state.value.copy(
+                        workspaces = workspaces,
+                        isLoading = false,
+                        error = null
+                    )
+                }
+                .launchIn(this)
         }
     }
 
@@ -155,8 +155,41 @@ class WorkspaceListViewModel(
 
     fun logout() {
         viewModelScope.launch {
-            workspaceRepository.clearLocalWorkspaces()
+            workspaceManager.clearCache()
             tokenRepository.clearTokens()
+        }
+    }
+    
+    /**
+     * Get cached workspaces only (useful for offline mode)
+     */
+    fun loadCachedWorkspaces() {
+        viewModelScope.launch {
+            workspaceManager.getCachedWorkspaces()
+                .onEach { dataState ->
+                    when (dataState) {
+                        is WorkspaceDataState.Success -> {
+                            _state.value = _state.value.copy(
+                                workspaces = dataState.workspaces,
+                                isLoading = false,
+                                error = null,
+                                hasNoWorkspaces = dataState.workspaces.isEmpty(),
+                                isOfflineMode = true
+                            )
+                        }
+                        is WorkspaceDataState.Error -> {
+                            _state.value = _state.value.copy(
+                                error = "No cached data available",
+                                isLoading = false,
+                                isOfflineMode = true
+                            )
+                        }
+                        is WorkspaceDataState.Loading -> {
+                            _state.value = _state.value.copy(isLoading = true)
+                        }
+                    }
+                }
+                .launchIn(this)
         }
     }
 }

@@ -14,6 +14,7 @@ import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
+import io.ktor.client.request.put
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
@@ -44,6 +45,43 @@ suspend inline fun <reified T> post(client: HttpClient, url: String, body: Any?)
             println("✅ Token refreshed - retrying original request")
             // Retry with refreshed token
             response = client.post(url) {
+                if (body != null) {
+                    setBody(body)
+                }
+                // Add the new token manually
+                val newAccessToken = tokenRepository.getAccessToken()
+                if (!newAccessToken.isNullOrEmpty()) {
+                    header("Authorization", "Bearer $newAccessToken")
+                }
+            }
+        } else {
+            println("❌ Token refresh failed")
+        }
+    }
+    
+    return handleResponse<T>(response)
+}
+
+/**
+ * PUT request with automatic token refresh handling
+ */
+suspend inline fun <reified T> put(client: HttpClient, url: String, body: Any?): T {
+    val tokenRepository = getTokenRepository(client)
+    var response = client.put(url) {
+        if (body != null) {
+            setBody(body)
+        }
+    }
+    
+    // Handle 401 and attempt token refresh
+    if (response.status == HttpStatusCode.Unauthorized) {
+        println("🔄 401 Unauthorized - attempting token refresh")
+        
+        val refreshed = refreshTokens(tokenRepository)
+        if (refreshed) {
+            println("✅ Token refreshed - retrying original request")
+            // Retry with refreshed token
+            response = client.put(url) {
                 if (body != null) {
                     setBody(body)
                 }

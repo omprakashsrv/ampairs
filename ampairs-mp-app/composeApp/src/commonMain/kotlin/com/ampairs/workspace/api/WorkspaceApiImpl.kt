@@ -4,6 +4,7 @@ import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.post
+import com.ampairs.common.put
 import com.ampairs.network.model.Response
 import com.ampairs.workspace.api.model.CreateWorkspaceRequest
 import com.ampairs.workspace.api.model.UpdateWorkspaceRequest
@@ -49,7 +50,7 @@ class WorkspaceApiImpl(engine: HttpClientEngine, private val tokenRepository: To
         workspaceId: String,
         request: UpdateWorkspaceRequest,
     ): Response<WorkspaceApiModel> {
-        return post(client, "$WORKSPACE_ENDPOINT/workspace/v1/$workspaceId", request)
+        return put(client, "$WORKSPACE_ENDPOINT/workspace/v1/$workspaceId", request)
     }
 
     override suspend fun checkSlugAvailability(slug: String): Response<Map<String, Boolean>> {

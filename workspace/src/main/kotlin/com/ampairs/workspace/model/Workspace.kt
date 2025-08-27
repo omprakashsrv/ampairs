@@ -249,30 +249,34 @@ class Workspace : BaseDomain() {
     // JPA Relationships
     
     /**
-     * Workspace members
+     * Workspace members (using JoinColumn instead of mappedBy to avoid entity conflicts)
      */
-    @OneToMany(mappedBy = "workspace", cascade = [CascadeType.ALL], fetch = FetchType.LAZY)
+    @OneToMany(cascade = [CascadeType.ALL], fetch = FetchType.LAZY)
+    @JoinColumn(name = "workspace_id", referencedColumnName = "uid")
     @JsonIgnore
     var members: MutableSet<WorkspaceMember> = mutableSetOf()
 
     /**
-     * Workspace invitations
+     * Workspace invitations (using JoinColumn instead of mappedBy to avoid entity conflicts)
      */
-    @OneToMany(mappedBy = "workspace", cascade = [CascadeType.ALL], fetch = FetchType.LAZY)
+    @OneToMany(cascade = [CascadeType.ALL], fetch = FetchType.LAZY)
+    @JoinColumn(name = "workspace_id", referencedColumnName = "uid")
     @JsonIgnore
     var invitations: MutableSet<WorkspaceInvitation> = mutableSetOf()
 
     /**
-     * Workspace settings
+     * Workspace settings (using JoinColumn instead of mappedBy to avoid entity conflicts)
      */
-    @OneToOne(mappedBy = "workspace", cascade = [CascadeType.ALL], fetch = FetchType.LAZY)
+    @OneToOne(cascade = [CascadeType.ALL], fetch = FetchType.LAZY)
+    @JoinColumn(name = "workspace_id", referencedColumnName = "uid")
     @JsonIgnore
     var workspaceSettings: WorkspaceSettings? = null
 
     /**
-     * Workspace activities
+     * Workspace activities (using JoinColumn instead of mappedBy to avoid entity conflicts)
      */
-    @OneToMany(mappedBy = "workspace", cascade = [CascadeType.ALL], fetch = FetchType.LAZY)
+    @OneToMany(cascade = [CascadeType.ALL], fetch = FetchType.LAZY)
+    @JoinColumn(name = "workspace_id", referencedColumnName = "uid")
     @JsonIgnore
     var activities: MutableSet<WorkspaceActivity> = mutableSetOf()
 

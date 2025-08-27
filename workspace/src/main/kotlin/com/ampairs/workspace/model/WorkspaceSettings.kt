@@ -187,13 +187,9 @@ class WorkspaceSettings : BaseDomain() {
 
     // JPA Relationships
 
-    /**
-     * Reference to the workspace
-     */
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "workspace_id", referencedColumnName = "id", insertable = false, updatable = false)
-    @JsonIgnore
-    var workspace: Workspace? = null
+    // JPA Relationships
+    // Note: Removed workspace relationship mapping to avoid column conflict
+    // The workspaceId string field above is used instead of entity relationship
 
     override fun obtainSeqIdPrefix(): String {
         return Constants.WORKSPACE_SETTINGS_PREFIX

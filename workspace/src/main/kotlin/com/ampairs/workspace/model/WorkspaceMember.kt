@@ -4,8 +4,6 @@ import com.ampairs.core.config.Constants
 import com.ampairs.core.domain.model.BaseDomain
 import com.ampairs.workspace.model.enums.Permission
 import com.ampairs.workspace.model.enums.WorkspaceRole
-import com.fasterxml.jackson.annotation.JsonIgnore
-import com.fasterxml.jackson.core.type.TypeReference
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
@@ -160,14 +158,8 @@ class WorkspaceMember : BaseDomain() {
     var accessRestrictions: String = "{}"
 
     // JPA Relationships
-
-    /**
-     * Reference to the workspace
-     */
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "workspace_id", referencedColumnName = "id", insertable = false, updatable = false)
-    @JsonIgnore
-    var workspace: Workspace? = null
+    // Note: Removed workspace relationship mapping to avoid column conflict
+    // The workspaceId string field above is used instead of entity relationship
 
     override fun obtainSeqIdPrefix(): String {
         return Constants.WORKSPACE_MEMBER_PREFIX
