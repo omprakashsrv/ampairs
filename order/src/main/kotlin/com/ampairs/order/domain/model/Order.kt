@@ -13,7 +13,12 @@ import java.util.*
 
 
 @Entity(name = "customer_order")
-@Table(indexes = arrayOf(Index(name = "order_ref_idx", columnList = "ref_id", unique = true)))
+@Table(
+    indexes = [
+        Index(name = "idx_order_uid", columnList = "uid", unique = true),
+        Index(name = "order_ref_idx", columnList = "ref_id", unique = true)
+    ]
+)
 class Order : OwnableBaseDomain() {
 
     @Column(name = "order_number", nullable = false, length = 255)
@@ -84,7 +89,7 @@ class Order : OwnableBaseDomain() {
 
     @OneToMany()
     @JoinColumn(
-        name = "order_id", referencedColumnName = "id", insertable = false, updatable = false, nullable = false
+        name = "order_id", referencedColumnName = "uid", insertable = false, updatable = false, nullable = false
     )
     var orderItems: MutableList<OrderItem> = mutableListOf()
 

@@ -9,12 +9,10 @@ import jakarta.persistence.Table
 
 @Entity(name = "unit")
 @Table(
-    indexes = arrayOf(
-        Index(
-            name = "unit_idx",
-            columnList = "name"
-        )
-    )
+    indexes = [
+        Index(name = "unit_idx", columnList = "name"),
+        Index(name = "idx_unit_uid", columnList = "uid", unique = true)
+    ]
 )
 class Unit : OwnableBaseDomain() {
 

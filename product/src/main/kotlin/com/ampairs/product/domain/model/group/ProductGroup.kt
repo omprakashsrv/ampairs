@@ -3,12 +3,14 @@ package com.ampairs.product.domain.model.group
 import com.ampairs.core.domain.model.File
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.product.config.Constants
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.JoinColumn
-import jakarta.persistence.OneToOne
+import jakarta.persistence.*
 
 @Entity(name = "product_group")
+@Table(
+    indexes = [
+        Index(name = "idx_product_group_uid", columnList = "uid", unique = true)
+    ]
+)
 class ProductGroup : OwnableBaseDomain() {
 
     @Column(name = "name", nullable = false, length = 255)
@@ -21,7 +23,7 @@ class ProductGroup : OwnableBaseDomain() {
     var index: Int = 0
 
     @OneToOne
-    @JoinColumn(name = "image_id", referencedColumnName = "id", updatable = false, insertable = false)
+    @JoinColumn(name = "image_id", referencedColumnName = "uid", updatable = false, insertable = false)
     var image: File? = null
 
     override fun obtainSeqIdPrefix(): String {

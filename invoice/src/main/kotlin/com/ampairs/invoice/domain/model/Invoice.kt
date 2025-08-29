@@ -13,7 +13,12 @@ import java.util.*
 
 
 @Entity(name = "invoice")
-@Table(indexes = arrayOf(Index(name = "invoice_ref_idx", columnList = "ref_id", unique = true)))
+@Table(
+    indexes = [
+        Index(name = "idx_invoice_uid", columnList = "uid", unique = true),
+        Index(name = "invoice_ref_idx", columnList = "ref_id", unique = true)
+    ]
+)
 class Invoice : OwnableBaseDomain() {
 
     @Column(name = "invoice_number", nullable = false, length = 255)
@@ -84,7 +89,7 @@ class Invoice : OwnableBaseDomain() {
 
     @OneToMany()
     @JoinColumn(
-        name = "invoice_id", referencedColumnName = "id", insertable = false, updatable = false, nullable = false
+        name = "invoice_id", referencedColumnName = "uid", insertable = false, updatable = false, nullable = false
     )
     var invoiceItems: MutableList<InvoiceItem> = mutableListOf()
 

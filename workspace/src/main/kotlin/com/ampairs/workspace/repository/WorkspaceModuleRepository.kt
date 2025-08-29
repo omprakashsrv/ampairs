@@ -7,6 +7,8 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
+import org.springframework.data.jpa.repository.Query
+import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
 import java.time.LocalDateTime
 
@@ -77,9 +79,10 @@ interface WorkspaceModuleRepository : JpaRepository<WorkspaceModule, String>, Jp
      * Find most used modules in workspace
      * Note: Usage-based sorting moved to service layer due to JSON field limitations
      */
+    @Query("SELECT wm FROM WorkspaceModule wm WHERE wm.workspaceId = :workspaceId AND wm.enabled = true ORDER BY wm.displayOrder ASC")
     fun findMostUsedModules(
-        workspaceId: String, 
-        pageable: Pageable
+        @Param("workspaceId") workspaceId: String,
+        pageable: Pageable,
     ): Page<WorkspaceModule>
 
     /**
@@ -131,27 +134,30 @@ interface WorkspaceModuleRepository : JpaRepository<WorkspaceModule, String>, Jp
      * Find modules visible to user role
      * Note: Role-based visibility logic moved to service layer
      */
+    @Query("SELECT wm FROM WorkspaceModule wm WHERE wm.workspaceId = :workspaceId AND wm.enabled = true ORDER BY wm.displayOrder ASC")
     fun findVisibleModulesForUser(
-        workspaceId: String,
-        userRole: String
+        @Param("workspaceId") workspaceId: String,
+        @Param("userRole") userRole: String,
     ): List<WorkspaceModule>
 
     /**
      * Find quick access modules for user
      * Note: Quick access logic moved to service layer
      */
+    @Query("SELECT wm FROM WorkspaceModule wm WHERE wm.workspaceId = :workspaceId AND wm.enabled = true ORDER BY wm.displayOrder ASC")
     fun findQuickAccessModulesForUser(
-        workspaceId: String,
-        userId: String
+        @Param("workspaceId") workspaceId: String,
+        @Param("userId") userId: String,
     ): List<WorkspaceModule>
 
     /**
      * Find user's favorite modules
      * Note: Favorite logic moved to service layer
      */
+    @Query("SELECT wm FROM WorkspaceModule wm WHERE wm.workspaceId = :workspaceId AND wm.enabled = true ORDER BY wm.displayOrder ASC")
     fun findUserFavoriteModules(
-        workspaceId: String,
-        userId: String
+        @Param("workspaceId") workspaceId: String,
+        @Param("userId") userId: String,
     ): List<WorkspaceModule>
 
     /**
@@ -169,19 +175,21 @@ interface WorkspaceModuleRepository : JpaRepository<WorkspaceModule, String>, Jp
      * Find unused modules (not accessed in specified period)
      * Note: Usage date filtering moved to service layer
      */
+    @Query("SELECT wm FROM WorkspaceModule wm WHERE wm.workspaceId = :workspaceId AND wm.enabled = true ORDER BY wm.displayOrder ASC")
     fun findUnusedModules(
-        workspaceId: String,
-        lastUsedBefore: LocalDateTime
+        @Param("workspaceId") workspaceId: String,
+        @Param("lastUsedBefore") lastUsedBefore: LocalDateTime,
     ): List<WorkspaceModule>
 
     /**
      * Find popular modules (high usage and satisfaction)
      * Note: Popularity filtering moved to service layer
      */
+    @Query("SELECT wm FROM WorkspaceModule wm WHERE wm.workspaceId = :workspaceId AND wm.enabled = true ORDER BY wm.displayOrder ASC")
     fun findPopularModules(
-        workspaceId: String,
-        minAccesses: Int,
-        minSatisfaction: Double
+        @Param("workspaceId") workspaceId: String,
+        @Param("minAccesses") minAccesses: Int,
+        @Param("minSatisfaction") minSatisfaction: Double,
     ): List<WorkspaceModule>
 
     /**

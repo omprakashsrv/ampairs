@@ -1,7 +1,10 @@
 package com.ampairs.workspace.repository
 
 import com.ampairs.workspace.model.MasterModule
-import com.ampairs.workspace.model.enums.*
+import com.ampairs.workspace.model.enums.ModuleCategory
+import com.ampairs.workspace.model.enums.ModuleComplexity
+import com.ampairs.workspace.model.enums.ModuleStatus
+import com.ampairs.workspace.model.enums.SubscriptionTier
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
@@ -54,7 +57,7 @@ interface MasterModuleRepository : JpaRepository<MasterModule, String>, JpaSpeci
     @Query("""
         SELECT m FROM MasterModule m 
         WHERE m.active = true 
-        AND JSON_EXTRACT(m.businessRelevance, '$[*].businessType') LIKE %:businessType%
+        AND JSON_SEARCH(m.businessRelevance, 'one', :businessType, NULL, '$[*].businessType') IS NOT NULL
         ORDER BY JSON_EXTRACT(m.businessRelevance, '$[?(@.businessType == :businessType)].relevanceScore') DESC
     """)
     fun findByBusinessType(@Param("businessType") businessType: String): List<MasterModule>
@@ -108,20 +111,22 @@ interface MasterModuleRepository : JpaRepository<MasterModule, String>, JpaSpeci
      * Find modules that have no dependencies
      */
     @Query("""
-        SELECT m FROM MasterModule m 
+        SELECT * FROM master_modules m 
         WHERE m.active = true 
-        AND JSON_LENGTH(m.configuration.dependencies) = 0
-    """)
+        AND JSON_LENGTH(JSON_EXTRACT(m.configuration, '$.dependencies')) = 0
+    """, nativeQuery = true
+    )
     fun findWithNoDependencies(): List<MasterModule>
 
     /**
      * Find modules with dependencies
      */
     @Query("""
-        SELECT m FROM MasterModule m 
+        SELECT * FROM master_modules m 
         WHERE m.active = true 
-        AND JSON_LENGTH(m.configuration.dependencies) > 0
-    """)
+        AND JSON_LENGTH(JSON_EXTRACT(m.configuration, '$.dependencies')) > 0
+    """, nativeQuery = true
+    )
     fun findWithDependencies(): List<MasterModule>
 
     /**
@@ -213,7 +218,7 @@ interface MasterModuleRepository : JpaRepository<MasterModule, String>, JpaSpeci
         WHERE m.active = true 
         AND m.requiredTier IN :allowedTiers
         AND (:businessType IS NULL OR 
-             JSON_EXTRACT(m.businessRelevance, '$[*].businessType') LIKE %:businessType%)
+             JSON_SEARCH(m.businessRelevance, 'one', :businessType, NULL, '$[*].businessType') IS NOT NULL)
         ORDER BY 
             m.featured DESC,
             CASE WHEN :businessType IS NOT NULL 
@@ -281,19 +286,21 @@ interface MasterModuleRepository : JpaRepository<MasterModule, String>, JpaSpeci
      * Find modules that depend on a specific module
      */
     @Query("""
-        SELECT m FROM MasterModule m 
+        SELECT * FROM master_modules m 
         WHERE m.active = true 
-        AND JSON_CONTAINS(m.configuration.dependencies, JSON_QUOTE(:moduleCode))
-    """)
+        AND JSON_CONTAINS(JSON_EXTRACT(m.configuration, '$.dependencies'), JSON_QUOTE(:moduleCode))
+    """, nativeQuery = true
+    )
     fun findModulesWithDependency(@Param("moduleCode") moduleCode: String): List<MasterModule>
 
     /**
      * Find modules that conflict with a specific module
      */
     @Query("""
-        SELECT m FROM MasterModule m 
+        SELECT * FROM master_modules m 
         WHERE m.active = true 
-        AND JSON_CONTAINS(m.configuration.conflictsWith, JSON_QUOTE(:moduleCode))
-    """)
+        AND JSON_CONTAINS(JSON_EXTRACT(m.configuration, '$.conflictsWith'), JSON_QUOTE(:moduleCode))
+    """, nativeQuery = true
+    )
     fun findModulesWithConflict(@Param("moduleCode") moduleCode: String): List<MasterModule>
 }

@@ -10,6 +10,11 @@ import com.ampairs.product.domain.model.group.ProductSubCategory
 import jakarta.persistence.*
 
 @Entity(name = "product")
+@Table(
+    indexes = [
+        Index(name = "idx_product_uid", columnList = "uid", unique = true)
+    ]
+)
 class Product : OwnableBaseDomain() {
 
     @Column(name = "name", nullable = false, length = 255)
@@ -46,23 +51,23 @@ class Product : OwnableBaseDomain() {
     var sellingPrice: Double = 0.0
 
     @OneToOne()
-    @JoinColumn(name = "group_id", referencedColumnName = "id", updatable = false, insertable = false)
+    @JoinColumn(name = "group_id", referencedColumnName = "uid", updatable = false, insertable = false)
     var group: ProductGroup? = null
 
     @OneToOne()
-    @JoinColumn(name = "brand_id", referencedColumnName = "id", updatable = false, insertable = false)
+    @JoinColumn(name = "brand_id", referencedColumnName = "uid", updatable = false, insertable = false)
     var brand: ProductBrand? = null
 
     @OneToOne()
-    @JoinColumn(name = "category_id", referencedColumnName = "id", updatable = false, insertable = false)
+    @JoinColumn(name = "category_id", referencedColumnName = "uid", updatable = false, insertable = false)
     var category: ProductCategory? = null
 
     @OneToOne()
-    @JoinColumn(name = "sub_category_id", referencedColumnName = "id", updatable = false, insertable = false)
+    @JoinColumn(name = "sub_category_id", referencedColumnName = "uid", updatable = false, insertable = false)
     var subCategory: ProductSubCategory? = null
 
     @OneToOne()
-    @JoinColumn(name = "base_unit_id", referencedColumnName = "id", updatable = false, insertable = false)
+    @JoinColumn(name = "base_unit_id", referencedColumnName = "uid", updatable = false, insertable = false)
     var baseUnit: Unit? = null
 
     @Column(name = "index_no", nullable = false)
@@ -76,19 +81,19 @@ class Product : OwnableBaseDomain() {
 
     @OneToMany()
     @JoinColumn(
-        name = "product_id", referencedColumnName = "id", insertable = false, updatable = false, nullable = false
+        name = "product_id", referencedColumnName = "uid", insertable = false, updatable = false, nullable = false
     )
     var images: MutableList<ProductImage> = mutableListOf()
 
     @OneToMany()
     @JoinColumn(
-        name = "product_id", referencedColumnName = "id", insertable = false, updatable = false, nullable = false
+        name = "product_id", referencedColumnName = "uid", insertable = false, updatable = false, nullable = false
     )
     var unitConversions: MutableList<UnitConversion> = mutableListOf()
 
     @OneToMany
     @JoinColumn(
-        name = "product_id", referencedColumnName = "id", insertable = false, updatable = false, nullable = false
+        name = "product_id", referencedColumnName = "uid", insertable = false, updatable = false, nullable = false
     )
     var inventory: MutableList<Inventory> = mutableListOf()
 

@@ -23,7 +23,7 @@ class ProductPrice : OwnableBaseDomain() {
     var sellingPrice: Double = 0.0
 
     @OneToOne()
-    @JoinColumn(name = "product_id", referencedColumnName = "id", updatable = false, insertable = false)
+    @JoinColumn(name = "product_id", referencedColumnName = "uid", updatable = false, insertable = false)
     var product: Product? = null
 
     override fun obtainSeqIdPrefix(): String {

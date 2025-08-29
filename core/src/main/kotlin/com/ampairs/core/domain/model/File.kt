@@ -3,9 +3,16 @@ package com.ampairs.core.domain.model
 import com.ampairs.core.config.Constants
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.Index
+import jakarta.persistence.Table
 
 
 @Entity(name = "file")
+@Table(
+    indexes = [
+        Index(name = "idx_file_uid", columnList = "uid", unique = true)
+    ]
+)
 class File : OwnableBaseDomain() {
 
     @Column(name = "name", nullable = false, length = 255)

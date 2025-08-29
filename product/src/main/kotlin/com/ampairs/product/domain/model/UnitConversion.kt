@@ -23,15 +23,15 @@ class UnitConversion : OwnableBaseDomain() {
     var multiplier: Double = 1.0
 
     @OneToOne()
-    @JoinColumn(name = "base_unit_id", referencedColumnName = "id", updatable = false, insertable = false)
+    @JoinColumn(name = "base_unit_id", referencedColumnName = "uid", updatable = false, insertable = false)
     lateinit var baseUnit: Unit
 
     @OneToOne()
-    @JoinColumn(name = "derived_unit_id", referencedColumnName = "id", updatable = false, insertable = false)
+    @JoinColumn(name = "derived_unit_id", referencedColumnName = "uid", updatable = false, insertable = false)
     lateinit var derivedUnit: Unit
 
     @OneToOne()
-    @JoinColumn(name = "product_id", referencedColumnName = "id", updatable = false, insertable = false)
+    @JoinColumn(name = "product_id", referencedColumnName = "uid", updatable = false, insertable = false)
     var product: Product? = null
 
     override fun obtainSeqIdPrefix(): String {

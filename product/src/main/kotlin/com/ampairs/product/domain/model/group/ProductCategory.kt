@@ -21,7 +21,7 @@ class ProductCategory : OwnableBaseDomain() {
     var index: Int = 0
 
     @OneToOne
-    @JoinColumn(name = "image_id", referencedColumnName = "id", updatable = false, insertable = false)
+    @JoinColumn(name = "image_id", referencedColumnName = "uid", updatable = false, insertable = false)
     var image: File? = null
 
     override fun obtainSeqIdPrefix(): String {

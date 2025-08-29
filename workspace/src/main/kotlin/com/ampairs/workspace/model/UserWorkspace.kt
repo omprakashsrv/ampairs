@@ -26,7 +26,7 @@ class UserWorkspace : BaseDomain() {
     var joinedAt: LocalDateTime = LocalDateTime.now()
 
     @OneToOne
-    @JoinColumn(name = "workspace_id", referencedColumnName = "id", updatable = false, insertable = false)
+    @JoinColumn(name = "workspace_id", referencedColumnName = "uid", updatable = false, insertable = false)
     lateinit var company: Workspace
 
     override fun obtainSeqIdPrefix(): String {
