@@ -137,3 +137,79 @@ fun WorkspaceEntity.asDomainModel(): Workspace {
         storagePercentage = this.storagePercentage,
     )
 }
+
+// ===== WORKSPACE MEMBER DOMAIN MODELS =====
+
+/**
+ * Domain model representing a workspace member
+ */
+data class WorkspaceMember(
+    val id: String,
+    val userId: String,
+    val workspaceId: String,
+    val email: String,
+    val name: String,
+    val role: String,
+    val status: String,
+    val joinedAt: String,
+    val lastActivity: String? = null,
+    val permissions: List<String> = emptyList(),
+    val avatarUrl: String? = null,
+    val phone: String? = null,
+    val department: String? = null,
+    val isOnline: Boolean = false,
+)
+
+// ===== WORKSPACE INVITATION DOMAIN MODELS =====
+
+/**
+ * Domain model representing a workspace invitation
+ */
+data class WorkspaceInvitation(
+    val id: String,
+    val workspaceId: String,
+    val recipientEmail: String,
+    val recipientName: String? = null,
+    val invitedRole: String,
+    val status: String,
+    val createdAt: String,
+    val expiresAt: String,
+    val sentByName: String,
+    val sentByEmail: String,
+    val emailSent: Boolean = false,
+    val emailDelivered: Boolean = false,
+    val emailOpened: Boolean = false,
+    val linkClicked: Boolean = false,
+    val resendCount: Int = 0,
+    val invitationMessage: String? = null,
+)
+
+/**
+ * Domain model for invitation acceptance result
+ */
+data class InvitationAcceptanceResult(
+    val invitationId: String,
+    val status: String,
+    val acceptedAt: String,
+    val workspaceId: String,
+    val workspaceName: String,
+    val workspaceDescription: String? = null,
+    val memberCount: Int,
+    val yourRole: String,
+    val memberId: String,
+    val userId: String,
+    val email: String,
+    val name: String,
+    val role: String,
+    val memberStatus: String,
+    val joinedAt: String,
+    val permissions: List<String>,
+    val welcomeTourAvailable: Boolean,
+    val profileCompletionRequired: Boolean,
+    val setupTasks: List<String>,
+    val welcomeMessage: String? = null,
+    val dashboardUrl: String,
+    val availableModules: List<String>,
+    val teamMembers: Int,
+    val recentActivityAvailable: Boolean,
+)

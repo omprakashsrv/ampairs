@@ -1,0 +1,446 @@
+<!-- Workspace Invitations Management -->
+<div class="workspace-invitations-container">
+
+  <!-- Header Section -->
+  <div class="header-section">
+    <mat-card class="header-card">
+      <mat-card-header>
+        <mat-card-title class="title-section">
+          <mat-icon class="title-icon">mail_outline</mat-icon>
+          <span>Workspace Invitations</span>
+          <span
+            [matBadge]="totalElements"
+            class="invitation-count-badge"
+            matBadgeColor="primary">
+          </span>
+        </mat-card-title>
+
+        <div class="header-actions">
+          <button
+            (click)="createNewInvitation()"
+            class="create-button"
+            color="primary"
+            mat-raised-button>
+            <mat-icon>add</mat-icon>
+            Send Invitations
+          </button>
+
+          <button
+            (click)="viewMembers()"
+            class="members-button"
+            mat-stroked-button>
+            <mat-icon>group</mat-icon>
+            View Members
+          </button>
+
+          <button
+            [matMenuTriggerFor]="exportMenu"
+            mat-icon-button
+            matTooltip="Export Data">
+            <mat-icon>download</mat-icon>
+          </button>
+        </div>
+      </mat-card-header>
+    </mat-card>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div *ngIf="!isLoadingStats && invitationStats" class="stats-section">
+    <div class="stats-grid">
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-content">
+            <div class="stat-number">{{ invitationStats.total_sent || 0 }}</div>
+            <div class="stat-label">Total Sent</div>
+          </div>
+          <mat-icon class="stat-icon">send</mat-icon>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-content">
+            <div class="stat-number">{{ invitationStats.total_accepted || 0 }}</div>
+            <div class="stat-label">Accepted</div>
+          </div>
+          <mat-icon class="stat-icon accepted">check_circle</mat-icon>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-content">
+            <div class="stat-number">{{ invitationStats.total_pending || 0 }}</div>
+            <div class="stat-label">Pending</div>
+          </div>
+          <mat-icon class="stat-icon pending">schedule</mat-icon>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="stat-card">
+        <mat-card-content>
+          <div class="stat-content">
+            <div class="stat-number">{{ (invitationStats.acceptance_rate * 100).toFixed(1) }}%</div>
+            <div class="stat-label">Acceptance Rate</div>
+          </div>
+          <mat-icon class="stat-icon rate">trending_up</mat-icon>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+
+  <!-- Filters Section -->
+  <mat-card class="filters-card">
+    <mat-card-header>
+      <mat-card-title>Filter Invitations</mat-card-title>
+      <div class="filter-actions">
+        <button
+          (click)="resetFilters()"
+          class="reset-filters-btn"
+          mat-button>
+          <mat-icon>clear_all</mat-icon>
+          Reset Filters
+        </button>
+      </div>
+    </mat-card-header>
+
+    <mat-card-content>
+      <form [formGroup]="filterForm" class="filters-form">
+        <div class="filter-row">
+          <!-- Search -->
+          <mat-form-field appearance="outline" class="search-field">
+            <mat-label>Search invitations</mat-label>
+            <input
+              [formControl]="searchControl"
+              autocomplete="off"
+              matInput
+              placeholder="Search by email, inviter...">
+            <mat-icon matSuffix>search</mat-icon>
+          </mat-form-field>
+
+          <!-- Status Filter -->
+          <mat-form-field appearance="outline">
+            <mat-label>Status</mat-label>
+            <mat-select formControlName="status">
+              <mat-option value="ALL">All Statuses</mat-option>
+              <mat-option
+                *ngFor="let status of statuses"
+                [value]="status">
+                <mat-chip [color]="getInvitationStatusColor(status)">{{ status }}</mat-chip>
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Role Filter -->
+          <mat-form-field appearance="outline">
+            <mat-label>Role</mat-label>
+            <mat-select formControlName="role">
+              <mat-option value="ALL">All Roles</mat-option>
+              <mat-option
+                *ngFor="let role of roles"
+                [value]="role">
+                {{ role }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Delivery Status Filter -->
+          <mat-form-field appearance="outline">
+            <mat-label>Delivery</mat-label>
+            <mat-select formControlName="delivery_status">
+              <mat-option value="ALL">All Delivery</mat-option>
+              <mat-option
+                *ngFor="let deliveryStatus of deliveryStatuses"
+                [value]="deliveryStatus">
+                <mat-chip [color]="getDeliveryStatusColor(deliveryStatus)">{{ deliveryStatus }}</mat-chip>
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
+
+        <!-- Date Range Filter -->
+        <div class="filter-row date-filters">
+          <mat-form-field appearance="outline">
+            <mat-label>Start Date</mat-label>
+            <input [matDatepicker]="startPicker" formControlName="start_date" matInput>
+            <mat-datepicker-toggle [for]="startPicker" matIconSuffix></mat-datepicker-toggle>
+            <mat-datepicker #startPicker></mat-datepicker>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>End Date</mat-label>
+            <input [matDatepicker]="endPicker" formControlName="end_date" matInput>
+            <mat-datepicker-toggle [for]="endPicker" matIconSuffix></mat-datepicker-toggle>
+            <mat-datepicker #endPicker></mat-datepicker>
+          </mat-form-field>
+        </div>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Bulk Actions Bar -->
+  <div *ngIf="selection.selected.length > 0" class="bulk-actions-bar">
+    <mat-card class="bulk-actions-card">
+      <mat-card-content class="bulk-actions-content">
+        <div class="selection-info">
+          <mat-checkbox
+            (change)="toggleAllRows()"
+            [checked]="isAllSelected()"
+            [indeterminate]="selection.selected.length > 0 && !isAllSelected()">
+          </mat-checkbox>
+          <span class="selection-text">
+            {{ selection.selected.length }} of {{ dataSource.data.length }} selected
+          </span>
+        </div>
+
+        <div class="bulk-actions">
+          <button
+            (click)="bulkResendInvitations()"
+            class="bulk-action-btn"
+            mat-button>
+            <mat-icon>send</mat-icon>
+            Resend Selected
+          </button>
+
+          <button
+            (click)="bulkCancelInvitations()"
+            class="bulk-action-btn"
+            color="warn"
+            mat-button>
+            <mat-icon>cancel</mat-icon>
+            Cancel Selected
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Invitations Table -->
+  <mat-card class="table-card">
+    <mat-card-content class="table-container">
+      <!-- Loading Spinner -->
+      <div *ngIf="isLoading" class="loading-container">
+        <mat-spinner diameter="40"></mat-spinner>
+        <p>Loading invitations...</p>
+      </div>
+
+      <!-- Invitations Table -->
+      <div *ngIf="!isLoading" class="table-wrapper">
+        <table
+          (matSortChange)="onSortChange($event)"
+          [dataSource]="dataSource"
+          class="invitations-table"
+          mat-table
+          matSort>
+
+          <!-- Selection Column -->
+          <ng-container matColumnDef="select">
+            <th *matHeaderCellDef class="select-column" mat-header-cell>
+              <mat-checkbox
+                (change)="toggleAllRows()"
+                [checked]="isAllSelected()"
+                [indeterminate]="selection.selected.length > 0 && !isAllSelected()">
+              </mat-checkbox>
+            </th>
+            <td *matCellDef="let invitation" class="select-column" mat-cell>
+              <mat-checkbox
+                (change)="toggleRow(invitation)"
+                (click)="$event.stopPropagation()"
+                [checked]="selection.isSelected(invitation)">
+              </mat-checkbox>
+            </td>
+          </ng-container>
+
+          <!-- Email Column -->
+          <ng-container matColumnDef="email">
+            <th *matHeaderCellDef mat-header-cell mat-sort-header="email">Email</th>
+            <td *matCellDef="let invitation" class="email-column" mat-cell>
+              <div class="invitation-email">
+                <div class="primary-text">{{ invitation.email }}</div>
+                <div *ngIf="invitation.custom_message" class="secondary-text">
+                  <mat-icon class="message-icon">message</mat-icon>
+                  Custom message included
+                </div>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Role Column -->
+          <ng-container matColumnDef="role">
+            <th *matHeaderCellDef mat-header-cell mat-sort-header="role">Role</th>
+            <td *matCellDef="let invitation" class="role-column" mat-cell>
+              <mat-chip>{{ invitation.role }}</mat-chip>
+            </td>
+          </ng-container>
+
+          <!-- Status Column -->
+          <ng-container matColumnDef="status">
+            <th *matHeaderCellDef mat-header-cell mat-sort-header="status">Status</th>
+            <td *matCellDef="let invitation" class="status-column" mat-cell>
+              <mat-chip
+                [color]="getInvitationStatusColor(invitation.status)"
+                [matTooltip]="getInvitationStatusDescription(invitation.status)">
+                {{ invitation.status }}
+              </mat-chip>
+            </td>
+          </ng-container>
+
+          <!-- Delivery Status Column -->
+          <ng-container matColumnDef="delivery_status">
+            <th *matHeaderCellDef mat-header-cell>Delivery</th>
+            <td *matCellDef="let invitation" class="delivery-column" mat-cell>
+              <mat-chip
+                [color]="getDeliveryStatusColor(invitation.delivery_status)"
+                [matTooltip]="getDeliveryStatusDescription(invitation.delivery_status)"
+                class="delivery-chip">
+                {{ invitation.delivery_status }}
+              </mat-chip>
+            </td>
+          </ng-container>
+
+          <!-- Inviter Column -->
+          <ng-container matColumnDef="inviter">
+            <th *matHeaderCellDef mat-header-cell>Invited By</th>
+            <td *matCellDef="let invitation" class="inviter-column" mat-cell>
+              <span class="inviter-name">{{ invitation.inviter_name }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Created Date Column -->
+          <ng-container matColumnDef="created_at">
+            <th *matHeaderCellDef mat-header-cell mat-sort-header="createdAt">Created</th>
+            <td *matCellDef="let invitation" class="created-column" mat-cell>
+              <div class="date-info">
+                <div class="primary-text">{{ formatDate(invitation.created_at) }}</div>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Expires Date Column -->
+          <ng-container matColumnDef="expires_at">
+            <th *matHeaderCellDef mat-header-cell mat-sort-header="expiresAt">Expires</th>
+            <td *matCellDef="let invitation" class="expires-column" mat-cell>
+              <div [class.expired]="isExpired(invitation.expires_at)" class="expires-info">
+                <div class="expires-text">
+                  {{ getInvitationTimeRemaining(invitation.expires_at) }}
+                </div>
+                <div *ngIf="!isExpired(invitation.expires_at)" class="expires-date">
+                  {{ formatDate(invitation.expires_at) }}
+                </div>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Reminder Count Column -->
+          <ng-container matColumnDef="reminder_count">
+            <th *matHeaderCellDef mat-header-cell>Reminders</th>
+            <td *matCellDef="let invitation" class="reminder-column" mat-cell>
+              <mat-icon
+                [matBadgeHidden]="invitation.reminder_count === 0"
+                [matBadge]="invitation.reminder_count"
+                matBadgeColor="accent">
+                notification_important
+              </mat-icon>
+              <span *ngIf="invitation.reminder_count === 0" class="no-reminders">-</span>
+            </td>
+          </ng-container>
+
+          <!-- Actions Column -->
+          <ng-container matColumnDef="actions">
+            <th *matHeaderCellDef class="actions-column" mat-header-cell>Actions</th>
+            <td *matCellDef="let invitation" class="actions-column" mat-cell>
+              <button
+                [matMenuTriggerData]="{ invitation: invitation }"
+                [matMenuTriggerFor]="invitationActionMenu"
+                mat-icon-button
+                matTooltip="Invitation Actions">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr *matHeaderRowDef="displayedColumns" mat-header-row></tr>
+          <tr
+            (click)="viewInvitationDetails(invitation)"
+            *matRowDef="let invitation; columns: displayedColumns;"
+            class="invitation-row"
+            mat-row>
+          </tr>
+        </table>
+
+        <!-- No Data Message -->
+        <div *ngIf="dataSource.data.length === 0 && !isLoading" class="no-data-container">
+          <mat-icon class="no-data-icon">mail_outline</mat-icon>
+          <h3>No Invitations Found</h3>
+          <p>No invitations match your current filter criteria.</p>
+          <div class="no-data-actions">
+            <button (click)="createNewInvitation()" color="primary" mat-raised-button>
+              Send First Invitation
+            </button>
+            <button (click)="resetFilters()" mat-button>
+              Clear Filters
+            </button>
+          </div>
+        </div>
+
+        <!-- Paginator -->
+        <mat-paginator
+          (page)="onPageChange($event)"
+          [length]="totalElements"
+          [pageSizeOptions]="[10, 20, 50, 100]"
+          [pageSize]="pageSize"
+          [showFirstLastButtons]="true"
+          class="invitations-paginator">
+        </mat-paginator>
+      </div>
+    </mat-card-content>
+  </mat-card>
+</div>
+
+<!-- Export Menu -->
+<mat-menu #exportMenu="matMenu">
+  <button (click)="exportInvitations('CSV')" mat-menu-item>
+    <mat-icon>table_view</mat-icon>
+    <span>Export as CSV</span>
+  </button>
+  <button (click)="exportInvitations('EXCEL')" mat-menu-item>
+    <mat-icon>grid_on</mat-icon>
+    <span>Export as Excel</span>
+  </button>
+</mat-menu>
+
+<!-- Invitation Action Menu -->
+<mat-menu #invitationActionMenu="matMenu">
+  <ng-template let-invitation="invitation" matMenuContent>
+    <button (click)="viewInvitationDetails(invitation)" mat-menu-item>
+      <mat-icon>visibility</mat-icon>
+      <span>View Details</span>
+    </button>
+
+    <button
+      (click)="resendInvitation(invitation)"
+      [disabled]="!canResend(invitation)"
+      mat-menu-item>
+      <mat-icon>send</mat-icon>
+      <span>Resend Invitation</span>
+    </button>
+
+    <mat-divider></mat-divider>
+
+    <button
+      (click)="cancelInvitation(invitation)"
+      [disabled]="!canCancel(invitation)"
+      mat-menu-item>
+      <mat-icon>cancel</mat-icon>
+      <span>Cancel Invitation</span>
+    </button>
+
+    <button
+      (click)="deleteInvitation(invitation)"
+      class="danger-action"
+      mat-menu-item>
+      <mat-icon>delete</mat-icon>
+      <span>Delete Invitation</span>
+    </button>
+  </ng-template>
+</mat-menu>
