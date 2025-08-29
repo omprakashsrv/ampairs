@@ -1,15 +1,10 @@
 package com.ampairs.workspace.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -21,14 +16,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.ampairs.workspace.api.model.WorkspaceModuleApiModel
 import com.ampairs.workspace.viewmodel.WorkspaceModulesViewModel
+import com.ampairs.workspace.viewmodel.WorkspaceModulesState
 
 /**
  * Workspace Modules Management Screen
@@ -328,7 +322,8 @@ private fun InstalledModulesTab(
         }
 
         // Modules List
-        items(state.installedModules) { module ->
+        items(state.installedModules.size) { index ->
+            val module = state.installedModules[index]
             InstalledModuleCard(
                 module = module,
                 onClick = { onModuleClick(module.id) },
@@ -383,7 +378,8 @@ private fun AvailableModulesTab(
         }
 
         // Available Modules
-        items(state.availableModules) { module ->
+        items(state.availableModules.size) { index ->
+            val module = state.availableModules[index]
             AvailableModuleCard(
                 module = module,
                 isInstalled = state.installedModules.any { it.masterModule.id == module.id },
@@ -433,6 +429,68 @@ private fun AnalyticsTab(
             if (state.dashboardData!!.categoryDistribution.isNotEmpty()) {
                 item {
                     CategoryDistributionCard(state.dashboardData!!.categoryDistribution)
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SearchAndFiltersSection(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    selectedCategory: String,
+    onCategoryChange: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        // Search Bar
+        OutlinedTextField(
+            value = searchQuery,
+            onValueChange = onSearchQueryChange,
+            label = { Text("Search modules...") },
+            leadingIcon = {
+                Icon(Icons.Default.Search, contentDescription = "Search")
+            },
+            modifier = Modifier.fillMaxWidth()
+        )
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        // Category Filter
+        var expanded by remember { mutableStateOf(false) }
+        val categories = listOf("ALL", "COMMUNICATION", "PRODUCTIVITY", "ANALYTICS", "INTEGRATION", "SECURITY")
+        
+        ExposedDropdownMenuBox(
+            expanded = expanded,
+            onExpandedChange = { expanded = it }
+        ) {
+            OutlinedTextField(
+                value = selectedCategory,
+                onValueChange = { },
+                readOnly = true,
+                label = { Text("Category") },
+                trailingIcon = {
+                    ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded)
+                },
+                modifier = Modifier
+                    .menuAnchor(MenuAnchorType.PrimaryNotEditable)
+                    .fillMaxWidth()
+            )
+            
+            ExposedDropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                categories.forEach { category ->
+                    DropdownMenuItem(
+                        text = { Text(category) },
+                        onClick = {
+                            onCategoryChange(category)
+                            expanded = false
+                        }
+                    )
                 }
             }
         }
@@ -876,7 +934,9 @@ private fun getModuleIcon(iconName: String): ImageVector {
 
 private fun parseHexColor(hex: String): Color {
     return try {
-        Color(android.graphics.Color.parseColor(if (hex.startsWith("#")) hex else "#$hex"))
+        val cleanHex = if (hex.startsWith("#")) hex.drop(1) else hex
+        val colorValue = cleanHex.toLong(16)
+        Color((0xFF000000L or colorValue).toULong())
     } catch (e: Exception) {
         Color(0xFF6200EE) // Default primary color
     }
@@ -895,6 +955,211 @@ private fun formatStorageSize(sizeInMb: Long): String {
         "${sizeInMb} MB"
     } else {
         String.format("%.1f GB", sizeInMb / 1024.0)
+    }
+}
+
+@Composable
+private fun MostUsedModulesCard(mostUsedModules: List<WorkspaceModuleApiModel.WorkspaceModule>) {
+    Card(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Most Used Modules",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            mostUsedModules.take(5).forEachIndexed { index, module ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = module.masterModule.name,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = "${module.usageMetrics.monthlyAccess ?: 0} uses",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CategoryDistributionCard(categoryDistribution: Map<String, Int>) {
+    Card(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Category Distribution",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            categoryDistribution.entries.sortedByDescending { it.value }.take(5).forEach { (category, count) ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = category.replace("_", " ").split(" ")
+                            .joinToString(" ") { it.lowercase().replaceFirstChar { char -> char.uppercase() } },
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Text(
+                        text = "$count modules",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun HealthOverviewCard(healthOverview: WorkspaceModuleApiModel.ModuleHealthOverview) {
+    Card(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Module Health Overview",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceEvenly
+            ) {
+                HealthMetricItem(
+                    label = "Healthy",
+                    count = healthOverview.healthyModules,
+                    color = Color(0xFF4CAF50)
+                )
+                
+                HealthMetricItem(
+                    label = "Warning",
+                    count = healthOverview.warningModules,
+                    color = Color(0xFFFF9800)
+                )
+                
+                HealthMetricItem(
+                    label = "Critical",
+                    count = healthOverview.criticalModules,
+                    color = Color(0xFFF44336)
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = "Overall Health Score: ${String.format("%.1f", healthOverview.overallHealthScore * 100)}%",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun HealthMetricItem(
+    label: String,
+    count: Int,
+    color: Color
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = count.toString(),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = color
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun EmptyStateCard(
+    title: String,
+    description: String,
+    icon: ImageVector = Icons.Default.Extension,
+    actionText: String? = null,
+    onAction: () -> Unit = {}
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                modifier = Modifier.size(64.dp),
+                tint = MaterialTheme.colorScheme.outline
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmall,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodyMedium,
+                textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            actionText?.let { text ->
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                Button(onClick = onAction) {
+                    Text(text)
+                }
+            }
+        }
     }
 }
 

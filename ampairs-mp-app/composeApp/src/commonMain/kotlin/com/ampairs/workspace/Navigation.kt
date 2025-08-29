@@ -106,8 +106,7 @@ fun NavGraphBuilder.workspaceNavigation(navController: NavController, onWorkspac
                     },
                     onInviteClick = {
                         navController.navigate(WorkspaceRoute.CreateInvitation(membersRoute.workspaceId))
-                    },
-                    modifier = Modifier.padding(paddingValues)
+                    }
                 )
             }
         }
@@ -126,8 +125,7 @@ fun NavGraphBuilder.workspaceNavigation(navController: NavController, onWorkspac
                     },
                     onInviteClick = {
                         navController.navigate(WorkspaceRoute.CreateInvitation(invitationsRoute.workspaceId))
-                    },
-                    modifier = Modifier.padding(paddingValues)
+                    }
                 )
             }
         }

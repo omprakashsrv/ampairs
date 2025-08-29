@@ -19,7 +19,6 @@ import java.time.LocalDateTime
     indexes = [
         Index(name = "idx_workspace_uid", columnList = "uid", unique = true),
         Index(name = "idx_workspace_slug", columnList = "slug", unique = true),
-        Index(name = "idx_workspace_tenant", columnList = "tenant_id"),
         Index(name = "idx_workspace_owner", columnList = "created_by"),
         Index(name = "idx_workspace_status", columnList = "status"),
         Index(name = "idx_workspace_type", columnList = "workspace_type"),

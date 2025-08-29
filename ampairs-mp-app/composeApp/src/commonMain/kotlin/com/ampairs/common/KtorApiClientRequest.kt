@@ -13,6 +13,7 @@ import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
+import io.ktor.client.request.delete
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
@@ -84,6 +85,54 @@ suspend inline fun <reified T> put(client: HttpClient, url: String, body: Any?):
             response = client.put(url) {
                 if (body != null) {
                     setBody(body)
+                }
+                // Add the new token manually
+                val newAccessToken = tokenRepository.getAccessToken()
+                if (!newAccessToken.isNullOrEmpty()) {
+                    header("Authorization", "Bearer $newAccessToken")
+                }
+            }
+        } else {
+            println("❌ Token refresh failed")
+        }
+    }
+    
+    return handleResponse<T>(response)
+}
+
+/**
+ * DELETE request with automatic token refresh handling
+ */
+suspend inline fun <reified T> delete(client: HttpClient, url: String): T {
+    return delete(client, url, null)
+}
+
+/**
+ * DELETE request with parameters and automatic token refresh handling
+ */
+suspend inline fun <reified T> delete(
+    client: HttpClient,
+    url: String,
+    parameters: Map<String, Any>?
+): T {
+    val tokenRepository = getTokenRepository(client)
+    var response = client.delete(url) {
+        parameters?.forEach { (key, value) ->
+            parameter(key, value)
+        }
+    }
+    
+    // Handle 401 and attempt token refresh
+    if (response.status == HttpStatusCode.Unauthorized) {
+        println("🔄 401 Unauthorized - attempting token refresh")
+        
+        val refreshed = refreshTokens(tokenRepository)
+        if (refreshed) {
+            println("✅ Token refreshed - retrying original request")
+            // Retry with refreshed token
+            response = client.delete(url) {
+                parameters?.forEach { (key, value) ->
+                    parameter(key, value)
                 }
                 // Add the new token manually
                 val newAccessToken = tokenRepository.getAccessToken()

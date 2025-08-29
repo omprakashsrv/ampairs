@@ -153,6 +153,7 @@ fun WorkspaceMembersScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MemberFiltersSection(
     selectedRole: String,
@@ -200,7 +201,7 @@ private fun MemberFiltersSection(
                                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = roleExpanded)
                             },
                             modifier = Modifier
-                                .menuAnchor()
+                                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                                 .fillMaxWidth()
                         )
 
@@ -243,7 +244,7 @@ private fun MemberFiltersSection(
                                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = statusExpanded)
                             },
                             modifier = Modifier
-                                .menuAnchor()
+                                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                                 .fillMaxWidth()
                         )
 

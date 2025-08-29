@@ -145,6 +145,7 @@ fun WorkspaceInvitationsScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun InvitationFiltersSection(
     selectedStatus: String,
@@ -192,7 +193,7 @@ private fun InvitationFiltersSection(
                                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = statusExpanded)
                             },
                             modifier = Modifier
-                                .menuAnchor()
+                                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                                 .fillMaxWidth()
                         )
 
@@ -235,7 +236,7 @@ private fun InvitationFiltersSection(
                                 ExposedDropdownMenuDefaults.TrailingIcon(expanded = roleExpanded)
                             },
                             modifier = Modifier
-                                .menuAnchor()
+                                .menuAnchor(MenuAnchorType.PrimaryNotEditable)
                                 .fillMaxWidth()
                         )
 
@@ -304,6 +305,35 @@ private fun InvitationsSummaryCard(
                 iconTint = MaterialTheme.colorScheme.error
             )
         }
+    }
+}
+
+@Composable
+private fun SummaryItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    value: String,
+    label: String,
+    iconTint: androidx.compose.ui.graphics.Color = MaterialTheme.colorScheme.onSurface,
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = iconTint
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = value,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

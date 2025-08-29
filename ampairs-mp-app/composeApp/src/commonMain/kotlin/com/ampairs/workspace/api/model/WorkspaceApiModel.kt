@@ -1,7 +1,9 @@
 package com.ampairs.workspace.api.model
 
+import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import java.util.Objects
 
 // ===== CORE WORKSPACE MODELS =====
 
@@ -148,7 +150,6 @@ data class UserRoleResponse(
     @SerialName("role_hierarchy") val roleHierarchy: Map<String, Boolean>,
     @SerialName("permissions") val permissions: Map<String, Map<String, Boolean>>,
     @SerialName("module_access") val moduleAccess: List<String>,
-    @SerialName("restrictions") val restrictions: Map<String, Any>? = null,
 )
 
 // ===== WORKSPACE INVITATION MANAGEMENT MODELS =====

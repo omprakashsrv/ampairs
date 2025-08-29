@@ -166,7 +166,6 @@ class WorkspaceMemberRepository(
                 roleHierarchy = roleData.roleHierarchy,
                 permissions = roleData.permissions,
                 moduleAccess = roleData.moduleAccess,
-                restrictions = roleData.restrictions
             )
         } else {
             throw Exception(response.error?.message ?: "Failed to get user role")
