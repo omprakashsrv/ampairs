@@ -108,6 +108,7 @@ fun AppScreenWithHeader(
     AppScreenLayout(
         navController = navController,
         currentWorkspaceName = if (isWorkspaceSelection) null else headerState.currentWorkspace?.name,
+        currentWorkspaceId = if (isWorkspaceSelection) null else headerState.currentWorkspace?.id,
         userFullName = "${headerState.currentUser?.firstName ?: ""} ${headerState.currentUser?.lastName ?: ""}".trim()
             .ifEmpty { "User" },
         isUserLoading = headerState.isUserLoading,

@@ -1,5 +1,6 @@
 package com.ampairs.common.ui
 
+import WorkspaceRoute
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -23,6 +24,7 @@ import androidx.navigation.NavController
 fun AppHeader(
     navController: NavController,
     currentWorkspaceName: String?,
+    currentWorkspaceId: String?,
     userFullName: String,
     isUserLoading: Boolean = false,
     isWorkspaceLoading: Boolean = false,
@@ -60,9 +62,11 @@ fun AppHeader(
                 Spacer(modifier = Modifier.width(8.dp))
             }
 
-            // Center - Workspace selector
+            // Center - Workspace selector with management menu
             WorkspaceSelector(
+                navController = navController,
                 workspaceName = currentWorkspaceName,
+                workspaceId = currentWorkspaceId,
                 isLoading = isWorkspaceLoading,
                 onWorkspaceClick = onWorkspaceClick,
                 modifier = Modifier.widthIn(min = 120.dp, max = 200.dp)
@@ -85,68 +89,129 @@ fun AppHeader(
 
 @Composable
 private fun WorkspaceSelector(
+    navController: NavController,
     workspaceName: String?,
+    workspaceId: String?,
     isLoading: Boolean,
     onWorkspaceClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    Card(
-        modifier = modifier
-            .clickable { onWorkspaceClick() },
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Icon(
-                Icons.Default.Business,
-                contentDescription = "Workspace",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(20.dp)
+    var expanded by remember { mutableStateOf(false) }
+    
+    Box(modifier = modifier) {
+        Card(
+            modifier = Modifier
+                .clickable { expanded = true },
+            shape = RoundedCornerShape(8.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
             )
-            
-            Spacer(modifier = Modifier.width(8.dp))
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = "Workspace",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.outline
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.Business,
+                    contentDescription = "Workspace",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
                 )
                 
-                if (isLoading) {
+                Spacer(modifier = Modifier.width(8.dp))
+                
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = "Loading...",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = "Workspace",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.outline
                     )
-                } else {
-                    Text(
-                        text = workspaceName ?: "Select Workspace",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        color = if (workspaceName != null) {
-                            MaterialTheme.colorScheme.onSurfaceVariant
-                        } else {
-                            MaterialTheme.colorScheme.outline
-                        }
-                    )
+                    
+                    if (isLoading) {
+                        Text(
+                            text = "Loading...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    } else {
+                        Text(
+                            text = workspaceName ?: "Select Workspace",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            color = if (workspaceName != null) {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            } else {
+                                MaterialTheme.colorScheme.outline
+                            }
+                        )
+                    }
                 }
+                
+                Icon(
+                    Icons.Default.KeyboardArrowDown,
+                    contentDescription = "Workspace menu",
+                    tint = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.size(16.dp)
+                )
             }
-            
-            Icon(
-                Icons.Default.SwapHoriz,
-                contentDescription = "Switch workspace",
-                tint = MaterialTheme.colorScheme.outline,
-                modifier = Modifier.size(16.dp)
+        }
+        
+        // Workspace Menu
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(
+                MaterialTheme.colorScheme.surface,
+                RoundedCornerShape(8.dp)
             )
+        ) {
+            // Switch Workspace
+            WorkspaceMenuItem(
+                icon = Icons.Default.SwapHoriz,
+                text = "Switch Workspace",
+                onClick = {
+                    expanded = false
+                    onWorkspaceClick()
+                }
+            )
+            
+            // Only show management options when a workspace is selected
+            if (workspaceName != null && workspaceId != null) {
+                HorizontalDivider(
+                    color = MaterialTheme.colorScheme.outlineVariant,
+                    thickness = 0.5.dp
+                )
+                
+                WorkspaceMenuItem(
+                    icon = Icons.Default.Group,
+                    text = "Team Members",
+                    onClick = {
+                        expanded = false
+                        navController.navigate(WorkspaceRoute.Members(workspaceId = workspaceId))
+                    }
+                )
+                
+                WorkspaceMenuItem(
+                    icon = Icons.Default.Apps,
+                    text = "Manage Modules",
+                    onClick = {
+                        expanded = false
+                        navController.navigate(WorkspaceRoute.Modules(workspaceId = workspaceId))
+                    }
+                )
+                
+                WorkspaceMenuItem(
+                    icon = Icons.Default.Mail,
+                    text = "Invitations",
+                    onClick = {
+                        expanded = false
+                        navController.navigate(WorkspaceRoute.Invitations(workspaceId = workspaceId))
+                    }
+                )
+            }
         }
     }
 }
@@ -318,6 +383,35 @@ private fun ProfileMenuItem(
                 Text(
                     text = text,
                     color = textColor,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+        },
+        onClick = onClick
+    )
+}
+
+@Composable
+private fun WorkspaceMenuItem(
+    icon: ImageVector,
+    text: String,
+    onClick: () -> Unit
+) {
+    DropdownMenuItem(
+        text = {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = text,
+                    color = MaterialTheme.colorScheme.onSurface,
                     style = MaterialTheme.typography.bodyMedium
                 )
             }

@@ -11,6 +11,7 @@ import androidx.navigation.NavController
 fun AppScreenLayout(
     navController: NavController,
     currentWorkspaceName: String?,
+    currentWorkspaceId: String?,
     userFullName: String,
     isUserLoading: Boolean = false,
     isWorkspaceLoading: Boolean = false,
@@ -27,6 +28,7 @@ fun AppScreenLayout(
             AppHeader(
                 navController = navController,
                 currentWorkspaceName = currentWorkspaceName,
+                currentWorkspaceId = currentWorkspaceId,
                 userFullName = userFullName,
                 isUserLoading = isUserLoading,
                 isWorkspaceLoading = isWorkspaceLoading,

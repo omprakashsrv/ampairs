@@ -31,6 +31,18 @@
 
             <mat-divider></mat-divider>
 
+            <button mat-menu-item (click)="manageMembers()">
+              <mat-icon>people</mat-icon>
+              <span>Manage Members</span>
+            </button>
+
+            <button mat-menu-item (click)="manageModules()">
+              <mat-icon>extension</mat-icon>
+              <span>Manage Modules</span>
+            </button>
+
+            <mat-divider></mat-divider>
+
             <button mat-menu-item (click)="switchWorkspace()">
               <mat-icon>swap_horiz</mat-icon>
               <span>Switch Workspace</span>

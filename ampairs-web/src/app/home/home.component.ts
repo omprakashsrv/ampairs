@@ -96,6 +96,20 @@ export class HomeComponent implements OnInit {
     this.router.navigate(['/workspaces']);
     }
 
+    manageMembers(): void {
+        const currentWorkspace = this.workspaceService.getCurrentWorkspace();
+        if (currentWorkspace) {
+            this.router.navigate(['/w', currentWorkspace.slug, 'members']);
+        }
+    }
+
+    manageModules(): void {
+        const currentWorkspace = this.workspaceService.getCurrentWorkspace();
+        if (currentWorkspace) {
+            this.router.navigate(['/w', currentWorkspace.slug, 'modules']);
+        }
+    }
+
     logout(): void {
       // Clear workspace data when logging out
       this.workspaceService.clearCurrentWorkspace();
