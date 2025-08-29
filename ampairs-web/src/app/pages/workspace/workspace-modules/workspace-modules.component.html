@@ -1,0 +1,395 @@
+<div class="workspace-modules-container">
+  <!-- Header Section -->
+  <div class="header-section">
+    <div class="header-content">
+      <h1 class="page-title">
+        <mat-icon class="title-icon">extension</mat-icon>
+        Workspace Modules
+      </h1>
+      <p class="page-description">
+        Manage and configure business modules for your workspace
+      </p>
+    </div>
+
+    <div class="header-actions">
+      <button (click)="refresh()" mat-icon-button matTooltip="Refresh">
+        <mat-icon>refresh</mat-icon>
+      </button>
+    </div>
+  </div>
+
+  <!-- Dashboard Cards -->
+  <div *ngIf="dashboardData" class="dashboard-cards">
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <div class="stat-content">
+          <mat-icon class="stat-icon primary">apps</mat-icon>
+          <div class="stat-text">
+            <h3>{{ dashboardData.total_modules }}</h3>
+            <p>Total Modules</p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <div class="stat-content">
+          <mat-icon class="stat-icon success">check_circle</mat-icon>
+          <div class="stat-text">
+            <h3>{{ dashboardData.active_modules }}</h3>
+            <p>Active Modules</p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <div class="stat-content">
+          <mat-icon [matBadgeHidden]="dashboardData.modules_needing_attention === 0"
+                    [matBadge]="dashboardData.modules_needing_attention"
+                    class="stat-icon warning"
+                    matBadgeColor="warn">
+            priority_high
+          </mat-icon>
+          <div class="stat-text">
+            <h3>{{ dashboardData.modules_needing_attention }}</h3>
+            <p>Need Attention</p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="stat-card">
+      <mat-card-content>
+        <div class="stat-content">
+          <mat-icon class="stat-icon accent">storage</mat-icon>
+          <div class="stat-text">
+            <h3>{{ formatStorageSize(dashboardData.storage_usage_mb) }}</h3>
+            <p>Storage Used</p>
+          </div>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  <!-- Main Content -->
+  <mat-card class="main-content">
+    <mat-tab-group (selectedTabChange)="onTabChange($event.index)" [(selectedIndex)]="selectedTabIndex">
+      <!-- Installed Modules Tab -->
+      <mat-tab label="Installed Modules">
+        <div class="tab-content">
+          <!-- Filters -->
+          <div class="filters-section">
+            <mat-form-field appearance="outline" class="search-field">
+              <mat-label>Search modules</mat-label>
+              <input (ngModelChange)="onSearchChange()"
+                     [(ngModel)]="searchQuery"
+                     matInput
+                     placeholder="Search by name or description">
+              <mat-icon matSuffix>search</mat-icon>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Category</mat-label>
+              <mat-select (selectionChange)="onFilterChange()" [(ngModel)]="selectedCategory">
+                <mat-option value="">All Categories</mat-option>
+                <mat-option *ngFor="let category of categories" [value]="category">
+                  {{ category.replace('_', ' ') | titlecase }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Status</mat-label>
+              <mat-select (selectionChange)="onFilterChange()" [(ngModel)]="selectedStatus">
+                <mat-option value="">All Statuses</mat-option>
+                <mat-option *ngFor="let status of statuses" [value]="status">
+                  {{ status.replace('_', ' ') | titlecase }}
+                </mat-option>
+              </mat-select>
+            </mat-form-field>
+
+            <button (click)="clearFilters()" class="clear-filters-btn" mat-stroked-button>
+              <mat-icon>clear</mat-icon>
+              Clear Filters
+            </button>
+          </div>
+
+          <!-- Loading State -->
+          <div *ngIf="loading" class="loading-state">
+            <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+          </div>
+
+          <!-- Modules Grid -->
+          <div *ngIf="!loading" class="modules-grid">
+            <mat-card *ngFor="let module of installedModules" class="module-card">
+              <mat-card-header>
+                <div class="module-header">
+                  <div [style.background-color]="module.effective_color" class="module-icon">
+                    <mat-icon>{{ module.effective_icon || 'extension' }}</mat-icon>
+                  </div>
+                  <div class="module-info">
+                    <mat-card-title>{{ module.effective_name }}</mat-card-title>
+                    <mat-card-subtitle>{{ module.effective_category.replace('_', ' ') | titlecase }}</mat-card-subtitle>
+                  </div>
+                  <div class="module-status">
+                    <mat-icon [color]="getModuleStatusColor(module)"
+                              matTooltip="{{ module.enabled ? 'Enabled' : 'Disabled' }}">
+                      {{ getModuleStatusIcon(module) }}
+                    </mat-icon>
+                  </div>
+                </div>
+              </mat-card-header>
+
+              <mat-card-content>
+                <p class="module-description">{{ module.effective_description }}</p>
+
+                <!-- Module Metrics -->
+                <div class="module-metrics">
+                  <div class="metric">
+                    <span class="metric-label">Health Score</span>
+                    <div class="metric-value">
+                      <mat-progress-bar [color]="getHealthScoreColor(module.health_score)"
+                                        [value]="module.health_score * 100"
+                                        mode="determinate">
+                      </mat-progress-bar>
+                      <span class="health-score">{{ (module.health_score * 100).toFixed(0) }}%</span>
+                    </div>
+                  </div>
+
+                  <div *ngIf="module.usage_metrics.daily_active_users" class="metric">
+                    <span class="metric-label">Daily Active Users</span>
+                    <span class="metric-value">{{ module.usage_metrics.daily_active_users }}</span>
+                  </div>
+                </div>
+
+                <!-- Module Tags -->
+                <div *ngIf="module.needs_attention || module.can_be_updated" class="module-tags">
+                  <mat-chip-set>
+                    <mat-chip *ngIf="module.needs_attention" color="warn">
+                      <mat-icon matChipLeading>warning</mat-icon>
+                      Needs Attention
+                    </mat-chip>
+                    <mat-chip *ngIf="module.can_be_updated" color="accent">
+                      <mat-icon matChipLeading>system_update</mat-icon>
+                      Update Available
+                    </mat-chip>
+                  </mat-chip-set>
+                </div>
+              </mat-card-content>
+
+              <mat-card-actions>
+                <div class="module-actions">
+                  <div class="primary-actions">
+                    <mat-slide-toggle (change)="toggleModuleStatus(module)"
+                                      [(ngModel)]="module.enabled"
+                                      [color]="'primary'">
+                      {{ module.enabled ? 'Enabled' : 'Disabled' }}
+                    </mat-slide-toggle>
+                  </div>
+
+                  <div class="secondary-actions">
+                    <button [matMenuTriggerFor]="moduleMenu" mat-icon-button matTooltip="More actions">
+                      <mat-icon>more_vert</mat-icon>
+                    </button>
+
+                    <mat-menu #moduleMenu="matMenu">
+                      <button (click)="configureModule(module)" mat-menu-item>
+                        <mat-icon>settings</mat-icon>
+                        Configure
+                      </button>
+                      <button (click)="viewModuleAnalytics(module)" mat-menu-item>
+                        <mat-icon>analytics</mat-icon>
+                        Analytics
+                      </button>
+                      <button (click)="updateModule(module)" *ngIf="module.can_be_updated" mat-menu-item>
+                        <mat-icon>system_update</mat-icon>
+                        Update
+                      </button>
+                      <button (click)="resetModuleConfiguration(module)" mat-menu-item>
+                        <mat-icon>settings_backup_restore</mat-icon>
+                        Reset Configuration
+                      </button>
+                      <mat-divider></mat-divider>
+                      <button (click)="uninstallModule(module)" class="danger-action" mat-menu-item>
+                        <mat-icon>delete</mat-icon>
+                        Uninstall
+                      </button>
+                    </mat-menu>
+                  </div>
+                </div>
+              </mat-card-actions>
+            </mat-card>
+
+            <!-- Empty State -->
+            <div *ngIf="installedModules.length === 0" class="empty-state">
+              <mat-icon class="empty-icon">extension_off</mat-icon>
+              <h3>No modules found</h3>
+              <p>Try adjusting your search criteria or install new modules from the Available tab.</p>
+              <button (click)="selectedTabIndex = 1" color="primary" mat-raised-button>
+                Browse Available Modules
+              </button>
+            </div>
+          </div>
+
+          <!-- Pagination -->
+          <mat-paginator (page)="onPageChange($event)"
+                         *ngIf="installedModules.length > 0"
+                         [length]="totalElements"
+                         [pageIndex]="currentPage"
+                         [pageSizeOptions]="[6, 12, 24, 48]"
+                         [pageSize]="pageSize">
+          </mat-paginator>
+        </div>
+      </mat-tab>
+
+      <!-- Available Modules Tab -->
+      <mat-tab label="Available Modules">
+        <div class="tab-content">
+          <div class="available-modules-header">
+            <h2>Install New Modules</h2>
+            <p>Expand your workspace capabilities with these business modules</p>
+          </div>
+
+          <!-- Available Modules Grid -->
+          <div class="modules-grid">
+            <mat-card *ngFor="let module of availableModules" class="module-card available-module">
+              <mat-card-header>
+                <div class="module-header">
+                  <div [style.background-color]="module.ui_metadata.color" class="module-icon">
+                    <mat-icon>{{ module.ui_metadata.icon || 'extension' }}</mat-icon>
+                  </div>
+                  <div class="module-info">
+                    <mat-card-title>{{ module.name }}</mat-card-title>
+                    <mat-card-subtitle>{{ module.category.replace('_', ' ') | titlecase }}</mat-card-subtitle>
+                  </div>
+                  <div *ngIf="module.rating > 0" class="module-rating">
+                    <mat-icon class="rating-icon">star</mat-icon>
+                    <span>{{ module.rating.toFixed(1) }}</span>
+                  </div>
+                </div>
+              </mat-card-header>
+
+              <mat-card-content>
+                <p class="module-description">{{ module.description }}</p>
+                <p *ngIf="module.tagline" class="module-tagline">{{ module.tagline }}</p>
+
+                <!-- Module Details -->
+                <div class="module-details">
+                  <div class="detail-item">
+                    <mat-icon>cloud_download</mat-icon>
+                    <span>{{ formatStorageSize(module.size_mb) }}</span>
+                  </div>
+                  <div class="detail-item">
+                    <mat-icon>group</mat-icon>
+                    <span>{{ module.install_count }} installs</span>
+                  </div>
+                  <div *ngIf="module.complexity" class="detail-item">
+                    <mat-icon>speed</mat-icon>
+                    <span>{{ module.complexity | titlecase }} Setup</span>
+                  </div>
+                </div>
+
+                <!-- Featured Badge -->
+                <mat-chip-set *ngIf="module.featured">
+                  <mat-chip color="accent">
+                    <mat-icon matChipLeading>star</mat-icon>
+                    Featured
+                  </mat-chip>
+                </mat-chip-set>
+              </mat-card-content>
+
+              <mat-card-actions>
+                <div class="module-actions">
+                  <button (click)="installModule(module)"
+                          [disabled]="isModuleInstalled(module)"
+                          color="primary"
+                          mat-raised-button>
+                    <mat-icon>add</mat-icon>
+                    {{ isModuleInstalled(module) ? 'Installed' : 'Install' }}
+                  </button>
+
+                  <button *ngIf="module.documentation_url" mat-stroked-button>
+                    <mat-icon>help</mat-icon>
+                    Learn More
+                  </button>
+                </div>
+              </mat-card-actions>
+            </mat-card>
+
+            <!-- Empty State for Available Modules -->
+            <div *ngIf="availableModules.length === 0 && selectedTabIndex === 1" class="empty-state">
+              <mat-icon class="empty-icon">cloud_off</mat-icon>
+              <h3>No modules available</h3>
+              <p>All available modules are already installed in your workspace.</p>
+            </div>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Analytics Tab -->
+      <mat-tab *ngIf="dashboardData" label="Analytics">
+        <div class="tab-content">
+          <div class="analytics-section">
+            <h2>Module Usage Analytics</h2>
+
+            <!-- Health Overview -->
+            <mat-card class="analytics-card">
+              <mat-card-header>
+                <mat-card-title>Health Overview</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="health-metrics">
+                  <div class="health-metric">
+                    <h3 class="metric-value success">{{ dashboardData.health_overview.healthy_modules }}</h3>
+                    <p class="metric-label">Healthy Modules</p>
+                  </div>
+                  <div class="health-metric">
+                    <h3 class="metric-value warning">{{ dashboardData.health_overview.warning_modules }}</h3>
+                    <p class="metric-label">Warning Modules</p>
+                  </div>
+                  <div class="health-metric">
+                    <h3 class="metric-value error">{{ dashboardData.health_overview.critical_modules }}</h3>
+                    <p class="metric-label">Critical Modules</p>
+                  </div>
+                  <div class="health-metric">
+                    <h3 class="metric-value">{{ (dashboardData.health_overview.overall_health_score * 100).toFixed(1) }}
+                      %</h3>
+                    <p class="metric-label">Overall Health</p>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <!-- Most Used Modules -->
+            <mat-card *ngIf="dashboardData.most_used_modules.length > 0" class="analytics-card">
+              <mat-card-header>
+                <mat-card-title>Most Used Modules</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="usage-list">
+                  <div *ngFor="let module of dashboardData.most_used_modules.slice(0, 5)" class="usage-item">
+                    <div class="module-info">
+                      <div [style.background-color]="module.effective_color" class="module-icon small">
+                        <mat-icon>{{ module.effective_icon || 'extension' }}</mat-icon>
+                      </div>
+                      <div class="module-details">
+                        <h4>{{ module.effective_name }}</h4>
+                        <p>{{ module.usage_metrics.daily_active_users || 0 }} daily users</p>
+                      </div>
+                    </div>
+                    <div class="usage-score">
+                      <span class="engagement-score">{{ (module.engagement_level * 100).toFixed(0) }}%</span>
+                    </div>
+                  </div>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </mat-card>
+</div>

@@ -108,7 +108,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/munsi_app
     username: root
-    password: om711590
+    password: pass
     driver-class-name: com.mysql.cj.jdbc.Driver
     hikari:
       pool-name: main-db-pool

@@ -71,6 +71,37 @@ sealed interface WorkspaceRoute {
     data class Detail(
         val workspaceId: String = "",
     ) : WorkspaceRoute
+
+    @Serializable
+    data class Members(
+        val workspaceId: String = "",
+    ) : WorkspaceRoute
+
+    @Serializable
+    data class MemberDetail(
+        val workspaceId: String = "",
+        val memberId: String = "",
+    ) : WorkspaceRoute
+
+    @Serializable
+    data class Invitations(
+        val workspaceId: String = "",
+    ) : WorkspaceRoute
+
+    @Serializable
+    data class CreateInvitation(
+        val workspaceId: String = "",
+    ) : WorkspaceRoute
+
+    @Serializable
+    data class AcceptInvitation(
+        val token: String = "",
+    ) : WorkspaceRoute
+
+    @Serializable
+    data class Modules(
+        val workspaceId: String = "",
+    ) : WorkspaceRoute
 }
 
 // Product routes
