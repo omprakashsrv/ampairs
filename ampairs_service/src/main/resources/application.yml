@@ -3,6 +3,50 @@
 # Use environment variables to override settings for production deployment
 # Example: export OTP_DEV_MODE=false for production
 
+# SpringDoc OpenAPI Configuration
+springdoc:
+  api-docs:
+    path: /api-docs
+    enabled: true
+  swagger-ui:
+    path: /swagger-ui
+    enabled: true
+    operationsSorter: alpha
+    tagsSorter: alpha
+    displayRequestDuration: true
+    displayOperationId: false
+    showExtensions: true
+    showCommonExtensions: true
+    defaultModelsExpandDepth: 1
+    defaultModelRendering: example
+    docExpansion: none
+    filter: false
+    maxDisplayedTags: 20
+  show-actuator: false
+  group-configs:
+    - group: 'public'
+      displayName: 'Public APIs'
+      pathsToMatch: 
+        - '/auth/v1/**'
+        - '/workspace/v1'
+        - '/workspace/v1/check-slug/**'
+        - '/workspace/v1/search/**'
+    - group: 'workspace'
+      displayName: 'Workspace Management'
+      pathsToMatch: 
+        - '/workspace/v1/**'
+    - group: 'modules'
+      displayName: 'Module Management'
+      pathsToMatch: 
+        - '/workspace/v1/modules/**'
+    - group: 'business'
+      displayName: 'Business Operations'
+      pathsToMatch: 
+        - '/customer/v1/**'
+        - '/product/v1/**'
+        - '/order/v1/**'
+        - '/invoice/v1/**'
+
 server:
   compression:
     enabled: true

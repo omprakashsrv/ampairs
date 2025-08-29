@@ -218,6 +218,14 @@ class WorkspaceMemberService(
     }
 
     /**
+     * Get user's role in workspace
+     */
+    fun getUserRole(workspaceId: String, userId: String): WorkspaceRole? {
+        val member = memberRepository.findByWorkspaceIdAndUserIdAndIsActiveTrue(workspaceId, userId)
+        return member.orElse(null)?.role
+    }
+
+    /**
      * Check if user has specific permission
      */
     fun hasPermission(workspaceId: String, userId: String, permission: String): Boolean {

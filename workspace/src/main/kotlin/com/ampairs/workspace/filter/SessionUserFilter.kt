@@ -25,7 +25,7 @@ class SessionUserFilter @Autowired constructor(
 
     companion object {
         private val log = LoggerFactory.getLogger(SessionUserFilter::class.java)
-        private const val WORKSPACE_HEADER = "X-Workspace"
+        private const val WORKSPACE_HEADER = "X-Workspace-ID"
     }
 
 
@@ -56,7 +56,7 @@ class SessionUserFilter @Autowired constructor(
 
             if (workspaceId.isNullOrBlank()) {
                 log.warn("Missing workspace header for user: ${user.uid}")
-                sendAccessDeniedResponse(response, request.requestURI, "Workspace header (X-Workspace) is required")
+                sendAccessDeniedResponse(response, request.requestURI, "Workspace header (X-Workspace-ID) is required")
                 return
             }
 

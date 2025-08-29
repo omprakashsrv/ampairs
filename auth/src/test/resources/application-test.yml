@@ -4,7 +4,7 @@ spring:
   datasource:
     url: jdbc:mysql://localhost:3306/ampairs_auth_test
     username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:pass}
+    password: ${DB_PASSWORD:om711590}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   # Test JPA settings - Drop and create schema for clean tests

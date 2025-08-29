@@ -11,6 +11,15 @@ import com.ampairs.workspace.model.enums.SubscriptionPlan
 import com.ampairs.workspace.model.enums.WorkspaceType
 import com.ampairs.workspace.security.WorkspacePermission
 import com.ampairs.workspace.service.WorkspaceService
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.ExampleObject
+import io.swagger.v3.oas.annotations.media.Schema
+import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
+import io.swagger.v3.oas.annotations.responses.ApiResponses
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -21,10 +30,38 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 
 /**
- * REST controller for workspace CRUD operations and management
+ * **Workspace Management Controller**
+ * 
+ * Core workspace operations including creation, management, and access control.
+ * Handles multi-tenant workspace functionality with role-based permissions.
  */
+@Tag(
+    name = "Workspace Management", 
+    description = """
+    ## 🏢 **Multi-Tenant Workspace Management**
+    
+    **Core workspace operations for creating and managing business workspaces.**
+    
+    ### 🎯 **Key Features**
+    - **Workspace Creation**: Set up new business workspaces
+    - **Multi-Tenancy**: Complete data isolation between workspaces
+    - **Access Control**: Role-based permissions and member management
+    - **Workspace Discovery**: Search and browse available workspaces
+    - **Settings Management**: Configure workspace preferences and settings
+    
+    ### 🔐 **Security Model**
+    - **Tenant Isolation**: All data scoped to specific workspace context
+    - **Role Hierarchy**: OWNER → ADMIN → MANAGER → MEMBER → GUEST → VIEWER
+    - **Permission-Based Access**: Fine-grained control over workspace operations
+    
+    ### 📋 **API Categories**
+    - **Public APIs**: No workspace context required (creation, listing, search)
+    - **Workspace-Scoped APIs**: Require X-Workspace-ID header for multi-tenant operations
+    """
+)
 @RestController
 @RequestMapping("/workspace/v1")
+@SecurityRequirement(name = "BearerAuth")
 class WorkspaceController(
     private val workspaceService: WorkspaceService,
 ) {
