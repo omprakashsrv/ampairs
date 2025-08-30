@@ -2,7 +2,9 @@ package com.ampairs.workspace.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
-import com.ampairs.user.model.User
+import com.ampairs.core.domain.User
+import com.ampairs.core.service.UserService
+import com.ampairs.core.security.AuthenticationHelper
 import com.ampairs.workspace.model.dto.CreateInvitationRequest
 import com.ampairs.workspace.model.dto.InvitationListResponse
 import com.ampairs.workspace.model.dto.InvitationResponse
@@ -99,6 +101,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 @SecurityRequirement(name = "WorkspaceContext")
 class WorkspaceInvitationController(
     private val invitationService: WorkspaceInvitationService,
+    private val userService: UserService,
 ) {
 
     @Operation(
@@ -478,9 +481,10 @@ class WorkspaceInvitationController(
         @RequestBody @Valid request: CreateInvitationRequest,
     ): ApiResponse<InvitationResponse> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val user = auth.principal as User
+        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+            ?: throw IllegalStateException("User not authenticated")
 
-        val invitation = invitationService.createInvitation(workspaceId, request, user.uid)
+        val invitation = invitationService.createInvitation(workspaceId, request, userId)
         return ApiResponse.success(invitation)
     }
 
@@ -670,9 +674,10 @@ class WorkspaceInvitationController(
         @PathVariable token: String,
     ): ApiResponse<InvitationResponse> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val user = auth.principal as User
+        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+            ?: throw IllegalStateException("User not authenticated")
 
-        val invitation = invitationService.acceptInvitation(token, user.uid)
+        val invitation = invitationService.acceptInvitation(token, userId)
         return ApiResponse.success(invitation)
     }
 
@@ -890,9 +895,10 @@ class WorkspaceInvitationController(
         @RequestBody request: ResendInvitationRequest = ResendInvitationRequest(),
     ): ApiResponse<InvitationResponse> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val user = auth.principal as User
+        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+            ?: throw IllegalStateException("User not authenticated")
 
-        val result = invitationService.resendInvitation(invitationId, request, user.uid)
+        val result = invitationService.resendInvitation(invitationId, request, userId)
         return ApiResponse.success(result)
     }
 
@@ -1093,9 +1099,10 @@ class WorkspaceInvitationController(
         @PathVariable invitationId: String,
     ): ApiResponse<String> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val user = auth.principal as User
+        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+            ?: throw IllegalStateException("User not authenticated")
 
-        val result = invitationService.cancelInvitation(invitationId, null, user.uid)
+        val result = invitationService.cancelInvitation(invitationId, null, userId)
         return ApiResponse.success(result)
     }
 

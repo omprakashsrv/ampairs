@@ -44,4 +44,14 @@ class UserService @Autowired constructor(val userRepository: UserRepository) {
             .orElseThrow { IllegalArgumentException("User not found with id: $id") }
     }
 
+    /**
+     * Get multiple users by their IDs in a single query
+     * @param ids List of user IDs to fetch
+     * @return List of found users (may be fewer than requested if some IDs don't exist)
+     */
+    fun getUsers(ids: List<String>): List<User> {
+        if (ids.isEmpty()) return emptyList()
+        return userRepository.findByUidIn(ids)
+    }
+
 }

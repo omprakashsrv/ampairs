@@ -2,7 +2,9 @@ package com.ampairs.workspace.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
-import com.ampairs.user.model.User
+import com.ampairs.core.domain.User
+import com.ampairs.core.service.UserService
+import com.ampairs.core.security.AuthenticationHelper
 import com.ampairs.workspace.model.dto.MemberListResponse
 import com.ampairs.workspace.model.dto.MemberResponse
 import com.ampairs.workspace.model.dto.UpdateMemberRequest
@@ -82,6 +84,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 @SecurityRequirement(name = "WorkspaceContext")
 class WorkspaceMemberController(
     private val memberService: WorkspaceMemberService,
+    private val userService: UserService,
 ) {
 
     @Operation(
@@ -567,9 +570,10 @@ class WorkspaceMemberController(
         @RequestBody @Valid request: UpdateMemberRequest,
     ): ApiResponse<MemberResponse> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val user = auth.principal as User
+        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+            ?: throw IllegalStateException("User not authenticated")
 
-        val updatedMember = memberService.updateMember(workspaceId, memberId, request, user.uid)
+        val updatedMember = memberService.updateMember(workspaceId, memberId, request, userId)
         return ApiResponse.success(updatedMember)
     }
 
@@ -723,9 +727,10 @@ class WorkspaceMemberController(
         @PathVariable memberId: String,
     ): ApiResponse<String> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val user = auth.principal as User
+        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+            ?: throw IllegalStateException("User not authenticated")
 
-        val result = memberService.removeMember(workspaceId, memberId, user.uid)
+        val result = memberService.removeMember(workspaceId, memberId, userId)
         return ApiResponse.success(result)
     }
 
@@ -896,19 +901,20 @@ class WorkspaceMemberController(
         @PathVariable workspaceId: String,
     ): ApiResponse<Map<String, Any>> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val user = auth.principal as User
+        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+            ?: throw IllegalStateException("User not authenticated")
 
         // Return user's permissions in workspace
-        val hasOwnerPermission = memberService.isWorkspaceOwner(workspaceId, user.uid)
-        val hasAdminPermission = memberService.hasPermission(workspaceId, user.uid, WorkspacePermission.WORKSPACE_MANAGE.permissionName)
-        val hasMemberPermission = memberService.hasPermission(workspaceId, user.uid, WorkspacePermission.MEMBER_VIEW.permissionName)
+        val hasOwnerPermission = memberService.isWorkspaceOwner(workspaceId, userId)
+        val hasAdminPermission = memberService.hasPermission(workspaceId, userId, WorkspacePermission.WORKSPACE_MANAGE.permissionName)
+        val hasMemberPermission = memberService.hasPermission(workspaceId, userId, WorkspacePermission.MEMBER_VIEW.permissionName)
 
         val result: Map<String, Any> = mapOf(
             "is_owner" to hasOwnerPermission,
             "is_admin" to hasAdminPermission,
             "can_view_members" to hasMemberPermission,
-            "can_invite_members" to memberService.hasPermission(workspaceId, user.uid, WorkspacePermission.MEMBER_INVITE.permissionName),
-            "can_manage_workspace" to memberService.hasPermission(workspaceId, user.uid, WorkspacePermission.WORKSPACE_MANAGE.permissionName)
+            "can_invite_members" to memberService.hasPermission(workspaceId, userId, WorkspacePermission.MEMBER_INVITE.permissionName),
+            "can_manage_workspace" to memberService.hasPermission(workspaceId, userId, WorkspacePermission.WORKSPACE_MANAGE.permissionName)
         )
         return ApiResponse.success(result)
     }

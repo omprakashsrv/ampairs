@@ -1,5 +1,6 @@
 package com.ampairs.workspace.model.dto
 
+import com.ampairs.core.domain.User
 import com.ampairs.workspace.model.WorkspaceMember
 import com.ampairs.workspace.model.enums.Permission
 import com.ampairs.workspace.model.enums.WorkspaceRole
@@ -10,49 +11,54 @@ import java.time.LocalDateTime
  * Response DTO for workspace member information
  */
 data class MemberResponse(
-    @JsonProperty("id")
+    @field:JsonProperty("id")
     val id: String,
 
-    @JsonProperty("user_id")
+    @field:JsonProperty("user_id")
     val userId: String,
 
-    @JsonProperty("workspace_id")
+    @field:JsonProperty("workspace_id")
     val workspaceId: String,
 
-    @JsonProperty("email")
+    // Flattened user fields (kept for backwards compatibility)
+    @field:JsonProperty("email")
     val email: String? = null,
 
-    @JsonProperty("first_name")
+    @field:JsonProperty("first_name")
     val firstName: String? = null,
 
-    @JsonProperty("last_name")
+    @field:JsonProperty("last_name")
     val lastName: String? = null,
 
-    @JsonProperty("avatar_url")
+    @field:JsonProperty("avatar_url")
     val avatarUrl: String? = null,
 
-    @JsonProperty("role")
+    // User details from core User interface
+    @field:JsonProperty("user")
+    val user: User? = null,
+
+    @field:JsonProperty("role")
     val role: WorkspaceRole,
 
-    @JsonProperty("permissions")
+    @field:JsonProperty("permissions")
     val permissions: Set<Permission>,
 
-    @JsonProperty("is_active")
+    @field:JsonProperty("is_active")
     val isActive: Boolean,
 
-    @JsonProperty("joined_at")
+    @field:JsonProperty("joined_at")
     val joinedAt: LocalDateTime,
 
-    @JsonProperty("last_activity_at")
+    @field:JsonProperty("last_activity_at")
     val lastActivityAt: LocalDateTime?,
 
-    @JsonProperty("invitation_accepted_at")
+    @field:JsonProperty("invitation_accepted_at")
     val invitationAcceptedAt: LocalDateTime?,
 
-    @JsonProperty("created_at")
+    @field:JsonProperty("created_at")
     val createdAt: LocalDateTime,
 
-    @JsonProperty("updated_at")
+    @field:JsonProperty("updated_at")
     val updatedAt: LocalDateTime,
 )
 
@@ -60,74 +66,60 @@ data class MemberResponse(
  * Simplified member response for lists
  */
 data class MemberListResponse(
-    @JsonProperty("id")
+    @field:JsonProperty("id")
     val id: String,
 
-    @JsonProperty("user_id")
+    @field:JsonProperty("user_id")
     val userId: String,
 
-    @JsonProperty("email")
+    // Flattened user fields (kept for backwards compatibility)
+    @field:JsonProperty("email")
     val email: String? = null,
 
-    @JsonProperty("first_name")
+    @field:JsonProperty("first_name")
     val firstName: String? = null,
 
-    @JsonProperty("last_name")
+    @field:JsonProperty("last_name")
     val lastName: String? = null,
 
-    @JsonProperty("avatar_url")
+    @field:JsonProperty("avatar_url")
     val avatarUrl: String? = null,
 
-    @JsonProperty("role")
+    // User details from core User interface
+    @field:JsonProperty("user")
+    val user: User? = null,
+
+    @field:JsonProperty("role")
     val role: WorkspaceRole,
 
-    @JsonProperty("is_active")
+    @field:JsonProperty("is_active")
     val isActive: Boolean,
 
-    @JsonProperty("joined_at")
+    @field:JsonProperty("joined_at")
     val joinedAt: LocalDateTime,
 
-    @JsonProperty("last_activity_at")
+    @field:JsonProperty("last_activity_at")
     val lastActivityAt: LocalDateTime?,
-)
-
-/**
- * Response DTO for member statistics
- */
-data class MemberStatsResponse(
-    @JsonProperty("total_members")
-    val totalMembers: Long,
-
-    @JsonProperty("active_members")
-    val activeMembers: Long,
-
-    @JsonProperty("pending_invitations")
-    val pendingInvitations: Long,
-
-    @JsonProperty("members_by_role")
-    val membersByRole: Map<String, Long>,
-
-    @JsonProperty("recent_joins")
-    val recentJoins: Long,
 )
 
 /**
  * Extension function to convert WorkspaceMember entity to MemberResponse
  */
-fun WorkspaceMember.toResponse(): MemberResponse {
+fun WorkspaceMember.toResponse(userInfo: User? = null): MemberResponse {
     return MemberResponse(
-        id = this.uid, // Use uid instead of id
+        id = this.uid,
         userId = this.userId,
         workspaceId = this.workspaceId,
-        email = null, // Will be populated from User entity if needed
-        firstName = null, // Will be populated from User entity if needed
-        lastName = null, // Will be populated from User entity if needed
-        avatarUrl = null, // Will be populated from User entity if needed
+        email = userInfo?.email,
+        firstName = userInfo?.firstName,
+        lastName = userInfo?.lastName,
+        avatarUrl = userInfo?.profilePictureUrl,
+        user = userInfo,
         role = this.role,
         permissions = this.permissions,
         isActive = this.isActive,
         joinedAt = this.joinedAt ?: LocalDateTime.now(),
-        lastActivityAt = this.lastActivityAt,
+        lastActivityAt = this.lastActiveAt,
         invitationAcceptedAt = this.invitationAcceptedAt,
         createdAt = this.createdAt ?: LocalDateTime.now(),
         updatedAt = this.updatedAt ?: LocalDateTime.now(),
@@ -137,17 +129,18 @@ fun WorkspaceMember.toResponse(): MemberResponse {
 /**
  * Extension function to convert WorkspaceMember entity to MemberListResponse
  */
-fun WorkspaceMember.toListResponse(): MemberListResponse {
+fun WorkspaceMember.toListResponse(userInfo: User? = null): MemberListResponse {
     return MemberListResponse(
-        id = this.uid, // Use uid instead of id
+        id = this.uid,
         userId = this.userId,
-        email = null, // Will be populated from User entity if needed
-        firstName = null, // Will be populated from User entity if needed
-        lastName = null, // Will be populated from User entity if needed
-        avatarUrl = null, // Will be populated from User entity if needed
+        email = userInfo?.email,
+        firstName = userInfo?.firstName,
+        lastName = userInfo?.lastName,
+        avatarUrl = userInfo?.profilePictureUrl,
+        user = userInfo,
         role = this.role,
         isActive = this.isActive,
         joinedAt = this.joinedAt ?: LocalDateTime.now(),
-        lastActivityAt = this.lastActivityAt
+        lastActivityAt = this.lastActiveAt
     )
 }

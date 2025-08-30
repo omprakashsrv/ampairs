@@ -23,7 +23,7 @@ fun User.toUserResponse(): UserResponse {
         countryCode = this.countryCode,
         phone = this.phone,
         email = this.email,
-        fullName = this.fullName,
+        fullName = this.getFullName(),
         active = this.active
     )
 }

@@ -2,25 +2,23 @@ package com.ampairs.user.model
 
 import com.ampairs.core.config.Constants
 import com.ampairs.core.domain.model.BaseDomain
-import jakarta.persistence.Column
-import jakarta.persistence.ElementCollection
-import jakarta.persistence.Entity
-import jakarta.persistence.Table
+import com.ampairs.core.domain.User as CoreUser
+import jakarta.persistence.*
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 
 
 @Entity
 @Table(name = "app_user")
-class User : BaseDomain(), UserDetails {
+class User : BaseDomain(), UserDetails, CoreUser {
     @Column(name = "country_code", nullable = false)
     var countryCode: Int = 91
 
     @Column(name = "phone", nullable = false, length = 20)  // Increased for international numbers
-    var phone: String = ""
+    override var phone: String = ""
 
     @Column(name = "email", length = 320)  // RFC compliant email length
-    var email: String? = null  // Email should be nullable
+    override var email: String? = null  // Email should be nullable
 
     @Column(name = "user_name", nullable = false, length = 200, unique = true)  // Added unique constraint
     var userName: String = ""
@@ -29,22 +27,22 @@ class User : BaseDomain(), UserDetails {
     var userPassword: String? = null
 
     @Column(name = "first_name", nullable = false, columnDefinition = "varchar(100) default ''")
-    var firstName = ""
+    override var firstName: String = ""
 
     @Column(name = "last_name", nullable = true, columnDefinition = "varchar(100) default ''")
-    var lastName: String? = ""
+    override var lastName: String? = ""
 
     @Column(name = "active", nullable = false)
     var active: Boolean = true
 
-    override fun obtainSeqIdPrefix(): String {
-        return Constants.USER_ID_PREFIX
-    }
+    // Core User interface implementation
+    override val isActive: Boolean
+        get() = active
 
-    val fullName: String
-        get() = if (lastName.isNullOrEmpty()) firstName else "$firstName $lastName"
+    override val profilePictureUrl: String?
+        get() = null // Can be implemented when profile pictures are added
 
-    @ElementCollection
+    // UserDetails implementation
     override fun getAuthorities(): List<SimpleGrantedAuthority> {
         return listOf()
     }
@@ -70,6 +68,35 @@ class User : BaseDomain(), UserDetails {
     }
 
     override fun isEnabled(): Boolean {
-        return true
+        return active
+    }
+
+    /**
+     * Get display name for the user
+     */
+    override fun getDisplayName(): String {
+        return when {
+            firstName.isNotBlank() && !lastName.isNullOrBlank() -> "$firstName $lastName"
+            firstName.isNotBlank() -> firstName
+            !lastName.isNullOrBlank() -> lastName!!
+            !email.isNullOrBlank() -> email!!
+            else -> uid
+        }
+    }
+
+    /**
+     * Get full name
+     */
+    override fun getFullName(): String {
+        return when {
+            firstName.isNotBlank() && !lastName.isNullOrBlank() -> "$firstName $lastName"
+            firstName.isNotBlank() -> firstName
+            !lastName.isNullOrBlank() -> lastName!!
+            else -> ""
+        }
+    }
+
+    override fun obtainSeqIdPrefix(): String {
+        return Constants.USER_ID_PREFIX
     }
 }

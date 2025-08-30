@@ -1,7 +1,9 @@
 package com.ampairs.workspace.security
 
 import com.ampairs.core.multitenancy.TenantContextHolder
-import com.ampairs.user.model.User
+import com.ampairs.core.domain.User
+import com.ampairs.core.service.UserService
+import com.ampairs.core.security.AuthenticationHelper
 import com.ampairs.workspace.model.enums.WorkspaceRole
 import com.ampairs.workspace.service.WorkspaceMemberService
 import org.springframework.security.core.Authentication
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service
 @Service("workspaceAuthorizationService")
 class WorkspaceAuthorizationService(
     private val memberService: WorkspaceMemberService,
+    private val userService: UserService,
 ) {
 
     /**
@@ -21,8 +24,8 @@ class WorkspaceAuthorizationService(
      * Used with @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, 'WORKSPACE_UPDATE')")
      */
     fun hasWorkspacePermission(authentication: Authentication, workspaceId: String, permission: String): Boolean {
-        val user = authentication.principal as? User ?: return false
-        return memberService.hasPermission(workspaceId, user.uid, permission)
+        val userId = AuthenticationHelper.getCurrentUserId(authentication) ?: return false
+        return memberService.hasPermission(workspaceId, userId, permission)
     }
 
     /**
@@ -30,16 +33,16 @@ class WorkspaceAuthorizationService(
      * Used with @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).WORKSPACE_UPDATE)")
      */
     fun hasWorkspacePermission(authentication: Authentication, workspaceId: String, permission: WorkspacePermission): Boolean {
-        val user = authentication.principal as? User ?: return false
-        return memberService.hasPermission(workspaceId, user.uid, permission.permissionName)
+        val userId = AuthenticationHelper.getCurrentUserId(authentication) ?: return false
+        return memberService.hasPermission(workspaceId, userId, permission.permissionName)
     }
 
     /**
      * Check if user is workspace member (any role)
      */
     fun isWorkspaceMember(authentication: Authentication, workspaceId: String): Boolean {
-        val user = authentication.principal as? User ?: return false
-        return memberService.isWorkspaceMember(workspaceId, user.uid)
+        val userId = AuthenticationHelper.getCurrentUserId(authentication) ?: return false
+        return memberService.isWorkspaceMember(workspaceId, userId)
     }
 
     /**
@@ -48,8 +51,8 @@ class WorkspaceAuthorizationService(
      */
     fun hasCurrentTenantPermission(authentication: Authentication, permission: String): Boolean {
         val workspaceId = TenantContextHolder.getCurrentTenant() ?: return false
-        val user = authentication.principal as? User ?: return false
-        return memberService.hasPermission(workspaceId, user.uid, permission)
+        val userId = AuthenticationHelper.getCurrentUserId(authentication) ?: return false
+        return memberService.hasPermission(workspaceId, userId, permission)
     }
 
     /**
@@ -64,16 +67,16 @@ class WorkspaceAuthorizationService(
      */
     fun isCurrentTenantMember(authentication: Authentication): Boolean {
         val workspaceId = TenantContextHolder.getCurrentTenant() ?: return false
-        val user = authentication.principal as? User ?: return false
-        return memberService.isWorkspaceMember(workspaceId, user.uid)
+        val userId = AuthenticationHelper.getCurrentUserId(authentication) ?: return false
+        return memberService.isWorkspaceMember(workspaceId, userId)
     }
 
     /**
      * Check if user has specific role or higher in workspace
      */
     fun hasWorkspaceRole(authentication: Authentication, workspaceId: String, requiredRole: WorkspaceRole): Boolean {
-        val user = authentication.principal as? User ?: return false
-        val userRole = memberService.getUserRole(workspaceId, user.uid) ?: return false
+        val userId = AuthenticationHelper.getCurrentUserId(authentication) ?: return false
+        val userRole = memberService.getUserRole(workspaceId, userId) ?: return false
         return userRole.hasPermissionLevel(requiredRole)
     }
 

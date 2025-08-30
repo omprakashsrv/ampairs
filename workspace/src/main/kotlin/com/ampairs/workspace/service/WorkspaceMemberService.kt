@@ -1,5 +1,6 @@
 package com.ampairs.workspace.service
 
+import com.ampairs.core.domain.User
 import com.ampairs.core.exception.BusinessException
 import com.ampairs.core.exception.NotFoundException
 import com.ampairs.workspace.model.WorkspaceMember
@@ -155,7 +156,9 @@ class WorkspaceMemberService(
         }
 
         val updatedMember = memberRepository.save(member)
-        return updatedMember.toResponse()
+        // Populate user detail if available
+        val userDetail = if (userDetailProvider.isUserServiceAvailable()) userDetailProvider.getUserDetail(updatedMember.userId) else null
+        return updatedMember.toResponse(userDetail)
     }
 
     /**
@@ -191,6 +194,16 @@ class WorkspaceMemberService(
      */
     fun getWorkspaceMembers(workspaceId: String, pageable: Pageable): Page<MemberListResponse> {
         val members = memberRepository.findByWorkspaceIdAndIsActiveTrue(workspaceId, pageable)
+        // Batch-load user details when provider is available to populate nested user DTOs
+        if (userDetailProvider.isUserServiceAvailable()) {
+            val userIds = members.content.map { it.userId }
+            val userDetails = userDetailProvider.getUserDetails(userIds)
+            return members.map { member ->
+                val ud = userDetails[member.userId]
+                member.toListResponse(ud)
+            }
+        }
+
         return members.map { it.toListResponse() }
     }
 
@@ -208,10 +221,10 @@ class WorkspaceMemberService(
         val memberProjections = memberRepository.findActiveMembers(workspaceId, pageable)
         
         // Extract user IDs for batch loading
-        val userIds = memberProjections.content.map { it["userId"] as String }
-        
+        val userIds = memberProjections.content.mapNotNull { it["userId"] as? String }
+
         // Batch load user details if provider is available
-        val userDetails: Map<String, UserDetail> = if (userDetailProvider.isUserServiceAvailable()) {
+        val userDetails: Map<String, User> = if (userDetailProvider.isUserServiceAvailable()) {
             userDetailProvider.getUserDetails(userIds)
         } else {
             emptyMap()
@@ -229,7 +242,8 @@ class WorkspaceMemberService(
                 email = userDetail?.email ?: projection["memberEmail"] as? String,
                 firstName = userDetail?.firstName ?: extractFirstName(memberName),
                 lastName = userDetail?.lastName ?: extractLastName(memberName),
-                avatarUrl = userDetail?.avatarUrl,
+                avatarUrl = userDetail?.profilePictureUrl,
+                user = userDetail,
                 role = projection["role"] as WorkspaceRole,
                 isActive = projection["isActive"] as Boolean,
                 joinedAt = projection["joinedAt"] as LocalDateTime,
@@ -260,7 +274,8 @@ class WorkspaceMemberService(
      */
     fun getMemberById(memberId: String): MemberResponse {
         val member = findMemberById(memberId)
-        return member.toResponse()
+        val userDetail = if (userDetailProvider.isUserServiceAvailable()) userDetailProvider.getUserDetail(member.userId) else null
+        return member.toResponse(userDetail)
     }
 
     /**
@@ -683,17 +698,8 @@ class WorkspaceMemberService(
         }
         
         val updatedMember = memberRepository.save(member)
-        
-        // Log status change if it actually changed
-        if (wasActive != member.isActive) {
-            if (member.isActive) {
-                activityService.logMemberActivated(workspaceId, member.userId, "Unknown User", "SYSTEM", "System")
-            } else {
-                activityService.logMemberDeactivated(workspaceId, member.userId, "Unknown User", "SYSTEM", "System")
-            }
-        }
-        
-        return updatedMember.toResponse()
+        val userDetail = if (userDetailProvider.isUserServiceAvailable()) userDetailProvider.getUserDetail(updatedMember.userId) else null
+        return updatedMember.toResponse(userDetail)
     }
 
     private fun findMemberById(memberId: String): WorkspaceMember {

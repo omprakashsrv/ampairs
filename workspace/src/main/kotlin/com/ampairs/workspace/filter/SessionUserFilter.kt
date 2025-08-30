@@ -3,7 +3,9 @@ package com.ampairs.workspace.filter
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.multitenancy.CurrentTenantIdentifierResolver
 import com.ampairs.core.multitenancy.TenantContextHolder
-import com.ampairs.user.model.User
+import com.ampairs.core.domain.User
+import com.ampairs.core.service.UserService
+import com.ampairs.core.security.AuthenticationHelper
 import com.ampairs.workspace.service.WorkspaceMemberService
 import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.servlet.FilterChain
@@ -21,6 +23,7 @@ import org.springframework.web.filter.OncePerRequestFilter
 class SessionUserFilter @Autowired constructor(
     private val memberService: WorkspaceMemberService,
     private val objectMapper: ObjectMapper,
+    private val userService: UserService,
 ) : OncePerRequestFilter() {
 
     companion object {
@@ -45,24 +48,30 @@ class SessionUserFilter @Autowired constructor(
         try {
             // Get authenticated user
             val auth: Authentication? = SecurityContextHolder.getContext().authentication
-            if (auth == null || auth.principal !is User) {
+            if (auth == null) {
                 log.warn("No authenticated user found for workspace access")
                 sendAccessDeniedResponse(response, request.requestURI, "Authentication required")
                 return
             }
 
-            val user = auth.principal as User
+            val userId = AuthenticationHelper.getCurrentUserId(auth)
+            if (userId == null) {
+                log.warn("Could not extract user ID from authentication")
+                sendAccessDeniedResponse(response, request.requestURI, "Invalid authentication")
+                return
+            }
+
             val workspaceId = request.getHeader(WORKSPACE_HEADER)
 
             if (workspaceId.isNullOrBlank()) {
-                log.warn("Missing workspace header for user: ${user.uid}")
+                log.warn("Missing workspace header for user: $userId")
                 sendAccessDeniedResponse(response, request.requestURI, "Workspace header (X-Workspace-ID) is required")
                 return
             }
 
             // Validate workspace membership
-            if (!memberService.isWorkspaceMember(workspaceId, user.uid)) {
-                log.warn("User ${user.uid} attempted to access workspace $workspaceId without membership")
+            if (!memberService.isWorkspaceMember(workspaceId, userId)) {
+                log.warn("User $userId attempted to access workspace $workspaceId without membership")
                 sendAccessDeniedResponse(response, request.requestURI, "You don't have access to this workspace")
                 return
             }
@@ -70,7 +79,7 @@ class SessionUserFilter @Autowired constructor(
             // Set tenant context using Spring-native approach
             setTenantInSecurityContext(workspaceId)
             TenantContextHolder.setCurrentTenant(workspaceId)
-            log.debug("Set tenant context to workspace: $workspaceId for user: ${user.uid}")
+            log.debug("Set tenant context to workspace: $workspaceId for user: $userId")
 
             // Continue with request
             chain.doFilter(request, response)
