@@ -127,9 +127,7 @@ class NotificationServiceTest {
 
         // Then
         verify(msg91SmsProvider, times(1)).sendNotification("+919876543210", "Test OTP: 123456")
-        verify(notificationQueueRepository, times(1)).save(any(NotificationQueue::class.java))
-        assertEquals(NotificationStatus.SENT, notificationQueue.status)
-        assertEquals("MSG91", notificationQueue.providerUsed)
+        verify(notificationDatabaseService, times(1)).updateNotificationAsSent(eq(notificationQueue), any(NotificationResult::class.java))
     }
 
     @Test
@@ -169,9 +167,7 @@ class NotificationServiceTest {
         // Then
         verify(msg91SmsProvider, times(1)).sendNotification("+919876543210", "Test OTP: 123456")
         verify(awsSnsSmsProvider, times(1)).sendNotification("+919876543210", "Test OTP: 123456")
-        verify(notificationQueueRepository, times(1)).save(any(NotificationQueue::class.java))
-        assertEquals(NotificationStatus.SENT, notificationQueue.status)
-        assertEquals("AWS_SNS", notificationQueue.providerUsed)
+        verify(notificationDatabaseService, times(1)).updateNotificationAsSent(eq(notificationQueue), any(NotificationResult::class.java))
     }
 
     @Test
@@ -211,10 +207,7 @@ class NotificationServiceTest {
         // Then
         verify(msg91SmsProvider, times(1)).sendNotification("+919876543210", "Test OTP: 123456")
         verify(awsSnsSmsProvider, times(1)).sendNotification("+919876543210", "Test OTP: 123456")
-        verify(notificationQueueRepository, times(1)).save(any(NotificationQueue::class.java))
-        assertEquals(NotificationStatus.FAILED, notificationQueue.status)
-        assertEquals("AWS_SNS", notificationQueue.providerUsed)
-        assertEquals("AWS SNS error", notificationQueue.errorMessage)
+        verify(notificationDatabaseService, times(1)).updateNotificationAsFailed(eq(notificationQueue), eq("AWS_SNS"), eq("AWS SNS error"), isNull())
     }
 
     @Test

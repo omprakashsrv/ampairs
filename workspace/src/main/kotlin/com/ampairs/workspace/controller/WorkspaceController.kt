@@ -294,9 +294,31 @@ class WorkspaceController(
         return ApiResponse.success(workspace)
     }
 
-    /**
-     * Get workspace by ID (requires workspace membership)
-     */
+    @Operation(
+        summary = "Get Workspace Details",
+        description = "Retrieve detailed information about a specific workspace. Requires workspace membership.",
+        tags = ["Workspace Management"]
+    )
+    @ApiResponses(
+        value = [
+            SwaggerApiResponse(
+                responseCode = "200",
+                description = "✅ Workspace details retrieved successfully"
+            ),
+            SwaggerApiResponse(
+                responseCode = "401",
+                description = "🚫 Authentication required"
+            ),
+            SwaggerApiResponse(
+                responseCode = "403",
+                description = "🚫 Access denied - Not a workspace member"
+            ),
+            SwaggerApiResponse(
+                responseCode = "404",
+                description = "❌ Workspace not found"
+            )
+        ]
+    )
     @GetMapping("/{workspaceId}")
     @PreAuthorize("@workspaceAuthorizationService.isWorkspaceMember(authentication, #workspaceId)")
     fun getWorkspace(@PathVariable workspaceId: String): ApiResponse<WorkspaceResponse> {
@@ -308,9 +330,11 @@ class WorkspaceController(
         return ApiResponse.success(workspace)
     }
 
-    /**
-     * Get workspace by slug (requires workspace membership)
-     */
+    @Operation(
+        summary = "Get Workspace by Slug",
+        description = "Retrieve workspace details using the workspace slug/URL identifier. Requires workspace membership.",
+        tags = ["Workspace Management"]
+    )
     @GetMapping("/by-slug/{slug}")
     fun getWorkspaceBySlug(@PathVariable slug: String): ApiResponse<WorkspaceResponse> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
@@ -321,9 +345,11 @@ class WorkspaceController(
         return ApiResponse.success(workspace)
     }
 
-    /**
-     * Update workspace (requires WORKSPACE_MANAGE permission)
-     */
+    @Operation(
+        summary = "Update Workspace",
+        description = "Update workspace settings and configuration. Requires WORKSPACE_MANAGE permission.",
+        tags = ["Workspace Management"]
+    )
     @PutMapping("/{workspaceId}")
     @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).WORKSPACE_MANAGE)")
     fun updateWorkspace(
@@ -339,9 +365,11 @@ class WorkspaceController(
         return ApiResponse.success(workspace)
     }
 
-    /**
-     * Get user's workspaces
-     */
+    @Operation(
+        summary = "Get User's Workspaces",
+        description = "Retrieve all workspaces the authenticated user has access to with pagination.",
+        tags = ["Workspace Management"]
+    )
     @GetMapping
     fun getUserWorkspaces(
         @RequestParam(defaultValue = "0") page: Int,
@@ -360,9 +388,11 @@ class WorkspaceController(
         return ApiResponse.success(PageResponse.from(workspaces))
     }
 
-    /**
-     * Search workspaces
-     */
+    @Operation(
+        summary = "Search Workspaces",
+        description = "Search for workspaces with optional filters by type and subscription plan.",
+        tags = ["Workspace Management"]
+    )
     @GetMapping("/search")
     fun searchWorkspaces(
         @RequestParam query: String,
@@ -380,9 +410,11 @@ class WorkspaceController(
         return ApiResponse.success(PageResponse.from(workspaces))
     }
 
-    /**
-     * Archive workspace (requires WORKSPACE_DELETE permission)
-     */
+    @Operation(
+        summary = "Archive Workspace",
+        description = "Archive a workspace (soft delete). Requires WORKSPACE_DELETE permission.",
+        tags = ["Workspace Management"]
+    )
     @PostMapping("/{workspaceId}/archive")
     @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).WORKSPACE_DELETE)")
     fun archiveWorkspace(@PathVariable workspaceId: String): ApiResponse<String> {
@@ -422,9 +454,11 @@ class WorkspaceController(
         return ApiResponse.success(result)
     }
 
-    /**
-     * Check slug availability
-     */
+    @Operation(
+        summary = "Check Slug Availability",
+        description = "Check if a workspace slug is available for use.",
+        tags = ["Workspace Management"]
+    )
     @GetMapping("/check-slug/{slug}")
     fun checkSlugAvailability(@PathVariable slug: String): ApiResponse<Map<String, Boolean>> {
         val result = workspaceService.checkSlugAvailability(slug)

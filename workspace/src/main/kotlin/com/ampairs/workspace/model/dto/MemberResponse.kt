@@ -2,7 +2,7 @@ package com.ampairs.workspace.model.dto
 
 import com.ampairs.core.domain.User
 import com.ampairs.workspace.model.WorkspaceMember
-import com.ampairs.workspace.model.enums.Permission
+import com.ampairs.workspace.security.WorkspacePermission
 import com.ampairs.workspace.model.enums.WorkspaceRole
 import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.LocalDateTime
@@ -41,7 +41,7 @@ data class MemberResponse(
     val role: WorkspaceRole,
 
     @field:JsonProperty("permissions")
-    val permissions: Set<Permission>,
+    val permissions: Set<WorkspacePermission>,
 
     @field:JsonProperty("is_active")
     val isActive: Boolean,
@@ -71,19 +71,6 @@ data class MemberListResponse(
 
     @field:JsonProperty("user_id")
     val userId: String,
-
-    // Flattened user fields (kept for backwards compatibility)
-    @field:JsonProperty("email")
-    val email: String? = null,
-
-    @field:JsonProperty("first_name")
-    val firstName: String? = null,
-
-    @field:JsonProperty("last_name")
-    val lastName: String? = null,
-
-    @field:JsonProperty("avatar_url")
-    val avatarUrl: String? = null,
 
     // User details from core User interface
     @field:JsonProperty("user")
@@ -133,10 +120,6 @@ fun WorkspaceMember.toListResponse(userInfo: User? = null): MemberListResponse {
     return MemberListResponse(
         id = this.uid,
         userId = this.userId,
-        email = userInfo?.email,
-        firstName = userInfo?.firstName,
-        lastName = userInfo?.lastName,
-        avatarUrl = userInfo?.profilePictureUrl,
         user = userInfo,
         role = this.role,
         isActive = this.isActive,

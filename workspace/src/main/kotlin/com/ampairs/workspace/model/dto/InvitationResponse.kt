@@ -20,7 +20,7 @@ data class InvitationResponse(
     val workspaceName: String? = null,
 
     @JsonProperty("email")
-    val email: String,
+    val email: String?,
 
     @JsonProperty("role")
     val role: WorkspaceRole,
@@ -29,13 +29,13 @@ data class InvitationResponse(
     val status: InvitationStatus,
 
     @JsonProperty("invitation_token")
-    val invitationToken: String? = null,
+    val token: String,
 
     @JsonProperty("message")
     val message: String?,
 
     @JsonProperty("invited_by")
-    val invitedBy: String,
+    val invitedBy: String?,
 
     @JsonProperty("inviter_name")
     val inviterName: String? = null,
@@ -47,7 +47,7 @@ data class InvitationResponse(
     val acceptedAt: LocalDateTime?,
 
     @JsonProperty("declined_at")
-    val declinedAt: LocalDateTime?,
+    val rejectedAt: LocalDateTime?,
 
     @JsonProperty("cancelled_at")
     val cancelledAt: LocalDateTime?,
@@ -85,7 +85,7 @@ data class InvitationListResponse(
     val id: String,
 
     @JsonProperty("email")
-    val email: String,
+    val email: String?,
 
     @JsonProperty("role")
     val role: WorkspaceRole,
@@ -94,7 +94,7 @@ data class InvitationListResponse(
     val status: InvitationStatus,
 
     @JsonProperty("invited_by")
-    val invitedBy: String,
+    val invitedBy: String?,
 
     @JsonProperty("inviter_name")
     val inviterName: String? = null,
@@ -190,13 +190,13 @@ fun WorkspaceInvitation.toResponse(): InvitationResponse {
         email = this.email,
         role = this.role,
         status = this.status,
-        invitationToken = this.invitationToken,
+        token = this.token,
         message = this.message,
         invitedBy = this.invitedBy,
         inviterName = null, // Will be populated from User entity if needed
         expiresAt = this.expiresAt,
         acceptedAt = this.acceptedAt,
-        declinedAt = this.declinedAt,
+        rejectedAt = this.rejectedAt,
         cancelledAt = this.cancelledAt,
         cancelledBy = this.cancelledBy,
         cancellationReason = this.cancellationReason,
@@ -204,8 +204,10 @@ fun WorkspaceInvitation.toResponse(): InvitationResponse {
         lastSentAt = this.lastSentAt,
         createdAt = this.createdAt ?: LocalDateTime.now(),
         updatedAt = this.updatedAt ?: LocalDateTime.now(),
-        isExpired = this.isExpired(),
-        daysUntilExpiry = this.getDaysUntilExpiry()
+        isExpired = LocalDateTime.now().isAfter(this.expiresAt),
+        daysUntilExpiry = if (LocalDateTime.now().isBefore(this.expiresAt)) {
+            java.time.Duration.between(LocalDateTime.now(), this.expiresAt).toDays()
+        } else null
     )
 }
 
@@ -227,6 +229,6 @@ fun WorkspaceInvitation.toListResponse(): InvitationListResponse {
         lastSentAt = this.lastSentAt,
         message = this.message,
         createdAt = this.createdAt ?: LocalDateTime.now(),
-        isExpired = this.isExpired()
+        isExpired = LocalDateTime.now().isAfter(this.expiresAt)
     )
 }

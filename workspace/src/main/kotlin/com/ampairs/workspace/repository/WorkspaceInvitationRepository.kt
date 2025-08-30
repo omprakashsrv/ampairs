@@ -22,7 +22,7 @@ interface WorkspaceInvitationRepository : JpaRepository<WorkspaceInvitation, Str
     /**
      * Find invitation by token
      */
-    fun findByInvitationToken(token: String): Optional<WorkspaceInvitation>
+    fun findByToken(token: String): Optional<WorkspaceInvitation>
 
     /**
      * Find invitations by workspace
@@ -236,4 +236,22 @@ interface WorkspaceInvitationRepository : JpaRepository<WorkspaceInvitation, Str
     @Modifying
     @Query("DELETE FROM workspace_invitations wi WHERE wi.workspaceId = :workspaceId")
     fun deleteByWorkspaceId(@Param("workspaceId") workspaceId: String)
+
+    /**
+     * Find invitation by workspace and phone number
+     */
+    fun findByWorkspaceIdAndPhoneAndStatus(
+        workspaceId: String,
+        phone: String?,
+        status: InvitationStatus
+    ): WorkspaceInvitation?
+
+    /**
+     * Check if there's already a pending invitation for phone number in workspace
+     */
+    fun existsByWorkspaceIdAndPhoneAndStatus(
+        workspaceId: String,
+        phone: String?,
+        status: InvitationStatus
+    ): Boolean
 }

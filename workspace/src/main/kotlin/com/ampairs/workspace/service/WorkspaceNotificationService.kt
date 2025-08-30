@@ -42,12 +42,12 @@ class WorkspaceNotificationService @Autowired constructor(
                 workspaceName = workspaceName,
                 inviterName = inviterName,
                 role = invitation.role,
-                inviteToken = invitation.invitationToken,
+                inviteToken = invitation.token,
                 expiryHours = invitationExpiryHours
             )
 
             val notificationId = notificationService.queueNotification(
-                recipient = invitation.email,
+                recipient = invitation.email ?: "",
                 message = message,
                 channel = NotificationChannel.EMAIL
             )
@@ -77,12 +77,12 @@ class WorkspaceNotificationService @Autowired constructor(
                 workspaceName = workspaceName,
                 resentBy = resentBy,
                 role = invitation.role,
-                inviteToken = invitation.invitationToken,
+                inviteToken = invitation.token,
                 expiryHours = invitationExpiryHours
             )
 
             val notificationId = notificationService.queueNotification(
-                recipient = invitation.email,
+                recipient = invitation.email ?: "",
                 message = message,
                 channel = NotificationChannel.EMAIL
             )
@@ -219,7 +219,7 @@ class WorkspaceNotificationService @Autowired constructor(
             )
 
             val notificationId = notificationService.queueNotification(
-                recipient = invitation.email,
+                recipient = invitation.email ?: "",
                 message = message,
                 channel = NotificationChannel.EMAIL
             )

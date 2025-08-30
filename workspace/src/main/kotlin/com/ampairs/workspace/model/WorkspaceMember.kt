@@ -2,8 +2,8 @@ package com.ampairs.workspace.model
 
 import com.ampairs.core.config.Constants
 import com.ampairs.core.domain.model.BaseDomain
-import com.ampairs.workspace.model.enums.Permission
 import com.ampairs.workspace.model.enums.WorkspaceRole
+import com.ampairs.workspace.security.WorkspacePermission
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
@@ -65,7 +65,7 @@ class WorkspaceMember : BaseDomain() {
      */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "permissions", columnDefinition = "JSON")
-    var permissions: Set<Permission> = setOf()
+    var permissions: Set<WorkspacePermission> = setOf()
 
     /**
      * ID of the user who invited this member
@@ -133,11 +133,6 @@ class WorkspaceMember : BaseDomain() {
     @Column(name = "deactivation_reason", length = 500)
     var deactivationReason: String? = null
 
-    /**
-     * Department or team this member belongs to
-     */
-    @Column(name = "department", length = 100)
-    var department: String? = null
 
     /**
      * Job title of this member
@@ -157,6 +152,22 @@ class WorkspaceMember : BaseDomain() {
     @Column(name = "access_restrictions", columnDefinition = "TEXT")
     var accessRestrictions: String = "{}"
 
+    /**
+     * Teams this member belongs to (JSON array of team IDs)
+     * Stores a user's membership in multiple teams as a JSON array in the database.
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "team_ids", columnDefinition = "JSON")
+    var teamIds: Set<String> = setOf()
+
+    /**
+     * Primary team ID for this member
+     * Stores the user's main team ID as a regular string column.
+     * This is used as the default/primary team context for the member.
+     */
+    @Column(name = "primary_team_id", length = 36)
+    var primaryTeamId: String? = null
+
     // JPA Relationships
     // Note: Removed workspace relationship mapping to avoid column conflict
     // The workspaceId string field above is used instead of entity relationship
@@ -168,7 +179,7 @@ class WorkspaceMember : BaseDomain() {
     /**
      * Check if this member has a specific permission
      */
-    fun hasPermission(permission: Permission): Boolean {
+    fun hasPermission(permission: WorkspacePermission): Boolean {
         return permissions.contains(permission)
     }
 
@@ -177,7 +188,7 @@ class WorkspaceMember : BaseDomain() {
      */
     fun hasPermission(permissionName: String): Boolean {
         try {
-            val permission = Permission.valueOf(permissionName)
+            val permission = WorkspacePermission.valueOf(permissionName)
             return hasPermission(permission)
         } catch (e: IllegalArgumentException) {
             return false
@@ -259,14 +270,14 @@ class WorkspaceMember : BaseDomain() {
      * Check if member can invite others
      */
     fun canInviteMembers(): Boolean {
-        return hasPermission(Permission.MEMBER_INVITE)
+        return hasPermission(WorkspacePermission.MEMBER_INVITE)
     }
 
     /**
      * Check if member can manage workspace settings
      */
     fun canManageSettings(): Boolean {
-        return hasPermission(Permission.WORKSPACE_SETTINGS)
+        return hasPermission(WorkspacePermission.WORKSPACE_MANAGE)
     }
 
     /**
@@ -320,8 +331,34 @@ class WorkspaceMember : BaseDomain() {
         val parts = mutableListOf<String>()
         parts.add(getDisplayName())
         parts.add(role.displayName)
-        if (department != null) parts.add(department!!)
         if (jobTitle != null) parts.add(jobTitle!!)
         return parts.joinToString(" • ")
+    }
+
+    /**
+     * Add member to a team
+     */
+    fun addToTeam(teamId: String, isPrimaryTeam: Boolean = false) {
+        teamIds = teamIds + teamId
+        if (isPrimaryTeam) {
+            primaryTeamId = teamId
+        }
+    }
+
+    /**
+     * Remove member from a team
+     */
+    fun removeFromTeam(teamId: String) {
+        teamIds = teamIds - teamId
+        if (primaryTeamId == teamId) {
+            primaryTeamId = teamIds.firstOrNull()
+        }
+    }
+
+    /**
+     * Check if member belongs to a team
+     */
+    fun isInTeam(teamId: String): Boolean {
+        return teamIds.contains(teamId)
     }
 }

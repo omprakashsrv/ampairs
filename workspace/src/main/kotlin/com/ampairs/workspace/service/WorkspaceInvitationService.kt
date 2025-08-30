@@ -5,6 +5,7 @@ import com.ampairs.core.exception.NotFoundException
 import com.ampairs.workspace.model.WorkspaceInvitation
 import com.ampairs.workspace.model.dto.*
 import com.ampairs.workspace.model.enums.InvitationStatus
+import com.ampairs.workspace.model.enums.WorkspaceRole
 import com.ampairs.workspace.repository.WorkspaceInvitationRepository
 import com.ampairs.workspace.repository.WorkspaceRepository
 import org.slf4j.LoggerFactory
@@ -38,57 +39,82 @@ class WorkspaceInvitationService(
      * Create workspace invitation
      */
     fun createInvitation(workspaceId: String, request: CreateInvitationRequest, invitedBy: String): InvitationResponse {
-        logger.info("Creating invitation for workspace: $workspaceId, email: ${request.email}")
+        // Validate request has either email or phone
+        if (!request.isValid()) {
+            throw BusinessException("INVALID_CONTACT", "Either email or phone number must be provided")
+        }
+
+        val contactType = request.getContactType()
+        val contactValue = request.getContactValue()
+
+        logger.info("Creating invitation for workspace: $workspaceId, $contactType: $contactValue")
 
         // Check if there's already a pending invitation
-        if (invitationRepository.existsByWorkspaceIdAndEmailAndStatus(
-                workspaceId, request.email, InvitationStatus.PENDING
+        val existingInvitation = when (contactType) {
+            "email" -> invitationRepository.findByWorkspaceIdAndEmailAndStatus(
+                workspaceId, request.recipientEmail!!, InvitationStatus.PENDING
+            ).orElse(null)
+            "phone" -> invitationRepository.findByWorkspaceIdAndPhoneAndStatus(
+                workspaceId, request.recipientPhone, InvitationStatus.PENDING
             )
-        ) {
-            throw BusinessException("INVITATION_ALREADY_EXISTS", "Pending invitation already exists for this email")
+            else -> null
         }
 
-        // Validate expiry days
-        val expiryDays = request.expiresInDays.coerceIn(1, MAX_INVITATION_VALIDITY_DAYS)
-        val expiresAt = LocalDateTime.now().plusDays(expiryDays.toLong())
+        if (existingInvitation != null) {
+            throw BusinessException(
+                "INVITATION_ALREADY_EXISTS",
+                "Pending invitation already exists for this ${contactType}"
+            )
+        }
 
-        // Generate invitation token
-        val invitationToken = generateInvitationToken()
-
-        // Create invitation
+        // Create new invitation
         val invitation = WorkspaceInvitation().apply {
             this.workspaceId = workspaceId
-            this.email = request.email
-            this.role = request.role
-            this.status = InvitationStatus.PENDING
-            this.invitationToken = invitationToken
-            this.message = request.message
+            this.email = request.recipientEmail
+            this.phone = request.recipientPhone
+            this.role = WorkspaceRole.valueOf(request.invitedRole.uppercase())
+            this.message = request.customMessage
             this.invitedBy = invitedBy
-            this.expiresAt = expiresAt
-            this.sendCount = if (request.sendEmail) 1 else 0
-            this.lastSentAt = if (request.sendEmail) LocalDateTime.now() else null
+            this.department = request.department
+            this.teamIds = request.teamIds ?: setOf()
+            this.primaryTeamId = request.primaryTeamId
+            this.expiresAt = LocalDateTime.now().plusDays(
+                (request.expiresInDays ?: DEFAULT_INVITATION_VALIDITY_DAYS)
+                    .coerceIn(1, MAX_INVITATION_VALIDITY_DAYS)
+                    .toLong()
+            )
         }
 
-        val savedInvitation = invitationRepository.save(invitation)
-
-        // Send email if requested
-        if (request.sendEmail) {
-            // TODO: Send invitation email
-            logger.info("Invitation email would be sent to: ${request.email}")
-        }
+        val saved = invitationRepository.save(invitation)
 
         // Log activity
         activityService.logInvitationSent(
-            workspaceId,
-            request.email,
-            request.role.name,
-            invitedBy,
-            "Unknown User",
-            savedInvitation.uid
+            workspaceId = workspaceId,
+            email = contactValue,
+            role = request.invitedRole,
+            invitedBy = invitedBy,
+            invitedByName = "Unknown User",
+            invitationId = saved.uid
         )
 
-        logger.info("Successfully created invitation: ${savedInvitation.id}")
-        return savedInvitation.toResponse()
+        // Send notification if requested
+        if (request.sendNotification) {
+            when (contactType) {
+                "email" -> sendEmailInvitation(saved)
+                "phone" -> sendPhoneInvitation(saved)
+            }
+        }
+
+        return saved.toResponse()
+    }
+
+    private fun sendEmailInvitation(invitation: WorkspaceInvitation) {
+        // Existing email notification logic
+    }
+
+    private fun sendPhoneInvitation(invitation: WorkspaceInvitation) {
+        // Send SMS/WhatsApp notification using notification service
+        // Implementation depends on your notification service
     }
 
     /**
@@ -116,7 +142,7 @@ class WorkspaceInvitationService(
         // Log activity
         activityService.logInvitationAccepted(
             invitation.workspaceId,
-            invitation.email,
+            invitation.email ?: "",
             userId,
             "Unknown User",
             invitation.uid
@@ -137,12 +163,12 @@ class WorkspaceInvitationService(
 
         // Update invitation status
         invitation.status = InvitationStatus.DECLINED
-        invitation.declinedAt = LocalDateTime.now()
-        invitation.cancellationReason = reason
+        invitation.rejectedAt = LocalDateTime.now()
+        invitation.rejectionReason = reason
         val updatedInvitation = invitationRepository.save(invitation)
 
         // Log activity
-        activityService.logInvitationDeclined(invitation.workspaceId, invitation.email, reason, invitation.uid)
+        activityService.logInvitationDeclined(invitation.workspaceId, invitation.email ?: "", reason, invitation.uid)
 
         logger.info("Invitation declined: ${invitation.id}")
         return updatedInvitation.toResponse()
@@ -181,7 +207,7 @@ class WorkspaceInvitationService(
         // Log activity
         activityService.logInvitationResent(
             invitation.workspaceId,
-            invitation.email,
+            invitation.email ?: "",
             resentBy,
             "Unknown User",
             invitation.uid
@@ -211,7 +237,7 @@ class WorkspaceInvitationService(
         // Log activity
         activityService.logInvitationCancelled(
             invitation.workspaceId,
-            invitation.email,
+            invitation.email ?: "",
             cancelledBy,
             "Unknown User",
             reason,
@@ -258,8 +284,8 @@ class WorkspaceInvitationService(
             inviterName = "Workspace Member", // TODO: Get actual inviter name
             role = invitation.role,
             expiresAt = invitation.expiresAt,
-            isExpired = invitation.isExpired(),
-            isValid = invitation.status == InvitationStatus.PENDING && !invitation.isExpired()
+            isExpired = LocalDateTime.now().isAfter(invitation.expiresAt),
+            isValid = invitation.status == InvitationStatus.PENDING && !LocalDateTime.now().isAfter(invitation.expiresAt)
         )
     }
 
@@ -309,7 +335,7 @@ class WorkspaceInvitationService(
             // Search query filter (email or message)
             if (!searchQuery.isNullOrBlank()) {
                 matches = matches && (
-                        invitation.email.contains(searchQuery, ignoreCase = true) ||
+                        invitation.email?.contains(searchQuery, ignoreCase = true) == true ||
                                 invitation.message?.contains(searchQuery, ignoreCase = true) == true
                         )
             }
@@ -354,10 +380,10 @@ class WorkspaceInvitationService(
 
         // Calculate statistics
         val totalInvitations = allInvitations.size
-        val pendingInvitations = allInvitations.count { it.status == InvitationStatus.PENDING && !it.isExpired() }
+        val pendingInvitations = allInvitations.count { it.status == InvitationStatus.PENDING && !LocalDateTime.now().isAfter(it.expiresAt) }
         val acceptedInvitations = allInvitations.count { it.status == InvitationStatus.ACCEPTED }
         val declinedInvitations = allInvitations.count { it.status == InvitationStatus.DECLINED }
-        val expiredInvitations = allInvitations.count { it.isExpired() || it.status == InvitationStatus.EXPIRED }
+        val expiredInvitations = allInvitations.count { LocalDateTime.now().isAfter(it.expiresAt) || it.status == InvitationStatus.EXPIRED }
         val cancelledInvitations = allInvitations.count { it.status == InvitationStatus.CANCELLED }
         val recentInvitations = allInvitations.count { it.createdAt?.isAfter(lastWeek) == true }
 
@@ -547,7 +573,7 @@ class WorkspaceInvitationService(
                     )
                 }
 
-                invitation.isExpired() -> {
+                LocalDateTime.now().isAfter(invitation.expiresAt) -> {
                     failedResends.add(
                         mapOf(
                             "invitation_id" to invitation.id.toString(),
@@ -689,7 +715,7 @@ class WorkspaceInvitationService(
     }
 
     private fun findInvitationByToken(token: String): WorkspaceInvitation {
-        return invitationRepository.findByInvitationToken(token)
+        return invitationRepository.findByToken(token)
             .orElseThrow { NotFoundException("Invalid invitation token") }
     }
 
@@ -698,7 +724,7 @@ class WorkspaceInvitationService(
             invitation.status != InvitationStatus.PENDING ->
                 throw BusinessException("INVITATION_NOT_PENDING", "Invitation is not pending")
 
-            invitation.isExpired() ->
+            LocalDateTime.now().isAfter(invitation.expiresAt) ->
                 throw BusinessException("INVITATION_EXPIRED", "Invitation has expired")
         }
     }

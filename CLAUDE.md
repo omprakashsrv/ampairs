@@ -1327,6 +1327,132 @@ Authorization: Bearer your_access_token
 - Follow existing test structure in each module
 - Mock external dependencies appropriately
 
+## Architectural Design Decisions & Best Practices
+
+### Data Modeling Best Practices
+
+#### **WorkspaceMember Entity Design (Updated 2025-01-30)**
+
+**✅ CORRECT APPROACH: Team-Required Architecture**
+
+The WorkspaceMember entity follows a clean, team-based organizational structure:
+
+```kotlin
+WorkspaceMember {
+    // Core member identity
+    userId: String                    // Reference to User entity
+    workspaceId: String              // Workspace context
+    role: WorkspaceRole              // Workspace-level role
+    
+    // Team organization (SINGLE SOURCE OF TRUTH)
+    teamIds: Set<String>             // All teams member belongs to
+    primaryTeamId: String?           // Primary team determines department
+    
+    // Member-specific data
+    jobTitle: String?                // Individual job title
+    isActive: Boolean                // Member status
+    joinedAt: LocalDateTime?         // Membership start date
+    lastActiveAt: LocalDateTime?     // Activity tracking
+}
+
+WorkspaceTeam {
+    department: String?              // Department assignment (single source)
+    // ... other team properties
+}
+```
+
+**Department Resolution Logic:**
+```kotlin
+// Department comes from primary team
+member.primaryTeam?.department  // Single source of truth
+```
+
+#### **❌ ANTI-PATTERN AVOIDED: Redundant Department Storage**
+
+**Previous problematic approach (fixed):**
+```kotlin
+// ❌ REMOVED: Redundant department field
+WorkspaceMember {
+    department: String?              // REMOVED - caused data inconsistency
+    teamIds: Set<String>
+    primaryTeamId: String?
+}
+
+WorkspaceTeam {
+    department: String?              // Could conflict with member.department
+}
+```
+
+**Problems with redundant storage:**
+- **Data Inconsistency**: Member.department could differ from team.department
+- **Maintenance Overhead**: Two places to update when department changes  
+- **Conflicting Truth**: Which department is correct if they differ?
+- **Code Complexity**: Complex logic to keep both fields in sync
+
+#### **Response DTO Anti-Pattern (Fixed)**
+
+**✅ CORRECT: Single User Object**
+```kotlin
+MemberListResponse {
+    userId: String
+    user: User?                      // Single source for user data
+    role: WorkspaceRole
+    // ... other member-specific fields
+}
+```
+
+**❌ ANTI-PATTERN REMOVED: Field Duplication**
+```kotlin
+// ❌ REMOVED: Redundant user field duplication
+MemberListResponse {
+    userId: String
+    email: String?                   // REMOVED - duplicated user.email
+    firstName: String?               // REMOVED - duplicated user.firstName  
+    lastName: String?                // REMOVED - duplicated user.lastName
+    avatarUrl: String?               // REMOVED - duplicated user.avatarUrl
+    user: User?                      // Kept as single source of truth
+}
+```
+
+**Problems with field duplication:**
+- **API Confusion**: Clients unsure which field to use
+- **Data Inconsistency**: Flattened fields could differ from user object
+- **Maintenance Burden**: Multiple places to update for user changes
+- **Response Bloat**: Unnecessary data duplication in JSON
+
+#### **Repository Anti-Pattern (Fixed)**
+
+**✅ CORRECT: Type-Safe Entity Returns**
+```kotlin
+// ✅ Returns proper entity with full type safety
+fun findByWorkspaceIdAndIsActiveTrueOrderByJoinedAtDesc(
+    workspaceId: String, 
+    pageable: Pageable
+): Page<WorkspaceMember>
+```
+
+**❌ ANTI-PATTERN REMOVED: Map Projections**
+```kotlin
+// ❌ REMOVED: Unsafe Map projections
+fun findActiveMembers(workspaceId: String, pageable: Pageable): Page<Map<String, Any>>
+```
+
+**Problems with Map projections:**
+- **Type Unsafety**: Runtime casting errors from Any to specific types
+- **Poor IDE Support**: No auto-completion or refactoring
+- **Maintenance Issues**: Hard to track what fields are included
+- **Performance Overhead**: Unnecessary Map object creation and casting
+
+### **Design Principles Applied:**
+
+1. **Single Source of Truth**: Department comes only from team membership
+2. **Type Safety**: Use proper entity types instead of Map projections  
+3. **DRY Principle**: No duplication of user data in response DTOs
+4. **Clear Hierarchy**: Workspace → Team → Member with proper relationships
+5. **Data Consistency**: Eliminate possibility of conflicting information
+
+These architectural improvements ensure maintainable, consistent, and type-safe code throughout the workspace module.
+
 ## Module Documentation
 
 Each module now includes comprehensive README.md files with detailed architecture and functionality documentation:

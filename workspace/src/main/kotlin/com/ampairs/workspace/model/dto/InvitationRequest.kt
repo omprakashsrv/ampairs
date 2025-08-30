@@ -1,33 +1,8 @@
 package com.ampairs.workspace.model.dto
 
-import com.ampairs.workspace.model.enums.WorkspaceRole
 import com.fasterxml.jackson.annotation.JsonProperty
-import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
-
-/**
- * Request DTO for creating workspace invitation
- */
-data class CreateInvitationRequest(
-    @field:NotBlank(message = "Email is required")
-    @field:Email(message = "Invalid email format")
-    @JsonProperty("email")
-    val email: String,
-
-    @JsonProperty("role")
-    val role: WorkspaceRole = WorkspaceRole.MEMBER,
-
-    @field:Size(max = 500, message = "Message must not exceed 500 characters")
-    @JsonProperty("message")
-    val message: String? = null,
-
-    @JsonProperty("expires_in_days")
-    val expiresInDays: Int = 7,
-
-    @JsonProperty("send_email")
-    val sendEmail: Boolean = true,
-)
 
 /**
  * Request DTO for responding to invitation

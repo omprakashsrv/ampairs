@@ -13,6 +13,7 @@ interface Constants {
         const val WORKSPACE_MEMBER_PREFIX = "WMB"
         const val WORKSPACE_INVITATION_PREFIX = "WIV"
         const val WORKSPACE_SETTINGS_PREFIX = "WST"
+        const val WORKSPACE_TEAM_PREFIX = "WTM"
         const val TOKEN_PREFIX = "JWT"
         const val DEVICE_SESSION_PREFIX = "DSS"
         const val FILE_ID_PREFIX = "FIL"

@@ -219,10 +219,10 @@ class WorkspaceMemberService(
     fun getWorkspaceMembersOptimized(workspaceId: String, pageable: Pageable): Page<MemberListResponse> {
         logger.debug("Fetching workspace members with optimized loading for workspace: $workspaceId")
 
-        val memberProjections = memberRepository.findActiveMembers(workspaceId, pageable)
+        val members = memberRepository.findByWorkspaceIdAndIsActiveTrueOrderByJoinedAtDesc(workspaceId, pageable)
 
         // Extract user IDs for batch loading
-        val userIds = memberProjections.content.mapNotNull { it["userId"] as? String }
+        val userIds = members.content.map { it.userId }
 
         // Batch load user details if provider is available
         val userDetails: Map<String, User> = if (userDetailProvider.isUserServiceAvailable()) {
@@ -231,25 +231,9 @@ class WorkspaceMemberService(
             emptyMap()
         }
 
-        return memberProjections.map { projection ->
-            val userId = projection["userId"] as String
-            val userDetail = userDetails[userId]
-            val memberName = projection["memberName"] as? String
-
-            MemberListResponse(
-                id = projection["memberId"] as String,
-                userId = userId,
-                // Prefer user service data, fallback to local member data
-                email = userDetail?.email ?: projection["memberEmail"] as? String,
-                firstName = userDetail?.firstName ?: extractFirstName(memberName),
-                lastName = userDetail?.lastName ?: extractLastName(memberName),
-                avatarUrl = userDetail?.profilePictureUrl,
-                user = userDetail,
-                role = projection["role"] as WorkspaceRole,
-                isActive = projection["isActive"] as Boolean,
-                joinedAt = projection["joinedAt"] as LocalDateTime,
-                lastActivityAt = projection["lastActivityAt"] as? LocalDateTime
-            )
+        return members.map { member ->
+            val userDetail = userDetails[member.userId]
+            member.toListResponse(userDetail)
         }
     }
 
@@ -729,7 +713,7 @@ class WorkspaceMemberService(
         return updatedMember.toResponse(userDetail)
     }
 
-    private fun findMemberById(memberId: String): WorkspaceMember {
+    fun findMemberById(memberId: String): WorkspaceMember {
         return memberRepository.findById(memberId)
             .orElseThrow { NotFoundException("Member not found: $memberId") }
     }

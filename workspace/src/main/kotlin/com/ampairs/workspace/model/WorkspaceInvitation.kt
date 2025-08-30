@@ -5,6 +5,8 @@ import com.ampairs.core.domain.model.BaseDomain
 import com.ampairs.workspace.model.enums.InvitationStatus
 import com.ampairs.workspace.model.enums.WorkspaceRole
 import jakarta.persistence.*
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 import java.time.LocalDateTime
 import java.util.*
 
@@ -17,10 +19,10 @@ import java.util.*
     indexes = [
         Index(name = "idx_invitation_workspace", columnList = "workspace_id"),
         Index(name = "idx_invitation_email", columnList = "email"),
-        Index(name = "idx_invitation_token", columnList = "invitation_token", unique = true),
+        Index(name = "idx_invitation_phone", columnList = "phone"),
         Index(name = "idx_invitation_status", columnList = "status"),
-        Index(name = "idx_invitation_expires", columnList = "expires_at"),
-        Index(name = "idx_invitation_workspace_email", columnList = "workspace_id, email")
+        Index(name = "idx_invitation_token", columnList = "token", unique = true),
+        Index(name = "idx_invitation_expires_at", columnList = "expires_at")
     ]
 )
 class WorkspaceInvitation : BaseDomain() {
@@ -34,8 +36,14 @@ class WorkspaceInvitation : BaseDomain() {
     /**
      * Email address of the person being invited
      */
-    @Column(name = "email", nullable = false, length = 255)
-    var email: String = ""
+    @Column(name = "email", length = 255)
+    var email: String? = null
+
+    /**
+     * Phone number of the person being invited
+     */
+    @Column(name = "phone", length = 20)
+    var phone: String? = null
 
     /**
      * Role that will be assigned upon accepting the invitation
@@ -45,23 +53,17 @@ class WorkspaceInvitation : BaseDomain() {
     var role: WorkspaceRole = WorkspaceRole.MEMBER
 
     /**
-     * ID of the user who sent the invitation
-     */
-    @Column(name = "invited_by", nullable = false, length = 36)
-    var invitedBy: String = ""
-
-    /**
-     * Unique token for accepting the invitation
-     */
-    @Column(name = "invitation_token", nullable = false, unique = true, length = 128)
-    var invitationToken: String = ""
-
-    /**
      * Current status of the invitation
      */
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)
     var status: InvitationStatus = InvitationStatus.PENDING
+
+    /**
+     * Unique token for accepting the invitation
+     */
+    @Column(name = "token", nullable = false, length = 100)
+    var token: String = ""
 
     /**
      * When the invitation expires
@@ -72,8 +74,52 @@ class WorkspaceInvitation : BaseDomain() {
     /**
      * Personal message included with the invitation
      */
-    @Column(name = "message", columnDefinition = "TEXT")
+    @Column(name = "message", length = 500)
     var message: String? = null
+
+    /**
+     * ID of the user who sent the invitation
+     */
+    @Column(name = "invited_by", length = 36)
+    var invitedBy: String? = null
+
+    /**
+     * Name of the user who sent the invitation
+     */
+    @Column(name = "invited_by_name", length = 255)
+    var invitedByName: String? = null
+
+    /**
+     * Department assignment for the invitation
+     */
+    @Column(name = "department", length = 100)
+    var department: String? = null
+
+    /**
+     * Team assignments for this invitation (JSON array)
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "team_ids", columnDefinition = "JSON")
+    var teamIds: Set<String> = setOf()
+
+    /**
+     * Primary team for this invitation
+     */
+    @Column(name = "primary_team_id", length = 36)
+    var primaryTeamId: String? = null
+
+    /**
+     * Job title for the invitee
+     */
+    @Column(name = "job_title", length = 100)
+    var jobTitle: String? = null
+
+    /**
+     * Additional metadata for the invitation (JSON)
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "metadata", columnDefinition = "JSON")
+    var metadata: Map<String, Any> = mapOf()
 
     /**
      * When the invitation was accepted
@@ -82,22 +128,16 @@ class WorkspaceInvitation : BaseDomain() {
     var acceptedAt: LocalDateTime? = null
 
     /**
-     * ID of the user who accepted (may differ from email if they used different account)
+     * When the invitation was rejected
      */
-    @Column(name = "accepted_by_user_id", length = 36)
-    var acceptedByUserId: String? = null
+    @Column(name = "rejected_at")
+    var rejectedAt: LocalDateTime? = null
 
     /**
-     * When the invitation was declined
+     * Reason for rejection (optional)
      */
-    @Column(name = "declined_at")
-    var declinedAt: LocalDateTime? = null
-
-    /**
-     * Reason for declining (optional)
-     */
-    @Column(name = "decline_reason", length = 500)
-    var declineReason: String? = null
+    @Column(name = "rejection_reason", length = 500)
+    var rejectionReason: String? = null
 
     /**
      * Number of times the invitation email was sent
@@ -129,6 +169,12 @@ class WorkspaceInvitation : BaseDomain() {
     @Column(name = "cancellation_reason", length = 500)
     var cancellationReason: String? = null
 
+    /**
+     * Auto-assign teams based on department or other rules
+     */
+    @Column(name = "auto_assign_teams")
+    var autoAssignTeams: Boolean = true
+
     // JPA Relationships
 
     // JPA Relationships
@@ -141,7 +187,7 @@ class WorkspaceInvitation : BaseDomain() {
 
     init {
         // Generate unique invitation token
-        invitationToken = generateInvitationToken()
+        token = generateInvitationToken()
     }
 
     /**
@@ -153,99 +199,64 @@ class WorkspaceInvitation : BaseDomain() {
     }
 
     /**
-     * Check if the invitation is expired
+     * Check if invitation is valid/active
      */
-    fun isExpired(): Boolean {
-        return LocalDateTime.now().isAfter(expiresAt)
+    fun isValid(): Boolean {
+        return status == InvitationStatus.PENDING &&
+                LocalDateTime.now().isBefore(expiresAt)
     }
 
     /**
-     * Check if the invitation can be accepted
+     * Accept invitation
      */
-    fun canBeAccepted(): Boolean {
-        return status == InvitationStatus.PENDING && !isExpired()
-    }
-
-    /**
-     * Check if the invitation can be cancelled
-     */
-    fun canBeCancelled(): Boolean {
-        return status == InvitationStatus.PENDING
-    }
-
-    /**
-     * Accept the invitation
-     */
-    fun accept(userId: String): Boolean {
-        if (!canBeAccepted()) return false
-
+    fun accept() {
         status = InvitationStatus.ACCEPTED
         acceptedAt = LocalDateTime.now()
-        acceptedByUserId = userId
-        return true
     }
 
     /**
-     * Decline the invitation
+     * Reject invitation
      */
-    fun decline(reason: String? = null): Boolean {
-        if (!canBeAccepted()) return false
-
+    fun reject(reason: String? = null) {
         status = InvitationStatus.DECLINED
-        declinedAt = LocalDateTime.now()
-        declineReason = reason
-        return true
+        rejectedAt = LocalDateTime.now()
+        rejectionReason = reason
     }
 
     /**
-     * Cancel the invitation
+     * Cancel invitation
      */
-    fun cancel(cancelledByUserId: String, reason: String? = null): Boolean {
-        if (!canBeCancelled()) return false
-
+    fun cancel(reason: String? = null) {
         status = InvitationStatus.CANCELLED
-        cancelledAt = LocalDateTime.now()
-        cancelledBy = cancelledByUserId
-        cancellationReason = reason
-        return true
+        rejectionReason = reason
     }
 
     /**
-     * Mark as expired
+     * Check if this invitation includes team assignments
      */
-    fun markExpired() {
-        if (status == InvitationStatus.PENDING && isExpired()) {
-            status = InvitationStatus.EXPIRED
+    fun hasTeamAssignments(): Boolean {
+        return teamIds.isNotEmpty()
+    }
+
+    /**
+     * Get contact method used (email or phone)
+     */
+    fun getContactMethod(): String {
+        return when {
+            !email.isNullOrBlank() -> "email"
+            !phone.isNullOrBlank() -> "phone"
+            else -> throw IllegalStateException("Invitation has no contact method")
         }
     }
 
     /**
-     * Resend the invitation (increment send count)
+     * Get contact value (email or phone)
      */
-    fun resend() {
-        if (status == InvitationStatus.PENDING && !isExpired()) {
-            sendCount++
-            lastSentAt = LocalDateTime.now()
+    fun getContactValue(): String {
+        return when {
+            !email.isNullOrBlank() -> email!!
+            !phone.isNullOrBlank() -> phone!!
+            else -> throw IllegalStateException("Invitation has no contact value")
         }
-    }
-
-    /**
-     * Extend the expiration date
-     */
-    fun extendExpiration(days: Long = 7) {
-        if (status == InvitationStatus.PENDING) {
-            expiresAt = LocalDateTime.now().plusDays(days)
-        }
-    }
-
-    /**
-     * Get days until expiry (null if expired or not pending)
-     */
-    fun getDaysUntilExpiry(): Long? {
-        if (status != InvitationStatus.PENDING || isExpired()) {
-            return null
-        }
-        val now = LocalDateTime.now()
-        return java.time.Duration.between(now, expiresAt).toDays()
     }
 }
