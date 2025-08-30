@@ -13,6 +13,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 /**
@@ -263,22 +264,146 @@ class WorkspaceInvitationService(
     }
 
     /**
-     * Get invitation statistics
+     * Search workspace invitations with advanced filtering
      */
-    fun getInvitationStatistics(workspaceId: String): InvitationStatsResponse {
-        val stats = invitationRepository.getInvitationStatistics(workspaceId)
-        val recentInvitations = invitationRepository.countByCreatedAtAfter(
-            LocalDateTime.now().minusDays(7)
+    fun searchWorkspaceInvitations(
+        workspaceId: String,
+        pageable: Pageable,
+        status: String?,
+        role: String?,
+        deliveryStatus: String?,
+        searchQuery: String?,
+        startDate: String?,
+        endDate: String?
+    ): Page<InvitationListResponse> {
+        // Parse dates if provided
+        val startDateTime = startDate?.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME) }
+        val endDateTime = endDate?.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME) }
+        
+        // Convert status string to enum if provided
+        val invitationStatus = status?.let { 
+            try {
+                InvitationStatus.valueOf(it.uppercase())
+            } catch (e: IllegalArgumentException) {
+                null
+            }
+        }
+        
+        // For now, use the basic repository method and filter in memory
+        // In production, you'd want to add custom query methods to the repository
+        val allInvitations = if (invitationStatus != null) {
+            invitationRepository.findByWorkspaceIdAndStatus(workspaceId, invitationStatus)
+        } else {
+            invitationRepository.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId)
+        }
+        
+        // Apply additional filtering
+        val filteredInvitations = allInvitations.filter { invitation ->
+            var matches = true
+            
+            // Role filter
+            if (role != null && role != "ALL") {
+                matches = matches && invitation.role.name.equals(role, ignoreCase = true)
+            }
+            
+            // Search query filter (email or message)
+            if (!searchQuery.isNullOrBlank()) {
+                matches = matches && (
+                    invitation.email.contains(searchQuery, ignoreCase = true) ||
+                    invitation.message?.contains(searchQuery, ignoreCase = true) == true
+                )
+            }
+            
+            // Date range filter
+            if (startDateTime != null) {
+                matches = matches && (invitation.createdAt?.isAfter(startDateTime) == true)
+            }
+            if (endDateTime != null) {
+                matches = matches && (invitation.createdAt?.isBefore(endDateTime) == true)
+            }
+            
+            matches
+        }
+        
+        // Convert to page
+        val startIndex = pageable.offset.toInt()
+        val endIndex = minOf(startIndex + pageable.pageSize, filteredInvitations.size)
+        val pageContent = if (startIndex < filteredInvitations.size) {
+            filteredInvitations.subList(startIndex, endIndex)
+        } else {
+            emptyList()
+        }
+        
+        val page = org.springframework.data.domain.PageImpl(
+            pageContent,
+            pageable,
+            filteredInvitations.size.toLong()
         )
+        
+        return page.map { it.toListResponse() }
+    }
 
-        return InvitationStatsResponse(
-            totalInvitations = stats["totalInvitations"] as? Long ?: 0,
-            pendingInvitations = stats["pendingInvitations"] as? Long ?: 0,
-            acceptedInvitations = stats["acceptedInvitations"] as? Long ?: 0,
-            declinedInvitations = stats["declinedInvitations"] as? Long ?: 0,
-            expiredInvitations = stats["expiredInvitations"] as? Long ?: 0,
-            cancelledInvitations = 0, // Not included in base query
-            recentInvitations = recentInvitations
+    /**
+     * Get invitation statistics with enhanced data
+     */
+    fun getInvitationStatistics(workspaceId: String): Map<String, Any> {
+        val allInvitations = invitationRepository.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId)
+        val now = LocalDateTime.now()
+        val lastWeek = now.minusDays(7)
+        val lastMonth = now.minusDays(30)
+        
+        // Calculate statistics
+        val totalInvitations = allInvitations.size
+        val pendingInvitations = allInvitations.count { it.status == InvitationStatus.PENDING && !it.isExpired() }
+        val acceptedInvitations = allInvitations.count { it.status == InvitationStatus.ACCEPTED }
+        val declinedInvitations = allInvitations.count { it.status == InvitationStatus.DECLINED }
+        val expiredInvitations = allInvitations.count { it.isExpired() || it.status == InvitationStatus.EXPIRED }
+        val cancelledInvitations = allInvitations.count { it.status == InvitationStatus.CANCELLED }
+        val recentInvitations = allInvitations.count { it.createdAt?.isAfter(lastWeek) == true }
+        
+        // Group by role
+        val byRole = allInvitations.groupBy { it.role.name }
+            .mapValues { it.value.size }
+        
+        // Group by status
+        val byStatus = allInvitations.groupBy { it.status.name }
+            .mapValues { it.value.size }
+        
+        // Recent activity (last 30 days, grouped by day)
+        val recentActivity = (0 until 30).map { daysAgo ->
+            val date = now.minusDays(daysAgo.toLong())
+            val dayStart = date.toLocalDate().atStartOfDay()
+            val dayEnd = dayStart.plusDays(1)
+            
+            val dayInvitations = allInvitations.filter { 
+                it.createdAt?.isAfter(dayStart) == true && it.createdAt?.isBefore(dayEnd) == true
+            }
+            
+            mapOf(
+                "date" to date.toLocalDate().toString(),
+                "sent" to dayInvitations.size,
+                "accepted" to dayInvitations.count { it.status == InvitationStatus.ACCEPTED },
+                "declined" to dayInvitations.count { it.status == InvitationStatus.DECLINED }
+            )
+        }.reversed()
+        
+        return mapOf(
+            "total_invitations" to totalInvitations,
+            "pending_invitations" to pendingInvitations,
+            "accepted_invitations" to acceptedInvitations,
+            "declined_invitations" to declinedInvitations,
+            "expired_invitations" to expiredInvitations,
+            "cancelled_invitations" to cancelledInvitations,
+            "recent_invitations" to recentInvitations,
+            "by_role" to byRole,
+            "by_status" to byStatus,
+            "recent_activity" to recentActivity,
+            "acceptance_rate" to if (totalInvitations > 0) {
+                (acceptedInvitations.toDouble() / totalInvitations * 100).toInt()
+            } else 0,
+            "pending_rate" to if (totalInvitations > 0) {
+                (pendingInvitations.toDouble() / totalInvitations * 100).toInt()
+            } else 0
         )
     }
 
@@ -321,7 +446,164 @@ class WorkspaceInvitationService(
     }
 
     /**
-     * Bulk invitation operations
+     * Bulk cancel invitations
+     */
+    fun bulkCancelInvitations(
+        workspaceId: String,
+        invitationIds: List<String>,
+        reason: String?,
+        cancelledBy: String
+    ): Map<String, Any> {
+        val invitations = invitationRepository.findAllById(invitationIds)
+        
+        // Validate all invitations belong to workspace and are pending
+        val validInvitations = mutableListOf<WorkspaceInvitation>()
+        val failedCancellations = mutableListOf<Map<String, String>>()
+        
+        invitations.forEach { invitation ->
+            when {
+                invitation.workspaceId != workspaceId -> {
+                    failedCancellations.add(mapOf(
+                        "invitation_id" to invitation.id.toString(),
+                        "error" to "Invitation doesn't belong to this workspace"
+                    ))
+                }
+                invitation.status != InvitationStatus.PENDING -> {
+                    failedCancellations.add(mapOf(
+                        "invitation_id" to invitation.id.toString(),
+                        "error" to "Only pending invitations can be cancelled"
+                    ))
+                }
+                else -> validInvitations.add(invitation)
+            }
+        }
+        
+        // Cancel valid invitations
+        validInvitations.forEach { invitation ->
+            invitation.status = InvitationStatus.CANCELLED
+            invitation.cancelledAt = LocalDateTime.now()
+            invitation.cancelledBy = cancelledBy
+            invitation.cancellationReason = reason
+        }
+        
+        if (validInvitations.isNotEmpty()) {
+            invitationRepository.saveAll(validInvitations)
+            
+            // Log activity
+            activityService.logBulkInvitationCancellation(
+                workspaceId,
+                validInvitations.size,
+                cancelledBy,
+                "Unknown User"
+            )
+        }
+        
+        logger.info("Bulk cancelled ${validInvitations.size} invitations for workspace: $workspaceId")
+        
+        return mapOf(
+            "cancelled_count" to validInvitations.size,
+            "failed_cancellations" to failedCancellations
+        )
+    }
+    
+    /**
+     * Bulk resend invitations
+     */
+    fun bulkResendInvitations(
+        workspaceId: String,
+        invitationIds: List<String>,
+        message: String?,
+        resentBy: String
+    ): Map<String, Any> {
+        val invitations = invitationRepository.findAllById(invitationIds)
+        
+        // Validate all invitations belong to workspace and are pending
+        val validInvitations = mutableListOf<WorkspaceInvitation>()
+        val failedResends = mutableListOf<Map<String, String>>()
+        
+        invitations.forEach { invitation ->
+            when {
+                invitation.workspaceId != workspaceId -> {
+                    failedResends.add(mapOf(
+                        "invitation_id" to invitation.id.toString(),
+                        "error" to "Invitation doesn't belong to this workspace"
+                    ))
+                }
+                invitation.status != InvitationStatus.PENDING -> {
+                    failedResends.add(mapOf(
+                        "invitation_id" to invitation.id.toString(),
+                        "error" to "Only pending invitations can be resent"
+                    ))
+                }
+                invitation.isExpired() -> {
+                    failedResends.add(mapOf(
+                        "invitation_id" to invitation.id.toString(),
+                        "error" to "Invitation has expired"
+                    ))
+                }
+                else -> validInvitations.add(invitation)
+            }
+        }
+        
+        // Resend valid invitations
+        validInvitations.forEach { invitation ->
+            invitation.sendCount += 1
+            invitation.lastSentAt = LocalDateTime.now()
+            message?.let { invitation.message = it }
+        }
+        
+        if (validInvitations.isNotEmpty()) {
+            invitationRepository.saveAll(validInvitations)
+            
+            // TODO: Send bulk emails
+            logger.info("Bulk invitation emails would be resent to ${validInvitations.size} recipients")
+            
+            // Log activity
+            activityService.logBulkInvitationResend(
+                workspaceId,
+                validInvitations.size,
+                resentBy,
+                "Unknown User"
+            )
+        }
+        
+        logger.info("Bulk resent ${validInvitations.size} invitations for workspace: $workspaceId")
+        
+        return mapOf(
+            "resent_count" to validInvitations.size,
+            "failed_resends" to failedResends
+        )
+    }
+    
+    /**
+     * Export invitations data
+     */
+    fun exportInvitations(
+        workspaceId: String,
+        format: String,
+        status: String?,
+        role: String?,
+        deliveryStatus: String?,
+        searchQuery: String?,
+        startDate: String?,
+        endDate: String?
+    ): ByteArray {
+        // Get filtered invitations using search method
+        val pageable = org.springframework.data.domain.PageRequest.of(0, 10000) // Get all for export
+        val invitations = searchWorkspaceInvitations(
+            workspaceId, pageable, status, role, deliveryStatus, 
+            searchQuery, startDate, endDate
+        ).content
+        
+        return when (format.uppercase()) {
+            "CSV" -> generateCsvExport(invitations)
+            "EXCEL" -> generateExcelExport(invitations)
+            else -> throw BusinessException("INVALID_FORMAT", "Unsupported export format: $format")
+        }
+    }
+    
+    /**
+     * Bulk invitation operations (legacy method for backward compatibility)
      */
     fun bulkInvitationOperation(workspaceId: String, request: BulkInvitationRequest, operatedBy: String): String {
         val invitations = invitationRepository.findAllById(request.invitationIds)
@@ -408,5 +690,43 @@ class WorkspaceInvitationService(
 
     private fun generateInvitationToken(): String {
         return UUID.randomUUID().toString().replace("-", "").uppercase()
+    }
+    
+    /**
+     * Generate CSV export for invitations
+     */
+    private fun generateCsvExport(invitations: List<InvitationListResponse>): ByteArray {
+        val csvBuilder = StringBuilder()
+        
+        // CSV Header
+        csvBuilder.appendLine("Email,Role,Status,Invited By,Invited At,Expires At,Accepted At,Send Count,Last Sent At,Message")
+        
+        // CSV Data
+        invitations.forEach { invitation ->
+            csvBuilder.appendLine(
+                "\"${invitation.email}\"" +
+                ",\"${invitation.role}\"" +
+                ",\"${invitation.status}\"" +
+                ",\"${invitation.invitedBy ?: ""}\"" +
+                ",\"${invitation.invitedAt}\"" +
+                ",\"${invitation.expiresAt}\"" +
+                ",\"${invitation.acceptedAt ?: ""}\"" +
+                ",${invitation.sendCount}" +
+                ",\"${invitation.lastSentAt ?: ""}\"" +
+                ",\"${invitation.message?.replace("\"", "\\\"") ?: ""}\""
+            )
+        }
+        
+        return csvBuilder.toString().toByteArray(Charsets.UTF_8)
+    }
+    
+    /**
+     * Generate Excel export for invitations
+     * Note: This is a simplified implementation. In production, you'd use Apache POI
+     */
+    private fun generateExcelExport(invitations: List<InvitationListResponse>): ByteArray {
+        // For now, return CSV format with Excel MIME type
+        // In production, implement proper Excel generation using Apache POI
+        return generateCsvExport(invitations)
     }
 }

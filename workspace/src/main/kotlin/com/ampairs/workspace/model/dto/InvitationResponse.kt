@@ -102,6 +102,21 @@ data class InvitationListResponse(
     @JsonProperty("expires_at")
     val expiresAt: LocalDateTime,
 
+    @JsonProperty("invited_at")
+    val invitedAt: LocalDateTime,
+
+    @JsonProperty("accepted_at")
+    val acceptedAt: LocalDateTime? = null,
+
+    @JsonProperty("send_count")
+    val sendCount: Int = 0,
+
+    @JsonProperty("last_sent_at")
+    val lastSentAt: LocalDateTime? = null,
+
+    @JsonProperty("message")
+    val message: String? = null,
+
     @JsonProperty("created_at")
     val createdAt: LocalDateTime,
 
@@ -206,6 +221,11 @@ fun WorkspaceInvitation.toListResponse(): InvitationListResponse {
         invitedBy = this.invitedBy,
         inviterName = null, // Will be populated from User entity if needed
         expiresAt = this.expiresAt,
+        invitedAt = this.createdAt ?: LocalDateTime.now(),
+        acceptedAt = this.acceptedAt,
+        sendCount = this.sendCount,
+        lastSentAt = this.lastSentAt,
+        message = this.message,
         createdAt = this.createdAt ?: LocalDateTime.now(),
         isExpired = this.isExpired()
     )

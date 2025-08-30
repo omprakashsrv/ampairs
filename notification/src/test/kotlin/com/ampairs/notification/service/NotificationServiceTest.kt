@@ -13,11 +13,9 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mock
 import org.mockito.Mockito.*
 import org.mockito.MockitoAnnotations
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.TestPropertySource
 import java.util.concurrent.Executor
 
-@SpringBootTest
 @TestPropertySource(
     properties = [
         "notification.sms.primary-provider=MSG91",

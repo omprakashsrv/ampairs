@@ -22,6 +22,7 @@ import {MatBadgeModule} from '@angular/material/badge';
 import {Subject} from 'rxjs';
 import {debounceTime, distinctUntilChanged, startWith, takeUntil} from 'rxjs/operators';
 import {SelectionModel} from '@angular/cdk/collections';
+import {Router} from '@angular/router';
 
 import {WorkspaceMemberService} from '../../../core/services/workspace-member.service';
 import {WorkspaceService} from '../../../core/services/workspace.service';
@@ -116,7 +117,8 @@ export class WorkspaceMembersComponent implements OnInit, OnDestroy {
     private workspaceService: WorkspaceService,
     private formBuilder: FormBuilder,
     private snackBar: MatSnackBar,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private router: Router
   ) {
     this.initializeFilterForm();
   }
@@ -253,7 +255,7 @@ export class WorkspaceMembersComponent implements OnInit, OnDestroy {
 
   removeMember(member: MemberListResponse): void {
     if (confirm(`Are you sure you want to remove ${member.name} from this workspace?`)) {
-      this.memberService.removeMember(member.id)
+      this.memberService.removeMember(this.currentWorkspaceId, member.id)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: () => {
@@ -419,15 +421,19 @@ export class WorkspaceMembersComponent implements OnInit, OnDestroy {
 
   // Navigation methods
   inviteNewMembers(): void {
-    // Navigate to invitation creation
-    console.log('Navigate to invite members');
-    // TODO: Implement navigation to invitation component
+    const currentWorkspace = this.workspaceService.getCurrentWorkspace();
+    if (currentWorkspace) {
+      this.router.navigate(['/w', currentWorkspace.slug, 'invitations'], {
+        queryParams: { action: 'invite' }
+      });
+    }
   }
 
   viewInvitations(): void {
-    // Navigate to invitations management
-    console.log('Navigate to invitations');
-    // TODO: Implement navigation to invitations component
+    const currentWorkspace = this.workspaceService.getCurrentWorkspace();
+    if (currentWorkspace) {
+      this.router.navigate(['/w', currentWorkspace.slug, 'invitations']);
+    }
   }
 
   // Reset filters
@@ -460,7 +466,18 @@ export class WorkspaceMembersComponent implements OnInit, OnDestroy {
     // Get current user's role in workspace
     this.memberService.getCurrentUserRole(this.currentWorkspaceId).subscribe({
       next: (roleResponse) => {
-        this.currentUserRole = roleResponse.current_role;
+        // Derive role from permissions since backend returns simplified format
+        if (roleResponse.is_owner) {
+          this.currentUserRole = 'OWNER';
+        } else if (roleResponse.is_admin) {
+          this.currentUserRole = 'ADMIN';
+        } else if (roleResponse.can_invite_members) {
+          this.currentUserRole = 'MANAGER';
+        } else if (roleResponse.can_view_members) {
+          this.currentUserRole = 'MEMBER';
+        } else {
+          this.currentUserRole = 'VIEWER';
+        }
       },
       error: (error) => {
         console.error('Failed to load current user role:', error);

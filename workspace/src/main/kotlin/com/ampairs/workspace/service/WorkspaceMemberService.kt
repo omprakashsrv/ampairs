@@ -21,6 +21,7 @@ import java.time.LocalDateTime
 class WorkspaceMemberService(
     private val memberRepository: WorkspaceMemberRepository,
     private val activityService: WorkspaceActivityService,
+    private val userDetailProvider: UserDetailProvider
 ) {
 
     companion object {
@@ -194,6 +195,67 @@ class WorkspaceMemberService(
     }
 
     /**
+     * Get workspace members with optimized loading (using projection to reduce DB queries)
+     * This method uses a custom query projection to efficiently load member details
+     * without additional N+1 queries for user information.
+     * 
+     * Additionally, if a UserDetailProvider is available, it will batch-load user details
+     * from the external user service for enhanced user information.
+     */
+    fun getWorkspaceMembersOptimized(workspaceId: String, pageable: Pageable): Page<MemberListResponse> {
+        logger.debug("Fetching workspace members with optimized loading for workspace: $workspaceId")
+        
+        val memberProjections = memberRepository.findActiveMembers(workspaceId, pageable)
+        
+        // Extract user IDs for batch loading
+        val userIds = memberProjections.content.map { it["userId"] as String }
+        
+        // Batch load user details if provider is available
+        val userDetails: Map<String, UserDetail> = if (userDetailProvider.isUserServiceAvailable()) {
+            userDetailProvider.getUserDetails(userIds)
+        } else {
+            emptyMap()
+        }
+        
+        return memberProjections.map { projection ->
+            val userId = projection["userId"] as String
+            val userDetail = userDetails[userId]
+            val memberName = projection["memberName"] as? String
+            
+            MemberListResponse(
+                id = projection["memberId"] as String,
+                userId = userId,
+                // Prefer user service data, fallback to local member data
+                email = userDetail?.email ?: projection["memberEmail"] as? String,
+                firstName = userDetail?.firstName ?: extractFirstName(memberName),
+                lastName = userDetail?.lastName ?: extractLastName(memberName),
+                avatarUrl = userDetail?.avatarUrl,
+                role = projection["role"] as WorkspaceRole,
+                isActive = projection["isActive"] as Boolean,
+                joinedAt = projection["joinedAt"] as LocalDateTime,
+                lastActivityAt = projection["lastActivityAt"] as? LocalDateTime
+            )
+        }
+    }
+
+    /**
+     * Extract first name from full name
+     */
+    private fun extractFirstName(fullName: String?): String? {
+        return fullName?.split(" ")?.firstOrNull()
+    }
+
+    /**
+     * Extract last name from full name
+     */
+    private fun extractLastName(fullName: String?): String? {
+        val nameParts = fullName?.split(" ")
+        return if (nameParts != null && nameParts.size > 1) {
+            nameParts.drop(1).joinToString(" ")
+        } else null
+    }
+
+    /**
      * Get member by ID
      */
     fun getMemberById(memberId: String): MemberResponse {
@@ -281,9 +343,9 @@ class WorkspaceMemberService(
     }
 
     /**
-     * Get member statistics
+     * Get member statistics as Map (for API compatibility)
      */
-    fun getMemberStatistics(workspaceId: String): MemberStatsResponse {
+    fun getMemberStatistics(workspaceId: String): Map<String, Any> {
         val totalMembers = memberRepository.countByWorkspaceId(workspaceId)
         val activeMembers = memberRepository.countByWorkspaceIdAndIsActiveTrue(workspaceId)
         val membersByRoleList = memberRepository.getMemberCountsByRole(workspaceId)
@@ -295,12 +357,17 @@ class WorkspaceMemberService(
             LocalDateTime.now().minusDays(7)
         )
 
-        return MemberStatsResponse(
-            totalMembers = totalMembers,
-            activeMembers = activeMembers,
-            pendingInvitations = 0, // Will be populated by invitation service
-            membersByRole = membersByRole,
-            recentJoins = recentJoins
+        return mapOf(
+            "total_members" to totalMembers,
+            "active_members" to activeMembers,
+            "recent_joins" to recentJoins,
+            "by_role" to membersByRole,
+            "by_status" to mapOf(
+                "ACTIVE" to activeMembers,
+                "INACTIVE" to (totalMembers - activeMembers),
+                "PENDING" to 0L, // Will be populated by invitation service
+                "SUSPENDED" to 0L
+            )
         )
     }
 
@@ -417,6 +484,217 @@ class WorkspaceMemberService(
     }
 
     // Private helper methods
+
+    /**
+     * Advanced member search with multiple filters
+     */
+    fun searchWorkspaceMembers(
+        workspaceId: String,
+        searchQuery: String?,
+        role: String?,
+        status: String?,
+        department: String?,
+        pageable: Pageable
+    ): Page<MemberListResponse> {
+        // Convert string role to enum if provided
+        val roleEnum = role?.takeIf { it != "ALL" }?.let { 
+            try { WorkspaceRole.valueOf(it) } catch (e: Exception) { null }
+        }
+        
+        // For now, use basic search and filtering
+        // TODO: Implement advanced search with user table joins when needed
+        val members = when {
+            roleEnum != null -> memberRepository.findByWorkspaceIdAndRoleAndIsActiveTrue(workspaceId, roleEnum, pageable)
+            else -> memberRepository.findByWorkspaceIdAndIsActiveTrue(workspaceId, pageable)
+        }
+        
+        return members.map { it.toListResponse() }
+    }
+
+    /**
+     * Get workspace departments
+     */
+    fun getWorkspaceDepartments(workspaceId: String): List<String> {
+        // TODO: Implement when department field is added to member entity
+        // For now return empty list
+        return emptyList()
+    }
+
+    /**
+     * Bulk update members
+     */
+    fun bulkUpdateMembers(workspaceId: String, request: Map<String, Any>): Map<String, Any> {
+        val memberIds = request["member_ids"] as? List<String> ?: emptyList()
+        val role = request["role"] as? String
+        val status = request["status"] as? String
+        val notifyMembers = request["notify_members"] as? Boolean ?: false
+        
+        val members = memberRepository.findAllById(memberIds)
+        var updatedCount = 0
+        val failedUpdates = mutableListOf<Map<String, String>>()
+        
+        members.forEach { member ->
+            try {
+                if (member.workspaceId == workspaceId) {
+                    role?.let { 
+                        try {
+                            member.role = WorkspaceRole.valueOf(it)
+                        } catch (e: Exception) {
+                            failedUpdates.add(mapOf(
+                                "member_id" to member.uid,
+                                "error" to "Invalid role: $it"
+                            ))
+                            return@forEach
+                        }
+                    }
+                    
+                    status?.let { 
+                        member.isActive = when(it) {
+                            "ACTIVE" -> true
+                            "INACTIVE" -> false
+                            else -> member.isActive
+                        }
+                    }
+                    
+                    memberRepository.save(member)
+                    updatedCount++
+                } else {
+                    failedUpdates.add(mapOf(
+                        "member_id" to member.uid,
+                        "error" to "Member not in this workspace"
+                    ))
+                }
+            } catch (e: Exception) {
+                failedUpdates.add(mapOf(
+                    "member_id" to member.uid,
+                    "error" to (e.message ?: "Unknown error")
+                ))
+            }
+        }
+        
+        return mapOf(
+            "updated_count" to updatedCount,
+            "failed_updates" to failedUpdates
+        )
+    }
+
+    /**
+     * Bulk remove members
+     */
+    fun bulkRemoveMembers(workspaceId: String, request: Map<String, Any>): Map<String, Any> {
+        val memberIds = request["member_ids"] as? List<String> ?: emptyList()
+        val reason = request["reason"] as? String
+        
+        val members = memberRepository.findAllById(memberIds)
+        var removedCount = 0
+        val failedRemovals = mutableListOf<Map<String, String>>()
+        
+        // Check for owners that would be removed
+        val ownerCount = memberRepository.countByWorkspaceIdAndRoleAndIsActiveTrue(workspaceId, WorkspaceRole.OWNER)
+        val ownersToRemove = members.count { it.role == WorkspaceRole.OWNER && it.workspaceId == workspaceId }
+        
+        if (ownerCount.toInt() - ownersToRemove <= 0) {
+            return mapOf(
+                "removed_count" to 0,
+                "failed_removals" to listOf(mapOf(
+                    "error" to "Cannot remove all owners from workspace"
+                ))
+            )
+        }
+        
+        members.forEach { member ->
+            try {
+                if (member.workspaceId == workspaceId) {
+                    memberRepository.delete(member)
+                    removedCount++
+                } else {
+                    failedRemovals.add(mapOf(
+                        "member_id" to member.uid,
+                        "error" to "Member not in this workspace"
+                    ))
+                }
+            } catch (e: Exception) {
+                failedRemovals.add(mapOf(
+                    "member_id" to member.uid,
+                    "error" to (e.message ?: "Unknown error")
+                ))
+            }
+        }
+        
+        return mapOf(
+            "removed_count" to removedCount,
+            "failed_removals" to failedRemovals
+        )
+    }
+
+    /**
+     * Export members data
+     */
+    fun exportMembers(
+        workspaceId: String, 
+        format: String, 
+        role: String?, 
+        status: String?, 
+        department: String?, 
+        searchQuery: String?
+    ): ByteArray {
+        // Get filtered members
+        val roleEnum = role?.takeIf { it != "ALL" }?.let { 
+            try { WorkspaceRole.valueOf(it) } catch (e: Exception) { null }
+        }
+        
+        val members = when {
+            roleEnum != null -> memberRepository.findByWorkspaceIdAndRole(workspaceId, roleEnum)
+            else -> memberRepository.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId)
+        }
+        
+        // Generate CSV content
+        val csvContent = StringBuilder()
+        csvContent.append("Name,Email,Role,Status,Joined Date,Last Activity\n")
+        
+        members.forEach { member ->
+            csvContent.append("\"${member.userId}\",")  // TODO: Get actual user name when user service is available
+            csvContent.append("\"${member.userId}@example.com\",") // TODO: Get actual email
+            csvContent.append("\"${member.role.name}\",")
+            csvContent.append("\"${if (member.isActive) "ACTIVE" else "INACTIVE"}\",")
+            csvContent.append("\"${member.joinedAt}\",")
+            csvContent.append("\"${member.lastActiveAt ?: ""}\"\n")
+        }
+        
+        return csvContent.toString().toByteArray(Charsets.UTF_8)
+    }
+
+    /**
+     * Update member status
+     */
+    fun updateMemberStatus(workspaceId: String, memberId: String, status: String, reason: String?): MemberResponse {
+        val member = findMemberById(memberId)
+        
+        if (member.workspaceId != workspaceId) {
+            throw BusinessException("MEMBER_NOT_IN_WORKSPACE", "Member does not belong to this workspace")
+        }
+        
+        val wasActive = member.isActive
+        when (status.uppercase()) {
+            "ACTIVE" -> member.isActive = true
+            "INACTIVE" -> member.isActive = false
+            "SUSPENDED" -> member.isActive = false
+            else -> throw BusinessException("INVALID_STATUS", "Invalid status: $status")
+        }
+        
+        val updatedMember = memberRepository.save(member)
+        
+        // Log status change if it actually changed
+        if (wasActive != member.isActive) {
+            if (member.isActive) {
+                activityService.logMemberActivated(workspaceId, member.userId, "Unknown User", "SYSTEM", "System")
+            } else {
+                activityService.logMemberDeactivated(workspaceId, member.userId, "Unknown User", "SYSTEM", "System")
+            }
+        }
+        
+        return updatedMember.toResponse()
+    }
 
     private fun findMemberById(memberId: String): WorkspaceMember {
         return memberRepository.findById(memberId)

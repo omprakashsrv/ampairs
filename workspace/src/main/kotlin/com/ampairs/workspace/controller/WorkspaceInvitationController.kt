@@ -19,7 +19,9 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
+import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
+import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
@@ -1095,6 +1097,207 @@ class WorkspaceInvitationController(
 
         val result = invitationService.cancelInvitation(invitationId, null, user.uid)
         return ApiResponse.success(result)
+    }
+
+    @Operation(
+        summary = "Search Workspace Invitations",
+        description = """
+        ## 🔍 **Advanced Invitation Search with Filtering**
+        
+        Search and filter workspace invitations with comprehensive filtering options including
+        status, role, delivery status, and text-based search across invitation details.
+        
+        ### **Search Capabilities:**
+        - **Text Search**: Search across recipient email, name, and invitation message
+        - **Status Filtering**: Filter by invitation status (PENDING, ACCEPTED, EXPIRED, etc.)
+        - **Role Filtering**: Filter by invited workspace roles
+        - **Delivery Filtering**: Filter by email delivery status
+        - **Date Range**: Filter by creation or expiration date ranges
+        - **Combined Filters**: Use multiple filters simultaneously for precise results
+        
+        ### **Sorting Options:**
+        - **Created Date**: Order by invitation creation date
+        - **Status**: Group by invitation status
+        - **Expiration**: Order by expiration date (urgent first)
+        - **Recipient**: Alphabetical by recipient email
+        - **Role**: Group by invited role
+        
+        ### **Use Cases:**
+        - **Quick Search**: Find specific invitations by recipient email
+        - **Status Monitoring**: View all pending, expired, or accepted invitations
+        - **Role Management**: View invitations for specific workspace roles
+        - **Follow-up Tasks**: Identify invitations requiring action or follow-up
+        """,
+        tags = ["Invitation Search"]
+    )
+    @GetMapping("/{workspaceId}/invitations/search")
+    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    fun searchWorkspaceInvitations(
+        @PathVariable workspaceId: String,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "20") size: Int,
+        @RequestParam(defaultValue = "createdAt") sortBy: String,
+        @RequestParam(defaultValue = "desc") sortDir: String,
+        @RequestParam(required = false) status: String?,
+        @RequestParam(required = false) role: String?,
+        @RequestParam(required = false) delivery_status: String?,
+        @RequestParam(required = false) search_query: String?,
+        @RequestParam(required = false) start_date: String?,
+        @RequestParam(required = false) end_date: String?
+    ): ApiResponse<PageResponse<InvitationListResponse>> {
+        val sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy)
+        val pageable = PageRequest.of(page, size, sort)
+
+        val invitations = invitationService.searchWorkspaceInvitations(
+            workspaceId,
+            pageable,
+            status,
+            role,
+            delivery_status,
+            search_query,
+            start_date,
+            end_date
+        )
+        return ApiResponse.success(PageResponse.from(invitations))
+    }
+
+    @Operation(
+        summary = "Get Invitation Statistics",
+        description = """
+        ## 📊 **Workspace Invitation Analytics and Statistics**
+        
+        Retrieve comprehensive statistics about workspace invitations including
+        counts by status, success rates, delivery metrics, and trend analysis.
+        
+        ### **Statistical Data:**
+        - **Invitation Counts**: Total, pending, accepted, expired counts
+        - **Status Distribution**: Breakdown by invitation status
+        - **Success Metrics**: Acceptance rates and conversion analytics
+        - **Delivery Analytics**: Email delivery success and engagement rates
+        - **Time-based Trends**: Recent invitation activity and patterns
+        
+        ### **Business Insights:**
+        - **Onboarding Efficiency**: Track invitation-to-member conversion
+        - **Email Effectiveness**: Monitor email delivery and engagement
+        - **Follow-up Needs**: Identify invitations requiring attention
+        - **Process Optimization**: Data for improving invitation workflows
+        """,
+        tags = ["Invitation Analytics"]
+    )
+    @GetMapping("/{workspaceId}/invitations/statistics")
+    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    fun getInvitationStatistics(
+        @PathVariable workspaceId: String
+    ): ApiResponse<Map<String, Any>> {
+        val statistics = invitationService.getInvitationStatistics(workspaceId)
+        return ApiResponse.success(statistics)
+    }
+
+    @Operation(
+        summary = "Bulk Cancel Invitations",
+        description = """
+        ## 🗑️ **Bulk Invitation Cancellation**
+        
+        Cancel multiple workspace invitations simultaneously with proper
+        cleanup and notification handling.
+        
+        ### **Bulk Cancellation Process:**
+        - **Multi-Selection**: Cancel multiple invitations in single operation
+        - **Token Invalidation**: All selected invitation tokens become invalid
+        - **Status Updates**: Update all invitation statuses to CANCELLED
+        - **Audit Logging**: Complete record of bulk cancellation operation
+        """,
+        tags = ["Bulk Operations"]
+    )
+    @DeleteMapping("/{workspaceId}/invitations/bulk")
+    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    fun bulkCancelInvitations(
+        @PathVariable workspaceId: String,
+        @RequestBody request: Map<String, Any>,
+        authentication: Authentication
+    ): ApiResponse<Map<String, Any>> {
+        val invitationIds = request["invitation_ids"] as? List<String> ?: emptyList()
+        val reason = request["reason"] as? String
+        val currentUserId = authentication.name
+        val result = invitationService.bulkCancelInvitations(workspaceId, invitationIds, reason, currentUserId)
+        return ApiResponse.success(result)
+    }
+
+    @Operation(
+        summary = "Bulk Resend Invitations",
+        description = """
+        ## 🔄 **Bulk Invitation Resend**
+        
+        Resend multiple workspace invitations simultaneously with updated
+        delivery options and tracking.
+        
+        ### **Bulk Resend Process:**
+        - **Multi-Selection**: Resend multiple invitations in single operation
+        - **Delivery Optimization**: Enhanced email delivery for bulk sends
+        - **Progress Tracking**: Monitor bulk resend operation progress
+        - **Error Handling**: Detailed reporting of successful and failed resends
+        """,
+        tags = ["Bulk Operations"]
+    )
+    @PostMapping("/{workspaceId}/invitations/bulk-resend")
+    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    fun bulkResendInvitations(
+        @PathVariable workspaceId: String,
+        @RequestBody request: Map<String, Any>,
+        authentication: Authentication
+    ): ApiResponse<Map<String, Any>> {
+        val invitationIds = request["invitation_ids"] as? List<String> ?: emptyList()
+        val message = request["message"] as? String
+        val currentUserId = authentication.name
+        val result = invitationService.bulkResendInvitations(workspaceId, invitationIds, message, currentUserId)
+        return ApiResponse.success(result)
+    }
+
+    @Operation(
+        summary = "Export Invitations Data",
+        description = """
+        ## 📤 **Export Invitation Data**
+        
+        Export workspace invitation data in various formats (CSV, Excel) with
+        optional filtering and custom field selection.
+        
+        ### **Export Formats:**
+        - **CSV**: Comma-separated values for spreadsheet applications
+        - **Excel**: Microsoft Excel format with formatting
+        - **Filtered Export**: Apply same filters as invitation search
+        
+        ### **Export Data:**
+        - **Basic Info**: Recipient email, name, role, status, dates
+        - **Extended Info**: Delivery status, resend count, acceptance details
+        - **Analytics**: Engagement metrics and invitation effectiveness
+        """,
+        tags = ["Data Export"]
+    )
+    @GetMapping("/{workspaceId}/invitations/export")
+    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    fun exportInvitations(
+        @PathVariable workspaceId: String,
+        @RequestParam(defaultValue = "CSV") format: String,
+        @RequestParam(required = false) status: String?,
+        @RequestParam(required = false) role: String?,
+        @RequestParam(required = false) delivery_status: String?,
+        @RequestParam(required = false) search_query: String?,
+        @RequestParam(required = false) start_date: String?,
+        @RequestParam(required = false) end_date: String?
+    ): ResponseEntity<ByteArray> {
+        val exportData = invitationService.exportInvitations(workspaceId, format, status, role, delivery_status, search_query, start_date, end_date)
+        
+        val contentType = when (format.uppercase()) {
+            "EXCEL" -> "application/vnd.ms-excel"
+            else -> "text/csv"
+        }
+        
+        val filename = "workspace-invitations-${java.time.LocalDate.now()}.${format.lowercase()}"
+        
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
+            .header(HttpHeaders.CONTENT_TYPE, contentType)
+            .body(exportData)
     }
 
 }

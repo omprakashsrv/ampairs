@@ -30,7 +30,7 @@ export class WorkspaceMemberGuard implements CanActivate {
     return this.memberService.getCurrentUserRole(currentWorkspace.id).pipe(
       map(roleResponse => {
         // Check if user has permission to view members
-        const canViewMembers = roleResponse.permissions.member_management.can_view_members;
+        const canViewMembers = roleResponse?.can_view_members;
 
         if (!canViewMembers) {
           // Insufficient permissions, redirect to dashboard with error message
@@ -60,21 +60,20 @@ export class WorkspaceMemberGuard implements CanActivate {
   }
 
   private checkMemberManagementPermissions(roleResponse: any): boolean {
-    const permissions = roleResponse.permissions.member_management;
-
     // User needs at least view members permission
-    if (!permissions.can_view_members) {
+    if (!roleResponse.can_view_members) {
       return false;
     }
 
     // For member management, user should have one of these permissions:
-    // - can_manage_members (for role changes, status updates)
+    // - is_owner or is_admin (full management access)
     // - can_invite_members (for inviting new members)
-    // - can_remove_members (for removing members)
+    // - can_manage_workspace (for workspace-level member management)
     const hasManagementPermission =
-      permissions.can_manage_members ||
-      permissions.can_invite_members ||
-      permissions.can_remove_members;
+      roleResponse.is_owner ||
+      roleResponse.is_admin ||
+      roleResponse.can_invite_members ||
+      roleResponse.can_manage_workspace;
 
     return hasManagementPermission;
   }

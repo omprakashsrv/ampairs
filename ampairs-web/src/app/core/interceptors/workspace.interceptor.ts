@@ -32,7 +32,7 @@ export class WorkspaceInterceptor implements HttpInterceptor {
       // Clone the request and add the workspace header
       const modifiedRequest = request.clone({
         setHeaders: {
-          'X-Workspace': workspaceId
+          'X-Workspace-ID': workspaceId
         }
       });
 

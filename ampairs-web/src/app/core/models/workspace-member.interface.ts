@@ -28,7 +28,8 @@ export interface MemberListResponse {
   id: string;
   user_id: string;
   email: string;
-  name: string;
+  first_name: string;
+  last_name: string;
   role: WorkspaceMemberRole;
   status: MemberStatus;
   joined_at: string;
@@ -50,12 +51,12 @@ export interface UpdateMemberRequest {
 
 export interface PagedMemberResponse {
   content: MemberListResponse[];
-  page: number;
-  size: number;
+  page_number: number;
+  page_size: number;
   total_elements: number;
   total_pages: number;
-  is_first: boolean;
-  is_last: boolean;
+  first: boolean;
+  last: boolean;
 }
 
 export interface UserRoleResponse {
@@ -69,6 +70,15 @@ export interface UserRoleResponse {
   permissions: PermissionMatrix;
   module_access: string[];
   restrictions?: { [key: string]: any };
+}
+
+// Simplified interface matching actual backend response
+export interface SimpleUserRoleResponse {
+  is_owner: boolean;
+  is_admin: boolean;
+  can_view_members: boolean;
+  can_invite_members: boolean;
+  can_manage_workspace: boolean;
 }
 
 // ===== ROLE AND PERMISSION TYPES =====

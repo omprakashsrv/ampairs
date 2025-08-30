@@ -19,6 +19,8 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
+import org.springframework.http.HttpHeaders
+import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
@@ -256,7 +258,7 @@ class WorkspaceMemberController(
         val sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy)
         val pageable = PageRequest.of(page, size, sort)
 
-        val members = memberService.getWorkspaceMembers(workspaceId, pageable)
+        val members = memberService.getWorkspaceMembersOptimized(workspaceId, pageable)
         return ApiResponse.success(PageResponse.from(members))
     }
 
@@ -909,5 +911,263 @@ class WorkspaceMemberController(
             "can_manage_workspace" to memberService.hasPermission(workspaceId, user.uid, WorkspacePermission.WORKSPACE_MANAGE.permissionName)
         )
         return ApiResponse.success(result)
+    }
+
+    @Operation(
+        summary = "Search Workspace Members",
+        description = """
+        ## 🔍 **Advanced Member Search with Filtering**
+        
+        Search and filter workspace members with comprehensive filtering options including
+        role, status, department, and text-based search across member profiles.
+        
+        ### **Search Capabilities:**
+        - **Text Search**: Search across name, email, and profile information
+        - **Role Filtering**: Filter by specific workspace roles
+        - **Status Filtering**: Filter by member status (ACTIVE, INACTIVE, etc.)
+        - **Department Filtering**: Filter by organizational department
+        - **Combined Filters**: Use multiple filters simultaneously for precise results
+        
+        ### **Sorting Options:**
+        - **Name**: Alphabetical sorting by member name
+        - **Email**: Alphabetical sorting by email address
+        - **Role**: Sort by role hierarchy
+        - **Join Date**: Sort by when member joined workspace
+        - **Last Activity**: Sort by most recent activity
+        
+        ### **Use Cases:**
+        - **Quick Search**: Find specific members by name or email
+        - **Role Management**: View all members with specific roles
+        - **Department Views**: Filter members by organizational structure
+        - **Status Monitoring**: View active, inactive, or pending members
+        """,
+        tags = ["Member Search"]
+    )
+    @GetMapping("/{workspaceId}/members/search")
+    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_VIEW)")
+    fun searchWorkspaceMembers(
+        @PathVariable workspaceId: String,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "20") size: Int,
+        @RequestParam(defaultValue = "joinedAt") sortBy: String,
+        @RequestParam(defaultValue = "desc") sortDir: String,
+        @RequestParam(required = false) role: String?,
+        @RequestParam(required = false) status: String?,
+        @RequestParam(required = false) department: String?,
+        @RequestParam(required = false) search_query: String?
+    ): ApiResponse<PageResponse<MemberListResponse>> {
+        val sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy)
+        val pageable = PageRequest.of(page, size, sort)
+
+        // Use the same service method with additional filtering
+        val members = memberService.searchWorkspaceMembers(
+            workspaceId, 
+            search_query,
+            role,
+            status, 
+            department,
+            pageable
+        )
+        return ApiResponse.success(PageResponse.from(members))
+    }
+
+    @Operation(
+        summary = "Get Member Statistics",
+        description = """
+        ## 📊 **Workspace Member Analytics and Statistics**
+        
+        Retrieve comprehensive statistics about workspace membership including
+        member counts, role distribution, activity metrics, and trend analysis.
+        
+        ### **Statistical Data:**
+        - **Member Counts**: Total, active, inactive member counts
+        - **Role Distribution**: Breakdown of members by role hierarchy
+        - **Status Analysis**: Member status distribution and health metrics
+        - **Activity Trends**: Recent joining patterns and engagement metrics
+        - **Department Analytics**: Member distribution across departments
+        
+        ### **Business Insights:**
+        - **Growth Tracking**: Monitor workspace membership growth over time
+        - **Role Balance**: Ensure proper distribution of roles and responsibilities
+        - **Engagement Analysis**: Track member activity and participation
+        - **Compliance Metrics**: Support audit and compliance reporting needs
+        """,
+        tags = ["Member Analytics"]
+    )
+    @GetMapping("/{workspaceId}/members/statistics")
+    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_VIEW)")
+    fun getMemberStatistics(
+        @PathVariable workspaceId: String
+    ): ApiResponse<Map<String, Any>> {
+        val statistics = memberService.getMemberStatistics(workspaceId)
+        return ApiResponse.success(statistics)
+    }
+
+    @Operation(
+        summary = "Get Workspace Departments",
+        description = """
+        ## 🏢 **Retrieve Available Departments**
+        
+        Get list of all departments that have members in the workspace.
+        Useful for filtering and organizational structure display.
+        
+        ### **Department Information:**
+        - **Active Departments**: Only departments with current members
+        - **Alphabetical Sorting**: Departments returned in alphabetical order
+        - **Member Count**: Optional member count per department
+        
+        ### **Use Cases:**
+        - **Filter Options**: Populate department filter dropdowns
+        - **Organizational View**: Display workspace organizational structure
+        - **Admin Tools**: Support HR and management reporting
+        """,
+        tags = ["Department Management"]
+    )
+    @GetMapping("/{workspaceId}/members/departments")
+    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_VIEW)")
+    fun getWorkspaceDepartments(
+        @PathVariable workspaceId: String
+    ): ApiResponse<List<String>> {
+        val departments = memberService.getWorkspaceDepartments(workspaceId)
+        return ApiResponse.success(departments)
+    }
+
+    @Operation(
+        summary = "Bulk Update Members",
+        description = """
+        ## 🔄 **Bulk Member Operations**
+        
+        Update multiple workspace members simultaneously with role changes,
+        status updates, or department assignments.
+        
+        ### **Bulk Operations:**
+        - **Role Updates**: Change multiple member roles at once
+        - **Status Changes**: Activate, deactivate, or suspend multiple members
+        - **Department Moves**: Transfer members between departments
+        - **Permission Updates**: Apply permission changes across multiple members
+        
+        ### **Safety Features:**
+        - **Transaction Safety**: All updates succeed or all fail
+        - **Validation**: Pre-validation of all changes before execution
+        - **Audit Trail**: Complete logging of all bulk operations
+        - **Notification**: Optional member notification of changes
+        """,
+        tags = ["Bulk Operations"]
+    )
+    @PutMapping("/{workspaceId}/members/bulk")
+    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_MANAGE)")
+    fun bulkUpdateMembers(
+        @PathVariable workspaceId: String,
+        @RequestBody request: Map<String, Any>
+    ): ApiResponse<Map<String, Any>> {
+        val result = memberService.bulkUpdateMembers(workspaceId, request)
+        return ApiResponse.success(result)
+    }
+
+    @Operation(
+        summary = "Bulk Remove Members",
+        description = """
+        ## 🗑️ **Bulk Member Removal**
+        
+        Remove multiple members from workspace simultaneously with proper
+        cleanup and notification handling.
+        
+        ### **Bulk Removal Process:**
+        - **Multi-Member Selection**: Remove multiple members in single operation
+        - **Data Cleanup**: Proper handling of member data and permissions
+        - **Audit Logging**: Complete record of removal operations
+        - **Notification**: Optional notification to removed members
+        """,
+        tags = ["Bulk Operations"]
+    )
+    @DeleteMapping("/{workspaceId}/members/bulk")
+    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_DELETE)")
+    fun bulkRemoveMembers(
+        @PathVariable workspaceId: String,
+        @RequestBody request: Map<String, Any>
+    ): ApiResponse<Map<String, Any>> {
+        val result = memberService.bulkRemoveMembers(workspaceId, request)
+        return ApiResponse.success(result)
+    }
+
+    @Operation(
+        summary = "Export Members Data",
+        description = """
+        ## 📤 **Export Member Data**
+        
+        Export workspace member data in various formats (CSV, Excel) with
+        optional filtering and custom field selection.
+        
+        ### **Export Formats:**
+        - **CSV**: Comma-separated values for spreadsheet applications
+        - **Excel**: Microsoft Excel format with formatting
+        - **Filtered Export**: Apply same filters as member search
+        
+        ### **Export Data:**
+        - **Basic Info**: Name, email, role, status, join date
+        - **Extended Info**: Department, last activity, permissions
+        - **Custom Fields**: Select specific fields for export
+        """,
+        tags = ["Data Export"]
+    )
+    @GetMapping("/{workspaceId}/members/export")
+    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_VIEW)")
+    fun exportMembers(
+        @PathVariable workspaceId: String,
+        @RequestParam(defaultValue = "CSV") format: String,
+        @RequestParam(required = false) role: String?,
+        @RequestParam(required = false) status: String?,
+        @RequestParam(required = false) department: String?,
+        @RequestParam(required = false) search_query: String?
+    ): ResponseEntity<ByteArray> {
+        val exportData = memberService.exportMembers(workspaceId, format, role, status, department, search_query)
+        
+        val contentType = when (format.uppercase()) {
+            "EXCEL" -> "application/vnd.ms-excel"
+            else -> "text/csv"
+        }
+        
+        val filename = "workspace-members-${java.time.LocalDate.now()}.${format.lowercase()}"
+        
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
+            .header(HttpHeaders.CONTENT_TYPE, contentType)
+            .body(exportData)
+    }
+
+    @Operation(
+        summary = "Update Member Status",
+        description = """
+        ## 🔄 **Update Member Status**
+        
+        Update a specific member's status (ACTIVE, INACTIVE, SUSPENDED, etc.)
+        with optional reason and notification.
+        
+        ### **Status Options:**
+        - **ACTIVE**: Full workspace access and permissions
+        - **INACTIVE**: Temporary suspension of access
+        - **SUSPENDED**: Administrative suspension with audit trail
+        - **PENDING**: Awaiting activation or approval
+        
+        ### **Status Change Process:**
+        - **Immediate Effect**: Status changes take effect immediately
+        - **Session Management**: Suspended members are logged out
+        - **Audit Trail**: Complete logging of status changes
+        - **Notifications**: Optional member and admin notifications
+        """,
+        tags = ["Member Status"]
+    )
+    @PatchMapping("/{workspaceId}/members/{memberId}/status")
+    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_MANAGE)")
+    fun updateMemberStatus(
+        @PathVariable workspaceId: String,
+        @PathVariable memberId: String,
+        @RequestBody request: Map<String, Any>
+    ): ApiResponse<MemberResponse> {
+        val status = request["status"] as? String ?: throw IllegalArgumentException("Status is required")
+        val reason = request["reason"] as? String
+        
+        val updatedMember = memberService.updateMemberStatus(workspaceId, memberId, status, reason)
+        return ApiResponse.success(updatedMember)
     }
 }

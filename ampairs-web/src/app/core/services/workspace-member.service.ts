@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
-import {Observable} from 'rxjs';
+import {Observable, throwError, of} from 'rxjs';
 import {catchError, map} from 'rxjs/operators';
 import {environment} from '../../../environments/environment';
 import {
@@ -8,6 +8,7 @@ import {
   MemberSortOptions,
   MemberStatus,
   PagedMemberResponse,
+  SimpleUserRoleResponse,
   UpdateMemberRequest,
   UserRoleResponse,
   WorkspaceMember,
@@ -67,6 +68,7 @@ export interface MemberActivityLog {
 })
 export class WorkspaceMemberService {
   private readonly MEMBER_API_URL = `${environment.apiBaseUrl}/workspace/v1/members`;
+  private readonly WORKSPACE_API_URL = `${environment.apiBaseUrl}/workspace/v1`;
 
   constructor(private http: HttpClient) {
   }
@@ -74,22 +76,33 @@ export class WorkspaceMemberService {
   /**
    * Get paginated list of workspace members
    */
-  getMembers(request: MemberSearchRequest = {}): Observable<PagedMemberResponse> {
+  getMembers(workspaceId: string, request: MemberSearchRequest = {}): Observable<PagedMemberResponse> {
     let params = new HttpParams();
 
-    if (request.workspace_id) params = params.set('workspace_id', request.workspace_id);
     if (request.page !== undefined) params = params.set('page', request.page.toString());
     if (request.size !== undefined) params = params.set('size', request.size.toString());
-    if (request.sort_by) params = params.set('sort_by', request.sort_by);
-    if (request.sort_direction) params = params.set('sort_direction', request.sort_direction);
+    if (request.sort_by) params = params.set('sortBy', request.sort_by);
+    if (request.sort_direction) params = params.set('sortDir', request.sort_direction);
     if (request.role && request.role !== 'ALL') params = params.set('role', request.role);
     if (request.status && request.status !== 'ALL') params = params.set('status', request.status);
     if (request.department) params = params.set('department', request.department);
     if (request.search_query) params = params.set('search_query', request.search_query);
 
-    return this.http.get<ApiResponse<PagedMemberResponse>>(`${this.MEMBER_API_URL}`, {params})
+    return this.http.get<ApiResponse<any>>(`${this.WORKSPACE_API_URL}/${workspaceId}/members`, {params})
       .pipe(
-        map(response => response.data),
+        map(response => {
+          const data = response.data;
+          // Map backend response format to frontend expected format
+          return {
+            content: data.content || [],
+            page_number: data.page_number || 0,
+            page_size: data.page_size || 20,
+            total_elements: data.total_elements || 0,
+            total_pages: data.total_pages || 0,
+            first: data.first || false,
+            last: data.last || false
+          } as PagedMemberResponse;
+        }),
         catchError(this.handleError)
       );
   }
@@ -97,8 +110,8 @@ export class WorkspaceMemberService {
   /**
    * Get member details by ID
    */
-  getMemberById(memberId: string): Observable<WorkspaceMember> {
-    return this.http.get<ApiResponse<WorkspaceMember>>(`${this.MEMBER_API_URL}/${memberId}`)
+  getMemberById(workspaceId: string, memberId: string): Observable<WorkspaceMember> {
+    return this.http.get<ApiResponse<WorkspaceMember>>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/${memberId}`)
       .pipe(
         map(response => response.data),
         catchError(this.handleError)
@@ -108,22 +121,52 @@ export class WorkspaceMemberService {
   /**
    * Get current user's role and permissions in workspace
    */
-  getCurrentUserRole(workspaceId?: string): Observable<UserRoleResponse> {
-    let params = new HttpParams();
-    if (workspaceId) params = params.set('workspace_id', workspaceId);
+  getCurrentUserRole(workspaceId: string): Observable<SimpleUserRoleResponse> {
+    console.log('Service calling API with workspaceId:', workspaceId);
+    const url = `${this.WORKSPACE_API_URL}/${workspaceId}/my-role`;
+    console.log('Full URL:', url);
 
-    return this.http.get<ApiResponse<UserRoleResponse>>(`${this.MEMBER_API_URL}/me`, {params})
+    return this.http.get<any>(url)
       .pipe(
-        map(response => response.data),
-        catchError(this.handleError)
+        map(response => {
+          console.log('Service received full response:', response);
+
+          // Handle both wrapped and direct response formats
+          let data: SimpleUserRoleResponse;
+
+          if (response && typeof response === 'object') {
+            // Check if it's wrapped in ApiResponse format
+            if (response.success !== undefined && response.data) {
+              data = response.data;
+              console.log('Using wrapped format, extracted data:', data);
+            }
+            // Check if it's direct permission object
+            else if (response.is_owner !== undefined || response.can_view_members !== undefined) {
+              data = response;
+              console.log('Using direct format, data:', data);
+            } else {
+              console.error('Unknown response structure:', response);
+              throw new Error('Unknown response structure');
+            }
+          } else {
+            console.error('Invalid response type:', typeof response, response);
+            throw new Error('Invalid response type');
+          }
+
+          return data;
+        }),
+        catchError(error => {
+          console.error('Service catchError triggered:', error);
+          return this.handleError(error);
+        })
       );
   }
 
   /**
    * Update member role and permissions
    */
-  updateMember(memberId: string, updateRequest: UpdateMemberRequest): Observable<WorkspaceMember> {
-    return this.http.put<ApiResponse<WorkspaceMember>>(`${this.MEMBER_API_URL}/${memberId}`, updateRequest)
+  updateMember(workspaceId: string, memberId: string, updateRequest: UpdateMemberRequest): Observable<WorkspaceMember> {
+    return this.http.put<ApiResponse<WorkspaceMember>>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/${memberId}`, updateRequest)
       .pipe(
         map(response => response.data),
         catchError(this.handleError)
@@ -137,10 +180,17 @@ export class WorkspaceMemberService {
     updated_count: number;
     failed_updates: Array<{ member_id: string; error: string }>
   }> {
+    const currentWorkspace = JSON.parse(localStorage.getItem('selected_workspace') || '{}');
+    const workspaceId = currentWorkspace?.id;
+
+    if (!workspaceId) {
+      return throwError(() => new Error('No current workspace selected'));
+    }
+
     return this.http.put<ApiResponse<{
       updated_count: number;
       failed_updates: Array<{ member_id: string; error: string }>
-    }>>(`${this.MEMBER_API_URL}/bulk`, bulkRequest)
+    }>>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/bulk`, bulkRequest)
       .pipe(
         map(response => response.data),
         catchError(this.handleError)
@@ -150,9 +200,11 @@ export class WorkspaceMemberService {
   /**
    * Remove member from workspace
    */
-  removeMember(memberId: string, reason?: string): Observable<{ message: string }> {
+  removeMember(workspaceId: string, memberId: string, reason?: string): Observable<{ message: string }> {
     const body = reason ? {reason} : {};
-    return this.http.delete<ApiResponse<{ message: string }>>(`${this.MEMBER_API_URL}/${memberId}`, {body})
+    return this.http.delete<ApiResponse<{
+      message: string
+    }>>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/${memberId}`, {body})
       .pipe(
         map(response => response.data),
         catchError(this.handleError)
@@ -166,14 +218,22 @@ export class WorkspaceMemberService {
     removed_count: number;
     failed_removals: Array<{ member_id: string; error: string }>
   }> {
+    const currentWorkspace = JSON.parse(localStorage.getItem('selected_workspace') || '{}');
+    const workspaceId = currentWorkspace?.id;
+
+    if (!workspaceId) {
+      return throwError(() => new Error('No current workspace selected'));
+    }
+
     const body = {
       member_ids: memberIds,
       reason: reason
     };
+
     return this.http.delete<ApiResponse<{
       removed_count: number;
       failed_removals: Array<{ member_id: string; error: string }>
-    }>>(`${this.MEMBER_API_URL}/bulk`, {body})
+    }>>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/bulk`, {body})
       .pipe(
         map(response => response.data),
         catchError(this.handleError)
@@ -184,6 +244,13 @@ export class WorkspaceMemberService {
    * Search members with advanced filtering
    */
   searchMembers(filters: MemberFilters, sortOptions?: MemberSortOptions, page = 0, size = 20): Observable<PagedMemberResponse> {
+    const currentWorkspace = JSON.parse(localStorage.getItem('selected_workspace') || '{}');
+    const workspaceId = currentWorkspace?.id;
+
+    if (!workspaceId) {
+      return throwError(() => new Error('No current workspace selected'));
+    }
+
     let params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
@@ -194,13 +261,16 @@ export class WorkspaceMemberService {
     if (filters.search_query) params = params.set('search_query', filters.search_query);
 
     if (sortOptions) {
-      params = params.set('sort_by', sortOptions.sort_by);
-      params = params.set('sort_direction', sortOptions.sort_direction);
+      params = params.set('sortBy', sortOptions.sort_by);
+      params = params.set('sortDir', sortOptions.sort_direction);
     }
 
-    return this.http.get<ApiResponse<PagedMemberResponse>>(`${this.MEMBER_API_URL}/search`, {params})
+    return this.http.get<PagedMemberResponse>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/search`, {params})
       .pipe(
-        map(response => response.data),
+        map(data => {
+          // Map backend response format to frontend expected format
+          return data;
+        }),
         catchError(this.handleError)
       );
   }
@@ -229,7 +299,7 @@ export class WorkspaceMemberService {
   /**
    * Get workspace member statistics
    */
-  getMemberStatistics(workspaceId?: string): Observable<{
+  getMemberStatistics(workspaceId: string): Observable<{
     total_members: number;
     active_members: number;
     by_role: { [key in WorkspaceMemberRole]: number };
@@ -242,9 +312,6 @@ export class WorkspaceMemberService {
       active: number;
     }>;
   }> {
-    let params = new HttpParams();
-    if (workspaceId) params = params.set('workspace_id', workspaceId);
-
     return this.http.get<ApiResponse<{
       total_members: number;
       active_members: number;
@@ -257,7 +324,7 @@ export class WorkspaceMemberService {
         left: number;
         active: number;
       }>;
-    }>>(`${this.MEMBER_API_URL}/statistics`, {params})
+    }>>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/statistics`)
       .pipe(
         map(response => response.data),
         catchError(this.handleError)
@@ -268,6 +335,13 @@ export class WorkspaceMemberService {
    * Export members data
    */
   exportMembers(format: 'CSV' | 'EXCEL' = 'CSV', filters?: MemberFilters): Observable<Blob> {
+    const currentWorkspace = JSON.parse(localStorage.getItem('selected_workspace') || '{}');
+    const workspaceId = currentWorkspace?.id;
+
+    if (!workspaceId) {
+      return throwError(() => new Error('No current workspace selected'));
+    }
+
     let params = new HttpParams().set('format', format);
 
     if (filters) {
@@ -277,7 +351,7 @@ export class WorkspaceMemberService {
       if (filters.search_query) params = params.set('search_query', filters.search_query);
     }
 
-    return this.http.get(`${this.MEMBER_API_URL}/export`, {
+    return this.http.get(`${this.WORKSPACE_API_URL}/${workspaceId}/members/export`, {
       params,
       responseType: 'blob'
     }).pipe(catchError(this.handleError));
@@ -286,11 +360,8 @@ export class WorkspaceMemberService {
   /**
    * Get available departments in workspace
    */
-  getDepartments(workspaceId?: string): Observable<string[]> {
-    let params = new HttpParams();
-    if (workspaceId) params = params.set('workspace_id', workspaceId);
-
-    return this.http.get<ApiResponse<string[]>>(`${this.MEMBER_API_URL}/departments`, {params})
+  getDepartments(workspaceId: string): Observable<string[]> {
+    return this.http.get<ApiResponse<string[]>>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/departments`)
       .pipe(
         map(response => response.data),
         catchError(this.handleError)
@@ -301,11 +372,19 @@ export class WorkspaceMemberService {
    * Update member status (activate/deactivate/suspend)
    */
   updateMemberStatus(memberId: string, status: MemberStatus, reason?: string): Observable<WorkspaceMember> {
+    const currentWorkspace = JSON.parse(localStorage.getItem('selected_workspace') || '{}');
+    const workspaceId = currentWorkspace?.id;
+
+    if (!workspaceId) {
+      return throwError(() => new Error('No current workspace selected'));
+    }
+
     const body = {
       status,
       reason
     };
-    return this.http.patch<ApiResponse<WorkspaceMember>>(`${this.MEMBER_API_URL}/${memberId}/status`, body)
+
+    return this.http.patch<ApiResponse<WorkspaceMember>>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/${memberId}/status`, body)
       .pipe(
         map(response => response.data),
         catchError(this.handleError)
@@ -328,6 +407,6 @@ export class WorkspaceMemberService {
       errorMessage = error.message;
     }
 
-    throw new Error(errorMessage);
+    return throwError(() => new Error(errorMessage));
   }
 }

@@ -54,28 +54,21 @@ export class WorkspaceInvitationGuard implements CanActivate {
   }
 
   private checkInvitationPermissions(roleResponse: any): boolean {
-    const memberPermissions = roleResponse.permissions.member_management;
-    const workspacePermissions = roleResponse.permissions.workspace_management;
-
     // User needs invitation management permissions
     // Check multiple permission sources as invitations might be controlled by:
-    // 1. Member management permissions (can_invite_members)
+    // 1. Direct invitation permission (can_invite_members)
     // 2. Workspace management permissions (can_manage_workspace)
-    // 3. Role hierarchy (admins and owners typically can manage invitations)
+    // 3. Role hierarchy (owners and admins typically can manage invitations)
 
-    const canInviteMembers = memberPermissions.can_invite_members;
-    const canManageWorkspace = workspacePermissions.can_manage_workspace;
-    const canManageMembers = memberPermissions.can_manage_members;
-
-    // User role hierarchy check
-    const roleHierarchy = roleResponse.role_hierarchy;
-    const isAdminOrAbove = roleHierarchy.is_owner || roleHierarchy.is_admin || roleHierarchy.is_manager;
+    const canInviteMembers = roleResponse.can_invite_members;
+    const canManageWorkspace = roleResponse.can_manage_workspace;
+    const isOwner = roleResponse.is_owner;
+    const isAdmin = roleResponse.is_admin;
 
     // Grant access if user has any of these permissions:
     // - Direct invitation permission
-    // - Member management permission
     // - Workspace management permission
-    // - Admin role or above
-    return canInviteMembers || canManageMembers || canManageWorkspace || isAdminOrAbove;
+    // - Owner or Admin role
+    return canInviteMembers || canManageWorkspace || isOwner || isAdmin;
   }
 }
