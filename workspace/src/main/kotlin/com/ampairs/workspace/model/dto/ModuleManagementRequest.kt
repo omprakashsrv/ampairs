@@ -1,7 +1,6 @@
 package com.ampairs.workspace.model.dto
 
 import com.ampairs.workspace.model.ModuleSettings
-import com.ampairs.workspace.model.UserModulePreferences
 import com.ampairs.workspace.model.enums.WorkspaceModuleStatus
 import com.fasterxml.jackson.annotation.JsonProperty
 import jakarta.validation.constraints.*
@@ -58,7 +57,10 @@ data class ModuleConfigurationRequest(
     var displayOrder: Int? = null,
 
     @JsonProperty("visibility")
-    @field:Pattern(regexp = "^(VISIBLE|HIDDEN|ADMIN_ONLY)$", message = "Visibility must be VISIBLE, HIDDEN, or ADMIN_ONLY")
+    @field:Pattern(
+        regexp = "^(VISIBLE|HIDDEN|ADMIN_ONLY)$",
+        message = "Visibility must be VISIBLE, HIDDEN, or ADMIN_ONLY"
+    )
     var visibility: String? = null,
 
     @JsonProperty("enabled_features")
@@ -134,8 +136,10 @@ data class BulkModuleOperationRequest(
     var moduleIds: List<String> = emptyList(),
 
     @field:NotBlank(message = "Operation is required")
-    @field:Pattern(regexp = "^(ENABLE|DISABLE|UPDATE|UNINSTALL|SET_QUICK_ACCESS|REMOVE_QUICK_ACCESS)$", 
-                   message = "Operation must be one of: ENABLE, DISABLE, UPDATE, UNINSTALL, SET_QUICK_ACCESS, REMOVE_QUICK_ACCESS")
+    @field:Pattern(
+        regexp = "^(ENABLE|DISABLE|UPDATE|UNINSTALL|SET_QUICK_ACCESS|REMOVE_QUICK_ACCESS)$",
+        message = "Operation must be one of: ENABLE, DISABLE, UPDATE, UNINSTALL, SET_QUICK_ACCESS, REMOVE_QUICK_ACCESS"
+    )
     @JsonProperty("operation")
     var operation: String = "",
 
@@ -169,8 +173,10 @@ data class ModuleSearchRequest(
     var businessRelevantOnly: Boolean = false,
 
     @JsonProperty("sort_by")
-    @field:Pattern(regexp = "^(NAME|CATEGORY|INSTALL_COUNT|RATING|DISPLAY_ORDER|INSTALLED_AT|LAST_ACCESS)$", 
-                   message = "Sort field must be one of: NAME, CATEGORY, INSTALL_COUNT, RATING, DISPLAY_ORDER, INSTALLED_AT, LAST_ACCESS")
+    @field:Pattern(
+        regexp = "^(NAME|CATEGORY|INSTALL_COUNT|RATING|DISPLAY_ORDER|INSTALLED_AT|LAST_ACCESS)$",
+        message = "Sort field must be one of: NAME, CATEGORY, INSTALL_COUNT, RATING, DISPLAY_ORDER, INSTALLED_AT, LAST_ACCESS"
+    )
     var sortBy: String = "DISPLAY_ORDER",
 
     @JsonProperty("sort_direction")

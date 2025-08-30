@@ -238,7 +238,7 @@ class MasterModule : BaseDomain() {
     var lastUpdatedAt: LocalDateTime? = null
 
     // JPA Relationships
-    
+
     /**
      * Workspace modules using this master module
      */

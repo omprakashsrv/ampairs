@@ -2,9 +2,8 @@ package com.ampairs.workspace.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
-import com.ampairs.core.domain.User
-import com.ampairs.core.service.UserService
 import com.ampairs.core.security.AuthenticationHelper
+import com.ampairs.core.service.UserService
 import com.ampairs.workspace.model.dto.MemberListResponse
 import com.ampairs.workspace.model.dto.MemberResponse
 import com.ampairs.workspace.model.dto.UpdateMemberRequest
@@ -570,7 +569,7 @@ class WorkspaceMemberController(
         @RequestBody @Valid request: UpdateMemberRequest,
     ): ApiResponse<MemberResponse> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+        val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
         val updatedMember = memberService.updateMember(workspaceId, memberId, request, userId)
@@ -727,7 +726,7 @@ class WorkspaceMemberController(
         @PathVariable memberId: String,
     ): ApiResponse<String> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+        val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
         val result = memberService.removeMember(workspaceId, memberId, userId)
@@ -901,20 +900,30 @@ class WorkspaceMemberController(
         @PathVariable workspaceId: String,
     ): ApiResponse<Map<String, Any>> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+        val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
         // Return user's permissions in workspace
         val hasOwnerPermission = memberService.isWorkspaceOwner(workspaceId, userId)
-        val hasAdminPermission = memberService.hasPermission(workspaceId, userId, WorkspacePermission.WORKSPACE_MANAGE.permissionName)
-        val hasMemberPermission = memberService.hasPermission(workspaceId, userId, WorkspacePermission.MEMBER_VIEW.permissionName)
+        val hasAdminPermission =
+            memberService.hasPermission(workspaceId, userId, WorkspacePermission.WORKSPACE_MANAGE.permissionName)
+        val hasMemberPermission =
+            memberService.hasPermission(workspaceId, userId, WorkspacePermission.MEMBER_VIEW.permissionName)
 
         val result: Map<String, Any> = mapOf(
             "is_owner" to hasOwnerPermission,
             "is_admin" to hasAdminPermission,
             "can_view_members" to hasMemberPermission,
-            "can_invite_members" to memberService.hasPermission(workspaceId, userId, WorkspacePermission.MEMBER_INVITE.permissionName),
-            "can_manage_workspace" to memberService.hasPermission(workspaceId, userId, WorkspacePermission.WORKSPACE_MANAGE.permissionName)
+            "can_invite_members" to memberService.hasPermission(
+                workspaceId,
+                userId,
+                WorkspacePermission.MEMBER_INVITE.permissionName
+            ),
+            "can_manage_workspace" to memberService.hasPermission(
+                workspaceId,
+                userId,
+                WorkspacePermission.WORKSPACE_MANAGE.permissionName
+            )
         )
         return ApiResponse.success(result)
     }
@@ -967,10 +976,10 @@ class WorkspaceMemberController(
 
         // Use the same service method with additional filtering
         val members = memberService.searchWorkspaceMembers(
-            workspaceId, 
+            workspaceId,
             search_query,
             role,
-            status, 
+            status,
             department,
             pageable
         )
@@ -1127,14 +1136,14 @@ class WorkspaceMemberController(
         @RequestParam(required = false) search_query: String?
     ): ResponseEntity<ByteArray> {
         val exportData = memberService.exportMembers(workspaceId, format, role, status, department, search_query)
-        
+
         val contentType = when (format.uppercase()) {
             "EXCEL" -> "application/vnd.ms-excel"
             else -> "text/csv"
         }
-        
+
         val filename = "workspace-members-${java.time.LocalDate.now()}.${format.lowercase()}"
-        
+
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
             .header(HttpHeaders.CONTENT_TYPE, contentType)
@@ -1172,7 +1181,7 @@ class WorkspaceMemberController(
     ): ApiResponse<MemberResponse> {
         val status = request["status"] as? String ?: throw IllegalArgumentException("Status is required")
         val reason = request["reason"] as? String
-        
+
         val updatedMember = memberService.updateMemberStatus(workspaceId, memberId, status, reason)
         return ApiResponse.success(updatedMember)
     }

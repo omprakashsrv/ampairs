@@ -17,7 +17,8 @@ import java.time.LocalDateTime
  * Handles module installations and configurations specific to each workspace.
  */
 @Repository
-interface WorkspaceModuleRepository : JpaRepository<WorkspaceModule, String>, JpaSpecificationExecutor<WorkspaceModule> {
+interface WorkspaceModuleRepository : JpaRepository<WorkspaceModule, String>,
+    JpaSpecificationExecutor<WorkspaceModule> {
 
     /**
      * Find all modules for a specific workspace

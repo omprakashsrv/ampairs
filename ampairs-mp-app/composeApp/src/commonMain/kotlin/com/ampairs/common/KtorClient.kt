@@ -13,6 +13,7 @@ import io.ktor.client.request.header
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
 
 fun httpClient(engine: HttpClientEngine, tokenRepository: TokenRepository) = HttpClient(engine) {
@@ -48,11 +49,11 @@ fun httpClient(engine: HttpClientEngine, tokenRepository: TokenRepository) = Htt
     
     // Default request configuration
     defaultRequest {
-        // Add company header if available
-//        val companyId = tokenRepository.getWorkspaceId()
-//        if (companyId.isNotEmpty()) {
-//            header("X-Company", companyId)
-//        }
+        // Add workspace header if available
+        val workspaceId = runBlocking { tokenRepository.getWorkspaceId() }
+        if (workspaceId.isNotEmpty()) {
+            header("X-Workspace-ID", workspaceId)
+        }
         
         // Add bearer token if available
         val accessToken = tokenRepository.getAccessToken()

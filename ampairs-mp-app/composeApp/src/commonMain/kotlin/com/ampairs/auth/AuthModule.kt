@@ -19,7 +19,7 @@ import org.koin.dsl.module
 
 val authModule: Module = module {
     single { AuthApiImpl(get(), get()) } bind (AuthApi::class)
-    single { TokenRepositoryImpl(get(), get()) } bind (TokenRepository::class)
+    single { TokenRepositoryImpl(get(), get(), get()) } bind (TokenRepository::class)
     single { UserWorkspaceRepositoryImpl(get()) } bind (UserWorkspaceRepository::class)
     // Database is provided by platform-specific modules
     single { get<AuthRoomDatabase>().userDao() }

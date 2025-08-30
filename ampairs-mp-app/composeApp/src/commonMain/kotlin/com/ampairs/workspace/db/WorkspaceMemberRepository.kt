@@ -42,7 +42,7 @@ class WorkspaceMemberRepository(
                     userId = memberListItem.userId,
                     workspaceId = workspaceId,
                     email = memberListItem.email,
-                    name = memberListItem.name,
+                    name = memberListItem.firstName,
                     role = memberListItem.role,
                     status = memberListItem.status,
                     joinedAt = memberListItem.joinedAt,

@@ -3,9 +3,8 @@ package com.ampairs.workspace.filter
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.multitenancy.CurrentTenantIdentifierResolver
 import com.ampairs.core.multitenancy.TenantContextHolder
-import com.ampairs.core.domain.User
-import com.ampairs.core.service.UserService
 import com.ampairs.core.security.AuthenticationHelper
+import com.ampairs.core.service.UserService
 import com.ampairs.workspace.service.WorkspaceMemberService
 import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.servlet.FilterChain

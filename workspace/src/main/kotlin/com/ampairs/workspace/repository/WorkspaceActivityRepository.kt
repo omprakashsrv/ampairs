@@ -24,54 +24,6 @@ interface WorkspaceActivityRepository : JpaRepository<WorkspaceActivity, String>
     fun findByWorkspaceIdOrderByCreatedAtDesc(workspaceId: String, pageable: Pageable): Page<WorkspaceActivity>
 
     /**
-     * Find activities by workspace ID and activity type
-     */
-    fun findByWorkspaceIdAndActivityTypeOrderByCreatedAtDesc(
-        workspaceId: String,
-        activityType: WorkspaceActivityType,
-        pageable: Pageable,
-    ): Page<WorkspaceActivity>
-
-    /**
-     * Find activities by workspace ID and actor
-     */
-    fun findByWorkspaceIdAndActorIdOrderByCreatedAtDesc(
-        workspaceId: String,
-        actorId: String,
-        pageable: Pageable,
-    ): Page<WorkspaceActivity>
-
-    /**
-     * Find activities by workspace ID within date range
-     */
-    @Query("SELECT wa FROM com.ampairs.workspace.model.WorkspaceActivity wa WHERE wa.workspaceId = :workspaceId AND wa.createdAt BETWEEN :startDate AND :endDate ORDER BY wa.createdAt DESC")
-    fun findByWorkspaceIdAndCreatedAtBetweenOrderByCreatedAtDesc(
-        @Param("workspaceId") workspaceId: String,
-        @Param("startDate") startDate: LocalDateTime,
-        @Param("endDate") endDate: LocalDateTime,
-        pageable: Pageable,
-    ): Page<WorkspaceActivity>
-
-    /**
-     * Find activities by workspace ID and severity level
-     */
-    fun findByWorkspaceIdAndSeverityOrderByCreatedAtDesc(
-        workspaceId: String,
-        severity: String,
-        pageable: Pageable,
-    ): Page<WorkspaceActivity>
-
-    /**
-     * Count activities by workspace and activity type
-     */
-    fun countByWorkspaceIdAndActivityType(workspaceId: String, activityType: WorkspaceActivityType): Long
-
-    /**
-     * Count activities by workspace and actor
-     */
-    fun countByWorkspaceIdAndActorId(workspaceId: String, actorId: String): Long
-
-    /**
      * Count activities by workspace within date range
      */
     @Query("SELECT COUNT(wa) FROM com.ampairs.workspace.model.WorkspaceActivity wa WHERE wa.workspaceId = :workspaceId AND wa.createdAt BETWEEN :startDate AND :endDate")
@@ -159,16 +111,6 @@ interface WorkspaceActivityRepository : JpaRepository<WorkspaceActivity, String>
     ): Page<WorkspaceActivity>
 
     /**
-     * Find activities by target entity
-     */
-    fun findByWorkspaceIdAndTargetEntityTypeAndTargetEntityIdOrderByCreatedAtDesc(
-        workspaceId: String,
-        targetEntityType: String,
-        targetEntityId: String,
-        pageable: Pageable,
-    ): Page<WorkspaceActivity>
-
-    /**
      * Get activity timeline for a specific entity
      */
     @Query(
@@ -188,59 +130,10 @@ interface WorkspaceActivityRepository : JpaRepository<WorkspaceActivity, String>
     ): List<WorkspaceActivity>
 
     /**
-     * Delete activities older than specified date for a workspace
-     */
-    @Modifying
-    @Query("DELETE FROM com.ampairs.workspace.model.WorkspaceActivity wa WHERE wa.workspaceId = :workspaceId AND wa.createdAt < :cutoffDate")
-    fun deleteByWorkspaceIdAndCreatedAtBefore(
-        @Param("workspaceId") workspaceId: String,
-        @Param("cutoffDate") cutoffDate: LocalDateTime,
-    ): Long
-
-    /**
      * Delete all activities for a workspace (used during workspace deletion)
      */
     @Modifying
     @Query("DELETE FROM com.ampairs.workspace.model.WorkspaceActivity wa WHERE wa.workspaceId = :workspaceId")
     fun deleteByWorkspaceId(@Param("workspaceId") workspaceId: String): Long
 
-    /**
-     * Check if there are any activities for a workspace
-     */
-    fun existsByWorkspaceId(workspaceId: String): Boolean
-
-    /**
-     * Get activity count by severity for monitoring
-     */
-    @Query(
-        """
-        SELECT wa.severity, COUNT(wa)
-        FROM com.ampairs.workspace.model.WorkspaceActivity wa
-        WHERE wa.workspaceId = :workspaceId
-        AND wa.createdAt >= :sinceDate
-        GROUP BY wa.severity
-    """
-    )
-    fun getActivityCountBySeverity(
-        @Param("workspaceId") workspaceId: String,
-        @Param("sinceDate") sinceDate: LocalDateTime,
-    ): List<Array<Any>>
-
-    /**
-     * Get daily activity count for the last N days
-     */
-    @Query(
-        """
-        SELECT DATE(wa.createdAt), COUNT(wa)
-        FROM com.ampairs.workspace.model.WorkspaceActivity wa
-        WHERE wa.workspaceId = :workspaceId
-        AND wa.createdAt >= :sinceDate
-        GROUP BY DATE(wa.createdAt)
-        ORDER BY DATE(wa.createdAt) DESC
-    """
-    )
-    fun getDailyActivityCount(
-        @Param("workspaceId") workspaceId: String,
-        @Param("sinceDate") sinceDate: LocalDateTime,
-    ): List<Array<Any>>
 }

@@ -7,21 +7,21 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.media.Schema
-import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
+import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 
 /**
  * **Workspace Module Management Controller**
- * 
+ *
  * Provides comprehensive module management functionality for workspaces.
  * Workspace managers and admins can discover, install, configure, and manage
  * business modules based on their specific business needs and category.
- * 
+ *
  * **Key Features:**
  * - Module discovery and browsing
  * - Installation and removal management
@@ -30,7 +30,7 @@ import org.springframework.web.bind.annotation.*
  * - Multi-tenant workspace isolation
  */
 @Tag(
-    name = "Workspace Module Management", 
+    name = "Workspace Module Management",
     description = """
     ## 🧩 Comprehensive Module Management System
     
@@ -138,7 +138,7 @@ class WorkspaceModuleController(
                 )]
             ),
             SwaggerApiResponse(
-                responseCode = "401", 
+                responseCode = "401",
                 description = "🚫 Authentication required - Invalid or missing JWT token"
             ),
             SwaggerApiResponse(
@@ -242,7 +242,7 @@ class WorkspaceModuleController(
                 description = "🚫 Authentication required - Invalid or missing JWT token"
             ),
             SwaggerApiResponse(
-                responseCode = "403", 
+                responseCode = "403",
                 description = "⛔ Access denied - Not a workspace member or missing workspace header"
             )
         ]
@@ -327,7 +327,7 @@ class WorkspaceModuleController(
                 responseCode = "200",
                 description = "✅ Action completed successfully",
                 content = [Content(
-                    mediaType = "application/json", 
+                    mediaType = "application/json",
                     schema = Schema(implementation = ApiResponse::class),
                     examples = [ExampleObject(
                         name = "Successful Action Response",
@@ -401,9 +401,9 @@ class WorkspaceModuleController(
             example = "MOD_CUSTOMER_CRM_001"
         )
         @PathVariable moduleId: String,
-        
+
         @Parameter(
-            name = "action", 
+            name = "action",
             description = """
             **Action to Perform**
             

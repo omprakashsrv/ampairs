@@ -2,8 +2,10 @@ package com.ampairs.workspace.model
 
 import com.ampairs.core.config.Constants
 import com.ampairs.core.domain.model.BaseDomain
-import com.fasterxml.jackson.annotation.JsonIgnore
-import jakarta.persistence.*
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.Index
+import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.time.LocalDateTime
@@ -26,29 +28,29 @@ data class MaterialColors(
     var onPrimary: String = "#FFFFFF",
     var primaryContainer: String = "#EADDFF",
     var onPrimaryContainer: String = "#21005D",
-    
+
     var secondary: String = "#625B71",
     var onSecondary: String = "#FFFFFF",
     var secondaryContainer: String = "#E8DEF8",
     var onSecondaryContainer: String = "#1D192B",
-    
+
     var tertiary: String = "#7D5260",
     var onTertiary: String = "#FFFFFF",
     var tertiaryContainer: String = "#FFD8E4",
     var onTertiaryContainer: String = "#31111D",
-    
+
     var error: String = "#BA1A1A",
     var onError: String = "#FFFFFF",
     var errorContainer: String = "#FFDAD6",
     var onErrorContainer: String = "#410002",
-    
+
     var background: String = "#FFFBFE",
     var onBackground: String = "#1C1B1F",
     var surface: String = "#FFFBFE",
     var onSurface: String = "#1C1B1F",
     var surfaceVariant: String = "#E7E0EC",
     var onSurfaceVariant: String = "#49454F",
-    
+
     var outline: String = "#79747E",
     var outlineVariant: String = "#CAC4D0",
     var scrim: String = "#000000"
@@ -63,23 +65,23 @@ data class MaterialTypography(
     var titleFont: String = "Roboto",
     var bodyFont: String = "Roboto",
     var labelFont: String = "Roboto",
-    
+
     var displayLarge: TypographyStyle = TypographyStyle(size = 57, weight = 400, lineHeight = 64),
     var displayMedium: TypographyStyle = TypographyStyle(size = 45, weight = 400, lineHeight = 52),
     var displaySmall: TypographyStyle = TypographyStyle(size = 36, weight = 400, lineHeight = 44),
-    
+
     var headlineLarge: TypographyStyle = TypographyStyle(size = 32, weight = 400, lineHeight = 40),
     var headlineMedium: TypographyStyle = TypographyStyle(size = 28, weight = 400, lineHeight = 36),
     var headlineSmall: TypographyStyle = TypographyStyle(size = 24, weight = 400, lineHeight = 32),
-    
+
     var titleLarge: TypographyStyle = TypographyStyle(size = 22, weight = 400, lineHeight = 28),
     var titleMedium: TypographyStyle = TypographyStyle(size = 16, weight = 500, lineHeight = 24),
     var titleSmall: TypographyStyle = TypographyStyle(size = 14, weight = 500, lineHeight = 20),
-    
+
     var bodyLarge: TypographyStyle = TypographyStyle(size = 16, weight = 400, lineHeight = 24),
     var bodyMedium: TypographyStyle = TypographyStyle(size = 14, weight = 400, lineHeight = 20),
     var bodySmall: TypographyStyle = TypographyStyle(size = 12, weight = 400, lineHeight = 16),
-    
+
     var labelLarge: TypographyStyle = TypographyStyle(size = 14, weight = 500, lineHeight = 20),
     var labelMedium: TypographyStyle = TypographyStyle(size = 12, weight = 500, lineHeight = 16),
     var labelSmall: TypographyStyle = TypographyStyle(size = 11, weight = 500, lineHeight = 16)
@@ -115,7 +117,7 @@ class WorkspaceSettings : BaseDomain() {
     var workspaceId: String = ""
 
     // Material Design 3 Theme Settings
-    
+
     /**
      * Company logo URL
      */
@@ -329,7 +331,11 @@ class WorkspaceSettings : BaseDomain() {
     /**
      * Set Material Typography configuration
      */
-    fun setMaterialTypography(typography: MaterialTypography, modifiedBy: String? = null, modifiedByName: String? = null) {
+    fun setMaterialTypography(
+        typography: MaterialTypography,
+        modifiedBy: String? = null,
+        modifiedByName: String? = null
+    ) {
         materialTypography = typography
         updateModification(modifiedBy, modifiedByName)
     }
@@ -345,7 +351,12 @@ class WorkspaceSettings : BaseDomain() {
     /**
      * Update color scheme preference
      */
-    fun updateColorScheme(colorScheme: String, seedColor: String? = null, modifiedBy: String? = null, modifiedByName: String? = null) {
+    fun updateColorScheme(
+        colorScheme: String,
+        seedColor: String? = null,
+        modifiedBy: String? = null,
+        modifiedByName: String? = null
+    ) {
         materialTheme.colorScheme = colorScheme
         materialTheme.seedColor = seedColor
         updateModification(modifiedBy, modifiedByName)

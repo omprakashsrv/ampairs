@@ -27,7 +27,7 @@ enum class SubscriptionTier(
     STANDARD("Standard", "Standard features for established businesses", 25, 15, 3),
     PREMIUM("Premium", "Premium features for growing organizations", 50, 25, 4),
     ENTERPRISE("Enterprise", "Full features for large organizations", -1, -1, 5); // -1 = unlimited
-    
+
     fun isUnlimited(field: String): Boolean {
         return when (field) {
             "users" -> maxUsers == -1
@@ -35,7 +35,7 @@ enum class SubscriptionTier(
             else -> false
         }
     }
-    
+
     fun supportsModule(requiredTier: SubscriptionTier): Boolean {
         return this.priority >= requiredTier.priority
     }
@@ -55,7 +55,7 @@ enum class UserRole(
     MANAGER("Manager", "Manage team and some modules", 3, false),
     ADMIN("Admin", "Full module management except billing", 4, true),
     OWNER("Owner", "Complete workspace control", 5, true);
-    
+
     fun hasAccessLevel(requiredRole: UserRole): Boolean {
         return this.priority >= requiredRole.priority
     }

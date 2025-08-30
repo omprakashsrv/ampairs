@@ -247,7 +247,7 @@ class Workspace : BaseDomain() {
     var createdBy: String? = null
 
     // JPA Relationships
-    
+
     /**
      * Workspace members (using JoinColumn instead of mappedBy to avoid entity conflicts)
      */

@@ -1,5 +1,6 @@
 package com.ampairs.core.security
 
+import com.ampairs.core.domain.User
 import org.springframework.security.core.Authentication
 
 /**
@@ -7,7 +8,7 @@ import org.springframework.security.core.Authentication
  * without creating direct dependencies on auth module entities
  */
 object AuthenticationHelper {
-    
+
     /**
      * Extract user ID from authentication principal
      * This works regardless of the actual principal type
@@ -15,6 +16,7 @@ object AuthenticationHelper {
     fun getUserId(authentication: Authentication): String? {
         val principal = authentication.principal
         return when {
+            principal is User -> principal.uid
             // If principal has a uid property (reflection-based)
             hasProperty(principal, "uid") -> getProperty(principal, "uid") as? String
             // If principal has getId method
@@ -25,12 +27,12 @@ object AuthenticationHelper {
             else -> authentication.name
         }
     }
-    
+
     /**
      * Get user ID from current user - alias for getUserId
      */
     fun getCurrentUserId(authentication: Authentication): String? = getUserId(authentication)
-    
+
     /**
      * Check if an object has a specific property using reflection
      */
@@ -42,7 +44,7 @@ object AuthenticationHelper {
             false
         }
     }
-    
+
     /**
      * Get property value using reflection
      */
@@ -56,7 +58,7 @@ object AuthenticationHelper {
             null
         }
     }
-    
+
     /**
      * Check if an object has a specific method using reflection
      */
@@ -68,7 +70,7 @@ object AuthenticationHelper {
             false
         }
     }
-    
+
     /**
      * Call method using reflection
      */

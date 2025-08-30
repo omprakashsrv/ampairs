@@ -17,7 +17,7 @@ import io.ktor.client.engine.HttpClientEngine
  */
 class WorkspaceMemberApiImpl(
     engine: HttpClientEngine,
-    private val tokenRepository: TokenRepository,
+    tokenRepository: TokenRepository,
 ) : WorkspaceMemberApi {
 
     private val client = httpClient(engine, tokenRepository)

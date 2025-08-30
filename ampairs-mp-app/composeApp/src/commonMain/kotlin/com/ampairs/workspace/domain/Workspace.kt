@@ -147,7 +147,7 @@ data class WorkspaceMember(
     val id: String,
     val userId: String,
     val workspaceId: String,
-    val email: String,
+    val email: String?,
     val name: String,
     val role: String,
     val status: String,

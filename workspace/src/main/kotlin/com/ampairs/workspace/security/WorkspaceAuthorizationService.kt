@@ -1,9 +1,8 @@
 package com.ampairs.workspace.security
 
 import com.ampairs.core.multitenancy.TenantContextHolder
-import com.ampairs.core.domain.User
-import com.ampairs.core.service.UserService
 import com.ampairs.core.security.AuthenticationHelper
+import com.ampairs.core.service.UserService
 import com.ampairs.workspace.model.enums.WorkspaceRole
 import com.ampairs.workspace.service.WorkspaceMemberService
 import org.springframework.security.core.Authentication
@@ -32,7 +31,11 @@ class WorkspaceAuthorizationService(
      * Check if the authenticated user has permission to perform an action on a workspace (enum version)
      * Used with @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).WORKSPACE_UPDATE)")
      */
-    fun hasWorkspacePermission(authentication: Authentication, workspaceId: String, permission: WorkspacePermission): Boolean {
+    fun hasWorkspacePermission(
+        authentication: Authentication,
+        workspaceId: String,
+        permission: WorkspacePermission
+    ): Boolean {
         val userId = AuthenticationHelper.getCurrentUserId(authentication) ?: return false
         return memberService.hasPermission(workspaceId, userId, permission.permissionName)
     }

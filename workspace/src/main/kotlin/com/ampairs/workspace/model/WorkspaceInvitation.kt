@@ -4,7 +4,6 @@ import com.ampairs.core.config.Constants
 import com.ampairs.core.domain.model.BaseDomain
 import com.ampairs.workspace.model.enums.InvitationStatus
 import com.ampairs.workspace.model.enums.WorkspaceRole
-import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.persistence.*
 import java.time.LocalDateTime
 import java.util.*

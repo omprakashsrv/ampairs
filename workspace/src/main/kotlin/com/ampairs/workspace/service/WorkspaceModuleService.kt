@@ -1,8 +1,6 @@
 package com.ampairs.workspace.service
 
 import com.ampairs.core.multitenancy.TenantContextHolder
-import com.ampairs.workspace.repository.WorkspaceModuleRepository
-import com.ampairs.workspace.repository.MasterModuleRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -13,8 +11,6 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional
 class WorkspaceModuleService(
-    private val workspaceModuleRepository: WorkspaceModuleRepository,
-    private val masterModuleRepository: MasterModuleRepository
 ) {
 
     /**
@@ -22,7 +18,7 @@ class WorkspaceModuleService(
      */
     fun getBasicModuleInfo(): Map<String, Any> {
         val workspaceId = TenantContextHolder.getCurrentTenant() ?: return mapOf("error" to "No tenant context")
-        
+
         return mapOf(
             "workspaceId" to workspaceId,
             "message" to "Module management is available",
@@ -36,7 +32,7 @@ class WorkspaceModuleService(
      */
     fun getModuleInfo(moduleId: String): Map<String, Any> {
         val workspaceId = TenantContextHolder.getCurrentTenant() ?: return mapOf("error" to "No tenant context")
-        
+
         return mapOf(
             "moduleId" to moduleId,
             "workspaceId" to workspaceId,
@@ -49,7 +45,7 @@ class WorkspaceModuleService(
      */
     fun performAction(moduleId: String, action: String): Map<String, Any> {
         val workspaceId = TenantContextHolder.getCurrentTenant() ?: return mapOf("error" to "No tenant context")
-        
+
         return mapOf(
             "moduleId" to moduleId,
             "action" to action,

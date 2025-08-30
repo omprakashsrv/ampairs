@@ -2,9 +2,8 @@ package com.ampairs.workspace.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
-import com.ampairs.core.domain.User
-import com.ampairs.core.service.UserService
 import com.ampairs.core.security.AuthenticationHelper
+import com.ampairs.core.service.UserService
 import com.ampairs.workspace.model.dto.CreateWorkspaceRequest
 import com.ampairs.workspace.model.dto.UpdateWorkspaceRequest
 import com.ampairs.workspace.model.dto.WorkspaceListResponse
@@ -31,12 +30,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 
 /**
  * **Workspace Management Controller**
- * 
+ *
  * Core workspace operations including creation, management, and access control.
  * Handles multi-tenant workspace functionality with role-based permissions.
  */
 @Tag(
-    name = "Workspace Management", 
+    name = "Workspace Management",
     description = """
     ## 🏢 **Multi-Tenant Workspace Management**
     
@@ -288,7 +287,7 @@ class WorkspaceController(
         @RequestBody @Valid request: CreateWorkspaceRequest,
     ): ApiResponse<WorkspaceResponse> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+        val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
         val workspace = workspaceService.createWorkspace(request, userId)
@@ -302,7 +301,7 @@ class WorkspaceController(
     @PreAuthorize("@workspaceAuthorizationService.isWorkspaceMember(authentication, #workspaceId)")
     fun getWorkspace(@PathVariable workspaceId: String): ApiResponse<WorkspaceResponse> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+        val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
         val workspace = workspaceService.getWorkspaceById(workspaceId, userId)
@@ -315,7 +314,7 @@ class WorkspaceController(
     @GetMapping("/by-slug/{slug}")
     fun getWorkspaceBySlug(@PathVariable slug: String): ApiResponse<WorkspaceResponse> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+        val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
         val workspace = workspaceService.getWorkspaceBySlug(slug, userId)
@@ -332,7 +331,7 @@ class WorkspaceController(
         @RequestBody @Valid request: UpdateWorkspaceRequest,
     ): ApiResponse<WorkspaceResponse> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+        val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
         // Authorization handled by @PreAuthorize - no manual permission check needed
@@ -351,7 +350,7 @@ class WorkspaceController(
         @RequestParam(defaultValue = "desc") sortDir: String,
     ): ApiResponse<PageResponse<WorkspaceListResponse>> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+        val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
         val sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy)
@@ -373,7 +372,7 @@ class WorkspaceController(
         @RequestParam(defaultValue = "10") size: Int,
     ): ApiResponse<PageResponse<WorkspaceListResponse>> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+        val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
         val pageable = PageRequest.of(page, size)
@@ -388,7 +387,7 @@ class WorkspaceController(
     @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).WORKSPACE_DELETE)")
     fun archiveWorkspace(@PathVariable workspaceId: String): ApiResponse<String> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+        val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
         val result = workspaceService.archiveWorkspace(workspaceId, userId)
@@ -402,7 +401,7 @@ class WorkspaceController(
     @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).WORKSPACE_DELETE)")
     fun deleteWorkspace(@PathVariable workspaceId: String): ApiResponse<String> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+        val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
         val result = workspaceService.archiveWorkspace(workspaceId, userId)
@@ -416,7 +415,7 @@ class WorkspaceController(
     @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).WORKSPACE_DELETE)")
     fun permanentlyDeleteWorkspace(@PathVariable workspaceId: String): ApiResponse<String> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+        val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
         val result = workspaceService.deleteWorkspace(workspaceId, userId)

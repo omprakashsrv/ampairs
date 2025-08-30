@@ -34,9 +34,6 @@ com.ampairs.workspace/
 #### Core Entities
 
 - **`Workspace.kt`** - Company/workspace entity with comprehensive business information
-- **`UserCompany.kt`** - User-company association with role-based access control
-- **`SessionUser.kt`** - Session context for user permissions and workspace access
-- **`Location.kt`** - Geographic location and address information
 
 #### DTOs
 
@@ -66,7 +63,7 @@ com.ampairs.workspace/
 
 ## Key Features
 
-### Multi-tenant Company Management
+### Multi-tenant Workspace Management
 
 - Complete company profile management
 - Business registration details (GST, PAN, etc.)
@@ -114,18 +111,6 @@ data class Workspace(
 ) : OwnableBaseDomain()
 ```
 
-### User-Company Association
-
-```kotlin
-data class UserCompany(
-    val userId: String,
-    val workspaceId: String,
-    val role: Role,
-    val isActive: Boolean,
-    val joinedAt: LocalDateTime
-) : BaseDomain()
-```
-
 ### Session User Context
 
 ```kotlin
@@ -156,24 +141,27 @@ Content-Type: application/json
   "businessType": "PRIVATE_LIMITED",
   "gstNumber": "29AABCU9603R1ZX",
   "panNumber": "AABCU9603R",
-  "contactEmail": "info@acme.com",
-  "contactPhone": "+91-9876543210",
-  "website": "https://acme.com",
-  "address": {
-    "street": "123 Business Street",
+#### Create Workspace
     "city": "Bangalore",
     "state": "Karnataka",
     "country": "India",
     "pincode": "560001"
+
   }
 }
 ```
 
-```http
-GET /workspace/v1/workspaces/{workspaceId}
-Authorization: Bearer <access-token>
-```
-
+  "subscriptionPlan": "ENTERPRISE",
+  "workspaceType": "BUSINESS",
+  "contactDetails": {
+    "email": "info@acme.com",
+    "phone": "+91-9876543210",
+    "website": "https://acme.com"
+  },
+  "registration": {
+    "gstNumber": "29AABCU9603R1ZX",
+    "panNumber": "AABCU9603R"
+  },
 ```http
 PUT /workspace/v1/workspaces/{workspaceId}
 Authorization: Bearer <access-token>
@@ -184,89 +172,181 @@ Content-Type: application/json
 }
 ```
 
+#### List & Search Workspaces
+```http
+GET /workspace/v1/workspaces
+Authorization: Bearer <access-token>
+Query Parameters:
+  - page: Page number (default: 0)
+  - size: Page size (default: 20)
+  - sort: Sort field (default: createdAt,desc)
+  - query: Search text
+  - type: Workspace type filter
+  - status: Status filter
+```
+
+#### Get Workspace Details
 ```http
 DELETE /workspace/v1/workspaces/{workspaceId}
 Authorization: Bearer <access-token>
+X-Workspace-ID: {workspaceId}
 ```
 
+#### Update Workspace
 ### User-Workspace Management
 
 ```http
+X-Workspace-ID: {workspaceId}
 GET /workspace/v1/workspaces/{workspaceId}/users
-Authorization: Bearer <access-token>
-```
 
+Authorization: Bearer <access-token>
+  "name": "Updated Name",
+  "description": "Updated description",
+  "contactDetails": {
+    "email": "updated@acme.com"
+  }
 ```http
 POST /workspace/v1/workspaces/{workspaceId}/users
 Authorization: Bearer <access-token>
+### Member Management
+
+#### List Members
 Content-Type: application/json
-{
+GET /workspace/v1/workspaces/{workspaceId}/members
   "userId": "user-uuid",
+X-Workspace-ID: {workspaceId}
+Query Parameters:
+  - page: Page number
+  - size: Page size
+  - sort: Sort field
+  - query: Search text
+  - role: Role filter
+  - status: Status filter
   "role": "ADMIN"
 }
-```
-
+#### Add Member
 ```http
-PUT /workspace/v1/workspaces/{workspaceId}/users/{userId}/role
+POST /workspace/v1/workspaces/{workspaceId}/members
 Authorization: Bearer <access-token>
+X-Workspace-ID: {workspaceId}
+Content-Type: application/json
+
+{
+  "userId": "user-uuid",
+  "role": "ADMIN",
+  "permissions": ["MANAGE_MEMBERS", "VIEW_REPORTS"]
+}
 Content-Type: application/json
 {
+#### Update Member
   "role": "MANAGER"
+PUT /workspace/v1/workspaces/{workspaceId}/members/{memberId}
+Authorization: Bearer <access-token}
+X-Workspace-ID: {workspaceId}
+Content-Type: application/json
+
+{
+  "role": "MANAGER",
+  "isActive": true,
+  "permissions": ["VIEW_REPORTS"]
 }
 ```
 
-## Role-based Access Control
+#### Remove Member
+```http
+DELETE /workspace/v1/workspaces/{workspaceId}/members/{memberId}
+```
+X-Workspace-ID: {workspaceId}
+```
 
-### Role Hierarchy
+### Module Management
+
+#### List Available Modules
+```http
+GET /workspace/v1/workspaces/{workspaceId}/modules
+Authorization: Bearer <access-token>
+X-Workspace-ID: {workspaceId}
+```
+
+#### Enable Module
+```http
+POST /workspace/v1/workspaces/{workspaceId}/modules
+Authorization: Bearer <access-token>
+X-Workspace-ID: {workspaceId}
+
+
+## Role-based Access Control
+  "moduleId": "module-uuid",
+  "settings": {
+    "enabled": true,
+    "configurations": {}
+  }
 
 ```kotlin
 enum class Role {
+### Invitation Management
+
+#### Create Invitation
     OWNER,      // Full workspace control
-    ADMIN,      // Administrative access
+POST /workspace/v1/workspaces/{workspaceId}/invitations
     MANAGER,    // Management access
+X-Workspace-ID: {workspaceId}
     EMPLOYEE,   // Standard employee access
+
     VIEWER      // Read-only access
-}
+  "email": "user@example.com",
+  "role": "MEMBER",
+  "expiresIn": "7d",
+  "message": "Join our workspace!"
 ```
 
 ### Permission Matrix
-
+#### List Invitations
+```http
+GET /workspace/v1/workspaces/{workspaceId}/invitations
+Authorization: Bearer <access-token>
+X-Workspace-ID: {workspaceId}
+Query Parameters:
+  - status: Invitation status filter
+  - page: Page number
+  - size: Page size
+```
 | Operation         | OWNER | ADMIN | MANAGER | EMPLOYEE | VIEWER  |
-|-------------------|-------|-------|---------|----------|---------|
+### Common Headers
 | Workspace CRUD    | ✓     | ✓     | ✗       | ✗        | ✗       |
-| User Management   | ✓     | ✓     | Limited | ✗        | ✗       |
-| Data Access       | ✓     | ✓     | ✓       | ✓        | ✓       |
-| Data Modification | ✓     | ✓     | ✓       | ✓        | ✗       |
-| Reports Access    | ✓     | ✓     | ✓       | Limited  | Limited |
-
-## Configuration
-
-### Required Properties
+All workspace-scoped endpoints require:
+```http
+Authorization: Bearer <access-token>
+X-Workspace-ID: {workspaceId}
+Content-Type: application/json  # For POST/PUT requests
 
 ```yaml
-ampairs:
+### Response Format
   workspace:
-    default-role: EMPLOYEE
-    max-users-per-workspace: 100
-    auto-approve-invitations: false
-  multitenancy:
-    enabled: true
-    tenant-resolver: workspace-based
+Success Response:
+```json
+{
+  "success": true,
+  "data": {
+    // Response data
+  },
+  "message": "Operation completed successfully"
+}
 ```
 
-## Security Implementation
-
-### Multi-tenancy Isolation
-
-- Workspace-scoped data access
-- Tenant context from JWT claims
-- Row-level security implementation
-- Cross-workspace data protection
-
-### Session Management
-
-- Request-scoped user context
-- Role-based method security
+Error Response:
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human readable error message",
+    "details": {
+      "field": "Additional error details if any"
+    }
+  }
+}
+```
 - Permission caching
 - Session validation
 
@@ -383,29 +463,6 @@ class BusinessController {
 }
 ```
 
-### Session Filter Usage
-
-```kotlin
-@Component
-class SessionUserFilter : OncePerRequestFilter() {
-
-    override fun doFilterInternal(
-        request: HttpServletRequest,
-        response: HttpServletResponse,
-        filterChain: FilterChain
-    ) {
-        val token = extractToken(request)
-        val sessionUser = buildSessionUser(token)
-
-        SessionUserContext.setCurrentUser(sessionUser)
-        try {
-            filterChain.doFilter(request, response)
-        } finally {
-            SessionUserContext.clear()
-        }
-    }
-}
-```
 
 ## Integration
 
@@ -418,4 +475,4 @@ This module integrates with:
 - **Order/Invoice Modules**: Workspace-based transaction processing
 
 The Workspace module provides the organizational foundation for all business operations within the Ampairs application,
-ensuring proper data isolation and access control across different companies and user roles.
+ensuring proper data isolation and access control across different workspaces and user roles.

@@ -1,10 +1,8 @@
 package com.ampairs.workspace.model
 
-import com.ampairs.core.config.Constants
 import com.ampairs.core.domain.model.BaseDomain
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.workspace.model.enums.WorkspaceModuleStatus
-import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.annotations.TenantId
@@ -394,10 +392,10 @@ class WorkspaceModule : BaseDomain() {
      * Check if module needs attention (errors, updates, license expiry)
      */
     fun needsAttention(): Boolean {
-        return usageMetrics.errorCount > 0 || 
-               canBeUpdated() ||
-               !hasValidLicense() ||
-               status != WorkspaceModuleStatus.ACTIVE
+        return usageMetrics.errorCount > 0 ||
+                canBeUpdated() ||
+                !hasValidLicense() ||
+                status != WorkspaceModuleStatus.ACTIVE
     }
 
     /**
@@ -405,28 +403,28 @@ class WorkspaceModule : BaseDomain() {
      */
     fun getHealthScore(): Double {
         var score = 1.0
-        
+
         // Deduct for errors
         if (usageMetrics.totalAccesses > 0) {
             val errorRate = usageMetrics.errorCount.toDouble() / usageMetrics.totalAccesses
             score -= errorRate * 0.3
         }
-        
+
         // Deduct for outdated version
         if (canBeUpdated()) {
             score -= 0.1
         }
-        
+
         // Deduct for invalid license
         if (!hasValidLicense()) {
             score -= 0.2
         }
-        
+
         // Deduct for inactive status
         if (!isOperational()) {
             score -= 0.4
         }
-        
+
         return maxOf(0.0, score)
     }
 
@@ -436,7 +434,7 @@ class WorkspaceModule : BaseDomain() {
     fun getUserEngagementLevel(): Double {
         val activeUsers = usageMetrics.dailyActiveUsers
         val totalUsers = userPreferences.size
-        
+
         return if (totalUsers > 0) {
             activeUsers.toDouble() / totalUsers
         } else 0.0
@@ -446,9 +444,9 @@ class WorkspaceModule : BaseDomain() {
      * Check if module is popular (high usage and satisfaction)
      */
     fun isPopular(): Boolean {
-        return usageMetrics.totalAccesses > 100 && 
-               usageMetrics.userSatisfactionScore > 4.0 &&
-               getUserEngagementLevel() > 0.5
+        return usageMetrics.totalAccesses > 100 &&
+                usageMetrics.userSatisfactionScore > 4.0 &&
+                getUserEngagementLevel() > 0.5
     }
 
     /**
@@ -456,13 +454,13 @@ class WorkspaceModule : BaseDomain() {
      */
     fun getDisplayPriority(): Int {
         var priority = settings.displayOrder
-        
+
         // Boost priority for quick access modules
         if (settings.quickAccess) priority -= 1000
-        
+
         // Boost priority for frequently used modules
         if (usageMetrics.totalAccesses > 50) priority -= 100
-        
+
         return priority
     }
 }

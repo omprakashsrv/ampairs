@@ -47,7 +47,8 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
      * Find all active members with user details projection for efficient loading
      * Returns a custom projection with member and user details combined
      */
-    @Query("""
+    @Query(
+        """
         SELECT new map(
             wm.uid as memberId,
             wm.userId as userId,
@@ -65,7 +66,8 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
         WHERE wm.workspaceId = :workspaceId 
         AND wm.isActive = true
         ORDER BY wm.joinedAt DESC
-    """)
+    """
+    )
     fun findActiveMembers(workspaceId: String, pageable: Pageable): Page<Map<String, Any>>
 
     /**

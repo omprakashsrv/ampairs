@@ -2,9 +2,8 @@ package com.ampairs.workspace.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
-import com.ampairs.core.domain.User
-import com.ampairs.core.service.UserService
 import com.ampairs.core.security.AuthenticationHelper
+import com.ampairs.core.service.UserService
 import com.ampairs.workspace.model.dto.CreateInvitationRequest
 import com.ampairs.workspace.model.dto.InvitationListResponse
 import com.ampairs.workspace.model.dto.InvitationResponse
@@ -481,7 +480,7 @@ class WorkspaceInvitationController(
         @RequestBody @Valid request: CreateInvitationRequest,
     ): ApiResponse<InvitationResponse> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+        val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
         val invitation = invitationService.createInvitation(workspaceId, request, userId)
@@ -674,7 +673,7 @@ class WorkspaceInvitationController(
         @PathVariable token: String,
     ): ApiResponse<InvitationResponse> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+        val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
         val invitation = invitationService.acceptInvitation(token, userId)
@@ -895,7 +894,7 @@ class WorkspaceInvitationController(
         @RequestBody request: ResendInvitationRequest = ResendInvitationRequest(),
     ): ApiResponse<InvitationResponse> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+        val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
         val result = invitationService.resendInvitation(invitationId, request, userId)
@@ -1099,7 +1098,7 @@ class WorkspaceInvitationController(
         @PathVariable invitationId: String,
     ): ApiResponse<String> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val userId = AuthenticationHelper.getCurrentUserId(auth) 
+        val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
         val result = invitationService.cancelInvitation(invitationId, null, userId)
@@ -1292,15 +1291,24 @@ class WorkspaceInvitationController(
         @RequestParam(required = false) start_date: String?,
         @RequestParam(required = false) end_date: String?
     ): ResponseEntity<ByteArray> {
-        val exportData = invitationService.exportInvitations(workspaceId, format, status, role, delivery_status, search_query, start_date, end_date)
-        
+        val exportData = invitationService.exportInvitations(
+            workspaceId,
+            format,
+            status,
+            role,
+            delivery_status,
+            search_query,
+            start_date,
+            end_date
+        )
+
         val contentType = when (format.uppercase()) {
             "EXCEL" -> "application/vnd.ms-excel"
             else -> "text/csv"
         }
-        
+
         val filename = "workspace-invitations-${java.time.LocalDate.now()}.${format.lowercase()}"
-        
+
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
             .header(HttpHeaders.CONTENT_TYPE, contentType)

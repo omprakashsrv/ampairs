@@ -28,6 +28,9 @@ interface TokenRepository {
         accessToken: String,
         refreshToken: String?
     )
+    
+    // Workspace management
+    suspend fun getWorkspaceId(): String
 }
 
 /**

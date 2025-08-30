@@ -148,7 +148,7 @@ class WorkspaceService(
                 1 // Default fallback value
             }
         }
-        
+
         return updatedWorkspace.toResponse(memberCount = memberCount)
     }
 

@@ -44,7 +44,7 @@ enum class BusinessType(
             ModuleCategory.ANALYTICS_REPORTING
         )
     ),
-    
+
     SERVICES(
         "Service Business",
         "Professional services, consulting, agencies",
@@ -57,7 +57,7 @@ enum class BusinessType(
             ModuleCategory.HR_MANAGEMENT
         )
     ),
-    
+
     MANUFACTURING(
         "Manufacturing",
         "Production and manufacturing businesses",
@@ -71,7 +71,7 @@ enum class BusinessType(
             ModuleCategory.HR_MANAGEMENT
         )
     ),
-    
+
     WHOLESALE(
         "Wholesale & Distribution",
         "B2B wholesale and distribution companies",
@@ -84,7 +84,7 @@ enum class BusinessType(
             ModuleCategory.ANALYTICS_REPORTING
         )
     ),
-    
+
     HEALTHCARE(
         "Healthcare",
         "Medical practices, clinics, and healthcare providers",
@@ -97,7 +97,7 @@ enum class BusinessType(
             ModuleCategory.ADMINISTRATION
         )
     ),
-    
+
     EDUCATION(
         "Education",
         "Schools, training centers, and educational institutions",
@@ -110,7 +110,7 @@ enum class BusinessType(
             ModuleCategory.ANALYTICS_REPORTING
         )
     ),
-    
+
     RESTAURANT(
         "Restaurant & Food Service",
         "Restaurants, cafes, and food service businesses",
@@ -123,7 +123,7 @@ enum class BusinessType(
             ModuleCategory.ANALYTICS_REPORTING
         )
     ),
-    
+
     NONPROFIT(
         "Non-Profit",
         "Non-profit organizations and NGOs",
@@ -136,7 +136,7 @@ enum class BusinessType(
             ModuleCategory.ANALYTICS_REPORTING
         )
     ),
-    
+
     TECHNOLOGY(
         "Technology",
         "Software companies, SaaS, and tech startups",
@@ -151,7 +151,7 @@ enum class BusinessType(
             ModuleCategory.HR_MANAGEMENT
         )
     ),
-    
+
     GENERAL(
         "General Business",
         "Other business types or mixed operations",

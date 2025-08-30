@@ -1,6 +1,7 @@
 package com.ampairs.auth.db
 
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.dao.UserSessionDao
 import com.ampairs.auth.db.dao.UserTokenDao
 import com.ampairs.auth.db.entity.UserSessionEntity
@@ -9,7 +10,8 @@ import kotlinx.coroutines.runBlocking
 
 class TokenRepositoryImpl(
     val userTokenDao: UserTokenDao,
-    val userSessionDao: UserSessionDao
+    val userSessionDao: UserSessionDao,
+    val userWorkspaceRepository: UserWorkspaceRepository
 ) : TokenRepository {
 
     private var currentUserId: String? = null
@@ -233,5 +235,14 @@ class TokenRepositoryImpl(
                 userSessionDao.deleteByUserId(dummySession.user_id)
                 userTokenDao.deleteByUserId(dummySession.user_id)
             }
+    }
+
+    override suspend fun getWorkspaceId(): String {
+        val userId = getCurrentUserId()
+        return if (userId != null) {
+            userWorkspaceRepository.getWorkspaceIdForUser(userId)
+        } else {
+            ""
+        }
     }
 }

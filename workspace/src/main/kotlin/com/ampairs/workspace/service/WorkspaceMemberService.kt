@@ -157,7 +157,8 @@ class WorkspaceMemberService(
 
         val updatedMember = memberRepository.save(member)
         // Populate user detail if available
-        val userDetail = if (userDetailProvider.isUserServiceAvailable()) userDetailProvider.getUserDetail(updatedMember.userId) else null
+        val userDetail =
+            if (userDetailProvider.isUserServiceAvailable()) userDetailProvider.getUserDetail(updatedMember.userId) else null
         return updatedMember.toResponse(userDetail)
     }
 
@@ -211,15 +212,15 @@ class WorkspaceMemberService(
      * Get workspace members with optimized loading (using projection to reduce DB queries)
      * This method uses a custom query projection to efficiently load member details
      * without additional N+1 queries for user information.
-     * 
+     *
      * Additionally, if a UserDetailProvider is available, it will batch-load user details
      * from the external user service for enhanced user information.
      */
     fun getWorkspaceMembersOptimized(workspaceId: String, pageable: Pageable): Page<MemberListResponse> {
         logger.debug("Fetching workspace members with optimized loading for workspace: $workspaceId")
-        
+
         val memberProjections = memberRepository.findActiveMembers(workspaceId, pageable)
-        
+
         // Extract user IDs for batch loading
         val userIds = memberProjections.content.mapNotNull { it["userId"] as? String }
 
@@ -229,12 +230,12 @@ class WorkspaceMemberService(
         } else {
             emptyMap()
         }
-        
+
         return memberProjections.map { projection ->
             val userId = projection["userId"] as String
             val userDetail = userDetails[userId]
             val memberName = projection["memberName"] as? String
-            
+
             MemberListResponse(
                 id = projection["memberId"] as String,
                 userId = userId,
@@ -270,11 +271,13 @@ class WorkspaceMemberService(
     }
 
     /**
-     * Get member by ID
+     * Get member by ID with user details
      */
     fun getMemberById(memberId: String): MemberResponse {
         val member = findMemberById(memberId)
-        val userDetail = if (userDetailProvider.isUserServiceAvailable()) userDetailProvider.getUserDetail(member.userId) else null
+        val userDetail = if (userDetailProvider.isUserServiceAvailable()) {
+            userDetailProvider.getUserDetail(member.userId)
+        } else null
         return member.toResponse(userDetail)
     }
 
@@ -313,17 +316,32 @@ class WorkspaceMemberService(
             // Standardized permission mapping with clear, consistent naming
             when (permission) {
                 // Workspace management permissions (consolidated)
-                "WORKSPACE_MANAGE", "WORKSPACE_UPDATE", "WORKSPACE_SETTINGS" -> 
+                "WORKSPACE_MANAGE", "WORKSPACE_UPDATE", "WORKSPACE_SETTINGS" ->
                     member.role in listOf(WorkspaceRole.OWNER, WorkspaceRole.ADMIN)
-                "WORKSPACE_DELETE", "WORKSPACE_ARCHIVE" -> 
+
+                "WORKSPACE_DELETE", "WORKSPACE_ARCHIVE" ->
                     member.role in listOf(WorkspaceRole.OWNER, WorkspaceRole.ADMIN)
-                
+
                 // Member management permissions
                 "MEMBER_VIEW" -> true // All active members can view other members
-                "MEMBER_INVITE" -> member.role in listOf(WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.MANAGER)
-                "MEMBER_MANAGE" -> member.role in listOf(WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.MANAGER)
-                "MEMBER_DELETE", "MEMBER_REMOVE" -> member.role in listOf(WorkspaceRole.OWNER, WorkspaceRole.ADMIN, WorkspaceRole.MANAGER)
-                
+                "MEMBER_INVITE" -> member.role in listOf(
+                    WorkspaceRole.OWNER,
+                    WorkspaceRole.ADMIN,
+                    WorkspaceRole.MANAGER
+                )
+
+                "MEMBER_MANAGE" -> member.role in listOf(
+                    WorkspaceRole.OWNER,
+                    WorkspaceRole.ADMIN,
+                    WorkspaceRole.MANAGER
+                )
+
+                "MEMBER_DELETE", "MEMBER_REMOVE" -> member.role in listOf(
+                    WorkspaceRole.OWNER,
+                    WorkspaceRole.ADMIN,
+                    WorkspaceRole.MANAGER
+                )
+
                 else -> false
             }
         } catch (e: Exception) {
@@ -358,7 +376,7 @@ class WorkspaceMemberService(
     }
 
     /**
-     * Get member statistics as Map (for API compatibility)
+     * Get member statistics
      */
     fun getMemberStatistics(workspaceId: String): Map<String, Any> {
         val totalMembers = memberRepository.countByWorkspaceId(workspaceId)
@@ -517,10 +535,19 @@ class WorkspaceMemberService(
         }
         
         // For now, use basic search and filtering
-        // TODO: Implement advanced search with user table joins when needed
         val members = when {
             roleEnum != null -> memberRepository.findByWorkspaceIdAndRoleAndIsActiveTrue(workspaceId, roleEnum, pageable)
             else -> memberRepository.findByWorkspaceIdAndIsActiveTrue(workspaceId, pageable)
+        }
+
+        // Batch-load user details when provider is available to populate nested user DTOs
+        if (userDetailProvider.isUserServiceAvailable()) {
+            val userIds = members.content.map { it.userId }
+            val userDetails = userDetailProvider.getUserDetails(userIds)
+            return members.map { member ->
+                val ud = userDetails[member.userId]
+                member.toListResponse(ud)
+            }
         }
         
         return members.map { it.toListResponse() }

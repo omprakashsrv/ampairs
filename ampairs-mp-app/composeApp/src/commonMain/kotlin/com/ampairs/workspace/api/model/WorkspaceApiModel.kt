@@ -106,17 +106,15 @@ data class MemberApiModel(
 data class MemberListResponse(
     @SerialName("id") val id: String,
     @SerialName("user_id") val userId: String,
-    @SerialName("email") val email: String,
-    @SerialName("name") val name: String,
-    @SerialName("role") val role: String,
-    @SerialName("status") val status: String,
-    @SerialName("joined_at") val joinedAt: String,
-    @SerialName("last_activity") val lastActivity: String? = null,
-    @SerialName("permissions") val permissions: List<String> = emptyList(),
-    @SerialName("avatar_url") val avatarUrl: String? = null,
+    @SerialName("email") val email: String? = null,
     @SerialName("phone") val phone: String? = null,
-    @SerialName("department") val department: String? = null,
-    @SerialName("is_online") val isOnline: Boolean = false,
+    @SerialName("first_name") val firstName: String = "",
+    @SerialName("last_name") val lastName: String? = null,
+    @SerialName("avatar_url") val avatarUrl: String? = null,
+    @SerialName("role") val role: String,
+    @SerialName("is_active") val isActive: Boolean,
+    @SerialName("joined_at") val joinedAt: String,
+    @SerialName("last_activity_at") val lastActivityAt: String? = null,
 )
 
 @Serializable
@@ -131,12 +129,15 @@ data class UpdateMemberRequest(
 @Serializable
 data class PagedMemberResponse(
     @SerialName("content") val content: List<MemberListResponse>,
-    @SerialName("page") val page: Int,
-    @SerialName("size") val size: Int,
-    @SerialName("total_elements") val totalElements: Int,
+    @SerialName("page_number") val pageNumber: Int,
+    @SerialName("page_size") val pageSize: Int,
+    @SerialName("total_elements") val totalElements: Long,
     @SerialName("total_pages") val totalPages: Int,
-    @SerialName("is_first") val isFirst: Boolean,
-    @SerialName("is_last") val isLast: Boolean,
+    @SerialName("first") val first: Boolean,
+    @SerialName("last") val last: Boolean,
+    @SerialName("has_next") val hasNext: Boolean,
+    @SerialName("has_previous") val hasPrevious: Boolean,
+    @SerialName("empty") val empty: Boolean,
 )
 
 @Serializable
