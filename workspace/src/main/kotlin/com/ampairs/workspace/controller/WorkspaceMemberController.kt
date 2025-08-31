@@ -3,9 +3,8 @@ package com.ampairs.workspace.controller
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.core.security.AuthenticationHelper
-import com.ampairs.workspace.model.dto.MemberListResponse
-import com.ampairs.workspace.model.dto.MemberResponse
-import com.ampairs.workspace.model.dto.UpdateMemberRequest
+import com.ampairs.workspace.model.dto.*
+import com.ampairs.workspace.model.enums.WorkspaceRole
 import com.ampairs.workspace.security.WorkspacePermission
 import com.ampairs.workspace.service.WorkspaceMemberService
 import io.swagger.v3.oas.annotations.Operation
@@ -1242,4 +1241,96 @@ class WorkspaceMemberController(
         val updatedMember = memberService.updateMemberStatus(workspaceId, memberId, status, reason)
         return ApiResponse.success(updatedMember)
     }
+
+    @Operation(
+        summary = "Get Workspace Roles",
+        description = """
+        ## 🎭 **Get Available Workspace Roles**
+        
+        Retrieve all available roles that can be assigned to workspace members.
+        This endpoint provides role hierarchy, permissions, and descriptions.
+        
+        ### **Role Information:**
+        - **Role Details**: Name, display name, level, and description
+        - **Permission Hierarchy**: Understanding role inheritance and capabilities
+        - **Assignment Rules**: Which roles can assign/manage other roles
+        - **Level System**: Numeric hierarchy for permission comparison
+        
+        ### **Role Hierarchy (High to Low):**
+        - **OWNER (100)**: Full workspace control including deletion
+        - **ADMIN (80)**: Administrative access with member management
+        - **MANAGER (60)**: Project and team management capabilities
+        - **MEMBER (40)**: Standard workspace collaboration access
+        - **GUEST (20)**: Limited access for external collaborators
+        - **VIEWER (10)**: Read-only access to workspace content
+        """,
+        tags = ["Workspace Configuration"]
+    )
+    @GetMapping("/{workspaceId}/roles")
+    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_VIEW)")
+    fun getWorkspaceRoles(
+        @PathVariable workspaceId: String
+    ): ApiResponse<List<WorkspaceRoleResponse>> {
+        val roles = WorkspaceRole.entries.map { role ->
+            WorkspaceRoleResponse(
+                name = role.name,
+                displayName = role.displayName,
+                level = role.level,
+                description = role.description,
+                manageableRoles = role.getManageableRoles().map { it.name }
+            )
+        }
+        return ApiResponse.success(roles)
+    }
+
+    @Operation(
+        summary = "Get Workspace Permissions",
+        description = """
+        ## 🔐 **Get Available Workspace Permissions**
+        
+        Retrieve all available permissions that can be assigned to workspace members.
+        This endpoint provides comprehensive permission details for role management.
+        
+        ### **Permission Categories:**
+        
+        #### **Workspace Management**
+        - **WORKSPACE_MANAGE**: Manage workspace settings, details, and configuration
+        - **WORKSPACE_DELETE**: Delete or archive the entire workspace
+        
+        #### **Member Management**
+        - **MEMBER_VIEW**: View workspace members and their basic information
+        - **MEMBER_INVITE**: Send invitations to new workspace members
+        - **MEMBER_MANAGE**: Manage member roles, permissions, and settings
+        - **MEMBER_DELETE**: Remove members from the workspace
+        
+        ### **Permission Usage:**
+        - **Role Assignment**: Default permissions per role level
+        - **Custom Permissions**: Fine-grained access control overrides
+        - **Security Model**: Type-safe permission checking and validation
+        - **Audit Trail**: Complete logging of permission changes
+        """,
+        tags = ["Workspace Configuration"]
+    )
+    @GetMapping("/{workspaceId}/permissions")
+    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_VIEW)")
+    fun getWorkspacePermissions(
+        @PathVariable workspaceId: String
+    ): ApiResponse<List<WorkspacePermissionResponse>> {
+        val permissions = WorkspacePermission.entries.map { permission ->
+            WorkspacePermissionResponse(
+                name = permission.name,
+                permissionName = permission.permissionName,
+                description = when (permission) {
+                    WorkspacePermission.WORKSPACE_MANAGE -> "Manage workspace settings, details, and configuration"
+                    WorkspacePermission.WORKSPACE_DELETE -> "Delete or archive the entire workspace"
+                    WorkspacePermission.MEMBER_VIEW -> "View workspace members and their basic information"
+                    WorkspacePermission.MEMBER_INVITE -> "Send invitations to new workspace members"
+                    WorkspacePermission.MEMBER_MANAGE -> "Manage member roles, permissions, and settings"
+                    WorkspacePermission.MEMBER_DELETE -> "Remove members from the workspace"
+                }
+            )
+        }
+        return ApiResponse.success(permissions)
+    }
+
 }

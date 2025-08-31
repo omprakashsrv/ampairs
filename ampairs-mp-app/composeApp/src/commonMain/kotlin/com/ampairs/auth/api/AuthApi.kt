@@ -7,8 +7,8 @@ import com.ampairs.auth.api.model.Token
 import com.ampairs.auth.api.model.UserApiModel
 import com.ampairs.auth.api.model.UserUpdateRequest
 import com.ampairs.auth.domain.DeviceSession
-import com.ampairs.network.model.GenericSuccess
-import com.ampairs.network.model.Response
+import com.ampairs.common.model.GenericSuccess
+import com.ampairs.common.model.Response
 
 interface AuthApi {
 

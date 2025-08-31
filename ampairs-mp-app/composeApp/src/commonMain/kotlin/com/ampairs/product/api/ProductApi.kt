@@ -1,6 +1,6 @@
 package com.ampairs.product.api
 
-import com.ampairs.network.model.Response
+import com.ampairs.common.model.Response
 import com.ampairs.product.api.model.AllProductGroupApiModel
 import com.ampairs.product.api.model.ImageApiModel
 import com.ampairs.product.api.model.ProductApiModel

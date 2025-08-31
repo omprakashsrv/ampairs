@@ -5,7 +5,7 @@ import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.post
 import com.ampairs.customer.api.model.CustomerApiModel
-import com.ampairs.network.model.Response
+import com.ampairs.common.model.Response
 import io.ktor.client.engine.HttpClientEngine
 
 const val CUSTOMER_ENDPOINT = "http://localhost:8080"

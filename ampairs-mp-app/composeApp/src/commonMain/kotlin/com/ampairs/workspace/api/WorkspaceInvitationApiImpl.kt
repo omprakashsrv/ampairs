@@ -5,7 +5,7 @@ import com.ampairs.common.delete
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.post
-import com.ampairs.network.model.Response
+import com.ampairs.common.model.Response
 import com.ampairs.workspace.api.model.AcceptInvitationResponse
 import com.ampairs.workspace.api.model.CreateInvitationRequest
 import com.ampairs.workspace.api.model.InvitationApiModel

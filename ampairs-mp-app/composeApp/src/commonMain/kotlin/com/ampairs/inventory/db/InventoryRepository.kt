@@ -8,7 +8,7 @@ import com.ampairs.inventory.domain.Inventory
 import com.ampairs.inventory.domain.asDatabaseModel
 import com.ampairs.inventory.domain.asDomainModel
 import com.ampairs.inventory.domain.asInventoryApiModel
-import com.ampairs.network.model.Response
+import com.ampairs.common.model.Response
 import com.ampairs.product.api.model.InventoryApiModel
 
 class InventoryRepository(

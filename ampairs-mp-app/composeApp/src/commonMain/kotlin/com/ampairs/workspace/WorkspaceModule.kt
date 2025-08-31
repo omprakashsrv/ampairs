@@ -13,6 +13,7 @@ import com.ampairs.workspace.db.OfflineFirstWorkspaceRepository
 import com.ampairs.workspace.db.WorkspaceMemberRepository
 import com.ampairs.workspace.db.OfflineFirstWorkspaceMemberRepository
 import com.ampairs.workspace.db.WorkspaceInvitationRepository
+import com.ampairs.workspace.db.OfflineFirstRolesPermissionsRepository
 import com.ampairs.workspace.manager.WorkspaceDataManager
 import com.ampairs.workspace.manager.WorkspaceMemberDataManager
 import com.ampairs.workspace.viewmodel.WorkspaceCreateViewModel
@@ -31,6 +32,8 @@ fun workspaceModule() = module {
     // Database (provided by platform-specific modules)
     single { get<com.ampairs.workspace.db.WorkspaceRoomDatabase>().workspaceDao() }
     single { get<com.ampairs.workspace.db.WorkspaceRoomDatabase>().workspaceMemberDao() }
+    single { get<com.ampairs.workspace.db.WorkspaceRoomDatabase>().workspaceRoleDao() }
+    single { get<com.ampairs.workspace.db.WorkspaceRoomDatabase>().workspacePermissionDao() }
 
     // APIs
     singleOf(::WorkspaceApiImpl) bind WorkspaceApi::class
@@ -44,10 +47,11 @@ fun workspaceModule() = module {
     single { WorkspaceMemberRepository(get(), get(), get()) } // Member management repository (updated with DAO)
     single { OfflineFirstWorkspaceMemberRepository(get(), get(), get()) } // Offline-first member repository
     single { WorkspaceInvitationRepository(get(), get()) } // Invitation management repository
-    
+    single { OfflineFirstRolesPermissionsRepository(get(), get(), get(), get()) } // Roles & permissions offline-first repo
+
     // Data managers for offline-first synchronization
     single { WorkspaceDataManager(get(), get()) }
-    single { WorkspaceMemberDataManager(get(), get()) }
+    single { WorkspaceMemberDataManager(get()) }
 
     // ViewModels with parameter support
     factory { WorkspaceListViewModel(get(), get(), get(), get()) }
@@ -55,7 +59,7 @@ fun workspaceModule() = module {
 
     // Member and invitation ViewModels with workspaceId parameter
     factory { (workspaceId: String) -> WorkspaceMembersViewModel(workspaceId, get()) }
-    factory { (workspaceId: String, memberId: String) -> MemberDetailsViewModel(workspaceId, memberId, get()) }
+    factory { (workspaceId: String, memberId: String) -> MemberDetailsViewModel(workspaceId, memberId, get(), get()) }
     factory { (workspaceId: String) -> WorkspaceInvitationsViewModel(workspaceId, get()) }
 
     // Module management ViewModel

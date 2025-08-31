@@ -1,6 +1,6 @@
 package com.ampairs.workspace.api
 
-import com.ampairs.network.model.Response
+import com.ampairs.common.model.Response
 import com.ampairs.workspace.api.model.AcceptInvitationResponse
 import com.ampairs.workspace.api.model.CreateInvitationRequest
 import com.ampairs.workspace.api.model.InvitationApiModel

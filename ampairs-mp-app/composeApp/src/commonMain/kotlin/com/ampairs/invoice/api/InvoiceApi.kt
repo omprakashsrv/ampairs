@@ -1,7 +1,7 @@
 package com.ampairs.invoice.api
 
 import com.ampairs.invoice.api.model.InvoiceApiModel
-import com.ampairs.network.model.Response
+import com.ampairs.common.model.Response
 
 interface InvoiceApi {
 

@@ -8,6 +8,7 @@ import com.ampairs.common.model.PageResult
 import com.ampairs.workspace.domain.asDatabaseModel
 import com.ampairs.workspace.domain.asDomainModel
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.workspace.api.model.UpdateWorkspaceRequest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -107,7 +108,7 @@ class WorkspaceRepository(
     /**
      * Update an existing workspace
      */
-    suspend fun updateWorkspace(workspaceId: String, request: com.ampairs.workspace.api.model.UpdateWorkspaceRequest): Workspace {
+    suspend fun updateWorkspace(workspaceId: String, request: UpdateWorkspaceRequest): Workspace {
         val response = workspaceApi.updateWorkspace(workspaceId, request)
 
         return if (response.error == null && response.data != null) {

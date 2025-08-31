@@ -1,4 +1,4 @@
-package com.ampairs.domain
+package com.ampairs.common.model
 
 class Location(
     val latitude: Double,

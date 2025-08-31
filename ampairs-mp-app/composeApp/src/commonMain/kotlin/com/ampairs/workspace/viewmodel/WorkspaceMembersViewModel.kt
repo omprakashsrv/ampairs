@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.workspace.api.model.UpdateMemberRequest
 import com.ampairs.workspace.api.model.UserRoleResponse
-import com.ampairs.common.flower_core.Resource
 import com.ampairs.workspace.db.WorkspaceMemberRepository
 import com.ampairs.workspace.domain.WorkspaceMember
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -74,6 +73,7 @@ class WorkspaceMembersViewModel(
     /**
      * Load more members for pagination
      */
+    @Suppress("unused")
     fun loadMoreMembers() {
         val currentState = _state.value
         if (currentState.isLoading || !currentState.hasNextPage) return
@@ -100,6 +100,7 @@ class WorkspaceMembersViewModel(
     /**
      * Search members by name or email
      */
+    @Suppress("unused")
     fun searchMembers(query: String) {
         if (query.isBlank()) {
             _state.value = _state.value.copy(members = allMembers)
@@ -117,6 +118,7 @@ class WorkspaceMembersViewModel(
     /**
      * Update member role
      */
+    @Suppress("unused")
     fun updateMemberRole(memberId: String, newRole: String) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true)
@@ -124,53 +126,26 @@ class WorkspaceMembersViewModel(
             try {
                 val updateRequest = UpdateMemberRequest(
                     role = newRole,
-                    reason = "Role updated via mobile app"
+                    reason = "Role updated via app"
                 )
 
-                val updateResult = memberRepository.updateMember(
+                val updatedMember = memberRepository.updateMember(
                     workspaceId = workspaceId,
                     memberId = memberId,
                     request = updateRequest
                 )
 
-                when (updateResult.status) {
-                    is Resource.Status.Success -> {
-                        val updatedMember = updateResult.status.data
-                        if (updatedMember != null) {
-                            // Update local state
-                            val updatedMembers = _state.value.members.map { member ->
-                                if (member.id == memberId) updatedMember else member
-                            }
-
-                            allMembers = updatedMembers
-                            _state.value = _state.value.copy(
-                                members = updatedMembers,
-                                isLoading = false,
-                                successMessage = "Member role updated successfully"
-                            )
-                        } else {
-                            _state.value = _state.value.copy(
-                                isLoading = false,
-                                error = "Update failed - no member data returned"
-                            )
-                        }
-                    }
-                    is Resource.Status.Error -> {
-                        _state.value = _state.value.copy(
-                            isLoading = false,
-                            error = updateResult.status.errorMessage
-                        )
-                    }
-                    is Resource.Status.Loading -> {
-                        // Loading state already set
-                    }
-                    is Resource.Status.EmptySuccess -> {
-                        _state.value = _state.value.copy(
-                            isLoading = false,
-                            error = "Update failed - no data returned"
-                        )
-                    }
+                // Update local state
+                val updatedMembers = _state.value.members.map { member ->
+                    if (member.id == memberId) updatedMember else member
                 }
+
+                allMembers = updatedMembers
+                _state.value = _state.value.copy(
+                    members = updatedMembers,
+                    isLoading = false,
+                    successMessage = "Member role updated successfully"
+                )
 
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
@@ -184,48 +159,24 @@ class WorkspaceMembersViewModel(
     /**
      * Remove member from workspace
      */
+    @Suppress("unused")
     fun removeMember(memberId: String) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true)
 
             try {
-                val result = memberRepository.removeMember(workspaceId, memberId)
+                memberRepository.removeMember(workspaceId, memberId)
 
-                when (result.status) {
-                    is Resource.Status.Success -> {
-                        // Remove member from local state
-                        val updatedMembers = _state.value.members.filterNot { it.id == memberId }
-                        allMembers = updatedMembers
+                // Remove member from local state
+                val updatedMembers = _state.value.members.filterNot { it.id == memberId }
+                allMembers = updatedMembers
 
-                        _state.value = _state.value.copy(
-                            members = updatedMembers,
-                            isLoading = false,
-                            totalMembers = _state.value.totalMembers - 1,
-                            successMessage = "Member removed successfully"
-                        )
-                    }
-                    is Resource.Status.Error -> {
-                        _state.value = _state.value.copy(
-                            isLoading = false,
-                            error = result.status.errorMessage
-                        )
-                    }
-                    is Resource.Status.Loading -> {
-                        // Loading state already set
-                    }
-                    is Resource.Status.EmptySuccess -> {
-                        // Still consider this a success for removal
-                        val updatedMembers = _state.value.members.filterNot { it.id == memberId }
-                        allMembers = updatedMembers
-
-                        _state.value = _state.value.copy(
-                            members = updatedMembers,
-                            isLoading = false,
-                            totalMembers = _state.value.totalMembers - 1,
-                            successMessage = "Member removed successfully"
-                        )
-                    }
-                }
+                _state.value = _state.value.copy(
+                    members = updatedMembers,
+                    isLoading = false,
+                    totalMembers = (_state.value.totalMembers - 1).coerceAtLeast(0),
+                    successMessage = "Member removed successfully"
+                )
 
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
@@ -242,27 +193,9 @@ class WorkspaceMembersViewModel(
     private fun loadCurrentUserRole() {
         viewModelScope.launch {
             try {
-                val userRoleResult = memberRepository.getMyRole(workspaceId)
-                when (userRoleResult.status) {
-                    is Resource.Status.Success -> {
-                        val userRole = userRoleResult.status.data
-                        _state.value = _state.value.copy(currentUserRole = userRole)
-                    }
-                    is Resource.Status.Error -> {
-                        // Non-critical error, continue without user role info
-                        _state.value = _state.value.copy(
-                            error = "Could not load user permissions: ${userRoleResult.status.errorMessage}"
-                        )
-                    }
-                    is Resource.Status.Loading -> {
-                        // Loading state handled elsewhere
-                    }
-                    is Resource.Status.EmptySuccess -> {
-                        _state.value = _state.value.copy(currentUserRole = null)
-                    }
-                }
+                val userRole = memberRepository.getMyRole(workspaceId)
+                _state.value = _state.value.copy(currentUserRole = userRole)
             } catch (e: Exception) {
-                // Non-critical error, continue without user role info
                 _state.value = _state.value.copy(
                     error = "Could not load user permissions: ${e.message}"
                 )
@@ -273,6 +206,7 @@ class WorkspaceMembersViewModel(
     /**
      * Clear error message
      */
+    @Suppress("unused")
     fun clearError() {
         _state.value = _state.value.copy(error = null)
     }
@@ -280,6 +214,7 @@ class WorkspaceMembersViewModel(
     /**
      * Clear success message
      */
+    @Suppress("unused")
     fun clearSuccessMessage() {
         _state.value = _state.value.copy(successMessage = null)
     }

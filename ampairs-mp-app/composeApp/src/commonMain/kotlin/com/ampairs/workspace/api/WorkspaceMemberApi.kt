@@ -1,11 +1,12 @@
 package com.ampairs.workspace.api
 
-import com.ampairs.network.model.Response
-import com.ampairs.workspace.api.model.MemberApiModel
+import com.ampairs.common.model.Response
 import com.ampairs.workspace.api.model.MemberDetailsResponse
 import com.ampairs.workspace.api.model.PagedMemberResponse
 import com.ampairs.workspace.api.model.UpdateMemberRequest
 import com.ampairs.workspace.api.model.UserRoleResponse
+import com.ampairs.workspace.api.model.WorkspaceRole
+import com.ampairs.workspace.api.model.WorkspacePermissionResponse
 
 /**
  * Workspace Member Management API
@@ -84,4 +85,27 @@ interface WorkspaceMemberApi {
      * @return User's role, permissions, and access information
      */
     suspend fun getMyRole(workspaceId: String): Response<UserRoleResponse>
+
+    /**
+     * Get all available roles in the workspace
+     *
+     * Returns a list of all roles that can be assigned to members in this workspace.
+     * The available roles may vary based on the workspace configuration and the
+     * current user's permissions.
+     *
+     * @param workspaceId Target workspace identifier
+     * @return List of available roles with their descriptions and permissions
+     */
+    suspend fun getAvailableRoles(workspaceId: String): Response<List<WorkspaceRole>>
+
+    /**
+     * Get all available permissions for the workspace
+     *
+     * Returns comprehensive permission structure including modules, actions,
+     * and access levels that can be assigned to members.
+     *
+     * @param workspaceId Target workspace identifier
+     * @return Hierarchical permission structure organized by modules
+     */
+    suspend fun getAvailablePermissions(workspaceId: String): Response<List<WorkspacePermissionResponse>>
 }

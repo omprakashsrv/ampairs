@@ -1,4 +1,4 @@
-package com.ampairs.network.model
+package com.ampairs.common.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable

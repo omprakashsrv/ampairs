@@ -1,6 +1,6 @@
 package com.ampairs.order.api
 
-import com.ampairs.network.model.Response
+import com.ampairs.common.model.Response
 import com.ampairs.order.api.model.OrderApiModel
 
 interface OrderApi {

@@ -4,7 +4,7 @@ import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.post
-import com.ampairs.network.model.Response
+import com.ampairs.common.model.Response
 import com.ampairs.product.api.model.InventoryApiModel
 import io.ktor.client.engine.HttpClientEngine
 

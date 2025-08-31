@@ -5,7 +5,8 @@ import com.ampairs.auth.api.model.RefreshToken
 import com.ampairs.auth.api.model.Token
 import com.ampairs.auth.domain.asRefreshTokens
 import com.ampairs.network.model.ErrorResponse
-import com.ampairs.network.model.Response
+import com.ampairs.common.model.Response
+import com.ampairs.common.model.Error
 import com.ampairs.network.model.toResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -249,7 +250,7 @@ suspend inline fun <reified T> handleResponse(response: HttpResponse): T {
             errorBody.toResponse()
         } catch (_: Exception) {
             Response(
-                error = com.ampairs.network.model.Error(
+                error = Error(
                     code = response.status.value.toString(),
                     message = "HTTP ${response.status.value}: ${response.status.description}"
                 ),

@@ -11,9 +11,9 @@ import com.ampairs.domain.asUnitDatabaseModel
 import com.ampairs.domain.asUnitDomainModel
 import com.ampairs.domain.asUnitModel
 import com.ampairs.inventory.db.dao.InventoryDao
-import com.ampairs.network.model.Response
-import com.ampairs.network.model.onError
-import com.ampairs.network.model.onSuccess
+import com.ampairs.common.model.Response
+import com.ampairs.common.model.onError
+import com.ampairs.common.model.onSuccess
 import com.ampairs.product.api.ProductApi
 import com.ampairs.product.api.model.AllProductGroupApiModel
 import com.ampairs.product.api.model.ProductApiModel

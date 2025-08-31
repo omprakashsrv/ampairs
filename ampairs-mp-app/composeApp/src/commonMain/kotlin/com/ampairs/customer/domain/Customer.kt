@@ -2,7 +2,7 @@ package com.ampairs.customer.domain
 
 import com.ampairs.customer.api.model.CustomerApiModel
 import com.ampairs.customer.db.entity.CustomerEntity
-import com.ampairs.domain.Location
+import com.ampairs.common.model.Location
 import com.ampairs.order.domain.Address
 import kotlinx.serialization.json.Json
 import kotlin.time.Clock

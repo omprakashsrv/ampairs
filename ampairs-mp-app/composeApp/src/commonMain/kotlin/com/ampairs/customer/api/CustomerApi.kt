@@ -1,7 +1,7 @@
 package com.ampairs.customer.api
 
 import com.ampairs.customer.api.model.CustomerApiModel
-import com.ampairs.network.model.Response
+import com.ampairs.common.model.Response
 
 interface CustomerApi {
     suspend fun getCustomers(lastUpdated: Long): Response<List<CustomerApiModel>>

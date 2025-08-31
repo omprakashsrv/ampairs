@@ -6,7 +6,7 @@ import com.ampairs.common.flower_core.Resource
 import com.ampairs.common.flower_core.networkResource
 import com.ampairs.customer.db.dao.CustomerDao
 import com.ampairs.customer.domain.asDomainModel
-import com.ampairs.network.model.Response
+import com.ampairs.common.model.Response
 import com.ampairs.order.api.OrderApi
 import com.ampairs.order.api.model.OrderApiModel
 import com.ampairs.order.api.model.toApiModel

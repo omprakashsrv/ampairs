@@ -1,6 +1,6 @@
 package com.ampairs.inventory.api
 
-import com.ampairs.network.model.Response
+import com.ampairs.common.model.Response
 import com.ampairs.product.api.model.InventoryApiModel
 
 interface InventoryApi {

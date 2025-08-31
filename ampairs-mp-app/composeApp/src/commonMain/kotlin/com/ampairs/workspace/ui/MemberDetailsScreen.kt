@@ -32,6 +32,8 @@ fun MemberDetailsScreen(
     val state by viewModel.state.collectAsState()
 
     var isEditing by remember { mutableStateOf(false) }
+    var showStatusConfirmation by remember { mutableStateOf(false) }
+    var pendingStatusChange by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(memberId) {
         viewModel.loadMemberDetails()
@@ -46,7 +48,6 @@ fun MemberDetailsScreen(
         MemberDetailsHeader(
             isEditing = isEditing,
             canEdit = state.canEdit,
-            onNavigateBack = onNavigateBack,
             onToggleEdit = { isEditing = !isEditing },
             onSave = {
                 viewModel.saveMemberChanges()
@@ -79,21 +80,82 @@ fun MemberDetailsScreen(
             }
 
             state.member != null -> {
+                val memberToDisplay = if (isEditing) state.displayMember ?: state.member!! else state.member!!
                 MemberDetailsContent(
-                    member = state.member!!,
+                    member = memberToDisplay,
                     userRole = state.userRole,
+                    availableRoles = state.availableRoles,
+                    availablePermissions = state.availablePermissions,
                     isEditing = isEditing,
                     onRoleChange = viewModel::updateRole,
-                    onStatusChange = viewModel::updateStatus,
+                    onStatusChange = { newStatus ->
+                        val currentMember = state.member!!
+                        // Show confirmation for deactivation or reactivation
+                        if (currentMember.status != newStatus && (newStatus == "INACTIVE" || currentMember.status == "INACTIVE")) {
+                            pendingStatusChange = newStatus
+                            showStatusConfirmation = true
+                        } else {
+                            viewModel.updateStatus(newStatus)
+                        }
+                    },
                     onPermissionsChange = viewModel::updatePermissions,
                     onRemoveMember = {
                         viewModel.removeMember()
                         onNavigateBack()
                     },
-                    canManageMembers = state.canEdit,
+                    canChangeRole = state.canChangeRole,
+                    canChangeStatus = state.canChangeStatus,
+                    canChangePermissions = state.canChangePermissions,
+                    canRemoveMember = state.canRemoveMember,
                     modifier = Modifier.fillMaxSize()
                 )
             }
+        }
+
+        // Status change confirmation dialog
+        if (showStatusConfirmation) {
+            val currentMember = state.member!!
+            val statusAction = if (pendingStatusChange == "INACTIVE") "deactivate" else "reactivate"
+            val statusResult = if (pendingStatusChange == "INACTIVE") "deactivated" else "reactivated"
+            
+            AlertDialog(
+                onDismissRequest = { 
+                    showStatusConfirmation = false 
+                    pendingStatusChange = null
+                },
+                title = { Text("${statusAction.replaceFirstChar { it.uppercaseChar() }} Member") },
+                text = { 
+                    Text("Are you sure you want to $statusAction ${currentMember.name}? This member will be $statusResult and ${if (pendingStatusChange == "INACTIVE") "lose access to" else "regain access to"} the workspace.")
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            pendingStatusChange?.let { newStatus ->
+                                viewModel.updateStatus(newStatus)
+                            }
+                            showStatusConfirmation = false
+                            pendingStatusChange = null
+                        },
+                        colors = if (pendingStatusChange == "INACTIVE") {
+                            ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error
+                            )
+                        } else ButtonDefaults.buttonColors()
+                    ) {
+                        Text(statusAction.replaceFirstChar { it.uppercaseChar() })
+                    }
+                },
+                dismissButton = {
+                    TextButton(
+                        onClick = { 
+                            showStatusConfirmation = false 
+                            pendingStatusChange = null
+                        }
+                    ) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
     }
 }
@@ -102,7 +164,6 @@ fun MemberDetailsScreen(
 private fun MemberDetailsHeader(
     isEditing: Boolean,
     canEdit: Boolean,
-    onNavigateBack: () -> Unit,
     onToggleEdit: () -> Unit,
     onSave: () -> Unit,
     onCancel: () -> Unit,
@@ -112,17 +173,11 @@ private fun MemberDetailsHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onNavigateBack) {
-                Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-            }
-            Text(
-                text = "Member Details",
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 8.dp)
-            )
-        }
+        Text(
+            text = "Member Details",
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold
+        )
 
         AnimatedVisibility(visible = canEdit) {
             Row {
@@ -156,12 +211,17 @@ private fun MemberDetailsHeader(
 private fun MemberDetailsContent(
     member: WorkspaceMember,
     userRole: com.ampairs.workspace.api.model.UserRoleResponse?,
+    availableRoles: List<com.ampairs.workspace.api.model.WorkspaceRole>,
+    availablePermissions: Map<String, Map<String, Boolean>>,
     isEditing: Boolean,
     onRoleChange: (String) -> Unit,
     onStatusChange: (String) -> Unit,
     onPermissionsChange: (List<String>) -> Unit,
     onRemoveMember: () -> Unit,
-    canManageMembers: Boolean,
+    canChangeRole: Boolean,
+    canChangeStatus: Boolean,
+    canChangePermissions: Boolean,
+    canRemoveMember: Boolean,
     modifier: Modifier = Modifier,
 ) {
     Column(
@@ -177,8 +237,10 @@ private fun MemberDetailsContent(
         // Role and Status Card
         MemberRoleStatusCard(
             member = member,
+            availableRoles = availableRoles,
             isEditing = isEditing,
-            canEdit = canManageMembers,
+            canChangeRole = canChangeRole,
+            canChangeStatus = canChangeStatus,
             onRoleChange = onRoleChange,
             onStatusChange = onStatusChange
         )
@@ -187,16 +249,17 @@ private fun MemberDetailsContent(
         MemberPermissionsCard(
             member = member,
             userRole = userRole,
+            availablePermissions = availablePermissions,
             isEditing = isEditing,
-            canEdit = canManageMembers,
+            canEdit = canChangePermissions,
             onPermissionsChange = onPermissionsChange
         )
 
         // Activity Card
         MemberActivityCard(member = member)
 
-        // Danger Zone (only if can manage members)
-        if (canManageMembers && member.role != "OWNER") {
+        // Danger Zone (only if can remove member)
+        if (canRemoveMember && member.role != "OWNER") {
             MemberDangerZoneCard(
                 member = member,
                 onRemoveMember = onRemoveMember
@@ -276,8 +339,10 @@ private fun MemberProfileCard(
 @Composable
 private fun MemberRoleStatusCard(
     member: WorkspaceMember,
+    availableRoles: List<com.ampairs.workspace.api.model.WorkspaceRole>,
     isEditing: Boolean,
-    canEdit: Boolean,
+    canChangeRole: Boolean,
+    canChangeStatus: Boolean,
     onRoleChange: (String) -> Unit,
     onStatusChange: (String) -> Unit,
 ) {
@@ -306,9 +371,10 @@ private fun MemberRoleStatusCard(
                         style = MaterialTheme.typography.labelMedium
                     )
 
-                    if (isEditing && canEdit && member.role != "OWNER") {
+                    if (isEditing && canChangeRole && member.role != "OWNER") {
                         RoleDropdown(
                             currentRole = member.role,
+                            availableRoles = availableRoles,
                             onRoleChange = onRoleChange
                         )
                     } else {
@@ -323,7 +389,7 @@ private fun MemberRoleStatusCard(
                         style = MaterialTheme.typography.labelMedium
                     )
 
-                    if (isEditing && canEdit) {
+                    if (isEditing && canChangeStatus) {
                         StatusDropdown(
                             currentStatus = member.status,
                             onStatusChange = onStatusChange
@@ -341,6 +407,7 @@ private fun MemberRoleStatusCard(
 private fun MemberPermissionsCard(
     member: WorkspaceMember,
     userRole: com.ampairs.workspace.api.model.UserRoleResponse?,
+    availablePermissions: Map<String, Map<String, Boolean>>,
     isEditing: Boolean,
     canEdit: Boolean,
     onPermissionsChange: (List<String>) -> Unit,
@@ -362,7 +429,7 @@ private fun MemberPermissionsCard(
             if (isEditing && canEdit) {
                 PermissionEditor(
                     currentPermissions = member.permissions,
-                    availablePermissions = userRole?.permissions ?: emptyMap(),
+                    availablePermissions = availablePermissions,
                     onPermissionsChange = onPermissionsChange
                 )
             } else {
@@ -483,10 +550,16 @@ private fun MemberDangerZoneCard(
 @Composable
 private fun RoleDropdown(
     currentRole: String,
+    availableRoles: List<com.ampairs.workspace.api.model.WorkspaceRole>,
     onRoleChange: (String) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val roles = listOf("ADMIN", "MANAGER", "MEMBER", "VIEWER")
+    // Use backend roles if available, fallback to default roles
+    val roles = if (availableRoles.isNotEmpty()) {
+        availableRoles.map { it.name }.filter { it != "OWNER" } // Exclude OWNER role from dropdown
+    } else {
+        listOf("ADMIN", "MANAGER", "MEMBER", "VIEWER") // Fallback for when roles haven't loaded yet
+    }
 
     ExposedDropdownMenuBox(
         expanded = expanded,
@@ -609,9 +682,88 @@ private fun PermissionEditor(
     availablePermissions: Map<String, Map<String, Boolean>>,
     onPermissionsChange: (List<String>) -> Unit,
 ) {
-    Column {
-        Text("Permission editing will be implemented based on backend structure")
-        // TODO: Implement based on actual permission structure from backend
+    // Convert current permissions to a set of permission keys for easier checking
+    val currentPermissionKeys = remember(currentPermissions) {
+        currentPermissions.keys.toSet()
+    }
+    
+    // Track selected permissions
+    var selectedPermissions by remember(currentPermissionKeys) {
+        mutableStateOf(currentPermissionKeys.toMutableSet())
+    }
+    
+    // Update callback when selectedPermissions changes
+    LaunchedEffect(selectedPermissions) {
+        onPermissionsChange(selectedPermissions.toList())
+    }
+    
+    if (availablePermissions.isEmpty()) {
+        Text(
+            text = "Loading permissions...",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    } else {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            availablePermissions.forEach { (module, actions) ->
+                // Module section
+                Column {
+                    Text(
+                        text = module.replaceFirstChar { it.uppercaseChar() },
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    
+                    Spacer(modifier = Modifier.height(8.dp))
+                    
+                    // Actions for this module
+                    Column(
+                        modifier = Modifier.padding(start = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        actions.forEach { (action, isAvailable) ->
+                            if (isAvailable) {
+                                val permissionKey = "$module:$action"
+                                val isSelected = selectedPermissions.contains(permissionKey) ||
+                                        selectedPermissions.contains("$module.$action") || // Alternative format
+                                        selectedPermissions.contains(action) // Simple format
+                                
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Checkbox(
+                                        checked = isSelected,
+                                        onCheckedChange = { isChecked ->
+                                            selectedPermissions = selectedPermissions.toMutableSet().apply {
+                                                if (isChecked) {
+                                                    add(permissionKey)
+                                                } else {
+                                                    // Remove all possible formats of this permission
+                                                    remove(permissionKey)
+                                                    remove("$module.$action")
+                                                    remove(action)
+                                                }
+                                            }
+                                        }
+                                    )
+                                    
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    
+                                    Text(
+                                        text = action.replaceFirstChar { it.uppercaseChar() },
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 

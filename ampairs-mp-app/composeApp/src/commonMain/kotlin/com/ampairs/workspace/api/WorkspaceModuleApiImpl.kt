@@ -6,7 +6,7 @@ import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.post
 import com.ampairs.common.put
-import com.ampairs.network.model.Response
+import com.ampairs.common.model.Response
 import com.ampairs.workspace.api.model.WorkspaceModuleApiModel
 import io.ktor.client.engine.HttpClientEngine
 

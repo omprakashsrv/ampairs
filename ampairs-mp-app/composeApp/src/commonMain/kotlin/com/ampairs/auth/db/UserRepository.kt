@@ -16,8 +16,8 @@ import com.ampairs.auth.domain.asDatabaseModel
 import com.ampairs.auth.domain.asDomainModel
 import com.ampairs.auth.service.RecaptchaService
 import com.ampairs.common.DeviceService
-import com.ampairs.network.model.GenericSuccess
-import com.ampairs.network.model.Response
+import com.ampairs.common.model.GenericSuccess
+import com.ampairs.common.model.Response
 
 class UserRepository(
     val authApi: AuthApi,

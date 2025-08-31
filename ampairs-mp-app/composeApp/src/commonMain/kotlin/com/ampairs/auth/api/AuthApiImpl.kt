@@ -11,8 +11,8 @@ import com.ampairs.auth.domain.DeviceSession
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.post
-import com.ampairs.network.model.GenericSuccess
-import com.ampairs.network.model.Response
+import com.ampairs.common.model.GenericSuccess
+import com.ampairs.common.model.Response
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.auth.authProvider
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider

@@ -307,4 +307,14 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
     @EntityGraph(attributePaths = ["primaryTeam"])
     @Query("SELECT wm FROM WorkspaceMember wm WHERE wm.uid = :memberId")
     fun findByIdWithPrimaryTeam(@Param("memberId") memberId: String): Optional<WorkspaceMember>
+
+    /**
+     * Find member by UID (string identifier)
+     */
+    fun findByUid(uid: String): Optional<WorkspaceMember>
+
+    /**
+     * Find multiple members by UIDs (string identifiers)
+     */
+    fun findByUidIn(uids: Collection<String>): List<WorkspaceMember>
 }

@@ -6,13 +6,12 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
-import com.ampairs.auth.api.isAuthenticated
 import com.ampairs.auth.db.UserRepository
 import com.ampairs.auth.db.entity.UserEntity
 import com.ampairs.auth.domain.LoginStatus
 import com.ampairs.common.DeviceService
-import com.ampairs.network.model.onError
-import com.ampairs.network.model.onSuccess
+import com.ampairs.common.model.onError
+import com.ampairs.common.model.onSuccess
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch

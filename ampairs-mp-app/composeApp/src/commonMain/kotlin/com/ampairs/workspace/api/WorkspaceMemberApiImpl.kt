@@ -5,12 +5,13 @@ import com.ampairs.common.delete
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.put
-import com.ampairs.network.model.Response
-import com.ampairs.workspace.api.model.MemberApiModel
+import com.ampairs.common.model.Response
 import com.ampairs.workspace.api.model.MemberDetailsResponse
 import com.ampairs.workspace.api.model.PagedMemberResponse
 import com.ampairs.workspace.api.model.UpdateMemberRequest
 import com.ampairs.workspace.api.model.UserRoleResponse
+import com.ampairs.workspace.api.model.WorkspaceRole
+import com.ampairs.workspace.api.model.WorkspacePermissionResponse
 import io.ktor.client.engine.HttpClientEngine
 
 /**
@@ -63,5 +64,13 @@ class WorkspaceMemberApiImpl(
 
     override suspend fun getMyRole(workspaceId: String): Response<UserRoleResponse> {
         return get(client, "$WORKSPACE_ENDPOINT/workspace/v1/$workspaceId/my-role")
+    }
+
+    override suspend fun getAvailableRoles(workspaceId: String): Response<List<WorkspaceRole>> {
+        return get(client, "$WORKSPACE_ENDPOINT/workspace/v1/$workspaceId/roles")
+    }
+
+    override suspend fun getAvailablePermissions(workspaceId: String): Response<List<WorkspacePermissionResponse>> {
+        return get(client, "$WORKSPACE_ENDPOINT/workspace/v1/$workspaceId/permissions")
     }
 }

@@ -9,7 +9,7 @@ import com.ampairs.customer.db.dao.CustomerDao
 import com.ampairs.customer.db.entity.CustomerEntity
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.asDatabaseModel
-import com.ampairs.network.model.Response
+import com.ampairs.common.model.Response
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow

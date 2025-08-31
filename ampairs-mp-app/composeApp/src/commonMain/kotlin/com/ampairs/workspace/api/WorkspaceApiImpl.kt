@@ -5,11 +5,10 @@ import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.post
 import com.ampairs.common.put
-import com.ampairs.network.model.Response
+import com.ampairs.common.model.Response
 import com.ampairs.workspace.api.model.CreateWorkspaceRequest
 import com.ampairs.workspace.api.model.UpdateWorkspaceRequest
 import com.ampairs.workspace.api.model.WorkspaceApiModel
-import com.ampairs.workspace.api.model.WorkspaceListApiModel
 import com.ampairs.workspace.api.model.PagedWorkspaceResponse
 import io.ktor.client.engine.HttpClientEngine
 

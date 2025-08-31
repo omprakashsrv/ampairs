@@ -453,7 +453,7 @@ class WorkspaceMemberService(
      * Bulk member operations
      */
     fun bulkMemberOperation(workspaceId: String, request: BulkMemberRequest, operatedBy: String): String {
-        val members = memberRepository.findAllById(request.memberIds)
+        val members = memberRepository.findByUidIn(request.memberIds)
 
         // Validate all members belong to workspace
         members.forEach { member ->
@@ -569,7 +569,7 @@ class WorkspaceMemberService(
         val status = request["status"] as? String
         val notifyMembers = request["notify_members"] as? Boolean ?: false
         
-        val members = memberRepository.findAllById(memberIds)
+        val members = memberRepository.findByUidIn(memberIds)
         var updatedCount = 0
         val failedUpdates = mutableListOf<Map<String, String>>()
         
@@ -625,7 +625,7 @@ class WorkspaceMemberService(
         val memberIds = request["member_ids"] as? List<String> ?: emptyList()
         val reason = request["reason"] as? String
         
-        val members = memberRepository.findAllById(memberIds)
+        val members = memberRepository.findByUidIn(memberIds)
         var removedCount = 0
         val failedRemovals = mutableListOf<Map<String, String>>()
         
@@ -728,7 +728,7 @@ class WorkspaceMemberService(
     }
 
     fun findMemberById(memberId: String): WorkspaceMember {
-        return memberRepository.findById(memberId)
+        return memberRepository.findByUid(memberId)
             .orElseThrow { NotFoundException("Member not found: $memberId") }
     }
 }

@@ -181,7 +181,7 @@ data class MemberListResponse(
 @Serializable
 data class UpdateMemberRequest(
     @SerialName("role") val role: String? = null,
-    @SerialName("custom_permissions") val customPermissions: List<String>? = null,
+    @SerialName("custom_permissions") val customPermissions: Set<WorkspacePermission>? = null,
     @SerialName("reason") val reason: String? = null,
     @SerialName("notify_member") val notifyMember: Boolean = true,
 )
@@ -342,3 +342,42 @@ data class ImmediateAccessInfo(
     @SerialName("team_members") val teamMembers: Int,
     @SerialName("recent_activity_available") val recentActivityAvailable: Boolean,
 )
+
+// ===== ROLES AND PERMISSIONS MODELS =====
+
+@Serializable
+data class WorkspaceRole(
+    @SerialName("name") val name: String,
+    @SerialName("display_name") val displayName: String,
+    @SerialName("level") val level: Int,
+    @SerialName("description") val description: String,
+    @SerialName("manageable_roles") val manageableRoles: List<String>
+)
+
+@Serializable
+data class WorkspacePermissionResponse(
+    @SerialName("name") val name: String,
+    @SerialName("permission_name") val permissionName: String,
+    @SerialName("description") val description: String
+)
+
+/**
+ * Client-side WorkspacePermission enum matching backend enum
+ */
+@Serializable
+enum class WorkspacePermission(val permissionName: String) {
+    @SerialName("WORKSPACE_MANAGE") WORKSPACE_MANAGE("WORKSPACE_MANAGE"),
+    @SerialName("WORKSPACE_DELETE") WORKSPACE_DELETE("WORKSPACE_DELETE"),
+    @SerialName("MEMBER_VIEW") MEMBER_VIEW("MEMBER_VIEW"),
+    @SerialName("MEMBER_INVITE") MEMBER_INVITE("MEMBER_INVITE"),
+    @SerialName("MEMBER_MANAGE") MEMBER_MANAGE("MEMBER_MANAGE"),
+    @SerialName("MEMBER_DELETE") MEMBER_DELETE("MEMBER_DELETE");
+
+    override fun toString(): String = permissionName
+
+    companion object {
+        fun fromString(permission: String): WorkspacePermission? {
+            return entries.find { it.permissionName == permission }
+        }
+    }
+}

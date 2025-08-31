@@ -1,10 +1,9 @@
 package com.ampairs.workspace.api
 
-import com.ampairs.network.model.Response
+import com.ampairs.common.model.Response
 import com.ampairs.workspace.api.model.CreateWorkspaceRequest
 import com.ampairs.workspace.api.model.UpdateWorkspaceRequest
 import com.ampairs.workspace.api.model.WorkspaceApiModel
-import com.ampairs.workspace.api.model.WorkspaceListApiModel
 import com.ampairs.workspace.api.model.PagedWorkspaceResponse
 
 interface WorkspaceApi {
