@@ -290,6 +290,14 @@ class WorkspaceMemberService(
     }
 
     /**
+     * Get workspace member by workspace ID and user ID
+     */
+    fun getWorkspaceMember(workspaceId: String, userId: String): WorkspaceMember? {
+        return memberRepository.findByWorkspaceIdAndUserIdAndIsActiveTrue(workspaceId, userId)
+            .orElse(null)
+    }
+
+    /**
      * Check if user has specific permission
      */
     fun hasPermission(workspaceId: String, userId: String, permission: String): Boolean {

@@ -3,110 +3,82 @@ package com.ampairs.workspace.model.dto
 import com.ampairs.workspace.model.MaterialColors
 import com.ampairs.workspace.model.MaterialTheme
 import com.ampairs.workspace.model.MaterialTypography
-import com.fasterxml.jackson.annotation.JsonProperty
 
 /**
  * Request DTO for updating workspace settings
  */
 data class UpdateSettingsRequest(
-    @JsonProperty("logo_url")
-    val logoUrl: String? = null,
+        val logoUrl: String? = null,
 
-    @JsonProperty("material_theme")
-    val materialTheme: MaterialTheme? = null,
+        val materialTheme: MaterialTheme? = null,
 
-    @JsonProperty("material_colors")
-    val materialColors: MaterialColors? = null,
+        val materialColors: MaterialColors? = null,
 
-    @JsonProperty("material_typography")
-    val materialTypography: MaterialTypography? = null,
+        val materialTypography: MaterialTypography? = null,
 
-    @JsonProperty("business_settings")
-    val businessSettings: Map<String, Any>? = null,
+        val businessSettings: Map<String, Any>? = null,
 )
 
 /**
  * Request DTO for updating branding settings
  */
 data class UpdateBrandingRequest(
-    @JsonProperty("logo_url")
-    val logoUrl: String? = null,
+        val logoUrl: String? = null,
 
-    @JsonProperty("primary_color")
-    val primaryColor: String? = null,
+        val primaryColor: String? = null,
 
-    @JsonProperty("secondary_color")
-    val secondaryColor: String? = null,
+        val secondaryColor: String? = null,
 
-    @JsonProperty("accent_color")
-    val accentColor: String? = null,
+        val accentColor: String? = null,
 
-    @JsonProperty("custom_css")
-    val customCss: String? = null,
+        val customCss: String? = null,
 
-    @JsonProperty("favicon_url")
-    val faviconUrl: String? = null,
+        val faviconUrl: String? = null,
 )
 
 /**
  * Request DTO for updating notification settings
  */
 data class UpdateNotificationRequest(
-    @JsonProperty("email_notifications")
-    val emailNotifications: Boolean? = null,
+        val emailNotifications: Boolean? = null,
 
-    @JsonProperty("push_notifications")
-    val pushNotifications: Boolean? = null,
+        val pushNotifications: Boolean? = null,
 
-    @JsonProperty("member_joined")
-    val memberJoined: Boolean? = null,
+        val memberJoined: Boolean? = null,
 
-    @JsonProperty("member_left")
-    val memberLeft: Boolean? = null,
+        val memberLeft: Boolean? = null,
 
-    @JsonProperty("new_invitation")
-    val newInvitation: Boolean? = null,
+        val newInvitation: Boolean? = null,
 
-    @JsonProperty("weekly_digest")
-    val weeklyDigest: Boolean? = null,
+        val weeklyDigest: Boolean? = null,
 )
 
 /**
  * Request DTO for updating security settings
  */
 data class UpdateSecurityRequest(
-    @JsonProperty("two_factor_required")
-    val twoFactorRequired: Boolean? = null,
+        val twoFactorRequired: Boolean? = null,
 
-    @JsonProperty("session_timeout_minutes")
-    val sessionTimeoutMinutes: Int? = null,
+        val sessionTimeoutMinutes: Int? = null,
 
-    @JsonProperty("allowed_domains")
-    val allowedDomains: List<String>? = null,
+        val allowedDomains: List<String>? = null,
 
-    @JsonProperty("ip_whitelist")
-    val ipWhitelist: List<String>? = null,
+        val ipWhitelist: List<String>? = null,
 
-    @JsonProperty("require_approval_for_new_members")
-    val requireApprovalForNewMembers: Boolean? = null,
+        val requireApprovalForNewMembers: Boolean? = null,
 )
 
 /**
  * Request DTO for updating feature settings
  */
 data class UpdateFeaturesRequest(
-    @JsonProperty("file_sharing_enabled")
-    val fileSharingEnabled: Boolean? = null,
+        val fileSharingEnabled: Boolean? = null,
 
-    @JsonProperty("external_integrations_enabled")
-    val externalIntegrationsEnabled: Boolean? = null,
+        val externalIntegrationsEnabled: Boolean? = null,
 
-    @JsonProperty("api_access_enabled")
-    val apiAccessEnabled: Boolean? = null,
+        val apiAccessEnabled: Boolean? = null,
 
-    @JsonProperty("custom_roles_enabled")
-    val customRolesEnabled: Boolean? = null,
+        val customRolesEnabled: Boolean? = null,
 
-    @JsonProperty("analytics_enabled")
-    val analyticsEnabled: Boolean? = null,
+        val analyticsEnabled: Boolean? = null,
 )

@@ -26,21 +26,18 @@ data class WorkspaceActivity(
      */
     @Enumerated(EnumType.STRING)
     @Column(name = "activity_type", nullable = false)
-    @JsonProperty("activity_type")
     var activityType: WorkspaceActivityType = WorkspaceActivityType.WORKSPACE_CREATED,
 
     /**
      * User ID who performed the action
      */
     @Column(name = "actor_id", nullable = false, length = 36)
-    @JsonProperty("actor_id")
     var actorId: String = "",
 
     /**
      * Display name of the actor at the time of action
      */
     @Column(name = "actor_name", nullable = false, length = 255)
-    @JsonProperty("actor_name")
     var actorName: String = "",
 
     /**
@@ -53,21 +50,18 @@ data class WorkspaceActivity(
      * Type of entity that was acted upon (workspace, member, invitation, settings)
      */
     @Column(name = "target_entity_type", length = 50)
-    @JsonProperty("target_entity_type")
     var targetEntityType: String? = null,
 
     /**
      * ID of the entity that was acted upon
      */
     @Column(name = "target_entity_id", length = 36)
-    @JsonProperty("target_entity_id")
     var targetEntityId: String? = null,
 
     /**
      * Name or identifier of the target entity for display
      */
     @Column(name = "target_entity_name", length = 255)
-    @JsonProperty("target_entity_name")
     var targetEntityName: String? = null,
 
     /**
@@ -75,28 +69,24 @@ data class WorkspaceActivity(
      * Contains information like old values, new values, counts, etc.
      */
     @Column(name = "context_data", columnDefinition = "JSON")
-    @JsonProperty("context_data")
     var contextData: String? = null,
 
     /**
      * IP address from which the action was performed
      */
     @Column(name = "ip_address", length = 45)
-    @JsonProperty("ip_address")
     var ipAddress: String? = null,
 
     /**
      * User agent string of the client
      */
     @Column(name = "user_agent", length = 500)
-    @JsonProperty("user_agent")
     var userAgent: String? = null,
 
     /**
      * Session or device ID for correlation
      */
     @Column(name = "session_id", length = 100)
-    @JsonProperty("session_id")
     var sessionId: String? = null,
 
     /**

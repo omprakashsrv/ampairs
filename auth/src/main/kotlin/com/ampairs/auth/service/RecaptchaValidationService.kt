@@ -528,9 +528,7 @@ data class RecaptchaApiResponse(
     val score: Double?,
     val action: String?,
     val hostname: String?,
-    @JsonProperty("challenge_ts")
     val challengeTs: String?,
-    @JsonProperty("error-codes")
     val errorCodes: List<String>?,
 )
 

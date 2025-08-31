@@ -85,6 +85,27 @@ data class PagedWorkspaceResponse(
 // ===== WORKSPACE MEMBER MANAGEMENT MODELS =====
 
 @Serializable
+data class UserApiModel(
+    @SerialName("id") val id: String,
+    @SerialName("email") val email: String? = null,
+    @SerialName("phone") val phone: String? = null,
+    @SerialName("first_name") val firstName: String = "",
+    @SerialName("last_name") val lastName: String? = null,
+    @SerialName("profile_picture_url") val profilePictureUrl: String? = null,
+) {
+    fun getDisplayName(): String {
+        return when {
+            firstName.isNotBlank() && !lastName.isNullOrBlank() -> "$firstName $lastName"
+            firstName.isNotBlank() -> firstName
+            !lastName.isNullOrBlank() -> lastName
+            !email.isNullOrBlank() -> email
+            !phone.isNullOrBlank() -> phone
+            else -> id
+        }
+    }
+}
+
+@Serializable
 data class MemberApiModel(
     @SerialName("id") val id: String,
     @SerialName("user_id") val userId: String,
@@ -106,11 +127,7 @@ data class MemberApiModel(
 data class MemberListResponse(
     @SerialName("id") val id: String,
     @SerialName("user_id") val userId: String,
-    @SerialName("email") val email: String? = null,
-    @SerialName("phone") val phone: String? = null,
-    @SerialName("first_name") val firstName: String = "",
-    @SerialName("last_name") val lastName: String? = null,
-    @SerialName("avatar_url") val avatarUrl: String? = null,
+    @SerialName("user") val user: UserApiModel? = null,
     @SerialName("role") val role: String,
     @SerialName("is_active") val isActive: Boolean,
     @SerialName("joined_at") val joinedAt: String,

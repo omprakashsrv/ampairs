@@ -107,7 +107,7 @@ class WorkspaceMembersViewModel(
 
         val searchResults = allMembers.filter { member ->
             member.name.contains(query, ignoreCase = true) ||
-                    member.email.contains(query, ignoreCase = true)
+                    (member.email?.contains(query, ignoreCase = true) == true)
         }
 
         _state.value = _state.value.copy(members = searchResults)

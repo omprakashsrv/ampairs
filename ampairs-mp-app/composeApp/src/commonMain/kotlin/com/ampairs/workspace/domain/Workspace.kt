@@ -3,6 +3,8 @@ package com.ampairs.workspace.domain
 import com.ampairs.workspace.api.model.WorkspaceApiModel
 import com.ampairs.workspace.api.model.WorkspaceListApiModel
 import com.ampairs.workspace.db.entity.WorkspaceEntity
+import com.ampairs.workspace.db.entity.WorkspaceMemberEntity
+import kotlinx.serialization.json.Json
 
 data class Workspace(
     val id: String,
@@ -153,7 +155,7 @@ data class WorkspaceMember(
     val status: String,
     val joinedAt: String,
     val lastActivity: String? = null,
-    val permissions: List<String> = emptyList(),
+    val permissions: Map<String, Any> = emptyMap(),
     val avatarUrl: String? = null,
     val phone: String? = null,
     val department: String? = null,
@@ -213,3 +215,45 @@ data class InvitationAcceptanceResult(
     val teamMembers: Int,
     val recentActivityAvailable: Boolean,
 )
+
+// ===== WORKSPACE MEMBER EXTENSION FUNCTIONS =====
+
+fun WorkspaceMember.asDatabaseModel(): WorkspaceMemberEntity {
+    return WorkspaceMemberEntity(
+        seq_id = 0,
+        id = this.id,
+        user_id = "", // Will be set by repository with current user ID
+        member_user_id = this.userId,
+        workspace_id = this.workspaceId,
+        email = this.email ?: "",
+        name = this.name,
+        role = this.role,
+        status = this.status,
+        joined_at = this.joinedAt,
+        last_activity = this.lastActivity,
+        permissions = if (this.permissions.isEmpty()) "{}" else this.permissions.toString(),
+        avatar_url = this.avatarUrl,
+        phone = this.phone,
+        department = this.department,
+        is_online = this.isOnline,
+    )
+}
+
+fun WorkspaceMemberEntity.asDomainModel(): WorkspaceMember {
+    return WorkspaceMember(
+        id = this.id,
+        userId = this.member_user_id,
+        workspaceId = this.workspace_id,
+        email = if (this.email.isEmpty()) null else this.email,
+        name = this.name,
+        role = this.role,
+        status = this.status,
+        joinedAt = this.joined_at,
+        lastActivity = this.last_activity,
+        permissions = emptyMap(), // Simplified for now, can be enhanced later
+        avatarUrl = this.avatar_url,
+        phone = this.phone,
+        department = this.department,
+        isOnline = this.is_online,
+    )
+}

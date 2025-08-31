@@ -1122,9 +1122,6 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { MatFormFieldModule } from '@angular/material/form-field';
 
-// ❌ INCORRECT: Using non-M3 components
-import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
-import { NzButtonModule } from 'ng-zorro-antd/button';
 ```
 
 #### **SCSS/CSS Guidelines**
@@ -1177,7 +1174,7 @@ const theme = {
 
 **IMPORTANT: Always use snake_case for JSON properties in REST APIs**
 
-The application is configured with:
+The application is configured with global snake_case conversion:
 
 ```yaml
 spring:
@@ -1187,35 +1184,63 @@ spring:
 
 This means:
 
-- **All JSON requests/responses use snake_case** (e.g., `country_code`, `recaptcha_token`, `session_id`)
+- **All JSON requests/responses automatically use snake_case** (e.g., `country_code`, `recaptcha_token`, `session_id`)
 - **Kotlin properties remain camelCase** (e.g., `countryCode`, `recaptchaToken`, `sessionId`)
-- **Use `@JsonProperty("snake_case_name")` annotations** on DTOs to map between JSON and Kotlin naming conventions
+- **NO @JsonProperty annotations needed** - Jackson automatically converts camelCase to snake_case and vice versa
+- **Only use @JsonProperty when the mapping is NOT a simple camelCase to snake_case conversion**
 
-Example DTO pattern:
+#### **✅ CORRECT DTO Pattern (No annotations needed):**
 
 ```kotlin
 data class AuthInitRequest(
-  @JsonProperty("country_code")
-  var countryCode: Int = 91,
-
-  @JsonProperty("recaptcha_token")
-  var recaptchaToken: String? = null,
-
-  var phone: String = ""  // No annotation needed - 'phone' is same in both cases
+    var countryCode: Int = 91,        // Automatically maps to "country_code" in JSON
+    var recaptchaToken: String? = null, // Automatically maps to "recaptcha_token" in JSON  
+    var phone: String = ""            // Maps to "phone" (same in both)
 )
 ```
 
-Example JSON request:
+
+```kotlin
+data class AuthInitRequest(
+    var countryCode: Int = 91,
+    
+    var recaptchaToken: String? = null,
+    
+    var phone: String = ""
+)
+```
+
+#### **✅ ONLY use @JsonProperty when needed:**
+
+```kotlin
+data class SpecialRequest(
+    var userId: String,               // Automatically maps to "user_id"
+    
+    var customField: String,
+    
+    var uid: String
+)
+```
+
+Example JSON request/response:
 
 ```json
 {
   "phone": "9591781662",
-  "country_code": 91,
-  "recaptcha_token": "dev-dummy-token-1754245041724"
+  "country_code": 91,              // Automatically converted from countryCode
+  "recaptcha_token": "dev-dummy-token", // Automatically converted from recaptchaToken
+  "user_id": "12345",              // Automatically converted from userId
+  "workspace_type": "BUSINESS"     // Automatically converted from workspaceType
 }
 ```
 
-This approach follows REST API industry standards and maintains consistency with database underscore naming convention.
+**Key Rules:**
+1. **Never add @JsonProperty for standard camelCase to snake_case conversions**
+2. **Let the global Jackson configuration handle the naming automatically** 
+3. **Only use @JsonProperty for special cases that don't follow the standard pattern**
+4. **This keeps DTOs clean and leverages the global configuration**
+
+This approach follows REST API industry standards and maintains consistency with database underscore naming convention while keeping code clean and maintainable.
 
 ### Multi-Device Authentication Usage
 
@@ -1361,28 +1386,6 @@ WorkspaceTeam {
 }
 ```
 
-**Department Resolution Logic:**
-```kotlin
-// Department comes from primary team
-member.primaryTeam?.department  // Single source of truth
-```
-
-#### **❌ ANTI-PATTERN AVOIDED: Redundant Department Storage**
-
-**Previous problematic approach (fixed):**
-```kotlin
-// ❌ REMOVED: Redundant department field
-WorkspaceMember {
-    department: String?              // REMOVED - caused data inconsistency
-    teamIds: Set<String>
-    primaryTeamId: String?
-}
-
-WorkspaceTeam {
-    department: String?              // Could conflict with member.department
-}
-```
-
 **Problems with redundant storage:**
 - **Data Inconsistency**: Member.department could differ from team.department
 - **Maintenance Overhead**: Two places to update when department changes  
@@ -1398,19 +1401,6 @@ MemberListResponse {
     user: User?                      // Single source for user data
     role: WorkspaceRole
     // ... other member-specific fields
-}
-```
-
-**❌ ANTI-PATTERN REMOVED: Field Duplication**
-```kotlin
-// ❌ REMOVED: Redundant user field duplication
-MemberListResponse {
-    userId: String
-    email: String?                   // REMOVED - duplicated user.email
-    firstName: String?               // REMOVED - duplicated user.firstName  
-    lastName: String?                // REMOVED - duplicated user.lastName
-    avatarUrl: String?               // REMOVED - duplicated user.avatarUrl
-    user: User?                      // Kept as single source of truth
 }
 ```
 
@@ -1431,10 +1421,8 @@ fun findByWorkspaceIdAndIsActiveTrueOrderByJoinedAtDesc(
 ): Page<WorkspaceMember>
 ```
 
-**❌ ANTI-PATTERN REMOVED: Map Projections**
 ```kotlin
-// ❌ REMOVED: Unsafe Map projections
-fun findActiveMembers(workspaceId: String, pageable: Pageable): Page<Map<String, Any>>
+
 ```
 
 **Problems with Map projections:**

@@ -2,7 +2,6 @@ package com.ampairs.workspace.model.dto
 
 import com.ampairs.workspace.model.enums.WorkspaceRole
 import com.ampairs.workspace.security.WorkspacePermission
-import com.fasterxml.jackson.annotation.JsonProperty
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 
@@ -12,43 +11,33 @@ import jakarta.validation.constraints.NotBlank
 data class InviteMemberRequest(
     @field:NotBlank(message = "Email is required")
     @field:Email(message = "Invalid email format")
-    @JsonProperty("email")
-    val email: String,
+        val email: String,
 
-    @JsonProperty("role")
-    val role: WorkspaceRole = WorkspaceRole.MEMBER,
+        val role: WorkspaceRole = WorkspaceRole.MEMBER,
 
-    @JsonProperty("message")
-    val message: String? = null,
+        val message: String? = null,
 
-    @JsonProperty("send_email")
-    val sendEmail: Boolean = true,
+        val sendEmail: Boolean = true,
 )
 
 /**
  * Request DTO for updating member role and permissions
  */
 data class UpdateMemberRequest(
-    @JsonProperty("role")
-    val role: WorkspaceRole? = null,
+        val role: WorkspaceRole? = null,
 
-    @JsonProperty("permissions")
-    val customPermissions: Set<WorkspacePermission>? = null,
+        val customPermissions: Set<WorkspacePermission>? = null,
 
-    @JsonProperty("is_active")
-    val isActive: Boolean? = null,
+        val isActive: Boolean? = null,
 )
 
 /**
  * Request DTO for bulk member operations
  */
 data class BulkMemberRequest(
-    @JsonProperty("member_ids")
-    val memberIds: List<String>,
+        val memberIds: List<String>,
 
-    @JsonProperty("action")
-    val action: String, // "activate", "deactivate", "remove", "update_role"
+        val action: String, // "activate", "deactivate", "remove", "update_role"
 
-    @JsonProperty("role")
-    val role: WorkspaceRole? = null,
+        val role: WorkspaceRole? = null,
 )

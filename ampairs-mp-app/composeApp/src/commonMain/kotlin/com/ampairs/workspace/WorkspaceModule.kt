@@ -11,8 +11,10 @@ import com.ampairs.workspace.api.WorkspaceModuleApiImpl
 import com.ampairs.workspace.db.WorkspaceRepository
 import com.ampairs.workspace.db.OfflineFirstWorkspaceRepository
 import com.ampairs.workspace.db.WorkspaceMemberRepository
+import com.ampairs.workspace.db.OfflineFirstWorkspaceMemberRepository
 import com.ampairs.workspace.db.WorkspaceInvitationRepository
 import com.ampairs.workspace.manager.WorkspaceDataManager
+import com.ampairs.workspace.manager.WorkspaceMemberDataManager
 import com.ampairs.workspace.viewmodel.WorkspaceCreateViewModel
 import com.ampairs.workspace.viewmodel.WorkspaceListViewModel
 import com.ampairs.workspace.viewmodel.WorkspaceMembersViewModel
@@ -27,6 +29,7 @@ fun workspaceModule() = module {
 
     // Database (provided by platform-specific modules)
     single { get<com.ampairs.workspace.db.WorkspaceRoomDatabase>().workspaceDao() }
+    single { get<com.ampairs.workspace.db.WorkspaceRoomDatabase>().workspaceMemberDao() }
 
     // APIs
     singleOf(::WorkspaceApiImpl) bind WorkspaceApi::class
@@ -37,11 +40,13 @@ fun workspaceModule() = module {
     // Repositories
     single { WorkspaceRepository(get(), get(), get()) } // Legacy repository
     single { OfflineFirstWorkspaceRepository(get(), get(), get()) } // Simplified offline-first repository
-    single { WorkspaceMemberRepository(get(), get()) } // Member management repository
+    single { WorkspaceMemberRepository(get(), get(), get()) } // Member management repository (updated with DAO)
+    single { OfflineFirstWorkspaceMemberRepository(get(), get(), get()) } // Offline-first member repository
     single { WorkspaceInvitationRepository(get(), get()) } // Invitation management repository
     
-    // Data manager for offline-first workspace synchronization
+    // Data managers for offline-first synchronization
     single { WorkspaceDataManager(get(), get()) }
+    single { WorkspaceMemberDataManager(get(), get()) }
 
     // ViewModels with parameter support
     factory { WorkspaceListViewModel(get(), get(), get(), get()) }

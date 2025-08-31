@@ -3,7 +3,6 @@ package com.ampairs.workspace.controller
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.core.security.AuthenticationHelper
-import com.ampairs.core.service.UserService
 import com.ampairs.workspace.model.dto.MemberListResponse
 import com.ampairs.workspace.model.dto.MemberResponse
 import com.ampairs.workspace.model.dto.UpdateMemberRequest
@@ -83,7 +82,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 @SecurityRequirement(name = "WorkspaceContext")
 class WorkspaceMemberController(
     private val memberService: WorkspaceMemberService,
-    private val userService: UserService,
 ) {
 
     @Operation(
@@ -898,33 +896,92 @@ class WorkspaceMemberController(
             example = "WS_ABC123_XYZ789"
         )
         @PathVariable workspaceId: String,
-    ): ApiResponse<Map<String, Any>> {
+    ): ApiResponse<com.ampairs.workspace.model.dto.UserRoleResponse> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
         val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
-        // Return user's permissions in workspace
-        val hasOwnerPermission = memberService.isWorkspaceOwner(workspaceId, userId)
-        val hasAdminPermission =
-            memberService.hasPermission(workspaceId, userId, WorkspacePermission.WORKSPACE_MANAGE.permissionName)
-        val hasMemberPermission =
-            memberService.hasPermission(workspaceId, userId, WorkspacePermission.MEMBER_VIEW.permissionName)
+        // Get member details
+        val member = memberService.getWorkspaceMember(workspaceId, userId)
+            ?: throw IllegalStateException("User is not a member of workspace")
 
-        val result: Map<String, Any> = mapOf(
-            "is_owner" to hasOwnerPermission,
-            "is_admin" to hasAdminPermission,
-            "can_view_members" to hasMemberPermission,
-            "can_invite_members" to memberService.hasPermission(
-                workspaceId,
-                userId,
-                WorkspacePermission.MEMBER_INVITE.permissionName
+        // Build role hierarchy
+        val roleHierarchy = mapOf(
+            "OWNER" to memberService.isWorkspaceOwner(workspaceId, userId),
+            "ADMIN" to (member.role.name in listOf("OWNER", "ADMIN")),
+            "MANAGER" to (member.role.name in listOf("OWNER", "ADMIN", "MANAGER")),
+            "MEMBER" to (member.role.name in listOf("OWNER", "ADMIN", "MANAGER", "MEMBER")),
+            "VIEWER" to true
+        )
+
+        // Build detailed permissions
+        val permissions = mapOf(
+            "workspace" to mapOf(
+                "manage" to memberService.hasPermission(
+                    workspaceId,
+                    userId,
+                    WorkspacePermission.WORKSPACE_MANAGE.permissionName
+                ),
+                "view" to true,
+                "delete" to memberService.hasPermission(
+                    workspaceId,
+                    userId,
+                    WorkspacePermission.WORKSPACE_DELETE.permissionName
+                )
             ),
-            "can_manage_workspace" to memberService.hasPermission(
-                workspaceId,
-                userId,
-                WorkspacePermission.WORKSPACE_MANAGE.permissionName
+            "members" to mapOf(
+                "view" to memberService.hasPermission(
+                    workspaceId,
+                    userId,
+                    WorkspacePermission.MEMBER_VIEW.permissionName
+                ),
+                "invite" to memberService.hasPermission(
+                    workspaceId,
+                    userId,
+                    WorkspacePermission.MEMBER_INVITE.permissionName
+                ),
+                "manage" to memberService.hasPermission(
+                    workspaceId,
+                    userId,
+                    WorkspacePermission.MEMBER_MANAGE.permissionName
+                ),
+                "remove" to memberService.hasPermission(
+                    workspaceId,
+                    userId,
+                    WorkspacePermission.MEMBER_DELETE.permissionName
+                )
             )
         )
+
+        // Module access based on role
+        val moduleAccess = when (member.role) {
+            com.ampairs.workspace.model.enums.WorkspaceRole.OWNER,
+            com.ampairs.workspace.model.enums.WorkspaceRole.ADMIN -> listOf("all")
+
+            com.ampairs.workspace.model.enums.WorkspaceRole.MANAGER -> listOf(
+                "customer",
+                "product",
+                "order",
+                "invoice",
+                "reports"
+            )
+
+            com.ampairs.workspace.model.enums.WorkspaceRole.MEMBER -> listOf("customer", "product", "order")
+            else -> listOf("customer")
+        }
+
+        val result = com.ampairs.workspace.model.dto.UserRoleResponse(
+            userId = userId,
+            workspaceId = workspaceId,
+            currentRole = member.role.name,
+            membershipStatus = if (member.isActive) "ACTIVE" else "INACTIVE",
+            joinedAt = (member.joinedAt ?: member.createdAt ?: java.time.LocalDateTime.now()).toString(),
+            lastActivity = member.lastActiveAt?.toString(),
+            roleHierarchy = roleHierarchy,
+            permissions = permissions,
+            moduleAccess = moduleAccess
+        )
+
         return ApiResponse.success(result)
     }
 

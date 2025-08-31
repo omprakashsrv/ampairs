@@ -4,61 +4,44 @@ import com.ampairs.core.domain.User
 import com.ampairs.workspace.model.WorkspaceMember
 import com.ampairs.workspace.security.WorkspacePermission
 import com.ampairs.workspace.model.enums.WorkspaceRole
-import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.LocalDateTime
 
 /**
  * Response DTO for workspace member information
  */
 data class MemberResponse(
-    @field:JsonProperty("id")
     val id: String,
 
-    @field:JsonProperty("user_id")
     val userId: String,
 
-    @field:JsonProperty("workspace_id")
     val workspaceId: String,
 
     // Flattened user fields (kept for backwards compatibility)
-    @field:JsonProperty("email")
     val email: String? = null,
 
-    @field:JsonProperty("first_name")
     val firstName: String? = null,
 
-    @field:JsonProperty("last_name")
     val lastName: String? = null,
 
-    @field:JsonProperty("avatar_url")
     val avatarUrl: String? = null,
 
     // User details from core User interface
-    @field:JsonProperty("user")
     val user: User? = null,
 
-    @field:JsonProperty("role")
     val role: WorkspaceRole,
 
-    @field:JsonProperty("permissions")
     val permissions: Set<WorkspacePermission>,
 
-    @field:JsonProperty("is_active")
     val isActive: Boolean,
 
-    @field:JsonProperty("joined_at")
     val joinedAt: LocalDateTime,
 
-    @field:JsonProperty("last_activity_at")
     val lastActivityAt: LocalDateTime?,
 
-    @field:JsonProperty("invitation_accepted_at")
     val invitationAcceptedAt: LocalDateTime?,
 
-    @field:JsonProperty("created_at")
     val createdAt: LocalDateTime,
 
-    @field:JsonProperty("updated_at")
     val updatedAt: LocalDateTime,
 )
 
@@ -66,26 +49,19 @@ data class MemberResponse(
  * Simplified member response for lists
  */
 data class MemberListResponse(
-    @field:JsonProperty("id")
     val id: String,
 
-    @field:JsonProperty("user_id")
     val userId: String,
 
     // User details from core User interface
-    @field:JsonProperty("user")
     val user: User? = null,
 
-    @field:JsonProperty("role")
     val role: WorkspaceRole,
 
-    @field:JsonProperty("is_active")
     val isActive: Boolean,
 
-    @field:JsonProperty("joined_at")
     val joinedAt: LocalDateTime,
 
-    @field:JsonProperty("last_activity_at")
     val lastActivityAt: LocalDateTime?,
 )
 
@@ -112,6 +88,21 @@ fun WorkspaceMember.toResponse(userInfo: User? = null): MemberResponse {
         updatedAt = this.updatedAt ?: LocalDateTime.now(),
     )
 }
+
+/**
+ * User role response with detailed permission information
+ */
+data class UserRoleResponse(
+    val userId: String,
+    val workspaceId: String,
+    val currentRole: String,
+    val membershipStatus: String,
+    val joinedAt: String,
+    val lastActivity: String? = null,
+    val roleHierarchy: Map<String, Boolean>,
+    val permissions: Map<String, Map<String, Boolean>>,
+    val moduleAccess: List<String>,
+)
 
 /**
  * Extension function to convert WorkspaceMember entity to MemberListResponse

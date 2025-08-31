@@ -397,7 +397,7 @@ private fun MemberCard(
                     }
 
                     Text(
-                        text = member.email,
+                        text = member.email ?: "",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
