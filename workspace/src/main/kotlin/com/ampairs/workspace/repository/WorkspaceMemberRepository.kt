@@ -4,6 +4,7 @@ import com.ampairs.workspace.model.WorkspaceMember
 import com.ampairs.workspace.model.enums.WorkspaceRole
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
@@ -270,4 +271,40 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
      */
     @Query("SELECT COUNT(*) FROM workspace_members wm WHERE JSON_CONTAINS(wm.team_ids, JSON_QUOTE(:teamId))", nativeQuery = true)
     fun countByTeamIdsContaining(@Param("teamId") teamId: String): Int
+
+    // EntityGraph methods for efficient loading of team data
+
+    /**
+     * Find active members with primary team loaded via EntityGraph
+     */
+    @EntityGraph(attributePaths = ["primaryTeam"])
+    @Query("SELECT wm FROM WorkspaceMember wm WHERE wm.workspaceId = :workspaceId AND wm.isActive = true ORDER BY wm.joinedAt DESC")
+    fun findByWorkspaceIdAndIsActiveTrueWithPrimaryTeam(
+        @Param("workspaceId") workspaceId: String,
+        pageable: Pageable
+    ): Page<WorkspaceMember>
+
+    /**
+     * Find active members with primary team loaded via EntityGraph (list version)
+     */
+    @EntityGraph(attributePaths = ["primaryTeam"])
+    @Query("SELECT wm FROM WorkspaceMember wm WHERE wm.workspaceId = :workspaceId AND wm.isActive = true ORDER BY wm.joinedAt DESC")
+    fun findByWorkspaceIdAndIsActiveTrueWithPrimaryTeam(@Param("workspaceId") workspaceId: String): List<WorkspaceMember>
+
+    /**
+     * Find single member with primary team loaded via EntityGraph
+     */
+    @EntityGraph(attributePaths = ["primaryTeam"])
+    @Query("SELECT wm FROM WorkspaceMember wm WHERE wm.workspaceId = :workspaceId AND wm.userId = :userId AND wm.isActive = true")
+    fun findByWorkspaceIdAndUserIdAndIsActiveTrueWithPrimaryTeam(
+        @Param("workspaceId") workspaceId: String,
+        @Param("userId") userId: String
+    ): Optional<WorkspaceMember>
+
+    /**
+     * Find member by ID with primary team loaded via EntityGraph
+     */
+    @EntityGraph(attributePaths = ["primaryTeam"])
+    @Query("SELECT wm FROM WorkspaceMember wm WHERE wm.uid = :memberId")
+    fun findByIdWithPrimaryTeam(@Param("memberId") memberId: String): Optional<WorkspaceMember>
 }

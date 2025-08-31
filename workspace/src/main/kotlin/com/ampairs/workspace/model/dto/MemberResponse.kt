@@ -7,6 +7,17 @@ import com.ampairs.workspace.model.enums.WorkspaceRole
 import java.time.LocalDateTime
 
 /**
+ * Summary information for teams associated with a member
+ */
+data class TeamSummary(
+    val id: String,
+    val name: String,
+    val teamCode: String,
+    val department: String?,
+    val isPrimaryTeam: Boolean = false
+)
+
+/**
  * Response DTO for workspace member information
  */
 data class MemberResponse(
@@ -43,6 +54,13 @@ data class MemberResponse(
     val createdAt: LocalDateTime,
 
     val updatedAt: LocalDateTime,
+
+    // Team information
+    val primaryTeam: TeamSummary? = null,
+
+    val teams: List<TeamSummary> = emptyList(),
+
+    val jobTitle: String? = null,
 )
 
 /**
@@ -63,12 +81,42 @@ data class MemberListResponse(
     val joinedAt: LocalDateTime,
 
     val lastActivityAt: LocalDateTime?,
+
+    // Team information
+    val primaryTeam: TeamSummary? = null,
+
+    val teams: List<TeamSummary> = emptyList(),
+
+    val jobTitle: String? = null,
 )
 
 /**
  * Extension function to convert WorkspaceMember entity to MemberResponse
+ * Now leverages EntityGraph-loaded teams for efficiency
  */
-fun WorkspaceMember.toResponse(userInfo: User? = null): MemberResponse {
+fun WorkspaceMember.toResponse(
+    userInfo: User? = null,
+    allTeams: List<TeamSummary> = emptyList() // Optional override for additional teams
+): MemberResponse {
+    // Primary team from EntityGraph
+    val primaryTeamSummary = this.primaryTeam?.let { team ->
+        TeamSummary(
+            id = team.uid,
+            name = team.name,
+            teamCode = team.teamCode,
+            department = team.department,
+            isPrimaryTeam = true
+        )
+    }
+
+    // For additional teams, we'll need a service method to populate based on teamIds JSON field
+    // For now, use the provided allTeams parameter or construct from primaryTeam only
+    val teamsList = if (allTeams.isNotEmpty()) {
+        allTeams
+    } else {
+        primaryTeamSummary?.let { listOf(it) } ?: emptyList()
+    }
+
     return MemberResponse(
         id = this.uid,
         userId = this.userId,
@@ -86,6 +134,9 @@ fun WorkspaceMember.toResponse(userInfo: User? = null): MemberResponse {
         invitationAcceptedAt = this.invitationAcceptedAt,
         createdAt = this.createdAt ?: LocalDateTime.now(),
         updatedAt = this.updatedAt ?: LocalDateTime.now(),
+        primaryTeam = primaryTeamSummary,
+        teams = teamsList,
+        jobTitle = this.jobTitle
     )
 }
 
@@ -106,8 +157,31 @@ data class UserRoleResponse(
 
 /**
  * Extension function to convert WorkspaceMember entity to MemberListResponse
+ * Now leverages EntityGraph-loaded teams for efficiency
  */
-fun WorkspaceMember.toListResponse(userInfo: User? = null): MemberListResponse {
+fun WorkspaceMember.toListResponse(
+    userInfo: User? = null,
+    allTeams: List<TeamSummary> = emptyList() // Optional override for additional teams
+): MemberListResponse {
+    // Primary team from EntityGraph
+    val primaryTeamSummary = this.primaryTeam?.let { team ->
+        TeamSummary(
+            id = team.uid,
+            name = team.name,
+            teamCode = team.teamCode,
+            department = team.department,
+            isPrimaryTeam = true
+        )
+    }
+
+    // For additional teams, we'll need a service method to populate based on teamIds JSON field
+    // For now, use the provided allTeams parameter or construct from primaryTeam only
+    val teamsList = if (allTeams.isNotEmpty()) {
+        allTeams
+    } else {
+        primaryTeamSummary?.let { listOf(it) } ?: emptyList()
+    }
+
     return MemberListResponse(
         id = this.uid,
         userId = this.userId,
@@ -115,6 +189,9 @@ fun WorkspaceMember.toListResponse(userInfo: User? = null): MemberListResponse {
         role = this.role,
         isActive = this.isActive,
         joinedAt = this.joinedAt ?: LocalDateTime.now(),
-        lastActivityAt = this.lastActiveAt
+        lastActivityAt = this.lastActiveAt,
+        primaryTeam = primaryTeamSummary,
+        teams = teamsList,
+        jobTitle = this.jobTitle
     )
 }

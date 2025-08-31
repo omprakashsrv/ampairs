@@ -209,17 +209,18 @@ class WorkspaceMemberService(
     }
 
     /**
-     * Get workspace members with optimized loading (using projection to reduce DB queries)
-     * This method uses a custom query projection to efficiently load member details
-     * without additional N+1 queries for user information.
+     * Get workspace members with optimized loading using EntityGraph
+     * This method uses @EntityGraph to efficiently load member details with their primary teams
+     * and avoids N+1 queries for both user information and team relationships.
      *
      * Additionally, if a UserDetailProvider is available, it will batch-load user details
      * from the external user service for enhanced user information.
      */
     fun getWorkspaceMembersOptimized(workspaceId: String, pageable: Pageable): Page<MemberListResponse> {
-        logger.debug("Fetching workspace members with optimized loading for workspace: $workspaceId")
+        logger.debug("Fetching workspace members with optimized loading (EntityGraph) for workspace: $workspaceId")
 
-        val members = memberRepository.findByWorkspaceIdAndIsActiveTrueOrderByJoinedAtDesc(workspaceId, pageable)
+        // Use EntityGraph to load members with primary team in a single query
+        val members = memberRepository.findByWorkspaceIdAndIsActiveTrueWithPrimaryTeam(workspaceId, pageable)
 
         // Extract user IDs for batch loading
         val userIds = members.content.map { it.userId }
@@ -233,6 +234,7 @@ class WorkspaceMemberService(
 
         return members.map { member ->
             val userDetail = userDetails[member.userId]
+            // The toListResponse method will now use the EntityGraph-loaded primaryTeam automatically
             member.toListResponse(userDetail)
         }
     }
@@ -255,13 +257,17 @@ class WorkspaceMemberService(
     }
 
     /**
-     * Get member by ID with user details
+     * Get member by ID with user details and team information using EntityGraph
      */
     fun getMemberById(memberId: String): MemberResponse {
-        val member = findMemberById(memberId)
+        val member = memberRepository.findByIdWithPrimaryTeam(memberId)
+            .orElseThrow { NotFoundException("Member not found: $memberId") }
+        
         val userDetail = if (userDetailProvider.isUserServiceAvailable()) {
             userDetailProvider.getUserDetail(member.userId)
         } else null
+        
+        // The toResponse method will use the EntityGraph-loaded primaryTeam automatically
         return member.toResponse(userDetail)
     }
 
@@ -290,10 +296,10 @@ class WorkspaceMemberService(
     }
 
     /**
-     * Get workspace member by workspace ID and user ID
+     * Get workspace member by workspace ID and user ID with team information using EntityGraph
      */
     fun getWorkspaceMember(workspaceId: String, userId: String): WorkspaceMember? {
-        return memberRepository.findByWorkspaceIdAndUserIdAndIsActiveTrue(workspaceId, userId)
+        return memberRepository.findByWorkspaceIdAndUserIdAndIsActiveTrueWithPrimaryTeam(workspaceId, userId)
             .orElse(null)
     }
 

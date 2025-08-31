@@ -171,6 +171,21 @@ class WorkspaceMember : BaseDomain() {
     // JPA Relationships
     // Note: Removed workspace relationship mapping to avoid column conflict
     // The workspaceId string field above is used instead of entity relationship
+    
+    /**
+     * Primary team relationship
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "primary_team_id", insertable = false, updatable = false)
+    var primaryTeam: WorkspaceTeam? = null
+    
+    /**
+     * All teams this member belongs to
+     * Note: This will be populated via custom repository queries
+     * since team membership is stored in the JSON teamIds field
+     */
+    @Transient
+    var teams: Set<WorkspaceTeam> = setOf()
 
     override fun obtainSeqIdPrefix(): String {
         return Constants.WORKSPACE_MEMBER_PREFIX
