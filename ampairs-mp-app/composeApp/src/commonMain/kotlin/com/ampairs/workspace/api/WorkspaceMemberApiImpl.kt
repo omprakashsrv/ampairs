@@ -7,6 +7,7 @@ import com.ampairs.common.httpClient
 import com.ampairs.common.put
 import com.ampairs.network.model.Response
 import com.ampairs.workspace.api.model.MemberApiModel
+import com.ampairs.workspace.api.model.MemberDetailsResponse
 import com.ampairs.workspace.api.model.PagedMemberResponse
 import com.ampairs.workspace.api.model.UpdateMemberRequest
 import com.ampairs.workspace.api.model.UserRoleResponse
@@ -41,7 +42,7 @@ class WorkspaceMemberApiImpl(
     override suspend fun getMemberDetails(
         workspaceId: String,
         memberId: String,
-    ): Response<MemberApiModel> {
+    ): Response<MemberDetailsResponse> {
         return get(client, "$WORKSPACE_ENDPOINT/workspace/v1/$workspaceId/members/$memberId")
     }
 
@@ -49,7 +50,7 @@ class WorkspaceMemberApiImpl(
         workspaceId: String,
         memberId: String,
         request: UpdateMemberRequest,
-    ): Response<MemberApiModel> {
+    ): Response<MemberDetailsResponse> {
         return put(client, "$WORKSPACE_ENDPOINT/workspace/v1/$workspaceId/members/$memberId", request)
     }
 

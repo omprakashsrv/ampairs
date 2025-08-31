@@ -1,9 +1,7 @@
 package com.ampairs.workspace.api.model
 
-import kotlinx.serialization.Contextual
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import java.util.Objects
 
 // ===== CORE WORKSPACE MODELS =====
 
@@ -110,17 +108,63 @@ data class MemberApiModel(
     @SerialName("id") val id: String,
     @SerialName("user_id") val userId: String,
     @SerialName("workspace_id") val workspaceId: String,
-    @SerialName("email") val email: String,
     @SerialName("name") val name: String,
+    @SerialName("email") val email: String? = null,
+    @SerialName("phone") val phone: String? = null,
     @SerialName("role") val role: String,
     @SerialName("status") val status: String,
     @SerialName("joined_at") val joinedAt: String,
     @SerialName("last_activity") val lastActivity: String? = null,
     @SerialName("permissions") val permissions: List<String> = emptyList(),
     @SerialName("avatar_url") val avatarUrl: String? = null,
+)
+
+@Serializable
+data class MemberDetailsResponse(
+    @SerialName("id") val id: String,
+    @SerialName("user_id") val userId: String,
+    @SerialName("workspace_id") val workspaceId: String,
+    
+    // Flattened user fields from backend
+    @SerialName("email") val email: String? = null,
     @SerialName("phone") val phone: String? = null,
+    @SerialName("first_name") val firstName: String? = null,
+    @SerialName("last_name") val lastName: String? = null,
+    @SerialName("avatar_url") val avatarUrl: String? = null,
+    
+    // Nested user object
+    @SerialName("user") val user: UserApiModel? = null,
+    
+    @SerialName("role") val role: String,
+    @SerialName("permissions") val permissions: List<String> = emptyList(),
+    @SerialName("is_active") val isActive: Boolean,
+    @SerialName("joined_at") val joinedAt: String,
+    @SerialName("last_activity_at") val lastActivityAt: String? = null,
+    @SerialName("invitation_accepted_at") val invitationAcceptedAt: String? = null,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+    
+    // Team information
+    @SerialName("primary_team") val primaryTeam: TeamSummaryApiModel? = null,
+    @SerialName("teams") val teams: List<TeamSummaryApiModel> = emptyList(),
+    @SerialName("job_title") val jobTitle: String? = null,
+) {
+    // Computed properties to match the expected interface
+    val name: String get() = user?.getDisplayName() 
+        ?: listOfNotNull(firstName, lastName).joinToString(" ").takeIf { it.isNotBlank() }
+        ?: email 
+        ?: userId
+
+    val status: String get() = if (isActive) "ACTIVE" else "INACTIVE"
+}
+
+@Serializable
+data class TeamSummaryApiModel(
+    @SerialName("id") val id: String,
+    @SerialName("name") val name: String,
+    @SerialName("team_code") val teamCode: String,
     @SerialName("department") val department: String? = null,
-    @SerialName("is_online") val isOnline: Boolean = false,
+    @SerialName("is_primary_team") val isPrimaryTeam: Boolean = false,
 )
 
 @Serializable
@@ -138,7 +182,6 @@ data class MemberListResponse(
 data class UpdateMemberRequest(
     @SerialName("role") val role: String? = null,
     @SerialName("custom_permissions") val customPermissions: List<String>? = null,
-    @SerialName("department") val department: String? = null,
     @SerialName("reason") val reason: String? = null,
     @SerialName("notify_member") val notifyMember: Boolean = true,
 )

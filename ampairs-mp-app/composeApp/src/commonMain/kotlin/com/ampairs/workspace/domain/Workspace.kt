@@ -149,17 +149,15 @@ data class WorkspaceMember(
     val id: String,
     val userId: String,
     val workspaceId: String,
-    val email: String?,
     val name: String,
+    val email: String?,
+    val phone: String? = null,
     val role: String,
     val status: String,
     val joinedAt: String,
     val lastActivity: String? = null,
     val permissions: Map<String, Any> = emptyMap(),
     val avatarUrl: String? = null,
-    val phone: String? = null,
-    val department: String? = null,
-    val isOnline: Boolean = false,
 )
 
 // ===== WORKSPACE INVITATION DOMAIN MODELS =====
@@ -234,8 +232,6 @@ fun WorkspaceMember.asDatabaseModel(): WorkspaceMemberEntity {
         permissions = if (this.permissions.isEmpty()) "{}" else this.permissions.toString(),
         avatar_url = this.avatarUrl,
         phone = this.phone,
-        department = this.department,
-        is_online = this.isOnline,
     )
 }
 
@@ -253,7 +249,5 @@ fun WorkspaceMemberEntity.asDomainModel(): WorkspaceMember {
         permissions = emptyMap(), // Simplified for now, can be enhanced later
         avatarUrl = this.avatar_url,
         phone = this.phone,
-        department = this.department,
-        isOnline = this.is_online,
     )
 }

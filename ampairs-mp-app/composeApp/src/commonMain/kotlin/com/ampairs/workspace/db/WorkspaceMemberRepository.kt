@@ -2,6 +2,7 @@ package com.ampairs.workspace.db
 
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.model.PageResult
+import com.ampairs.common.flower_core.Resource
 import com.ampairs.workspace.api.WorkspaceMemberApi
 import com.ampairs.workspace.api.model.MemberApiModel // This import might be unused now if MemberListResponse is used instead from the API layer
 import com.ampairs.workspace.api.model.UpdateMemberRequest
@@ -73,10 +74,6 @@ class WorkspaceMemberRepository(
                         permissions = emptyMap(),
                         avatarUrl = memberListItem.user?.profilePictureUrl,
                         phone = memberListItem.user?.phone,
-                        // Data for department is not in MemberListResponse, defaulting to null
-                        department = null,
-                        // Data for isOnline is not in MemberListResponse, defaulting to false
-                        isOnline = false
                     )
                 }
 
@@ -167,30 +164,33 @@ class WorkspaceMemberRepository(
     /**
      * Get detailed member information
      */
-    suspend fun getMemberDetails(workspaceId: String, memberId: String): WorkspaceMember {
-        val response = memberApi.getMemberDetails(workspaceId, memberId)
+    suspend fun getMemberDetails(workspaceId: String, memberId: String): Resource<WorkspaceMember> {
+        return try {
+            val response = memberApi.getMemberDetails(workspaceId, memberId)
 
-        return if (response.error == null && response.data != null) {
-            val memberData = response.data!! // This might also need updates if its response structure changed
+            if (response.error == null && response.data != null) {
+                val memberData = response.data!! // This might also need updates if its response structure changed
 
-            WorkspaceMember(
-                id = memberData.id,
-                userId = memberData.userId,
-                workspaceId = memberData.workspaceId,
-                email = memberData.email,
-                name = memberData.name,
-                role = memberData.role,
-                status = memberData.status,
-                joinedAt = memberData.joinedAt,
-                lastActivity = memberData.lastActivity,
-                permissions = memberData.permissions.associateWith { true },
-                avatarUrl = memberData.avatarUrl,
-                phone = memberData.phone,
-                department = memberData.department,
-                isOnline = memberData.isOnline
-            )
-        } else {
-            throw Exception(response.error?.message ?: "Failed to fetch member details")
+                val member = WorkspaceMember(
+                    id = memberData.id,
+                    userId = memberData.userId,
+                    workspaceId = memberData.workspaceId,
+                    email = memberData.email,
+                    name = memberData.name,
+                    role = memberData.role,
+                    status = memberData.status,
+                    joinedAt = memberData.joinedAt,
+                    lastActivity = memberData.lastActivityAt,
+                    permissions = memberData.permissions.associateWith { true },
+                    avatarUrl = memberData.avatarUrl,
+                    phone = memberData.user?.phone,
+                )
+                Resource.success(member)
+            } else {
+                Resource.error(response.error?.message ?: "Failed to fetch member details", "API_ERROR", null)
+            }
+        } catch (e: Exception) {
+            Resource.error(e.message ?: "Failed to fetch member details", "EXCEPTION", null)
         }
     }
 
@@ -201,73 +201,72 @@ class WorkspaceMemberRepository(
         workspaceId: String,
         memberId: String,
         request: UpdateMemberRequest,
-    ): WorkspaceMember {
-        val response = memberApi.updateMember(workspaceId, memberId, request)
+    ): Resource<WorkspaceMember> {
+        return try {
+            val response = memberApi.updateMember(workspaceId, memberId, request)
 
-        return if (response.error == null && response.data != null) {
-            val memberData = response.data!! // This might also need updates if its response structure changed
+            if (response.error == null && response.data != null) {
+                val memberData = response.data!! // This might also need updates if its response structure changed
 
-            WorkspaceMember(
-                id = memberData.id,
-                userId = memberData.userId,
-                workspaceId = memberData.workspaceId,
-                email = memberData.email,
-                name = memberData.name,
-                role = memberData.role,
-                status = memberData.status,
-                joinedAt = memberData.joinedAt,
-                lastActivity = memberData.lastActivity,
-                permissions = memberData.permissions.associateWith { true },
-                avatarUrl = memberData.avatarUrl,
-                phone = memberData.phone,
-                department = memberData.department,
-                isOnline = memberData.isOnline
-            )
-        } else {
-            throw Exception(response.error?.message ?: "Failed to update member")
+                val member = WorkspaceMember(
+                    id = memberData.id,
+                    userId = memberData.userId,
+                    workspaceId = memberData.workspaceId,
+                    email = memberData.email,
+                    name = memberData.name,
+                    role = memberData.role,
+                    status = memberData.status,
+                    joinedAt = memberData.joinedAt,
+                    lastActivity = memberData.lastActivityAt,
+                    permissions = memberData.permissions.associateWith { true },
+                    avatarUrl = memberData.avatarUrl,
+                    phone = memberData.user?.phone,
+                )
+                Resource.success(member)
+            } else {
+                Resource.error(response.error?.message ?: "Failed to update member", "API_ERROR", null)
+            }
+        } catch (e: Exception) {
+            Resource.error(e.message ?: "Failed to update member", "EXCEPTION", null)
         }
     }
 
     /**
      * Remove member from workspace
      */
-    suspend fun removeMember(workspaceId: String, memberId: String): String {
-        val response = memberApi.removeMember(workspaceId, memberId)
+    suspend fun removeMember(workspaceId: String, memberId: String): Resource<String> {
+        return try {
+            val response = memberApi.removeMember(workspaceId, memberId)
 
-        return if (response.error == null && response.data != null) {
-            // Remove from local database
-            val currentUserId = getCurrentUserId()
-            if (currentUserId != null) {
-                memberDao.deleteWorkspaceMemberForUser(currentUserId, workspaceId, memberId)
+            if (response.error == null && response.data != null) {
+                // Remove from local database
+                val currentUserId = getCurrentUserId()
+                if (currentUserId != null) {
+                    memberDao.deleteWorkspaceMemberForUser(currentUserId, workspaceId, memberId)
+                }
+                Resource.success(response.data!!)
+            } else {
+                Resource.error(response.error?.message ?: "Failed to remove member", "API_ERROR", null)
             }
-            response.data!!
-        } else {
-            throw Exception(response.error?.message ?: "Failed to remove member")
+        } catch (e: Exception) {
+            Resource.error(e.message ?: "Failed to remove member", "EXCEPTION", null)
         }
     }
 
     /**
      * Get current user's role and permissions in workspace
      */
-    suspend fun getMyRole(workspaceId: String): UserRole {
-        val response = memberApi.getMyRole(workspaceId)
+    suspend fun getMyRole(workspaceId: String): Resource<UserRoleResponse> {
+        return try {
+            val response = memberApi.getMyRole(workspaceId)
 
-        return if (response.error == null && response.data != null) {
-            val roleData = response.data!!
-
-            UserRole(
-                userId = roleData.userId,
-                workspaceId = roleData.workspaceId,
-                currentRole = roleData.currentRole,
-                membershipStatus = roleData.membershipStatus,
-                joinedAt = roleData.joinedAt,
-                lastActivity = roleData.lastActivity,
-                roleHierarchy = roleData.roleHierarchy,
-                permissions = roleData.permissions,
-                moduleAccess = roleData.moduleAccess,
-            )
-        } else {
-            throw Exception(response.error?.message ?: "Failed to get user role")
+            if (response.error == null && response.data != null) {
+                Resource.success(response.data!!)
+            } else {
+                Resource.error(response.error?.message ?: "Failed to get user role", "API_ERROR", null)
+            }
+        } catch (e: Exception) {
+            Resource.error(e.message ?: "Failed to get user role", "EXCEPTION", null)
         }
     }
 

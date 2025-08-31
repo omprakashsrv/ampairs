@@ -98,7 +98,7 @@ fun WorkspaceMembersScreen(
         if (state.members.isNotEmpty()) {
             MembersSummaryCard(
                 totalMembers = state.members.size,
-                onlineMembers = state.members.count { it.isOnline },
+                activeMembers = state.members.count { it.status == "ACTIVE" },
                 recentlyActive = state.members.count {
                     it.lastActivity != null &&
                             // Simple check for recent activity (could be enhanced with proper date parsing)
@@ -139,9 +139,6 @@ fun WorkspaceMembersScreen(
                         MemberCard(
                             member = member,
                             onMemberClick = { onMemberClick(member.id) },
-                            onRoleUpdate = { newRole ->
-                                viewModel.updateMemberRole(member.id, newRole)
-                            },
                             canManageMembers = state.currentUserRole?.permissions
                                 ?.get("member_management")
                                 ?.get("can_manage_members") == true
@@ -272,7 +269,7 @@ private fun MemberFiltersSection(
 @Composable
 private fun MembersSummaryCard(
     totalMembers: Int,
-    onlineMembers: Int,
+    activeMembers: Int,
     recentlyActive: Int,
 ) {
     Card(
@@ -292,10 +289,9 @@ private fun MembersSummaryCard(
             )
 
             SummaryItem(
-                icon = Icons.Default.Circle,
-                value = onlineMembers.toString(),
-                label = "Online Now",
-                iconTint = MaterialTheme.colorScheme.primary
+                icon = Icons.Default.Person,
+                value = activeMembers.toString(),
+                label = "Active Members"
             )
 
             SummaryItem(
@@ -343,7 +339,6 @@ private fun SummaryItem(
 private fun MemberCard(
     member: WorkspaceMember,
     onMemberClick: () -> Unit,
-    onRoleUpdate: (String) -> Unit,
     canManageMembers: Boolean,
 ) {
     Card(
@@ -376,25 +371,11 @@ private fun MemberCard(
                         .weight(1f)
                         .padding(start = 12.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = member.name,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-
-                        if (member.isOnline) {
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Icon(
-                                Icons.Default.Circle,
-                                contentDescription = "Online",
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(8.dp)
-                            )
-                        }
-                    }
+                    Text(
+                        text = member.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Medium
+                    )
 
                     Text(
                         text = member.email ?: "",
@@ -402,20 +383,7 @@ private fun MemberCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        MemberRoleChip(role = member.role)
-
-                        member.department?.let { dept ->
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "• $dept",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
+                    MemberRoleChip(role = member.role)
                 }
 
                 if (canManageMembers && member.role != "OWNER") {

@@ -54,16 +54,14 @@ class OfflineFirstWorkspaceMemberRepository(
                 userId = memberData.userId,
                 workspaceId = memberData.workspaceId,
                 email = memberData.email,
+                phone = memberData.phone,
                 name = memberData.name,
                 role = memberData.role,
                 status = memberData.status,
                 joinedAt = memberData.joinedAt,
-                lastActivity = memberData.lastActivity,
+                lastActivity = memberData.lastActivityAt ?: "",
                 permissions = memberData.permissions.associateWith { true },
                 avatarUrl = memberData.avatarUrl,
-                phone = memberData.phone,
-                department = memberData.department,
-                isOnline = memberData.isOnline
             )
 
             // Update in local database with current user association
@@ -144,8 +142,6 @@ class OfflineFirstWorkspaceMemberRepository(
                         permissions = emptyMap(),
                         avatarUrl = memberListItem.user?.profilePictureUrl,
                         phone = memberListItem.user?.phone,
-                        department = null,
-                        isOnline = false
                     )
                 }
 

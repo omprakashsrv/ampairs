@@ -16,6 +16,7 @@ import com.ampairs.common.ui.AppScreenWithHeader
 import com.ampairs.workspace.ui.WorkspaceCreateScreen
 import com.ampairs.workspace.ui.WorkspaceListScreen
 import com.ampairs.workspace.ui.WorkspaceMembersScreen
+import com.ampairs.workspace.ui.MemberDetailsScreen
 import com.ampairs.workspace.ui.WorkspaceInvitationsScreen
 import com.ampairs.workspace.ui.WorkspaceModulesScreen
 import org.koin.compose.koinInject
@@ -130,23 +131,21 @@ fun NavGraphBuilder.workspaceNavigation(navController: NavController, onWorkspac
             }
         }
 
-        // TODO: Add member detail screen
+        // Member detail screen
         composable<WorkspaceRoute.MemberDetail> { backStackEntry ->
             val memberDetailRoute = backStackEntry.toRoute<WorkspaceRoute.MemberDetail>()
-            // TODO: Implement member detail screen
             AppScreenWithHeader(
                 navController = navController,
                 isWorkspaceSelection = false
             ) { paddingValues ->
-                // Placeholder - implement member detail screen
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Member Detail Screen - Coming Soon")
-                }
+                MemberDetailsScreen(
+                    workspaceId = memberDetailRoute.workspaceId,
+                    memberId = memberDetailRoute.memberId,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    modifier = Modifier.padding(paddingValues)
+                )
             }
         }
 

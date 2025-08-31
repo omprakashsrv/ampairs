@@ -18,6 +18,7 @@ import com.ampairs.workspace.manager.WorkspaceMemberDataManager
 import com.ampairs.workspace.viewmodel.WorkspaceCreateViewModel
 import com.ampairs.workspace.viewmodel.WorkspaceListViewModel
 import com.ampairs.workspace.viewmodel.WorkspaceMembersViewModel
+import com.ampairs.workspace.viewmodel.MemberDetailsViewModel
 import com.ampairs.workspace.viewmodel.WorkspaceInvitationsViewModel
 import com.ampairs.workspace.viewmodel.WorkspaceModulesViewModel
 import org.koin.core.module.dsl.factoryOf
@@ -54,6 +55,7 @@ fun workspaceModule() = module {
 
     // Member and invitation ViewModels with workspaceId parameter
     factory { (workspaceId: String) -> WorkspaceMembersViewModel(workspaceId, get()) }
+    factory { (workspaceId: String, memberId: String) -> MemberDetailsViewModel(workspaceId, memberId, get()) }
     factory { (workspaceId: String) -> WorkspaceInvitationsViewModel(workspaceId, get()) }
 
     // Module management ViewModel

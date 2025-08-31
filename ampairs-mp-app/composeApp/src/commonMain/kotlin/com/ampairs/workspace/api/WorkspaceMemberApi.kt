@@ -2,6 +2,7 @@ package com.ampairs.workspace.api
 
 import com.ampairs.network.model.Response
 import com.ampairs.workspace.api.model.MemberApiModel
+import com.ampairs.workspace.api.model.MemberDetailsResponse
 import com.ampairs.workspace.api.model.PagedMemberResponse
 import com.ampairs.workspace.api.model.UpdateMemberRequest
 import com.ampairs.workspace.api.model.UserRoleResponse
@@ -42,7 +43,7 @@ interface WorkspaceMemberApi {
     suspend fun getMemberDetails(
         workspaceId: String,
         memberId: String,
-    ): Response<MemberApiModel>
+    ): Response<MemberDetailsResponse>
 
     /**
      * Update member role and permissions
@@ -56,7 +57,7 @@ interface WorkspaceMemberApi {
         workspaceId: String,
         memberId: String,
         request: UpdateMemberRequest,
-    ): Response<MemberApiModel>
+    ): Response<MemberDetailsResponse>
 
     /**
      * Remove member from workspace
