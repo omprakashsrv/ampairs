@@ -17,14 +17,12 @@ abstract class BaseDomain {
 
     @Column(
         name = "created_at",
-        columnDefinition = "TIMESTAMP default CURRENT_TIMESTAMP",
         insertable = false, updatable = false, nullable = false
     )
     var createdAt: LocalDateTime? = null
 
     @Column(
         name = "updated_at",
-        columnDefinition = "TIMESTAMP default CURRENT_TIMESTAMP on update CURRENT_TIMESTAMP",
         insertable = false,
         updatable = false,
         nullable = false
@@ -33,7 +31,6 @@ abstract class BaseDomain {
 
     @Column(
         name = "last_updated",
-        columnDefinition = "BIGINT default (UNIX_TIMESTAMP()*1000)",
         insertable = false,
         updatable = false,
         nullable = false
@@ -46,11 +43,17 @@ abstract class BaseDomain {
         if (uid == "") {
             uid = Helper.generateUniqueId(obtainSeqIdPrefix(), com.ampairs.core.config.Constants.ID_LENGTH)
         }
+        val now = LocalDateTime.now()
+        if (createdAt == null) {
+            createdAt = now
+        }
+        updatedAt = now
         lastUpdated = System.currentTimeMillis()
     }
 
     @PreUpdate
     protected fun preUpdate() {
+        updatedAt = LocalDateTime.now()
         lastUpdated = System.currentTimeMillis()
     }
 

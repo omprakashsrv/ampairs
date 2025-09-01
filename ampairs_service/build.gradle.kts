@@ -76,6 +76,7 @@ dependencies {
 
     // Database
     runtimeOnly("com.mysql:mysql-connector-j")
+    runtimeOnly("org.postgresql:postgresql")
 
     // Spring Cloud AWS - Auto-configuration for AWS services
     implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.3.0"))

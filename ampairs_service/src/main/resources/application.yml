@@ -106,10 +106,10 @@ spring:
     cache-specs:
       userDetails: maximumSize=1000,expireAfterWrite=${CACHE_USER_DETAILS_EXPIRE:300s}
   datasource:
-    url: jdbc:mysql://localhost:3306/munsi_app
-    username: root
-    password: om711590
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${DB_URL:jdbc:mysql://localhost:3306/munsi_app}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:om711590}
+    driver-class-name: ${DB_DRIVER:com.mysql.cj.jdbc.Driver}
     hikari:
       pool-name: main-db-pool
       maximum-pool-size: 20
@@ -129,6 +129,7 @@ spring:
       hibernate:
         format_sql: ${JPA_FORMAT_SQL:true}
         use_sql_comments: ${JPA_USE_SQL_COMMENTS:true}
+        dialect: ${JPA_DIALECT:org.hibernate.dialect.MySQLDialect}
   # Spring Cloud AWS Auto-configuration
   cloud:
     aws:
