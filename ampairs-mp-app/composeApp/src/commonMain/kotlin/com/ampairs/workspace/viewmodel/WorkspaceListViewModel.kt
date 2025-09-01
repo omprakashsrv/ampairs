@@ -5,8 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.UserRepository
-import com.ampairs.workspace.manager.WorkspaceDataManager
-import com.ampairs.workspace.manager.WorkspaceDataState
+import com.ampairs.workspace.store.WorkspaceStore
+import com.ampairs.workspace.store.WorkspaceKey
+import com.ampairs.workspace.domain.Workspace
+import org.mobilenativefoundation.store.store5.StoreReadRequest
+import org.mobilenativefoundation.store.store5.StoreReadResponse
 import com.ampairs.workspace.ui.WorkspaceListState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,7 +19,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 class WorkspaceListViewModel(
-    private val workspaceManager: WorkspaceDataManager,
+    private val workspaceStore: WorkspaceStore,
     private val userWorkspaceRepository: UserWorkspaceRepository,
     private val tokenRepository: TokenRepository,
     private val userRepository: UserRepository,
@@ -64,39 +67,66 @@ class WorkspaceListViewModel(
     fun loadWorkspaces(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             _state.value = _state.value.copy(error = null)
-
-            workspaceManager.getWorkspaces(
-                page = 0,
-                size = 100, // Load more workspaces for better offline experience
-                forceRefresh = forceRefresh
-            ).onEach { dataState ->
-                when (dataState) {
-                    is WorkspaceDataState.Loading -> {
-                        // Show loading only when we don't have any cached data
-                        if (_state.value.workspaces.isEmpty()) {
-                            _state.value = _state.value.copy(isLoading = true)
+            
+            try {
+                val userId = tokenRepository.getCurrentUserId() 
+                    ?: throw Exception("User not authenticated")
+                
+                val key = WorkspaceKey(workspaceId = null, userId = userId)
+                val request = if (forceRefresh) {
+                    StoreReadRequest.fresh(key)
+                } else {
+                    StoreReadRequest.cached(key, refresh = true)
+                }
+                
+                workspaceStore.stream(request).onEach { response ->
+                    when (response) {
+                        is StoreReadResponse.Loading -> {
+                            // Show loading only when we don't have any cached data
+                            if (_state.value.workspaces.isEmpty()) {
+                                _state.value = _state.value.copy(isLoading = true)
+                            }
+                        }
+                        is StoreReadResponse.Data -> {
+                            _state.value = _state.value.copy(
+                                workspaces = response.value,
+                                isLoading = false,
+                                isRefreshing = false,
+                                error = null,
+                                hasNoWorkspaces = response.value.isEmpty(),
+                                isOfflineMode = false // TODO: Check if data came from cache
+                            )
+                        }
+                        is StoreReadResponse.Error.Exception -> {
+                            _state.value = _state.value.copy(
+                                error = response.error.message ?: "Failed to load workspaces",
+                                isLoading = false,
+                                isRefreshing = false,
+                                isOfflineMode = true
+                            )
+                        }
+                        is StoreReadResponse.Error.Message -> {
+                            _state.value = _state.value.copy(
+                                error = response.message,
+                                isLoading = false,
+                                isRefreshing = false,
+                                isOfflineMode = true
+                            )
+                        }
+                        else -> {
+                            // Handle other response types if needed
                         }
                     }
-                    is WorkspaceDataState.Success -> {
-                        _state.value = _state.value.copy(
-                            workspaces = dataState.workspaces,
-                            isLoading = false,
-                            isRefreshing = false,
-                            error = dataState.networkError, // Show network error if exists but keep data
-                            hasNoWorkspaces = dataState.workspaces.isEmpty(),
-                            isOfflineMode = dataState.isFromCache && dataState.networkError != null
-                        )
-                    }
-                    is WorkspaceDataState.Error -> {
-                        _state.value = _state.value.copy(
-                            error = dataState.message,
-                            isLoading = false,
-                            isRefreshing = false,
-                            isOfflineMode = true
-                        )
-                    }
-                }
-            }.launchIn(this)
+                }.launchIn(this)
+                
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    error = e.message ?: "Failed to load workspaces",
+                    isLoading = false,
+                    isRefreshing = false,
+                    isOfflineMode = true
+                )
+            }
         }
     }
 
@@ -104,31 +134,54 @@ class WorkspaceListViewModel(
         viewModelScope.launch {
             _state.value = _state.value.copy(isRefreshing = true, error = null)
             
-            val dataState = workspaceManager.refreshWorkspaces()
-            
-            when (dataState) {
-                is WorkspaceDataState.Success -> {
-                    _state.value = _state.value.copy(
-                        workspaces = dataState.workspaces,
-                        isLoading = false,
-                        isRefreshing = false,
-                        error = dataState.networkError,
-                        hasNoWorkspaces = dataState.workspaces.isEmpty(),
-                        isOfflineMode = dataState.isFromCache && dataState.networkError != null
-                    )
-                }
-                is WorkspaceDataState.Error -> {
-                    _state.value = _state.value.copy(
-                        error = dataState.message,
-                        isLoading = false,
-                        isRefreshing = false,
-                        isOfflineMode = true
-                    )
-                }
-                is WorkspaceDataState.Loading -> {
-                    // Should not happen in refreshWorkspaces but handle anyway
-                    _state.value = _state.value.copy(isRefreshing = true)
-                }
+            try {
+                val userId = tokenRepository.getCurrentUserId() 
+                    ?: throw Exception("User not authenticated")
+                
+                val key = WorkspaceKey(workspaceId = null, userId = userId)
+                val request = StoreReadRequest.fresh(key)
+                
+                workspaceStore.stream(request).onEach { response ->
+                    when (response) {
+                        is StoreReadResponse.Data -> {
+                            _state.value = _state.value.copy(
+                                workspaces = response.value,
+                                isLoading = false,
+                                isRefreshing = false,
+                                error = null,
+                                hasNoWorkspaces = response.value.isEmpty(),
+                                isOfflineMode = false // TODO: Check if data came from cache
+                            )
+                        }
+                        is StoreReadResponse.Error.Exception -> {
+                            _state.value = _state.value.copy(
+                                error = response.error.message ?: "Failed to refresh workspaces",
+                                isLoading = false,
+                                isRefreshing = false,
+                                isOfflineMode = true
+                            )
+                        }
+                        is StoreReadResponse.Error.Message -> {
+                            _state.value = _state.value.copy(
+                                error = response.message,
+                                isLoading = false,
+                                isRefreshing = false,
+                                isOfflineMode = true
+                            )
+                        }
+                        else -> {
+                            // Handle other states
+                        }
+                    }
+                }.launchIn(this)
+                
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    error = e.message ?: "Failed to refresh workspaces",
+                    isLoading = false,
+                    isRefreshing = false,
+                    isOfflineMode = true
+                )
             }
         }
     }
@@ -137,15 +190,56 @@ class WorkspaceListViewModel(
         _state.value = _state.value.copy(searchQuery = query)
 
         viewModelScope.launch {
-            workspaceManager.searchWorkspaces(query)
-                .onEach { workspaces ->
-                    _state.value = _state.value.copy(
-                        workspaces = workspaces,
-                        isLoading = false,
-                        error = null
-                    )
-                }
-                .launchIn(this)
+            try {
+                val userId = tokenRepository.getCurrentUserId() 
+                    ?: throw Exception("User not authenticated")
+                
+                val key = WorkspaceKey(workspaceId = null, userId = userId)
+                val request = StoreReadRequest.cached(key, refresh = false)
+                
+                workspaceStore.stream(request).onEach { response ->
+                    when (response) {
+                        is StoreReadResponse.Data -> {
+                            // Filter workspaces locally based on search query
+                            val filteredWorkspaces = if (query.isBlank()) {
+                                response.value
+                            } else {
+                                response.value.filter { workspace ->
+                                    workspace.name.contains(query, ignoreCase = true) ||
+                                    workspace.description?.contains(query, ignoreCase = true) == true
+                                }
+                            }
+                            
+                            _state.value = _state.value.copy(
+                                workspaces = filteredWorkspaces,
+                                isLoading = false,
+                                error = null
+                            )
+                        }
+                        is StoreReadResponse.Error.Exception -> {
+                            _state.value = _state.value.copy(
+                                error = response.error.message ?: "Failed to search workspaces",
+                                isLoading = false
+                            )
+                        }
+                        is StoreReadResponse.Error.Message -> {
+                            _state.value = _state.value.copy(
+                                error = response.message,
+                                isLoading = false
+                            )
+                        }
+                        else -> {
+                            // Handle other states
+                        }
+                    }
+                }.launchIn(this)
+                
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    error = e.message ?: "Failed to search workspaces",
+                    isLoading = false
+                )
+            }
         }
     }
 
@@ -155,7 +249,7 @@ class WorkspaceListViewModel(
 
     fun logout() {
         viewModelScope.launch {
-            workspaceManager.clearCache()
+            // Store5 handles cache clearing automatically
             tokenRepository.clearTokens()
         }
     }
@@ -165,31 +259,55 @@ class WorkspaceListViewModel(
      */
     fun loadCachedWorkspaces() {
         viewModelScope.launch {
-            workspaceManager.getCachedWorkspaces()
-                .onEach { dataState ->
-                    when (dataState) {
-                        is WorkspaceDataState.Success -> {
+            try {
+                val userId = tokenRepository.getCurrentUserId() 
+                    ?: throw Exception("User not authenticated")
+                
+                val key = WorkspaceKey(workspaceId = null, userId = userId)
+                // Use cached-only request to avoid network calls
+                val request = StoreReadRequest.cached(key, refresh = false)
+                
+                workspaceStore.stream(request).onEach { response ->
+                    when (response) {
+                        is StoreReadResponse.Data -> {
                             _state.value = _state.value.copy(
-                                workspaces = dataState.workspaces,
+                                workspaces = response.value,
                                 isLoading = false,
                                 error = null,
-                                hasNoWorkspaces = dataState.workspaces.isEmpty(),
+                                hasNoWorkspaces = response.value.isEmpty(),
                                 isOfflineMode = true
                             )
                         }
-                        is WorkspaceDataState.Error -> {
+                        is StoreReadResponse.Error.Exception -> {
                             _state.value = _state.value.copy(
                                 error = "No cached data available",
                                 isLoading = false,
                                 isOfflineMode = true
                             )
                         }
-                        is WorkspaceDataState.Loading -> {
+                        is StoreReadResponse.Error.Message -> {
+                            _state.value = _state.value.copy(
+                                error = "No cached data available",
+                                isLoading = false,
+                                isOfflineMode = true
+                            )
+                        }
+                        is StoreReadResponse.Loading -> {
                             _state.value = _state.value.copy(isLoading = true)
                         }
+                        else -> {
+                            // Handle other states
+                        }
                     }
-                }
-                .launchIn(this)
+                }.launchIn(this)
+                
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    error = "No cached data available",
+                    isLoading = false,
+                    isOfflineMode = true
+                )
+            }
         }
     }
 }

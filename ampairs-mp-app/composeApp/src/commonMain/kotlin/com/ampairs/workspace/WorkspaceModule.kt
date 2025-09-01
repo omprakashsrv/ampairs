@@ -14,8 +14,16 @@ import com.ampairs.workspace.db.WorkspaceMemberRepository
 import com.ampairs.workspace.db.OfflineFirstWorkspaceMemberRepository
 import com.ampairs.workspace.db.WorkspaceInvitationRepository
 import com.ampairs.workspace.db.OfflineFirstRolesPermissionsRepository
-import com.ampairs.workspace.manager.WorkspaceDataManager
-import com.ampairs.workspace.manager.WorkspaceMemberDataManager
+import com.ampairs.workspace.store.WorkspaceStoreFactory
+import com.ampairs.workspace.store.WorkspaceMemberStoreFactory
+import com.ampairs.workspace.store.WorkspaceRolesStoreFactory
+import com.ampairs.workspace.store.WorkspacePermissionsStoreFactory
+import com.ampairs.workspace.store.WorkspaceMemberUpdateStoreFactory
+import com.ampairs.workspace.store.WorkspaceStore
+import com.ampairs.workspace.store.WorkspaceMemberStore
+import com.ampairs.workspace.store.WorkspaceRolesStore
+import com.ampairs.workspace.store.WorkspacePermissionsStore
+import com.ampairs.workspace.store.WorkspaceMemberUpdateStore
 import com.ampairs.workspace.viewmodel.WorkspaceCreateViewModel
 import com.ampairs.workspace.viewmodel.WorkspaceListViewModel
 import com.ampairs.workspace.viewmodel.WorkspaceMembersViewModel
@@ -24,6 +32,7 @@ import com.ampairs.workspace.viewmodel.WorkspaceInvitationsViewModel
 import com.ampairs.workspace.viewmodel.WorkspaceModulesViewModel
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
+import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
@@ -41,24 +50,32 @@ fun workspaceModule() = module {
     singleOf(::WorkspaceInvitationApiImpl) bind WorkspaceInvitationApi::class
     singleOf(::WorkspaceModuleApiImpl) bind WorkspaceModuleApi::class
     
-    // Repositories
-    single { WorkspaceRepository(get(), get(), get()) } // Legacy repository
-    single { OfflineFirstWorkspaceRepository(get(), get(), get()) } // Simplified offline-first repository
-    single { WorkspaceMemberRepository(get(), get(), get()) } // Member management repository (updated with DAO)
-    single { OfflineFirstWorkspaceMemberRepository(get(), get(), get()) } // Offline-first member repository
+    // Repositories - now powered by Store5 for offline-first architecture
+    single<WorkspaceRepository> { WorkspaceRepository(get(), get(), get()) }
+    single<WorkspaceMemberRepository> { WorkspaceMemberRepository(get(), get(), get()) }
     single { WorkspaceInvitationRepository(get(), get()) } // Invitation management repository
     single { OfflineFirstRolesPermissionsRepository(get(), get(), get(), get()) } // Roles & permissions offline-first repo
 
-    // Data managers for offline-first synchronization
-    single { WorkspaceDataManager(get(), get()) }
-    single { WorkspaceMemberDataManager(get()) }
+    // Store5 Factories for proper offline-first architecture
+    single { WorkspaceStoreFactory(get(), get()) }
+    single { WorkspaceMemberStoreFactory(get(), get()) }
+    single { WorkspaceRolesStoreFactory(get(), get()) }
+    single { WorkspacePermissionsStoreFactory(get(), get()) }
+    single { WorkspaceMemberUpdateStoreFactory(get(), get()) }
+    
+    // Store instances with qualifiers to prevent conflicts
+    single<WorkspaceStore>(named("workspaceStore")) { get<WorkspaceStoreFactory>().create() }
+    single<WorkspaceMemberStore>(named("workspaceMemberStore")) { get<WorkspaceMemberStoreFactory>().create() }
+    single<WorkspaceRolesStore>(named("workspaceRolesStore")) { get<WorkspaceRolesStoreFactory>().create() }
+    single<WorkspacePermissionsStore>(named("workspacePermissionsStore")) { get<WorkspacePermissionsStoreFactory>().create() }
+    single<WorkspaceMemberUpdateStore>(named("workspaceMemberUpdateStore")) { get<WorkspaceMemberUpdateStoreFactory>().create() }
 
     // ViewModels with parameter support
-    factory { WorkspaceListViewModel(get(), get(), get(), get()) }
+    factory { WorkspaceListViewModel(get(named("workspaceStore")), get(), get(), get()) }
     factoryOf(::WorkspaceCreateViewModel)
 
     // Member and invitation ViewModels with workspaceId parameter
-    factory { (workspaceId: String) -> WorkspaceMembersViewModel(workspaceId, get()) }
+    factory { (workspaceId: String) -> WorkspaceMembersViewModel(workspaceId, get(named("workspaceMemberStore")), get(named("workspaceMemberUpdateStore"))) }
     factory { (workspaceId: String, memberId: String) -> MemberDetailsViewModel(workspaceId, memberId, get(), get()) }
     factory { (workspaceId: String) -> WorkspaceInvitationsViewModel(workspaceId, get()) }
 

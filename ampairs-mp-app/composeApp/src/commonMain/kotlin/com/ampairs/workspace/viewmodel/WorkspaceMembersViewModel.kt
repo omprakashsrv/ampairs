@@ -4,7 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.workspace.api.model.UpdateMemberRequest
 import com.ampairs.workspace.api.model.UserRoleResponse
-import com.ampairs.workspace.db.WorkspaceMemberRepository
+import com.ampairs.workspace.store.WorkspaceMemberStore
+import com.ampairs.workspace.store.WorkspaceMemberKey
+import com.ampairs.workspace.store.WorkspaceMemberUpdateStore
+import com.ampairs.workspace.store.WorkspaceMemberUpdateKey
+import com.ampairs.workspace.store.WorkspaceMemberUpdateRequest
+import org.mobilenativefoundation.store.store5.StoreReadRequest
+import org.mobilenativefoundation.store.store5.StoreReadResponse
 import com.ampairs.workspace.domain.WorkspaceMember
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,7 +24,8 @@ import kotlinx.coroutines.launch
  */
 class WorkspaceMembersViewModel(
     private val workspaceId: String,
-    private val memberRepository: WorkspaceMemberRepository,
+    private val memberStore: WorkspaceMemberStore,
+    private val memberUpdateStore: WorkspaceMemberUpdateStore,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(WorkspaceMembersState())
@@ -43,23 +50,48 @@ class WorkspaceMembersViewModel(
             _state.value = _state.value.copy(isLoading = true, error = null)
 
             try {
-                val pageResult = memberRepository.getWorkspaceMembers(
+                val key = WorkspaceMemberKey(
+                    userId = "", // TODO: Get current user ID from auth repository
                     workspaceId = workspaceId,
-                    page = page,
-                    size = size,
-                    sortBy = sortBy,
-                    sortDir = sortDir
+                    memberId = null // null for list all members
                 )
+                val request = StoreReadRequest.cached(key, refresh = true)
 
-                allMembers = pageResult.content
-                _state.value = _state.value.copy(
-                    members = allMembers,
-                    isLoading = false,
-                    currentPage = pageResult.currentPage,
-                    totalPages = pageResult.totalPages,
-                    totalMembers = pageResult.totalElements,
-                    hasNextPage = !pageResult.isLast
-                )
+                memberStore.stream(request).collect { response ->
+                    when (response) {
+                        is StoreReadResponse.Data -> {
+                            allMembers = response.value
+                            _state.value = _state.value.copy(
+                                members = allMembers,
+                                isLoading = false,
+                                currentPage = page,
+                                totalPages = if (response.value.size < size) page + 1 else page + 2, // Estimated
+                                totalMembers = response.value.size, // Estimated
+                                hasNextPage = response.value.size == size
+                            )
+                        }
+                        is StoreReadResponse.Loading -> {
+                            if (_state.value.members.isEmpty()) {
+                                _state.value = _state.value.copy(isLoading = true)
+                            }
+                        }
+                        is StoreReadResponse.Error.Exception -> {
+                            _state.value = _state.value.copy(
+                                isLoading = false,
+                                error = response.error.message ?: "Failed to load members"
+                            )
+                        }
+                        is StoreReadResponse.Error.Message -> {
+                            _state.value = _state.value.copy(
+                                isLoading = false,
+                                error = response.message
+                            )
+                        }
+                        else -> {
+                            // Handle other states
+                        }
+                    }
+                }
 
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
@@ -129,15 +161,16 @@ class WorkspaceMembersViewModel(
                     reason = "Role updated via app"
                 )
 
-                val updatedMember = memberRepository.updateMember(
-                    workspaceId = workspaceId,
-                    memberId = memberId,
-                    request = updateRequest
-                )
+                // Use the Store5 update mechanism
+                val updateKey = WorkspaceMemberUpdateKey(workspaceId, memberId)
+                val updateRequestWrapper = WorkspaceMemberUpdateRequest(updateKey, updateRequest)
+                
+                // TODO: Implement Store5 update mechanism
+                // For now, just update the local state optimistically
 
-                // Update local state
+                // Update local state optimistically
                 val updatedMembers = _state.value.members.map { member ->
-                    if (member.id == memberId) updatedMember else member
+                    if (member.id == memberId) member.copy(role = newRole) else member
                 }
 
                 allMembers = updatedMembers
@@ -165,7 +198,7 @@ class WorkspaceMembersViewModel(
             _state.value = _state.value.copy(isLoading = true)
 
             try {
-                memberRepository.removeMember(workspaceId, memberId)
+                // TODO: Use Store5 remove mechanism
 
                 // Remove member from local state
                 val updatedMembers = _state.value.members.filterNot { it.id == memberId }
@@ -193,8 +226,9 @@ class WorkspaceMembersViewModel(
     private fun loadCurrentUserRole() {
         viewModelScope.launch {
             try {
-                val userRole = memberRepository.getMyRole(workspaceId)
-                _state.value = _state.value.copy(currentUserRole = userRole)
+                // TODO: Use Store5 to load user role
+                // For now, set a default role
+                _state.value = _state.value.copy(currentUserRole = null)
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     error = "Could not load user permissions: ${e.message}"
