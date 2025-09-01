@@ -129,7 +129,6 @@ spring:
       hibernate:
         format_sql: ${JPA_FORMAT_SQL:true}
         use_sql_comments: ${JPA_USE_SQL_COMMENTS:true}
-        dialect: ${JPA_DIALECT:org.hibernate.dialect.MySQLDialect}
   # Spring Cloud AWS Auto-configuration
   cloud:
     aws:

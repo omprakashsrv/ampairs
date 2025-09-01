@@ -176,7 +176,7 @@ class WorkspaceMember : BaseDomain() {
      * Primary team relationship
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "primary_team_id", insertable = false, updatable = false)
+    @JoinColumn(name = "primary_team_id", referencedColumnName = "uid", insertable = false, updatable = false)
     var primaryTeam: WorkspaceTeam? = null
     
     /**

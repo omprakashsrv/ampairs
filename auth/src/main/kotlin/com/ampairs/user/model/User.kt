@@ -2,10 +2,12 @@ package com.ampairs.user.model
 
 import com.ampairs.core.config.Constants
 import com.ampairs.core.domain.model.BaseDomain
-import com.ampairs.core.domain.User as CoreUser
-import jakarta.persistence.*
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.Table
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
+import com.ampairs.core.domain.User as CoreUser
 
 
 @Entity
@@ -26,10 +28,10 @@ class User : BaseDomain(), UserDetails, CoreUser {
     @Column(name = "user_password", nullable = true)  // Password should be nullable
     var userPassword: String? = null
 
-    @Column(name = "first_name", nullable = false, columnDefinition = "varchar(100) default ''")
+    @Column(name = "first_name", nullable = false, length = 100)
     override var firstName: String = ""
 
-    @Column(name = "last_name", nullable = true, columnDefinition = "varchar(100) default ''")
+    @Column(name = "last_name", nullable = true, length = 100)
     override var lastName: String? = ""
 
     @Column(name = "active", nullable = false)
