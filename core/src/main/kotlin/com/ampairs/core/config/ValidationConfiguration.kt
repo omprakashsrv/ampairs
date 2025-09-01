@@ -5,35 +5,13 @@ import com.ampairs.core.domain.dto.ErrorDetails
 import jakarta.validation.ConstraintViolation
 import jakarta.validation.ConstraintViolationException
 import org.slf4j.LoggerFactory
-import org.springframework.context.annotation.Bean
-import org.springframework.context.annotation.Configuration
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.validation.FieldError
-import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean
-import org.springframework.validation.beanvalidation.MethodValidationPostProcessor
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 
-/**
- * Configuration for comprehensive input validation
- */
-@Configuration
-class ValidationConfiguration {
-
-    @Bean
-    fun validator(): LocalValidatorFactoryBean {
-        return LocalValidatorFactoryBean()
-    }
-
-    @Bean
-    fun methodValidationPostProcessor(): MethodValidationPostProcessor {
-        val processor = MethodValidationPostProcessor()
-        processor.setValidator(validator())
-        return processor
-    }
-}
 
 /**
  * Global exception handler for validation errors

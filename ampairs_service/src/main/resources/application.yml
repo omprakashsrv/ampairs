@@ -101,10 +101,10 @@ spring:
   cache:
     type: caffeine
     caffeine:
-      spec: maximumSize=1000,expireAfterAccess=${CACHE_EXPIRE_AFTER_ACCESS:300s}  # 5 minutes for development
+      spec: maximumSize=1000,expireAfterAccess=${CACHE_EXPIRE_AFTER_ACCESS:300s},recordStats  # 5 minutes for development
     cache-names: userDetails
     cache-specs:
-      userDetails: maximumSize=1000,expireAfterWrite=${CACHE_USER_DETAILS_EXPIRE:300s}
+      userDetails: maximumSize=1000,expireAfterWrite=${CACHE_USER_DETAILS_EXPIRE:300s},recordStats
   datasource:
     url: ${DB_URL:jdbc:mysql://localhost:3306/munsi_app}
     username: ${DB_USERNAME:root}
@@ -125,6 +125,7 @@ spring:
         physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
       ddl-auto: update
     show-sql: ${JPA_SHOW_SQL:false}
+    open-in-view: false
     properties:
       hibernate:
         format_sql: ${JPA_FORMAT_SQL:true}
