@@ -7,6 +7,7 @@ import com.ampairs.workspace.model.WorkspaceMember
 import com.ampairs.workspace.model.dto.*
 import com.ampairs.workspace.model.enums.WorkspaceRole
 import com.ampairs.workspace.repository.WorkspaceMemberRepository
+import com.ampairs.workspace.security.WorkspacePermission
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -262,11 +263,11 @@ class WorkspaceMemberService(
     fun getMemberById(memberId: String): MemberResponse {
         val member = memberRepository.findByIdWithPrimaryTeam(memberId)
             .orElseThrow { NotFoundException("Member not found: $memberId") }
-        
+
         val userDetail = if (userDetailProvider.isUserServiceAvailable()) {
             userDetailProvider.getUserDetail(member.userId)
         } else null
-        
+
         // The toResponse method will use the EntityGraph-loaded primaryTeam automatically
         return member.toResponse(userDetail)
     }
@@ -306,41 +307,39 @@ class WorkspaceMemberService(
     /**
      * Check if user has specific permission
      */
-    fun hasPermission(workspaceId: String, userId: String, permission: String): Boolean {
+    fun hasPermission(workspaceId: String, userId: String, permission: WorkspacePermission): Boolean {
         return try {
             val member = memberRepository.findByWorkspaceIdAndUserIdAndIsActiveTrue(workspaceId, userId)
                 .orElse(null) ?: return false
 
             // Standardized permission mapping with clear, consistent naming
-            when (permission) {
+           return when (permission) {
                 // Workspace management permissions (consolidated)
-                "WORKSPACE_MANAGE", "WORKSPACE_UPDATE", "WORKSPACE_SETTINGS" ->
+                WorkspacePermission.WORKSPACE_MANAGE ->
                     member.role in listOf(WorkspaceRole.OWNER, WorkspaceRole.ADMIN)
 
-                "WORKSPACE_DELETE", "WORKSPACE_ARCHIVE" ->
+                WorkspacePermission.WORKSPACE_DELETE ->
                     member.role in listOf(WorkspaceRole.OWNER, WorkspaceRole.ADMIN)
 
                 // Member management permissions
-                "MEMBER_VIEW" -> true // All active members can view other members
-                "MEMBER_INVITE" -> member.role in listOf(
+                WorkspacePermission.MEMBER_VIEW -> true // All active members can view other members
+                WorkspacePermission.MEMBER_INVITE -> member.role in listOf(
                     WorkspaceRole.OWNER,
                     WorkspaceRole.ADMIN,
                     WorkspaceRole.MANAGER
                 )
 
-                "MEMBER_MANAGE" -> member.role in listOf(
+                WorkspacePermission.MEMBER_MANAGE -> member.role in listOf(
                     WorkspaceRole.OWNER,
                     WorkspaceRole.ADMIN,
                     WorkspaceRole.MANAGER
                 )
 
-                "MEMBER_DELETE", "MEMBER_REMOVE" -> member.role in listOf(
+                WorkspacePermission.MEMBER_DELETE -> member.role in listOf(
                     WorkspaceRole.OWNER,
                     WorkspaceRole.ADMIN,
                     WorkspaceRole.MANAGER
                 )
-
-                else -> false
             }
         } catch (e: Exception) {
             logger.warn("Error checking permissions for user $userId in workspace $workspaceId: ${e.message}")
@@ -350,7 +349,7 @@ class WorkspaceMemberService(
                 memberRepository.existsByWorkspaceIdAndUserIdAndIsActiveTrue(workspaceId, userId)
                 // If exists but couldn't get role, be conservative and deny advanced permissions
                 when (permission) {
-                    "VIEW_MEMBERS" -> true // Basic permission
+                    WorkspacePermission.MEMBER_VIEW -> true // Basic permission
                     else -> false // Conservative approach for advanced permissions
                 }
             } catch (ex: Exception) {
@@ -417,7 +416,7 @@ class WorkspaceMemberService(
         } else {
             memberRepository.findByWorkspaceIdAndIsActiveTrueOrderByJoinedAtDesc(workspaceId, pageable)
         }
-        
+
         // TODO: If advanced user search is needed, implement it at the service layer
         // by fetching user data separately and filtering results
 
@@ -528,13 +527,22 @@ class WorkspaceMemberService(
         pageable: Pageable
     ): Page<MemberListResponse> {
         // Convert string role to enum if provided
-        val roleEnum = role?.takeIf { it != "ALL" }?.let { 
-            try { WorkspaceRole.valueOf(it) } catch (e: Exception) { null }
+        val roleEnum = role?.takeIf { it != "ALL" }?.let {
+            try {
+                WorkspaceRole.valueOf(it)
+            } catch (e: Exception) {
+                null
+            }
         }
-        
+
         // For now, use basic search and filtering
         val members = when {
-            roleEnum != null -> memberRepository.findByWorkspaceIdAndRoleAndIsActiveTrue(workspaceId, roleEnum, pageable)
+            roleEnum != null -> memberRepository.findByWorkspaceIdAndRoleAndIsActiveTrue(
+                workspaceId,
+                roleEnum,
+                pageable
+            )
+
             else -> memberRepository.findByWorkspaceIdAndIsActiveTrue(workspaceId, pageable)
         }
 
@@ -547,7 +555,7 @@ class WorkspaceMemberService(
                 member.toListResponse(ud)
             }
         }
-        
+
         return members.map { it.toListResponse() }
     }
 
@@ -572,46 +580,52 @@ class WorkspaceMemberService(
         val members = memberRepository.findByUidIn(memberIds)
         var updatedCount = 0
         val failedUpdates = mutableListOf<Map<String, String>>()
-        
+
         members.forEach { member ->
             try {
                 if (member.workspaceId == workspaceId) {
-                    role?.let { 
+                    role?.let {
                         try {
                             member.role = WorkspaceRole.valueOf(it)
                         } catch (e: Exception) {
-                            failedUpdates.add(mapOf(
-                                "member_id" to member.uid,
-                                "error" to "Invalid role: $it"
-                            ))
+                            failedUpdates.add(
+                                mapOf(
+                                    "member_id" to member.uid,
+                                    "error" to "Invalid role: $it"
+                                )
+                            )
                             return@forEach
                         }
                     }
-                    
-                    status?.let { 
-                        member.isActive = when(it) {
+
+                    status?.let {
+                        member.isActive = when (it) {
                             "ACTIVE" -> true
                             "INACTIVE" -> false
                             else -> member.isActive
                         }
                     }
-                    
+
                     memberRepository.save(member)
                     updatedCount++
                 } else {
-                    failedUpdates.add(mapOf(
-                        "member_id" to member.uid,
-                        "error" to "Member not in this workspace"
-                    ))
+                    failedUpdates.add(
+                        mapOf(
+                            "member_id" to member.uid,
+                            "error" to "Member not in this workspace"
+                        )
+                    )
                 }
             } catch (e: Exception) {
-                failedUpdates.add(mapOf(
-                    "member_id" to member.uid,
-                    "error" to (e.message ?: "Unknown error")
-                ))
+                failedUpdates.add(
+                    mapOf(
+                        "member_id" to member.uid,
+                        "error" to (e.message ?: "Unknown error")
+                    )
+                )
             }
         }
-        
+
         return mapOf(
             "updated_count" to updatedCount,
             "failed_updates" to failedUpdates
@@ -628,39 +642,45 @@ class WorkspaceMemberService(
         val members = memberRepository.findByUidIn(memberIds)
         var removedCount = 0
         val failedRemovals = mutableListOf<Map<String, String>>()
-        
+
         // Check for owners that would be removed
         val ownerCount = memberRepository.countByWorkspaceIdAndRoleAndIsActiveTrue(workspaceId, WorkspaceRole.OWNER)
         val ownersToRemove = members.count { it.role == WorkspaceRole.OWNER && it.workspaceId == workspaceId }
-        
+
         if (ownerCount.toInt() - ownersToRemove <= 0) {
             return mapOf(
                 "removed_count" to 0,
-                "failed_removals" to listOf(mapOf(
-                    "error" to "Cannot remove all owners from workspace"
-                ))
+                "failed_removals" to listOf(
+                    mapOf(
+                        "error" to "Cannot remove all owners from workspace"
+                    )
+                )
             )
         }
-        
+
         members.forEach { member ->
             try {
                 if (member.workspaceId == workspaceId) {
                     memberRepository.delete(member)
                     removedCount++
                 } else {
-                    failedRemovals.add(mapOf(
-                        "member_id" to member.uid,
-                        "error" to "Member not in this workspace"
-                    ))
+                    failedRemovals.add(
+                        mapOf(
+                            "member_id" to member.uid,
+                            "error" to "Member not in this workspace"
+                        )
+                    )
                 }
             } catch (e: Exception) {
-                failedRemovals.add(mapOf(
-                    "member_id" to member.uid,
-                    "error" to (e.message ?: "Unknown error")
-                ))
+                failedRemovals.add(
+                    mapOf(
+                        "member_id" to member.uid,
+                        "error" to (e.message ?: "Unknown error")
+                    )
+                )
             }
         }
-        
+
         return mapOf(
             "removed_count" to removedCount,
             "failed_removals" to failedRemovals
@@ -671,27 +691,31 @@ class WorkspaceMemberService(
      * Export members data
      */
     fun exportMembers(
-        workspaceId: String, 
-        format: String, 
-        role: String?, 
-        status: String?, 
-        department: String?, 
+        workspaceId: String,
+        format: String,
+        role: String?,
+        status: String?,
+        department: String?,
         searchQuery: String?
     ): ByteArray {
         // Get filtered members
-        val roleEnum = role?.takeIf { it != "ALL" }?.let { 
-            try { WorkspaceRole.valueOf(it) } catch (e: Exception) { null }
+        val roleEnum = role?.takeIf { it != "ALL" }?.let {
+            try {
+                WorkspaceRole.valueOf(it)
+            } catch (e: Exception) {
+                null
+            }
         }
-        
+
         val members = when {
             roleEnum != null -> memberRepository.findByWorkspaceIdAndRole(workspaceId, roleEnum)
             else -> memberRepository.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId)
         }
-        
+
         // Generate CSV content
         val csvContent = StringBuilder()
         csvContent.append("Name,Email,Role,Status,Joined Date,Last Activity\n")
-        
+
         members.forEach { member ->
             csvContent.append("\"${member.userId}\",")  // TODO: Get actual user name when user service is available
             csvContent.append("\"${member.userId}@example.com\",") // TODO: Get actual email
@@ -700,7 +724,7 @@ class WorkspaceMemberService(
             csvContent.append("\"${member.joinedAt}\",")
             csvContent.append("\"${member.lastActiveAt ?: ""}\"\n")
         }
-        
+
         return csvContent.toString().toByteArray(Charsets.UTF_8)
     }
 
@@ -709,21 +733,21 @@ class WorkspaceMemberService(
      */
     fun updateMemberStatus(workspaceId: String, memberId: String, status: String, reason: String?): MemberResponse {
         val member = findMemberById(memberId)
-        
+
         if (member.workspaceId != workspaceId) {
             throw BusinessException("MEMBER_NOT_IN_WORKSPACE", "Member does not belong to this workspace")
         }
 
-        member.isActive
         when (status.uppercase()) {
             "ACTIVE" -> member.isActive = true
             "INACTIVE" -> member.isActive = false
             "SUSPENDED" -> member.isActive = false
             else -> throw BusinessException("INVALID_STATUS", "Invalid status: $status")
         }
-        
+
         val updatedMember = memberRepository.save(member)
-        val userDetail = if (userDetailProvider.isUserServiceAvailable()) userDetailProvider.getUserDetail(updatedMember.userId) else null
+        val userDetail =
+            if (userDetailProvider.isUserServiceAvailable()) userDetailProvider.getUserDetail(updatedMember.userId) else null
         return updatedMember.toResponse(userDetail)
     }
 

@@ -19,15 +19,6 @@ class WorkspaceAuthorizationService(
 ) {
 
     /**
-     * Check if the authenticated user has permission to perform an action on a workspace
-     * Used with @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, 'WORKSPACE_UPDATE')")
-     */
-    fun hasWorkspacePermission(authentication: Authentication, workspaceId: String, permission: String): Boolean {
-        val userId = AuthenticationHelper.getCurrentUserId(authentication) ?: return false
-        return memberService.hasPermission(workspaceId, userId, permission)
-    }
-
-    /**
      * Check if the authenticated user has permission to perform an action on a workspace (enum version)
      * Used with @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).WORKSPACE_UPDATE)")
      */
@@ -37,7 +28,7 @@ class WorkspaceAuthorizationService(
         permission: WorkspacePermission
     ): Boolean {
         val userId = AuthenticationHelper.getCurrentUserId(authentication) ?: return false
-        return memberService.hasPermission(workspaceId, userId, permission.permissionName)
+        return memberService.hasPermission(workspaceId, userId, permission)
     }
 
     /**
@@ -52,17 +43,10 @@ class WorkspaceAuthorizationService(
      * Check if user has permission in the current tenant workspace
      * Used when tenant context is already set by SessionUserFilter
      */
-    fun hasCurrentTenantPermission(authentication: Authentication, permission: String): Boolean {
+    fun hasCurrentTenantPermission(authentication: Authentication, permission: WorkspacePermission): Boolean {
         val workspaceId = TenantContextHolder.getCurrentTenant() ?: return false
         val userId = AuthenticationHelper.getCurrentUserId(authentication) ?: return false
         return memberService.hasPermission(workspaceId, userId, permission)
-    }
-
-    /**
-     * Check if user has permission in the current tenant workspace (enum version)
-     */
-    fun hasCurrentTenantPermission(authentication: Authentication, permission: WorkspacePermission): Boolean {
-        return hasCurrentTenantPermission(authentication, permission.permissionName)
     }
 
     /**
