@@ -1,6 +1,8 @@
 package com.ampairs.workspace.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.domain.dto.ErrorCodes
+import com.ampairs.workspace.model.dto.*
 import com.ampairs.workspace.service.WorkspaceModuleService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
@@ -153,9 +155,13 @@ class WorkspaceModuleController(
     )
     @GetMapping
     @PreAuthorize("@workspaceAuthorizationService.isCurrentTenantMember(authentication)")
-    fun getModules(): ResponseEntity<ApiResponse<Map<String, Any>>> {
+    fun getModules(): ResponseEntity<ApiResponse<WorkspaceModuleOverviewResponse>> {
         val result = workspaceModuleService.getBasicModuleInfo()
-        return ResponseEntity.ok(ApiResponse.success(result))
+        return if (result != null) {
+            ResponseEntity.ok(ApiResponse.success(result))
+        } else {
+            ResponseEntity.badRequest().body(ApiResponse.error(ErrorCodes.INVALID_TENANT_CONTEXT, "No tenant context"))
+        }
     }
 
     @Operation(
@@ -268,10 +274,14 @@ class WorkspaceModuleController(
             required = true,
             example = "MOD_CUSTOMER_CRM_001"
         )
-        @PathVariable moduleId: String
-    ): ResponseEntity<ApiResponse<Map<String, Any>>> {
+        @PathVariable moduleId: String,
+    ): ResponseEntity<ApiResponse<ModuleDetailResponse>> {
         val result = workspaceModuleService.getModuleInfo(moduleId)
-        return ResponseEntity.ok(ApiResponse.success(result))
+        return if (result != null) {
+            ResponseEntity.ok(ApiResponse.success(result))
+        } else {
+            ResponseEntity.notFound().build()
+        }
     }
 
     @Operation(
@@ -428,10 +438,15 @@ class WorkspaceModuleController(
             required = true,
             example = "enable"
         )
-        @RequestParam action: String
-    ): ResponseEntity<ApiResponse<Map<String, Any>>> {
+        @RequestParam action: String,
+    ): ResponseEntity<ApiResponse<ModuleActionResponse>> {
         val result = workspaceModuleService.performAction(moduleId, action)
-        return ResponseEntity.ok(ApiResponse.success(result))
+        return if (result != null) {
+            ResponseEntity.ok(ApiResponse.success(result))
+        } else {
+            ResponseEntity.badRequest()
+                .body(ApiResponse.error(ErrorCodes.BAD_REQUEST, "Invalid action or module not found"))
+        }
     }
 
     @Operation(
@@ -502,9 +517,14 @@ class WorkspaceModuleController(
             example = "false"
         )
         @RequestParam(required = false, defaultValue = "false") featured: Boolean,
-    ): ResponseEntity<ApiResponse<Map<String, Any>>> {
+    ): ResponseEntity<ApiResponse<AvailableModulesCatalogResponse>> {
         val result = workspaceModuleService.getAvailableModules(category, featured)
-        return ResponseEntity.ok(ApiResponse.success(result))
+        return if (result != null) {
+            ResponseEntity.ok(ApiResponse.success(result))
+        } else {
+            ResponseEntity.badRequest()
+                .body(ApiResponse.error(ErrorCodes.BAD_REQUEST, "Invalid category or no tenant context"))
+        }
     }
 
     @Operation(
@@ -552,9 +572,13 @@ class WorkspaceModuleController(
             example = "customer-management"
         )
         @PathVariable moduleCode: String,
-    ): ResponseEntity<ApiResponse<Map<String, Any>>> {
+    ): ResponseEntity<ApiResponse<ModuleInstallationResponse>> {
         val result = workspaceModuleService.installModule(moduleCode)
-        return ResponseEntity.ok(ApiResponse.success(result))
+        return if (result != null) {
+            ResponseEntity.ok(ApiResponse.success(result))
+        } else {
+            ResponseEntity.badRequest().body(ApiResponse.error(ErrorCodes.BAD_REQUEST, "Module installation failed"))
+        }
     }
 
     @Operation(
@@ -600,8 +624,12 @@ class WorkspaceModuleController(
             example = "MOD_CUSTOMER_CRM_001"
         )
         @PathVariable moduleId: String,
-    ): ResponseEntity<ApiResponse<Map<String, Any>>> {
+    ): ResponseEntity<ApiResponse<ModuleUninstallationResponse>> {
         val result = workspaceModuleService.uninstallModule(moduleId)
-        return ResponseEntity.ok(ApiResponse.success(result))
+        return if (result != null) {
+            ResponseEntity.ok(ApiResponse.success(result))
+        } else {
+            ResponseEntity.badRequest().body(ApiResponse.error(ErrorCodes.BAD_REQUEST, "Module uninstallation failed"))
+        }
     }
 }

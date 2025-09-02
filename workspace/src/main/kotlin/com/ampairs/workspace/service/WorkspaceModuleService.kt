@@ -4,6 +4,7 @@ import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.workspace.model.MasterModule
 import com.ampairs.workspace.model.ModuleSettings
 import com.ampairs.workspace.model.WorkspaceModule
+import com.ampairs.workspace.model.dto.*
 import com.ampairs.workspace.model.enums.ModuleCategory
 import com.ampairs.workspace.model.enums.WorkspaceModuleStatus
 import com.ampairs.workspace.repository.MasterModuleRepository
@@ -26,23 +27,22 @@ class WorkspaceModuleService(
     /**
      * Get comprehensive module overview for workspace
      */
-    fun getBasicModuleInfo(): Map<String, Any> {
-        val workspaceId = TenantContextHolder.getCurrentTenant()
-            ?: return mapOf("error" to "No tenant context")
+    fun getBasicModuleInfo(): WorkspaceModuleOverviewResponse? {
+        val workspaceId = TenantContextHolder.getCurrentTenant() ?: return null
 
         val installedModules = workspaceModuleRepository.findByWorkspaceId(workspaceId)
         val activeModules = installedModules.filter { it.enabled && it.status == WorkspaceModuleStatus.ACTIVE }
         val recentActivity = getRecentActivity(workspaceId)
         val moduleCategories = getInstalledCategories(workspaceId)
 
-        return mapOf(
-            "workspaceId" to workspaceId,
-            "message" to "Module management is available",
-            "totalModules" to installedModules.size,
-            "activeModules" to activeModules.size,
-            "moduleCategories" to moduleCategories,
-            "recentActivity" to recentActivity,
-            "quickActions" to listOf(
+        return WorkspaceModuleOverviewResponse(
+            workspaceId = workspaceId,
+            message = "Module management is available",
+            totalModules = installedModules.size,
+            activeModules = activeModules.size,
+            moduleCategories = moduleCategories,
+            recentActivity = recentActivity,
+            quickActions = listOf(
                 "Browse Available Modules",
                 "Configure Existing Modules",
                 "View Module Analytics"
@@ -53,49 +53,49 @@ class WorkspaceModuleService(
     /**
      * Get detailed information about a specific module
      */
-    fun getModuleInfo(moduleId: String): Map<String, Any> {
-        val workspaceId = TenantContextHolder.getCurrentTenant()
-            ?: return mapOf("error" to "No tenant context")
+    fun getModuleInfo(moduleId: String): ModuleDetailResponse? {
+        val workspaceId = TenantContextHolder.getCurrentTenant() ?: return null
 
         // Try to find by UID first, then by module code
         val workspaceModule = workspaceModuleRepository.findById(moduleId).orElse(null)
             ?: workspaceModuleRepository.findByWorkspaceIdAndMasterModuleModuleCode(workspaceId, moduleId)
-            ?: return mapOf("error" to "Module not found", "moduleId" to moduleId)
+            ?: return null
 
         workspaceModule.masterModule
         val analytics = buildModuleAnalytics(workspaceModule)
         val permissions = buildModulePermissions(workspaceModule)
+        val configuration = buildModuleConfiguration(workspaceModule)
 
-        return mapOf(
-            "moduleId" to workspaceModule.uid,
-            "workspaceId" to workspaceId,
-            "moduleInfo" to mapOf(
-                "name" to workspaceModule.getEffectiveName(),
-                "category" to workspaceModule.getEffectiveCategory(),
-                "description" to workspaceModule.getEffectiveDescription(),
-                "version" to workspaceModule.installedVersion,
-                "status" to workspaceModule.status.displayName,
-                "enabled" to workspaceModule.enabled,
-                "installedAt" to workspaceModule.installedAt,
-                "lastUpdated" to workspaceModule.lastUpdatedAt
-            ),
-            "configuration" to buildModuleConfiguration(workspaceModule),
-            "analytics" to analytics,
-            "permissions" to permissions,
-            "healthScore" to workspaceModule.getHealthScore(),
-            "needsAttention" to workspaceModule.needsAttention()
+        val moduleInfo = ModuleInfoResponse(
+            name = workspaceModule.getEffectiveName(),
+            category = workspaceModule.getEffectiveCategory(),
+            description = workspaceModule.getEffectiveDescription(),
+            version = workspaceModule.installedVersion,
+            status = workspaceModule.status.displayName,
+            enabled = workspaceModule.enabled,
+            installedAt = workspaceModule.installedAt,
+            lastUpdated = workspaceModule.lastUpdatedAt
+        )
+
+        return ModuleDetailResponse(
+            moduleId = workspaceModule.uid,
+            workspaceId = workspaceId,
+            moduleInfo = moduleInfo,
+            configuration = configuration,
+            analytics = analytics,
+            permissions = permissions,
+            healthScore = workspaceModule.getHealthScore(),
+            needsAttention = workspaceModule.needsAttention()
         )
     }
 
     /**
      * Perform various module management actions
      */
-    fun performAction(moduleId: String, action: String): Map<String, Any> {
-        val workspaceId = TenantContextHolder.getCurrentTenant()
-            ?: return mapOf("error" to "No tenant context")
+    fun performAction(moduleId: String, action: String): ModuleActionResponse? {
+        val workspaceId = TenantContextHolder.getCurrentTenant() ?: return null
 
-        val workspaceModule = findWorkspaceModule(workspaceId, moduleId)
-            ?: return mapOf("error" to "Module not found", "moduleId" to moduleId)
+        val workspaceModule = findWorkspaceModule(workspaceId, moduleId) ?: return null
 
         return when (action.lowercase()) {
             "enable" -> enableModule(workspaceModule)
@@ -108,7 +108,7 @@ class WorkspaceModuleService(
             "optimize" -> optimizeModule(workspaceModule)
             "restart" -> restartModule(workspaceModule)
             "refresh" -> refreshModule(workspaceModule)
-            else -> mapOf("error" to "Unknown action: $action", "supportedActions" to getSupportedActions())
+            else -> null
         }
     }
 
@@ -119,41 +119,31 @@ class WorkspaceModuleService(
         moduleCode: String,
         installedBy: String? = null,
         installedByName: String? = null,
-    ): Map<String, Any> {
-        val workspaceId = TenantContextHolder.getCurrentTenant()
-            ?: return mapOf("error" to "No tenant context")
+    ): ModuleInstallationResponse? {
+        val workspaceId = TenantContextHolder.getCurrentTenant() ?: return null
 
         // Check if already installed
         if (workspaceModuleRepository.existsByWorkspaceIdAndMasterModuleModuleCode(workspaceId, moduleCode)) {
-            return mapOf("error" to "Module already installed", "moduleCode" to moduleCode)
+            return null
         }
 
         // Find master module
-        val masterModule = masterModuleRepository.findByModuleCode(moduleCode)
-            ?: return mapOf("error" to "Module not found in catalog", "moduleCode" to moduleCode)
+        val masterModule = masterModuleRepository.findByModuleCode(moduleCode) ?: return null
 
         if (!masterModule.isProductionReady()) {
-            return mapOf("error" to "Module is not ready for installation", "moduleCode" to moduleCode)
+            return null
         }
 
         // Check dependencies
         val missingDependencies = checkMissingDependencies(workspaceId, masterModule)
         if (missingDependencies.isNotEmpty()) {
-            return mapOf(
-                "error" to "Missing dependencies",
-                "moduleCode" to moduleCode,
-                "missingDependencies" to missingDependencies
-            )
+            return null
         }
 
         // Check conflicts
         val conflicts = checkModuleConflicts(workspaceId, masterModule)
         if (conflicts.isNotEmpty()) {
-            return mapOf(
-                "error" to "Module conflicts detected",
-                "moduleCode" to moduleCode,
-                "conflicts" to conflicts
-            )
+            return null
         }
 
         // Create workspace module
@@ -178,34 +168,28 @@ class WorkspaceModuleService(
         savedModule.status = WorkspaceModuleStatus.ACTIVE
         workspaceModuleRepository.save(savedModule)
 
-        return mapOf(
-            "success" to true,
-            "moduleId" to savedModule.uid,
-            "moduleCode" to moduleCode,
-            "workspaceId" to workspaceId,
-            "message" to "Module ${masterModule.name} installed successfully",
-            "installedAt" to savedModule.installedAt
+        return ModuleInstallationResponse(
+            success = true,
+            moduleId = savedModule.uid,
+            moduleCode = moduleCode,
+            workspaceId = workspaceId,
+            message = "Module ${masterModule.name} installed successfully",
+            installedAt = savedModule.installedAt
         )
     }
 
     /**
      * Uninstall a module from the workspace
      */
-    fun uninstallModule(moduleId: String): Map<String, Any> {
-        val workspaceId = TenantContextHolder.getCurrentTenant()
-            ?: return mapOf("error" to "No tenant context")
+    fun uninstallModule(moduleId: String): ModuleUninstallationResponse? {
+        val workspaceId = TenantContextHolder.getCurrentTenant() ?: return null
 
-        val workspaceModule = findWorkspaceModule(workspaceId, moduleId)
-            ?: return mapOf("error" to "Module not found", "moduleId" to moduleId)
+        val workspaceModule = findWorkspaceModule(workspaceId, moduleId) ?: return null
 
         // Check if other modules depend on this one
         val dependentModules = findDependentModules(workspaceId, workspaceModule.masterModule.moduleCode)
         if (dependentModules.isNotEmpty()) {
-            return mapOf(
-                "error" to "Cannot uninstall: other modules depend on this module",
-                "moduleId" to moduleId,
-                "dependentModules" to dependentModules.map { it.masterModule.name }
-            )
+            return null
         }
 
         val moduleName = workspaceModule.getEffectiveName()
@@ -217,21 +201,20 @@ class WorkspaceModuleService(
         // Remove from workspace
         workspaceModuleRepository.delete(workspaceModule)
 
-        return mapOf(
-            "success" to true,
-            "moduleId" to moduleId,
-            "workspaceId" to workspaceId,
-            "message" to "Module $moduleName uninstalled successfully",
-            "uninstalledAt" to LocalDateTime.now()
+        return ModuleUninstallationResponse(
+            success = true,
+            moduleId = moduleId,
+            workspaceId = workspaceId,
+            message = "Module $moduleName uninstalled successfully",
+            uninstalledAt = LocalDateTime.now()
         )
     }
 
     /**
      * Get available modules from master registry
      */
-    fun getAvailableModules(category: String? = null, featured: Boolean = false): Map<String, Any> {
-        val workspaceId = TenantContextHolder.getCurrentTenant()
-            ?: return mapOf("error" to "No tenant context")
+    fun getAvailableModules(category: String? = null, featured: Boolean = false): AvailableModulesCatalogResponse? {
+        val workspaceId = TenantContextHolder.getCurrentTenant() ?: return null
 
         val installedCodes = workspaceModuleRepository.findByWorkspaceId(workspaceId)
             .map { it.masterModule.moduleCode }.toSet()
@@ -242,7 +225,7 @@ class WorkspaceModuleService(
                 val moduleCategory = try {
                     ModuleCategory.valueOf(category.uppercase())
                 } catch (e: IllegalArgumentException) {
-                    return mapOf("error" to "Invalid category: $category")
+                    return null
                 }
                 masterModuleRepository.findByActiveTrueAndCategory(moduleCategory)
             }
@@ -251,50 +234,52 @@ class WorkspaceModuleService(
         }.filterNot { it.moduleCode in installedCodes }
 
         val moduleData = availableModules.map { masterModule ->
-            mapOf(
-                "moduleCode" to masterModule.moduleCode,
-                "name" to masterModule.name,
-                "description" to masterModule.description,
-                "category" to masterModule.category.displayName,
-                "version" to masterModule.version,
-                "rating" to masterModule.rating,
-                "installCount" to masterModule.installCount,
-                "complexity" to masterModule.complexity.displayName,
-                "icon" to masterModule.getDisplayIcon(),
-                "primaryColor" to masterModule.getPrimaryColor(),
-                "featured" to masterModule.featured,
-                "requiredTier" to masterModule.requiredTier.displayName,
-                "sizeMb" to masterModule.sizeMb
+            AvailableModuleResponse(
+                moduleCode = masterModule.moduleCode,
+                name = masterModule.name,
+                description = masterModule.description,
+                category = masterModule.category.displayName,
+                version = masterModule.version,
+                rating = masterModule.rating,
+                installCount = masterModule.installCount,
+                complexity = masterModule.complexity.displayName,
+                icon = masterModule.getDisplayIcon(),
+                primaryColor = masterModule.getPrimaryColor(),
+                featured = masterModule.featured,
+                requiredTier = masterModule.requiredTier.displayName,
+                sizeMb = masterModule.sizeMb
             )
         }
 
-        return mapOf(
-            "availableModules" to moduleData,
-            "totalAvailable" to moduleData.size,
-            "categories" to ModuleCategory.values().map {
-                mapOf(
-                    "code" to it.name,
-                    "displayName" to it.displayName,
-                    "description" to it.description,
-                    "icon" to it.icon
-                )
-            }
+        val categories = ModuleCategory.values().map {
+            ModuleCategoryResponse(
+                code = it.name,
+                displayName = it.displayName,
+                description = it.description,
+                icon = it.icon
+            )
+        }
+
+        return AvailableModulesCatalogResponse(
+            availableModules = moduleData,
+            totalAvailable = moduleData.size,
+            categories = categories
         )
     }
 
     // Helper methods
 
-    private fun getRecentActivity(workspaceId: String): Map<String, Any?> {
+    private fun getRecentActivity(workspaceId: String): RecentActivityResponse {
         val recentlyInstalled = workspaceModuleRepository
             .findByWorkspaceIdAndInstalledAtAfterOrderByInstalledAtDesc(
                 workspaceId,
                 LocalDateTime.now().minusDays(30)
             )
 
-        return mapOf(
-            "lastInstalled" to recentlyInstalled.firstOrNull()?.masterModule?.name,
-            "lastConfigured" to null, // Could be enhanced with configuration tracking
-            "lastAccessed" to LocalDateTime.now()
+        return RecentActivityResponse(
+            lastInstalled = recentlyInstalled.firstOrNull()?.masterModule?.name,
+            lastConfigured = null, // Could be enhanced with configuration tracking
+            lastAccessed = LocalDateTime.now()
         )
     }
 
@@ -304,29 +289,33 @@ class WorkspaceModuleService(
             .distinct()
     }
 
-    private fun buildModuleAnalytics(workspaceModule: WorkspaceModule): Map<String, Any> {
+    private fun buildModuleAnalytics(workspaceModule: WorkspaceModule): ModuleAnalyticsResponse {
         val metrics = workspaceModule.usageMetrics
-        return mapOf(
-            "dailyActiveUsers" to metrics.dailyActiveUsers,
-            "monthlyAccess" to metrics.totalAccesses,
-            "averageSessionDuration" to "${metrics.averageSessionDuration / 60} minutes"
+        return ModuleAnalyticsResponse(
+            dailyActiveUsers = metrics.dailyActiveUsers,
+            monthlyAccess = metrics.totalAccesses,
+            averageSessionDuration = "${metrics.averageSessionDuration / 60} minutes"
         )
     }
 
-    private fun buildModulePermissions(workspaceModule: WorkspaceModule): Map<String, Boolean> {
-        return mapOf(
-            "canConfigure" to true,
-            "canUninstall" to !hasDependentModules(workspaceModule),
-            "canViewAnalytics" to true
+    private fun buildModulePermissions(workspaceModule: WorkspaceModule): ModulePermissionsResponse {
+        return ModulePermissionsResponse(
+            canConfigure = true,
+            canUninstall = !hasDependentModules(workspaceModule),
+            canViewAnalytics = true
         )
     }
 
-    private fun buildModuleConfiguration(workspaceModule: WorkspaceModule): Map<String, Any> {
+    private fun buildModuleConfiguration(workspaceModule: WorkspaceModule): ModuleConfigurationResponse {
         val settings = workspaceModule.settings
-        return mapOf(
-            "autoSync" to (settings.getConfigValue("autoSync") ?: true),
-            "notificationsEnabled" to settings.notificationsEnabled,
-            "customFields" to (settings.customConfiguration["customFields"] ?: emptyList<String>())
+
+        @Suppress("UNCHECKED_CAST")
+        val customFields = settings.customConfiguration["customFields"] as? List<String> ?: emptyList()
+
+        return ModuleConfigurationResponse(
+            autoSync = (workspaceModule.getConfigValue("autoSync") as? Boolean) ?: true,
+            notificationsEnabled = settings.notificationsEnabled,
+            customFields = customFields
         )
     }
 
@@ -335,7 +324,7 @@ class WorkspaceModuleService(
             ?: workspaceModuleRepository.findByWorkspaceIdAndMasterModuleModuleCode(workspaceId, moduleId)
     }
 
-    private fun enableModule(workspaceModule: WorkspaceModule): Map<String, Any> {
+    private fun enableModule(workspaceModule: WorkspaceModule): ModuleActionResponse {
         workspaceModule.enabled = true
         workspaceModule.status = WorkspaceModuleStatus.ACTIVE
         workspaceModuleRepository.save(workspaceModule)
@@ -343,7 +332,7 @@ class WorkspaceModuleService(
         return buildActionResponse(workspaceModule, "enable", "Module enabled successfully")
     }
 
-    private fun disableModule(workspaceModule: WorkspaceModule): Map<String, Any> {
+    private fun disableModule(workspaceModule: WorkspaceModule): ModuleActionResponse {
         workspaceModule.enabled = false
         workspaceModule.status = WorkspaceModuleStatus.SUSPENDED
         workspaceModuleRepository.save(workspaceModule)
@@ -351,21 +340,21 @@ class WorkspaceModuleService(
         return buildActionResponse(workspaceModule, "disable", "Module disabled successfully")
     }
 
-    private fun configureModule(workspaceModule: WorkspaceModule): Map<String, Any> {
+    private fun configureModule(workspaceModule: WorkspaceModule): ModuleActionResponse {
         // Configuration logic would be implemented here
         return buildActionResponse(workspaceModule, "configure", "Module configuration updated")
     }
 
-    private fun resetModule(workspaceModule: WorkspaceModule): Map<String, Any> {
+    private fun resetModule(workspaceModule: WorkspaceModule): ModuleActionResponse {
         workspaceModule.settings = ModuleSettings()
         workspaceModuleRepository.save(workspaceModule)
 
         return buildActionResponse(workspaceModule, "reset", "Module reset to defaults")
     }
 
-    private fun updateModule(workspaceModule: WorkspaceModule): Map<String, Any> {
+    private fun updateModule(workspaceModule: WorkspaceModule): ModuleActionResponse? {
         if (!workspaceModule.canBeUpdated()) {
-            return mapOf("error" to "Module is already up to date")
+            return null
         }
 
         workspaceModule.updateToLatestVersion()
@@ -374,13 +363,12 @@ class WorkspaceModuleService(
         return buildActionResponse(workspaceModule, "update", "Module updated to latest version")
     }
 
-    private fun analyzeModule(workspaceModule: WorkspaceModule): Map<String, Any> {
-        val analytics = buildModuleAnalytics(workspaceModule)
-        return buildActionResponse(workspaceModule, "analyze", "Module analysis completed", analytics)
+    private fun analyzeModule(workspaceModule: WorkspaceModule): ModuleActionResponse {
+        return buildActionResponse(workspaceModule, "analyze", "Module analysis completed")
     }
 
-    private fun diagnoseModule(workspaceModule: WorkspaceModule): Map<String, Any> {
-        val healthScore = workspaceModule.getHealthScore()
+    private fun diagnoseModule(workspaceModule: WorkspaceModule): ModuleActionResponse {
+        workspaceModule.getHealthScore()
         val issues = mutableListOf<String>()
 
         if (!workspaceModule.isOperational()) issues.add("Module is not operational")
@@ -388,26 +376,22 @@ class WorkspaceModuleService(
         if (workspaceModule.canBeUpdated()) issues.add("Update available")
         if (workspaceModule.usageMetrics.errorCount > 0) issues.add("Errors detected")
 
-        val diagnostics = mapOf(
-            "healthScore" to healthScore,
-            "issues" to issues,
-            "status" to if (issues.isEmpty()) "Healthy" else "Needs attention"
-        )
-
-        return buildActionResponse(workspaceModule, "diagnose", "Module diagnosis completed", diagnostics)
+        val message =
+            if (issues.isEmpty()) "Module diagnosis completed - Healthy" else "Module diagnosis completed - Needs attention"
+        return buildActionResponse(workspaceModule, "diagnose", message)
     }
 
-    private fun optimizeModule(workspaceModule: WorkspaceModule): Map<String, Any> {
+    private fun optimizeModule(workspaceModule: WorkspaceModule): ModuleActionResponse {
         // Optimization logic would be implemented here
         return buildActionResponse(workspaceModule, "optimize", "Module optimization completed")
     }
 
-    private fun restartModule(workspaceModule: WorkspaceModule): Map<String, Any> {
+    private fun restartModule(workspaceModule: WorkspaceModule): ModuleActionResponse {
         // Restart logic would be implemented here
         return buildActionResponse(workspaceModule, "restart", "Module restarted successfully")
     }
 
-    private fun refreshModule(workspaceModule: WorkspaceModule): Map<String, Any> {
+    private fun refreshModule(workspaceModule: WorkspaceModule): ModuleActionResponse {
         // Refresh logic would be implemented here
         return buildActionResponse(workspaceModule, "refresh", "Module data refreshed")
     }
@@ -416,32 +400,29 @@ class WorkspaceModuleService(
         workspaceModule: WorkspaceModule,
         action: String,
         message: String,
-        additionalData: Map<String, Any> = emptyMap(),
-    ): Map<String, Any> {
-        val baseResponse = mapOf(
-            "moduleId" to workspaceModule.uid,
-            "action" to action,
-            "workspaceId" to workspaceModule.workspaceId,
-            "success" to true,
-            "message" to message,
-            "actionDetails" to mapOf(
-                "executedAt" to LocalDateTime.now(),
-                "duration" to "1.2 seconds",
-                "affectedComponents" to listOf("configuration", "user-interface")
+    ): ModuleActionResponse {
+        return ModuleActionResponse(
+            moduleId = workspaceModule.uid,
+            action = action,
+            workspaceId = workspaceModule.workspaceId,
+            success = true,
+            message = message,
+            actionDetails = ActionDetailsResponse(
+                executedAt = LocalDateTime.now(),
+                duration = "1.2 seconds",
+                affectedComponents = listOf("configuration", "user-interface")
             ),
-            "impact" to mapOf(
-                "usersAffected" to workspaceModule.usageMetrics.dailyActiveUsers,
-                "dataChanged" to false,
-                "requiresRestart" to false,
-                "immediatelyAvailable" to true
+            impact = ActionImpactResponse(
+                usersAffected = workspaceModule.usageMetrics.dailyActiveUsers,
+                dataChanged = false,
+                requiresRestart = false,
+                immediatelyAvailable = true
             ),
-            "nextSteps" to listOf(
+            nextSteps = listOf(
                 "Verify functionality in user interface",
                 "Monitor performance metrics"
             )
         )
-
-        return baseResponse + additionalData
     }
 
     private fun checkMissingDependencies(workspaceId: String, masterModule: MasterModule): List<String> {
