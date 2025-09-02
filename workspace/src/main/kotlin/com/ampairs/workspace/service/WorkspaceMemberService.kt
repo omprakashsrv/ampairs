@@ -125,7 +125,7 @@ class WorkspaceMemberService(
             }
         }
 
-        request.customPermissions?.let { permissions ->
+        request.permissions?.let { permissions ->
             member.permissions = permissions
         }
 
@@ -567,7 +567,7 @@ class WorkspaceMemberService(
         val memberIds = request["member_ids"] as? List<String> ?: emptyList()
         val role = request["role"] as? String
         val status = request["status"] as? String
-        val notifyMembers = request["notify_members"] as? Boolean ?: false
+        request["notify_members"] as? Boolean ?: false
         
         val members = memberRepository.findByUidIn(memberIds)
         var updatedCount = 0
@@ -623,7 +623,7 @@ class WorkspaceMemberService(
      */
     fun bulkRemoveMembers(workspaceId: String, request: Map<String, Any>): Map<String, Any> {
         val memberIds = request["member_ids"] as? List<String> ?: emptyList()
-        val reason = request["reason"] as? String
+        request["reason"] as? String
         
         val members = memberRepository.findByUidIn(memberIds)
         var removedCount = 0
@@ -713,8 +713,8 @@ class WorkspaceMemberService(
         if (member.workspaceId != workspaceId) {
             throw BusinessException("MEMBER_NOT_IN_WORKSPACE", "Member does not belong to this workspace")
         }
-        
-        val wasActive = member.isActive
+
+        member.isActive
         when (status.uppercase()) {
             "ACTIVE" -> member.isActive = true
             "INACTIVE" -> member.isActive = false

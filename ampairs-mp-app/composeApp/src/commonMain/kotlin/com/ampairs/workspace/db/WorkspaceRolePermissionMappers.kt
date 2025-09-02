@@ -108,27 +108,6 @@ fun convertPermissionsListToMap(permissionsList: List<WorkspacePermissionRespons
     }
 }
 
-// Convert API response list to UI expected map format
-fun convertPermissionsListToMap(permissionsList: List<String>): List<String> {
-    // The permissionsList contains ALL available permissions from the backend
-    // Group them by module and convert to the UI expected format
-    val groupedPermissions = permissionsList.map { permissionName ->
-        // Extract module from permission name (e.g., "MEMBER_VIEW" -> "member")
-        val parts = permissionName.split("_")
-        if (parts.size > 1) parts[0].lowercase() else "general"
-    }
-    return groupedPermissions;
-
-//    // Convert to UI format with all permissions set to true (available)
-//    return groupedPermissions.mapValues { (_, permissions) ->
-//        permissions.associate { permissionName ->
-//            // Extract action from permission name (e.g., "MEMBER_VIEW" -> "view")
-//            val action = permissionName.split("_").drop(1).joinToString("_").lowercase()
-//            action.ifEmpty { "general" } to true
-//        }
-//    }
-}
-
 // Convert UI permission map back to backend enum set
 fun convertPermissionMapToEnumSet(permissionMap: Map<String, Map<String, Boolean>>): Set<WorkspacePermission> {
     val permissions = mutableSetOf<WorkspacePermission>()

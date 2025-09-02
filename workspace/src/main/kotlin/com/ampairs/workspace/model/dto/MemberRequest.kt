@@ -24,11 +24,11 @@ data class InviteMemberRequest(
  * Request DTO for updating member role and permissions
  */
 data class UpdateMemberRequest(
-        val role: WorkspaceRole? = null,
+    val role: WorkspaceRole? = null,
 
-        val customPermissions: Set<WorkspacePermission>? = null,
+    val permissions: Set<WorkspacePermission>? = null,
 
-        val isActive: Boolean? = null,
+    val isActive: Boolean? = null,
 )
 
 /**

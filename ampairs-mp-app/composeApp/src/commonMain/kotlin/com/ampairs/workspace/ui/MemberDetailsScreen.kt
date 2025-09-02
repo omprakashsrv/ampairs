@@ -14,7 +14,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.workspace.api.model.UserRoleResponse
 import com.ampairs.workspace.api.model.WorkspaceRole
-import com.ampairs.workspace.db.convertPermissionsListToMap
 import com.ampairs.workspace.domain.WorkspaceMember
 import com.ampairs.workspace.viewmodel.MemberDetailsViewModel
 import org.koin.compose.koinInject
@@ -91,8 +90,9 @@ fun MemberDetailsScreen(
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                     }
-                    
-                    val memberToDisplay = if (isEditing) state.displayMember ?: state.member!! else state.member!!
+
+                    val memberToDisplay =
+                        if (isEditing) state.displayMember ?: state.member!! else state.member!!
                     MemberDetailsContent(
                         member = memberToDisplay,
                         userRole = state.userRole,
@@ -129,15 +129,16 @@ fun MemberDetailsScreen(
         if (showStatusConfirmation) {
             val currentMember = state.member!!
             val statusAction = if (pendingStatusChange == "INACTIVE") "deactivate" else "reactivate"
-            val statusResult = if (pendingStatusChange == "INACTIVE") "deactivated" else "reactivated"
-            
+            val statusResult =
+                if (pendingStatusChange == "INACTIVE") "deactivated" else "reactivated"
+
             AlertDialog(
-                onDismissRequest = { 
-                    showStatusConfirmation = false 
+                onDismissRequest = {
+                    showStatusConfirmation = false
                     pendingStatusChange = null
                 },
                 title = { Text("${statusAction.replaceFirstChar { it.uppercaseChar() }} Member") },
-                text = { 
+                text = {
                     Text("Are you sure you want to $statusAction ${currentMember.name}? This member will be $statusResult and ${if (pendingStatusChange == "INACTIVE") "lose access to" else "regain access to"} the workspace.")
                 },
                 confirmButton = {
@@ -160,8 +161,8 @@ fun MemberDetailsScreen(
                 },
                 dismissButton = {
                     TextButton(
-                        onClick = { 
-                            showStatusConfirmation = false 
+                        onClick = {
+                            showStatusConfirmation = false
                             pendingStatusChange = null
                         }
                     ) {
@@ -441,7 +442,7 @@ private fun MemberPermissionsCard(
 
             if (isEditing && canEdit) {
                 PermissionEditor(
-                    currentPermissions = convertPermissionsListToMap(member.permissions),
+                    currentPermissions = member.permissions,
                     availablePermissions = availablePermissions,
                     onPermissionsChange = onPermissionsChange
                 )
@@ -532,7 +533,7 @@ private fun MemberDangerZoneCard(
         AlertDialog(
             onDismissRequest = { showRemoveDialog = false },
             title = { Text("Remove Member") },
-            text = { 
+            text = {
                 Text("Are you sure you want to remove ${member.name} from this workspace? This action cannot be undone.")
             },
             confirmButton = {
@@ -699,17 +700,17 @@ private fun PermissionEditor(
     val currentPermissionKeys = remember(currentPermissions) {
         currentPermissions.toSet()
     }
-    
+
     // Track selected permissions
     var selectedPermissions by remember(currentPermissionKeys) {
         mutableStateOf(currentPermissionKeys.toMutableSet())
     }
-    
+
     // Update callback when selectedPermissions changes
     LaunchedEffect(selectedPermissions) {
         onPermissionsChange(selectedPermissions.toList())
     }
-    
+
     if (availablePermissions.isEmpty()) {
         Text(
             text = "Loading permissions...",
@@ -729,9 +730,9 @@ private fun PermissionEditor(
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.primary
                     )
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     // Actions for this module
                     Column(
                         modifier = Modifier.padding(start = 16.dp),
@@ -739,10 +740,11 @@ private fun PermissionEditor(
                     ) {
                         actions.forEach { (action, isCurrentlyGranted) ->
                             val permissionKey = "$module:$action"
-                            val isSelected = selectedPermissions.contains(permissionKey) ||
-                                    selectedPermissions.contains("$module.$action") || // Alternative format
-                                    selectedPermissions.contains(action) // Simple format
-                            
+                            // Convert module:action format to enum format (e.g., "member:view" -> "MEMBER_VIEW")
+                            val enumFormat = "${module.uppercase()}_${action.uppercase()}"
+                            val isSelected =
+                                selectedPermissions.contains(enumFormat) // Enum format from backend
+
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically
@@ -750,21 +752,20 @@ private fun PermissionEditor(
                                 Checkbox(
                                     checked = isSelected,
                                     onCheckedChange = { isChecked ->
-                                        selectedPermissions = selectedPermissions.toMutableSet().apply {
-                                            if (isChecked) {
-                                                add(permissionKey)
-                                            } else {
-                                                // Remove all possible formats of this permission
-                                                remove(permissionKey)
-                                                remove("$module.$action")
-                                                remove(action)
+                                        selectedPermissions =
+                                            selectedPermissions.toMutableSet().apply {
+                                                if (isChecked) {
+                                                    add(enumFormat) // Add in backend enum format
+                                                } else {
+                                                    // Remove all possible formats of this permission
+                                                    remove(enumFormat)
+                                                }
                                             }
-                                        }
                                     }
                                 )
-                                
+
                                 Spacer(modifier = Modifier.width(8.dp))
-                                
+
                                 Text(
                                     text = action.replaceFirstChar { it.uppercaseChar() },
                                     style = MaterialTheme.typography.bodyMedium
@@ -887,9 +888,9 @@ private fun MemberDetailsOfflineIndicator(
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
                 )
-                
+
                 Spacer(modifier = Modifier.width(8.dp))
-                
+
                 Column {
                     Text(
                         text = "Offline Mode",
@@ -903,7 +904,7 @@ private fun MemberDetailsOfflineIndicator(
                     )
                 }
             }
-            
+
             TextButton(onClick = onRefresh) {
                 Icon(
                     imageVector = Icons.Default.Refresh,
