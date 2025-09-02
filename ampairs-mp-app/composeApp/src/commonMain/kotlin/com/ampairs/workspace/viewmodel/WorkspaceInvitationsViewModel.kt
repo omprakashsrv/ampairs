@@ -4,50 +4,62 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.workspace.api.model.CreateInvitationRequest
 import com.ampairs.workspace.api.model.ResendInvitationRequest
-import com.ampairs.workspace.db.WorkspaceInvitationRepository
+import com.ampairs.workspace.db.OfflineFirstWorkspaceInvitationRepository
 import com.ampairs.workspace.domain.InvitationAcceptanceResult
 import com.ampairs.workspace.domain.WorkspaceInvitation
+import com.ampairs.common.model.PageResult
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 /**
- * ViewModel for workspace invitation management
+ * ViewModel for workspace invitation management with Store5 offline-first approach
  *
  * Manages invitation listing, creation, acceptance, resending, and cancellation
- * with proper state management and error handling.
+ * with proper offline-first state management, automatic sync, and error handling.
  */
 class WorkspaceInvitationsViewModel(
     private val workspaceId: String,
-    private val invitationRepository: WorkspaceInvitationRepository,
+    private val invitationRepository: OfflineFirstWorkspaceInvitationRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(WorkspaceInvitationsState())
-    val state = _state.asStateFlow()
+    val state: StateFlow<WorkspaceInvitationsState> = _state.asStateFlow()
 
     private var allInvitations = listOf<WorkspaceInvitation>()
+    private var currentPage = 0
+    private val pageSize = 20
 
     /**
-     * Load workspace invitations from API
+     * Load workspace invitations using Store5 offline-first approach
      */
     fun loadInvitations(
         page: Int = 0,
-        size: Int = 20,
+        size: Int = pageSize,
         sortBy: String = "createdAt",
         sortDir: String = "desc",
+        refresh: Boolean = false
     ) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null)
+            currentPage = page
 
-            try {
-                val pageResult = invitationRepository.getWorkspaceInvitations(
-                    workspaceId = workspaceId,
-                    page = page,
-                    size = size,
-                    sortBy = sortBy,
-                    sortDir = sortDir
+            invitationRepository.getWorkspaceInvitations(
+                workspaceId = workspaceId,
+                page = page,
+                size = size,
+                sortBy = sortBy,
+                sortDir = sortDir,
+                refresh = refresh
+            ).catch { error ->
+                _state.value = _state.value.copy(
+                    isLoading = false,
+                    error = error.message ?: "Failed to load invitations"
                 )
-
+            }.collectLatest { pageResult ->
                 allInvitations = pageResult.content
                 _state.value = _state.value.copy(
                     invitations = allInvitations,
@@ -57,57 +69,89 @@ class WorkspaceInvitationsViewModel(
                     totalInvitations = pageResult.totalElements,
                     hasNextPage = !pageResult.isLast
                 )
+            }
+        }
+    }
 
-            } catch (e: Exception) {
+    /**
+     * Load more invitations for pagination with Store5 support
+     */
+    fun loadMoreInvitations() {
+        val currentState = _state.value
+        if (currentState.isLoading || !currentState.hasNextPage) return
+
+        loadInvitations(page = currentState.currentPage + 1, refresh = false)
+    }
+
+    /**
+     * Filter invitations by status and role using Store5 filters
+     */
+    fun filterInvitations(status: String, role: String) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(
+                isLoading = true,
+                activeFilters = mapOf("status" to status, "role" to role)
+            )
+
+            val filterStatus = if (status == "ALL") null else status
+            val filterRole = if (role == "ALL") null else role
+
+            invitationRepository.getFilteredInvitations(
+                workspaceId = workspaceId,
+                status = filterStatus,
+                role = filterRole,
+                page = 0,
+                size = pageSize,
+                refresh = false
+            ).catch { error ->
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    error = e.message ?: "Failed to load invitations"
+                    error = error.message ?: "Failed to filter invitations"
+                )
+            }.collectLatest { pageResult ->
+                allInvitations = pageResult.content
+                _state.value = _state.value.copy(
+                    invitations = allInvitations,
+                    isLoading = false,
+                    currentPage = pageResult.currentPage,
+                    totalPages = pageResult.totalPages,
+                    totalInvitations = pageResult.totalElements,
+                    hasNextPage = !pageResult.isLast
                 )
             }
         }
     }
 
     /**
-     * Load more invitations for pagination
-     */
-    fun loadMoreInvitations() {
-        val currentState = _state.value
-        if (currentState.isLoading || !currentState.hasNextPage) return
-
-        loadInvitations(page = currentState.currentPage + 1)
-    }
-
-    /**
-     * Filter invitations by status and role
-     */
-    fun filterInvitations(status: String, role: String) {
-        val filteredInvitations = allInvitations.filter { invitation ->
-            val matchesStatus = status == "ALL" || invitation.status == status
-            val matchesRole = role == "ALL" || invitation.invitedRole == role
-            matchesStatus && matchesRole
-        }
-
-        _state.value = _state.value.copy(
-            invitations = filteredInvitations,
-            activeFilters = mapOf("status" to status, "role" to role)
-        )
-    }
-
-    /**
-     * Search invitations by recipient name or email
+     * Search invitations by recipient name or email using Store5 repository
      */
     fun searchInvitations(query: String) {
         if (query.isBlank()) {
-            _state.value = _state.value.copy(invitations = allInvitations)
+            // Reset to show all invitations
+            loadInvitations(page = 0, refresh = false)
             return
         }
 
-        val searchResults = allInvitations.filter { invitation ->
-            invitation.recipientEmail.contains(query, ignoreCase = true) ||
-                    (invitation.recipientName?.contains(query, ignoreCase = true) == true)
-        }
+        viewModelScope.launch {
+            _state.value = _state.value.copy(isLoading = true)
 
-        _state.value = _state.value.copy(invitations = searchResults)
+            invitationRepository.searchInvitations(workspaceId, query)
+                .catch { error ->
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        error = error.message ?: "Failed to search invitations"
+                    )
+                }.collectLatest { searchResults ->
+                    _state.value = _state.value.copy(
+                        invitations = searchResults,
+                        isLoading = false,
+                        totalInvitations = searchResults.size,
+                        currentPage = 0,
+                        totalPages = 1,
+                        hasNextPage = false
+                    )
+                }
+        }
     }
 
     /**
@@ -298,10 +342,10 @@ class WorkspaceInvitationsViewModel(
     }
 
     /**
-     * Refresh invitations data
+     * Refresh invitations data from server
      */
     fun refresh() {
-        loadInvitations()
+        loadInvitations(page = 0, refresh = true)
     }
 }
 

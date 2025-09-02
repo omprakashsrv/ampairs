@@ -265,12 +265,9 @@ export class WorkspaceMemberService {
       params = params.set('sortDir', sortOptions.sort_direction);
     }
 
-    return this.http.get<PagedMemberResponse>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/search`, {params})
+    return this.http.get<ApiResponse<PagedMemberResponse>>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/search`, {params})
       .pipe(
-        map(data => {
-          // Map backend response format to frontend expected format
-          return data;
-        }),
+        map(response => response.data),
         catchError(this.handleError)
       );
   }

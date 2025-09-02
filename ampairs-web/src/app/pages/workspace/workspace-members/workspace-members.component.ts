@@ -138,6 +138,11 @@ export class WorkspaceMembersComponent implements OnInit, OnDestroy {
   }
 
   loadMembers(): void {
+    if (!this.currentWorkspaceId) {
+      this.showError('No workspace selected');
+      return;
+    }
+
     this.isLoading = true;
 
     const filters = this.getCurrentFilters();
@@ -164,6 +169,10 @@ export class WorkspaceMembersComponent implements OnInit, OnDestroy {
   }
 
   loadDepartments(): void {
+    if (!this.currentWorkspaceId) {
+      return;
+    }
+
     this.memberService.getDepartments(this.currentWorkspaceId)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
@@ -177,6 +186,10 @@ export class WorkspaceMembersComponent implements OnInit, OnDestroy {
   }
 
   loadMemberStatistics(): void {
+    if (!this.currentWorkspaceId) {
+      return;
+    }
+
     this.isLoadingStats = true;
     this.memberService.getMemberStatistics(this.currentWorkspaceId)
       .pipe(takeUntil(this.destroy$))
@@ -254,7 +267,8 @@ export class WorkspaceMembersComponent implements OnInit, OnDestroy {
   }
 
   removeMember(member: MemberListResponse): void {
-    if (confirm(`Are you sure you want to remove ${member.name} from this workspace?`)) {
+    const memberName = this.getMemberName(member);
+    if (confirm(`Are you sure you want to remove ${memberName} from this workspace?`)) {
       this.memberService.removeMember(this.currentWorkspaceId, member.id)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
@@ -317,7 +331,7 @@ export class WorkspaceMembersComponent implements OnInit, OnDestroy {
   }
 
   bulkRemoveMembers(): void {
-    const memberNames = this.selectedMembers.map(m => m.name).join(', ');
+    const memberNames = this.selectedMembers.map(m => this.getMemberName(m)).join(', ');
 
     if (confirm(`Are you sure you want to remove ${this.selectedMembers.length} members (${memberNames}) from this workspace?`)) {
       const memberIds = this.selectedMembers.map(m => m.id);
@@ -363,6 +377,10 @@ export class WorkspaceMembersComponent implements OnInit, OnDestroy {
   }
 
   // Utility methods
+  getMemberName(member: MemberListResponse): string {
+    return `${member.first_name} ${member.last_name}`.trim() || member.email;
+  }
+
   getRoleColor(role: WorkspaceMemberRole): string {
     return getRoleColor(role);
   }
@@ -461,29 +479,31 @@ export class WorkspaceMembersComponent implements OnInit, OnDestroy {
     const currentWorkspace = this.workspaceService.getCurrentWorkspace();
     if (currentWorkspace) {
       this.currentWorkspaceId = currentWorkspace.id;
-    }
-
-    // Get current user's role in workspace
-    this.memberService.getCurrentUserRole(this.currentWorkspaceId).subscribe({
-      next: (roleResponse) => {
-        // Derive role from permissions since backend returns simplified format
-        if (roleResponse.is_owner) {
-          this.currentUserRole = 'OWNER';
-        } else if (roleResponse.is_admin) {
-          this.currentUserRole = 'ADMIN';
-        } else if (roleResponse.can_invite_members) {
-          this.currentUserRole = 'MANAGER';
-        } else if (roleResponse.can_view_members) {
-          this.currentUserRole = 'MEMBER';
-        } else {
-          this.currentUserRole = 'VIEWER';
+      
+      // Get current user's role in workspace
+      this.memberService.getCurrentUserRole(this.currentWorkspaceId).subscribe({
+        next: (roleResponse) => {
+          // Derive role from permissions since backend returns simplified format
+          if (roleResponse.is_owner) {
+            this.currentUserRole = 'OWNER';
+          } else if (roleResponse.is_admin) {
+            this.currentUserRole = 'ADMIN';
+          } else if (roleResponse.can_invite_members) {
+            this.currentUserRole = 'MANAGER';
+          } else if (roleResponse.can_view_members) {
+            this.currentUserRole = 'MEMBER';
+          } else {
+            this.currentUserRole = 'VIEWER';
+          }
+        },
+        error: (error) => {
+          console.error('Failed to load current user role:', error);
+          this.showError('Failed to load user permissions');
         }
-      },
-      error: (error) => {
-        console.error('Failed to load current user role:', error);
-        this.showError('Failed to load user permissions');
-      }
-    });
+      });
+    } else {
+      this.showError('No workspace selected');
+    }
   }
 
   private setupSearchSubscription(): void {

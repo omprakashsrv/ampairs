@@ -144,6 +144,11 @@ export class WorkspaceInvitationsComponent implements OnInit, OnDestroy {
   }
 
   loadInvitations(): void {
+    if (!this.currentWorkspaceId) {
+      this.showError('No workspace selected');
+      return;
+    }
+
     this.isLoading = true;
 
     const filters = this.getCurrentFilters();
@@ -170,6 +175,10 @@ export class WorkspaceInvitationsComponent implements OnInit, OnDestroy {
   }
 
   loadInvitationStatistics(): void {
+    if (!this.currentWorkspaceId) {
+      return;
+    }
+
     this.isLoadingStats = true;
     this.invitationService.getInvitationStatistics(this.currentWorkspaceId)
       .pipe(takeUntil(this.destroy$))
@@ -448,6 +457,8 @@ export class WorkspaceInvitationsComponent implements OnInit, OnDestroy {
     const currentWorkspace = this.workspaceService.getCurrentWorkspace();
     if (currentWorkspace) {
       this.currentWorkspaceId = currentWorkspace.id;
+    } else {
+      this.showError('No workspace selected');
     }
   }
 
