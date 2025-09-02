@@ -106,7 +106,17 @@ fun WorkspaceMembersScreen(
                 }
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            // Offline mode indicator
+            if (state.isOfflineMode) {
+                OfflineModeIndicator(
+                    onRefresh = { viewModel.loadMembers(forceRefresh = true) }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
         }
 
         // Members list
@@ -142,6 +152,18 @@ fun WorkspaceMembersScreen(
                             canManageMembers = state.currentUserRole?.permissions
                                 ?.get("member_management")
                                 ?.get("can_manage_members") == true
+                        )
+                    }
+                    
+                    // Pagination footer
+                    item {
+                        PaginationFooter(
+                            currentPage = state.currentPage,
+                            totalPages = state.totalPages,
+                            totalMembers = state.totalMembers,
+                            hasNextPage = state.hasNextPage,
+                            isLoading = state.isLoading,
+                            onLoadMore = { viewModel.loadMoreMembers() }
                         )
                     }
                 }
@@ -507,6 +529,112 @@ private fun ErrorState(
             Icon(Icons.Default.Refresh, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
             Text("Try Again")
+        }
+    }
+}
+
+@Composable
+private fun PaginationFooter(
+    currentPage: Int,
+    totalPages: Int,
+    totalMembers: Int,
+    hasNextPage: Boolean,
+    isLoading: Boolean,
+    onLoadMore: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        // Page info
+        Text(
+            text = "Page ${currentPage + 1} of $totalPages • $totalMembers total members",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        
+        if (hasNextPage) {
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            if (isLoading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp
+                )
+            } else {
+                Button(
+                    onClick = onLoadMore,
+                    modifier = Modifier.fillMaxWidth(0.6f)
+                ) {
+                    Text("Load More Members")
+                }
+            }
+        } else if (currentPage > 0) {
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            Text(
+                text = "All members loaded",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun OfflineModeIndicator(
+    onRefresh: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CloudOff,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                
+                Spacer(modifier = Modifier.width(8.dp))
+                
+                Column {
+                    Text(
+                        text = "Offline Mode",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Showing cached data",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+            }
+            
+            TextButton(onClick = onRefresh) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Refresh")
+            }
         }
     }
 }

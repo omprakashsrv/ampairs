@@ -124,17 +124,17 @@ data class MemberDetailsResponse(
     @SerialName("id") val id: String,
     @SerialName("user_id") val userId: String,
     @SerialName("workspace_id") val workspaceId: String,
-    
+
     // Flattened user fields from backend
     @SerialName("email") val email: String? = null,
     @SerialName("phone") val phone: String? = null,
     @SerialName("first_name") val firstName: String? = null,
     @SerialName("last_name") val lastName: String? = null,
     @SerialName("avatar_url") val avatarUrl: String? = null,
-    
+
     // Nested user object
     @SerialName("user") val user: UserApiModel? = null,
-    
+
     @SerialName("role") val role: String,
     @SerialName("permissions") val permissions: List<String> = emptyList(),
     @SerialName("is_active") val isActive: Boolean,
@@ -143,17 +143,18 @@ data class MemberDetailsResponse(
     @SerialName("invitation_accepted_at") val invitationAcceptedAt: String? = null,
     @SerialName("created_at") val createdAt: String,
     @SerialName("updated_at") val updatedAt: String,
-    
+
     // Team information
     @SerialName("primary_team") val primaryTeam: TeamSummaryApiModel? = null,
     @SerialName("teams") val teams: List<TeamSummaryApiModel> = emptyList(),
     @SerialName("job_title") val jobTitle: String? = null,
 ) {
     // Computed properties to match the expected interface
-    val name: String get() = user?.getDisplayName() 
-        ?: listOfNotNull(firstName, lastName).joinToString(" ").takeIf { it.isNotBlank() }
-        ?: email 
-        ?: userId
+    val name: String
+        get() = user?.getDisplayName()
+            ?: listOfNotNull(firstName, lastName).joinToString(" ").takeIf { it.isNotBlank() }
+            ?: email
+            ?: userId
 
     val status: String get() = if (isActive) "ACTIVE" else "INACTIVE"
 }
@@ -172,6 +173,7 @@ data class MemberListResponse(
     @SerialName("id") val id: String,
     @SerialName("user_id") val userId: String,
     @SerialName("user") val user: UserApiModel? = null,
+    @SerialName("permissions") val permissions: List<String> = emptyList(),
     @SerialName("role") val role: String,
     @SerialName("is_active") val isActive: Boolean,
     @SerialName("joined_at") val joinedAt: String,
@@ -181,7 +183,7 @@ data class MemberListResponse(
 @Serializable
 data class UpdateMemberRequest(
     @SerialName("role") val role: String? = null,
-    @SerialName("custom_permissions") val customPermissions: Set<WorkspacePermission>? = null,
+    @SerialName("permissions") val permissions: Set<WorkspacePermission>? = null,
     @SerialName("reason") val reason: String? = null,
     @SerialName("notify_member") val notifyMember: Boolean = true,
 )
@@ -366,12 +368,18 @@ data class WorkspacePermissionResponse(
  */
 @Serializable
 enum class WorkspacePermission(val permissionName: String) {
-    @SerialName("WORKSPACE_MANAGE") WORKSPACE_MANAGE("WORKSPACE_MANAGE"),
-    @SerialName("WORKSPACE_DELETE") WORKSPACE_DELETE("WORKSPACE_DELETE"),
-    @SerialName("MEMBER_VIEW") MEMBER_VIEW("MEMBER_VIEW"),
-    @SerialName("MEMBER_INVITE") MEMBER_INVITE("MEMBER_INVITE"),
-    @SerialName("MEMBER_MANAGE") MEMBER_MANAGE("MEMBER_MANAGE"),
-    @SerialName("MEMBER_DELETE") MEMBER_DELETE("MEMBER_DELETE");
+    @SerialName("WORKSPACE_MANAGE")
+    WORKSPACE_MANAGE("WORKSPACE_MANAGE"),
+    @SerialName("WORKSPACE_DELETE")
+    WORKSPACE_DELETE("WORKSPACE_DELETE"),
+    @SerialName("MEMBER_VIEW")
+    MEMBER_VIEW("MEMBER_VIEW"),
+    @SerialName("MEMBER_INVITE")
+    MEMBER_INVITE("MEMBER_INVITE"),
+    @SerialName("MEMBER_MANAGE")
+    MEMBER_MANAGE("MEMBER_MANAGE"),
+    @SerialName("MEMBER_DELETE")
+    MEMBER_DELETE("MEMBER_DELETE");
 
     override fun toString(): String = permissionName
 

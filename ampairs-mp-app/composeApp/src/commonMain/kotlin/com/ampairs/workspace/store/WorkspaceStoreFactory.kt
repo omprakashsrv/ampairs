@@ -3,23 +3,47 @@ package com.ampairs.workspace.store
 import com.ampairs.workspace.api.WorkspaceApi
 import com.ampairs.workspace.api.model.WorkspaceApiModel
 import com.ampairs.workspace.api.model.WorkspaceListApiModel
+import com.ampairs.workspace.api.model.PagedWorkspaceResponse
 import com.ampairs.workspace.db.dao.WorkspaceDao
 import com.ampairs.workspace.db.entity.WorkspaceEntity
 import com.ampairs.workspace.domain.Workspace
+import com.ampairs.common.model.PageResult
 import org.mobilenativefoundation.store.store5.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 /**
- * Store5 Factory for Workspace data management
+ * Store5 Factory for Workspace data management with pagination support
  * Following Store5 guidelines for proper offline-first architecture
  */
-typealias WorkspaceStore = Store<WorkspaceKey, List<Workspace>>
+typealias WorkspaceStore = Store<WorkspaceKey, PageResult<Workspace>>
 
+/**
+ * Pagination-aware WorkspaceKey for Store5
+ * Each page is cached separately for optimal performance
+ */
 data class WorkspaceKey(
-    val workspaceId: String? = null, // null for list all workspaces
-    val userId: String
-)
+    val userId: String,
+    val workspaceId: String? = null, // null for paginated list, non-null for single workspace
+    val page: Int = 0,
+    val size: Int = 10,
+    val sortBy: String = "createdAt",
+    val sortDir: String = "desc"
+) {
+    // Helper function to create key for single workspace
+    companion object {
+        fun forWorkspace(userId: String, workspaceId: String) = WorkspaceKey(
+            userId = userId,
+            workspaceId = workspaceId
+        )
+        
+        fun forPage(userId: String, page: Int, size: Int = 10) = WorkspaceKey(
+            userId = userId,
+            page = page,
+            size = size
+        )
+    }
+}
 
 class WorkspaceStoreFactory(
     private val workspaceApi: WorkspaceApi,
@@ -35,21 +59,50 @@ class WorkspaceStoreFactory(
             .build()
     }
 
-    private fun createFetcher(): Fetcher<WorkspaceKey, List<Workspace>> {
+    private fun createFetcher(): Fetcher<WorkspaceKey, PageResult<Workspace>> {
         return Fetcher.of { key ->
-            val result: List<Workspace> = if (key.workspaceId != null) {
+            val result: PageResult<Workspace> = if (key.workspaceId != null) {
                 // Fetch single workspace
                 val response = workspaceApi.getWorkspace(key.workspaceId)
                 if (response.data != null && response.error == null) {
-                    listOf(response.data!!.toDomainModel())
+                    val workspace = response.data!!.toDomainModel()
+                    // Return single workspace as PageResult
+                    PageResult(
+                        content = listOf(workspace),
+                        totalElements = 1,
+                        totalPages = 1,
+                        currentPage = 0,
+                        pageSize = 1,
+                        isFirst = true,
+                        isLast = true,
+                        isEmpty = false
+                    )
                 } else {
                     throw Exception(response.error?.message ?: "Failed to fetch workspace")
                 }
             } else {
-                // Fetch all user workspaces
-                val response = workspaceApi.getUserWorkspaces()
+                // Fetch paginated user workspaces
+                val response = workspaceApi.getUserWorkspaces(
+                    page = key.page,
+                    size = key.size,
+                    sortBy = key.sortBy,
+                    sortDir = key.sortDir
+                )
                 if (response.data != null && response.error == null) {
-                    response.data!!.content.map { it.toDomainModel() }
+                    val pagedResponse = response.data!!
+                    val workspaces = pagedResponse.content.map { it.toDomainModel() }
+                    
+                    // Convert API PagedWorkspaceResponse to domain PageResult
+                    PageResult(
+                        content = workspaces,
+                        totalElements = pagedResponse.totalElements,
+                        totalPages = pagedResponse.totalPages,
+                        currentPage = pagedResponse.pageNumber,
+                        pageSize = pagedResponse.pageSize,
+                        isFirst = pagedResponse.first,
+                        isLast = pagedResponse.last,
+                        isEmpty = pagedResponse.empty
+                    )
                 } else {
                     throw Exception(response.error?.message ?: "Failed to fetch workspaces")
                 }
@@ -58,32 +111,83 @@ class WorkspaceStoreFactory(
         }
     }
 
-    private fun createSourceOfTruth(): SourceOfTruth<WorkspaceKey, List<Workspace>, List<Workspace>> {
+    private fun createSourceOfTruth(): SourceOfTruth<WorkspaceKey, PageResult<Workspace>, PageResult<Workspace>> {
         return SourceOfTruth.of(
             reader = { key ->
                 if (key.workspaceId != null) {
                     // Read single workspace
                     workspaceDao.getWorkspaceByIdForUserFlow(key.workspaceId, key.userId)
-                        .map { entity -> entity?.let { listOf(it.toDomainModel()) } ?: emptyList() }
+                        .map { entity -> 
+                            if (entity != null) {
+                                val workspace = entity.toDomainModel()
+                                PageResult(
+                                    content = listOf(workspace),
+                                    totalElements = 1,
+                                    totalPages = 1,
+                                    currentPage = 0,
+                                    pageSize = 1,
+                                    isFirst = true,
+                                    isLast = true,
+                                    isEmpty = false
+                                )
+                            } else {
+                                PageResult(
+                                    content = emptyList(),
+                                    totalElements = 0,
+                                    totalPages = 0,
+                                    currentPage = 0,
+                                    pageSize = key.size,
+                                    isFirst = true,
+                                    isLast = true,
+                                    isEmpty = true
+                                )
+                            }
+                        }
                 } else {
-                    // Read all user workspaces
-                    workspaceDao.getAllWorkspacesForUser(key.userId)
-                        .map { entities -> entities.map { it.toDomainModel() } }
+                    // Read paginated user workspaces
+                    workspaceDao.getWorkspacesPaged(key.userId, key.size, key.page * key.size)
+                        .map { entities -> 
+                            val workspaces = entities.map { it.toDomainModel() }
+                            val totalCount = workspaceDao.getWorkspaceCountForUser(key.userId)
+                            val totalPages = (totalCount + key.size - 1) / key.size
+                            
+                            PageResult(
+                                content = workspaces,
+                                totalElements = totalCount,
+                                totalPages = totalPages,
+                                currentPage = key.page,
+                                pageSize = key.size,
+                                isFirst = key.page == 0,
+                                isLast = key.page >= totalPages - 1,
+                                isEmpty = workspaces.isEmpty()
+                            )
+                        }
                 }
             },
-            writer = { key, networkData ->
-                // Convert Domain models to entities
-                val entities = networkData.map { it.toEntityModel(key.userId) }
-                
-                // Clear existing data for this user/workspace
-                if (key.workspaceId != null) {
-                    workspaceDao.deleteWorkspaceForUser(key.workspaceId, key.userId)
-                } else {
-                    workspaceDao.deleteAllWorkspacesForUser(key.userId)
+            writer = { key, pageResult ->
+                // Convert Domain models to entities with sync metadata
+                val currentTime = System.currentTimeMillis()
+                val entities = pageResult.content.map { workspace ->
+                    workspace.toEntityModel(key.userId).copy(
+                        sync_state = "SYNCED",
+                        last_synced_at = currentTime,
+                        server_updated_at = currentTime,
+                        local_updated_at = currentTime
+                    )
                 }
                 
-                // Insert new data
-                workspaceDao.insertWorkspaces(entities)
+                if (key.workspaceId != null) {
+                    // Single workspace - replace existing
+                    workspaceDao.deleteWorkspaceForUser(key.workspaceId, key.userId)
+                    workspaceDao.insertWorkspaces(entities)
+                } else {
+                    // Paginated data - only clear and insert if it's the first page
+                    // For subsequent pages, just insert new data
+                    if (key.page == 0) {
+                        workspaceDao.deleteAllWorkspacesForUser(key.userId)
+                    }
+                    workspaceDao.insertWorkspaces(entities)
+                }
             }
         )
     }

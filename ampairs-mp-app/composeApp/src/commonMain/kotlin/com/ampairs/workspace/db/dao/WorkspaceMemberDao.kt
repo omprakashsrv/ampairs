@@ -19,6 +19,9 @@ interface WorkspaceMemberDao {
     @Query("SELECT * FROM workspaceMemberEntity WHERE user_id = :userId AND workspace_id = :workspaceId ORDER BY joined_at DESC")
     fun getWorkspaceMembersForUser(userId: String, workspaceId: String): Flow<List<WorkspaceMemberEntity>>
 
+    @Query("SELECT * FROM workspaceMemberEntity WHERE user_id = :userId AND workspace_id = :workspaceId ORDER BY joined_at DESC LIMIT :limit OFFSET :offset")
+    fun getWorkspaceMembersPaged(userId: String, workspaceId: String, limit: Int, offset: Int): Flow<List<WorkspaceMemberEntity>>
+
     @Query("SELECT * FROM workspaceMemberEntity WHERE user_id = :userId AND workspace_id = :workspaceId AND id = :memberId")
     suspend fun getWorkspaceMemberForUser(userId: String, workspaceId: String, memberId: String): WorkspaceMemberEntity?
 

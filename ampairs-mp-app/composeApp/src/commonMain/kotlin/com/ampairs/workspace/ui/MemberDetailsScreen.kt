@@ -12,6 +12,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.ampairs.workspace.api.model.UserRoleResponse
+import com.ampairs.workspace.api.model.WorkspaceRole
+import com.ampairs.workspace.db.convertPermissionsListToMap
 import com.ampairs.workspace.domain.WorkspaceMember
 import com.ampairs.workspace.viewmodel.MemberDetailsViewModel
 import org.koin.compose.koinInject
@@ -75,40 +78,50 @@ fun MemberDetailsScreen(
             state.error != null -> {
                 ErrorState(
                     error = state.error!!,
-                    onRetry = { viewModel.loadMemberDetails() }
+                    onRetry = { viewModel.refresh() }
                 )
             }
 
             state.member != null -> {
-                val memberToDisplay = if (isEditing) state.displayMember ?: state.member!! else state.member!!
-                MemberDetailsContent(
-                    member = memberToDisplay,
-                    userRole = state.userRole,
-                    availableRoles = state.availableRoles,
-                    availablePermissions = state.availablePermissions,
-                    isEditing = isEditing,
-                    onRoleChange = viewModel::updateRole,
-                    onStatusChange = { newStatus ->
-                        val currentMember = state.member!!
-                        // Show confirmation for deactivation or reactivation
-                        if (currentMember.status != newStatus && (newStatus == "INACTIVE" || currentMember.status == "INACTIVE")) {
-                            pendingStatusChange = newStatus
-                            showStatusConfirmation = true
-                        } else {
-                            viewModel.updateStatus(newStatus)
-                        }
-                    },
-                    onPermissionsChange = viewModel::updatePermissions,
-                    onRemoveMember = {
-                        viewModel.removeMember()
-                        onNavigateBack()
-                    },
-                    canChangeRole = state.canChangeRole,
-                    canChangeStatus = state.canChangeStatus,
-                    canChangePermissions = state.canChangePermissions,
-                    canRemoveMember = state.canRemoveMember,
-                    modifier = Modifier.fillMaxSize()
-                )
+                Column(modifier = Modifier.fillMaxSize()) {
+                    // Offline mode indicator
+                    if (state.isOfflineMode) {
+                        MemberDetailsOfflineIndicator(
+                            onRefresh = { viewModel.refresh() }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                    
+                    val memberToDisplay = if (isEditing) state.displayMember ?: state.member!! else state.member!!
+                    MemberDetailsContent(
+                        member = memberToDisplay,
+                        userRole = state.userRole,
+                        availableRoles = state.availableRoles,
+                        availablePermissions = state.availablePermissions,
+                        isEditing = isEditing,
+                        onRoleChange = viewModel::updateRole,
+                        onStatusChange = { newStatus ->
+                            val currentMember = state.member!!
+                            // Show confirmation for deactivation or reactivation
+                            if (currentMember.status != newStatus && (newStatus == "INACTIVE" || currentMember.status == "INACTIVE")) {
+                                pendingStatusChange = newStatus
+                                showStatusConfirmation = true
+                            } else {
+                                viewModel.updateStatus(newStatus)
+                            }
+                        },
+                        onPermissionsChange = viewModel::updatePermissions,
+                        onRemoveMember = {
+                            viewModel.removeMember()
+                            onNavigateBack()
+                        },
+                        canChangeRole = state.canChangeRole,
+                        canChangeStatus = state.canChangeStatus,
+                        canChangePermissions = state.canChangePermissions,
+                        canRemoveMember = state.canRemoveMember,
+                        modifier = Modifier.fillMaxSize()
+                    )
+                }
             }
         }
 
@@ -210,8 +223,8 @@ private fun MemberDetailsHeader(
 @Composable
 private fun MemberDetailsContent(
     member: WorkspaceMember,
-    userRole: com.ampairs.workspace.api.model.UserRoleResponse?,
-    availableRoles: List<com.ampairs.workspace.api.model.WorkspaceRole>,
+    userRole: UserRoleResponse?,
+    availableRoles: List<WorkspaceRole>,
     availablePermissions: Map<String, Map<String, Boolean>>,
     isEditing: Boolean,
     onRoleChange: (String) -> Unit,
@@ -406,7 +419,7 @@ private fun MemberRoleStatusCard(
 @Composable
 private fun MemberPermissionsCard(
     member: WorkspaceMember,
-    userRole: com.ampairs.workspace.api.model.UserRoleResponse?,
+    userRole: UserRoleResponse?,
     availablePermissions: Map<String, Map<String, Boolean>>,
     isEditing: Boolean,
     canEdit: Boolean,
@@ -428,7 +441,7 @@ private fun MemberPermissionsCard(
 
             if (isEditing && canEdit) {
                 PermissionEditor(
-                    currentPermissions = member.permissions,
+                    currentPermissions = convertPermissionsListToMap(member.permissions),
                     availablePermissions = availablePermissions,
                     onPermissionsChange = onPermissionsChange
                 )
@@ -678,13 +691,13 @@ private fun MemberStatusChip(status: String) {
 
 @Composable
 private fun PermissionEditor(
-    currentPermissions: Map<String, Any>,
+    currentPermissions: List<String>,
     availablePermissions: Map<String, Map<String, Boolean>>,
     onPermissionsChange: (List<String>) -> Unit,
 ) {
-    // Convert current permissions to a set of permission keys for easier checking
+    // Convert current permissions list to a set for easier checking
     val currentPermissionKeys = remember(currentPermissions) {
-        currentPermissions.keys.toSet()
+        currentPermissions.toSet()
     }
     
     // Track selected permissions
@@ -724,40 +737,38 @@ private fun PermissionEditor(
                         modifier = Modifier.padding(start = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        actions.forEach { (action, isAvailable) ->
-                            if (isAvailable) {
-                                val permissionKey = "$module:$action"
-                                val isSelected = selectedPermissions.contains(permissionKey) ||
-                                        selectedPermissions.contains("$module.$action") || // Alternative format
-                                        selectedPermissions.contains(action) // Simple format
-                                
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Checkbox(
-                                        checked = isSelected,
-                                        onCheckedChange = { isChecked ->
-                                            selectedPermissions = selectedPermissions.toMutableSet().apply {
-                                                if (isChecked) {
-                                                    add(permissionKey)
-                                                } else {
-                                                    // Remove all possible formats of this permission
-                                                    remove(permissionKey)
-                                                    remove("$module.$action")
-                                                    remove(action)
-                                                }
+                        actions.forEach { (action, isCurrentlyGranted) ->
+                            val permissionKey = "$module:$action"
+                            val isSelected = selectedPermissions.contains(permissionKey) ||
+                                    selectedPermissions.contains("$module.$action") || // Alternative format
+                                    selectedPermissions.contains(action) // Simple format
+                            
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = isSelected,
+                                    onCheckedChange = { isChecked ->
+                                        selectedPermissions = selectedPermissions.toMutableSet().apply {
+                                            if (isChecked) {
+                                                add(permissionKey)
+                                            } else {
+                                                // Remove all possible formats of this permission
+                                                remove(permissionKey)
+                                                remove("$module.$action")
+                                                remove(action)
                                             }
                                         }
-                                    )
-                                    
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    
-                                    Text(
-                                        text = action.replaceFirstChar { it.uppercaseChar() },
-                                        style = MaterialTheme.typography.bodyMedium
-                                    )
-                                }
+                                    }
+                                )
+                                
+                                Spacer(modifier = Modifier.width(8.dp))
+                                
+                                Text(
+                                    text = action.replaceFirstChar { it.uppercaseChar() },
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
                             }
                         }
                     }
@@ -769,7 +780,7 @@ private fun PermissionEditor(
 
 @Composable
 private fun PermissionViewer(
-    permissions: Map<String, Any>,
+    permissions: List<String>,
 ) {
     if (permissions.isEmpty()) {
         Text(
@@ -779,8 +790,8 @@ private fun PermissionViewer(
         )
     } else {
         Column {
-            permissions.forEach { (key, value) ->
-                Text("$key: $value")
+            permissions.forEach { permission ->
+                Text(permission)
             }
         }
     }
@@ -846,6 +857,62 @@ private fun ErrorState(
             Icon(Icons.Default.Refresh, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
             Text("Try Again")
+        }
+    }
+}
+
+@Composable
+private fun MemberDetailsOfflineIndicator(
+    onRefresh: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CloudOff,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp)
+                )
+                
+                Spacer(modifier = Modifier.width(8.dp))
+                
+                Column {
+                    Text(
+                        text = "Offline Mode",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "Showing cached member details",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                    )
+                }
+            }
+            
+            TextButton(onClick = onRefresh) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Refresh")
+            }
         }
     }
 }

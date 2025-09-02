@@ -22,6 +22,9 @@ interface WorkspaceDao {
     @Query("SELECT * FROM workspaceEntity WHERE user_id = :userId ORDER BY createdAt DESC")
     fun getAllWorkspacesForUser(userId: String): Flow<List<WorkspaceEntity>>
 
+    @Query("SELECT * FROM workspaceEntity WHERE user_id = :userId ORDER BY createdAt DESC LIMIT :limit OFFSET :offset")
+    fun getWorkspacesPaged(userId: String, limit: Int, offset: Int): Flow<List<WorkspaceEntity>>
+
     @Query("SELECT * FROM workspaceEntity WHERE id = :id")
     suspend fun getWorkspaceById(id: String): WorkspaceEntity?
 

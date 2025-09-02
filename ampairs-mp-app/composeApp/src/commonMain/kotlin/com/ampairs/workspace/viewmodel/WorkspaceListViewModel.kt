@@ -88,12 +88,13 @@ class WorkspaceListViewModel(
                             }
                         }
                         is StoreReadResponse.Data -> {
+                            val pageResult = response.value
                             _state.value = _state.value.copy(
-                                workspaces = response.value,
+                                workspaces = pageResult.content,
                                 isLoading = false,
                                 isRefreshing = false,
                                 error = null,
-                                hasNoWorkspaces = response.value.isEmpty(),
+                                hasNoWorkspaces = pageResult.isEmpty,
                                 isOfflineMode = false // TODO: Check if data came from cache
                             )
                         }
@@ -144,12 +145,13 @@ class WorkspaceListViewModel(
                 workspaceStore.stream(request).onEach { response ->
                     when (response) {
                         is StoreReadResponse.Data -> {
+                            val pageResult = response.value
                             _state.value = _state.value.copy(
-                                workspaces = response.value,
+                                workspaces = pageResult.content,
                                 isLoading = false,
                                 isRefreshing = false,
                                 error = null,
-                                hasNoWorkspaces = response.value.isEmpty(),
+                                hasNoWorkspaces = pageResult.isEmpty,
                                 isOfflineMode = false // TODO: Check if data came from cache
                             )
                         }
@@ -201,10 +203,11 @@ class WorkspaceListViewModel(
                     when (response) {
                         is StoreReadResponse.Data -> {
                             // Filter workspaces locally based on search query
+                            val pageResult = response.value
                             val filteredWorkspaces = if (query.isBlank()) {
-                                response.value
+                                pageResult.content
                             } else {
-                                response.value.filter { workspace ->
+                                pageResult.content.filter { workspace ->
                                     workspace.name.contains(query, ignoreCase = true) ||
                                     workspace.description?.contains(query, ignoreCase = true) == true
                                 }
@@ -270,11 +273,12 @@ class WorkspaceListViewModel(
                 workspaceStore.stream(request).onEach { response ->
                     when (response) {
                         is StoreReadResponse.Data -> {
+                            val pageResult = response.value
                             _state.value = _state.value.copy(
-                                workspaces = response.value,
+                                workspaces = pageResult.content,
                                 isLoading = false,
                                 error = null,
-                                hasNoWorkspaces = response.value.isEmpty(),
+                                hasNoWorkspaces = pageResult.isEmpty,
                                 isOfflineMode = true
                             )
                         }

@@ -7,12 +7,21 @@ import com.ampairs.workspace.api.model.UserRoleResponse
 import com.ampairs.workspace.api.model.WorkspaceRole
 import com.ampairs.workspace.api.model.WorkspacePermission
 import com.ampairs.workspace.db.WorkspaceMemberRepository
-import com.ampairs.workspace.db.OfflineFirstRolesPermissionsRepository
 import com.ampairs.workspace.domain.WorkspaceMember
+import com.ampairs.workspace.store.WorkspaceMemberStore
+import com.ampairs.workspace.store.WorkspaceRolesStore
+import com.ampairs.workspace.store.WorkspacePermissionsStore
+import com.ampairs.workspace.store.WorkspaceRolesKey
+import com.ampairs.workspace.store.WorkspacePermissionsKey
+import com.ampairs.workspace.store.WorkspaceMemberKey
+import com.ampairs.workspace.store.WorkspaceMemberUpdateStoreFactory
+import com.ampairs.workspace.store.WorkspaceMemberUpdateKey
+import com.ampairs.auth.api.TokenRepository
+import org.mobilenativefoundation.store.store5.StoreReadRequest
+import org.mobilenativefoundation.store.store5.StoreReadResponse
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 
 /**
@@ -25,8 +34,12 @@ import kotlinx.coroutines.launch
 class MemberDetailsViewModel(
     private val workspaceId: String,
     private val memberId: String,
-    private val memberRepository: WorkspaceMemberRepository,
-    private val rolesPermissionsRepository: OfflineFirstRolesPermissionsRepository,
+    private val memberStore: WorkspaceMemberStore,
+    private val memberUpdateStoreFactory: WorkspaceMemberUpdateStoreFactory,
+    private val memberRepository: WorkspaceMemberRepository, // Keep for methods not yet using Store5
+    private val rolesStore: WorkspaceRolesStore,
+    private val permissionsStore: WorkspacePermissionsStore,
+    private val tokenRepository: TokenRepository,
 ) : ViewModel() {
 
     data class MemberDetailsState(
@@ -45,6 +58,7 @@ class MemberDetailsViewModel(
         val hasChanges: Boolean = false,
         val error: String? = null,
         val successMessage: String? = null,
+        val isOfflineMode: Boolean = false,
     )
 
     private val _state = MutableStateFlow(MemberDetailsState())
@@ -71,29 +85,112 @@ class MemberDetailsViewModel(
     /**
      * Load member details (synchronous-like call wrapped in coroutine).
      */
-    fun loadMemberDetails() {
+    fun loadMemberDetails(forceRefresh: Boolean = false) {
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null)
+            
             try {
-                val member = memberRepository.getMemberDetails(workspaceId, memberId)
-                _state.value = _state.value.copy(
-                    isLoading = false,
-                    member = member,
-                    originalMember = member,
-                    displayMember = member,
-                    error = null
-                )
-                // Recalculate permissions now that member is loaded
-                _state.value.userRole?.let { userRole ->
-                    val perms = calculateMemberPermissions(userRole)
+                val currentUserId = tokenRepository.getCurrentUserId()
+                if (currentUserId == null) {
                     _state.value = _state.value.copy(
-                        canEdit = perms.canEdit,
-                        canChangeRole = perms.canChangeRole,
-                        canChangeStatus = perms.canChangeStatus,
-                        canChangePermissions = perms.canChangePermissions,
-                        canRemoveMember = perms.canRemoveMember
+                        isLoading = false,
+                        error = "User not authenticated"
                     )
+                    return@launch
                 }
+
+                // Use Store5 to get single member details
+                val key = WorkspaceMemberKey.forMember(currentUserId, workspaceId, memberId)
+                val request = if (forceRefresh) {
+                    StoreReadRequest.fresh(key)
+                } else {
+                    StoreReadRequest.cached(key, refresh = true)
+                }
+                
+                memberStore.stream(request).collect { response ->
+                    when (response) {
+                        is StoreReadResponse.Data -> {
+                            val pageResult = response.value
+                            val member = pageResult.content.firstOrNull()
+                            
+                            if (member != null) {
+                                _state.value = _state.value.copy(
+                                    isLoading = false,
+                                    member = member,
+                                    originalMember = member,
+                                    displayMember = member,
+                                    error = null,
+                                    isOfflineMode = false // Successfully loaded from network
+                                )
+                                
+                                // Recalculate permissions now that member is loaded
+                                // If userRole is not available, load it first
+                                if (_state.value.userRole == null) {
+                                    loadUserRole()
+                                } else {
+                                    val userRole = _state.value.userRole!!
+                                    val perms = calculateMemberPermissions(userRole)
+                                    _state.value = _state.value.copy(
+                                        canEdit = perms.canEdit,
+                                        canChangeRole = perms.canChangeRole,
+                                        canChangeStatus = perms.canChangeStatus,
+                                        canChangePermissions = perms.canChangePermissions,
+                                        canRemoveMember = perms.canRemoveMember
+                                    )
+                                }
+                            } else {
+                                _state.value = _state.value.copy(
+                                    isLoading = false,
+                                    error = "Member not found"
+                                )
+                            }
+                        }
+                        is StoreReadResponse.Loading -> {
+                            // Only show loading if we don't have any data yet
+                            if (_state.value.member == null) {
+                                _state.value = _state.value.copy(isLoading = true)
+                            }
+                        }
+                        is StoreReadResponse.Error.Exception -> {
+                            // Check if we have cached data to show
+                            if (_state.value.member == null) {
+                                // No cached data, show error
+                                _state.value = _state.value.copy(
+                                    isLoading = false,
+                                    error = response.error.message ?: "Failed to load member details"
+                                )
+                            } else {
+                                // We have cached data, show it in offline mode
+                                _state.value = _state.value.copy(
+                                    isLoading = false,
+                                    error = null, // Don't show network error if we have cached data
+                                    isOfflineMode = true // Indicate we're showing cached data
+                                )
+                            }
+                        }
+                        is StoreReadResponse.Error.Message -> {
+                            // Check if we have cached data to show
+                            if (_state.value.member == null) {
+                                // No cached data, show error
+                                _state.value = _state.value.copy(
+                                    isLoading = false,
+                                    error = response.message
+                                )
+                            } else {
+                                // We have cached data, show it in offline mode
+                                _state.value = _state.value.copy(
+                                    isLoading = false,
+                                    error = null, // Don't show network error if we have cached data
+                                    isOfflineMode = true // Indicate we're showing cached data
+                                )
+                            }
+                        }
+                        else -> {
+                            // Handle other states
+                        }
+                    }
+                }
+
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     isLoading = false,
@@ -134,39 +231,61 @@ class MemberDetailsViewModel(
     }
 
     /**
-     * Load roles & permissions using an offline-first strategy: show cached data immediately,
-     * then collect fresh flows to update state when network data becomes available.
+     * Load roles & permissions using Store5 for offline-first data access.
      */
     private fun loadAvailableRolesAndPermissions() {
         viewModelScope.launch {
             try {
-                // cached values for instant UI responsiveness
-                val cachedRoles = rolesPermissionsRepository.getCachedRoles(workspaceId).firstOrNull() ?: emptyList()
-                val cachedPermissions = rolesPermissionsRepository.getCachedPermissions(workspaceId)
+                val currentUserId = tokenRepository.getCurrentUserId() ?: "unknown_user"
 
-                if (cachedRoles.isNotEmpty() || cachedPermissions.isNotEmpty()) {
-                    _state.value = _state.value.copy(
-                        availableRoles = cachedRoles,
-                        availablePermissions = cachedPermissions
-                    )
-                }
-
-                // collect fresh roles
+                // Load workspace roles using Store5
                 launch {
                     try {
-                        rolesPermissionsRepository.getWorkspaceRoles(workspaceId).collect { roles ->
-                            _state.value = _state.value.copy(availableRoles = roles)
+                        val rolesKey = WorkspaceRolesKey(workspaceId, currentUserId)
+                        val rolesRequest = StoreReadRequest.cached(rolesKey, refresh = true)
+                        
+                        rolesStore.stream(rolesRequest).collect { response ->
+                            when (response) {
+                                is StoreReadResponse.Data -> {
+                                    _state.value = _state.value.copy(availableRoles = response.value)
+                                }
+                                is StoreReadResponse.Loading -> {
+                                    // Keep existing data while loading
+                                }
+                                is StoreReadResponse.Error -> {
+                                    // Keep existing cached data on error
+                                }
+                                else -> {
+                                    // Handle other response types
+                                }
+                            }
                         }
                     } catch (_: Exception) {
                         // ignore background errors
                     }
                 }
 
-                // collect fresh permissions
+                // Load workspace permissions using Store5
                 launch {
                     try {
-                        rolesPermissionsRepository.getWorkspacePermissions(workspaceId).collect { permissions ->
-                            _state.value = _state.value.copy(availablePermissions = permissions)
+                        val permissionsKey = WorkspacePermissionsKey(workspaceId, currentUserId)
+                        val permissionsRequest = StoreReadRequest.cached(permissionsKey, refresh = true)
+                        
+                        permissionsStore.stream(permissionsRequest).collect { response ->
+                            when (response) {
+                                is StoreReadResponse.Data -> {
+                                    _state.value = _state.value.copy(availablePermissions = response.value)
+                                }
+                                is StoreReadResponse.Loading -> {
+                                    // Keep existing data while loading
+                                }
+                                is StoreReadResponse.Error -> {
+                                    // Keep existing cached data on error
+                                }
+                                else -> {
+                                    // Handle other response types
+                                }
+                            }
                         }
                     } catch (_: Exception) {
                         // ignore background errors
@@ -174,7 +293,7 @@ class MemberDetailsViewModel(
                 }
 
             } catch (_: Exception) {
-                // ignore cached load errors; nothing critical
+                // ignore load errors; nothing critical
             }
         }
     }
@@ -216,7 +335,7 @@ class MemberDetailsViewModel(
         val display = current.copy(
             role = pendingRole ?: current.role,
             status = pendingStatus ?: current.status,
-            permissions = pendingPermissions?.associateWith { true } ?: current.permissions
+            permissions = pendingPermissions ?: current.permissions
         )
         _state.value = _state.value.copy(displayMember = display)
     }
@@ -232,19 +351,45 @@ class MemberDetailsViewModel(
              _state.value = _state.value.copy(isLoading = true, error = null)
 
              try {
-                 // Convert List<String> permissions to Set<WorkspacePermission>
-                 val permissionSet = pendingPermissions?.mapNotNull { permission ->
-                     WorkspacePermission.fromString(permission)
-                 }?.toSet()
+                 // Capture mutable properties to avoid smart cast issues
+                 val currentPendingPermissions = pendingPermissions
+                 
+                 // Convert permissions to Set<WorkspacePermission>
+                 val permissionSet = if (!currentPendingPermissions.isNullOrEmpty()) {
+                     currentPendingPermissions.mapNotNull { permission ->
+                         // Convert from colon format (e.g., "member:view") to underscore format (e.g., "MEMBER_VIEW")
+                         val convertedPermission = if (permission.contains(":")) {
+                             val parts = permission.split(":")
+                             "${parts[0].uppercase()}_${parts[1].uppercase()}"
+                         } else {
+                             permission.uppercase()
+                         }
+                         WorkspacePermission.fromString(convertedPermission)
+                     }.toSet()
+                 } else {
+                     emptySet()
+                 }
                  
                  val updateRequest = UpdateMemberRequest(
                      role = pendingRole,
-                     customPermissions = permissionSet,
+                     permissions = permissionSet,
                      reason = "Updated via member details screen",
                      notifyMember = true
                  )
 
-                 val updatedMember = memberRepository.updateMember(workspaceId, memberId, updateRequest)
+                 // Use Store5 update mechanism for better sync
+                val updateKey = WorkspaceMemberUpdateKey(workspaceId, memberId)
+                val success = memberUpdateStoreFactory.updateMember(updateKey, updateRequest)
+                
+                if (success) {
+                    // Reload member details to get fresh data from Store5
+                    loadMemberDetails(forceRefresh = true)
+                } else {
+                    throw Exception("Failed to update member")
+                }
+                
+                // For backward compatibility, get the updated member from state
+                val updatedMember = _state.value.member!!
 
                  _state.value = _state.value.copy(
                      isLoading = false,
@@ -273,7 +418,13 @@ class MemberDetailsViewModel(
         viewModelScope.launch {
             _state.value = _state.value.copy(isLoading = true, error = null)
             try {
-                memberRepository.removeMember(workspaceId, memberId)
+                // Use Store5 remove mechanism 
+                val removeKey = WorkspaceMemberUpdateKey(workspaceId, memberId)
+                val success = memberUpdateStoreFactory.removeMember(removeKey)
+                
+                if (!success) {
+                    throw Exception("Failed to remove member")
+                }
 
                 // remove locally from UI
                 _state.value = _state.value.copy(
@@ -361,8 +512,9 @@ class MemberDetailsViewModel(
     }
 
     fun refresh() {
-        loadMemberDetails()
+        loadMemberDetails(forceRefresh = true)
         loadUserRole()
         loadAvailableRolesAndPermissions()
     }
+
 }

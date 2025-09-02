@@ -60,7 +60,7 @@ class OfflineFirstWorkspaceMemberRepository(
                 status = memberData.status,
                 joinedAt = memberData.joinedAt,
                 lastActivity = memberData.lastActivityAt ?: "",
-                permissions = memberData.permissions.associateWith { true },
+                permissions = memberData.permissions,
                 avatarUrl = memberData.avatarUrl,
             )
 
@@ -139,7 +139,7 @@ class OfflineFirstWorkspaceMemberRepository(
                         status = if (memberListItem.isActive) "ACTIVE" else "INACTIVE",
                         joinedAt = memberListItem.joinedAt,
                         lastActivity = memberListItem.lastActivityAt,
-                        permissions = emptyMap(),
+                        permissions = emptyList(),
                         avatarUrl = memberListItem.user?.profilePictureUrl,
                         phone = memberListItem.user?.phone,
                     )

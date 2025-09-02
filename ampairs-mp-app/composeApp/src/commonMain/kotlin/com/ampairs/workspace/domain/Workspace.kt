@@ -156,7 +156,7 @@ data class WorkspaceMember(
     val status: String,
     val joinedAt: String,
     val lastActivity: String? = null,
-    val permissions: Map<String, Any> = emptyMap(),
+    val permissions: List<String> = emptyList(),
     val avatarUrl: String? = null,
 )
 
@@ -229,7 +229,7 @@ fun WorkspaceMember.asDatabaseModel(): WorkspaceMemberEntity {
         status = this.status,
         joined_at = this.joinedAt,
         last_activity = this.lastActivity,
-        permissions = if (this.permissions.isEmpty()) "{}" else this.permissions.toString(),
+        permissions = if (this.permissions.isEmpty()) "[]" else kotlinx.serialization.json.Json.encodeToString(this.permissions),
         avatar_url = this.avatarUrl,
         phone = this.phone,
     )
@@ -246,7 +246,16 @@ fun WorkspaceMemberEntity.asDomainModel(): WorkspaceMember {
         status = this.status,
         joinedAt = this.joined_at,
         lastActivity = this.last_activity,
-        permissions = emptyMap(), // Simplified for now, can be enhanced later
+        permissions = try {
+            if (this.permissions.isEmpty() || this.permissions == "{}" || this.permissions == "[]") {
+                emptyList()
+            } else {
+                // Parse permissions from JSON string stored in database
+                kotlinx.serialization.json.Json.decodeFromString<List<String>>(this.permissions)
+            }
+        } catch (e: Exception) {
+            emptyList()
+        },
         avatarUrl = this.avatar_url,
         phone = this.phone,
     )

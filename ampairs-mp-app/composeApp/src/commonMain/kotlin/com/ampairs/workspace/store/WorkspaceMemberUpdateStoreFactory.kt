@@ -67,6 +67,28 @@ class WorkspaceMemberUpdateStoreFactory(
         )
     }
 
+    // Direct remove method for member removal operations
+    suspend fun removeMember(key: WorkspaceMemberUpdateKey): Boolean {
+        return try {
+            val response = memberApi.removeMember(
+                workspaceId = key.workspaceId,
+                memberId = key.memberId
+            )
+            
+            if (response.data != null && response.error == null) {
+                // Remove from local cache
+                removeLocalMember(key)
+                true
+            } else {
+                throw Exception(response.error?.message ?: "Failed to remove member")
+            }
+        } catch (e: Exception) {
+            // Mark as pending deletion
+            markMemberForDeletion(key, e.message)
+            throw e
+        }
+    }
+
     // Direct update method for now - can be enhanced later with proper Store5 updater
     suspend fun updateMember(key: WorkspaceMemberUpdateKey, request: UpdateMemberRequest): Boolean {
         return try {
@@ -104,6 +126,23 @@ class WorkspaceMemberUpdateStoreFactory(
                 server_updated_at = System.currentTimeMillis(),
                 pending_changes = "",
                 retry_count = 0
+            )
+            memberDao.insertWorkspaceMember(updated)
+        }
+    }
+
+    private suspend fun removeLocalMember(key: WorkspaceMemberUpdateKey) {
+        memberDao.deleteWorkspaceMemberForUser("", key.workspaceId, key.memberId)
+    }
+
+    private suspend fun markMemberForDeletion(key: WorkspaceMemberUpdateKey, errorMessage: String?) {
+        val entity = memberDao.getWorkspaceMemberForUser("", key.workspaceId, key.memberId)
+        entity?.let { existing ->
+            val updated = existing.copy(
+                sync_state = "PENDING_DELETE",
+                retry_count = existing.retry_count + 1,
+                local_updated_at = System.currentTimeMillis(),
+                conflict_data = errorMessage ?: ""
             )
             memberDao.insertWorkspaceMember(updated)
         }

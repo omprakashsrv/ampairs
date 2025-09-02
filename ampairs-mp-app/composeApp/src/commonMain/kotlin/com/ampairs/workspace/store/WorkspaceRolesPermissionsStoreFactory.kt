@@ -114,18 +114,21 @@ class WorkspacePermissionsStoreFactory(
                 // Clear old data
                 permissionDao.deleteAllWorkspacePermissionsForUser(key.userId, key.workspaceId)
                 
-                // Convert map back to permission response list and then to entities
-                val permissionResponses = networkData.flatMap { (module, actions) ->
-                    actions.filter { it.value }.map { (action, _) ->
-                        WorkspacePermissionResponse(
-                            name = "${module}_${action}".uppercase(),
-                            permissionName = "${module}_${action}".uppercase(),
-                            description = "Permission for $module $action"
-                        )
-                    }
+                // Store the complete permission map structure
+                val entities = networkData.map { (module, actions) ->
+                    WorkspacePermissionEntity(
+                        user_id = key.userId,
+                        workspace_id = key.workspaceId,
+                        module = module,
+                        actions = Json.encodeToString(actions), // Store the complete actions map
+                        description = "Permissions for $module module",
+                        sync_state = "SYNCED",
+                        last_synced_at = System.currentTimeMillis(),
+                        local_updated_at = System.currentTimeMillis(),
+                        server_updated_at = System.currentTimeMillis()
+                    )
                 }
                 
-                val entities = permissionResponses.map { it.toPermissionEntity(key.userId, key.workspaceId) }
                 permissionDao.insertWorkspacePermissions(entities)
             }
         )
@@ -137,7 +140,7 @@ class WorkspacePermissionsStoreFactory(
 private fun List<WorkspacePermissionEntity>.toPermissionMap(): Map<String, Map<String, Boolean>> {
     return this.associate { entity ->
         val actions = try {
-            kotlinx.serialization.json.Json.decodeFromString<Map<String, Boolean>>(entity.actions)
+            Json.decodeFromString<Map<String, Boolean>>(entity.actions)
         } catch (e: Exception) {
             emptyMap()
         }
@@ -182,16 +185,3 @@ private fun WorkspaceRoleEntity.toApiModel(): WorkspaceRole {
     )
 }
 
-private fun WorkspacePermissionResponse.toPermissionEntity(userId: String, workspaceId: String): WorkspacePermissionEntity {
-    return WorkspacePermissionEntity(
-        user_id = userId,
-        workspace_id = workspaceId,
-        module = this.name.split("_").first(),
-        actions = "{}",
-        description = this.description,
-        sync_state = "SYNCED",
-        last_synced_at = System.currentTimeMillis(),
-        local_updated_at = System.currentTimeMillis(),
-        server_updated_at = System.currentTimeMillis()
-    )
-}

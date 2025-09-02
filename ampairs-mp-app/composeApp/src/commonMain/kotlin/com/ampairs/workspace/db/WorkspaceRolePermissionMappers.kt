@@ -44,7 +44,7 @@ fun WorkspaceRoleEntity.toApiModel(): WorkspaceRole {
     } catch (e: Exception) {
         emptyList()
     }
-    
+
     return WorkspaceRole(
         name = this.name,
         displayName = this.name, // Use name as display name
@@ -57,29 +57,18 @@ fun WorkspaceRoleEntity.toApiModel(): WorkspaceRole {
 // Permission mapping functions
 
 fun List<WorkspacePermissionResponse>.toPermissionEntities(
-    userId: String, 
+    userId: String,
     workspaceId: String
 ): List<WorkspacePermissionEntity> {
-    // Group permissions by module (extracted from permissionName)
-    val groupedPermissions = this.groupBy { permission ->
-        // Extract module from permission name (e.g., "MEMBER_VIEW" -> "MEMBER")
-        val parts = permission.permissionName.split("_")
-        if (parts.size > 1) parts[0].lowercase() else "general"
-    }
-    
-    return groupedPermissions.map { (module, permissions) ->
-        val actions = permissions.associate { permission ->
-            // Extract action from permission name (e.g., "MEMBER_VIEW" -> "view")
-            val action = permission.permissionName.split("_").drop(1).joinToString("_").lowercase()
-            action.ifEmpty { "general" } to true
-        }
-        
+    // Store permissions directly as received from backend
+    // Backend should handle grouping and structuring of permissions
+    return this.mapIndexed { index, permission ->
         WorkspacePermissionEntity(
             user_id = userId,
             workspace_id = workspaceId,
-            module = module,
-            actions = Json.encodeToString(actions),
-            description = "Permissions for $module module",
+            module = permission.name, // Use permission name directly from backend
+            actions = Json.encodeToString(mapOf(permission.permissionName to true)), // Store individual permission
+            description = permission.description,
             sync_state = "SYNCED",
             last_synced_at = System.currentTimeMillis(),
             local_updated_at = System.currentTimeMillis(),
@@ -101,13 +90,15 @@ fun List<WorkspacePermissionEntity>.toPermissionMap(): Map<String, Map<String, B
 
 // Convert API response list to UI expected map format
 fun convertPermissionsListToMap(permissionsList: List<WorkspacePermissionResponse>): Map<String, Map<String, Boolean>> {
-    // Group permissions by module (extracted from permissionName)
+    // The permissionsList contains ALL available permissions from the backend
+    // Group them by module and convert to the UI expected format
     val groupedPermissions = permissionsList.groupBy { permission ->
-        // Extract module from permission name (e.g., "MEMBER_VIEW" -> "MEMBER")
+        // Extract module from permission name (e.g., "MEMBER_VIEW" -> "member")
         val parts = permission.permissionName.split("_")
         if (parts.size > 1) parts[0].lowercase() else "general"
     }
-    
+
+    // Convert to UI format with all permissions set to true (available)
     return groupedPermissions.mapValues { (_, permissions) ->
         permissions.associate { permission ->
             // Extract action from permission name (e.g., "MEMBER_VIEW" -> "view")
@@ -117,10 +108,31 @@ fun convertPermissionsListToMap(permissionsList: List<WorkspacePermissionRespons
     }
 }
 
+// Convert API response list to UI expected map format
+fun convertPermissionsListToMap(permissionsList: List<String>): List<String> {
+    // The permissionsList contains ALL available permissions from the backend
+    // Group them by module and convert to the UI expected format
+    val groupedPermissions = permissionsList.map { permissionName ->
+        // Extract module from permission name (e.g., "MEMBER_VIEW" -> "member")
+        val parts = permissionName.split("_")
+        if (parts.size > 1) parts[0].lowercase() else "general"
+    }
+    return groupedPermissions;
+
+//    // Convert to UI format with all permissions set to true (available)
+//    return groupedPermissions.mapValues { (_, permissions) ->
+//        permissions.associate { permissionName ->
+//            // Extract action from permission name (e.g., "MEMBER_VIEW" -> "view")
+//            val action = permissionName.split("_").drop(1).joinToString("_").lowercase()
+//            action.ifEmpty { "general" } to true
+//        }
+//    }
+}
+
 // Convert UI permission map back to backend enum set
 fun convertPermissionMapToEnumSet(permissionMap: Map<String, Map<String, Boolean>>): Set<WorkspacePermission> {
     val permissions = mutableSetOf<WorkspacePermission>()
-    
+
     permissionMap.forEach { (module, actions) ->
         actions.forEach { (action, enabled) ->
             if (enabled) {
@@ -130,7 +142,7 @@ fun convertPermissionMapToEnumSet(permissionMap: Map<String, Map<String, Boolean
             }
         }
     }
-    
+
     return permissions
 }
 
