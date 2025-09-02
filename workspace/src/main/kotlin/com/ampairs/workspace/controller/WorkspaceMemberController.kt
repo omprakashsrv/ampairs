@@ -895,7 +895,7 @@ class WorkspaceMemberController(
             example = "WS_ABC123_XYZ789"
         )
         @PathVariable workspaceId: String,
-    ): ApiResponse<com.ampairs.workspace.model.dto.UserRoleResponse> {
+    ): ApiResponse<UserRoleResponse> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
         val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
@@ -919,45 +919,45 @@ class WorkspaceMemberController(
                 "manage" to memberService.hasPermission(
                     workspaceId,
                     userId,
-                    WorkspacePermission.WORKSPACE_MANAGE.permissionName
+                    WorkspacePermission.WORKSPACE_MANAGE
                 ),
                 "view" to true,
                 "delete" to memberService.hasPermission(
                     workspaceId,
                     userId,
-                    WorkspacePermission.WORKSPACE_DELETE.permissionName
+                    WorkspacePermission.WORKSPACE_DELETE
                 )
             ),
             "members" to mapOf(
                 "view" to memberService.hasPermission(
                     workspaceId,
                     userId,
-                    WorkspacePermission.MEMBER_VIEW.permissionName
+                    WorkspacePermission.MEMBER_VIEW
                 ),
                 "invite" to memberService.hasPermission(
                     workspaceId,
                     userId,
-                    WorkspacePermission.MEMBER_INVITE.permissionName
+                    WorkspacePermission.MEMBER_INVITE
                 ),
                 "manage" to memberService.hasPermission(
                     workspaceId,
                     userId,
-                    WorkspacePermission.MEMBER_MANAGE.permissionName
+                    WorkspacePermission.MEMBER_MANAGE
                 ),
                 "remove" to memberService.hasPermission(
                     workspaceId,
                     userId,
-                    WorkspacePermission.MEMBER_DELETE.permissionName
+                    WorkspacePermission.MEMBER_DELETE
                 )
             )
         )
 
         // Module access based on role
         val moduleAccess = when (member.role) {
-            com.ampairs.workspace.model.enums.WorkspaceRole.OWNER,
-            com.ampairs.workspace.model.enums.WorkspaceRole.ADMIN -> listOf("all")
+            WorkspaceRole.OWNER,
+            WorkspaceRole.ADMIN -> listOf("all")
 
-            com.ampairs.workspace.model.enums.WorkspaceRole.MANAGER -> listOf(
+            WorkspaceRole.MANAGER -> listOf(
                 "customer",
                 "product",
                 "order",
@@ -965,11 +965,11 @@ class WorkspaceMemberController(
                 "reports"
             )
 
-            com.ampairs.workspace.model.enums.WorkspaceRole.MEMBER -> listOf("customer", "product", "order")
+            WorkspaceRole.MEMBER -> listOf("customer", "product", "order")
             else -> listOf("customer")
         }
 
-        val result = com.ampairs.workspace.model.dto.UserRoleResponse(
+        val result = UserRoleResponse(
             userId = userId,
             workspaceId = workspaceId,
             currentRole = member.role.name,

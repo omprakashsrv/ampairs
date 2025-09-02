@@ -116,7 +116,7 @@ class WorkspaceService(
         val workspace = findWorkspaceById(workspaceId)
 
         // Check permissions
-        if (!memberService.hasPermission(workspaceId, updatedBy, WorkspacePermission.WORKSPACE_MANAGE.permissionName)) {
+        if (!memberService.hasPermission(workspaceId, updatedBy, WorkspacePermission.WORKSPACE_MANAGE)) {
             throw BusinessException("INSUFFICIENT_PERMISSIONS", "You don't have permission to update this workspace")
         }
 
