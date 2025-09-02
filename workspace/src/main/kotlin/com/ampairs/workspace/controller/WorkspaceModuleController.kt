@@ -433,4 +433,175 @@ class WorkspaceModuleController(
         val result = workspaceModuleService.performAction(moduleId, action)
         return ResponseEntity.ok(ApiResponse.success(result))
     }
+
+    @Operation(
+        summary = "Browse Available Modules",
+        description = """
+        ## 🔍 **Discover Available Modules for Installation**
+        
+        Browse the catalog of available business modules that can be installed in the workspace.
+        Modules are filtered based on subscription tier and what's already installed.
+        
+        ### **Response Information:**
+        - **Available Modules**: Modules not yet installed in workspace
+        - **Module Details**: Name, description, category, rating, and requirements
+        - **Installation Requirements**: Dependencies, conflicts, and prerequisites
+        - **Filtering Options**: Category-based filtering and featured modules
+        
+        ### **Use Cases:**
+        - **Module Discovery**: Find new functionality to add to workspace
+        - **Business Growth**: Explore modules as business needs expand
+        - **Feature Planning**: Research available capabilities before implementation
+        - **Competitive Analysis**: Compare module features and ratings
+        
+        ### **Business Value:**
+        - Enables informed decisions about workspace functionality
+        - Supports scalable business growth through modular expansion
+        - Provides visibility into ecosystem capabilities
+        """,
+        tags = ["Module Discovery"]
+    )
+    @GetMapping("/available")
+    @PreAuthorize("@workspaceAuthorizationService.isCurrentTenantMember(authentication)")
+    fun getAvailableModules(
+        @Parameter(
+            name = "category",
+            description = """
+            **Filter by Module Category**
+            
+            Optional filter to show only modules in a specific category.
+            
+            **Available Categories:**
+            - CUSTOMER_MANAGEMENT
+            - SALES_MANAGEMENT
+            - FINANCIAL_MANAGEMENT
+            - INVENTORY_MANAGEMENT
+            - ORDER_MANAGEMENT
+            - ANALYTICS_REPORTING
+            - COMMUNICATION
+            - PROJECT_MANAGEMENT
+            - HR_MANAGEMENT
+            - MARKETING
+            - INTEGRATIONS
+            - ADMINISTRATION
+            """,
+            required = false,
+            example = "CUSTOMER_MANAGEMENT"
+        )
+        @RequestParam(required = false) category: String?,
+
+        @Parameter(
+            name = "featured",
+            description = """
+            **Show Featured Modules Only**
+            
+            When true, returns only modules marked as featured/recommended.
+            Featured modules are typically popular, well-rated, or essential for most businesses.
+            """,
+            required = false,
+            example = "false"
+        )
+        @RequestParam(required = false, defaultValue = "false") featured: Boolean,
+    ): ResponseEntity<ApiResponse<Map<String, Any>>> {
+        val result = workspaceModuleService.getAvailableModules(category, featured)
+        return ResponseEntity.ok(ApiResponse.success(result))
+    }
+
+    @Operation(
+        summary = "Install Module",
+        description = """
+        ## ⚡ **Install New Module in Workspace**
+        
+        Installs a business module from the master catalog into the current workspace.
+        Handles dependency checking, conflict resolution, and proper initialization.
+        
+        ### **Installation Process:**
+        1. **Validation**: Check module exists and is installable
+        2. **Dependencies**: Verify all required modules are installed
+        3. **Conflicts**: Ensure no conflicting modules are active
+        4. **Installation**: Create workspace module configuration
+        5. **Activation**: Enable module for immediate use
+        
+        ### **Use Cases:**
+        - **Business Expansion**: Add new functionality as business grows
+        - **Feature Adoption**: Install specific modules for new processes
+        - **Compliance Requirements**: Install modules for regulatory needs
+        - **Integration Setup**: Install modules for third-party connections
+        
+        ### **Business Impact:**
+        - Immediate access to new business capabilities
+        - Structured approach to functionality expansion
+        - Maintained system integrity through validation
+        """,
+        tags = ["Module Installation"]
+    )
+    @PostMapping("/install/{moduleCode}")
+    @PreAuthorize("@workspaceAuthorizationService.isCurrentTenantAdmin(authentication)")
+    fun installModule(
+        @Parameter(
+            name = "moduleCode",
+            description = """
+            **Module Code to Install**
+            
+            The unique code identifier of the module to install from the master catalog.
+            
+            **Format:** Usually lowercase with hyphens (e.g., 'customer-management')
+            **How to Find:** Use the /available endpoint to browse module codes
+            """,
+            required = true,
+            example = "customer-management"
+        )
+        @PathVariable moduleCode: String,
+    ): ResponseEntity<ApiResponse<Map<String, Any>>> {
+        val result = workspaceModuleService.installModule(moduleCode)
+        return ResponseEntity.ok(ApiResponse.success(result))
+    }
+
+    @Operation(
+        summary = "Uninstall Module",
+        description = """
+        ## 🗑️ **Remove Module from Workspace**
+        
+        Safely uninstalls a module from the workspace after checking for dependencies.
+        Ensures data integrity and prevents breaking other installed modules.
+        
+        ### **Uninstallation Process:**
+        1. **Dependency Check**: Verify no other modules depend on this one
+        2. **Data Backup**: Option to backup module data before removal
+        3. **Deactivation**: Disable module functionality
+        4. **Cleanup**: Remove module configuration and settings
+        5. **Statistics Update**: Update master module usage statistics
+        
+        ### **Safety Features:**
+        - **Dependency Protection**: Prevents removal if other modules depend on it
+        - **Data Preservation**: Option to retain data for future reinstallation
+        - **Rollback Support**: Ability to reinstall and restore previous state
+        
+        ### **Use Cases:**
+        - **Cost Optimization**: Remove unused modules to reduce overhead
+        - **Simplification**: Streamline workspace by removing unnecessary features
+        - **Migration**: Remove modules before switching to alternatives
+        - **Troubleshooting**: Temporarily remove problematic modules
+        """,
+        tags = ["Module Management"]
+    )
+    @DeleteMapping("/{moduleId}")
+    @PreAuthorize("@workspaceAuthorizationService.isCurrentTenantAdmin(authentication)")
+    fun uninstallModule(
+        @Parameter(
+            name = "moduleId",
+            description = """
+            **Module Identifier to Uninstall**
+            
+            The unique identifier of the installed module to remove from workspace.
+            Can be either the workspace module UID or the master module code.
+            """,
+            required = true,
+            example = "MOD_CUSTOMER_CRM_001"
+        )
+        @PathVariable moduleId: String,
+    ): ResponseEntity<ApiResponse<Map<String, Any>>> {
+        val result = workspaceModuleService.uninstallModule(moduleId)
+        return ResponseEntity.ok(ApiResponse.success(result))
+    }
 }

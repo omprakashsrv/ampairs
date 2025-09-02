@@ -29,4 +29,82 @@ interface MasterModuleRepository : JpaRepository<MasterModule, String>, JpaSpeci
      * Find all active modules
      */
     fun findByActiveTrue(): List<MasterModule>
+
+    /**
+     * Find active modules by category
+     */
+    fun findByActiveTrueAndCategory(category: ModuleCategory): List<MasterModule>
+
+    /**
+     * Find active modules ordered by display order
+     */
+    fun findByActiveTrueOrderByDisplayOrderAsc(): List<MasterModule>
+
+    /**
+     * Find featured modules
+     */
+    fun findByActiveTrueAndFeaturedTrueOrderByDisplayOrderAsc(): List<MasterModule>
+
+    /**
+     * Find modules by status
+     */
+    fun findByStatusOrderByDisplayOrderAsc(status: ModuleStatus): List<MasterModule>
+
+    /**
+     * Find modules available for subscription tier
+     */
+    @Query("SELECT m FROM MasterModule m WHERE m.active = true AND m.requiredTier <= :tier ORDER BY m.displayOrder ASC")
+    fun findByActiveTrueAndRequiredTierLessThanEqualOrderByDisplayOrderAsc(@Param("tier") tier: SubscriptionTier): List<MasterModule>
+
+    /**
+     * Search modules by name or description
+     */
+    fun findByActiveTrueAndNameContainingIgnoreCaseOrDescriptionContainingIgnoreCaseOrderByDisplayOrderAsc(
+        nameKeyword: String,
+        descriptionKeyword: String,
+    ): List<MasterModule>
+
+    /**
+     * Find modules by complexity level
+     */
+    fun findByActiveTrueAndComplexity(complexity: ModuleComplexity): List<MasterModule>
+
+    /**
+     * Find modules by category with pagination
+     */
+    fun findByActiveTrueAndCategoryOrderByDisplayOrderAsc(
+        category: ModuleCategory,
+        pageable: Pageable,
+    ): Page<MasterModule>
+
+    /**
+     * Find most popular modules (high install count and rating)
+     */
+    @Query("SELECT m FROM MasterModule m WHERE m.active = true AND m.installCount > :minInstalls AND m.rating >= :minRating ORDER BY m.installCount DESC, m.rating DESC")
+    fun findPopularModules(
+        @Param("minInstalls") minInstalls: Int,
+        @Param("minRating") minRating: Double,
+        pageable: Pageable,
+    ): Page<MasterModule>
+
+    /**
+     * Find modules by tags or keywords (search in UI metadata)
+     * Note: Full-text search moved to service layer due to JSON field limitations
+     */
+    fun findByActiveTrueAndNameContainingIgnoreCase(searchTerm: String): List<MasterModule>
+
+    /**
+     * Count modules by category
+     */
+    fun countByActiveTrueAndCategory(category: ModuleCategory): Long
+
+    /**
+     * Get module provider statistics
+     */
+    fun countByActiveTrueAndProvider(provider: String): Long
+
+    /**
+     * Find modules that exist in master registry by codes
+     */
+    fun findByModuleCodeIn(moduleCodes: List<String>): List<MasterModule>
 }
