@@ -262,7 +262,6 @@ private fun MemberDetailsContent(
         // Permissions Card
         MemberPermissionsCard(
             member = member,
-            userRole = userRole,
             availablePermissions = availablePermissions,
             isEditing = isEditing,
             canEdit = canChangePermissions,
@@ -353,7 +352,7 @@ private fun MemberProfileCard(
 @Composable
 private fun MemberRoleStatusCard(
     member: WorkspaceMember,
-    availableRoles: List<com.ampairs.workspace.api.model.WorkspaceRole>,
+    availableRoles: List<WorkspaceRole>,
     isEditing: Boolean,
     canChangeRole: Boolean,
     canChangeStatus: Boolean,
@@ -385,7 +384,7 @@ private fun MemberRoleStatusCard(
                         style = MaterialTheme.typography.labelMedium
                     )
 
-                    if (isEditing && canChangeRole && member.role != "OWNER") {
+                    if (isEditing && canChangeRole) {
                         RoleDropdown(
                             currentRole = member.role,
                             availableRoles = availableRoles,
@@ -420,7 +419,6 @@ private fun MemberRoleStatusCard(
 @Composable
 private fun MemberPermissionsCard(
     member: WorkspaceMember,
-    userRole: UserRoleResponse?,
     availablePermissions: Map<String, Map<String, Boolean>>,
     isEditing: Boolean,
     canEdit: Boolean,
@@ -738,8 +736,7 @@ private fun PermissionEditor(
                         modifier = Modifier.padding(start = 16.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        actions.forEach { (action, isCurrentlyGranted) ->
-                            val permissionKey = "$module:$action"
+                        actions.forEach { (action, _) ->
                             // Convert module:action format to enum format (e.g., "member:view" -> "MEMBER_VIEW")
                             val enumFormat = "${module.uppercase()}_${action.uppercase()}"
                             val isSelected =
@@ -790,9 +787,42 @@ private fun PermissionViewer(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     } else {
-        Column {
-            permissions.forEach { permission ->
-                Text(permission)
+        // Group permissions by module for better organization
+        val groupedPermissions = permissions.groupBy { permission ->
+            // Extract module from permission name (e.g., "MEMBER_VIEW" -> "member")
+            val parts = permission.split("_")
+            if (parts.size > 1) parts[0].lowercase() else "general"
+        }
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            groupedPermissions.forEach { (module, modulePermissions) ->
+                Column {
+                    Text(
+                        text = module.replaceFirstChar { it.uppercaseChar() },
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    
+                    Column(
+                        modifier = Modifier.padding(start = 16.dp, top = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        modulePermissions.forEach { permission ->
+                            // Extract action from permission name (e.g., "MEMBER_VIEW" -> "View")
+                            val action = permission.split("_").drop(1).joinToString(" ") { part ->
+                                part.lowercase().replaceFirstChar { it.uppercaseChar() }
+                            }
+                            Text(
+                                text = "• $action",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
             }
         }
     }
