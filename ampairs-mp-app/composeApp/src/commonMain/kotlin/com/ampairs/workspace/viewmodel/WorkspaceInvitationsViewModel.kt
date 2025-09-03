@@ -184,8 +184,8 @@ class WorkspaceInvitationsViewModel(
             try {
                 val request = CreateInvitationRequest(
                     countryCode = countryCode,
-                    recipientPhone = phone,
-                    recipientName = recipientName,
+                    phone = phone,
+                    name = recipientName,
                     invitedRole = invitedRole,
                     customMessage = customMessage,
                     expiresInDays = expiresInDays,

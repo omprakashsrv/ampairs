@@ -270,8 +270,8 @@ data class InvitationListResponse(
 @Serializable
 data class CreateInvitationRequest(
     @SerialName("country_code") val countryCode: Int,
-    @SerialName("recipient_phone") val recipientPhone: String,
-    @SerialName("recipient_name") val recipientName: String? = null,
+    @SerialName("phone") val phone: String,
+    @SerialName("name") val name: String? = null,
     @SerialName("invited_role") val invitedRole: String,
     @SerialName("custom_message") val customMessage: String? = null,
     @SerialName("expires_in_days") val expiresInDays: Int = 7,

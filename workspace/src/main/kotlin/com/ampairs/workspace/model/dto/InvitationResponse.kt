@@ -64,6 +64,8 @@ data class InvitationResponse(
 data class InvitationListResponse(
     val id: String,
 
+    val workspaceId: String,
+
     val email: String?,
 
     val phone: String?,
@@ -175,6 +177,7 @@ fun WorkspaceInvitation.toResponse(): InvitationResponse {
 fun WorkspaceInvitation.toListResponse(): InvitationListResponse {
     return InvitationListResponse(
         id = this.uid, // Use uid instead of id
+        workspaceId = this.workspaceId,
         email = this.email,
         phone = this.phone,
         countryCode = this.countryCode,
