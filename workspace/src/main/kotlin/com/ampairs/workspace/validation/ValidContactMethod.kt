@@ -22,8 +22,8 @@ class ContactMethodValidator : ConstraintValidator<ValidContactMethod, CreateInv
     override fun isValid(request: CreateInvitationRequest?, context: ConstraintValidatorContext): Boolean {
         if (request == null) return true
 
-        val hasEmail = !request.recipientEmail.isNullOrBlank()
-        val hasPhone = !request.recipientPhone.isNullOrBlank()
+        val hasEmail = !request.email.isNullOrBlank()
+        val hasPhone = !request.phone.isNullOrBlank()
 
         return hasEmail xor hasPhone
     }

@@ -5,10 +5,10 @@ import jakarta.validation.constraints.*
 
 data class CreateInvitationRequest(
     @field:Email(message = "Invalid email format")
-    val recipientEmail: String? = null,
+    val email: String? = null,
 
     @field:Pattern(regexp = "^[0-9]{10}$")
-    val recipientPhone: String? = null,
+    val phone: String? = null,
 
     @field:Min(1)
     @field:Max(999)
@@ -17,8 +17,8 @@ data class CreateInvitationRequest(
     @field:NotNull(message = "Role is required")
     val invitedRole: WorkspaceRole,
 
-    val recipientName: String? = null,
-    val customMessage: String? = null,
+    val name: String? = null,
+    val message: String? = null,
 
     @field:Min(1)
     @field:Max(30)
@@ -36,21 +36,21 @@ data class CreateInvitationRequest(
     val welcomeTour: Boolean = true
 ) {
     fun getContactType(): String = when {
-        !recipientEmail.isNullOrBlank() -> "email"
-        !recipientPhone.isNullOrBlank() -> "phone"
+        !email.isNullOrBlank() -> "email"
+        !phone.isNullOrBlank() -> "phone"
         else -> throw IllegalStateException("Neither email nor phone provided")
     }
 
     fun getContactValue(): String {
         val value = when {
-            !recipientEmail.isNullOrBlank() -> recipientEmail
-            !recipientPhone.isNullOrBlank() -> recipientPhone
+            !email.isNullOrBlank() -> email
+            !phone.isNullOrBlank() -> phone
             else -> null
         }
         return value ?: throw IllegalStateException("Neither email nor phone provided")
     }
 
     fun isValid(): Boolean {
-        return !recipientEmail.isNullOrBlank() || !recipientPhone.isNullOrBlank()
+        return !email.isNullOrBlank() || !phone.isNullOrBlank()
     }
 }

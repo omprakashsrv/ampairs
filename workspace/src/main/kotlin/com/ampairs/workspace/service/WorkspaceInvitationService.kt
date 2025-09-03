@@ -5,7 +5,6 @@ import com.ampairs.core.exception.NotFoundException
 import com.ampairs.workspace.model.WorkspaceInvitation
 import com.ampairs.workspace.model.dto.*
 import com.ampairs.workspace.model.enums.InvitationStatus
-import com.ampairs.workspace.model.enums.WorkspaceRole
 import com.ampairs.workspace.repository.WorkspaceInvitationRepository
 import com.ampairs.workspace.repository.WorkspaceRepository
 import org.slf4j.LoggerFactory
@@ -53,10 +52,10 @@ class WorkspaceInvitationService(
         // Check if there's already a pending invitation
         val existingInvitation = when (contactType) {
             "email" -> invitationRepository.findByWorkspaceIdAndEmailAndStatus(
-                workspaceId, request.recipientEmail!!, InvitationStatus.PENDING
+                workspaceId, request.email!!, InvitationStatus.PENDING
             ).orElse(null)
             "phone" -> invitationRepository.findByWorkspaceIdAndPhoneAndStatus(
-                workspaceId, request.recipientPhone, InvitationStatus.PENDING
+                workspaceId, request.phone, InvitationStatus.PENDING
             )
             else -> null
         }
@@ -71,10 +70,10 @@ class WorkspaceInvitationService(
         // Create new invitation
         val invitation = WorkspaceInvitation().apply {
             this.workspaceId = workspaceId
-            this.email = request.recipientEmail
-            this.phone = request.recipientPhone
+            this.email = request.email
+            this.phone = request.phone
             this.role = request.invitedRole
-            this.message = request.customMessage
+            this.message = request.message
             this.invitedBy = invitedBy
             this.department = request.department
             this.teamIds = request.teamIds ?: setOf()
