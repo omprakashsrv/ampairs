@@ -35,25 +35,27 @@ data class WorkspaceInvitationKey(
 ) {
     // Helper functions to create specific keys
     companion object {
-        fun forInvitation(userId: String, workspaceId: String, invitationId: String) = WorkspaceInvitationKey(
-            userId = userId,
-            workspaceId = workspaceId,
-            invitationId = invitationId
-        )
-        
-        fun forPage(userId: String, workspaceId: String, page: Int, size: Int = 20) = WorkspaceInvitationKey(
-            userId = userId,
-            workspaceId = workspaceId,
-            page = page,
-            size = size
-        )
-        
+        fun forInvitation(userId: String, workspaceId: String, invitationId: String) =
+            WorkspaceInvitationKey(
+                userId = userId,
+                workspaceId = workspaceId,
+                invitationId = invitationId
+            )
+
+        fun forPage(userId: String, workspaceId: String, page: Int, size: Int = 20) =
+            WorkspaceInvitationKey(
+                userId = userId,
+                workspaceId = workspaceId,
+                page = page,
+                size = size
+            )
+
         fun forPageWithFilters(
-            userId: String, 
-            workspaceId: String, 
-            page: Int, 
-            size: Int = 20, 
-            status: String? = null, 
+            userId: String,
+            workspaceId: String,
+            page: Int,
+            size: Int = 20,
+            status: String? = null,
             role: String? = null
         ) = WorkspaceInvitationKey(
             userId = userId,
@@ -97,21 +99,22 @@ class WorkspaceInvitationStoreFactory(
                     sortBy = key.sortBy,
                     sortDir = key.sortDir
                 )
-                
+
                 println("🌐 Store5 Fetcher: API response - data=${response.data != null}, error=${response.error}")
                 if (response.data != null && response.error == null) {
                     val pagedResponse = response.data!!
-                    val invitations = pagedResponse.content.map { invitationListResponse: InvitationListResponse -> 
-                        invitationListResponse.toDomainModel()
-                    }
-                    
+                    val invitations =
+                        pagedResponse.content.map { invitationListResponse: InvitationListResponse ->
+                            invitationListResponse.toDomainModel()
+                        }
+
                     // Apply client-side filters if specified
                     val filteredInvitations = invitations.filter { invitation ->
                         val matchesStatus = key.status == null || invitation.status == key.status
                         val matchesRole = key.role == null || invitation.invitedRole == key.role
                         matchesStatus && matchesRole
                     }
-                    
+
                     // Convert API PagedInvitationResponse to domain PageResult
                     PageResult(
                         content = filteredInvitations,
@@ -124,7 +127,9 @@ class WorkspaceInvitationStoreFactory(
                         isEmpty = filteredInvitations.isEmpty()
                     )
                 } else {
-                    throw Exception(response.error?.message ?: "Failed to fetch workspace invitations")
+                    throw Exception(
+                        response.error?.message ?: "Failed to fetch workspace invitations"
+                    )
                 }
             }
             result
@@ -137,7 +142,7 @@ class WorkspaceInvitationStoreFactory(
                 if (key.invitationId != null) {
                     // Read single invitation
                     invitationDao.getInvitationByIdFlow(key.invitationId, key.userId)
-                        .map { entity -> 
+                        .map { entity ->
                             if (entity != null) {
                                 val invitation = entity.toDomainModel()
                                 PageResult(
@@ -166,22 +171,39 @@ class WorkspaceInvitationStoreFactory(
                 } else {
                     // Read paginated workspace invitations with filters
                     val baseFlow = if (key.status != null && key.role != null) {
-                        invitationDao.getInvitationsByStatusAndRole(key.userId, key.workspaceId, key.status, key.role)
+                        invitationDao.getInvitationsByStatusAndRole(
+                            key.userId,
+                            key.workspaceId,
+                            key.status,
+                            key.role
+                        )
                     } else if (key.status != null) {
-                        invitationDao.getInvitationsByStatus(key.userId, key.workspaceId, key.status)
+                        invitationDao.getInvitationsByStatus(
+                            key.userId,
+                            key.workspaceId,
+                            key.status
+                        )
                     } else if (key.role != null) {
                         invitationDao.getInvitationsByRole(key.userId, key.workspaceId, key.role)
                     } else {
-                        invitationDao.getInvitationsForWorkspacePaged(key.userId, key.workspaceId, key.size, key.page * key.size)
+                        invitationDao.getInvitationsForWorkspacePaged(
+                            key.userId,
+                            key.workspaceId,
+                            key.size,
+                            key.page * key.size
+                        )
                     }
-                    
-                    baseFlow.map { entities -> 
-                        val invitations = entities.map { entity: WorkspaceInvitationEntity -> 
+
+                    baseFlow.map { entities ->
+                        val invitations = entities.map { entity: WorkspaceInvitationEntity ->
                             entity.toDomainModel()
                         }
-                        val totalCount = invitationDao.getInvitationCountForWorkspace(key.userId, key.workspaceId)
+                        val totalCount = invitationDao.getInvitationCountForWorkspace(
+                            key.userId,
+                            key.workspaceId
+                        )
                         val totalPages = (totalCount + key.size - 1) / key.size
-                        
+
                         PageResult(
                             content = invitations,
                             totalElements = totalCount,
@@ -206,7 +228,7 @@ class WorkspaceInvitationStoreFactory(
                         local_updated_at = currentTime
                     )
                 }
-                
+
                 if (key.invitationId != null) {
                     // Single invitation - replace existing
                     invitationDao.deleteInvitation(key.invitationId, key.userId)
@@ -232,7 +254,7 @@ class WorkspaceInvitationStoreFactory(
 private fun InvitationListResponse.toDomainModel(): WorkspaceInvitation {
     return WorkspaceInvitation(
         id = this.id,
-        workspaceId = "", // Backend list response doesn't include workspace_id
+        workspaceId = this.workspaceId, // Backend list response doesn't include workspace_id
         countryCode = this.countryCode ?: 0,
         phone = this.phone ?: "",
         recipientName = this.email, // Use email as name fallback

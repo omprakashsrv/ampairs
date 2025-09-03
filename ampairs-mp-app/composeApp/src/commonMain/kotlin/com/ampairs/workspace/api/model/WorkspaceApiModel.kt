@@ -248,6 +248,7 @@ data class InvitationApiModel(
 @Serializable
 data class InvitationListResponse(
     @SerialName("id") val id: String,
+    @SerialName("workspace_id") val workspaceId: String,
     @SerialName("email") val email: String? = null,
     @SerialName("phone") val phone: String? = null,
     @SerialName("country_code") val countryCode: Int? = null,

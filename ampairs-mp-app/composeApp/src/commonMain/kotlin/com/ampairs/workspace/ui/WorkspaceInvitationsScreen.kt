@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,7 +24,6 @@ import org.koin.core.parameter.parametersOf
 @Composable
 fun WorkspaceInvitationsScreen(
     workspaceId: String,
-    onNavigateBack: () -> Unit,
     onInviteClick: () -> Unit,
 ) {
     val viewModel: WorkspaceInvitationsViewModel = koinInject { parametersOf(workspaceId) }
@@ -43,23 +43,17 @@ fun WorkspaceInvitationsScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Header with actions
+        // Header with actions - Always visible at top
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                }
-                Text(
-                    text = "Invitations",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.padding(start = 8.dp)
-                )
-            }
+            Text(
+                text = "Invitations",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
+            )
 
             Row {
                 IconButton(onClick = { showFilters = !showFilters }) {
@@ -71,11 +65,18 @@ fun WorkspaceInvitationsScreen(
 
                 Button(
                     onClick = onInviteClick,
-                    modifier = Modifier.padding(start = 8.dp)
+                    modifier = Modifier.padding(start = 8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
                 ) {
-                    Icon(Icons.Default.Send, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Send Invitation")
+                    Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null)
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "Send Invite",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
             }
         }
@@ -87,8 +88,18 @@ fun WorkspaceInvitationsScreen(
             InvitationFiltersSection(
                 selectedStatus = selectedStatus,
                 selectedRole = selectedRole,
-                onStatusChanged = { selectedStatus = it; viewModel.filterInvitations(it, selectedRole) },
-                onRoleChanged = { selectedRole = it; viewModel.filterInvitations(selectedStatus, it) }
+                onStatusChanged = {
+                    selectedStatus = it; viewModel.filterInvitations(
+                    it,
+                    selectedRole
+                )
+                },
+                onRoleChanged = {
+                    selectedRole = it; viewModel.filterInvitations(
+                    selectedStatus,
+                    it
+                )
+                }
             )
 
             Spacer(modifier = Modifier.height(16.dp))
@@ -180,7 +191,8 @@ private fun InvitationFiltersSection(
                     )
 
                     var statusExpanded by remember { mutableStateOf(false) }
-                    val statuses = listOf("ALL", "PENDING", "ACCEPTED", "EXPIRED", "CANCELLED", "DECLINED")
+                    val statuses =
+                        listOf("ALL", "PENDING", "ACCEPTED", "EXPIRED", "CANCELLED", "DECLINED")
 
                     ExposedDropdownMenuBox(
                         expanded = statusExpanded,
@@ -280,7 +292,7 @@ private fun InvitationsSummaryCard(
             horizontalArrangement = Arrangement.SpaceEvenly
         ) {
             SummaryItem(
-                icon = Icons.Default.Send,
+                icon = Icons.AutoMirrored.Filled.Send,
                 value = totalInvitations.toString(),
                 label = "Total Sent"
             )
@@ -360,7 +372,8 @@ private fun InvitationCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = invitation.recipientName ?: "+${invitation.countryCode} ${invitation.phone}",
+                        text = invitation.recipientName
+                            ?: "+${invitation.countryCode} ${invitation.phone}",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Medium
                     )
@@ -614,10 +627,18 @@ private fun EmptyInvitationsState(onInviteClick: () -> Unit) {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Button(onClick = onInviteClick) {
+        Button(
+            onClick = onInviteClick,
+            modifier = Modifier
+                .fillMaxWidth(0.6f)
+                .height(48.dp)
+        ) {
             Icon(Icons.Default.Send, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
-            Text("Send Invitation")
+            Text(
+                text = "Send Your First Invitation",
+                style = MaterialTheme.typography.labelLarge
+            )
         }
     }
 }

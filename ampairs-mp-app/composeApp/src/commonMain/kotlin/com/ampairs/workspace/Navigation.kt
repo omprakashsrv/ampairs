@@ -122,9 +122,6 @@ fun NavGraphBuilder.workspaceNavigation(navController: NavController, onWorkspac
             ) { paddingValues ->
                 WorkspaceInvitationsScreen(
                     workspaceId = invitationsRoute.workspaceId,
-                    onNavigateBack = {
-                        navController.popBackStack()
-                    },
                     onInviteClick = {
                         navController.navigate(WorkspaceRoute.CreateInvitation(invitationsRoute.workspaceId))
                     }
