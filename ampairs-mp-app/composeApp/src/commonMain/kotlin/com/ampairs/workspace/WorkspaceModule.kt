@@ -84,7 +84,7 @@ fun workspaceModule() = module {
     // Member and invitation ViewModels with workspaceId parameter
     factory { (workspaceId: String) -> WorkspaceMembersViewModel(workspaceId, get(named("workspaceMemberStore")), get(), get()) }
     factory { (workspaceId: String, memberId: String) -> MemberDetailsViewModel(workspaceId, memberId, get(named("workspaceMemberStore")), get(), get(), get(named("workspaceRolesStore")), get(named("workspacePermissionsStore")), get()) }
-    factory { (workspaceId: String) -> WorkspaceInvitationsViewModel(workspaceId, get<OfflineFirstWorkspaceInvitationRepository>()) }
+    factory { (workspaceId: String) -> WorkspaceInvitationsViewModel(workspaceId, get<OfflineFirstWorkspaceInvitationRepository>(), get<OfflineFirstRolesPermissionsRepository>()) }
 
     // Module management ViewModel
     factory { WorkspaceModulesViewModel(get()) }

@@ -17,6 +17,10 @@ data class InvitationResponse(
 
     val email: String?,
 
+    val phone: String?,
+
+    val countryCode: Int?,
+
     val role: WorkspaceRole,
 
     val status: InvitationStatus,
@@ -61,6 +65,10 @@ data class InvitationListResponse(
     val id: String,
 
     val email: String?,
+
+    val phone: String?,
+
+    val countryCode: Int?,
 
     val role: WorkspaceRole,
 
@@ -136,6 +144,8 @@ fun WorkspaceInvitation.toResponse(): InvitationResponse {
         workspaceId = this.workspaceId,
         workspaceName = null, // Will be populated from Workspace entity if needed
         email = this.email,
+        phone = this.phone,
+        countryCode = this.countryCode,
         role = this.role,
         status = this.status,
         token = this.token,
@@ -166,6 +176,8 @@ fun WorkspaceInvitation.toListResponse(): InvitationListResponse {
     return InvitationListResponse(
         id = this.uid, // Use uid instead of id
         email = this.email,
+        phone = this.phone,
+        countryCode = this.countryCode,
         role = this.role,
         status = this.status,
         invitedBy = this.invitedBy,

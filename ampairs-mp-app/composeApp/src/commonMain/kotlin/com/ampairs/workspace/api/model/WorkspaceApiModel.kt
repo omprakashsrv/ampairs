@@ -221,52 +221,55 @@ data class UserRoleResponse(
 data class InvitationApiModel(
     @SerialName("id") val id: String,
     @SerialName("workspace_id") val workspaceId: String,
-    @SerialName("recipient_email") val recipientEmail: String,
-    @SerialName("recipient_name") val recipientName: String? = null,
-    @SerialName("invited_role") val invitedRole: String,
+    @SerialName("workspace_name") val workspaceName: String? = null,
+    @SerialName("email") val email: String? = null,
+    @SerialName("phone") val phone: String? = null,
+    @SerialName("country_code") val countryCode: Int? = null,
+    @SerialName("role") val role: String,
     @SerialName("status") val status: String,
-    @SerialName("created_at") val createdAt: String,
+    @SerialName("token") val token: String,
+    @SerialName("message") val message: String? = null,
+    @SerialName("invited_by") val invitedBy: String? = null,
+    @SerialName("inviter_name") val inviterName: String? = null,
     @SerialName("expires_at") val expiresAt: String,
     @SerialName("accepted_at") val acceptedAt: String? = null,
-    @SerialName("sent_by") val sentBy: InvitationSenderInfo,
-    @SerialName("delivery_status") val deliveryStatus: InvitationDeliveryStatus,
-    @SerialName("invitation_message") val invitationMessage: String? = null,
-    @SerialName("resend_count") val resendCount: Int = 0,
-    @SerialName("last_activity") val lastActivity: String? = null,
+    @SerialName("rejected_at") val rejectedAt: String? = null,
+    @SerialName("cancelled_at") val cancelledAt: String? = null,
+    @SerialName("cancelled_by") val cancelledBy: String? = null,
+    @SerialName("cancellation_reason") val cancellationReason: String? = null,
+    @SerialName("send_count") val sendCount: Int = 0,
+    @SerialName("last_sent_at") val lastSentAt: String? = null,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String,
+    @SerialName("is_expired") val isExpired: Boolean,
+    @SerialName("days_until_expiry") val daysUntilExpiry: Long? = null,
 )
 
 @Serializable
 data class InvitationListResponse(
     @SerialName("id") val id: String,
-    @SerialName("workspace_id") val workspaceId: String,
-    @SerialName("recipient_email") val recipientEmail: String,
-    @SerialName("recipient_name") val recipientName: String? = null,
-    @SerialName("invited_role") val invitedRole: String,
+    @SerialName("email") val email: String? = null,
+    @SerialName("phone") val phone: String? = null,
+    @SerialName("country_code") val countryCode: Int? = null,
+    @SerialName("role") val role: String,
     @SerialName("status") val status: String,
-    @SerialName("created_at") val createdAt: String,
+    @SerialName("invited_by") val invitedBy: String? = null,
+    @SerialName("inviter_name") val inviterName: String? = null,
     @SerialName("expires_at") val expiresAt: String,
-    @SerialName("sent_by") val sentBy: InvitationSenderInfo,
-    @SerialName("delivery_status") val deliveryStatus: InvitationDeliveryStatus,
-    @SerialName("resend_count") val resendCount: Int = 0,
+    @SerialName("invited_at") val invitedAt: String,
+    @SerialName("accepted_at") val acceptedAt: String? = null,
+    @SerialName("send_count") val sendCount: Int = 0,
+    @SerialName("last_sent_at") val lastSentAt: String? = null,
+    @SerialName("message") val message: String? = null,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("is_expired") val isExpired: Boolean,
 )
 
-@Serializable
-data class InvitationSenderInfo(
-    @SerialName("name") val name: String,
-    @SerialName("email") val email: String,
-)
-
-@Serializable
-data class InvitationDeliveryStatus(
-    @SerialName("email_sent") val emailSent: Boolean = false,
-    @SerialName("email_delivered") val emailDelivered: Boolean = false,
-    @SerialName("email_opened") val emailOpened: Boolean = false,
-    @SerialName("link_clicked") val linkClicked: Boolean = false,
-)
 
 @Serializable
 data class CreateInvitationRequest(
-    @SerialName("recipient_email") val recipientEmail: String,
+    @SerialName("country_code") val countryCode: Int,
+    @SerialName("recipient_phone") val recipientPhone: String,
     @SerialName("recipient_name") val recipientName: String? = null,
     @SerialName("invited_role") val invitedRole: String,
     @SerialName("custom_message") val customMessage: String? = null,
@@ -288,13 +291,13 @@ data class ResendInvitationRequest(
 
 @Serializable
 data class PagedInvitationResponse(
-    @SerialName("content") val content: List<InvitationListResponse>,
-    @SerialName("page") val page: Int,
-    @SerialName("size") val size: Int,
-    @SerialName("total_elements") val totalElements: Int,
-    @SerialName("total_pages") val totalPages: Int,
-    @SerialName("is_first") val isFirst: Boolean,
-    @SerialName("is_last") val isLast: Boolean,
+    @SerialName("content") val content: List<InvitationListResponse> = emptyList(),
+    @SerialName("page") val page: Int = 0,
+    @SerialName("size") val size: Int = 20,
+    @SerialName("total_elements") val totalElements: Int = 0,
+    @SerialName("total_pages") val totalPages: Int = 0,
+    @SerialName("is_first") val isFirst: Boolean = true,
+    @SerialName("is_last") val isLast: Boolean = true,
 )
 
 @Serializable

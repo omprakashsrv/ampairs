@@ -25,7 +25,7 @@ import kotlinx.coroutines.IO
         WorkspaceRoleEntity::class,
         WorkspacePermissionEntity::class
     ],
-    version = 4,  // Increment version due to new entity
+    version = 5,  // Increment version due to invitation schema change: recipient_email -> country_code + phone
     exportSchema = false
 )
 abstract class WorkspaceRoomDatabase : RoomDatabase() {

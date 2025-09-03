@@ -16,6 +16,7 @@ import org.mobilenativefoundation.store.store5.StoreWriteRequest
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import org.mobilenativefoundation.store.core5.ExperimentalStoreApi
 
 /**
  * Offline-first workspace invitation repository using Store5 pattern
@@ -23,6 +24,7 @@ import kotlinx.coroutines.flow.map
  * Provides comprehensive invitation management with proper offline-first functionality,
  * automatic sync, conflict resolution, and optimistic updates.
  */
+@OptIn(ExperimentalStoreApi::class)
 class OfflineFirstWorkspaceInvitationRepository(
     private val invitationApi: WorkspaceInvitationApi,
     private val invitationDao: WorkspaceInvitationDao,
@@ -46,23 +48,40 @@ class OfflineFirstWorkspaceInvitationRepository(
         refresh: Boolean = false
     ): Flow<PageResult<WorkspaceInvitation>> {
         val currentUserId = getCurrentUserId()
-        return invitationStore.stream(
-            StoreReadRequest.cached(
-                key = WorkspaceInvitationKey.forPage(
-                    userId = currentUserId,
-                    workspaceId = workspaceId,
-                    page = page,
-                    size = size
-                ).copy(sortBy = sortBy, sortDir = sortDir),
-                refresh = refresh
-            )
-        ).map { response ->
+        println("🏪 Repository: Getting invitations for workspace $workspaceId, user $currentUserId (refresh=$refresh)")
+        
+        val key = WorkspaceInvitationKey.forPage(
+            userId = currentUserId,
+            workspaceId = workspaceId,
+            page = page,
+            size = size
+        ).copy(sortBy = sortBy, sortDir = sortDir)
+        
+        val request = if (refresh) {
+            StoreReadRequest.fresh(key)
+        } else {
+            StoreReadRequest.cached(key, refresh = false)
+        }
+        
+        return invitationStore.stream(request).map { response ->
+            println("🏪 Repository: Store5 response type: ${response::class.simpleName}")
             when (response) {
-                is StoreReadResponse.Data -> response.value
-                is StoreReadResponse.Error.Exception -> throw response.error
-                is StoreReadResponse.Error.Message -> throw Exception(response.message)
+                is StoreReadResponse.Data -> {
+                    println("✅ Repository: Got data with ${response.value.content.size} invitations")
+                    response.value
+                }
+                is StoreReadResponse.Error.Exception -> {
+                    println("❌ Repository: Store5 exception: ${response.error.message}")
+                    throw response.error
+                }
+                is StoreReadResponse.Error.Message -> {
+                    println("❌ Repository: Store5 error message: ${response.message}")
+                    throw Exception(response.message)
+                }
                 is StoreReadResponse.Loading -> {
-                    // Return cached data or empty result while loading
+                    println("⏳ Repository: Loading state - returning empty while loading")
+                    // For loading state, return empty data while loading
+                    // The Store5 will eventually provide the actual data
                     PageResult(
                         content = emptyList(),
                         totalElements = 0,
@@ -75,30 +94,15 @@ class OfflineFirstWorkspaceInvitationRepository(
                     )
                 }
                 is StoreReadResponse.NoNewData -> {
-                    // Return last known data
-                    PageResult(
-                        content = emptyList(),
-                        totalElements = 0,
-                        totalPages = 0,
-                        currentPage = page,
-                        pageSize = size,
-                        isFirst = true,
-                        isLast = true,
-                        isEmpty = true
-                    )
+                    println("📦 Repository: NoNewData - this indicates cached data exists")
+                    // NoNewData means we have cached data but no new network data
+                    // This should not throw an exception but return cached data
+                    // However, the Store5 should have provided the cached data
+                    throw Exception("No cached data available in NoNewData response")
                 }
                 else -> {
-                    // Handle any other response types
-                    PageResult(
-                        content = emptyList(),
-                        totalElements = 0,
-                        totalPages = 0,
-                        currentPage = page,
-                        pageSize = size,
-                        isFirst = true,
-                        isLast = true,
-                        isEmpty = true
-                    )
+                    println("❓ Repository: Unknown Store response type: ${response::class.simpleName}")
+                    throw Exception("Unknown Store response type: ${response::class.simpleName}")
                 }
             }
         }
@@ -154,44 +158,37 @@ class OfflineFirstWorkspaceInvitationRepository(
         workspaceId: String,
         request: CreateInvitationRequest,
     ): WorkspaceInvitation {
-        val currentUserId = getCurrentUserId()
-        
-        try {
-            // Make API call first
-            val response = invitationApi.createInvitation(workspaceId, request)
-            
-            if (response.error == null && response.data != null) {
-                val invitationData = response.data!!
-                val invitation = WorkspaceInvitation(
-                    id = invitationData.id,
-                    workspaceId = invitationData.workspaceId,
-                    recipientEmail = invitationData.recipientEmail,
-                    recipientName = invitationData.recipientName,
-                    invitedRole = invitationData.invitedRole,
-                    status = invitationData.status,
-                    createdAt = invitationData.createdAt,
-                    expiresAt = invitationData.expiresAt,
-                    sentByName = invitationData.sentBy.name,
-                    sentByEmail = invitationData.sentBy.email,
-                    emailSent = invitationData.deliveryStatus.emailSent,
-                    emailDelivered = invitationData.deliveryStatus.emailDelivered,
-                    emailOpened = invitationData.deliveryStatus.emailOpened,
-                    linkClicked = invitationData.deliveryStatus.linkClicked,
-                    resendCount = invitationData.resendCount,
-                    invitationMessage = invitationData.invitationMessage
-                )
+        // Make API call first
+        val response = invitationApi.createInvitation(workspaceId, request)
 
-                // Update Store5 cache by clearing it so next read will fetch fresh data
-                val key = WorkspaceInvitationKey.forPage(currentUserId, workspaceId, 0)
-                invitationStore.clear(key)
+        if (response.error == null && response.data != null) {
+            val invitationData = response.data!!
+            val invitation = WorkspaceInvitation(
+                id = invitationData.id,
+                workspaceId = invitationData.workspaceId,
+                countryCode = invitationData.countryCode ?: 0,
+                phone = invitationData.phone ?: "",
+                recipientName = invitationData.email,
+                invitedRole = invitationData.role,
+                status = invitationData.status,
+                createdAt = invitationData.createdAt,
+                expiresAt = invitationData.expiresAt,
+                sentByName = invitationData.inviterName ?: "Unknown",
+                sentByEmail = invitationData.invitedBy ?: "Unknown",
+                emailSent = true, // Backend doesn't provide detailed delivery status
+                emailDelivered = true,
+                emailOpened = false,
+                linkClicked = false,
+                resendCount = invitationData.sendCount,
+                invitationMessage = invitationData.message
+            )
 
-                return invitation
-            } else {
-                throw Exception(response.error?.message ?: "Failed to create invitation")
-            }
-        } catch (e: Exception) {
-            // TODO: Implement optimistic update with pending sync
-            throw e
+            // Update Store5 cache by clearing it so next read will fetch fresh data
+            invitationStore.clear()
+
+            return invitation
+        } else {
+            throw Exception(response.error?.message ?: "Failed to create invitation")
         }
     }
 
@@ -256,20 +253,21 @@ class OfflineFirstWorkspaceInvitationRepository(
                 val invitation = WorkspaceInvitation(
                     id = invitationData.id,
                     workspaceId = invitationData.workspaceId,
-                    recipientEmail = invitationData.recipientEmail,
-                    recipientName = invitationData.recipientName,
-                    invitedRole = invitationData.invitedRole,
+                    countryCode = invitationData.countryCode ?: 0,
+                    phone = invitationData.phone ?: "",
+                    recipientName = invitationData.email,
+                    invitedRole = invitationData.role,
                     status = invitationData.status,
                     createdAt = invitationData.createdAt,
                     expiresAt = invitationData.expiresAt,
-                    sentByName = invitationData.sentBy.name,
-                    sentByEmail = invitationData.sentBy.email,
-                    emailSent = invitationData.deliveryStatus.emailSent,
-                    emailDelivered = invitationData.deliveryStatus.emailDelivered,
-                    emailOpened = invitationData.deliveryStatus.emailOpened,
-                    linkClicked = invitationData.deliveryStatus.linkClicked,
-                    resendCount = invitationData.resendCount,
-                    invitationMessage = invitationData.invitationMessage
+                    sentByName = invitationData.inviterName ?: "Unknown",
+                    sentByEmail = invitationData.invitedBy ?: "Unknown",
+                    emailSent = true, // Backend doesn't provide detailed delivery status
+                    emailDelivered = true,
+                    emailOpened = false,
+                    linkClicked = false,
+                    resendCount = invitationData.sendCount,
+                    invitationMessage = invitationData.message
                 )
 
                 // Update local database with server data
@@ -343,8 +341,7 @@ class OfflineFirstWorkspaceInvitationRepository(
         invitationDao.deleteAllInvitationsForWorkspace(workspaceId, currentUserId)
         
         // Clear Store5 cache
-        val key = WorkspaceInvitationKey.forPage(currentUserId, workspaceId, 0)
-        invitationStore.clear(key)
+        invitationStore.clear()
     }
 
     /**
@@ -374,7 +371,8 @@ private fun WorkspaceInvitation.toEntityModel(userId: String): com.ampairs.works
         id = this.id,
         user_id = userId,
         workspace_id = this.workspaceId,
-        recipient_email = this.recipientEmail,
+        country_code = this.countryCode,
+        phone = this.phone,
         recipient_name = this.recipientName,
         invited_role = this.invitedRole,
         status = this.status,
@@ -399,7 +397,8 @@ private fun com.ampairs.workspace.db.entity.WorkspaceInvitationEntity.toDomainMo
     return WorkspaceInvitation(
         id = this.id,
         workspaceId = this.workspace_id,
-        recipientEmail = this.recipient_email,
+        countryCode = this.country_code,
+        phone = this.phone,
         recipientName = this.recipient_name,
         invitedRole = this.invited_role,
         status = this.status,

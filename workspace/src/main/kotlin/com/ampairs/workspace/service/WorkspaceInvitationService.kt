@@ -10,6 +10,7 @@ import com.ampairs.workspace.repository.WorkspaceInvitationRepository
 import com.ampairs.workspace.repository.WorkspaceRepository
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
+import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -72,7 +73,7 @@ class WorkspaceInvitationService(
             this.workspaceId = workspaceId
             this.email = request.recipientEmail
             this.phone = request.recipientPhone
-            this.role = WorkspaceRole.valueOf(request.invitedRole.uppercase())
+            this.role = request.invitedRole
             this.message = request.customMessage
             this.invitedBy = invitedBy
             this.department = request.department
@@ -91,7 +92,7 @@ class WorkspaceInvitationService(
         activityService.logInvitationSent(
             workspaceId = workspaceId,
             email = contactValue,
-            role = request.invitedRole,
+            role = request.invitedRole.name,
             invitedBy = invitedBy,
             invitedByName = "Unknown User",
             invitationId = saved.uid
@@ -260,7 +261,7 @@ class WorkspaceInvitationService(
             invitationRepository.findByWorkspaceIdAndStatus(workspaceId, status).let { list ->
                 // Convert List to Page manually (simplified for this example)
                 // In production, you'd want to use repository method with Pageable
-                org.springframework.data.domain.PageImpl(list, pageable, list.size.toLong())
+                PageImpl(list, pageable, list.size.toLong())
             }
         } else {
             invitationRepository.findByWorkspaceId(workspaceId, pageable)

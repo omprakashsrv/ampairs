@@ -168,7 +168,8 @@ data class WorkspaceMember(
 data class WorkspaceInvitation(
     val id: String,
     val workspaceId: String,
-    val recipientEmail: String,
+    val countryCode: Int,
+    val phone: String,
     val recipientName: String? = null,
     val invitedRole: String,
     val status: String,

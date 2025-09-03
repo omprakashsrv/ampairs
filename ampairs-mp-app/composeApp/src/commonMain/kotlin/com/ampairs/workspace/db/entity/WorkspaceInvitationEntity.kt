@@ -12,7 +12,7 @@ import androidx.room.PrimaryKey
         Index(value = ["workspace_id"], unique = false),
         Index(value = ["user_id", "workspace_id"], unique = false),
         Index(value = ["user_id", "id"], unique = true), // Unique per user
-        Index(value = ["recipient_email"], unique = false),
+        Index(value = ["phone"], unique = false),
         Index(value = ["status"], unique = false),
         Index(value = ["sync_state"], unique = false),
         Index(value = ["last_synced_at"], unique = false)
@@ -24,7 +24,8 @@ data class WorkspaceInvitationEntity(
     val id: String,
     val user_id: String = "", // Associate invitation with user who can see it
     val workspace_id: String,
-    val recipient_email: String,
+    val country_code: Int,
+    val phone: String,
     val recipient_name: String? = null,
     val invited_role: String,
     val status: String, // PENDING, ACCEPTED, EXPIRED, CANCELLED, DECLINED

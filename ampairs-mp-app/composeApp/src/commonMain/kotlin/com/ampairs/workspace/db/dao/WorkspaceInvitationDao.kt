@@ -44,7 +44,7 @@ interface WorkspaceInvitationDao {
     @Query("SELECT * FROM workspaceInvitationEntity WHERE user_id = :userId AND workspace_id = :workspaceId AND invited_role = :role ORDER BY created_at DESC")
     fun getInvitationsByRole(userId: String, workspaceId: String, role: String): Flow<List<WorkspaceInvitationEntity>>
 
-    @Query("SELECT * FROM workspaceInvitationEntity WHERE user_id = :userId AND workspace_id = :workspaceId AND (recipient_email LIKE '%' || :query || '%' OR recipient_name LIKE '%' || :query || '%') ORDER BY created_at DESC")
+    @Query("SELECT * FROM workspaceInvitationEntity WHERE user_id = :userId AND workspace_id = :workspaceId AND (phone LIKE '%' || :query || '%' OR recipient_name LIKE '%' || :query || '%') ORDER BY created_at DESC")
     fun searchInvitations(userId: String, workspaceId: String, query: String): Flow<List<WorkspaceInvitationEntity>>
 
     @Query("SELECT * FROM workspaceInvitationEntity WHERE user_id = :userId AND workspace_id = :workspaceId AND status = :status AND invited_role = :role ORDER BY created_at DESC")

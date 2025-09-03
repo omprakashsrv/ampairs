@@ -34,7 +34,8 @@ fun WorkspaceInvitationsScreen(
     var selectedRole by remember { mutableStateOf("ALL") }
 
     LaunchedEffect(workspaceId) {
-        viewModel.loadInvitations()
+        // Force refresh on first load to ensure we get fresh data from the API
+        viewModel.loadInvitations(refresh = true)
     }
 
     Column(
@@ -359,14 +360,14 @@ private fun InvitationCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = invitation.recipientName ?: invitation.recipientEmail,
+                        text = invitation.recipientName ?: "+${invitation.countryCode} ${invitation.phone}",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Medium
                     )
 
                     if (invitation.recipientName != null) {
                         Text(
-                            text = invitation.recipientEmail,
+                            text = "+${invitation.countryCode} ${invitation.phone}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

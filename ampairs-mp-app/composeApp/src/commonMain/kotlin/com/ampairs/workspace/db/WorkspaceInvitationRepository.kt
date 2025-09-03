@@ -38,20 +38,21 @@ class WorkspaceInvitationRepository(
             val invitations = pagedResponse.content.map { invitationItem ->
                 WorkspaceInvitation(
                     id = invitationItem.id,
-                    workspaceId = invitationItem.workspaceId,
-                    recipientEmail = invitationItem.recipientEmail,
-                    recipientName = invitationItem.recipientName,
-                    invitedRole = invitationItem.invitedRole,
+                    workspaceId = "", // Backend list response doesn't include workspace_id
+                    countryCode = invitationItem.countryCode ?: 0,
+                    phone = invitationItem.phone ?: "",
+                    recipientName = invitationItem.email, // Use email as name fallback
+                    invitedRole = invitationItem.role,
                     status = invitationItem.status,
                     createdAt = invitationItem.createdAt,
                     expiresAt = invitationItem.expiresAt,
-                    sentByName = invitationItem.sentBy.name,
-                    sentByEmail = invitationItem.sentBy.email,
-                    emailSent = invitationItem.deliveryStatus.emailSent,
-                    emailDelivered = invitationItem.deliveryStatus.emailDelivered,
-                    emailOpened = invitationItem.deliveryStatus.emailOpened,
-                    linkClicked = invitationItem.deliveryStatus.linkClicked,
-                    resendCount = invitationItem.resendCount
+                    sentByName = invitationItem.inviterName ?: "Unknown",
+                    sentByEmail = invitationItem.invitedBy ?: "Unknown",
+                    emailSent = true, // Backend doesn't provide detailed delivery status
+                    emailDelivered = true,
+                    emailOpened = false,
+                    linkClicked = false,
+                    resendCount = invitationItem.sendCount
                 )
             }
 
@@ -85,20 +86,21 @@ class WorkspaceInvitationRepository(
             WorkspaceInvitation(
                 id = invitationData.id,
                 workspaceId = invitationData.workspaceId,
-                recipientEmail = invitationData.recipientEmail,
-                recipientName = invitationData.recipientName,
-                invitedRole = invitationData.invitedRole,
+                countryCode = invitationData.countryCode ?: 0,
+                phone = invitationData.phone ?: "",
+                recipientName = invitationData.email, // Use email as name fallback
+                invitedRole = invitationData.role,
                 status = invitationData.status,
                 createdAt = invitationData.createdAt,
                 expiresAt = invitationData.expiresAt,
-                sentByName = invitationData.sentBy.name,
-                sentByEmail = invitationData.sentBy.email,
-                emailSent = invitationData.deliveryStatus.emailSent,
-                emailDelivered = invitationData.deliveryStatus.emailDelivered,
-                emailOpened = invitationData.deliveryStatus.emailOpened,
-                linkClicked = invitationData.deliveryStatus.linkClicked,
-                resendCount = invitationData.resendCount,
-                invitationMessage = invitationData.invitationMessage
+                sentByName = invitationData.inviterName ?: "Unknown",
+                sentByEmail = invitationData.invitedBy ?: "Unknown",
+                emailSent = true, // Backend doesn't provide detailed delivery status
+                emailDelivered = true,
+                emailOpened = false,
+                linkClicked = false,
+                resendCount = invitationData.sendCount,
+                invitationMessage = invitationData.message
             )
         } else {
             throw Exception(response.error?.message ?: "Failed to create invitation")
@@ -161,20 +163,21 @@ class WorkspaceInvitationRepository(
             WorkspaceInvitation(
                 id = invitationData.id,
                 workspaceId = invitationData.workspaceId,
-                recipientEmail = invitationData.recipientEmail,
-                recipientName = invitationData.recipientName,
-                invitedRole = invitationData.invitedRole,
+                countryCode = invitationData.countryCode ?: 0,
+                phone = invitationData.phone ?: "",
+                recipientName = invitationData.email, // Use email as name fallback
+                invitedRole = invitationData.role,
                 status = invitationData.status,
                 createdAt = invitationData.createdAt,
                 expiresAt = invitationData.expiresAt,
-                sentByName = invitationData.sentBy.name,
-                sentByEmail = invitationData.sentBy.email,
-                emailSent = invitationData.deliveryStatus.emailSent,
-                emailDelivered = invitationData.deliveryStatus.emailDelivered,
-                emailOpened = invitationData.deliveryStatus.emailOpened,
-                linkClicked = invitationData.deliveryStatus.linkClicked,
-                resendCount = invitationData.resendCount,
-                invitationMessage = invitationData.invitationMessage
+                sentByName = invitationData.inviterName ?: "Unknown",
+                sentByEmail = invitationData.invitedBy ?: "Unknown",
+                emailSent = true, // Backend doesn't provide detailed delivery status
+                emailDelivered = true,
+                emailOpened = false,
+                linkClicked = false,
+                resendCount = invitationData.sendCount,
+                invitationMessage = invitationData.message
             )
         } else {
             throw Exception(response.error?.message ?: "Failed to resend invitation")

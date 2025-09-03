@@ -1,16 +1,21 @@
 package com.ampairs.workspace.model.dto
 
+import com.ampairs.workspace.model.enums.WorkspaceRole
 import jakarta.validation.constraints.*
 
 data class CreateInvitationRequest(
     @field:Email(message = "Invalid email format")
     val recipientEmail: String? = null,
 
-    @field:Pattern(regexp = "\\+[1-9][0-9]{6,14}")
+    @field:Pattern(regexp = "^[0-9]{10}$")
     val recipientPhone: String? = null,
 
-    @field:NotBlank(message = "Role is required")
-    val invitedRole: String,
+    @field:Min(1)
+    @field:Max(999)
+    val countryCode: Int? = null,
+
+    @field:NotNull(message = "Role is required")
+    val invitedRole: WorkspaceRole,
 
     val recipientName: String? = null,
     val customMessage: String? = null,

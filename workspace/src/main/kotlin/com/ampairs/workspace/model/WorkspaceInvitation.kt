@@ -46,6 +46,12 @@ class WorkspaceInvitation : BaseDomain() {
     var phone: String? = null
 
     /**
+     * Country code for the phone number
+     */
+    @Column(name = "country_code")
+    var countryCode: Int? = null
+
+    /**
      * Role that will be assigned upon accepting the invitation
      */
     @Column(name = "role", nullable = false)

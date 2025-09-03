@@ -18,6 +18,7 @@ import com.ampairs.workspace.ui.WorkspaceListScreen
 import com.ampairs.workspace.ui.WorkspaceMembersScreen
 import com.ampairs.workspace.ui.MemberDetailsScreen
 import com.ampairs.workspace.ui.WorkspaceInvitationsScreen
+import com.ampairs.workspace.ui.WorkspaceInvitationCreateScreen
 import com.ampairs.workspace.ui.WorkspaceModulesScreen
 import org.koin.compose.koinInject
 
@@ -149,23 +150,17 @@ fun NavGraphBuilder.workspaceNavigation(navController: NavController, onWorkspac
             }
         }
 
-        // TODO: Add create invitation screen
         composable<WorkspaceRoute.CreateInvitation> { backStackEntry ->
             val createInvitationRoute = backStackEntry.toRoute<WorkspaceRoute.CreateInvitation>()
-            // TODO: Implement create invitation screen
             AppScreenWithHeader(
                 navController = navController,
                 isWorkspaceSelection = false
             ) { paddingValues ->
-                // Placeholder - implement create invitation screen
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(paddingValues),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("Create Invitation Screen - Coming Soon")
-                }
+                WorkspaceInvitationCreateScreen(
+                    workspaceId = createInvitationRoute.workspaceId,
+                    onNavigateBack = { navController.navigateUp() },
+                    modifier = Modifier.padding(paddingValues)
+                )
             }
         }
 

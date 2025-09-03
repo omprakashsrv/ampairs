@@ -82,12 +82,14 @@ class WorkspaceInvitationStoreFactory(
 
     private fun createFetcher(): Fetcher<WorkspaceInvitationKey, PageResult<WorkspaceInvitation>> {
         return Fetcher.of { key ->
+            println("🌐 Store5 Fetcher: Fetching invitations for workspace ${key.workspaceId} (page=${key.page})")
             val result: PageResult<WorkspaceInvitation> = if (key.invitationId != null) {
                 // Fetch single invitation (if API supports it)
                 // For now, we'll throw an exception as the current API doesn't support single invitation fetch
                 throw UnsupportedOperationException("Single invitation fetch not supported by API")
             } else {
                 // Fetch paginated workspace invitations
+                println("🌐 Store5 Fetcher: Making API call to getWorkspaceInvitations")
                 val response = invitationApi.getWorkspaceInvitations(
                     workspaceId = key.workspaceId,
                     page = key.page,
@@ -96,6 +98,7 @@ class WorkspaceInvitationStoreFactory(
                     sortDir = key.sortDir
                 )
                 
+                println("🌐 Store5 Fetcher: API response - data=${response.data != null}, error=${response.error}")
                 if (response.data != null && response.error == null) {
                     val pagedResponse = response.data!!
                     val invitations = pagedResponse.content.map { invitationListResponse: InvitationListResponse -> 
@@ -229,21 +232,22 @@ class WorkspaceInvitationStoreFactory(
 private fun InvitationListResponse.toDomainModel(): WorkspaceInvitation {
     return WorkspaceInvitation(
         id = this.id,
-        workspaceId = this.workspaceId,
-        recipientEmail = this.recipientEmail,
-        recipientName = this.recipientName,
-        invitedRole = this.invitedRole,
+        workspaceId = "", // Backend list response doesn't include workspace_id
+        countryCode = this.countryCode ?: 0,
+        phone = this.phone ?: "",
+        recipientName = this.email, // Use email as name fallback
+        invitedRole = this.role,
         status = this.status,
         createdAt = this.createdAt,
         expiresAt = this.expiresAt,
-        sentByName = this.sentBy.name,
-        sentByEmail = this.sentBy.email,
-        emailSent = this.deliveryStatus.emailSent,
-        emailDelivered = this.deliveryStatus.emailDelivered,
-        emailOpened = this.deliveryStatus.emailOpened,
-        linkClicked = this.deliveryStatus.linkClicked,
-        resendCount = this.resendCount,
-        invitationMessage = null // Not available in list response
+        sentByName = this.inviterName ?: "Unknown",
+        sentByEmail = this.invitedBy ?: "Unknown",
+        emailSent = true, // Backend doesn't provide detailed delivery status
+        emailDelivered = true,
+        emailOpened = false,
+        linkClicked = false,
+        resendCount = this.sendCount,
+        invitationMessage = this.message
     )
 }
 
@@ -251,20 +255,21 @@ private fun InvitationApiModel.toDomainModel(): WorkspaceInvitation {
     return WorkspaceInvitation(
         id = this.id,
         workspaceId = this.workspaceId,
-        recipientEmail = this.recipientEmail,
-        recipientName = this.recipientName,
-        invitedRole = this.invitedRole,
+        countryCode = this.countryCode ?: 0,
+        phone = this.phone ?: "",
+        recipientName = this.email, // Use email as name fallback
+        invitedRole = this.role,
         status = this.status,
         createdAt = this.createdAt,
         expiresAt = this.expiresAt,
-        sentByName = this.sentBy.name,
-        sentByEmail = this.sentBy.email,
-        emailSent = this.deliveryStatus.emailSent,
-        emailDelivered = this.deliveryStatus.emailDelivered,
-        emailOpened = this.deliveryStatus.emailOpened,
-        linkClicked = this.deliveryStatus.linkClicked,
-        resendCount = this.resendCount,
-        invitationMessage = this.invitationMessage
+        sentByName = this.inviterName ?: "Unknown",
+        sentByEmail = this.invitedBy ?: "Unknown",
+        emailSent = true, // Backend doesn't provide detailed delivery status
+        emailDelivered = true,
+        emailOpened = false,
+        linkClicked = false,
+        resendCount = this.sendCount,
+        invitationMessage = this.message
     )
 }
 
@@ -272,7 +277,8 @@ private fun WorkspaceInvitationEntity.toDomainModel(): WorkspaceInvitation {
     return WorkspaceInvitation(
         id = this.id,
         workspaceId = this.workspace_id,
-        recipientEmail = this.recipient_email,
+        countryCode = this.country_code,
+        phone = this.phone,
         recipientName = this.recipient_name,
         invitedRole = this.invited_role,
         status = this.status,
@@ -294,7 +300,8 @@ private fun WorkspaceInvitation.toEntityModel(userId: String): WorkspaceInvitati
         id = this.id,
         user_id = userId,
         workspace_id = this.workspaceId,
-        recipient_email = this.recipientEmail,
+        country_code = this.countryCode,
+        phone = this.phone,
         recipient_name = this.recipientName,
         invited_role = this.invitedRole,
         status = this.status,

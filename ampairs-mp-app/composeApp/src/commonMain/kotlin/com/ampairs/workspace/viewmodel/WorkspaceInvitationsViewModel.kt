@@ -5,9 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.workspace.api.model.CreateInvitationRequest
 import com.ampairs.workspace.api.model.ResendInvitationRequest
 import com.ampairs.workspace.db.OfflineFirstWorkspaceInvitationRepository
+import com.ampairs.workspace.db.OfflineFirstRolesPermissionsRepository
 import com.ampairs.workspace.domain.InvitationAcceptanceResult
 import com.ampairs.workspace.domain.WorkspaceInvitation
-import com.ampairs.common.model.PageResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,6 +24,7 @@ import kotlinx.coroutines.launch
 class WorkspaceInvitationsViewModel(
     private val workspaceId: String,
     private val invitationRepository: OfflineFirstWorkspaceInvitationRepository,
+    private val rolesRepository: OfflineFirstRolesPermissionsRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(WorkspaceInvitationsState())
@@ -47,27 +48,39 @@ class WorkspaceInvitationsViewModel(
             _state.value = _state.value.copy(isLoading = true, error = null)
             currentPage = page
 
-            invitationRepository.getWorkspaceInvitations(
-                workspaceId = workspaceId,
-                page = page,
-                size = size,
-                sortBy = sortBy,
-                sortDir = sortDir,
-                refresh = refresh
-            ).catch { error ->
+            println("📝 WorkspaceInvitationsViewModel: Loading invitations for workspace $workspaceId (page=$page, refresh=$refresh)")
+
+            try {
+                invitationRepository.getWorkspaceInvitations(
+                    workspaceId = workspaceId,
+                    page = page,
+                    size = size,
+                    sortBy = sortBy,
+                    sortDir = sortDir,
+                    refresh = refresh
+                ).catch { error ->
+                    println("❌ WorkspaceInvitationsViewModel: Error loading invitations: ${error.message}")
+                    _state.value = _state.value.copy(
+                        isLoading = false,
+                        error = error.message ?: "Failed to load invitations"
+                    )
+                }.collectLatest { pageResult ->
+                    println("✅ WorkspaceInvitationsViewModel: Received ${pageResult.content.size} invitations")
+                    allInvitations = pageResult.content
+                    _state.value = _state.value.copy(
+                        invitations = allInvitations,
+                        isLoading = false,
+                        currentPage = pageResult.currentPage,
+                        totalPages = pageResult.totalPages,
+                        totalInvitations = pageResult.totalElements,
+                        hasNextPage = !pageResult.isLast
+                    )
+                }
+            } catch (e: Exception) {
+                println("❌ WorkspaceInvitationsViewModel: Exception during load: ${e.message}")
                 _state.value = _state.value.copy(
                     isLoading = false,
-                    error = error.message ?: "Failed to load invitations"
-                )
-            }.collectLatest { pageResult ->
-                allInvitations = pageResult.content
-                _state.value = _state.value.copy(
-                    invitations = allInvitations,
-                    isLoading = false,
-                    currentPage = pageResult.currentPage,
-                    totalPages = pageResult.totalPages,
-                    totalInvitations = pageResult.totalElements,
-                    hasNextPage = !pageResult.isLast
+                    error = e.message ?: "Failed to load invitations"
                 )
             }
         }
@@ -158,7 +171,8 @@ class WorkspaceInvitationsViewModel(
      * Create and send new invitation
      */
     fun createInvitation(
-        recipientEmail: String,
+        countryCode: Int,
+        phone: String,
         recipientName: String? = null,
         invitedRole: String,
         customMessage: String? = null,
@@ -169,7 +183,8 @@ class WorkspaceInvitationsViewModel(
 
             try {
                 val request = CreateInvitationRequest(
-                    recipientEmail = recipientEmail,
+                    countryCode = countryCode,
+                    recipientPhone = phone,
                     recipientName = recipientName,
                     invitedRole = invitedRole,
                     customMessage = customMessage,
@@ -191,7 +206,7 @@ class WorkspaceInvitationsViewModel(
                     invitations = updatedInvitations,
                     isLoading = false,
                     totalInvitations = _state.value.totalInvitations + 1,
-                    successMessage = "Invitation sent successfully to $recipientEmail"
+                    successMessage = "Invitation sent successfully to +$countryCode $phone"
                 )
 
             } catch (e: Exception) {
@@ -342,6 +357,25 @@ class WorkspaceInvitationsViewModel(
     }
 
     /**
+     * Load available workspace roles for invitation creation
+     */
+    fun loadAvailableRoles() {
+        viewModelScope.launch {
+            try {
+                rolesRepository.getWorkspaceRoles(workspaceId)
+                    .catch { error ->
+                        println("Failed to load roles: ${error.message}")
+                    }.collectLatest { roles ->
+                        _state.value = _state.value.copy(availableRoles = roles)
+                    }
+            } catch (e: Exception) {
+                // Silently fail for roles loading - use fallback roles in UI
+                println("Failed to load roles: ${e.message}")
+            }
+        }
+    }
+
+    /**
      * Refresh invitations data from server
      */
     fun refresh() {
@@ -363,6 +397,7 @@ data class WorkspaceInvitationsState(
     val hasNextPage: Boolean = false,
     val activeFilters: Map<String, String> = emptyMap(),
     val acceptanceResult: InvitationAcceptanceResult? = null,
+    val availableRoles: List<com.ampairs.workspace.api.model.WorkspaceRole> = emptyList(),
 )
 
 /**
