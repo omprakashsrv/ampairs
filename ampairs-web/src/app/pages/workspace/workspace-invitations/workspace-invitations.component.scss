@@ -1,393 +1,508 @@
-/* Workspace Invitations Component Styles */
+/* Workspace Invitations - Material Design 3 */
 
-.workspace-invitations-container {
+.invitations-container {
   padding: 24px;
-  max-width: 1400px;
+  max-width: 1200px;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
   gap: 24px;
+  min-height: calc(100vh - 100px);
 
-  /* Header Section */
-  .header-section {
-    .header-card {
-      .mat-card-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 24px;
+  /* Page Header */
+  .page-header {
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 24px;
+      margin-bottom: 8px;
 
-        .title-section {
+      .title-section {
+        flex: 1;
+        min-width: 0;
+
+        .page-title {
           display: flex;
           align-items: center;
           gap: 12px;
           font-size: 28px;
-          font-weight: 500;
+          font-weight: 600;
+          margin: 0;
+          color: var(--mat-sys-on-surface);
+          line-height: 1.3;
 
           .title-icon {
             font-size: 32px;
+            width: 32px;
+            height: 32px;
             color: var(--mat-sys-primary);
+            flex-shrink: 0;
           }
 
-          .invitation-count-badge {
+          .invitation-count {
             margin-left: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: 12px;
+            background: var(--mat-sys-primary-container);
+            color: var(--mat-sys-on-primary-container);
+            flex-shrink: 0;
           }
         }
 
-        .header-actions {
-          display: flex;
-          gap: 16px;
-          align-items: center;
+        .page-subtitle {
+          color: var(--mat-sys-on-surface-variant);
+          font-size: 14px;
+          margin: 4px 0 0 44px;
+          line-height: 1.4;
+        }
+      }
 
-          .create-button {
-            font-weight: 500;
+      .header-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
 
-            mat-icon {
-              margin-right: 8px;
-            }
+        .invite-fab {
+          width: 56px;
+          height: 56px;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          transition: all 0.3s ease;
+
+          mat-icon {
+            font-size: 24px;
+            width: 24px;
+            height: 24px;
           }
 
-          .members-button {
-            mat-icon {
-              margin-right: 8px;
-            }
+          &:hover {
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
+            transform: translateY(-2px);
+          }
+        }
+
+        .more-actions {
+          width: 40px;
+          height: 40px;
+          border-radius: 20px;
+
+          mat-icon {
+            font-size: 20px;
+            width: 20px;
+            height: 20px;
           }
         }
       }
     }
   }
 
-  /* Statistics Section */
+  /* Statistics Cards */
   .stats-section {
-    .stats-grid {
+    margin-bottom: 8px;
+
+    .stats-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 16px;
 
       .stat-card {
-        .mat-card-content {
-          padding: 24px;
+        border-radius: 12px;
+        transition: all 0.2s ease;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--mat-sys-outline-variant);
+
+        &:hover {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        }
+
+        &.total {
+          background: var(--mat-sys-primary-container);
+          color: var(--mat-sys-on-primary-container);
+          border-color: var(--mat-sys-primary);
+        }
+
+        &.accepted {
+          background: var(--mat-sys-tertiary-container);
+          color: var(--mat-sys-on-tertiary-container);
+          border-color: var(--mat-sys-tertiary);
+        }
+
+        &.pending {
+          background: var(--mat-sys-secondary-container);
+          color: var(--mat-sys-on-secondary-container);
+          border-color: var(--mat-sys-secondary);
+        }
+
+        &.rate {
+          background: var(--mat-sys-surface-container);
+          color: var(--mat-sys-on-surface);
+          border-color: var(--mat-sys-outline-variant);
+        }
+
+        .mat-mdc-card-content {
+          padding: 20px;
+          text-align: center;
           display: flex;
-          justify-content: space-between;
-          align-items: center;
+          flex-direction: column;
+          justify-content: center;
 
-          .stat-content {
-            .stat-number {
-              font-size: 32px;
-              font-weight: 600;
-              color: var(--mat-sys-primary);
-              line-height: 1;
-              margin-bottom: 4px;
-            }
-
-            .stat-label {
-              font-size: 14px;
-              color: var(--mat-sys-on-surface-variant);
-              font-weight: 500;
-            }
+          .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            line-height: 1.1;
+            margin-bottom: 6px;
           }
 
-          .stat-icon {
-            font-size: 48px;
-            width: 48px;
-            height: 48px;
-            color: var(--mat-sys-outline);
-
-            &.accepted {
-              color: var(--mat-sys-tertiary);
-            }
-
-            &.pending {
-              color: var(--mat-sys-secondary);
-            }
-
-            &.rate {
-              color: var(--mat-sys-primary);
-            }
-          }
-        }
-      }
-    }
-  }
-
-  /* Filters Section */
-  .filters-card {
-    .mat-card-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px 24px 0;
-
-      .filter-actions {
-        .reset-filters-btn {
-          color: var(--mat-sys-primary);
-
-          mat-icon {
-            margin-right: 8px;
-          }
-        }
-      }
-    }
-
-    .mat-card-content {
-      padding: 16px 24px 24px;
-
-      .filters-form {
-        .filter-row {
-          display: grid;
-          grid-template-columns: 2fr 1fr 1fr 1fr;
-          gap: 16px;
-          align-items: end;
-          margin-bottom: 16px;
-
-          &.date-filters {
-            grid-template-columns: 1fr 1fr;
-            margin-bottom: 0;
-          }
-
-          .search-field {
-            min-width: 300px;
-          }
-
-          mat-form-field {
-            width: 100%;
-          }
-
-          mat-chip {
+          .stat-label {
             font-size: 12px;
-            font-weight: 500;
+            font-weight: 600;
+            opacity: 0.9;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
           }
         }
       }
     }
   }
 
-  /* Bulk Actions Bar */
-  .bulk-actions-bar {
-    .bulk-actions-card {
-      background: var(--mat-sys-secondary-container);
+  /* Invitations Section */
+  .invitations-section {
+    flex: 1;
 
-      .bulk-actions-content {
-        padding: 16px 24px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
+    .loading-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 20px;
+      text-align: center;
 
-        .selection-info {
-          display: flex;
-          align-items: center;
-          gap: 12px;
+      mat-spinner {
+        margin-bottom: 24px;
+      }
 
-          .selection-text {
-            font-weight: 500;
-            color: var(--mat-sys-on-secondary-container);
-          }
-        }
-
-        .bulk-actions {
-          display: flex;
-          gap: 8px;
-
-          .bulk-action-btn {
-            color: var(--mat-sys-on-secondary-container);
-
-            mat-icon {
-              margin-right: 8px;
-            }
-          }
-        }
+      .loading-text {
+        font-size: 16px;
+        color: var(--mat-sys-on-surface-variant);
+        margin: 0;
       }
     }
-  }
 
-  /* Table Section */
-  .table-card {
-    .table-container {
-      padding: 0;
+    .invitations-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 20px;
+      margin-top: 8px;
 
-      .loading-container {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 64px;
-        gap: 16px;
+      .invitation-card {
+        border-radius: 12px;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        border: 1px solid var(--mat-sys-outline-variant);
+        position: relative;
+        overflow: hidden;
+        background: var(--mat-sys-surface);
 
-        p {
-          color: var(--mat-sys-on-surface-variant);
-          font-size: 16px;
+        &:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+          border-color: var(--mat-sys-primary);
         }
-      }
 
-      .table-wrapper {
-        .invitations-table {
-          width: 100%;
-
-          /* Column Styles */
-          .select-column {
-            width: 56px;
-            padding-left: 24px;
+        &.expired {
+          border-left: 4px solid var(--mat-sys-error);
+          
+          .invitation-content {
+            opacity: 0.8;
           }
+        }
 
-          .email-column {
-            min-width: 240px;
+        &.accepted {
+          border-left: 4px solid var(--mat-sys-tertiary);
+          
+          &::after {
+            content: '';
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 8px;
+            height: 8px;
+            background: var(--mat-sys-tertiary);
+            border-radius: 50%;
+          }
+        }
 
-            .invitation-email {
-              .primary-text {
-                font-weight: 500;
-                color: var(--mat-sys-on-surface);
-                margin-bottom: 2px;
-              }
+        &.pending {
+          border-left: 4px solid var(--mat-sys-secondary);
+          
+          &::after {
+            content: '';
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 8px;
+            height: 8px;
+            background: var(--mat-sys-secondary);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+          }
+        }
 
-              .secondary-text {
-                font-size: 12px;
-                color: var(--mat-sys-secondary);
+        .invitation-content {
+          padding: 20px;
+
+          .invitation-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+
+            .invitation-avatar {
+              position: relative;
+              flex-shrink: 0;
+
+              .avatar-placeholder {
+                width: 48px;
+                height: 48px;
+                border-radius: 50%;
+                background: var(--mat-sys-primary-container);
+                color: var(--mat-sys-on-primary-container);
                 display: flex;
                 align-items: center;
-                gap: 4px;
+                justify-content: center;
+                font-size: 18px;
+                font-weight: 600;
+                border: 2px solid var(--mat-sys-outline-variant);
+              }
 
-                .message-icon {
+              .status-indicator {
+                position: absolute;
+                bottom: 0;
+                right: 0;
+                width: 12px;
+                height: 12px;
+                border: 2px solid var(--mat-sys-surface);
+                border-radius: 50%;
+
+                &.accepted {
+                  background: var(--mat-sys-tertiary);
+                }
+
+                &.pending {
+                  background: var(--mat-sys-secondary);
+                  animation: pulse 2s infinite;
+                }
+
+                &.expired {
+                  background: var(--mat-sys-error);
+                }
+              }
+            }
+
+            .invitation-info {
+              flex: 1;
+              min-width: 0;
+
+              .invitation-email {
+                font-size: 16px;
+                font-weight: 600;
+                color: var(--mat-sys-on-surface);
+                margin: 0 0 2px 0;
+                line-height: 1.3;
+                word-break: break-word;
+              }
+
+              .invitation-role {
+                font-size: 12px;
+                color: var(--mat-sys-on-surface-variant);
+                margin: 0;
+                font-weight: 500;
+                text-transform: uppercase;
+                letter-spacing: 0.3px;
+              }
+            }
+          }
+
+          .invitation-details {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+
+            .status-chip,
+            .delivery-chip {
+              font-size: 10px;
+              font-weight: 600;
+              text-transform: uppercase;
+              letter-spacing: 0.3px;
+              border-radius: 10px;
+              min-height: 24px;
+              padding: 2px 8px;
+            }
+          }
+
+          .invitation-meta {
+            margin-bottom: 16px;
+
+            .meta-row {
+              display: flex;
+              gap: 16px;
+              margin-bottom: 6px;
+              flex-wrap: wrap;
+
+              &:last-child {
+                margin-bottom: 0;
+              }
+
+              .meta-item {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                font-size: 12px;
+                color: var(--mat-sys-on-surface-variant);
+
+                &.expires {
+                  &.expired {
+                    color: var(--mat-sys-error);
+                    font-weight: 500;
+                  }
+                }
+
+                .meta-icon {
                   font-size: 14px;
                   width: 14px;
                   height: 14px;
+                  opacity: 0.7;
+                  flex-shrink: 0;
                 }
               }
             }
           }
 
-          .role-column, .status-column, .delivery-column {
-            width: 120px;
-
-            mat-chip {
-              font-size: 11px;
-              font-weight: 600;
-              text-transform: uppercase;
-
-              &.delivery-chip {
-                font-size: 10px;
-              }
-            }
-          }
-
-          .inviter-column {
-            width: 140px;
-
-            .inviter-name {
-              color: var(--mat-sys-on-surface-variant);
-              font-size: 14px;
-            }
-          }
-
-          .created-column, .expires-column {
-            width: 150px;
-
-            .date-info {
-              .primary-text {
-                font-size: 14px;
-                color: var(--mat-sys-on-surface-variant);
-              }
-            }
-
-            .expires-info {
-              &.expired {
-                color: var(--mat-sys-error);
-
-                .expires-text {
-                  font-weight: 500;
-                }
-              }
-
-              .expires-text {
-                font-size: 13px;
-                font-weight: 500;
-                color: var(--mat-sys-secondary);
-                margin-bottom: 2px;
-              }
-
-              .expires-date {
-                font-size: 11px;
-                color: var(--mat-sys-on-surface-variant);
-              }
-            }
-          }
-
-          .reminder-column {
-            width: 100px;
-            text-align: center;
-
-            .no-reminders {
-              color: var(--mat-sys-on-surface-variant);
-              font-style: italic;
-            }
-
-            mat-badge {
-              .mat-badge-content {
-                right: -6px;
-                top: -6px;
-              }
-            }
-          }
-
-          .actions-column {
-            width: 80px;
-            text-align: center;
-            padding-right: 24px;
-          }
-
-          /* Row Styles */
-          .invitation-row {
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-
-            &:hover {
-              background-color: var(--mat-sys-surface-variant);
-            }
-          }
-        }
-
-        /* No Data State */
-        .no-data-container {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-          padding: 64px;
-          text-align: center;
-
-          .no-data-icon {
-            font-size: 72px;
-            width: 72px;
-            height: 72px;
-            color: var(--mat-sys-outline);
-            margin-bottom: 16px;
-          }
-
-          h3 {
-            color: var(--mat-sys-on-surface);
-            margin-bottom: 8px;
-            font-weight: 500;
-          }
-
-          p {
-            color: var(--mat-sys-on-surface-variant);
-            margin-bottom: 24px;
-            max-width: 400px;
-          }
-
-          .no-data-actions {
+          .invitation-actions {
             display: flex;
-            gap: 12px;
-            justify-content: center;
-            flex-wrap: wrap;
-          }
-        }
+            justify-content: flex-end;
+            gap: 6px;
+            padding-top: 8px;
+            border-top: 1px solid var(--mat-sys-outline-variant);
 
-        /* Paginator */
-        .invitations-paginator {
-          border-top: 1px solid var(--mat-sys-outline-variant);
-          background: var(--mat-sys-surface-container);
+            button[mat-icon-button] {
+              width: 32px;
+              height: 32px;
+              border-radius: 16px;
+
+              mat-icon {
+                font-size: 16px;
+                width: 16px;
+                height: 16px;
+              }
+
+              &:disabled {
+                opacity: 0.4;
+              }
+            }
+          }
+
+          .message-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            background: var(--mat-sys-primary-container);
+            color: var(--mat-sys-on-primary-container);
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 500;
+            margin-bottom: 12px;
+
+            .message-icon {
+              font-size: 16px;
+              width: 16px;
+              height: 16px;
+            }
+
+            .message-text {
+              flex: 1;
+            }
+          }
+
+          .reminder-count {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--mat-sys-on-surface-variant);
+
+            mat-icon {
+              font-size: 16px;
+              width: 16px;
+              height: 16px;
+            }
+
+            .reminder-text {
+              font-weight: 500;
+            }
+          }
         }
       }
+    }
+
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 80px 20px;
+      text-align: center;
+
+      .empty-icon {
+        font-size: 64px;
+        width: 64px;
+        height: 64px;
+        color: var(--mat-sys-outline);
+        margin-bottom: 24px;
+      }
+
+      h2 {
+        font-size: 24px;
+        font-weight: 500;
+        color: var(--mat-sys-on-surface);
+        margin: 0 0 12px 0;
+      }
+
+      p {
+        font-size: 16px;
+        color: var(--mat-sys-on-surface-variant);
+        margin: 0 0 32px 0;
+        max-width: 400px;
+        line-height: 1.5;
+      }
+
+      .empty-action {
+        height: 48px;
+        border-radius: 24px;
+        font-weight: 600;
+        min-width: 160px;
+
+        mat-icon {
+          margin-right: 8px;
+          font-size: 20px;
+          width: 20px;
+          height: 20px;
+        }
+      }
+    }
+
+    .invitations-paginator {
+      margin-top: 32px;
+      border-radius: 12px;
+      background: var(--mat-sys-surface-container-low);
+      border: 1px solid var(--mat-sys-outline-variant);
     }
   }
 }
@@ -397,11 +512,44 @@
   color: var(--mat-sys-error) !important;
 
   mat-icon {
-    color: var(--mat-sys-error);
+    color: var(--mat-sys-error) !important;
   }
 }
 
-/* Custom chip colors for invitation statuses */
+/* Global Button Enhancements */
+button {
+  &[mat-fab] {
+    transition: all 0.3s ease;
+  }
+
+  &[mat-raised-button] {
+    border-radius: 24px;
+    font-weight: 600;
+    text-transform: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+
+    &:hover {
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    }
+  }
+
+  &[mat-stroked-button] {
+    border-radius: 20px;
+    font-weight: 500;
+    text-transform: none;
+  }
+
+  &[mat-icon-button] {
+    border-radius: 20px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      background-color: var(--mat-sys-surface-variant);
+    }
+  }
+}
+
+/* Custom Chip Colors */
 mat-chip {
   &[color="success"] {
     background-color: var(--mat-sys-tertiary-container);
@@ -434,97 +582,298 @@ mat-chip {
   }
 }
 
+/* Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
 /* Responsive Design */
-@media (max-width: 1200px) {
-  .workspace-invitations-container {
-    .filters-card .mat-card-content .filters-form .filter-row {
-      grid-template-columns: 1fr;
-      gap: 12px;
+@media (max-width: 1024px) {
+  .invitations-container {
+    max-width: 100%;
+    padding: 20px;
 
-      &.date-filters {
-        grid-template-columns: 1fr 1fr;
-      }
+    .invitations-grid {
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
 
-      .search-field {
-        min-width: auto;
+    .stats-section .stats-row {
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 14px;
+    }
+  }
+}
+
+@media (max-width: 900px) {
+  .invitations-container {
+    .page-header .header-content {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 16px;
+
+      .header-actions {
+        width: 100%;
+        justify-content: space-between;
       }
     }
 
-    .stats-section .stats-grid {
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    .invitations-grid {
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .stats-section .stats-row {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
     }
   }
 }
 
 @media (max-width: 768px) {
-  .workspace-invitations-container {
+  .invitations-container {
     padding: 16px;
     gap: 16px;
 
-    .header-section .header-card .mat-card-header {
-      flex-direction: column;
-      gap: 16px;
-      align-items: flex-start;
+    .page-header .header-content {
+      .title-section {
+        .page-title {
+          font-size: 24px;
+          gap: 8px;
+
+          .title-icon {
+            font-size: 28px;
+            width: 28px;
+            height: 28px;
+          }
+
+          .invitation-count {
+            font-size: 11px;
+            padding: 3px 6px;
+          }
+        }
+
+        .page-subtitle {
+          font-size: 13px;
+          margin-left: 36px;
+        }
+      }
 
       .header-actions {
-        width: 100%;
-        justify-content: flex-start;
+        .invite-fab {
+          width: 48px;
+          height: 48px;
+
+          mat-icon {
+            font-size: 20px;
+            width: 20px;
+            height: 20px;
+          }
+        }
       }
     }
 
-    .bulk-actions-bar .bulk-actions-card .bulk-actions-content {
-      flex-direction: column;
-      gap: 16px;
-      align-items: flex-start;
+    .stats-section .stats-row {
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
 
-      .bulk-actions {
-        width: 100%;
-        justify-content: flex-start;
+      .stat-card .mat-mdc-card-content {
+        padding: 16px;
+
+        .stat-value {
+          font-size: 28px;
+        }
+
+        .stat-label {
+          font-size: 11px;
+        }
+      }
+    }
+
+    .invitations-grid {
+      grid-template-columns: 1fr;
+      gap: 12px;
+
+      .invitation-card .invitation-content {
+        padding: 16px;
+
+        .invitation-header {
+          gap: 10px;
+          margin-bottom: 12px;
+
+          .invitation-avatar .avatar-placeholder {
+            width: 40px;
+            height: 40px;
+            font-size: 16px;
+          }
+
+          .invitation-info {
+            .invitation-email {
+              font-size: 15px;
+            }
+
+            .invitation-role {
+              font-size: 11px;
+            }
+          }
+        }
+
+        .invitation-details {
+          margin-bottom: 12px;
+        }
+
+        .invitation-meta {
+          margin-bottom: 12px;
+        }
+      }
+    }
+
+    .empty-state {
+      padding: 40px 16px;
+
+      .empty-icon {
+        font-size: 40px;
+        width: 40px;
+        height: 40px;
+        margin-bottom: 16px;
+      }
+
+      h2 {
+        font-size: 18px;
+        margin-bottom: 6px;
+      }
+
+      p {
+        font-size: 13px;
+        margin-bottom: 20px;
+      }
+
+      .empty-action {
+        height: 40px;
+        border-radius: 20px;
+        min-width: 120px;
+      }
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .invitations-container {
+    padding: 12px;
+    gap: 12px;
+
+    .page-header .header-content {
+      gap: 12px;
+
+      .title-section .page-title {
+        font-size: 20px;
         flex-wrap: wrap;
+
+        .title-icon {
+          font-size: 24px;
+          width: 24px;
+          height: 24px;
+        }
+
+        .invitation-count {
+          margin-left: 0;
+          margin-top: 4px;
+          font-size: 10px;
+          padding: 2px 6px;
+        }
+      }
+
+      .header-actions .invite-fab {
+        width: 44px;
+        height: 44px;
+
+        mat-icon {
+          font-size: 18px;
+          width: 18px;
+          height: 18px;
+        }
       }
     }
 
-    .stats-section .stats-grid {
+    .stats-section .stats-row {
       grid-template-columns: 1fr;
+      gap: 8px;
+
+      .stat-card .mat-mdc-card-content {
+        padding: 12px;
+
+        .stat-value {
+          font-size: 24px;
+        }
+
+        .stat-label {
+          font-size: 10px;
+        }
+      }
     }
 
-    .filters-card .mat-card-content .filters-form .filter-row.date-filters {
-      grid-template-columns: 1fr;
-    }
+    .invitations-grid .invitation-card .invitation-content {
+      padding: 12px;
 
-    .table-card .table-container .table-wrapper .invitations-table {
-      .email-column {
-        min-width: 200px;
+      .invitation-header {
+        gap: 8px;
+        margin-bottom: 10px;
+
+        .invitation-avatar .avatar-placeholder {
+          width: 36px;
+          height: 36px;
+          font-size: 14px;
+        }
+
+        .invitation-info {
+          .invitation-email {
+            font-size: 14px;
+          }
+
+          .invitation-role {
+            font-size: 10px;
+          }
+        }
       }
 
-      .created-column, .expires-column {
-        min-width: 130px;
+      .invitation-details,
+      .invitation-meta {
+        margin-bottom: 10px;
       }
     }
   }
 }
 
-/* Loading State */
-.mat-progress-spinner {
-  margin: 0 auto;
-}
-
-/* Accessibility */
+/* Animation and Accessibility */
 @media (prefers-reduced-motion: reduce) {
-  .invitation-row {
+  .invitation-card,
+  .stat-card,
+  .invite-fab,
+  button[mat-raised-button],
+  .status-indicator.pending {
     transition: none;
-  }
-
-  .bulk-action-btn,
-  .reset-filters-btn,
-  .create-button {
-    transition: none;
+    transform: none !important;
+    animation: none !important;
   }
 }
 
-/* Date picker theming */
-.mat-datepicker-content {
-  .mat-calendar {
-    width: auto;
+/* Print Styles */
+@media print {
+  .invitations-container {
+    .page-header .header-actions,
+    .invitation-actions {
+      display: none;
+    }
+
+    .invitation-card {
+      box-shadow: none;
+      border: 1px solid #ddd;
+      break-inside: avoid;
+    }
   }
 }

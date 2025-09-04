@@ -1,480 +1,253 @@
-<!-- Workspace Members Management -->
-<div class="workspace-members-container">
-
-  <!-- Header Section -->
-  <div class="header-section">
-    <mat-card class="header-card">
-      <mat-card-header>
-        <mat-card-title class="title-section">
+<!-- Modern Workspace Members Management -->
+<div class="members-container">
+  
+  <!-- Header Section with Clean Typography -->
+  <div class="page-header">
+    <div class="header-content">
+      <div class="title-section">
+        <h1 class="page-title">
           <mat-icon class="title-icon">group</mat-icon>
-          <span>Workspace Members</span>
-          <span
-            [matBadge]="totalElements"
-            class="member-count-badge"
-            matBadgeColor="primary">
-          </span>
-        </mat-card-title>
-
-        <div class="header-actions">
-          <button
-            (click)="inviteNewMembers()"
-            class="invite-button"
-            color="primary"
-            mat-raised-button>
-            <mat-icon>person_add</mat-icon>
-            Invite Members
-          </button>
-
-          <button
-            (click)="viewInvitations()"
-            class="invitations-button"
-            mat-stroked-button>
-            <mat-icon>mail_outline</mat-icon>
-            View Invitations
-          </button>
-
-          <button
-            [matMenuTriggerFor]="exportMenu"
-            mat-icon-button
-            matTooltip="Export Data">
-            <mat-icon>download</mat-icon>
-          </button>
-        </div>
-      </mat-card-header>
-    </mat-card>
+          Members
+          <mat-chip class="member-count" [color]="'primary'">
+            {{ totalElements || 0 }}
+          </mat-chip>
+        </h1>
+        <p class="page-subtitle">Manage your workspace team members and their permissions</p>
+      </div>
+      
+      <div class="header-actions">
+        <button 
+          (click)="inviteNewMembers()" 
+          mat-fab 
+          color="primary" 
+          class="invite-fab"
+          matTooltip="Invite new members"
+          [matTooltipPosition]="'left'">
+          <mat-icon>person_add</mat-icon>
+        </button>
+        
+        <button 
+          (click)="viewInvitations()" 
+          mat-stroked-button 
+          class="secondary-action">
+          <mat-icon>mail_outline</mat-icon>
+          Invitations
+        </button>
+        
+        <button 
+          [matMenuTriggerFor]="actionsMenu" 
+          mat-icon-button 
+          class="more-actions"
+          matTooltip="More actions">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+      </div>
+    </div>
   </div>
 
-  <!-- Statistics Cards -->
+  <!-- Statistics Cards - Simplified -->
   <div *ngIf="!isLoadingStats && memberStats" class="stats-section">
-    <div class="stats-grid">
-      <mat-card class="stat-card">
+    <div class="stats-row">
+      <mat-card class="stat-card total">
         <mat-card-content>
-          <div class="stat-content">
-            <div class="stat-number">{{ memberStats.total_members || 0 }}</div>
-            <div class="stat-label">Total Members</div>
-          </div>
-          <mat-icon class="stat-icon">group</mat-icon>
+          <div class="stat-value">{{ memberStats.total_members || 0 }}</div>
+          <div class="stat-label">Total Members</div>
         </mat-card-content>
       </mat-card>
-
-      <mat-card class="stat-card">
+      
+      <mat-card class="stat-card active">
         <mat-card-content>
-          <div class="stat-content">
-            <div class="stat-number">{{ memberStats.active_members || 0 }}</div>
-            <div class="stat-label">Active Members</div>
-          </div>
-          <mat-icon class="stat-icon active">person</mat-icon>
+          <div class="stat-value">{{ memberStats.active_members || 0 }}</div>
+          <div class="stat-label">Active</div>
         </mat-card-content>
       </mat-card>
-
-      <mat-card class="stat-card">
+      
+      <mat-card class="stat-card recent">
         <mat-card-content>
-          <div class="stat-content">
-            <div class="stat-number">{{ memberStats.recent_joins || 0 }}</div>
-            <div class="stat-label">Recent Joins</div>
-          </div>
-          <mat-icon class="stat-icon recent">person_add</mat-icon>
-        </mat-card-content>
-      </mat-card>
-
-      <mat-card class="stat-card">
-        <mat-card-content>
-          <div class="stat-content">
-            <div class="stat-number">{{ departments.length || 0 }}</div>
-            <div class="stat-label">Departments</div>
-          </div>
-          <mat-icon class="stat-icon">business</mat-icon>
+          <div class="stat-value">{{ memberStats.recent_joins || 0 }}</div>
+          <div class="stat-label">Recent Joins</div>
         </mat-card-content>
       </mat-card>
     </div>
   </div>
 
-  <!-- Filters Section -->
-  <mat-card class="filters-card">
-    <mat-card-header>
-      <mat-card-title>Filter Members</mat-card-title>
-      <div class="filter-actions">
-        <button
-          (click)="resetFilters()"
-          class="reset-filters-btn"
-          mat-button>
-          <mat-icon>clear_all</mat-icon>
-          Reset Filters
-        </button>
-      </div>
-    </mat-card-header>
+  <!-- Members List - Card Based Design -->
+  <div class="members-section">
+    
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="loading-state">
+      <mat-spinner diameter="48"></mat-spinner>
+      <p class="loading-text">Loading members...</p>
+    </div>
 
-    <mat-card-content>
-      <form [formGroup]="filterForm" class="filters-form">
-        <div class="filter-row">
-          <!-- Search -->
-          <mat-form-field appearance="outline" class="search-field">
-            <mat-label>Search members</mat-label>
-            <input
-              [formControl]="searchControl"
-              autocomplete="off"
-              matInput
-              placeholder="Search by name, email...">
-            <mat-icon matSuffix>search</mat-icon>
-          </mat-form-field>
-
-          <!-- Role Filter -->
-          <mat-form-field appearance="outline">
-            <mat-label>Role</mat-label>
-            <mat-select formControlName="role">
-              <mat-option value="ALL">All Roles</mat-option>
-              <mat-option
-                *ngFor="let role of roles"
-                [value]="role">
-                <mat-chip [color]="getRoleColor(role)">{{ role }}</mat-chip>
-              </mat-option>
-            </mat-select>
-          </mat-form-field>
-
-          <!-- Status Filter -->
-          <mat-form-field appearance="outline">
-            <mat-label>Status</mat-label>
-            <mat-select formControlName="status">
-              <mat-option value="ALL">All Statuses</mat-option>
-              <mat-option
-                *ngFor="let status of statuses"
-                [value]="status">
-                <mat-chip [color]="getStatusColor(status)">{{ status }}</mat-chip>
-              </mat-option>
-            </mat-select>
-          </mat-form-field>
-
-          <!-- Department Filter -->
-          <mat-form-field appearance="outline">
-            <mat-label>Department</mat-label>
-            <mat-select formControlName="department">
-              <mat-option value="">All Departments</mat-option>
-              <mat-option
-                *ngFor="let dept of departments"
-                [value]="dept">
-                {{ dept }}
-              </mat-option>
-            </mat-select>
-          </mat-form-field>
-        </div>
-      </form>
-    </mat-card-content>
-  </mat-card>
-
-  <!-- Bulk Actions Bar -->
-  <div *ngIf="selection.selected.length > 0" class="bulk-actions-bar">
-    <mat-card class="bulk-actions-card">
-      <mat-card-content class="bulk-actions-content">
-        <div class="selection-info">
-          <mat-checkbox
-            (change)="toggleAllRows()"
-            [checked]="isAllSelected()"
-            [indeterminate]="selection.selected.length > 0 && !isAllSelected()">
-          </mat-checkbox>
-          <span class="selection-text">
-            {{ selection.selected.length }} of {{ dataSource.data.length }} selected
-          </span>
-        </div>
-
-        <div class="bulk-actions">
-          <button
-            [matMenuTriggerFor]="bulkRoleMenu"
-            class="bulk-action-btn"
-            mat-button>
-            <mat-icon>admin_panel_settings</mat-icon>
-            Change Role
-          </button>
-
-          <button
-            [matMenuTriggerFor]="bulkStatusMenu"
-            class="bulk-action-btn"
-            mat-button>
-            <mat-icon>toggle_on</mat-icon>
-            Change Status
-          </button>
-
-          <button
-            (click)="bulkRemoveMembers()"
-            class="bulk-action-btn"
-            color="warn"
-            mat-button>
-            <mat-icon>delete</mat-icon>
-            Remove Selected
-          </button>
-        </div>
-      </mat-card-content>
-    </mat-card>
-  </div>
-
-  <!-- Members Table -->
-  <mat-card class="table-card">
-    <mat-card-content class="table-container">
-      <!-- Loading Spinner -->
-      <div *ngIf="isLoading" class="loading-container">
-        <mat-spinner diameter="40"></mat-spinner>
-        <p>Loading members...</p>
-      </div>
-
-      <!-- Members Table -->
-      <div *ngIf="!isLoading" class="table-wrapper">
-        <table
-          (matSortChange)="onSortChange($event)"
-          [dataSource]="dataSource"
-          class="members-table"
-          mat-table
-          matSort>
-
-          <!-- Selection Column -->
-          <ng-container matColumnDef="select">
-            <th *matHeaderCellDef class="select-column" mat-header-cell>
-              <mat-checkbox
-                (change)="toggleAllRows()"
-                [checked]="isAllSelected()"
-                [indeterminate]="selection.selected.length > 0 && !isAllSelected()">
-              </mat-checkbox>
-            </th>
-            <td *matCellDef="let member" class="select-column" mat-cell>
-              <mat-checkbox
-                (change)="toggleRow(member)"
-                (click)="$event.stopPropagation()"
-                [checked]="selection.isSelected(member)">
-              </mat-checkbox>
-            </td>
-          </ng-container>
-
-          <!-- Avatar Column -->
-          <ng-container matColumnDef="avatar">
-            <th *matHeaderCellDef class="avatar-column" mat-header-cell></th>
-            <td *matCellDef="let member" class="avatar-column" mat-cell>
-              <div class="member-avatar">
-                <img
-                  *ngIf="member.avatar_url; else avatarFallback"
-                  [alt]="getDisplayName(member)"
-                  [src]="member.avatar_url"
-                  class="avatar-image">
-                <ng-template #avatarFallback>
-                  <div class="avatar-fallback">
-                    {{ (getDisplayName(member) || '?').charAt(0).toUpperCase() }}
-                  </div>
-                </ng-template>
-              </div>
-            </td>
-          </ng-container>
-
-          <!-- Name Column -->
-          <ng-container matColumnDef="name">
-            <th *matHeaderCellDef mat-header-cell mat-sort-header="name">Name</th>
-            <td *matCellDef="let member" class="name-column" mat-cell>
-              <div class="member-name">
-                <div class="primary-text">{{ getDisplayName(member) }}</div>
-                <div *ngIf="member.is_online" class="secondary-text">
-                  <mat-icon class="online-indicator">fiber_manual_record</mat-icon>
-                  Online
+    <!-- Members Grid -->
+    <div *ngIf="!isLoading && dataSource.data.length > 0" class="members-grid">
+      <mat-card 
+        *ngFor="let member of dataSource.data; trackBy: trackByMemberId"
+        class="member-card"
+        (click)="viewMemberDetails(member)"
+        [class.online]="member.is_online">
+        
+        <mat-card-content class="member-content">
+          <!-- Avatar and Basic Info -->
+          <div class="member-header">
+            <div class="member-avatar">
+              <img 
+                *ngIf="member.avatar_url; else avatarFallback"
+                [src]="member.avatar_url" 
+                [alt]="getDisplayName(member)"
+                class="avatar-image">
+              <ng-template #avatarFallback>
+                <div class="avatar-placeholder">
+                  {{ (getDisplayName(member) || '?').charAt(0).toUpperCase() }}
                 </div>
-              </div>
-            </td>
-          </ng-container>
-
-          <!-- Email Column -->
-          <ng-container matColumnDef="email">
-            <th *matHeaderCellDef mat-header-cell mat-sort-header="email">Email</th>
-            <td *matCellDef="let member" class="email-column" mat-cell>
-              <div class="member-email">
-                <div class="primary-text">{{ member.email }}</div>
-                <div *ngIf="member.phone" class="secondary-text">{{ member.phone }}</div>
-              </div>
-            </td>
-          </ng-container>
-
-          <!-- Role Column -->
-          <ng-container matColumnDef="role">
-            <th *matHeaderCellDef mat-header-cell mat-sort-header="role">Role</th>
-            <td *matCellDef="let member" class="role-column" mat-cell>
-              <mat-chip
-                [color]="getRoleColor(member.role)"
-                [matTooltip]="getRoleDescription(member.role)">
-                {{ member.role }}
-              </mat-chip>
-            </td>
-          </ng-container>
-
-          <!-- Status Column -->
-          <ng-container matColumnDef="status">
-            <th *matHeaderCellDef mat-header-cell mat-sort-header="status">Status</th>
-            <td *matCellDef="let member" class="status-column" mat-cell>
-              <mat-chip [color]="getStatusColor(member.status)">
-                {{ member.status }}
-              </mat-chip>
-            </td>
-          </ng-container>
-
-          <!-- Department Column -->
-          <ng-container matColumnDef="department">
-            <th *matHeaderCellDef mat-header-cell mat-sort-header="department">Department</th>
-            <td *matCellDef="let member" class="department-column" mat-cell>
-              <span *ngIf="member.department; else noDepartment">
-                {{ member.department }}
-              </span>
-              <ng-template #noDepartment>
-                <span class="no-data">-</span>
               </ng-template>
-            </td>
-          </ng-container>
+              <div *ngIf="member.is_online" class="online-indicator"></div>
+            </div>
+            
+            <div class="member-info">
+              <h3 class="member-name">{{ getDisplayName(member) }}</h3>
+              <p class="member-email">{{ member.email }}</p>
+            </div>
+          </div>
 
-          <!-- Joined Date Column -->
-          <ng-container matColumnDef="joined_at">
-            <th *matHeaderCellDef mat-header-cell mat-sort-header="joinedAt">Joined</th>
-            <td *matCellDef="let member" class="joined-column" mat-cell>
-              <div class="date-info">
-                <div class="primary-text">{{ formatJoinedDate(member.joined_at) }}</div>
-              </div>
-            </td>
-          </ng-container>
+          <!-- Role and Status -->
+          <div class="member-details">
+            <mat-chip [color]="getRoleColor(member.role)" class="role-chip">
+              {{ member.role }}
+            </mat-chip>
+            
+            <mat-chip 
+              [color]="getStatusColor(member.status)" 
+              class="status-chip"
+              [class.inactive]="member.status !== 'ACTIVE'">
+              {{ member.status }}
+            </mat-chip>
+          </div>
 
-          <!-- Last Activity Column -->
-          <ng-container matColumnDef="last_activity">
-            <th *matHeaderCellDef mat-header-cell mat-sort-header="lastActivity">Last Activity</th>
-            <td *matCellDef="let member" class="activity-column" mat-cell>
-              <div class="activity-info">
-                <span class="activity-text">{{ formatLastActivity(member.last_activity) }}</span>
-              </div>
-            </td>
-          </ng-container>
+          <!-- Quick Actions -->
+          <div class="member-actions">
+            <button 
+              mat-icon-button 
+              (click)="editMemberRole(member); $event.stopPropagation()"
+              [disabled]="!canManageMember(member.role)"
+              matTooltip="Edit role">
+              <mat-icon>edit</mat-icon>
+            </button>
+            
+            <button 
+              mat-icon-button 
+              [matMenuTriggerFor]="memberQuickActions"
+              [matMenuTriggerData]="{ member: member }"
+              (click)="$event.stopPropagation()"
+              matTooltip="More actions">
+              <mat-icon>more_horiz</mat-icon>
+            </button>
+          </div>
 
-          <!-- Actions Column -->
-          <ng-container matColumnDef="actions">
-            <th *matHeaderCellDef class="actions-column" mat-header-cell>Actions</th>
-            <td *matCellDef="let member" class="actions-column" mat-cell>
-              <button
-                [disabled]="!canManageMember(member.role)"
-                [matMenuTriggerData]="{ member: member }"
-                [matMenuTriggerFor]="memberActionMenu"
-                mat-icon-button
-                matTooltip="Member Actions">
-                <mat-icon>more_vert</mat-icon>
-              </button>
-            </td>
-          </ng-container>
+          <!-- Join Date -->
+          <div class="member-meta">
+            <span class="join-date">
+              <mat-icon class="meta-icon">schedule</mat-icon>
+              Joined {{ formatJoinedDate(member.joined_at) }}
+            </span>
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </div>
 
-          <tr *matHeaderRowDef="displayedColumns" mat-header-row></tr>
-          <tr
-            (click)="viewMemberDetails(member)"
-            *matRowDef="let member; columns: displayedColumns;"
-            class="member-row"
-            mat-row>
-          </tr>
-        </table>
+    <!-- Empty State -->
+    <div *ngIf="!isLoading && dataSource.data.length === 0" class="empty-state">
+      <mat-icon class="empty-icon">group_off</mat-icon>
+      <h2>No members found</h2>
+      <p>Start building your team by inviting members to your workspace.</p>
+      <button 
+        (click)="inviteNewMembers()" 
+        mat-raised-button 
+        color="primary" 
+        class="empty-action">
+        <mat-icon>person_add</mat-icon>
+        Invite Members
+      </button>
+    </div>
 
-        <!-- No Data Message -->
-        <div *ngIf="dataSource.data.length === 0 && !isLoading" class="no-data-container">
-          <mat-icon class="no-data-icon">group_off</mat-icon>
-          <h3>No Members Found</h3>
-          <p>No members match your current filter criteria.</p>
-          <button (click)="resetFilters()" color="primary" mat-raised-button>
-            Clear Filters
-          </button>
-        </div>
-
-        <!-- Paginator -->
-        <mat-paginator
-          (page)="onPageChange($event)"
-          [length]="totalElements"
-          [pageSizeOptions]="[10, 20, 50, 100]"
-          [pageSize]="pageSize"
-          [showFirstLastButtons]="true"
-          class="members-paginator">
-        </mat-paginator>
-      </div>
-    </mat-card-content>
-  </mat-card>
+    <!-- Pagination -->
+    <mat-paginator
+      *ngIf="!isLoading && totalElements > 0"
+      (page)="onPageChange($event)"
+      [length]="totalElements"
+      [pageSizeOptions]="[12, 24, 48]"
+      [pageSize]="pageSize"
+      [showFirstLastButtons]="true"
+      class="members-paginator">
+    </mat-paginator>
+  </div>
 </div>
 
-<!-- Export Menu -->
-<mat-menu #exportMenu="matMenu">
+<!-- Actions Menu -->
+<mat-menu #actionsMenu="matMenu">
   <button (click)="exportMembers('CSV')" mat-menu-item>
-    <mat-icon>table_view</mat-icon>
-    <span>Export as CSV</span>
+    <mat-icon>download</mat-icon>
+    Export as CSV
   </button>
   <button (click)="exportMembers('EXCEL')" mat-menu-item>
-    <mat-icon>grid_on</mat-icon>
-    <span>Export as Excel</span>
+    <mat-icon>table_chart</mat-icon>
+    Export as Excel
+  </button>
+  <mat-divider></mat-divider>
+  <button (click)="refresh()" mat-menu-item>
+    <mat-icon>refresh</mat-icon>
+    Refresh
   </button>
 </mat-menu>
 
-<!-- Member Action Menu -->
-<mat-menu #memberActionMenu="matMenu">
+<!-- Member Quick Actions Menu -->
+<mat-menu #memberQuickActions="matMenu">
   <ng-template let-member="member" matMenuContent>
-    <button (click)="viewMemberDetails(member)" mat-menu-item>
+    <button 
+      (click)="viewMemberDetails(member)" 
+      mat-menu-item>
       <mat-icon>visibility</mat-icon>
-      <span>View Details</span>
+      View Details
     </button>
-
-    <button
-      (click)="editMemberRole(member)"
+    
+    <button 
+      (click)="editMemberRole(member)" 
       [disabled]="!canManageMember(member.role)"
       mat-menu-item>
       <mat-icon>admin_panel_settings</mat-icon>
-      <span>Edit Role</span>
+      Edit Role
     </button>
-
+    
     <mat-divider></mat-divider>
-
-    <button
+    
+    <button 
       (click)="updateMemberStatus(member, 'ACTIVE')"
       *ngIf="member.status !== 'ACTIVE'"
       [disabled]="!canManageMember(member.role)"
       mat-menu-item>
       <mat-icon>play_circle</mat-icon>
-      <span>Activate</span>
+      Activate
     </button>
-
-    <button
+    
+    <button 
       (click)="updateMemberStatus(member, 'INACTIVE')"
-      *ngIf="member.status !== 'INACTIVE'"
+      *ngIf="member.status === 'ACTIVE'"
       [disabled]="!canManageMember(member.role)"
       mat-menu-item>
       <mat-icon>pause_circle</mat-icon>
-      <span>Deactivate</span>
+      Deactivate
     </button>
-
-    <button
-      (click)="updateMemberStatus(member, 'SUSPENDED')"
-      *ngIf="member.status !== 'SUSPENDED'"
-      [disabled]="!canManageMember(member.role)"
-      mat-menu-item>
-      <mat-icon>block</mat-icon>
-      <span>Suspend</span>
-    </button>
-
-    <mat-divider></mat-divider>
-
-    <button
+    
+    <mat-divider *ngIf="canManageMember(member.role)"></mat-divider>
+    
+    <button 
       (click)="removeMember(member)"
       [disabled]="!canManageMember(member.role)"
       class="danger-action"
       mat-menu-item>
       <mat-icon>person_remove</mat-icon>
-      <span>Remove Member</span>
+      Remove Member
     </button>
   </ng-template>
-</mat-menu>
-
-<!-- Bulk Role Menu -->
-<mat-menu #bulkRoleMenu="matMenu">
-  <button
-    (click)="bulkUpdateRole(role)"
-    *ngFor="let role of roles"
-    mat-menu-item>
-    <mat-chip [color]="getRoleColor(role)">{{ role }}</mat-chip>
-  </button>
-</mat-menu>
-
-<!-- Bulk Status Menu -->
-<mat-menu #bulkStatusMenu="matMenu">
-  <button
-    (click)="bulkUpdateStatus(status)"
-    *ngFor="let status of statuses"
-    mat-menu-item>
-    <mat-chip [color]="getStatusColor(status)">{{ status }}</mat-chip>
-  </button>
 </mat-menu>

@@ -46,6 +46,7 @@ import {
   PagedInvitationResponse,
   WorkspaceMemberRole
 } from '../../../core/models/workspace-invitation.interface';
+import {CreateInvitationDialogComponent} from './create-invitation-dialog/create-invitation-dialog.component';
 
 @Component({
   selector: 'app-workspace-invitations',
@@ -421,7 +422,32 @@ export class WorkspaceInvitationsComponent implements OnInit, OnDestroy {
 
   // Navigation methods
   createNewInvitation(): void {
-    this.router.navigate(['/workspace/invitations/create']);
+    const dialogRef = this.dialog.open(CreateInvitationDialogComponent, {
+      width: '800px',
+      maxWidth: '90vw',
+      maxHeight: '90vh',
+      panelClass: 'create-invitation-dialog-container',
+      data: {
+        workspaceId: this.currentWorkspaceId,
+        currentUserRole: this.getCurrentUserRole()
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result?.created) {
+        // Refresh the invitations list
+        this.loadInvitations();
+        this.loadInvitationStatistics();
+        
+        this.showSuccess(`${result.count || 1} invitation${(result.count || 1) > 1 ? 's' : ''} sent successfully`);
+      }
+    });
+  }
+
+  private getCurrentUserRole(): WorkspaceMemberRole {
+    // This should be fetched from a service or stored in the component
+    // For now, return a default role - this should be improved
+    return 'ADMIN';
   }
 
   viewMembers(): void {
@@ -522,5 +548,16 @@ export class WorkspaceInvitationsComponent implements OnInit, OnDestroy {
       duration: 8000,
       panelClass: ['error-snackbar']
     });
+  }
+
+  // Track by function for ngFor performance
+  trackByInvitationId(index: number, invitation: InvitationListResponse): string {
+    return invitation.id;
+  }
+
+  // Refresh data
+  refresh(): void {
+    this.loadInvitations();
+    this.loadInvitationStatistics();
   }
 }

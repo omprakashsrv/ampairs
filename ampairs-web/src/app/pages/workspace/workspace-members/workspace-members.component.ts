@@ -37,6 +37,8 @@ import {
   PagedMemberResponse,
   WorkspaceMemberRole
 } from '../../../core/models/workspace-member.interface';
+import {MemberDetailDialogComponent} from './member-detail-dialog/member-detail-dialog.component';
+import {CreateInvitationDialogComponent} from '../workspace-invitations/create-invitation-dialog/create-invitation-dialog.component';
 
 @Component({
   selector: 'app-workspace-members',
@@ -91,7 +93,6 @@ export class WorkspaceMembersComponent implements OnInit, OnDestroy {
   // Available options
   roles: WorkspaceMemberRole[] = ['OWNER', 'ADMIN', 'MANAGER', 'MEMBER', 'GUEST', 'VIEWER'];
   statuses: MemberStatus[] = ['ACTIVE', 'INACTIVE', 'PENDING', 'SUSPENDED'];
-  departments: string[] = [];
   // Table configuration
   displayedColumns: string[] = [
     'select',
@@ -100,7 +101,6 @@ export class WorkspaceMembersComponent implements OnInit, OnDestroy {
     'email',
     'role',
     'status',
-    'department',
     'joined_at',
     'last_activity',
     'actions'
@@ -127,7 +127,6 @@ export class WorkspaceMembersComponent implements OnInit, OnDestroy {
     this.setupCurrentWorkspace();
     this.setupSearchSubscription();
     this.setupFilterSubscription();
-    this.loadDepartments();
     this.loadMembers();
     this.loadMemberStatistics();
   }
@@ -168,22 +167,6 @@ export class WorkspaceMembersComponent implements OnInit, OnDestroy {
       });
   }
 
-  loadDepartments(): void {
-    if (!this.currentWorkspaceId) {
-      return;
-    }
-
-    this.memberService.getDepartments(this.currentWorkspaceId)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (departments) => {
-          this.departments = departments;
-        },
-        error: (error) => {
-          console.error('Failed to load departments:', error);
-        }
-      });
-  }
 
   loadMemberStatistics(): void {
     if (!this.currentWorkspaceId) {
@@ -240,15 +223,50 @@ export class WorkspaceMembersComponent implements OnInit, OnDestroy {
 
   // Member actions
   viewMemberDetails(member: MemberListResponse): void {
-    // Navigate to member detail view
-    console.log('View member details:', member);
-    // TODO: Implement member detail navigation
+    this.openMemberDetailDialog(member);
   }
 
   editMemberRole(member: MemberListResponse): void {
-    // Open role editing dialog
-    console.log('Edit member role:', member);
-    // TODO: Implement role editing dialog
+    this.openMemberDetailDialog(member, true);
+  }
+
+  private openMemberDetailDialog(member: MemberListResponse, startEditing: boolean = false): void {
+    const dialogRef = this.dialog.open(MemberDetailDialogComponent, {
+      width: '700px',
+      maxWidth: '90vw',
+      maxHeight: '90vh',
+      panelClass: 'member-detail-dialog-container',
+      data: {
+        member: member,
+        currentUserRole: this.currentUserRole,
+        workspaceId: this.currentWorkspaceId
+      }
+    });
+
+    // If startEditing is true, trigger edit mode after dialog opens
+    if (startEditing) {
+      dialogRef.afterOpened().subscribe(() => {
+        const componentInstance = dialogRef.componentInstance as MemberDetailDialogComponent;
+        if (componentInstance) {
+          setTimeout(() => componentInstance.onEdit(), 100);
+        }
+      });
+    }
+
+    // Handle dialog close
+    dialogRef.afterClosed().subscribe(result => {
+      if (result?.updated) {
+        // Refresh the members list
+        this.loadMembers();
+        this.loadMemberStatistics();
+        
+        if (result.member) {
+          this.showSuccess('Member updated successfully');
+        } else {
+          this.showSuccess('Member removed successfully');
+        }
+      }
+    });
   }
 
   updateMemberStatus(member: MemberListResponse, newStatus: MemberStatus): void {
@@ -439,12 +457,26 @@ export class WorkspaceMembersComponent implements OnInit, OnDestroy {
 
   // Navigation methods
   inviteNewMembers(): void {
-    const currentWorkspace = this.workspaceService.getCurrentWorkspace();
-    if (currentWorkspace) {
-      this.router.navigate(['/w', currentWorkspace.slug, 'invitations'], {
-        queryParams: { action: 'invite' }
-      });
-    }
+    const dialogRef = this.dialog.open(CreateInvitationDialogComponent, {
+      width: '800px',
+      maxWidth: '90vw',
+      maxHeight: '90vh',
+      panelClass: 'create-invitation-dialog-container',
+      data: {
+        workspaceId: this.currentWorkspaceId,
+        currentUserRole: this.currentUserRole
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result?.created) {
+        // Refresh the members list and show success
+        this.loadMembers();
+        this.loadMemberStatistics();
+        
+        this.showSuccess(`${result.count || 1} invitation${(result.count || 1) > 1 ? 's' : ''} sent successfully`);
+      }
+    });
   }
 
   viewInvitations(): void {
@@ -459,7 +491,6 @@ export class WorkspaceMembersComponent implements OnInit, OnDestroy {
     this.filterForm.reset({
       role: 'ALL',
       status: 'ALL',
-      department: '',
       search_query: ''
     });
     this.searchControl.setValue('');
@@ -470,7 +501,6 @@ export class WorkspaceMembersComponent implements OnInit, OnDestroy {
     this.filterForm = this.formBuilder.group({
       role: ['ALL'],
       status: ['ALL'],
-      department: [''],
       search_query: ['']
     });
   }
@@ -535,7 +565,6 @@ export class WorkspaceMembersComponent implements OnInit, OnDestroy {
     return {
       role: formValue.role,
       status: formValue.status,
-      department: formValue.department || undefined,
       search_query: formValue.search_query || undefined
     };
   }
@@ -583,5 +612,16 @@ export class WorkspaceMembersComponent implements OnInit, OnDestroy {
     
     // Fallback to email or id
     return member.email || member.user_id || member.id || 'Unknown';
+  }
+
+  // Track by function for ngFor performance
+  trackByMemberId(index: number, member: MemberListResponse): string {
+    return member.id;
+  }
+
+  // Refresh data
+  refresh(): void {
+    this.loadMembers();
+    this.loadMemberStatistics();
   }
 }

@@ -116,6 +116,13 @@ export class WorkspaceInvitationService {
   }
 
   /**
+   * Send bulk invitations (alias for createBulkInvitations)
+   */
+  sendBulkInvitations(bulkRequest: any): Observable<BulkInvitationResponse> {
+    return this.createBulkInvitations(bulkRequest.workspace_id, bulkRequest);
+  }
+
+  /**
    * Resend invitation email
    */
   resendInvitation(workspaceId: string, invitationId: string, request?: ResendInvitationRequest): Observable<{
