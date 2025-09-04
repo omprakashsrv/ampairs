@@ -60,25 +60,23 @@ export class WorkspaceSelectComponent implements OnInit {
     this.loadWorkspaces();
   }
 
-  loadWorkspaces(): void {
+  async loadWorkspaces(): Promise<void> {
     this.isLoading = true;
 
-    this.workspaceService.getUserWorkspaces().subscribe({
-      next: (workspaces) => {
-        this.workspaces = workspaces;
-        this.isLoading = false;
+    try {
+      const workspaces = await this.workspaceService.getUserWorkspaces();
+      this.workspaces = workspaces;
+      this.isLoading = false;
 
-        // If no workspaces found, show create workspace option
-        if (workspaces.length === 0) {
-          this.showNoWorkspacesMessage();
-        }
-      },
-      error: (error) => {
-        this.isLoading = false;
-        console.error('Failed to load workspaces:', error);
-        this.showError('Failed to load workspaces. Please try again.');
+      // If no workspaces found, show create workspace option
+      if (workspaces.length === 0) {
+        this.showNoWorkspacesMessage();
       }
-    });
+    } catch (error: any) {
+      this.isLoading = false;
+      console.error('Failed to load workspaces:', error);
+      this.showError('Failed to load workspaces. Please try again.');
+    }
   }
 
   selectWorkspace(workspace: WorkspaceListItem): void {

@@ -101,6 +101,7 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
     async onSubmit(): Promise<void> {
         if (this.otpForm.valid && !this.isLoading) {
             this.isLoading = true;
+            this.otpForm.get('otp')?.disable();
             const otp = this.otpForm.get('otp')?.value;
 
             // Check if reCAPTCHA is enabled for this environment
@@ -120,6 +121,7 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
                 error: (recaptchaError) => {
                     console.error('reCAPTCHA error:', recaptchaError);
                     this.isLoading = false;
+            this.otpForm.get('otp')?.enable();
                     this.showError('Security verification failed. Please try again.');
                 }
             });
@@ -154,82 +156,78 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
         });
     }
 
-    private handleOtpVerification(otp: string, recaptchaToken: string): void {
-        this.authService.verifyOtp(this.sessionId, otp, recaptchaToken).subscribe({
-            next: (response) => {
-                this.isLoading = false;
-                if (response && response.access_token && response.refresh_token) {
-                    // Clear session storage
-                    sessionStorage.removeItem('auth_session_id');
-                    sessionStorage.removeItem('mobile_number');
+    private async handleOtpVerification(otp: string, recaptchaToken: string): Promise<void> {
+        try {
+            const response = await this.authService.verifyOtp(this.sessionId, otp, recaptchaToken);
+            this.isLoading = false;
+            this.otpForm.get('otp')?.enable();
+            if (response && response.access_token && response.refresh_token) {
+                // Clear session storage
+                sessionStorage.removeItem('auth_session_id');
+                sessionStorage.removeItem('mobile_number');
 
-                    this.snackBar.open('Login successful!', 'Close', {
-                        duration: 3000,
-                        panelClass: ['success-snackbar']
-                    });
+                this.snackBar.open('Login successful!', 'Close', {
+                    duration: 3000,
+                    panelClass: ['success-snackbar']
+                });
 
-                    this.authService.getUserProfile().subscribe({
-                        next: (user) => {
-                            if (this.authService.isProfileIncomplete(user)) {
-                                this.router.navigate(['/complete-profile']);
-                            } else {
-                              // Redirect to workspace selection
-                              this.router.navigate(['/workspaces']);
-                            }
-                        },
-                        error: (profileError) => {
-                            // Extract error message from interceptor-formatted error
-                            const errorMessage = profileError.error?.message || profileError.message || 'Failed to load profile.';
-                            console.error('Profile load error:', errorMessage);
-                          // Still redirect to workspace selection even if profile load fails
-                          this.router.navigate(['/workspaces']);
-                        }
-                    });
-                } else {
-                    this.showError('Invalid OTP. Please try again.');
-                    this.otpForm.get('otp')?.setValue('');
+                try {
+                    const user = await this.authService.getUserProfile();
+                    if (this.authService.isProfileIncomplete(user)) {
+                        this.router.navigate(['/complete-profile']);
+                    } else {
+                        // Redirect to workspace selection
+                        this.router.navigate(['/workspaces']);
+                    }
+                } catch (profileError: any) {
+                    // Extract error message from interceptor-formatted error
+                    const errorMessage = profileError.error?.message || profileError.message || 'Failed to load profile.';
+                    console.error('Profile load error:', errorMessage);
+                    // Still redirect to workspace selection even if profile load fails
+                    this.router.navigate(['/workspaces']);
                 }
-            },
-            error: (error) => {
-                this.isLoading = false;
-                // Extract error message from interceptor-formatted error
-                const errorMessage = error.error?.message || error.message || 'Failed to verify OTP. Please try again.';
-                this.showError(errorMessage);
+            } else {
+                this.showError('Invalid OTP. Please try again.');
                 this.otpForm.get('otp')?.setValue('');
             }
-        });
+        } catch (error: any) {
+            this.isLoading = false;
+            this.otpForm.get('otp')?.enable();
+            // Extract error message from interceptor-formatted error
+            const errorMessage = error.error?.message || error.message || 'Failed to verify OTP. Please try again.';
+            this.showError(errorMessage);
+            this.otpForm.get('otp')?.setValue('');
+        }
     }
 
-    private handleResendOtp(mobileNumber: string, recaptchaToken: string): void {
-        this.authService.initAuth(mobileNumber, recaptchaToken).subscribe({
-            next: (response) => {
-                this.isResending = false;
-                if (response && response.session_id) {
-                    // Update session ID
-                    this.sessionId = response.session_id;
-                    sessionStorage.setItem('auth_session_id', response.session_id);
+    private async handleResendOtp(mobileNumber: string, recaptchaToken: string): Promise<void> {
+        try {
+            const response = await this.authService.initAuth(mobileNumber, recaptchaToken);
+            this.isResending = false;
+            if (response && response.session_id) {
+                // Update session ID
+                this.sessionId = response.session_id;
+                sessionStorage.setItem('auth_session_id', response.session_id);
 
-                    this.snackBar.open('OTP resent successfully!', 'Close', {
-                        duration: 3000,
-                        panelClass: ['success-snackbar']
-                    });
+                this.snackBar.open('OTP resent successfully!', 'Close', {
+                    duration: 3000,
+                    panelClass: ['success-snackbar']
+                });
 
-                    // Reset timer
-                    this.canResend = false;
-                    this.remainingTime = 30;
-                    this.startTimer();
-                    this.otpForm.get('otp')?.setValue('');
-                } else {
-                    this.showError('Failed to resend OTP');
-                }
-            },
-            error: (error) => {
-                this.isResending = false;
-                // Extract error message from interceptor-formatted error
-                const errorMessage = error.error?.message || error.message || 'Failed to resend OTP. Please try again.';
-                this.showError(errorMessage);
+                // Reset timer
+                this.canResend = false;
+                this.remainingTime = 30;
+                this.startTimer();
+                this.otpForm.get('otp')?.setValue('');
+            } else {
+                this.showError('Failed to resend OTP');
             }
-        });
+        } catch (error: any) {
+            this.isResending = false;
+            // Extract error message from interceptor-formatted error
+            const errorMessage = error.error?.message || error.message || 'Failed to resend OTP. Please try again.';
+            this.showError(errorMessage);
+        }
     }
 
     goBack(): void {

@@ -377,7 +377,7 @@ export class DeviceService {
 
       for (const cookie of cookies) {
         const [name, value] = cookie.trim().split('=');
-        if (name === 'ampairs_device_id' || name === 'ampairs_device_backup') {
+        if ((name === 'ampairs_device_id' || name === 'ampairs_device_backup') && value) {
           return decodeURIComponent(value);
         }
       }
@@ -580,7 +580,7 @@ export class DeviceService {
     // Use Angular CDK Platform service for comprehensive OS detection
     if (this.platform.IOS) {
       const match = userAgent.match(/OS (\d+_\d+_?\d*)/);
-      return match ? `iOS ${match[1].replace(/_/g, '.')}` : 'iOS';
+      return match && match[1] ? `iOS ${match[1].replace(/_/g, '.')}` : 'iOS';
     }
 
     if (this.platform.ANDROID) {
@@ -605,7 +605,7 @@ export class DeviceService {
     // macOS detection - check user agent first, then CDK
     if (userAgent.includes('Mac OS X') || userAgent.includes('Macintosh')) {
       const match = userAgent.match(/Mac OS X (\d+_\d+_?\d*)/);
-      return match ? `macOS ${match[1].replace(/_/g, '.')}` : 'macOS';
+      return match && match[1] ? `macOS ${match[1].replace(/_/g, '.')}` : 'macOS';
     }
 
     // Additional CDK-based detection for Edge cases

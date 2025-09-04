@@ -22,7 +22,6 @@
                             maxlength="6"
                             type="tel"
                             class="otp-input"
-                            [disabled]="isLoading"
                             (input)="onOtpInput($event)">
                     <mat-icon matSuffix>lock</mat-icon>
                     @if (otpForm.get('otp')?.hasError('required')) {

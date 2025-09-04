@@ -167,7 +167,7 @@ export class ThemeSettingsComponent implements OnInit, OnDestroy {
     const typography = this.availableTypographies[index];
     if (!typography) return 'Unknown';
     
-    return typography.fontFamily.split(',')[0].replace(/['"]/g, '');
+    return typography.fontFamily.split(',')[0]?.replace(/['"]/g, '') || 'Unknown';
   }
 
 }

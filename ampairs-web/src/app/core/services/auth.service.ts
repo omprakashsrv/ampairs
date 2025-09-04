@@ -1,6 +1,7 @@
-import {Injectable} from '@angular/core';
+import {Injectable, signal, computed, effect, inject} from '@angular/core';
+import {toObservable} from '@angular/core/rxjs-interop';
 import {HttpClient} from '@angular/common/http';
-import {BehaviorSubject, Observable, throwError} from 'rxjs';
+import {Observable, throwError, firstValueFrom} from 'rxjs';
 import {catchError, map} from 'rxjs/operators';
 import {Router} from '@angular/router';
 import Cookies from 'js-cookie';
@@ -74,18 +75,59 @@ export interface DeviceSession {
 export class AuthService {
     private readonly AUTH_API_URL = `${environment.apiBaseUrl}/auth/v1`;
     private readonly USER_API_URL = `${environment.apiBaseUrl}/user/v1`;
-    private currentUserSubject = new BehaviorSubject<User | null>(null);
-  private isAuthenticatedSubject = new BehaviorSubject<boolean | null>(null);
+    
+    // Modern dependency injection
+    private http = inject(HttpClient);
+    private router = inject(Router);
+    private notificationService = inject(NotificationService);
+    private deviceService = inject(DeviceService);
 
-    public currentUser$ = this.currentUserSubject.asObservable();
-    public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
+    // Signal-based state management
+    private _currentUser = signal<User | null>(null);
+    private _isAuthenticated = signal<boolean | null>(null);
+    private _loading = signal(false);
+    private _error = signal<string | null>(null);
 
-    constructor(
-        private http: HttpClient,
-        private router: Router,
-        private notificationService: NotificationService,
-        private deviceService: DeviceService
-    ) {
+    // Public readonly signals
+    readonly currentUser = this._currentUser.asReadonly();
+    readonly isAuthenticated = this._isAuthenticated.asReadonly();
+    readonly loading = this._loading.asReadonly();
+    readonly error = this._error.asReadonly();
+
+    // Backward compatibility Observable properties (deprecated - use signals instead)
+    /** @deprecated Use currentUser signal instead */
+    readonly currentUser$ = toObservable(this._currentUser);
+
+    /** @deprecated Use isAuthenticated signal instead */
+    readonly isAuthenticated$ = toObservable(this._isAuthenticated);
+
+    // Computed signals
+    readonly isProfileComplete = computed(() => {
+        const user = this._currentUser();
+        return user && user.first_name && user.first_name.trim() !== '';
+    });
+
+    readonly userDisplayName = computed(() => {
+        const user = this._currentUser();
+        if (!user) return '';
+        return user.full_name || `${user.first_name} ${user.last_name || ''}`.trim();
+    });
+
+    readonly authenticationStatus = computed(() => {
+        const isAuth = this._isAuthenticated();
+        if (isAuth === null) return 'checking';
+        return isAuth ? 'authenticated' : 'unauthenticated';
+    });
+
+    constructor() {
+        // Effect to handle authentication state changes
+        effect(() => {
+            const isAuth = this._isAuthenticated();
+            if (isAuth === false && this.router.url !== '/login') {
+                this.router.navigate(['/login']);
+            }
+        });
+
         this.checkAuthenticationStatus();
     }
 
@@ -93,64 +135,135 @@ export class AuthService {
     /**
      * Initialize authentication by sending mobile number
      */
-    initAuth(mobileNumber: string, recaptchaToken?: string): Observable<AuthInitResponse> {
-        const deviceInfo = this.deviceService.getDeviceInfo();
+    async initAuth(mobileNumber: string, recaptchaToken?: string): Promise<AuthInitResponse> {
+        this._loading.set(true);
+        this._error.set(null);
+        
+        try {
+            const deviceInfo = this.deviceService.getDeviceInfo();
 
-        const request: AuthInitRequest = {
-            phone: mobileNumber,
-            country_code: 91,
-            token_id: '',
-            recaptcha_token: recaptchaToken,
-            device_id: deviceInfo.device_id,
-            device_name: deviceInfo.device_name,
-            device_type: deviceInfo.device_type,
-            platform: deviceInfo.platform,
-            browser: deviceInfo.browser,
-            os: deviceInfo.os
-        };
+            const request: AuthInitRequest = {
+                phone: mobileNumber,
+                country_code: 91,
+                token_id: '',
+                ...(recaptchaToken && { recaptcha_token: recaptchaToken }),
+                device_id: deviceInfo.device_id,
+                device_name: deviceInfo.device_name,
+                device_type: deviceInfo.device_type,
+                platform: deviceInfo.platform,
+                browser: deviceInfo.browser,
+                os: deviceInfo.os
+            };
 
-        return this.http.post<AuthInitResponse>(`${this.AUTH_API_URL}/init`, request)
-            .pipe(
-                catchError(this.handleError)
+            const response = await firstValueFrom(
+                this.http.post<AuthInitResponse>(`${this.AUTH_API_URL}/init`, request)
+                    .pipe(catchError(this.handleError))
             );
+            
+            return response;
+        } catch (error: any) {
+            this._error.set(error.message || 'Authentication initialization failed');
+            throw error;
+        } finally {
+            this._loading.set(false);
+        }
     }
 
 
     /**
      * Verify OTP and complete authentication
      */
-    verifyOtp(sessionId: string, otp: string, recaptchaToken?: string): Observable<AuthResponse> {
-        const deviceInfo = this.deviceService.getDeviceInfo();
+    async verifyOtp(sessionId: string, otp: string, recaptchaToken?: string): Promise<AuthResponse> {
+        this._loading.set(true);
+        this._error.set(null);
+        
+        try {
+            const deviceInfo = this.deviceService.getDeviceInfo();
 
-        const request: OtpVerificationRequest = {
-            session_id: sessionId,
-            otp: otp,
-            auth_mode: 'OTP',
-            recaptcha_token: recaptchaToken,
-            device_id: deviceInfo.device_id,
-            device_name: deviceInfo.device_name
-        };
+            const request: OtpVerificationRequest = {
+                session_id: sessionId,
+                otp: otp,
+                auth_mode: 'OTP',
+                ...(recaptchaToken && { recaptcha_token: recaptchaToken }),
+                device_id: deviceInfo.device_id,
+                device_name: deviceInfo.device_name
+            };
 
-        return this.http.post<AuthResponse>(`${this.AUTH_API_URL}/verify`, request)
-            .pipe(
-                map(response => {
-                    if (response.access_token && response.refresh_token) {
-                        this.setAuthTokens(response.access_token, response.refresh_token, response.access_token_expires_at, response.refresh_token_expires_at);
-                        this.isAuthenticatedSubject.next(true);
-                        // Get user profile after successful authentication
-                        this.getUserProfile().subscribe({
-                            next: (user) => this.currentUserSubject.next(user),
-                            error: (error) => console.error('Failed to get user profile:', error)
-                        });
-                    }
-                    return response;
-                }),
-                catchError(this.handleError)
+            const response = await firstValueFrom(
+                this.http.post<AuthResponse>(`${this.AUTH_API_URL}/verify`, request)
+                    .pipe(catchError(this.handleError))
             );
+
+            if (response.access_token && response.refresh_token) {
+                this.setAuthTokens(response.access_token, response.refresh_token, 
+                    response.access_token_expires_at, response.refresh_token_expires_at);
+                this._isAuthenticated.set(true);
+                
+                // Get user profile after successful authentication
+                try {
+                    const user = await this.getUserProfile();
+                    this._currentUser.set(user);
+                } catch (error) {
+                    console.error('Failed to get user profile:', error);
+                }
+            }
+            
+            return response;
+        } catch (error: any) {
+            this._error.set(error.message || 'OTP verification failed');
+            throw error;
+        } finally {
+            this._loading.set(false);
+        }
     }
 
     /**
-     * Refresh access token using refresh token
+     * Refresh access token using refresh token (async version)
+     */
+    async refreshTokenAsync(): Promise<AuthResponse> {
+        const refreshToken = this.getRefreshToken();
+        if (!refreshToken) {
+            await this.logout('No refresh token available');
+            throw new Error('No refresh token available');
+        }
+
+        const deviceInfo = this.deviceService.getDeviceInfo();
+
+        try {
+            const response = await firstValueFrom(
+                this.http.post<AuthResponse>(`${this.AUTH_API_URL}/refresh_token`, {
+                    refresh_token: refreshToken,
+                    device_id: deviceInfo.device_id
+                }).pipe(catchError(this.handleError))
+            );
+
+            if (response && response.access_token && response.refresh_token) {
+                this.setAuthTokens(response.access_token, response.refresh_token, 
+                    response.access_token_expires_at, response.refresh_token_expires_at);
+                this._isAuthenticated.set(true);
+            } else {
+                await this.logout('Token refresh failed');
+                throw new Error('Token refresh failed');
+            }
+            
+            return response;
+        } catch (error: any) {
+            // Handle different types of refresh token failures
+            let logoutReason = 'Token refresh error';
+            if (error.status === 401) {
+                logoutReason = 'Refresh token expired or invalid';
+            } else if (error.status === 403) {
+                logoutReason = 'Refresh token forbidden';
+            } else if (error.status === 400) {
+                logoutReason = 'Invalid refresh token format';
+            }
+            await this.logout(logoutReason);
+            throw error;
+        }
+    }
+
+    /**
+     * Refresh access token using refresh token (legacy Observable version)
      */
     refreshToken(): Observable<AuthResponse> {
         const refreshToken = this.getRefreshToken();
@@ -168,7 +281,7 @@ export class AuthService {
             map(response => {
                 if (response && response.access_token && response.refresh_token) {
                     this.setAuthTokens(response.access_token, response.refresh_token, response.access_token_expires_at, response.refresh_token_expires_at);
-                    this.isAuthenticatedSubject.next(true);
+                    this._isAuthenticated.set(true);
                 } else {
                     // If refresh fails, logout user
                     this.logout('Token refresh failed');
@@ -195,34 +308,41 @@ export class AuthService {
     /**
      * Logout user and clear all tokens
      */
-    logout(reason?: string): void {
-        // Log the reason for logout for debugging
-        if (reason) {
-            console.log('Logout reason:', reason);
+    async logout(reason?: string): Promise<void> {
+        this._loading.set(true);
+        
+        try {
+            // Log the reason for logout for debugging
+            if (reason) {
+                console.log('Logout reason:', reason);
 
-            // Show appropriate notification based on reason
-            if (reason.includes('expired') || reason.includes('invalid')) {
-                this.notificationService.showSessionExpired();
-            } else if (reason.includes('refresh')) {
-                this.notificationService.showTokenRefreshFailed();
+                // Show appropriate notification based on reason
+                if (reason.includes('expired') || reason.includes('invalid')) {
+                    this.notificationService.showSessionExpired();
+                } else if (reason.includes('refresh')) {
+                    this.notificationService.showTokenRefreshFailed();
+                }
             }
-        }
 
-        // Call logout endpoint to invalidate session on server
-        const accessToken = this.getAccessToken();
-        if (accessToken) {
-            this.http.post(`${this.AUTH_API_URL}/logout`, {}).subscribe({
-                error: (error) => console.error('Logout error:', error)
-            });
-        }
+            // Call logout endpoint to invalidate session on server
+            const accessToken = this.getAccessToken();
+            if (accessToken) {
+                try {
+                    await firstValueFrom(this.http.post(`${this.AUTH_API_URL}/logout`, {}));
+                } catch (error) {
+                    console.error('Logout error:', error);
+                }
+            }
 
-        this.clearAuthTokens();
-        this.currentUserSubject.next(null);
-        this.isAuthenticatedSubject.next(false);
+            // Clear state and tokens
+            this.clearAuthTokens();
+            this._currentUser.set(null);
+            this._isAuthenticated.set(false);
+            this._error.set(null);
 
-        // Only navigate if not already on login page to avoid navigation loops
-        if (this.router.url !== '/login') {
-            this.router.navigate(['/login']);
+            // Navigation will be handled by the effect in constructor
+        } finally {
+            this._loading.set(false);
         }
     }
 
@@ -241,16 +361,18 @@ export class AuthService {
     }
 
     /**
-     * Check if user is currently authenticated
+     * Check if token is valid (new method)
      */
-    isAuthenticated(): boolean {
+    isTokenValid(): boolean {
         const token = this.getAccessToken();
         if (!token) {
             return false;
         }
         try {
             // Check if token is expired (basic JWT expiration check)
-            const payload = JSON.parse(atob(token.split('.')[1]));
+            const parts = token.split('.');
+            if (parts.length !== 3 || !parts[1]) return false;
+            const payload = JSON.parse(atob(parts[1]));
             const currentTime = Math.floor(Date.now() / 1000);
             return payload.exp > currentTime;
         } catch (error) {
@@ -259,10 +381,18 @@ export class AuthService {
     }
 
     /**
-     * Get current user information
+     * Check if user is currently authenticated (legacy method - use signal instead)
+     * @deprecated Use isAuthenticated signal instead
+     */
+    isAuthenticatedLegacy(): boolean {
+        return this.isTokenValid();
+    }
+
+    /**
+     * Get current user information (legacy method - use signal instead)
      */
     getCurrentUser(): User | null {
-        return this.currentUserSubject.value;
+        return this._currentUser();
     }
 
     /**
@@ -294,8 +424,8 @@ export class AuthService {
                 map(() => {
                     // Clear local tokens and update state
                     this.clearAuthTokens();
-                    this.currentUserSubject.next(null);
-                    this.isAuthenticatedSubject.next(false);
+                    this._currentUser.set(null);
+                    this._isAuthenticated.set(false);
 
                     // Navigate to login page
                     if (this.router.url !== '/login') {
@@ -307,82 +437,88 @@ export class AuthService {
     }
 
     // Make user profile API public and add update name API
-    public getUserProfile(): Observable<User> {
-        return this.http.get<User>(`${this.USER_API_URL}`)
-            .pipe(
-                catchError(this.handleError)
+    public async getUserProfile(): Promise<User> {
+        try {
+            const user = await firstValueFrom(
+                this.http.get<User>(`${this.USER_API_URL}`)
+                    .pipe(catchError(this.handleError))
             );
+            return user;
+        } catch (error: any) {
+            this._error.set(error.message || 'Failed to get user profile');
+            throw error;
+        }
     }
 
     public isProfileIncomplete(user: User | null): boolean {
       return !user || !user.first_name || user.first_name.trim() === '';
     }
 
-  public updateUserName(firstName: string, lastName?: string): Observable<User> {
-    const body: any = {first_name: firstName};
-    if (lastName && lastName.trim()) {
-      body.last_name = lastName;
-    }
-        return this.http.post<User>(`${this.USER_API_URL}/update`, body)
-            .pipe(
-                map((updated: User) => {
-                    this.currentUserSubject.next(updated);
-                    return updated;
-                }),
-                catchError(this.handleError)
+    public async updateUserName(firstName: string, lastName?: string): Promise<User> {
+        this._loading.set(true);
+        this._error.set(null);
+        
+        try {
+            const body: any = {first_name: firstName};
+            if (lastName && lastName.trim()) {
+                body.last_name = lastName;
+            }
+            
+            const updatedUser = await firstValueFrom(
+                this.http.post<User>(`${this.USER_API_URL}/update`, body)
+                    .pipe(catchError(this.handleError))
             );
+            
+            this._currentUser.set(updatedUser);
+            return updatedUser;
+        } catch (error: any) {
+            this._error.set(error.message || 'Failed to update user profile');
+            throw error;
+        } finally {
+            this._loading.set(false);
+        }
     }
 
     /**
      * Check authentication status on service initialization
      */
-    private checkAuthenticationStatus(): void {
-      const accessToken = this.getAccessToken();
-      const refreshToken = this.getRefreshToken();
+    private async checkAuthenticationStatus(): Promise<void> {
+        const accessToken = this.getAccessToken();
+        const refreshToken = this.getRefreshToken();
 
-      if (accessToken && this.isAuthenticated()) {
-        // If we have a valid access token, set authenticated state and get user info
-        this.isAuthenticatedSubject.next(true);
+        if (accessToken && this.isTokenValid()) {
+            // If we have a valid access token, set authenticated state and get user info
+            this._isAuthenticated.set(true);
 
-            this.getUserProfile().subscribe({
-                next: (user) => {
-                    this.currentUserSubject.next(user);
-                },
-              error: (error) => {
+            try {
+                const user = await this.getUserProfile();
+                this._currentUser.set(user);
+            } catch (error) {
                 // If getting user profile fails, try to refresh token
-                this.refreshToken().subscribe({
-                  next: () => {
+                try {
+                    await this.refreshTokenAsync();
                     // After successful refresh, try to get user profile again
-                    this.getUserProfile().subscribe({
-                      next: (user) => this.currentUserSubject.next(user),
-                      error: () => this.logout('Failed to get user profile after token refresh')
-                    });
-                  },
-                  error: () => {
-                    this.logout('Token refresh failed during authentication check');
-                  }
-                });
-              }
-            });
-      } else if (refreshToken) {
-        // If we only have refresh token, try to refresh
-        this.refreshToken().subscribe({
-          next: () => {
-            this.isAuthenticatedSubject.next(true);
-            // After successful refresh, get user profile
-            this.getUserProfile().subscribe({
-              next: (user) => this.currentUserSubject.next(user),
-              error: () => this.logout('Failed to get user profile after token refresh')
-            });
-          },
-          error: () => {
-            this.logout('Refresh token expired or invalid');
+                    const user = await this.getUserProfile();
+                    this._currentUser.set(user);
+                } catch (refreshError) {
+                    await this.logout('Token refresh failed during authentication check');
                 }
-            });
-      } else {
-        // No tokens available, ensure logged out state
-        this.isAuthenticatedSubject.next(false);
-        this.currentUserSubject.next(null);
+            }
+        } else if (refreshToken) {
+            // If we only have refresh token, try to refresh
+            try {
+                await this.refreshTokenAsync();
+                this._isAuthenticated.set(true);
+                // After successful refresh, get user profile
+                const user = await this.getUserProfile();
+                this._currentUser.set(user);
+            } catch (error) {
+                await this.logout('Refresh token expired or invalid');
+            }
+        } else {
+            // No tokens available, ensure logged out state
+            this._isAuthenticated.set(false);
+            this._currentUser.set(null);
         }
     }
 

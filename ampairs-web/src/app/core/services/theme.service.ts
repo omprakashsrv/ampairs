@@ -265,9 +265,9 @@ export class ThemeService {
   ];
 
   // Current state observables
-  private readonly currentThemeSubject = new BehaviorSubject<M3ThemeConfig>(this.themes[0]);
-  private readonly currentDensitySubject = new BehaviorSubject<M3DensityConfig>(this.densityLevels[3]); // Medium density (-2)
-  private readonly currentTypographySubject = new BehaviorSubject<M3TypographyConfig>(this.typographyConfigs[0]);
+  private readonly currentThemeSubject = new BehaviorSubject<M3ThemeConfig>(this.themes[0]!);
+  private readonly currentDensitySubject = new BehaviorSubject<M3DensityConfig>(this.densityLevels[3]!); // Medium density (-2)
+  private readonly currentTypographySubject = new BehaviorSubject<M3TypographyConfig>(this.typographyConfigs[0]!);
 
   // Public observables
   public readonly currentTheme$ = this.currentThemeSubject.asObservable();
@@ -374,20 +374,20 @@ export class ThemeService {
 
     // Apply saved or default theme
     const theme = savedTheme 
-      ? this.themes.find(t => t.name === savedTheme) ?? this.themes[0]
-      : this.themes[0];
+      ? this.themes.find(t => t.name === savedTheme) ?? this.themes[0]!
+      : this.themes[0]!;
     this.applyTheme(theme);
 
     // Apply saved or default density
     const density = savedDensity 
-      ? this.densityLevels.find(d => d.level === parseInt(savedDensity)) ?? this.densityLevels[3]
-      : this.densityLevels[3];
+      ? this.densityLevels.find(d => d.level === parseInt(savedDensity)) ?? this.densityLevels[3]!
+      : this.densityLevels[3]!;
     this.applyDensity(density);
 
     // Apply saved or default typography
     const typography = savedTypography 
-      ? this.typographyConfigs[parseInt(savedTypography)] ?? this.typographyConfigs[0]
-      : this.typographyConfigs[0];
+      ? this.typographyConfigs[parseInt(savedTypography)] ?? this.typographyConfigs[0]!
+      : this.typographyConfigs[0]!;
     this.applyTypography(typography);
   }
 
@@ -399,8 +399,8 @@ export class ThemeService {
     const root = this.document.documentElement;
     
     // Always set both light and dark theme properties from their respective theme configs
-    this.setThemeProperties(root, this.themes[0], 'light'); // Light theme (index 0)
-    this.setThemeProperties(root, this.themes[1], 'dark');  // Dark theme (index 1)
+    this.setThemeProperties(root, this.themes[0]!, 'light'); // Light theme (index 0)
+    this.setThemeProperties(root, this.themes[1]!, 'dark');  // Dark theme (index 1)
 
     // Set direct color tokens for current theme that styles.scss expects
     const { colors } = theme;

@@ -180,7 +180,7 @@ export class WorkspaceCreateComponent implements OnInit {
     });
   }
 
-  onSubmit(): void {
+  async onSubmit(): Promise<void> {
     if (this.workspaceForm.valid && !this.isLoading && this.slugAvailable) {
       this.isLoading = true;
 
@@ -193,26 +193,24 @@ export class WorkspaceCreateComponent implements OnInit {
         language: this.workspaceForm.get('language')?.value
       };
 
-      this.workspaceService.createWorkspace(workspaceData).subscribe({
-        next: (workspace) => {
-          this.isLoading = false;
+      try {
+        const workspace = await this.workspaceService.createWorkspace(workspaceData);
+        this.isLoading = false;
 
-          // Set as current workspace and navigate to home
-          this.workspaceService.setCurrentWorkspace(workspace);
+        // Set as current workspace and navigate to home
+        this.workspaceService.setCurrentWorkspace(workspace);
 
-          this.snackBar.open(`Workspace "${workspace.name}" created successfully!`, 'Close', {
-            duration: 4000,
-            panelClass: ['success-snackbar']
-          });
+        this.snackBar.open(`Workspace "${workspace.name}" created successfully!`, 'Close', {
+          duration: 4000,
+          panelClass: ['success-snackbar']
+        });
 
-          this.router.navigate(['/w', workspace.slug]);
-        },
-        error: (error) => {
-          this.isLoading = false;
-          console.error('Failed to create workspace:', error);
-          this.showError(error.message || 'Failed to create workspace. Please try again.');
-        }
-      });
+        this.router.navigate(['/w', workspace.slug]);
+      } catch (error: any) {
+        this.isLoading = false;
+        console.error('Failed to create workspace:', error);
+        this.showError(error.message || 'Failed to create workspace. Please try again.');
+      }
     } else {
       this.markFormGroupTouched();
     }

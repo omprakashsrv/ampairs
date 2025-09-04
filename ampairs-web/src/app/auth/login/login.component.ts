@@ -69,6 +69,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     onSubmit(): void {
         if (this.loginForm.valid && !this.isLoading) {
             this.isLoading = true;
+            this.loginForm.get('mobileNumber')?.disable();
             const mobileNumber = this.loginForm.get('mobileNumber')?.value;
 
             // Check if reCAPTCHA is enabled for this environment
@@ -105,6 +106,7 @@ export class LoginComponent implements OnInit, OnDestroy {
         this.recaptchaScript.onerror = () => {
             console.error('Failed to load reCAPTCHA script');
             this.isLoading = false;
+            this.loginForm.get('mobileNumber')?.enable();
             this.showError('Security verification failed. Please try again.');
         };
         
@@ -120,6 +122,7 @@ export class LoginComponent implements OnInit, OnDestroy {
                 if (!recaptchaToken) {
                     console.error('reCAPTCHA token is null or empty');
                     this.isLoading = false;
+            this.loginForm.get('mobileNumber')?.enable();
                     this.showError('Security verification failed. Please try again.');
                     return;
                 }
@@ -132,6 +135,7 @@ export class LoginComponent implements OnInit, OnDestroy {
             error: (recaptchaError) => {
                 console.error('reCAPTCHA error:', recaptchaError);
                 this.isLoading = false;
+            this.loginForm.get('mobileNumber')?.enable();
                 this.showError('Security verification failed. Please try again.');
                 this.cleanupRecaptcha();
             }
@@ -161,33 +165,33 @@ export class LoginComponent implements OnInit, OnDestroy {
         }
     }
 
-    private handleAuthRequest(mobileNumber: string, recaptchaToken: string): void {
-        this.authService.initAuth(mobileNumber, recaptchaToken).subscribe({
-            next: (response) => {
-                this.isLoading = false;
-                if (response && response.session_id) {
-                    // Store session ID for OTP verification
-                    sessionStorage.setItem('auth_session_id', response.session_id);
-                    sessionStorage.setItem('mobile_number', mobileNumber);
+    private async handleAuthRequest(mobileNumber: string, recaptchaToken: string): Promise<void> {
+        try {
+            const response = await this.authService.initAuth(mobileNumber, recaptchaToken);
+            this.isLoading = false;
+            this.loginForm.get('mobileNumber')?.enable();
+            if (response && response.session_id) {
+                // Store session ID for OTP verification
+                sessionStorage.setItem('auth_session_id', response.session_id);
+                sessionStorage.setItem('mobile_number', mobileNumber);
 
-                    this.snackBar.open('OTP sent successfully!', 'Close', {
-                        duration: 3000,
-                        panelClass: ['success-snackbar']
-                    });
+                this.snackBar.open('OTP sent successfully!', 'Close', {
+                    duration: 3000,
+                    panelClass: ['success-snackbar']
+                });
 
-                    // Navigate to OTP verification page
-                    this.router.navigate(['/verify-otp']);
-                } else {
-                    this.showError('Failed to send OTP');
-                }
-            },
-            error: (error) => {
-                this.isLoading = false;
-                // Extract error message from interceptor-formatted error
-                const errorMessage = error.error?.message || error.message || 'Failed to send OTP. Please try again.';
-                this.showError(errorMessage);
+                // Navigate to OTP verification page
+                this.router.navigate(['/verify-otp']);
+            } else {
+                this.showError('Failed to send OTP');
             }
-        });
+        } catch (error: any) {
+            this.isLoading = false;
+            this.loginForm.get('mobileNumber')?.enable();
+            // Extract error message from interceptor-formatted error
+            const errorMessage = error.error?.message || error.message || 'Failed to send OTP. Please try again.';
+            this.showError(errorMessage);
+        }
     }
 
     private showError(message: string): void {

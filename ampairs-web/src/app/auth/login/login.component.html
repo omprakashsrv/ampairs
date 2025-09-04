@@ -20,8 +20,7 @@
                             formControlName="mobileNumber"
                             placeholder="Enter 10-digit mobile number"
                             maxlength="10"
-                            type="tel"
-                            [disabled]="isLoading">
+                            type="tel">
                     <mat-icon matSuffix>phone</mat-icon>
                     @if (loginForm.get('mobileNumber')?.hasError('required')) {
                         <mat-error>Mobile number is required</mat-error>

@@ -2,7 +2,6 @@ import {Routes} from '@angular/router';
 import {AuthGuard} from './core/guards/auth.guard';
 import {WorkspaceGuard} from './core/guards/workspace.guard';
 import {WorkspaceMemberGuard} from './core/guards/workspace-member.guard';
-import {WorkspaceInvitationGuard} from './core/guards/workspace-invitation.guard';
 
 export const routes: Routes = [
     {
@@ -55,12 +54,6 @@ export const routes: Routes = [
                 path: 'devices',
                 loadComponent: () => import('./pages/devices/devices.component').then(m => m.DevicesComponent)
             },
-            // Workspace Management Routes
-            {
-                path: 'invitations',
-                loadComponent: () => import('./pages/workspace/workspace-invitations/workspace-invitations.component').then(m => m.WorkspaceInvitationsComponent),
-                canActivate: [WorkspaceInvitationGuard]
-            }
         ]
     },
     {
