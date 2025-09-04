@@ -24,7 +24,8 @@ export class AuthInterceptor implements HttpInterceptor {
     private injector: Injector,
     private notificationService: NotificationService,
     private router: Router
-  ) {}
+  ) {
+  }
 
   intercept(req: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
     // Skip interceptor for authentication endpoints

@@ -18,7 +18,7 @@ $ampairs-light-theme: mat.define-theme((
     plain-family: 'Roboto, "Helvetica Neue", sans-serif',
   ),
   density: (
-    scale: -2  // Default to medium-compact density
+    scale: -2 // Default to medium-compact density
   )
 ));
 
@@ -35,7 +35,7 @@ $ampairs-dark-theme: mat.define-theme((
     plain-family: 'Roboto, "Helvetica Neue", sans-serif',
   ),
   density: (
-    scale: -2  // Default to medium-compact density
+    scale: -2 // Default to medium-compact density
   )
 ));
 
@@ -46,17 +46,17 @@ $ampairs-dark-theme: mat.define-theme((
   --app-light-primary-container: #{mat.get-theme-color($ampairs-light-theme, primary-container)};
   --app-light-on-primary: #{mat.get-theme-color($ampairs-light-theme, on-primary)};
   --app-light-on-primary-container: #{mat.get-theme-color($ampairs-light-theme, on-primary-container)};
-  
+
   --app-light-secondary: #{mat.get-theme-color($ampairs-light-theme, secondary)};
   --app-light-secondary-container: #{mat.get-theme-color($ampairs-light-theme, secondary-container)};
   --app-light-on-secondary: #{mat.get-theme-color($ampairs-light-theme, on-secondary)};
   --app-light-on-secondary-container: #{mat.get-theme-color($ampairs-light-theme, on-secondary-container)};
-  
+
   --app-light-tertiary: #{mat.get-theme-color($ampairs-light-theme, tertiary)};
   --app-light-tertiary-container: #{mat.get-theme-color($ampairs-light-theme, tertiary-container)};
   --app-light-on-tertiary: #{mat.get-theme-color($ampairs-light-theme, on-tertiary)};
   --app-light-on-tertiary-container: #{mat.get-theme-color($ampairs-light-theme, on-tertiary-container)};
-  
+
   --app-light-surface: #{mat.get-theme-color($ampairs-light-theme, surface)};
   --app-light-surface-container: #{mat.get-theme-color($ampairs-light-theme, surface-container)};
   --app-light-surface-container-low: #{mat.get-theme-color($ampairs-light-theme, surface-container-low)};
@@ -64,34 +64,34 @@ $ampairs-dark-theme: mat.define-theme((
   --app-light-surface-container-highest: #{mat.get-theme-color($ampairs-light-theme, surface-container-highest)};
   --app-light-on-surface: #{mat.get-theme-color($ampairs-light-theme, on-surface)};
   --app-light-on-surface-variant: #{mat.get-theme-color($ampairs-light-theme, on-surface-variant)};
-  
+
   --app-light-background: #{mat.get-theme-color($ampairs-light-theme, background)};
   --app-light-on-background: #{mat.get-theme-color($ampairs-light-theme, on-background)};
-  
+
   --app-light-error: #{mat.get-theme-color($ampairs-light-theme, error)};
   --app-light-error-container: #{mat.get-theme-color($ampairs-light-theme, error-container)};
   --app-light-on-error: #{mat.get-theme-color($ampairs-light-theme, on-error)};
   --app-light-on-error-container: #{mat.get-theme-color($ampairs-light-theme, on-error-container)};
-  
+
   --app-light-outline: #{mat.get-theme-color($ampairs-light-theme, outline)};
   --app-light-outline-variant: #{mat.get-theme-color($ampairs-light-theme, outline-variant)};
-  
-  // Dark theme color tokens  
+
+  // Dark theme color tokens
   --app-dark-primary: #{mat.get-theme-color($ampairs-dark-theme, primary)};
   --app-dark-primary-container: #{mat.get-theme-color($ampairs-dark-theme, primary-container)};
   --app-dark-on-primary: #{mat.get-theme-color($ampairs-dark-theme, on-primary)};
   --app-dark-on-primary-container: #{mat.get-theme-color($ampairs-dark-theme, on-primary-container)};
-  
+
   --app-dark-secondary: #{mat.get-theme-color($ampairs-dark-theme, secondary)};
   --app-dark-secondary-container: #{mat.get-theme-color($ampairs-dark-theme, secondary-container)};
   --app-dark-on-secondary: #{mat.get-theme-color($ampairs-dark-theme, on-secondary)};
   --app-dark-on-secondary-container: #{mat.get-theme-color($ampairs-dark-theme, on-secondary-container)};
-  
+
   --app-dark-tertiary: #{mat.get-theme-color($ampairs-dark-theme, tertiary)};
   --app-dark-tertiary-container: #{mat.get-theme-color($ampairs-dark-theme, tertiary-container)};
   --app-dark-on-tertiary: #{mat.get-theme-color($ampairs-dark-theme, on-tertiary)};
   --app-dark-on-tertiary-container: #{mat.get-theme-color($ampairs-dark-theme, on-tertiary-container)};
-  
+
   --app-dark-surface: #{mat.get-theme-color($ampairs-dark-theme, surface)};
   --app-dark-surface-container: #{mat.get-theme-color($ampairs-dark-theme, surface-container)};
   --app-dark-surface-container-low: #{mat.get-theme-color($ampairs-dark-theme, surface-container-low)};
@@ -99,15 +99,15 @@ $ampairs-dark-theme: mat.define-theme((
   --app-dark-surface-container-highest: #{mat.get-theme-color($ampairs-dark-theme, surface-container-highest)};
   --app-dark-on-surface: #{mat.get-theme-color($ampairs-dark-theme, on-surface)};
   --app-dark-on-surface-variant: #{mat.get-theme-color($ampairs-dark-theme, on-surface-variant)};
-  
+
   --app-dark-background: #{mat.get-theme-color($ampairs-dark-theme, background)};
   --app-dark-on-background: #{mat.get-theme-color($ampairs-dark-theme, on-background)};
-  
+
   --app-dark-error: #{mat.get-theme-color($ampairs-dark-theme, error)};
   --app-dark-error-container: #{mat.get-theme-color($ampairs-dark-theme, error-container)};
   --app-dark-on-error: #{mat.get-theme-color($ampairs-dark-theme, on-error)};
   --app-dark-on-error-container: #{mat.get-theme-color($ampairs-dark-theme, on-error-container)};
-  
+
   --app-dark-outline: #{mat.get-theme-color($ampairs-dark-theme, outline)};
   --app-dark-outline-variant: #{mat.get-theme-color($ampairs-dark-theme, outline-variant)};
 }

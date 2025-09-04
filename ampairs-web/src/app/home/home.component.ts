@@ -17,102 +17,102 @@ import {ThemeSettingsComponent} from '../shared/components/theme-settings/theme-
 import {Observable} from 'rxjs';
 
 @Component({
-    selector: 'app-home',
-    standalone: true,
-    imports: [
-        CommonModule,
-        RouterOutlet,
-        MatToolbarModule,
-        MatButtonModule,
-        MatIconModule,
-        MatMenuModule,
-        MatCardModule,
-        MatDividerModule,
-        MatDialogModule,
-        MatTooltipModule,
-        MatGridListModule
-    ],
-    templateUrl: './home.component.html',
-    styleUrl: './home.component.scss'
+  selector: 'app-home',
+  standalone: true,
+  imports: [
+    CommonModule,
+    RouterOutlet,
+    MatToolbarModule,
+    MatButtonModule,
+    MatIconModule,
+    MatMenuModule,
+    MatCardModule,
+    MatDividerModule,
+    MatDialogModule,
+    MatTooltipModule,
+    MatGridListModule
+  ],
+  templateUrl: './home.component.html',
+  styleUrl: './home.component.scss'
 })
 export class HomeComponent implements OnInit {
-    currentUser$: Observable<User | null>;
+  currentUser$: Observable<User | null>;
   currentWorkspace$: Observable<Workspace | null>;
 
-    constructor(
-        private authService: AuthService,
-        private workspaceService: WorkspaceService,
-        private themeService: ThemeService,
-        private dialog: MatDialog,
-        private router: Router
-    ) {
-        this.currentUser$ = this.authService.currentUser$;
-      this.currentWorkspace$ = this.workspaceService.currentWorkspace$;
-    }
+  constructor(
+    private authService: AuthService,
+    private workspaceService: WorkspaceService,
+    private themeService: ThemeService,
+    private dialog: MatDialog,
+    private router: Router
+  ) {
+    this.currentUser$ = this.authService.currentUser$;
+    this.currentWorkspace$ = this.workspaceService.currentWorkspace$;
+  }
 
-    ngOnInit(): void {
-        // Component initialization
-    }
+  ngOnInit(): void {
+    // Component initialization
+  }
 
-    editProfile(): void {
-      const currentWorkspace = this.workspaceService.getCurrentWorkspace();
-      if (currentWorkspace) {
-        this.router.navigate(['/w', currentWorkspace.slug, 'profile'], {queryParams: {edit: 'true'}});
+  editProfile(): void {
+    const currentWorkspace = this.workspaceService.getCurrentWorkspace();
+    if (currentWorkspace) {
+      this.router.navigate(['/w', currentWorkspace.slug, 'profile'], {queryParams: {edit: 'true'}});
+    }
+  }
+
+  viewSettings(): void {
+    this.openThemeSettings();
+  }
+
+  openThemeSettings(): void {
+    const dialogRef = this.dialog.open(ThemeSettingsComponent, {
+      width: '600px',
+      maxWidth: '90vw',
+      maxHeight: '90vh',
+      disableClose: false,
+      autoFocus: true
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result && result.applied) {
+        console.log('Theme settings applied:', result);
       }
-    }
+    });
+  }
 
-    viewSettings(): void {
-        this.openThemeSettings();
-    }
+  toggleTheme(): void {
+    this.themeService.toggleTheme();
+  }
 
-    openThemeSettings(): void {
-        const dialogRef = this.dialog.open(ThemeSettingsComponent, {
-            width: '600px',
-            maxWidth: '90vw',
-            maxHeight: '90vh',
-            disableClose: false,
-            autoFocus: true
-        });
-
-        dialogRef.afterClosed().subscribe(result => {
-            if (result && result.applied) {
-                console.log('Theme settings applied:', result);
-            }
-        });
+  viewDevices(): void {
+    const currentWorkspace = this.workspaceService.getCurrentWorkspace();
+    if (currentWorkspace) {
+      this.router.navigate(['/w', currentWorkspace.slug, 'devices']);
     }
-
-    toggleTheme(): void {
-        this.themeService.toggleTheme();
-    }
-
-    viewDevices(): void {
-      const currentWorkspace = this.workspaceService.getCurrentWorkspace();
-      if (currentWorkspace) {
-        this.router.navigate(['/w', currentWorkspace.slug, 'devices']);
-      }
-    }
+  }
 
   switchWorkspace(): void {
     this.router.navigate(['/workspaces']);
-    }
+  }
 
-    manageMembers(): void {
-        const currentWorkspace = this.workspaceService.getCurrentWorkspace();
-        if (currentWorkspace) {
-            this.router.navigate(['/w', currentWorkspace.slug, 'members']);
-        }
+  manageMembers(): void {
+    const currentWorkspace = this.workspaceService.getCurrentWorkspace();
+    if (currentWorkspace) {
+      this.router.navigate(['/w', currentWorkspace.slug, 'members']);
     }
+  }
 
-    manageModules(): void {
-        const currentWorkspace = this.workspaceService.getCurrentWorkspace();
-        if (currentWorkspace) {
-            this.router.navigate(['/w', currentWorkspace.slug, 'modules']);
-        }
+  manageModules(): void {
+    const currentWorkspace = this.workspaceService.getCurrentWorkspace();
+    if (currentWorkspace) {
+      this.router.navigate(['/w', currentWorkspace.slug, 'modules']);
     }
+  }
 
-    logout(): void {
-      // Clear workspace data when logging out
-      this.workspaceService.clearCurrentWorkspace();
-        this.authService.logout();
-    }
+  logout(): void {
+    // Clear workspace data when logging out
+    this.workspaceService.clearCurrentWorkspace();
+    this.authService.logout();
+  }
 }

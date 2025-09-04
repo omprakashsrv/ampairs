@@ -1,7 +1,7 @@
 import {Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
-import {BehaviorSubject, Observable, throwError, of} from 'rxjs';
-import {map, tap, catchError} from 'rxjs/operators';
+import {BehaviorSubject, Observable, of, throwError} from 'rxjs';
+import {catchError, tap} from 'rxjs/operators';
 import {environment} from '../../../environments/environment';
 import {WorkspaceService} from './workspace.service';
 import {
@@ -47,75 +47,6 @@ export class WorkspaceModuleService {
     private http: HttpClient,
     private workspaceService: WorkspaceService
   ) {
-  }
-
-  private getCurrentWorkspaceId(): string | null {
-    const workspace = this.workspaceService.getCurrentWorkspace();
-    return workspace?.id || null;
-  }
-
-  private handleError(error: any): Observable<never> {
-    console.error('Workspace Module Service Error:', error);
-    let errorMessage = 'An unexpected error occurred';
-    
-    if (error.error && error.error.error && error.error.error.message) {
-      errorMessage = error.error.error.message;
-    } else if (error.error && error.error.message) {
-      errorMessage = error.error.message;
-    } else if (error.message) {
-      errorMessage = error.message;
-    }
-    
-    return throwError(() => new Error(errorMessage));
-  }
-
-  private getMockDashboardData(): ModuleDashboardResponse {
-    return {
-      total_modules: 8,
-      active_modules: 6,
-      inactive_modules: 2,
-      modules_needing_attention: 1,
-      modules_needing_updates: 3,
-      storage_usage_mb: 245,
-      most_used_modules: [],
-      least_used_modules: [],
-      category_distribution: {
-        'CUSTOMER_MANAGEMENT': 2,
-        'SALES_MANAGEMENT': 1,
-        'FINANCIAL_MANAGEMENT': 2,
-        'ANALYTICS_REPORTING': 1,
-        'INVENTORY_MANAGEMENT': 2
-      },
-      usage_trends: {},
-      health_overview: {
-        overall_health_score: 0.85,
-        healthy_modules: 6,
-        warning_modules: 1,
-        critical_modules: 1,
-        error_rate: 0.02,
-        user_satisfaction: 0.92
-      }
-    };
-  }
-
-  private getMockModuleSearchResponse(): ModuleSearchResponse {
-    return {
-      modules: [],
-      total_elements: 0,
-      total_pages: 0,
-      current_page: 0,
-      page_size: 12,
-      has_next: false,
-      has_previous: false,
-      search_metadata: {
-        applied_filters: {},
-        available_categories: Object.values(ModuleCategory),
-        available_statuses: Object.values(WorkspaceModuleStatus),
-        featured_count: 0,
-        installed_count: 0,
-        enabled_count: 0
-      }
-    };
   }
 
   /**
@@ -453,6 +384,75 @@ export class WorkspaceModuleService {
   clearCache(): void {
     this.installedModulesSubject.next([]);
     this.dashboardDataSubject.next(null);
+  }
+
+  private getCurrentWorkspaceId(): string | null {
+    const workspace = this.workspaceService.getCurrentWorkspace();
+    return workspace?.id || null;
+  }
+
+  private handleError(error: any): Observable<never> {
+    console.error('Workspace Module Service Error:', error);
+    let errorMessage = 'An unexpected error occurred';
+
+    if (error.error && error.error.error && error.error.error.message) {
+      errorMessage = error.error.error.message;
+    } else if (error.error && error.error.message) {
+      errorMessage = error.error.message;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+
+    return throwError(() => new Error(errorMessage));
+  }
+
+  private getMockDashboardData(): ModuleDashboardResponse {
+    return {
+      total_modules: 8,
+      active_modules: 6,
+      inactive_modules: 2,
+      modules_needing_attention: 1,
+      modules_needing_updates: 3,
+      storage_usage_mb: 245,
+      most_used_modules: [],
+      least_used_modules: [],
+      category_distribution: {
+        'CUSTOMER_MANAGEMENT': 2,
+        'SALES_MANAGEMENT': 1,
+        'FINANCIAL_MANAGEMENT': 2,
+        'ANALYTICS_REPORTING': 1,
+        'INVENTORY_MANAGEMENT': 2
+      },
+      usage_trends: {},
+      health_overview: {
+        overall_health_score: 0.85,
+        healthy_modules: 6,
+        warning_modules: 1,
+        critical_modules: 1,
+        error_rate: 0.02,
+        user_satisfaction: 0.92
+      }
+    };
+  }
+
+  private getMockModuleSearchResponse(): ModuleSearchResponse {
+    return {
+      modules: [],
+      total_elements: 0,
+      total_pages: 0,
+      current_page: 0,
+      page_size: 12,
+      has_next: false,
+      has_previous: false,
+      search_metadata: {
+        applied_filters: {},
+        available_categories: Object.values(ModuleCategory),
+        available_statuses: Object.values(WorkspaceModuleStatus),
+        featured_count: 0,
+        installed_count: 0,
+        enabled_count: 0
+      }
+    };
   }
 
   /**

@@ -1,7 +1,7 @@
-import {Injectable, signal, computed, inject, effect} from '@angular/core';
+import {computed, inject, Injectable, signal} from '@angular/core';
 import {toObservable} from '@angular/core/rxjs-interop';
 import {HttpClient} from '@angular/common/http';
-import {Observable, firstValueFrom} from 'rxjs';
+import {firstValueFrom, Observable} from 'rxjs';
 import {catchError, map} from 'rxjs/operators';
 import {environment} from '../../../environments/environment';
 
@@ -99,36 +99,31 @@ export class WorkspaceService {
 
   // Signal-based state management
   private _currentWorkspace = signal<Workspace | null>(null);
-  private _workspaces = signal<WorkspaceListItem[]>([]);
-  private _loading = signal(false);
-  private _error = signal<string | null>(null);
-
   // Public readonly signals
   readonly currentWorkspace = this._currentWorkspace.asReadonly();
-  readonly workspaces = this._workspaces.asReadonly();
-  readonly loading = this._loading.asReadonly();
-  readonly error = this._error.asReadonly();
-
   // Backward compatibility Observable properties (deprecated - use signals instead)
   /** @deprecated Use currentWorkspace signal instead */
   readonly currentWorkspace$ = toObservable(this._currentWorkspace);
-
   // Computed signals
   readonly hasSelectedWorkspace = computed(() => this._currentWorkspace() !== null);
-  readonly workspaceCount = computed(() => this._workspaces().length);
   readonly currentWorkspaceName = computed(() => this._currentWorkspace()?.name || '');
   readonly currentWorkspaceSlug = computed(() => this._currentWorkspace()?.slug || '');
-  
   readonly storageUsage = computed(() => {
     const workspace = this._currentWorkspace();
     if (!workspace || !workspace.storage_limit_gb) return 0;
     return Math.round((workspace.storage_used_gb / workspace.storage_limit_gb) * 100);
   });
-
   readonly isTrialWorkspace = computed(() => {
     const workspace = this._currentWorkspace();
     return workspace?.is_trial === true;
   });
+  private _workspaces = signal<WorkspaceListItem[]>([]);
+  readonly workspaces = this._workspaces.asReadonly();
+  readonly workspaceCount = computed(() => this._workspaces().length);
+  private _loading = signal(false);
+  readonly loading = this._loading.asReadonly();
+  private _error = signal<string | null>(null);
+  readonly error = this._error.asReadonly();
 
   constructor() {
     this.loadSelectedWorkspace();
@@ -202,10 +197,10 @@ export class WorkspaceService {
       );
 
       const workspace = response.data;
-      
+
       // Refresh workspace list after creation
       await this.getUserWorkspaces();
-      
+
       return workspace;
     } catch (error: any) {
       this._error.set(error.message || 'Failed to create workspace');
@@ -296,7 +291,7 @@ export class WorkspaceService {
       console.error('Invalid workspace provided to setCurrentWorkspace:', workspace);
       return;
     }
-    
+
     this._currentWorkspace.set(workspace);
     localStorage.setItem('selected_workspace', JSON.stringify(workspace));
     // Set workspace header for API requests

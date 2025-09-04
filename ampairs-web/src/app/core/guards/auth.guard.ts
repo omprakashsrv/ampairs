@@ -12,7 +12,8 @@ export class AuthGuard implements CanActivate {
   constructor(
     private authService: AuthService,
     private router: Router
-  ) {}
+  ) {
+  }
 
   canActivate(): Observable<boolean> {
     // First check if we have tokens and can authenticate immediately

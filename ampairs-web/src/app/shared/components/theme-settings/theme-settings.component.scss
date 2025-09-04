@@ -1,4 +1,4 @@
-// M3 Material Design Theme Settings Component  
+// M3 Material Design Theme Settings Component
 @use '../../styles/variables' as vars;
 @use '../../styles/mixins' as mixins;
 
@@ -64,12 +64,17 @@
 
 .tab-content {
   padding: 24px 0;
-  @include mixins.tablet { padding: 16px 0; }
+  @include mixins.tablet {
+    padding: 16px 0;
+  }
 }
 
 .setting-section {
   margin-bottom: 32px;
-  &:last-child { margin-bottom: 0; }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 }
 
 .section-title {
@@ -142,7 +147,10 @@
   flex: 1;
   border-radius: 4px;
   border: 1px solid var(--outline-variant-color);
-  &.primary { flex: 2; }
+
+  &.primary {
+    flex: 2;
+  }
 }
 
 .theme-info {
@@ -151,13 +159,25 @@
   color: var(--on-surface-color);
 }
 
-.theme-name { font-weight: 500; }
+.theme-name {
+  font-weight: 500;
+}
 
-.dark-icon, .light-icon { font-size: 14px; }
-.dark-icon { color: var(--on-surface-variant-color); }
-.light-icon { color: var(--tertiary-color); }
+.dark-icon, .light-icon {
+  font-size: 14px;
+}
 
-.quick-actions { @include mixins.flex-center; }
+.dark-icon {
+  color: var(--on-surface-variant-color);
+}
+
+.light-icon {
+  color: var(--tertiary-color);
+}
+
+.quick-actions {
+  @include mixins.flex-center;
+}
 
 .toggle-button {
   @include mixins.flex-center;
@@ -165,7 +185,9 @@
 }
 
 // M3 Density & Typography controls
-.density-control, .typography-select { margin-bottom: 24px; }
+.density-control, .typography-select {
+  margin-bottom: 24px;
+}
 
 .slider-container {
   @include mixins.flex-center;
@@ -181,6 +203,7 @@
 
 .density-slider {
   flex: 1;
+
   .mat-mdc-slider {
     --mdc-slider-active-track-color: var(--primary-color);
     --mdc-slider-inactive-track-color: var(--outline-variant-color);
@@ -188,7 +211,9 @@
   }
 }
 
-.density-info { text-align: center; }
+.density-info {
+  text-align: center;
+}
 
 .density-level {
   font-weight: 500;
@@ -198,12 +223,14 @@
   font-size: 0.875rem;
 }
 
-.density-description { 
+.density-description {
   color: var(--on-surface-variant-color);
   font-size: 0.75rem;
 }
 
-.density-preview { margin-top: 16px; }
+.density-preview {
+  margin-top: 16px;
+}
 
 .preview-card {
   max-width: 300px;
@@ -220,6 +247,7 @@
 
 .typography-select {
   width: 100%;
+
   .mat-mdc-form-field {
     --mdc-outlined-text-field-label-text-color: var(--on-surface-variant-color);
     --mdc-outlined-text-field-input-text-color: var(--on-surface-color);
@@ -238,7 +266,10 @@
 .text-samples > * {
   margin: 0 0 16px 0;
   color: var(--on-surface-color);
-  &:last-child { margin-bottom: 0; }
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 }
 
 // Configuration & Settings
@@ -246,41 +277,68 @@
   @include mixins.flex-column;
   gap: 12px;
   margin-bottom: 24px;
-  @media (min-width: 600px) { flex-direction: row; flex-wrap: wrap; }
+  @media (min-width: 600px) {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
 }
 
 .config-button {
   @include mixins.flex-center;
   gap: 8px;
   flex: 1;
-  @media (min-width: 600px) { flex: none; min-width: 160px; }
+  @media (min-width: 600px) {
+    flex: none;
+    min-width: 160px;
+  }
 }
 
 .reset-button {
   color: var(--error-color);
 }
 
-.import-wrapper { display: contents; }
+.import-wrapper {
+  display: contents;
+}
 
-.current-settings { @include mixins.flex-column; gap: 12px; }
+.current-settings {
+  @include mixins.flex-column;
+  gap: 12px;
+}
 
 .setting-item {
   @include mixins.flex-between;
   padding: 8px 0;
   border-bottom: 1px solid var(--outline-variant-color);
-  &:last-child { border-bottom: none; }
+
+  &:last-child {
+    border-bottom: none;
+  }
 }
 
-.setting-label, .setting-value { font-size: 0.875rem; }
-.setting-label { font-weight: 500; color: var(--on-surface-variant-color); }
-.setting-value { font-weight: 500; color: var(--on-surface-color); }
+.setting-label, .setting-value {
+  font-size: 0.875rem;
+}
+
+.setting-label {
+  font-weight: 500;
+  color: var(--on-surface-variant-color);
+}
+
+.setting-value {
+  font-weight: 500;
+  color: var(--on-surface-color);
+}
 
 .settings-actions {
   padding: 16px 24px 24px;
   @include mixins.flex-between;
   gap: 12px;
   border-top: 1px solid var(--outline-variant-color);
-  @include mixins.tablet { padding: 16px; @include mixins.flex-column; }
+  @include mixins.tablet {
+    padding: 16px;
+    @include mixins.flex-column;
+  }
 }
 
 .cancel-button {
@@ -290,16 +348,26 @@
 .apply-button {
   @include mixins.flex-center;
   gap: 8px;
-  @include mixins.tablet { order: -1; }
+  @include mixins.tablet {
+    order: -1;
+  }
 }
 
 // Responsive
 @include mixins.mobile {
-  .theme-grid { grid-template-columns: repeat(2, 1fr); }
-  .slider-container { 
-    @include mixins.flex-column; 
-    gap: 8px; 
-    .density-slider { width: 100%; }
+  .theme-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
-  .preview-buttons { @include mixins.flex-column; align-items: stretch; }
+  .slider-container {
+    @include mixins.flex-column;
+    gap: 8px;
+
+    .density-slider {
+      width: 100%;
+    }
+  }
+  .preview-buttons {
+    @include mixins.flex-column;
+    align-items: stretch;
+  }
 }

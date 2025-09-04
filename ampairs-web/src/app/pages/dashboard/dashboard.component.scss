@@ -14,20 +14,20 @@
 .welcome-card {
   background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
   color: white;
-  
+
   .welcome-icon {
     font-size: 32px;
     width: 32px;
     height: 32px;
     margin-right: var(--spacing-sm, 8px);
   }
-  
+
   mat-card-title {
     display: flex;
     align-items: center;
     color: white;
   }
-  
+
   mat-card-subtitle {
     color: rgba(255, 255, 255, 0.7);
     margin-top: var(--spacing-sm, 8px);
@@ -45,19 +45,19 @@
     gap: var(--spacing-md, 16px);
     margin-top: var(--spacing-md, 16px);
   }
-  
+
   .action-button {
     @include mixins.flex-column;
     gap: var(--spacing-sm, 8px);
     padding: var(--spacing-lg, 24px);
     height: auto;
-    
+
     mat-icon {
       font-size: 32px;
       width: 32px;
       height: 32px;
     }
-    
+
     span {
       font-weight: 500;
     }
@@ -68,14 +68,14 @@
   .dashboard-container {
     padding: var(--spacing-md, 16px);
   }
-  
+
   .action-card .action-grid {
     grid-template-columns: repeat(2, 1fr);
   }
-  
+
   .action-button {
     padding: var(--spacing-md, 16px);
-    
+
     mat-icon {
       font-size: 24px;
       width: 24px;

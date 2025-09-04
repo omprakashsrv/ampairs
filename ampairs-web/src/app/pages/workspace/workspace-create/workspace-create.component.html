@@ -227,7 +227,8 @@
                 Previous
               </button>
               <span class="action-spacer"></span>
-              <button (click)="onSubmit()" [disabled]="!workspaceForm.valid || isLoading || !slugAvailable" color="primary" extended
+              <button (click)="onSubmit()" [disabled]="!workspaceForm.valid || isLoading || !slugAvailable"
+                      color="primary" extended
                       mat-fab>
                 <mat-icon *ngIf="!isLoading">add</mat-icon>
                 <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>

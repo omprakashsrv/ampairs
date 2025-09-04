@@ -1,6 +1,6 @@
 import {Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
-import {Observable, throwError, of} from 'rxjs';
+import {Observable, throwError} from 'rxjs';
 import {catchError, map} from 'rxjs/operators';
 import {environment} from '../../../environments/environment';
 import {
@@ -10,7 +10,6 @@ import {
   PagedMemberResponse,
   SimpleUserRoleResponse,
   UpdateMemberRequest,
-  UserRoleResponse,
   WorkspaceMember,
   WorkspaceMemberRole
 } from '../models/workspace-member.interface';
@@ -89,18 +88,18 @@ export class WorkspaceMemberService {
     if (request.search_query) params = params.set('search_query', request.search_query);
 
     return this.http.get<{
-      content: any[]; 
-      page_number: number; 
-      page_size: number; 
-      total_elements: number; 
-      total_pages: number; 
-      first: boolean; 
+      content: any[];
+      page_number: number;
+      page_size: number;
+      total_elements: number;
+      total_pages: number;
+      first: boolean;
       last: boolean;
     }>(`${this.WORKSPACE_API_URL}/${workspaceId}/members`, {params})
       .pipe(
         map(response => {
           console.log('getMembers - Interceptor-unwrapped response:', response);
-          
+
           // Handle case where response is null/undefined
           if (!response) {
             console.warn('getMembers - Response is null/undefined');
@@ -114,7 +113,7 @@ export class WorkspaceMemberService {
               last: true
             } as PagedMemberResponse;
           }
-          
+
           // Response is already unwrapped by ApiResponseInterceptor
           // Map backend response format to frontend expected format
           const result = {
@@ -126,7 +125,7 @@ export class WorkspaceMemberService {
             first: response.first || false,
             last: response.last || false
           } as PagedMemberResponse;
-          
+
           console.log('getMembers - Mapped result:', result);
           return result;
         }),
@@ -175,7 +174,7 @@ export class WorkspaceMemberService {
 
           // Map the UserRoleResponse structure (with snake_case from backend) to SimpleUserRoleResponse
           let data: SimpleUserRoleResponse;
-          
+
           if (response.role_hierarchy && response.permissions) {
             // Map from UserRoleResponse structure (snake_case)
             data = {
@@ -317,18 +316,18 @@ export class WorkspaceMemberService {
     }
 
     return this.http.get<{
-      content: any[]; 
-      page_number: number; 
-      page_size: number; 
-      total_elements: number; 
-      total_pages: number; 
-      first: boolean; 
+      content: any[];
+      page_number: number;
+      page_size: number;
+      total_elements: number;
+      total_pages: number;
+      first: boolean;
       last: boolean;
     }>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/search`, {params})
       .pipe(
         map(response => {
           console.log('searchMembers - Interceptor-unwrapped response:', response);
-          
+
           // Handle case where response is null/undefined
           if (!response) {
             console.warn('searchMembers - Response is null/undefined');
@@ -342,7 +341,7 @@ export class WorkspaceMemberService {
               last: true
             } as PagedMemberResponse;
           }
-          
+
           // Response is already unwrapped by ApiResponseInterceptor
           // Map backend response format to frontend expected format
           const result = {
@@ -354,7 +353,7 @@ export class WorkspaceMemberService {
             first: response.first || false,
             last: response.last || false
           } as PagedMemberResponse;
-          
+
           console.log('searchMembers - Mapped result:', result);
           return result;
         }),

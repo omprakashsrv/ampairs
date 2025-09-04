@@ -53,7 +53,7 @@
 // Note: Card, Button, Form, and Loading Spinner mixins removed
 // Use Angular Material M3 components instead:
 // - mat-card for cards
-// - mat-button, mat-raised-button, mat-stroked-button for buttons  
+// - mat-button, mat-raised-button, mat-stroked-button for buttons
 // - mat-form-field for forms
 // - mat-progress-spinner for loading indicators
 // All can be customized via M3 design tokens
@@ -91,29 +91,33 @@
 
 // Keyframes
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
-  from { 
+  from {
     opacity: 0;
-    transform: translateY(20px); 
+    transform: translateY(20px);
   }
-  to { 
+  to {
     opacity: 1;
-    transform: translateY(0); 
+    transform: translateY(0);
   }
 }
 
 @keyframes scaleIn {
-  from { 
+  from {
     opacity: 0;
-    transform: scale(0.9); 
+    transform: scale(0.9);
   }
-  to { 
+  to {
     opacity: 1;
-    transform: scale(1); 
+    transform: scale(1);
   }
 }
 
