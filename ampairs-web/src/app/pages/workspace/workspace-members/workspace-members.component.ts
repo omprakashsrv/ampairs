@@ -558,4 +558,30 @@ export class WorkspaceMembersComponent implements OnInit, OnDestroy {
       panelClass: ['error-snackbar']
     });
   }
+
+  getDisplayName(member: any): string {
+    if (!member) return 'Unknown';
+    
+    // Check if member has a direct name property
+    if (member.name) return member.name;
+    
+    // Check if member has first_name and last_name
+    if (member.first_name || member.last_name) {
+      return `${member.first_name || ''} ${member.last_name || ''}`.trim();
+    }
+    
+    // Check if member has a nested user object with name info
+    if (member.user) {
+      if (member.user.name) return member.user.name;
+      if (member.user.firstName || member.user.lastName) {
+        return `${member.user.firstName || ''} ${member.user.lastName || ''}`.trim();
+      }
+      if (member.user.first_name || member.user.last_name) {
+        return `${member.user.first_name || ''} ${member.user.last_name || ''}`.trim();
+      }
+    }
+    
+    // Fallback to email or id
+    return member.email || member.user_id || member.id || 'Unknown';
+  }
 }

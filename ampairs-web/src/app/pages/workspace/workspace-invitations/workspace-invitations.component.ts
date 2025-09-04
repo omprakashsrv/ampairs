@@ -1,6 +1,7 @@
 import {Component, OnDestroy, OnInit, ViewChild} from '@angular/core';
 import {CommonModule} from '@angular/common';
 import {FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule} from '@angular/forms';
+import {Router} from '@angular/router';
 import {MatTableDataSource, MatTableModule} from '@angular/material/table';
 import {MatPaginator, MatPaginatorModule, PageEvent} from '@angular/material/paginator';
 import {MatSort, MatSortModule} from '@angular/material/sort';
@@ -125,7 +126,8 @@ export class WorkspaceInvitationsComponent implements OnInit, OnDestroy {
     private workspaceService: WorkspaceService,
     private formBuilder: FormBuilder,
     private snackBar: MatSnackBar,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private router: Router
   ) {
     this.initializeFilterForm();
   }
@@ -157,7 +159,7 @@ export class WorkspaceInvitationsComponent implements OnInit, OnDestroy {
       sort_direction: this.sortDirection
     };
 
-    this.invitationService.searchInvitations(filters, sortOptions, this.pageIndex, this.pageSize)
+    this.invitationService.searchInvitations(this.currentWorkspaceId, filters, sortOptions, this.pageIndex, this.pageSize)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (response: PagedInvitationResponse) => {
@@ -239,7 +241,7 @@ export class WorkspaceInvitationsComponent implements OnInit, OnDestroy {
       return;
     }
 
-    this.invitationService.resendInvitation(invitation.id)
+    this.invitationService.resendInvitation(this.currentWorkspaceId, invitation.id)
       .pipe(takeUntil(this.destroy$))
       .subscribe({
         next: (result) => {
@@ -261,7 +263,7 @@ export class WorkspaceInvitationsComponent implements OnInit, OnDestroy {
     }
 
     if (confirm(`Are you sure you want to cancel the invitation for ${invitation.email}?`)) {
-      this.invitationService.cancelInvitation(invitation.id)
+      this.invitationService.cancelInvitation(this.currentWorkspaceId, invitation.id)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: () => {
@@ -279,7 +281,7 @@ export class WorkspaceInvitationsComponent implements OnInit, OnDestroy {
 
   deleteInvitation(invitation: InvitationListResponse): void {
     if (confirm(`Are you sure you want to permanently delete the invitation for ${invitation.email}?`)) {
-      this.invitationService.deleteInvitation(invitation.id)
+      this.invitationService.deleteInvitation(this.currentWorkspaceId, invitation.id)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: () => {
@@ -302,7 +304,7 @@ export class WorkspaceInvitationsComponent implements OnInit, OnDestroy {
     if (confirm(`Are you sure you want to cancel ${this.selectedInvitations.length} invitations (${invitationEmails})?`)) {
       const invitationIds = this.selectedInvitations.map(i => i.id);
 
-      this.invitationService.bulkCancelInvitations(invitationIds)
+      this.invitationService.bulkCancelInvitations(this.currentWorkspaceId, invitationIds)
         .pipe(takeUntil(this.destroy$))
         .subscribe({
           next: (result) => {
@@ -331,7 +333,7 @@ export class WorkspaceInvitationsComponent implements OnInit, OnDestroy {
     }
 
     const promises = resendableInvitations.map(invitation =>
-      this.invitationService.resendInvitation(invitation.id).toPromise()
+      this.invitationService.resendInvitation(this.currentWorkspaceId, invitation.id).toPromise()
     );
 
     Promise.allSettled(promises).then(results => {
@@ -419,13 +421,11 @@ export class WorkspaceInvitationsComponent implements OnInit, OnDestroy {
 
   // Navigation methods
   createNewInvitation(): void {
-    console.log('Navigate to create invitation');
-    // TODO: Implement navigation to invitation creation
+    this.router.navigate(['/workspace/invitations/create']);
   }
 
   viewMembers(): void {
-    console.log('Navigate to members');
-    // TODO: Implement navigation to members component
+    this.router.navigate(['/workspace/members']);
   }
 
   // Reset filters

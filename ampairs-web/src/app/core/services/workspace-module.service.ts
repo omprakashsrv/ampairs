@@ -1,20 +1,23 @@
 import {Injectable} from '@angular/core';
 import {HttpClient, HttpParams} from '@angular/common/http';
-import {BehaviorSubject, Observable} from 'rxjs';
-import {map, tap} from 'rxjs/operators';
+import {BehaviorSubject, Observable, throwError, of} from 'rxjs';
+import {map, tap, catchError} from 'rxjs/operators';
 import {environment} from '../../../environments/environment';
+import {WorkspaceService} from './workspace.service';
 import {
   AvailableModulesResponse,
   BulkOperationRequest,
   BulkOperationResponse,
   MasterModule,
   ModuleActionResponse,
+  ModuleCategory,
   ModuleConfigurationRequest,
   ModuleDashboardResponse,
   ModuleInstallationRequest,
   ModuleSearchRequest,
   ModuleSearchResponse,
-  WorkspaceModule
+  WorkspaceModule,
+  WorkspaceModuleStatus
 } from '../models/workspace-module.interface';
 
 /**
@@ -30,8 +33,9 @@ import {
   providedIn: 'root'
 })
 export class WorkspaceModuleService {
-  private readonly baseUrl = `${environment.apiBaseUrl}/workspace/v1/modules`;
-  private readonly masterModulesUrl = `${environment.apiBaseUrl}/workspace/v1/master-modules`;
+  private readonly WORKSPACE_API_URL = `${environment.apiBaseUrl}/workspace/v1`;
+  private readonly GLOBAL_MODULES_API_URL = `${environment.apiBaseUrl}/workspace/v1/modules`;
+  private readonly USE_MOCK_DATA = true; // TODO: Remove when backend is implemented
 
   // State management
   private installedModulesSubject = new BehaviorSubject<WorkspaceModule[]>([]);
@@ -39,23 +43,105 @@ export class WorkspaceModuleService {
   private dashboardDataSubject = new BehaviorSubject<ModuleDashboardResponse | null>(null);
   public dashboardData$ = this.dashboardDataSubject.asObservable();
 
-  constructor(private http: HttpClient) {
+  constructor(
+    private http: HttpClient,
+    private workspaceService: WorkspaceService
+  ) {
+  }
+
+  private getCurrentWorkspaceId(): string | null {
+    const workspace = this.workspaceService.getCurrentWorkspace();
+    return workspace?.id || null;
+  }
+
+  private handleError(error: any): Observable<never> {
+    console.error('Workspace Module Service Error:', error);
+    let errorMessage = 'An unexpected error occurred';
+    
+    if (error.error && error.error.error && error.error.error.message) {
+      errorMessage = error.error.error.message;
+    } else if (error.error && error.error.message) {
+      errorMessage = error.error.message;
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    return throwError(() => new Error(errorMessage));
+  }
+
+  private getMockDashboardData(): ModuleDashboardResponse {
+    return {
+      total_modules: 8,
+      active_modules: 6,
+      inactive_modules: 2,
+      modules_needing_attention: 1,
+      modules_needing_updates: 3,
+      storage_usage_mb: 245,
+      most_used_modules: [],
+      least_used_modules: [],
+      category_distribution: {
+        'CUSTOMER_MANAGEMENT': 2,
+        'SALES_MANAGEMENT': 1,
+        'FINANCIAL_MANAGEMENT': 2,
+        'ANALYTICS_REPORTING': 1,
+        'INVENTORY_MANAGEMENT': 2
+      },
+      usage_trends: {},
+      health_overview: {
+        overall_health_score: 0.85,
+        healthy_modules: 6,
+        warning_modules: 1,
+        critical_modules: 1,
+        error_rate: 0.02,
+        user_satisfaction: 0.92
+      }
+    };
+  }
+
+  private getMockModuleSearchResponse(): ModuleSearchResponse {
+    return {
+      modules: [],
+      total_elements: 0,
+      total_pages: 0,
+      current_page: 0,
+      page_size: 12,
+      has_next: false,
+      has_previous: false,
+      search_metadata: {
+        applied_filters: {},
+        available_categories: Object.values(ModuleCategory),
+        available_statuses: Object.values(WorkspaceModuleStatus),
+        featured_count: 0,
+        installed_count: 0,
+        enabled_count: 0
+      }
+    };
   }
 
   /**
    * Get workspace module overview and basic information
    */
   getModuleOverview(): Observable<{ [key: string]: any }> {
-    return this.http.get<{ success: boolean; data: any }>(`${this.baseUrl}`)
-      .pipe(map(response => response.data));
+    const workspaceId = this.getCurrentWorkspaceId();
+    if (!workspaceId) {
+      return throwError(() => new Error('No workspace selected'));
+    }
+
+    return this.http.get<any>(`${this.WORKSPACE_API_URL}/${workspaceId}/modules`)
+      .pipe(catchError(this.handleError.bind(this)));
   }
 
   /**
    * Get detailed information about a specific module
    */
   getModule(moduleId: string): Observable<{ [key: string]: any }> {
-    return this.http.get<{ success: boolean; data: any }>(`${this.baseUrl}/${moduleId}`)
-      .pipe(map(response => response.data));
+    const workspaceId = this.getCurrentWorkspaceId();
+    if (!workspaceId) {
+      return throwError(() => new Error('No workspace selected'));
+    }
+
+    return this.http.get<any>(`${this.WORKSPACE_API_URL}/${workspaceId}/modules/${moduleId}`)
+      .pipe(catchError(this.handleError.bind(this)));
   }
 
   /**
@@ -67,13 +153,15 @@ export class WorkspaceModuleService {
     const params = new HttpParams().set('action', action);
     const body = parameters ? {parameters} : {};
 
-    return this.http.post<{
-      success: boolean;
-      data: ModuleActionResponse
-    }>(`${this.baseUrl}/${moduleId}/action`, body, {params})
+    const workspaceId = this.getCurrentWorkspaceId();
+    if (!workspaceId) {
+      return throwError(() => new Error('No workspace selected'));
+    }
+
+    return this.http.post<ModuleActionResponse>(`${this.WORKSPACE_API_URL}/${workspaceId}/modules/${moduleId}/action`, body, {params})
       .pipe(
-        map(response => response.data),
-        tap(() => this.refreshInstalledModules())
+        tap(() => this.refreshInstalledModules()),
+        catchError(this.handleError.bind(this))
       );
   }
 
@@ -81,6 +169,17 @@ export class WorkspaceModuleService {
    * Search and list installed modules with filtering and pagination
    */
   searchInstalledModules(searchRequest: ModuleSearchRequest = {}): Observable<ModuleSearchResponse> {
+    if (this.USE_MOCK_DATA) {
+      const mockData = this.getMockModuleSearchResponse();
+      this.installedModulesSubject.next(mockData.modules);
+      return of(mockData);
+    }
+
+    const workspaceId = this.getCurrentWorkspaceId();
+    if (!workspaceId) {
+      return throwError(() => new Error('No workspace selected'));
+    }
+
     let params = new HttpParams();
 
     if (searchRequest.query) params = params.set('query', searchRequest.query);
@@ -93,10 +192,10 @@ export class WorkspaceModuleService {
     if (searchRequest.page !== undefined) params = params.set('page', searchRequest.page.toString());
     if (searchRequest.size !== undefined) params = params.set('size', searchRequest.size.toString());
 
-    return this.http.get<{ success: boolean; data: ModuleSearchResponse }>(`${this.baseUrl}/search`, {params})
+    return this.http.get<ModuleSearchResponse>(`${this.WORKSPACE_API_URL}/${workspaceId}/modules/search`, {params})
       .pipe(
-        map(response => response.data),
-        tap(result => this.installedModulesSubject.next(result.modules))
+        tap(result => this.installedModulesSubject.next(result.modules)),
+        catchError(this.handleError.bind(this))
       );
   }
 
@@ -107,19 +206,16 @@ export class WorkspaceModuleService {
     let params = new HttpParams();
     if (businessType) params = params.set('business_type', businessType);
 
-    return this.http.get<{
-      success: boolean;
-      data: AvailableModulesResponse
-    }>(`${this.masterModulesUrl}/available`, {params})
-      .pipe(map(response => response.data));
+    return this.http.get<AvailableModulesResponse>(`${this.GLOBAL_MODULES_API_URL}/master-modules/available`, {params})
+      .pipe(catchError(this.handleError.bind(this)));
   }
 
   /**
    * Get master module details
    */
   getMasterModule(moduleId: string): Observable<MasterModule> {
-    return this.http.get<{ success: boolean; data: MasterModule }>(`${this.masterModulesUrl}/${moduleId}`)
-      .pipe(map(response => response.data));
+    return this.http.get<MasterModule>(`${this.GLOBAL_MODULES_API_URL}/master-modules/${moduleId}`)
+      .pipe(catchError(this.handleError.bind(this)));
   }
 
   /**
@@ -136,18 +232,23 @@ export class WorkspaceModuleService {
     if (searchRequest.page !== undefined) params = params.set('page', searchRequest.page.toString());
     if (searchRequest.size !== undefined) params = params.set('size', searchRequest.size.toString());
 
-    return this.http.get<{ success: boolean; data: any }>(`${this.masterModulesUrl}/search`, {params})
-      .pipe(map(response => response.data));
+    return this.http.get<any>(`${this.GLOBAL_MODULES_API_URL}/master-modules/search`, {params})
+      .pipe(catchError(this.handleError.bind(this)));
   }
 
   /**
    * Install a new module
    */
   installModule(installRequest: ModuleInstallationRequest): Observable<any> {
-    return this.http.post<{ success: boolean; data: any }>(`${this.baseUrl}/install`, installRequest)
+    const workspaceId = this.getCurrentWorkspaceId();
+    if (!workspaceId) {
+      return throwError(() => new Error('No workspace selected'));
+    }
+
+    return this.http.post<any>(`${this.WORKSPACE_API_URL}/${workspaceId}/modules/install`, installRequest)
       .pipe(
-        map(response => response.data),
-        tap(() => this.refreshInstalledModules())
+        tap(() => this.refreshInstalledModules()),
+        catchError(this.handleError.bind(this))
       );
   }
 
@@ -155,12 +256,17 @@ export class WorkspaceModuleService {
    * Uninstall a module
    */
   uninstallModule(moduleId: string, preserveData: boolean = false): Observable<any> {
+    const workspaceId = this.getCurrentWorkspaceId();
+    if (!workspaceId) {
+      return throwError(() => new Error('No workspace selected'));
+    }
+
     const params = new HttpParams().set('preserve_data', preserveData.toString());
 
-    return this.http.delete<{ success: boolean; data: any }>(`${this.baseUrl}/${moduleId}`, {params})
+    return this.http.delete<any>(`${this.WORKSPACE_API_URL}/${workspaceId}/modules/${moduleId}`, {params})
       .pipe(
-        map(response => response.data),
-        tap(() => this.refreshInstalledModules())
+        tap(() => this.refreshInstalledModules()),
+        catchError(this.handleError.bind(this))
       );
   }
 
@@ -168,10 +274,15 @@ export class WorkspaceModuleService {
    * Update module configuration
    */
   updateModuleConfiguration(moduleId: string, configRequest: ModuleConfigurationRequest): Observable<any> {
-    return this.http.put<{ success: boolean; data: any }>(`${this.baseUrl}/${moduleId}/configuration`, configRequest)
+    const workspaceId = this.getCurrentWorkspaceId();
+    if (!workspaceId) {
+      return throwError(() => new Error('No workspace selected'));
+    }
+
+    return this.http.put<any>(`${this.WORKSPACE_API_URL}/${workspaceId}/modules/${moduleId}/configuration`, configRequest)
       .pipe(
-        map(response => response.data),
-        tap(() => this.refreshInstalledModules())
+        tap(() => this.refreshInstalledModules()),
+        catchError(this.handleError.bind(this))
       );
   }
 
@@ -187,10 +298,15 @@ export class WorkspaceModuleService {
    * Bulk operations on multiple modules
    */
   performBulkOperation(bulkRequest: BulkOperationRequest): Observable<BulkOperationResponse> {
-    return this.http.post<{ success: boolean; data: BulkOperationResponse }>(`${this.baseUrl}/bulk`, bulkRequest)
+    const workspaceId = this.getCurrentWorkspaceId();
+    if (!workspaceId) {
+      return throwError(() => new Error('No workspace selected'));
+    }
+
+    return this.http.post<BulkOperationResponse>(`${this.WORKSPACE_API_URL}/${workspaceId}/modules/bulk`, bulkRequest)
       .pipe(
-        map(response => response.data),
-        tap(() => this.refreshInstalledModules())
+        tap(() => this.refreshInstalledModules()),
+        catchError(this.handleError.bind(this))
       );
   }
 
@@ -198,10 +314,21 @@ export class WorkspaceModuleService {
    * Get module dashboard and analytics
    */
   getModuleDashboard(): Observable<ModuleDashboardResponse> {
-    return this.http.get<{ success: boolean; data: ModuleDashboardResponse }>(`${this.baseUrl}/dashboard`)
+    if (this.USE_MOCK_DATA) {
+      const mockData = this.getMockDashboardData();
+      this.dashboardDataSubject.next(mockData);
+      return of(mockData);
+    }
+
+    const workspaceId = this.getCurrentWorkspaceId();
+    if (!workspaceId) {
+      return throwError(() => new Error('No workspace selected'));
+    }
+
+    return this.http.get<ModuleDashboardResponse>(`${this.WORKSPACE_API_URL}/${workspaceId}/modules/dashboard`)
       .pipe(
-        map(response => response.data),
-        tap(dashboard => this.dashboardDataSubject.next(dashboard))
+        tap(dashboard => this.dashboardDataSubject.next(dashboard)),
+        catchError(this.handleError.bind(this))
       );
   }
 
@@ -209,30 +336,45 @@ export class WorkspaceModuleService {
    * Get module analytics for a specific module
    */
   getModuleAnalytics(moduleId: string, period: string = '30d'): Observable<any> {
+    const workspaceId = this.getCurrentWorkspaceId();
+    if (!workspaceId) {
+      return throwError(() => new Error('No workspace selected'));
+    }
+
     const params = new HttpParams().set('period', period);
 
-    return this.http.get<{ success: boolean; data: any }>(`${this.baseUrl}/${moduleId}/analytics`, {params})
-      .pipe(map(response => response.data));
+    return this.http.get<any>(`${this.WORKSPACE_API_URL}/${workspaceId}/modules/${moduleId}/analytics`, {params})
+      .pipe(catchError(this.handleError.bind(this)));
   }
 
   /**
    * Export module configuration
    */
   exportModuleConfiguration(moduleIds?: string[]): Observable<any> {
+    const workspaceId = this.getCurrentWorkspaceId();
+    if (!workspaceId) {
+      return throwError(() => new Error('No workspace selected'));
+    }
+
     const body = moduleIds ? {module_ids: moduleIds} : {};
 
-    return this.http.post<{ success: boolean; data: any }>(`${this.baseUrl}/export`, body)
-      .pipe(map(response => response.data));
+    return this.http.post<any>(`${this.WORKSPACE_API_URL}/${workspaceId}/modules/export`, body)
+      .pipe(catchError(this.handleError.bind(this)));
   }
 
   /**
    * Import module configuration
    */
   importModuleConfiguration(configData: any): Observable<any> {
-    return this.http.post<{ success: boolean; data: any }>(`${this.baseUrl}/import`, configData)
+    const workspaceId = this.getCurrentWorkspaceId();
+    if (!workspaceId) {
+      return throwError(() => new Error('No workspace selected'));
+    }
+
+    return this.http.post<any>(`${this.WORKSPACE_API_URL}/${workspaceId}/modules/import`, configData)
       .pipe(
-        map(response => response.data),
-        tap(() => this.refreshInstalledModules())
+        tap(() => this.refreshInstalledModules()),
+        catchError(this.handleError.bind(this))
       );
   }
 
@@ -240,16 +382,21 @@ export class WorkspaceModuleService {
    * Get module categories
    */
   getModuleCategories(): Observable<string[]> {
-    return this.http.get<{ success: boolean; data: string[] }>(`${this.masterModulesUrl}/categories`)
-      .pipe(map(response => response.data));
+    return this.http.get<string[]>(`${this.GLOBAL_MODULES_API_URL}/categories`)
+      .pipe(catchError(this.handleError.bind(this)));
   }
 
   /**
    * Check for module updates
    */
   checkForUpdates(): Observable<any> {
-    return this.http.get<{ success: boolean; data: any }>(`${this.baseUrl}/updates`)
-      .pipe(map(response => response.data));
+    const workspaceId = this.getCurrentWorkspaceId();
+    if (!workspaceId) {
+      return throwError(() => new Error('No workspace selected'));
+    }
+
+    return this.http.get<any>(`${this.WORKSPACE_API_URL}/${workspaceId}/modules/updates`)
+      .pipe(catchError(this.handleError.bind(this)));
   }
 
   /**
@@ -270,8 +417,13 @@ export class WorkspaceModuleService {
    * Get module health status
    */
   getModuleHealthStatus(moduleId: string): Observable<any> {
-    return this.http.get<{ success: boolean; data: any }>(`${this.baseUrl}/${moduleId}/health`)
-      .pipe(map(response => response.data));
+    const workspaceId = this.getCurrentWorkspaceId();
+    if (!workspaceId) {
+      return throwError(() => new Error('No workspace selected'));
+    }
+
+    return this.http.get<any>(`${this.WORKSPACE_API_URL}/${workspaceId}/modules/${moduleId}/health`)
+      .pipe(catchError(this.handleError.bind(this)));
   }
 
   /**

@@ -88,20 +88,47 @@ export class WorkspaceMemberService {
     if (request.department) params = params.set('department', request.department);
     if (request.search_query) params = params.set('search_query', request.search_query);
 
-    return this.http.get<ApiResponse<any>>(`${this.WORKSPACE_API_URL}/${workspaceId}/members`, {params})
+    return this.http.get<{
+      content: any[]; 
+      page_number: number; 
+      page_size: number; 
+      total_elements: number; 
+      total_pages: number; 
+      first: boolean; 
+      last: boolean;
+    }>(`${this.WORKSPACE_API_URL}/${workspaceId}/members`, {params})
       .pipe(
         map(response => {
-          const data = response.data;
+          console.log('getMembers - Interceptor-unwrapped response:', response);
+          
+          // Handle case where response is null/undefined
+          if (!response) {
+            console.warn('getMembers - Response is null/undefined');
+            return {
+              content: [],
+              page_number: 0,
+              page_size: 20,
+              total_elements: 0,
+              total_pages: 0,
+              first: true,
+              last: true
+            } as PagedMemberResponse;
+          }
+          
+          // Response is already unwrapped by ApiResponseInterceptor
           // Map backend response format to frontend expected format
-          return {
-            content: data.content || [],
-            page_number: data.page_number || 0,
-            page_size: data.page_size || 20,
-            total_elements: data.total_elements || 0,
-            total_pages: data.total_pages || 0,
-            first: data.first || false,
-            last: data.last || false
+          const result = {
+            content: response.content || [],
+            page_number: response.page_number || 0,
+            page_size: response.page_size || 20,
+            total_elements: response.total_elements || 0,
+            total_pages: response.total_pages || 0,
+            first: response.first || false,
+            last: response.last || false
           } as PagedMemberResponse;
+          
+          console.log('getMembers - Mapped result:', result);
+          return result;
         }),
         catchError(this.handleError)
       );
@@ -111,9 +138,8 @@ export class WorkspaceMemberService {
    * Get member details by ID
    */
   getMemberById(workspaceId: string, memberId: string): Observable<WorkspaceMember> {
-    return this.http.get<ApiResponse<WorkspaceMember>>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/${memberId}`)
+    return this.http.get<WorkspaceMember>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/${memberId}`)
       .pipe(
-        map(response => response.data),
         catchError(this.handleError)
       );
   }
@@ -126,31 +152,60 @@ export class WorkspaceMemberService {
     const url = `${this.WORKSPACE_API_URL}/${workspaceId}/my-role`;
     console.log('Full URL:', url);
 
-    return this.http.get<any>(url)
+    return this.http.get<{
+      user_id: string;
+      workspace_id: string;
+      current_role: string;
+      membership_status: string;
+      joined_at: string;
+      last_activity?: string;
+      role_hierarchy: { [key: string]: boolean };
+      permissions: { [key: string]: { [key: string]: boolean } };
+      module_access: string[];
+    }>(url)
       .pipe(
         map(response => {
-          console.log('Service received full response:', response);
+          console.log('Service received interceptor-unwrapped response:', response);
 
-          // Handle both wrapped and direct response formats
+          // Handle case where response is null/undefined
+          if (!response) {
+            console.error('Response is null/undefined');
+            throw new Error('Invalid response');
+          }
+
+          // Map the UserRoleResponse structure (with snake_case from backend) to SimpleUserRoleResponse
           let data: SimpleUserRoleResponse;
-
-          if (response && typeof response === 'object') {
-            // Check if it's wrapped in ApiResponse format
-            if (response.success !== undefined && response.data) {
-              data = response.data;
-              console.log('Using wrapped format, extracted data:', data);
-            }
-            // Check if it's direct permission object
-            else if (response.is_owner !== undefined || response.can_view_members !== undefined) {
-              data = response;
-              console.log('Using direct format, data:', data);
-            } else {
-              console.error('Unknown response structure:', response);
-              throw new Error('Unknown response structure');
-            }
+          
+          if (response.role_hierarchy && response.permissions) {
+            // Map from UserRoleResponse structure (snake_case)
+            data = {
+              is_owner: response.role_hierarchy['OWNER'] || false,
+              is_admin: response.role_hierarchy['ADMIN'] || false,
+              can_view_members: response.permissions['members']?.['view'] || false,
+              can_invite_members: response.permissions['members']?.['invite'] || false,
+              can_manage_workspace: response.permissions['workspace']?.['manage'] || false
+            };
+            console.log('Mapped UserRoleResponse to SimpleUserRoleResponse:', data);
+          }
+          // Handle camelCase version as fallback (though unlikely with interceptor)
+          else if ((response as any).roleHierarchy && (response as any).permissions) {
+            // Map from UserRoleResponse structure (camelCase)
+            data = {
+              is_owner: (response as any).roleHierarchy?.OWNER || false,
+              is_admin: (response as any).roleHierarchy?.ADMIN || false,
+              can_view_members: (response as any).permissions?.members?.view || false,
+              can_invite_members: (response as any).permissions?.members?.invite || false,
+              can_manage_workspace: (response as any).permissions?.workspace?.manage || false
+            };
+            console.log('Mapped camelCase UserRoleResponse to SimpleUserRoleResponse:', data);
+          }
+          // Check if it's already in simple format
+          else if ((response as any).is_owner !== undefined || (response as any).can_view_members !== undefined) {
+            data = response as any;
+            console.log('Already in simple format:', data);
           } else {
-            console.error('Invalid response type:', typeof response, response);
-            throw new Error('Invalid response type');
+            console.error('Unknown response structure:', response);
+            throw new Error('Unknown response structure');
           }
 
           return data;
@@ -166,9 +221,8 @@ export class WorkspaceMemberService {
    * Update member role and permissions
    */
   updateMember(workspaceId: string, memberId: string, updateRequest: UpdateMemberRequest): Observable<WorkspaceMember> {
-    return this.http.put<ApiResponse<WorkspaceMember>>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/${memberId}`, updateRequest)
+    return this.http.put<WorkspaceMember>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/${memberId}`, updateRequest)
       .pipe(
-        map(response => response.data),
         catchError(this.handleError)
       );
   }
@@ -187,12 +241,11 @@ export class WorkspaceMemberService {
       return throwError(() => new Error('No current workspace selected'));
     }
 
-    return this.http.put<ApiResponse<{
+    return this.http.put<{
       updated_count: number;
       failed_updates: Array<{ member_id: string; error: string }>
-    }>>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/bulk`, bulkRequest)
+    }>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/bulk`, bulkRequest)
       .pipe(
-        map(response => response.data),
         catchError(this.handleError)
       );
   }
@@ -202,11 +255,10 @@ export class WorkspaceMemberService {
    */
   removeMember(workspaceId: string, memberId: string, reason?: string): Observable<{ message: string }> {
     const body = reason ? {reason} : {};
-    return this.http.delete<ApiResponse<{
+    return this.http.delete<{
       message: string
-    }>>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/${memberId}`, {body})
+    }>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/${memberId}`, {body})
       .pipe(
-        map(response => response.data),
         catchError(this.handleError)
       );
   }
@@ -230,12 +282,11 @@ export class WorkspaceMemberService {
       reason: reason
     };
 
-    return this.http.delete<ApiResponse<{
+    return this.http.delete<{
       removed_count: number;
       failed_removals: Array<{ member_id: string; error: string }>
-    }>>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/bulk`, {body})
+    }>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/bulk`, {body})
       .pipe(
-        map(response => response.data),
         catchError(this.handleError)
       );
   }
@@ -265,9 +316,48 @@ export class WorkspaceMemberService {
       params = params.set('sortDir', sortOptions.sort_direction);
     }
 
-    return this.http.get<ApiResponse<PagedMemberResponse>>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/search`, {params})
+    return this.http.get<{
+      content: any[]; 
+      page_number: number; 
+      page_size: number; 
+      total_elements: number; 
+      total_pages: number; 
+      first: boolean; 
+      last: boolean;
+    }>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/search`, {params})
       .pipe(
-        map(response => response.data),
+        map(response => {
+          console.log('searchMembers - Interceptor-unwrapped response:', response);
+          
+          // Handle case where response is null/undefined
+          if (!response) {
+            console.warn('searchMembers - Response is null/undefined');
+            return {
+              content: [],
+              page_number: 0,
+              page_size: 20,
+              total_elements: 0,
+              total_pages: 0,
+              first: true,
+              last: true
+            } as PagedMemberResponse;
+          }
+          
+          // Response is already unwrapped by ApiResponseInterceptor
+          // Map backend response format to frontend expected format
+          const result = {
+            content: response.content || [],
+            page_number: response.page_number || 0,
+            page_size: response.page_size || 20,
+            total_elements: response.total_elements || 0,
+            total_pages: response.total_pages || 0,
+            first: response.first || false,
+            last: response.last || false
+          } as PagedMemberResponse;
+          
+          console.log('searchMembers - Mapped result:', result);
+          return result;
+        }),
         catchError(this.handleError)
       );
   }
@@ -283,12 +373,11 @@ export class WorkspaceMemberService {
       .set('page', page.toString())
       .set('size', size.toString());
 
-    return this.http.get<ApiResponse<{
+    return this.http.get<{
       content: MemberActivityLog[];
       total_elements: number
-    }>>(`${this.MEMBER_API_URL}/${memberId}/activity`, {params})
+    }>(`${this.MEMBER_API_URL}/${memberId}/activity`, {params})
       .pipe(
-        map(response => response.data),
         catchError(this.handleError)
       );
   }
@@ -309,7 +398,7 @@ export class WorkspaceMemberService {
       active: number;
     }>;
   }> {
-    return this.http.get<ApiResponse<{
+    return this.http.get<{
       total_members: number;
       active_members: number;
       by_role: { [key in WorkspaceMemberRole]: number };
@@ -321,9 +410,8 @@ export class WorkspaceMemberService {
         left: number;
         active: number;
       }>;
-    }>>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/statistics`)
+    }>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/statistics`)
       .pipe(
-        map(response => response.data),
         catchError(this.handleError)
       );
   }
@@ -358,9 +446,8 @@ export class WorkspaceMemberService {
    * Get available departments in workspace
    */
   getDepartments(workspaceId: string): Observable<string[]> {
-    return this.http.get<ApiResponse<string[]>>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/departments`)
+    return this.http.get<string[]>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/departments`)
       .pipe(
-        map(response => response.data),
         catchError(this.handleError)
       );
   }
@@ -381,9 +468,8 @@ export class WorkspaceMemberService {
       reason
     };
 
-    return this.http.patch<ApiResponse<WorkspaceMember>>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/${memberId}/status`, body)
+    return this.http.patch<WorkspaceMember>(`${this.WORKSPACE_API_URL}/${workspaceId}/members/${memberId}/status`, body)
       .pipe(
-        map(response => response.data),
         catchError(this.handleError)
       );
   }

@@ -53,7 +53,8 @@ export interface ResendInvitationRequest {
   providedIn: 'root'
 })
 export class WorkspaceInvitationService {
-  private readonly INVITATION_API_URL = `${environment.apiBaseUrl}/workspace/v1/invitations`;
+  private readonly WORKSPACE_API_URL = `${environment.apiBaseUrl}/workspace/v1`;
+  private readonly GLOBAL_INVITATION_API_URL = `${environment.apiBaseUrl}/workspace/v1/invitations`;
 
   constructor(private http: HttpClient) {
   }
@@ -61,14 +62,13 @@ export class WorkspaceInvitationService {
   /**
    * Get paginated list of workspace invitations
    */
-  getInvitations(request: InvitationSearchRequest = {}): Observable<PagedInvitationResponse> {
+  getInvitations(workspaceId: string, request: InvitationSearchRequest = {}): Observable<PagedInvitationResponse> {
     let params = new HttpParams();
 
-    if (request.workspace_id) params = params.set('workspace_id', request.workspace_id);
     if (request.page !== undefined) params = params.set('page', request.page.toString());
     if (request.size !== undefined) params = params.set('size', request.size.toString());
-    if (request.sort_by) params = params.set('sort_by', request.sort_by);
-    if (request.sort_direction) params = params.set('sort_direction', request.sort_direction);
+    if (request.sort_by) params = params.set('sortBy', request.sort_by);
+    if (request.sort_direction) params = params.set('sortDir', request.sort_direction);
     if (request.status && request.status !== 'ALL') params = params.set('status', request.status);
     if (request.role && request.role !== 'ALL') params = params.set('role', request.role);
     if (request.delivery_status && request.delivery_status !== 'ALL') params = params.set('delivery_status', request.delivery_status);
@@ -76,9 +76,8 @@ export class WorkspaceInvitationService {
     if (request.start_date) params = params.set('start_date', request.start_date);
     if (request.end_date) params = params.set('end_date', request.end_date);
 
-    return this.http.get<ApiResponse<PagedInvitationResponse>>(`${this.INVITATION_API_URL}`, {params})
+    return this.http.get<PagedInvitationResponse>(`${this.WORKSPACE_API_URL}/${workspaceId}/invitations`, {params})
       .pipe(
-        map(response => response.data),
         catchError(this.handleError)
       );
   }
@@ -86,8 +85,8 @@ export class WorkspaceInvitationService {
   /**
    * Get invitation details by ID
    */
-  getInvitationById(invitationId: string): Observable<WorkspaceInvitation> {
-    return this.http.get<ApiResponse<WorkspaceInvitation>>(`${this.INVITATION_API_URL}/${invitationId}`)
+  getInvitationById(workspaceId: string, invitationId: string): Observable<WorkspaceInvitation> {
+    return this.http.get<ApiResponse<WorkspaceInvitation>>(`${this.WORKSPACE_API_URL}/${workspaceId}/invitations/${invitationId}`)
       .pipe(
         map(response => response.data),
         catchError(this.handleError)
@@ -97,8 +96,8 @@ export class WorkspaceInvitationService {
   /**
    * Create a new workspace invitation
    */
-  createInvitation(invitation: CreateInvitationRequest): Observable<InvitationResponse> {
-    return this.http.post<ApiResponse<InvitationResponse>>(`${this.INVITATION_API_URL}`, invitation)
+  createInvitation(workspaceId: string, invitation: CreateInvitationRequest): Observable<InvitationResponse> {
+    return this.http.post<ApiResponse<InvitationResponse>>(`${this.WORKSPACE_API_URL}/${workspaceId}/invitations`, invitation)
       .pipe(
         map(response => response.data),
         catchError(this.handleError)
@@ -108,8 +107,8 @@ export class WorkspaceInvitationService {
   /**
    * Create multiple invitations in bulk
    */
-  createBulkInvitations(bulkRequest: BulkInvitationRequest): Observable<BulkInvitationResponse> {
-    return this.http.post<ApiResponse<BulkInvitationResponse>>(`${this.INVITATION_API_URL}/bulk`, bulkRequest)
+  createBulkInvitations(workspaceId: string, bulkRequest: BulkInvitationRequest): Observable<BulkInvitationResponse> {
+    return this.http.post<ApiResponse<BulkInvitationResponse>>(`${this.WORKSPACE_API_URL}/${workspaceId}/invitations/bulk`, bulkRequest)
       .pipe(
         map(response => response.data),
         catchError(this.handleError)
@@ -119,7 +118,7 @@ export class WorkspaceInvitationService {
   /**
    * Resend invitation email
    */
-  resendInvitation(invitationId: string, request?: ResendInvitationRequest): Observable<{
+  resendInvitation(workspaceId: string, invitationId: string, request?: ResendInvitationRequest): Observable<{
     message: string;
     delivery_status: string
   }> {
@@ -127,7 +126,7 @@ export class WorkspaceInvitationService {
     return this.http.post<ApiResponse<{
       message: string;
       delivery_status: string
-    }>>(`${this.INVITATION_API_URL}/${invitationId}/resend`, body)
+    }>>(`${this.WORKSPACE_API_URL}/${workspaceId}/invitations/${invitationId}/resend`, body)
       .pipe(
         map(response => response.data),
         catchError(this.handleError)
@@ -137,9 +136,9 @@ export class WorkspaceInvitationService {
   /**
    * Cancel invitation
    */
-  cancelInvitation(invitationId: string, reason?: string): Observable<{ message: string }> {
+  cancelInvitation(workspaceId: string, invitationId: string, reason?: string): Observable<{ message: string }> {
     const body = reason ? {reason} : {};
-    return this.http.put<ApiResponse<{ message: string }>>(`${this.INVITATION_API_URL}/${invitationId}/cancel`, body)
+    return this.http.delete<ApiResponse<{ message: string }>>(`${this.WORKSPACE_API_URL}/${workspaceId}/invitations/${invitationId}`, {body})
       .pipe(
         map(response => response.data),
         catchError(this.handleError)
@@ -149,7 +148,7 @@ export class WorkspaceInvitationService {
   /**
    * Bulk cancel multiple invitations
    */
-  bulkCancelInvitations(invitationIds: string[], reason?: string): Observable<{
+  bulkCancelInvitations(workspaceId: string, invitationIds: string[], reason?: string): Observable<{
     cancelled_count: number;
     failed_cancellations: Array<{ invitation_id: string; error: string }>
   }> {
@@ -157,10 +156,10 @@ export class WorkspaceInvitationService {
       invitation_ids: invitationIds,
       reason: reason
     };
-    return this.http.put<ApiResponse<{
+    return this.http.delete<ApiResponse<{
       cancelled_count: number;
       failed_cancellations: Array<{ invitation_id: string; error: string }>
-    }>>(`${this.INVITATION_API_URL}/bulk/cancel`, body)
+    }>>(`${this.WORKSPACE_API_URL}/${workspaceId}/invitations/bulk`, {body})
       .pipe(
         map(response => response.data),
         catchError(this.handleError)
@@ -170,8 +169,8 @@ export class WorkspaceInvitationService {
   /**
    * Delete invitation permanently
    */
-  deleteInvitation(invitationId: string): Observable<{ message: string }> {
-    return this.http.delete<ApiResponse<{ message: string }>>(`${this.INVITATION_API_URL}/${invitationId}`)
+  deleteInvitation(workspaceId: string, invitationId: string): Observable<{ message: string }> {
+    return this.http.delete<ApiResponse<{ message: string }>>(`${this.WORKSPACE_API_URL}/${workspaceId}/invitations/${invitationId}`)
       .pipe(
         map(response => response.data),
         catchError(this.handleError)
@@ -182,9 +181,8 @@ export class WorkspaceInvitationService {
    * Get public invitation details (no authentication required)
    */
   getPublicInvitationDetails(invitationCode: string): Observable<PublicInvitationDetails> {
-    return this.http.get<ApiResponse<PublicInvitationDetails>>(`${this.INVITATION_API_URL}/public/${invitationCode}`)
+    return this.http.get<PublicInvitationDetails>(`${this.GLOBAL_INVITATION_API_URL}/public/${invitationCode}`)
       .pipe(
-        map(response => response.data),
         catchError(this.handleError)
       );
   }
@@ -192,18 +190,17 @@ export class WorkspaceInvitationService {
   /**
    * Accept invitation (public endpoint)
    */
-  acceptInvitation(acceptRequest: AcceptInvitationRequest): Observable<{
+  acceptInvitation(token: string): Observable<{
     message: string;
     workspace_id: string;
     member_id: string
   }> {
-    return this.http.post<ApiResponse<{
+    return this.http.post<{
       message: string;
       workspace_id: string;
       member_id: string
-    }>>(`${this.INVITATION_API_URL}/accept`, acceptRequest)
+    }>(`${this.GLOBAL_INVITATION_API_URL}/${token}/accept`, {})
       .pipe(
-        map(response => response.data),
         catchError(this.handleError)
       );
   }
@@ -216,7 +213,7 @@ export class WorkspaceInvitationService {
       invitation_code: invitationCode,
       reason: reason
     };
-    return this.http.post<ApiResponse<{ message: string }>>(`${this.INVITATION_API_URL}/decline`, body)
+    return this.http.post<ApiResponse<{ message: string }>>(`${this.GLOBAL_INVITATION_API_URL}/decline`, body)
       .pipe(
         map(response => response.data),
         catchError(this.handleError)
@@ -226,7 +223,7 @@ export class WorkspaceInvitationService {
   /**
    * Search invitations with advanced filtering
    */
-  searchInvitations(filters: InvitationFilters, sortOptions?: InvitationSortOptions, page = 0, size = 20): Observable<PagedInvitationResponse> {
+  searchInvitations(workspaceId: string, filters: InvitationFilters, sortOptions?: InvitationSortOptions, page = 0, size = 20): Observable<PagedInvitationResponse> {
     let params = new HttpParams()
       .set('page', page.toString())
       .set('size', size.toString());
@@ -242,13 +239,12 @@ export class WorkspaceInvitationService {
     }
 
     if (sortOptions) {
-      params = params.set('sort_by', sortOptions.sort_by);
-      params = params.set('sort_direction', sortOptions.sort_direction);
+      params = params.set('sortBy', sortOptions.sort_by);
+      params = params.set('sortDir', sortOptions.sort_direction);
     }
 
-    return this.http.get<ApiResponse<PagedInvitationResponse>>(`${this.INVITATION_API_URL}/search`, {params})
+    return this.http.get<PagedInvitationResponse>(`${this.WORKSPACE_API_URL}/${workspaceId}/invitations/search`, {params})
       .pipe(
-        map(response => response.data),
         catchError(this.handleError)
       );
   }
@@ -256,13 +252,9 @@ export class WorkspaceInvitationService {
   /**
    * Get invitation statistics
    */
-  getInvitationStatistics(workspaceId?: string): Observable<InvitationStatistics> {
-    let params = new HttpParams();
-    if (workspaceId) params = params.set('workspace_id', workspaceId);
-
-    return this.http.get<ApiResponse<InvitationStatistics>>(`${this.INVITATION_API_URL}/statistics`, {params})
+  getInvitationStatistics(workspaceId: string): Observable<InvitationStatistics> {
+    return this.http.get<InvitationStatistics>(`${this.WORKSPACE_API_URL}/${workspaceId}/invitations/statistics`)
       .pipe(
-        map(response => response.data),
         catchError(this.handleError)
       );
   }
@@ -285,7 +277,7 @@ export class WorkspaceInvitationService {
       }
     }
 
-    return this.http.get(`${this.INVITATION_API_URL}/export`, {
+    return this.http.get(`${this.GLOBAL_INVITATION_API_URL}/export`, {
       params,
       responseType: 'blob'
     }).pipe(catchError(this.handleError));
@@ -317,7 +309,7 @@ export class WorkspaceInvitationService {
       }>;
       current_status: DeliveryStatus;
       last_attempt: string;
-    }>>(`${this.INVITATION_API_URL}/${invitationId}/delivery-tracking`)
+    }>>(`${this.GLOBAL_INVITATION_API_URL}/${invitationId}/delivery-tracking`)
       .pipe(
         map(response => response.data),
         catchError(this.handleError)
@@ -329,7 +321,7 @@ export class WorkspaceInvitationService {
    */
   updateInvitationExpiry(invitationId: string, expiryDays: number): Observable<WorkspaceInvitation> {
     const body = {expiry_days: expiryDays};
-    return this.http.patch<ApiResponse<WorkspaceInvitation>>(`${this.INVITATION_API_URL}/${invitationId}/expiry`, body)
+    return this.http.patch<ApiResponse<WorkspaceInvitation>>(`${this.GLOBAL_INVITATION_API_URL}/${invitationId}/expiry`, body)
       .pipe(
         map(response => response.data),
         catchError(this.handleError)
@@ -371,7 +363,7 @@ export class WorkspaceInvitationService {
       role_distribution: { [key in WorkspaceMemberRole]: number };
       status_breakdown: { [key in InvitationStatus]: number };
       delivery_performance: { [key in DeliveryStatus]: number };
-    }>>(`${this.INVITATION_API_URL}/analytics`, {params})
+    }>>(`${this.GLOBAL_INVITATION_API_URL}/analytics`, {params})
       .pipe(
         map(response => response.data),
         catchError(this.handleError)

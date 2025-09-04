@@ -249,12 +249,12 @@
               <div class="member-avatar">
                 <img
                   *ngIf="member.avatar_url; else avatarFallback"
-                  [alt]="member.name"
+                  [alt]="getDisplayName(member)"
                   [src]="member.avatar_url"
                   class="avatar-image">
                 <ng-template #avatarFallback>
                   <div class="avatar-fallback">
-                    {{ member.name.charAt(0).toUpperCase() }}
+                    {{ (getDisplayName(member) || '?').charAt(0).toUpperCase() }}
                   </div>
                 </ng-template>
               </div>
@@ -266,7 +266,7 @@
             <th *matHeaderCellDef mat-header-cell mat-sort-header="name">Name</th>
             <td *matCellDef="let member" class="name-column" mat-cell>
               <div class="member-name">
-                <div class="primary-text">{{ member.name }}</div>
+                <div class="primary-text">{{ getDisplayName(member) }}</div>
                 <div *ngIf="member.is_online" class="secondary-text">
                   <mat-icon class="online-indicator">fiber_manual_record</mat-icon>
                   Online
