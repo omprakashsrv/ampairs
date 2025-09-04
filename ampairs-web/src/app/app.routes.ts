@@ -57,19 +57,9 @@ export const routes: Routes = [
             },
             // Workspace Management Routes
             {
-                path: 'members',
-                loadComponent: () => import('./pages/workspace/workspace-members/workspace-members.component').then(m => m.WorkspaceMembersComponent),
-                canActivate: [WorkspaceMemberGuard]
-            },
-            {
                 path: 'invitations',
                 loadComponent: () => import('./pages/workspace/workspace-invitations/workspace-invitations.component').then(m => m.WorkspaceInvitationsComponent),
                 canActivate: [WorkspaceInvitationGuard]
-            },
-            {
-                path: 'modules',
-                loadComponent: () => import('./pages/workspace/workspace-modules/workspace-modules.component').then(m => m.WorkspaceModulesComponent),
-                canActivate: [WorkspaceMemberGuard]
             }
         ]
     },
