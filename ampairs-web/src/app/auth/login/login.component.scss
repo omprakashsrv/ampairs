@@ -5,7 +5,7 @@
 .auth-container {
   min-height: 100vh;
   @include theme.flex-center;
-  background-color: var(--surface-dim-color, var(--background-color));
+  background-color: vars.$color-background;
   padding: vars.$spacing-xl;
 }
 
@@ -18,7 +18,7 @@
   font-size: 3rem; // M3 icon size large
   width: 3rem;
   height: 3rem;
-  color: var(--primary-color);
+  color: vars.$color-primary;
   margin-bottom: vars.$spacing-md;
 }
 
@@ -47,8 +47,8 @@
 .help-text {
   @include theme.flex-center;
   gap: vars.$spacing-md;
-  color: var(--on-surface-variant-color);
-  font-size: var(--font-body-small-size, 0.875rem);
+  color: vars.$color-on-surface-variant;
+  font-size: vars.$font-size-sm;
   margin: vars.$spacing-xl 0 0 0;
 }
 
@@ -56,7 +56,7 @@
   font-size: vars.$font-size-lg;
   width: vars.$font-size-lg;
   height: vars.$font-size-lg;
-  color: var(--primary-color);
+  color: vars.$color-primary;
 }
 
 .text-center {
@@ -73,14 +73,14 @@ mat-card-header {
 
 mat-card-title h1 {
   margin: vars.$spacing-md 0;
-  font-size: var(--font-headline-small-size, 1.5rem);
-  font-weight: var(--font-headline-small-weight, 400);
-  color: var(--on-surface-color);
+  font-size: vars.$font-size-title;
+  font-weight: 400;
+  color: vars.$color-on-surface;
 }
 
 .country-code {
   padding: vars.$spacing-md;
-  color: var(--on-surface-variant-color);
+  color: vars.$color-on-surface-variant;
   font-weight: 500;
 }
 
@@ -95,6 +95,6 @@ mat-card-title h1 {
   }
 
   mat-card-title h1 {
-    font-size: var(--font-title-large-size, 1.375rem);
+    font-size: vars.$font-size-xxl;
   }
 }

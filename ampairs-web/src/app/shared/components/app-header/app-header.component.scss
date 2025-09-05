@@ -8,13 +8,13 @@
   padding: 0 vars.$spacing-xl;
 
   // M3 Surface styling with consistent theming
-  background-color: var(--mat-app-surface-container, var(--surface-container-color, #f3f3f3));
-  color: var(--mat-app-on-surface, var(--on-surface-color, #1d1b20));
+  background-color: vars.$color-surface-container;
+  color: vars.$color-on-surface;
 
   // Dark mode support
   :host-context(.dark-theme) & {
-    background-color: var(--mat-app-surface-container, var(--surface-container-color, #1e1e1e));
-    color: var(--mat-app-on-surface, var(--on-surface-color, #e6e1e5));
+    background-color: vars.$color-surface-container;
+    color: vars.$color-on-surface;
   }
 
   // Responsive padding
@@ -219,7 +219,7 @@
       font-size: vars.$font-size-xxl;
       width: vars.$font-size-xxl;
       height: vars.$font-size-xxl;
-      color: var(--mat-primary-color);
+      color: vars.$color-primary;
       flex-shrink: 0;
       display: block;
     }
