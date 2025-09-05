@@ -3,7 +3,6 @@ package com.ampairs.workspace.controller
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.core.security.AuthenticationHelper
-import com.ampairs.core.service.UserService
 import com.ampairs.workspace.model.dto.CreateWorkspaceRequest
 import com.ampairs.workspace.model.dto.UpdateWorkspaceRequest
 import com.ampairs.workspace.model.dto.WorkspaceListResponse
@@ -63,7 +62,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 @SecurityRequirement(name = "BearerAuth")
 class WorkspaceController(
     private val workspaceService: WorkspaceService,
-    private val userService: UserService,
 ) {
 
     @Operation(

@@ -1,0 +1,39 @@
+// Main Layout Styles
+.main-layout-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.main-content {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--mat-app-background-color, var(--background-color, #fafafa));
+  
+  // Ensure proper scrolling behavior
+  &::-webkit-scrollbar {
+    width: 8px;
+  }
+  
+  &::-webkit-scrollbar-track {
+    background: var(--mat-app-surface-variant, #f5f5f5);
+  }
+  
+  &::-webkit-scrollbar-thumb {
+    background: var(--mat-app-outline-variant, #ccc);
+    border-radius: 4px;
+  }
+  
+  &::-webkit-scrollbar-thumb:hover {
+    background: var(--mat-app-outline, #999);
+  }
+}
+
+// Responsive adjustments
+@media (max-width: 768px) {
+  .main-content {
+    // Mobile-specific scrolling optimizations
+    -webkit-overflow-scrolling: touch;
+  }
+}

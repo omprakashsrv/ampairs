@@ -1,22 +1,5 @@
+<!-- Workspace Creation Content (toolbar now handled by app-header) -->
 <div class="workspace-create-container">
-  <!-- M3 App Bar with Back Navigation -->
-  <mat-toolbar class="header-toolbar" color="primary">
-    <button (click)="goBack()" mat-icon-button matTooltip="Back to workspace selection">
-      <mat-icon>arrow_back</mat-icon>
-    </button>
-
-    <span class="header-title">
-      <mat-icon class="header-icon">add_business</mat-icon>
-      Create Workspace
-    </span>
-
-    <span class="spacer"></span>
-
-    <!-- M3 Stepper Indicator -->
-    <div class="step-indicator">
-      <span class="step-text">{{ currentStep + 1 }} of {{ totalSteps }}</span>
-    </div>
-  </mat-toolbar>
 
   <!-- M3 Content Container -->
   <div class="content-container">

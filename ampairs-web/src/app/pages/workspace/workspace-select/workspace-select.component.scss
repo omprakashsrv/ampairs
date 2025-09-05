@@ -3,10 +3,8 @@
 @use '../../../shared/styles/mixins' as mixins;
 
 .workspace-select-container {
-  min-height: 100vh;
+  // Remove min-height since header is now at layout level
   background-color: var(--background-color);
-  display: flex;
-  flex-direction: column;
 }
 
 // M3 Toolbar Header

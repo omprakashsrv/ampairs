@@ -1,38 +1,5 @@
+<!-- Workspace Selection Content (toolbar now handled by app-header) -->
 <div class="workspace-select-container">
-  <!-- M3 Header with User Profile -->
-  <mat-toolbar class="header-toolbar" color="primary">
-    <span class="header-title">
-      <mat-icon class="header-icon">business</mat-icon>
-      Select Workspace
-    </span>
-
-    <span class="spacer"></span>
-
-    <!-- User Profile Menu -->
-    <ng-container *ngIf="currentUser$ | async as user">
-      <button [matMenuTriggerFor]="userMenu" class="user-avatar-button" mat-icon-button>
-        <mat-icon>account_circle</mat-icon>
-      </button>
-
-      <mat-menu #userMenu="matMenu" class="user-menu">
-        <div class="user-info">
-          <mat-icon>account_circle</mat-icon>
-          <div class="user-details">
-            <h3 class="user-name">{{ user.full_name || 'User' }}</h3>
-            <p class="user-mobile">+91 {{ user.phone }}</p>
-            <p *ngIf="user.email" class="user-email">{{ user.email }}</p>
-          </div>
-        </div>
-
-        <mat-divider></mat-divider>
-
-        <button (click)="logout()" mat-menu-item>
-          <mat-icon>logout</mat-icon>
-          <span>Logout</span>
-        </button>
-      </mat-menu>
-    </ng-container>
-  </mat-toolbar>
 
   <!-- M3 Content Container -->
   <div class="content-container">

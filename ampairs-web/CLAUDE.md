@@ -127,10 +127,10 @@
 
   Critical Rules
 
-  1. Material Design 3 Only: Never use Bootstrap, Tailwind, or custom UI frameworks, Use design tokens which is created from m3 theme.
+  1. Material Design 3 Only: Never use Bootstrap, Tailwind, or custom UI frameworks, Use design tokens which is created from m3 theme. Make components theme-aware.
   2. Snake Case APIs: Interface properties match backend naming
   3. Standalone Components: No NgModules in new code
-  4. Service State Management: Use BehaviorSubject for reactive state
+  4. Service State Management: Do not Use BehaviorSubject for reactive state, use signal instead for angular 20 best practise.
   5. Interceptor Chain: Respect the established HTTP processing order
   6. Workspace Context: All business APIs must be workspace-aware
   7. Theme Integration: All components must support M3 theming

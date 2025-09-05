@@ -12,7 +12,6 @@ import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatSnackBar, MatSnackBarModule} from '@angular/material/snack-bar';
 import {MatStepperModule} from '@angular/material/stepper';
 import {MatTooltipModule} from '@angular/material/tooltip';
-import {MatToolbarModule} from '@angular/material/toolbar';
 import {debounceTime, distinctUntilChanged, switchMap} from 'rxjs/operators';
 import {CreateWorkspaceRequest, WorkspaceService} from '../../../core/services/workspace.service';
 
@@ -31,8 +30,7 @@ import {CreateWorkspaceRequest, WorkspaceService} from '../../../core/services/w
     MatProgressSpinnerModule,
     MatSnackBarModule,
     MatStepperModule,
-    MatTooltipModule,
-    MatToolbarModule
+    MatTooltipModule
   ],
   templateUrl: './workspace-create.component.html',
   styleUrl: './workspace-create.component.scss'
