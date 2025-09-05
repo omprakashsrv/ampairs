@@ -25,15 +25,21 @@
                   <mat-label>Workspace Name</mat-label>
                   <input formControlName="name" matInput placeholder="Enter workspace name">
                   <mat-icon matSuffix>business</mat-icon>
-                  <mat-error *ngIf="nameField?.hasError('required')">
-                    Workspace name is required
-                  </mat-error>
-                  <mat-error *ngIf="nameField?.hasError('minlength')">
-                    Name must be at least 2 characters long
-                  </mat-error>
-                  <mat-error *ngIf="nameField?.hasError('maxlength')">
-                    Name cannot exceed 100 characters
-                  </mat-error>
+                  @if (nameField?.hasError('required')) {
+                    <mat-error>
+                      Workspace name is required
+                    </mat-error>
+                  }
+                  @if (nameField?.hasError('minlength')) {
+                    <mat-error>
+                      Name must be at least 2 characters long
+                    </mat-error>
+                  }
+                  @if (nameField?.hasError('maxlength')) {
+                    <mat-error>
+                      Name cannot exceed 100 characters
+                    </mat-error>
+                  }
                 </mat-form-field>
 
                 <!-- M3 Workspace URL Field -->
@@ -44,37 +50,49 @@
                     {{ getSlugIcon() }}
                   </mat-icon>
                   <mat-hint>{{ getSlugPreview() }}</mat-hint>
-                  <mat-error *ngIf="slugField?.hasError('required')">
-                    URL is required
-                  </mat-error>
-                  <mat-error *ngIf="slugField?.hasError('pattern')">
-                    URL can only contain lowercase letters, numbers, and hyphens
-                  </mat-error>
-                  <mat-error *ngIf="slugField?.hasError('minlength')">
-                    URL must be at least 3 characters long
-                  </mat-error>
-                  <mat-error *ngIf="slugField?.hasError('unavailable')">
-                    This URL is already taken
-                  </mat-error>
+                  @if (slugField?.hasError('required')) {
+                    <mat-error>
+                      URL is required
+                    </mat-error>
+                  }
+                  @if (slugField?.hasError('pattern')) {
+                    <mat-error>
+                      URL can only contain lowercase letters, numbers, and hyphens
+                    </mat-error>
+                  }
+                  @if (slugField?.hasError('minlength')) {
+                    <mat-error>
+                      URL must be at least 3 characters long
+                    </mat-error>
+                  }
+                  @if (slugField?.hasError('unavailable')) {
+                    <mat-error>
+                      This URL is already taken
+                    </mat-error>
+                  }
                 </mat-form-field>
 
                 <!-- M3 Workspace Type Selection -->
                 <mat-form-field appearance="outline" class="full-width-field">
                   <mat-label>Workspace Type</mat-label>
                   <mat-select formControlName="workspace_type">
-                    <mat-option *ngFor="let type of workspaceTypes" [value]="type.value">
-                      <div class="type-option">
-                        <mat-icon>{{ type.icon }}</mat-icon>
-                        <div class="type-content">
-                          <span class="type-name">{{ type.label }}</span>
-                          <span class="type-desc">{{ type.description }}</span>
+                    @for (type of workspaceTypes; track type.value) {
+                      <mat-option [value]="type.value">
+                        <div class="type-option">
+                          <mat-icon>{{ type.icon }}</mat-icon>
+                          <div class="type-content">
+                            <span class="type-name">{{ type.label }}</span>
+                            <span class="type-desc">{{ type.description }}</span>
+                          </div>
                         </div>
-                      </div>
-                    </mat-option>
+                      </mat-option>
+                    }
                   </mat-select>
-                  <mat-error *ngIf="workspaceTypeField?.hasError('required')">
-                    Please select a workspace type
-                  </mat-error>
+                  @if (workspaceTypeField?.hasError('required')) {
+                    <mat-error>
+                      Please select a workspace type
+                    </mat-error>
+                  }
                 </mat-form-field>
               </form>
             </mat-card-content>
@@ -111,9 +129,11 @@
                   <textarea formControlName="description" matInput placeholder="Brief description of your workspace..."
                             rows="4"></textarea>
                   <mat-hint>{{ descriptionField?.value?.length || 0 }}/500 characters</mat-hint>
-                  <mat-error *ngIf="descriptionField?.hasError('maxlength')">
-                    Description cannot exceed 500 characters
-                  </mat-error>
+                  @if (descriptionField?.hasError('maxlength')) {
+                    <mat-error>
+                      Description cannot exceed 500 characters
+                    </mat-error>
+                  }
                 </mat-form-field>
 
                 <!-- M3 Info Card -->
@@ -165,28 +185,36 @@
                 <mat-form-field appearance="outline" class="full-width-field">
                   <mat-label>Timezone</mat-label>
                   <mat-select formControlName="timezone">
-                    <mat-option *ngFor="let tz of timezones" [value]="tz.value">
-                      {{ tz.label }}
-                    </mat-option>
+                    @for (tz of timezones; track tz.value) {
+                      <mat-option [value]="tz.value">
+                        {{ tz.label }}
+                      </mat-option>
+                    }
                   </mat-select>
                   <mat-icon matSuffix>schedule</mat-icon>
-                  <mat-error *ngIf="timezoneField?.hasError('required')">
-                    Please select a timezone
-                  </mat-error>
+                  @if (timezoneField?.hasError('required')) {
+                    <mat-error>
+                      Please select a timezone
+                    </mat-error>
+                  }
                 </mat-form-field>
 
                 <!-- M3 Language Field -->
                 <mat-form-field appearance="outline" class="full-width-field">
                   <mat-label>Language</mat-label>
                   <mat-select formControlName="language">
-                    <mat-option *ngFor="let lang of languages" [value]="lang.value">
-                      {{ lang.label }}
-                    </mat-option>
+                    @for (lang of languages; track lang.value) {
+                      <mat-option [value]="lang.value">
+                        {{ lang.label }}
+                      </mat-option>
+                    }
                   </mat-select>
                   <mat-icon matSuffix>language</mat-icon>
-                  <mat-error *ngIf="languageField?.hasError('required')">
-                    Please select a language
-                  </mat-error>
+                  @if (languageField?.hasError('required')) {
+                    <mat-error>
+                      Please select a language
+                    </mat-error>
+                  }
                 </mat-form-field>
 
                 <!-- M3 Success Info Card -->
@@ -213,8 +241,11 @@
               <button (click)="onSubmit()" [disabled]="!workspaceForm.valid || isLoading || !slugAvailable"
                       color="primary" extended
                       mat-fab>
-                <mat-icon *ngIf="!isLoading">add</mat-icon>
-                <mat-spinner *ngIf="isLoading" diameter="20"></mat-spinner>
+                @if (!isLoading) {
+                  <mat-icon>add</mat-icon>
+                } @else {
+                  <mat-spinner diameter="20"></mat-spinner>
+                }
                 Create Workspace
               </button>
             </mat-card-actions>

@@ -4,32 +4,38 @@
   <!-- M3 Content Container -->
   <div class="content-container">
     <!-- M3 Loading State -->
-    <div *ngIf="isLoading" class="loading-state">
-      <mat-spinner diameter="48"></mat-spinner>
-      <span class="loading-text">Loading your workspaces...</span>
-    </div>
+    @if (isLoading) {
+      <div class="loading-state">
+        <mat-spinner diameter="48"></mat-spinner>
+        <span class="loading-text">Loading your workspaces...</span>
+      </div>
+    }
 
     <!-- M3 Workspaces Grid -->
-    <div *ngIf="!isLoading && workspaces.length > 0" class="workspaces-section">
+    @if (!isLoading && workspaces.length > 0) {
+      <div class="workspaces-section">
       <div class="section-header">
         <h2 class="section-title">Your Workspaces</h2>
         <p class="section-subtitle">Choose the workspace you want to work with</p>
       </div>
 
       <div class="workspaces-grid">
-        <mat-card
-          (click)="selectWorkspace(workspace)"
-          *ngFor="let workspace of workspaces"
-          [class.selected]="selectedWorkspaceId === workspace.id"
-          appearance="outlined"
-          class="workspace-card"
-          matRipple>
+        @for (workspace of workspaces; track workspace.id) {
+          <mat-card
+            (click)="selectWorkspace(workspace)"
+            [class.selected]="selectedWorkspaceId === workspace.id"
+            appearance="outlined"
+            class="workspace-card"
+            matRipple>
 
           <mat-card-header>
             <!-- M3 Avatar -->
             <div class="workspace-avatar" mat-card-avatar>
-              <img *ngIf="workspace.avatar_url" [alt]="workspace.name" [src]="workspace.avatar_url">
-              <mat-icon *ngIf="!workspace.avatar_url">{{ getWorkspaceTypeIcon(workspace.workspace_type) }}</mat-icon>
+              @if (workspace.avatar_url) {
+                <img [alt]="workspace.name" [src]="workspace.avatar_url">
+              } @else {
+                <mat-icon>{{ getWorkspaceTypeIcon(workspace.workspace_type) }}</mat-icon>
+              }
             </div>
 
             <mat-card-title>{{ workspace.name }}</mat-card-title>
@@ -44,9 +50,11 @@
           </mat-card-header>
 
           <mat-card-content>
-            <p *ngIf="workspace.description" class="workspace-description">
-              {{ workspace.description }}
-            </p>
+            @if (workspace.description) {
+              <p class="workspace-description">
+                {{ workspace.description }}
+              </p>
+            }
 
             <!-- M3 Stats List -->
             <mat-list class="workspace-stats">
@@ -63,48 +71,56 @@
           </mat-card-content>
 
           <!-- M3 Selection State -->
-          <mat-card-actions *ngIf="selectedWorkspaceId === workspace.id" class="selection-actions">
-            <mat-progress-bar mode="indeterminate"></mat-progress-bar>
-            <div class="selection-feedback">
-              <mat-icon>check_circle</mat-icon>
-              <span>Selecting workspace...</span>
-            </div>
-          </mat-card-actions>
-        </mat-card>
+          @if (selectedWorkspaceId === workspace.id) {
+            <mat-card-actions class="selection-actions">
+              <mat-progress-bar mode="indeterminate"></mat-progress-bar>
+              <div class="selection-feedback">
+                <mat-icon>check_circle</mat-icon>
+                <span>Selecting workspace...</span>
+              </div>
+            </mat-card-actions>
+          }
+          </mat-card>
+        }
       </div>
-    </div>
+      </div>
+    }
 
     <!-- M3 Empty State -->
-    <div *ngIf="!isLoading && workspaces.length === 0" class="empty-state">
-      <mat-card class="empty-state-card">
-        <mat-card-content>
-          <div class="empty-state-content">
-            <mat-icon class="empty-state-icon" color="primary">workspace_premium</mat-icon>
-            <h2 class="empty-state-title">No Workspaces Found</h2>
-            <p class="empty-state-description">
-              You don't have any workspaces yet. Create your first workspace to get started with Ampairs.
-            </p>
+    @if (!isLoading && workspaces.length === 0) {
+      <div class="empty-state">
+        <mat-card class="empty-state-card">
+          <mat-card-content>
+            <div class="empty-state-content">
+              <mat-icon class="empty-state-icon" color="primary">workspace_premium</mat-icon>
+              <h2 class="empty-state-title">No Workspaces Found</h2>
+              <p class="empty-state-description">
+                You don't have any workspaces yet. Create your first workspace to get started with Ampairs.
+              </p>
 
-            <button (click)="createNewWorkspace()" class="create-first-btn" color="primary" extended mat-fab>
-              <mat-icon>add</mat-icon>
-              Create Your First Workspace
-            </button>
-          </div>
-        </mat-card-content>
-      </mat-card>
-    </div>
+              <button (click)="createNewWorkspace()" class="create-first-btn" color="primary" extended mat-fab>
+                <mat-icon>add</mat-icon>
+                Create Your First Workspace
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    }
 
     <!-- M3 Create New Workspace FAB -->
-    <div *ngIf="!isLoading && workspaces.length > 0" class="create-new-section">
-      <mat-divider class="section-divider"></mat-divider>
+    @if (!isLoading && workspaces.length > 0) {
+      <div class="create-new-section">
+        <mat-divider class="section-divider"></mat-divider>
 
-      <div class="create-new-content">
-        <p class="create-new-text">Need a new workspace?</p>
-        <button (click)="createNewWorkspace()" class="create-new-btn" color="primary" mat-stroked-button>
-          <mat-icon>add</mat-icon>
-          Create New Workspace
-        </button>
+        <div class="create-new-content">
+          <p class="create-new-text">Need a new workspace?</p>
+          <button (click)="createNewWorkspace()" class="create-new-btn" color="primary" mat-stroked-button>
+            <mat-icon>add</mat-icon>
+            Create New Workspace
+          </button>
+        </div>
       </div>
-    </div>
+    }
   </div>
 </div>
