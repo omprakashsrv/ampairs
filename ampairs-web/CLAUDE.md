@@ -41,29 +41,100 @@
   ├── _variables.scss          # Design tokens
   └── _mixins.scss            # Utility mixins
 
-  Material 3 Design Tokens (from src/theme/variables.scss):
+  Centralized Design Token System (src/theme/variables.scss):
+  
+  CRITICAL: Always use SCSS variables instead of direct CSS custom properties
+  
   ```scss
-  // Material 3 Color Tokens
-  $color-primary: var(--primary-color)
-  $color-primary-container: var(--primary-container-color)
-  $color-surface: var(--surface-color)
-  $color-surface-container: var(--surface-container-color)
-  $color-on-surface: var(--on-surface-color)
-  $color-outline-variant: var(--outline-variant-color)
+  // Import pattern for all components
+  @use '../../../theme/variables' as vars;
+  @use '../../../theme/mixins' as theme;
+  
+  // Material 3 Color System - Complete token set
+  $color-primary: var(--primary-color);
+  $color-primary-container: var(--primary-container-color);
+  $color-on-primary: var(--on-primary-color);
+  $color-on-primary-container: var(--on-primary-container-color);
+  
+  $color-secondary: var(--secondary-color);
+  $color-secondary-container: var(--secondary-container-color);
+  $color-on-secondary-container: var(--on-secondary-container-color);
+  
+  $color-surface: var(--surface-color);
+  $color-surface-container: var(--surface-container-color);
+  $color-surface-container-low: var(--surface-container-low-color);
+  $color-surface-container-high: var(--surface-container-high-color);
+  $color-surface-variant: var(--surface-variant-color);
+  $color-on-surface: var(--on-surface-color);
+  $color-on-surface-variant: var(--on-surface-variant-color);
+  
+  $color-background: var(--background-color);
+  $color-outline: var(--outline-color);
+  $color-outline-variant: var(--outline-variant-color);
+  
+  // Semantic Colors
+  $color-error: var(--error-color);
+  $color-success: var(--success-color);
+  $color-warning: var(--warning-color);
+  $color-info: var(--info-color);
+  
+  // Menu System Colors
+  $color-menu-item-label: var(--on-surface-color);
+  $color-menu-item-supporting: var(--on-surface-variant-color);
+  $color-menu-divider: var(--outline-variant-color);
 
-  // Material 3 Typography Tokens
-  $font-body-large: var(--mat-sys-body-large)
-  $font-body-medium: var(--mat-sys-body-medium)
-  $font-headline-large: var(--mat-sys-headline-large)
-  $font-headline-medium: var(--mat-sys-headline-medium)
-  $font-label-large: var(--mat-sys-label-large)
+  // Typography Scale - M3 System
+  $font-size-xs: var(--mat-sys-typescale-label-small-size, 0.6875rem);   // 11px
+  $font-size-sm: var(--mat-sys-typescale-label-medium-size, 0.75rem);    // 12px  
+  $font-size-md: var(--mat-sys-typescale-body-medium-size, 0.875rem);    // 14px
+  $font-size-lg: var(--mat-sys-typescale-title-medium-size, 1rem);       // 16px
+  $font-size-xl: var(--mat-sys-typescale-title-large-size, 1.375rem);    // 22px
+  $font-size-title: var(--mat-sys-typescale-headline-small-size, 1.5rem); // 24px
 
-  // Material 3 Spacing Tokens
-  $spacing-xs: var(--mat-sys-spacing-small, 0.125rem)    // ~2px
-  $spacing-sm: var(--mat-sys-spacing-medium, 0.25rem)   // ~4px
-  $spacing-md: var(--mat-sys-spacing-large, 0.5rem)     // ~8px
-  $spacing-lg: var(--mat-sys-spacing-x-large, 0.75rem)  // ~12px
-  $spacing-xl: var(--mat-sys-spacing-xx-large, 1rem)    // ~16px
+  // Spacing Scale - M3 System  
+  $spacing-xs: var(--mat-sys-spacing-x-small, 0.25rem);      // 4px
+  $spacing-sm: var(--mat-sys-spacing-small, 0.5rem);         // 8px
+  $spacing-md: var(--mat-sys-spacing-medium, 0.75rem);       // 12px
+  $spacing-lg: var(--mat-sys-spacing-large, 1rem);           // 16px
+  $spacing-xl: var(--mat-sys-spacing-x-large, 1.5rem);       // 24px
+  $spacing-xxl: var(--mat-sys-spacing-xx-large, 2rem);       // 32px
+
+  // Layout Tokens
+  $border-radius-sm: var(--mat-sys-corner-extra-small, 0.25rem);  // 4px
+  $border-radius-md: var(--mat-sys-corner-small, 0.5rem);         // 8px
+  $border-radius-lg: var(--mat-sys-corner-medium, 1rem);          // 16px
+  $border-radius-xl: var(--mat-sys-corner-large, 1rem);           // 16px
+  $border-radius-round: var(--mat-sys-corner-full, 625rem);       // Full round
+  
+  // Animation & Transitions
+  $transition-fast: 0.15s;
+  $transition-normal: 0.3s;
+  $transition-slow: 0.5s;
+  $transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);   // M3 easing
+  
+  // Elevation System
+  $shadow-1: var(--shadow-1);    // Light elevation
+  $shadow-2: var(--shadow-2);    // Medium elevation
+  ```
+  
+  Usage Pattern - Always use SCSS variables:
+  ```scss
+  // ✅ CORRECT - Use centralized SCSS variables
+  .component {
+    background-color: vars.$color-surface-container;
+    color: vars.$color-on-surface;
+    padding: vars.$spacing-lg vars.$spacing-xl;
+    border-radius: vars.$border-radius-lg;
+    box-shadow: vars.$shadow-1;
+    transition: vars.$transition-standard;
+  }
+  
+  // ❌ INCORRECT - Never use CSS custom properties directly  
+  .component {
+    background-color: var(--surface-container-color);
+    color: var(--on-surface-color);
+    padding: var(--spacing-lg, 16px);
+  }
   ```
 
   ThemeService Features:
@@ -152,14 +223,17 @@
 
   Critical Rules
 
-  1. Material Design 3 Only: Never use Bootstrap, Tailwind, or custom UI frameworks, Use design tokens which is created from m3 theme. Make components theme-aware.
-  2. Snake Case APIs: Interface properties match backend naming
-  3. Standalone Components: No NgModules in new code
-  4. Service State Management: Do not Use BehaviorSubject for reactive state, use signal instead for angular 20 best practise.
-  5. Interceptor Chain: Respect the established HTTP processing order
-  6. Workspace Context: All business APIs must be workspace-aware
-  7. Theme Integration: All components must support M3 theming
-  8. Security First: Follow established auth and session patterns
-  9. Use angular 20 best practices.
+  1. Material Design 3 Only: Never use Bootstrap, Tailwind, or custom UI frameworks. ALWAYS use centralized SCSS variables from src/theme/variables.scss instead of direct CSS custom properties. Make all components theme-aware.
+  2. Design Token Usage: MANDATORY use of SCSS variables (vars.$color-primary) instead of CSS custom properties (var(--primary-color)) for consistency and build optimization.
+  3. Component Import Pattern: Always include '@use "../../../theme/variables" as vars;' and '@use "../../../theme/mixins" as theme;' in every component SCSS file.
+  4. Snake Case APIs: Interface properties match backend naming (following Jackson snake_case configuration).
+  5. Standalone Components: No NgModules in new code - use standalone component architecture.
+  6. Service State Management: Use Angular signals for reactive state (Angular 20 best practice), avoid BehaviorSubject.
+  7. Interceptor Chain: Respect established HTTP processing order (ApiResponse → Auth → Workspace → Loading).
+  8. Workspace Context: All business APIs must be workspace-aware with proper tenant isolation.
+  9. Theme Integration: All components must support complete M3 theming with proper color contrast and accessibility.
+  10. Security First: Follow established auth patterns with JWT refresh, device tracking, and session management.
+  11. Responsive Design: Use established breakpoint mixins (theme.mobile, theme.tablet) for consistent responsive behavior.
+  12. Performance: Leverage build-time SCSS compilation while maintaining runtime theme switching capabilities.
 
   This architecture supports a scalable, secure, multi-tenant business management platform with excellent UX and maintainable code patterns.
