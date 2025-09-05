@@ -1,5 +1,6 @@
 // M3 Material Design Theme Settings Component
 @use '../../../../theme/mixins' as theme;
+@use '../../../../theme/variables' as vars;
 
 .theme-settings-container {
   max-width: 600px;
@@ -15,20 +16,20 @@
 }
 
 .settings-header {
-  padding: 24px 24px 0;
+  padding: vars.$spacing-xxl vars.$spacing-xxl 0;
   text-align: center;
   border-bottom: 1px solid var(--outline-variant-color);
 
   @include theme.tablet {
-    padding: 16px 16px 0;
+    padding: vars.$spacing-xl vars.$spacing-xl 0;
   }
 }
 
 .settings-title {
   @include theme.flex-center;
-  gap: 8px;
-  margin: 0 0 8px 0;
-  font-size: 1.5rem;
+  gap: vars.$spacing-md;
+  margin: 0 0 vars.$spacing-md 0;
+  font-size: vars.$font-size-title;
   font-weight: 400;
   color: var(--on-surface-color);
 }
@@ -39,18 +40,18 @@
 }
 
 .settings-subtitle {
-  margin: 0 0 16px 0;
+  margin: 0 0 vars.$spacing-xl 0;
   color: var(--on-surface-variant-color);
-  font-size: 0.875rem;
+  font-size: vars.$font-size-md;
 }
 
 .settings-content {
-  padding: 0 24px;
+  padding: 0 vars.$spacing-xxl;
   max-height: 70vh;
   overflow-y: auto;
 
   @include theme.tablet {
-    padding: 0 16px;
+    padding: 0 vars.$spacing-xl;
     max-height: 60vh;
   }
 }
@@ -62,14 +63,14 @@
 }
 
 .tab-content {
-  padding: 24px 0;
+  padding: vars.$spacing-xxl 0;
   @include theme.tablet {
-    padding: 16px 0;
+    padding: vars.$spacing-xl 0;
   }
 }
 
 .setting-section {
-  margin-bottom: 32px;
+  margin-bottom: 2rem; // Using rem for consistent large spacing
 
   &:last-child {
     margin-bottom: 0;

@@ -8,6 +8,7 @@
 
 // Import comprehensive M3 theme system from src/theme
 @use 'theme/theme' as theme;
+@use 'theme/variables' as vars;
 @use 'theme/fonts' as fonts;
 @use 'theme/spacing' as spacing;
 @use 'theme/colors' as colors;
@@ -74,8 +75,8 @@ $dark-theme: theme.$dark-theme;
   --accent-color: var(--app-light-secondary);
   --warn-color: var(--app-light-error);
   --success-color: var(--app-light-tertiary);
-  --warning-color: #ff9800;
-  --info-color: #2196f3;
+  --warning-color: var(--app-light-tertiary);
+  --info-color: var(--app-light-primary);
   --text-color: var(--app-light-on-background);
   --text-secondary-color: var(--app-light-on-surface-variant);
   --text-disabled-color: color-mix(in srgb, var(--app-light-on-surface) 38%, transparent);
@@ -133,8 +134,8 @@ $dark-theme: theme.$dark-theme;
   --accent-color: var(--app-dark-secondary);
   --warn-color: var(--app-dark-error);
   --success-color: var(--app-dark-tertiary);
-  --warning-color: #ff9800;
-  --info-color: #2196f3;
+  --warning-color: var(--app-dark-tertiary);
+  --info-color: var(--app-dark-primary);
   --text-color: var(--app-dark-on-background);
   --text-secondary-color: var(--app-dark-on-surface-variant);
   --text-disabled-color: color-mix(in srgb, var(--app-dark-on-surface) 38%, transparent);
@@ -253,26 +254,26 @@ body { @extend .spacing-m; }
 // Theme-aware snackbar variants (using design tokens)
 .success-snackbar {
   --mdc-snackbar-container-color: var(--success-color);
-  --mdc-snackbar-supporting-text-color: #ffffff;
-  --mat-snack-bar-button-color: #ffffff;
+  --mdc-snackbar-supporting-text-color: var(--on-tertiary-color);
+  --mat-snack-bar-button-color: var(--on-tertiary-color);
 }
 
 .error-snackbar {
   --mdc-snackbar-container-color: var(--warn-color);
-  --mdc-snackbar-supporting-text-color: #ffffff;
-  --mat-snack-bar-button-color: #ffffff;
+  --mdc-snackbar-supporting-text-color: var(--on-error-color);
+  --mat-snack-bar-button-color: var(--on-error-color);
 }
 
 .warning-snackbar {
   --mdc-snackbar-container-color: var(--warning-color);
-  --mdc-snackbar-supporting-text-color: #ffffff;
-  --mat-snack-bar-button-color: #ffffff;
+  --mdc-snackbar-supporting-text-color: var(--on-tertiary-color);
+  --mat-snack-bar-button-color: var(--on-tertiary-color);
 }
 
 .info-snackbar {
   --mdc-snackbar-container-color: var(--info-color);
-  --mdc-snackbar-supporting-text-color: #ffffff;
-  --mat-snack-bar-button-color: #ffffff;
+  --mdc-snackbar-supporting-text-color: var(--on-primary-color);
+  --mat-snack-bar-button-color: var(--on-primary-color);
 }
 
 // ================================
@@ -574,7 +575,7 @@ body { @extend .spacing-m; }
 // ================================
 
 // Mobile-first responsive utilities
-@media (min-width: 600px) {
+@media (min-width: vars.$breakpoint-sm) {
   .sm\:flex {
     display: flex;
   }
@@ -586,7 +587,7 @@ body { @extend .spacing-m; }
   }
 }
 
-@media (min-width: 960px) {
+@media (min-width: vars.$breakpoint-md) {
   .md\:flex {
     display: flex;
   }
@@ -598,7 +599,7 @@ body { @extend .spacing-m; }
   }
 }
 
-@media (min-width: 1280px) {
+@media (min-width: vars.$breakpoint-lg) {
   .lg\:flex {
     display: flex;
   }
@@ -611,14 +612,14 @@ body { @extend .spacing-m; }
 }
 
 // Hide on mobile
-@media (max-width: 599px) {
+@media (max-width: vars.$breakpoint-sm - 1px) {
   .hide-on-mobile {
     display: none;
   }
 }
 
 // Hide on desktop
-@media (min-width: 960px) {
+@media (min-width: vars.$breakpoint-md) {
   .hide-on-desktop {
     display: none;
   }

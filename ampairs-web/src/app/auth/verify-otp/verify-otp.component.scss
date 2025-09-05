@@ -1,11 +1,12 @@
 // M3 Material Design Verify OTP Component
 @use '../../../theme/mixins' as theme;
+@use '../../../theme/variables' as vars;
 
 .auth-container {
   min-height: 100vh;
   @include theme.flex-center;
   background-color: var(--surface-dim-color, var(--background-color));
-  padding: var(--spacing-md, 16px);
+  padding: vars.$spacing-xl;
 }
 
 .auth-card {
@@ -14,17 +15,17 @@
 }
 
 .logo-icon {
-  font-size: 48px;
-  width: 48px;
-  height: 48px;
+  font-size: 3rem; // M3 icon size large
+  width: 3rem;
+  height: 3rem;
   color: var(--primary-color);
-  margin-bottom: var(--spacing-sm, 8px);
+  margin-bottom: vars.$spacing-md;
 }
 
 .auth-form {
   @include theme.flex-column;
-  gap: var(--spacing-md, 16px);
-  margin-top: var(--spacing-md, 16px);
+  gap: vars.$spacing-xl;
+  margin-top: vars.$spacing-xl;
 }
 
 .otp-input {

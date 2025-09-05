@@ -1,27 +1,28 @@
 // Material 3 Compatible Mixins
 // Updated to use CSS custom properties from M3 theme system
+@use 'variables' as vars;
 
 // Responsive Mixins
 @mixin mobile {
-  @media (max-width: 767px) {
+  @media (max-width: vars.$breakpoint-sm - 1px) {
     @content;
   }
 }
 
 @mixin tablet {
-  @media (min-width: 768px) and (max-width: 1023px) {
+  @media (min-width: vars.$breakpoint-sm) and (max-width: vars.$breakpoint-md - 1px) {
     @content;
   }
 }
 
 @mixin desktop {
-  @media (min-width: 1024px) {
+  @media (min-width: vars.$breakpoint-md) {
     @content;
   }
 }
 
 @mixin large-desktop {
-  @media (min-width: 1200px) {
+  @media (min-width: vars.$breakpoint-lg) {
     @content;
   }
 }

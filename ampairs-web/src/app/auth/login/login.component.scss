@@ -1,11 +1,12 @@
 // M3 Material Design Login Component
 @use '../../../theme/mixins' as theme;
+@use '../../../theme/variables' as vars;
 
 .auth-container {
   min-height: 100vh;
   @include theme.flex-center;
   background-color: var(--surface-dim-color, var(--background-color));
-  padding: var(--spacing-md, 16px);
+  padding: vars.$spacing-xl;
 }
 
 .auth-card {
@@ -14,21 +15,21 @@
 }
 
 .logo-icon {
-  font-size: 48px;
-  width: 48px;
-  height: 48px;
+  font-size: 3rem; // M3 icon size large
+  width: 3rem;
+  height: 3rem;
   color: var(--primary-color);
-  margin-bottom: var(--spacing-sm, 8px);
+  margin-bottom: vars.$spacing-md;
 }
 
 .auth-form {
   @include theme.flex-column;
-  gap: var(--spacing-md, 16px);
-  margin-top: var(--spacing-md, 16px);
+  gap: vars.$spacing-xl;
+  margin-top: vars.$spacing-xl;
 }
 
 .auth-button {
-  margin-top: var(--spacing-md, 16px);
+  margin-top: vars.$spacing-xl;
   align-self: center;
 }
 
@@ -36,7 +37,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--spacing-sm, 8px);
+  gap: vars.$spacing-md;
 }
 
 .button-spinner {
@@ -45,16 +46,16 @@
 
 .help-text {
   @include theme.flex-center;
-  gap: var(--spacing-sm, 8px);
+  gap: vars.$spacing-md;
   color: var(--on-surface-variant-color);
   font-size: var(--font-body-small-size, 0.875rem);
-  margin: var(--spacing-md, 16px) 0 0 0;
+  margin: vars.$spacing-xl 0 0 0;
 }
 
 .info-icon {
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
+  font-size: vars.$font-size-lg;
+  width: vars.$font-size-lg;
+  height: vars.$font-size-lg;
   color: var(--primary-color);
 }
 
@@ -67,18 +68,18 @@
 }
 
 mat-card-header {
-  margin-bottom: var(--spacing-sm, 8px);
+  margin-bottom: vars.$spacing-md;
 }
 
 mat-card-title h1 {
-  margin: var(--spacing-sm, 8px) 0;
+  margin: vars.$spacing-md 0;
   font-size: var(--font-headline-small-size, 1.5rem);
   font-weight: var(--font-headline-small-weight, 400);
   color: var(--on-surface-color);
 }
 
 .country-code {
-  padding: var(--spacing-sm, 8px);
+  padding: vars.$spacing-md;
   color: var(--on-surface-variant-color);
   font-weight: 500;
 }
@@ -86,7 +87,7 @@ mat-card-title h1 {
 /* M3 Responsive design */
 @include theme.mobile {
   .auth-container {
-    padding: var(--spacing-sm, 8px);
+    padding: vars.$spacing-md;
   }
 
   .auth-card {

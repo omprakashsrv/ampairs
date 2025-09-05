@@ -41,6 +41,31 @@
   ├── _variables.scss          # Design tokens
   └── _mixins.scss            # Utility mixins
 
+  Material 3 Design Tokens (from src/theme/variables.scss):
+  ```scss
+  // Material 3 Color Tokens
+  $color-primary: var(--primary-color)
+  $color-primary-container: var(--primary-container-color)
+  $color-surface: var(--surface-color)
+  $color-surface-container: var(--surface-container-color)
+  $color-on-surface: var(--on-surface-color)
+  $color-outline-variant: var(--outline-variant-color)
+
+  // Material 3 Typography Tokens
+  $font-body-large: var(--mat-sys-body-large)
+  $font-body-medium: var(--mat-sys-body-medium)
+  $font-headline-large: var(--mat-sys-headline-large)
+  $font-headline-medium: var(--mat-sys-headline-medium)
+  $font-label-large: var(--mat-sys-label-large)
+
+  // Material 3 Spacing Tokens
+  $spacing-xs: var(--mat-sys-spacing-small, 0.125rem)    // ~2px
+  $spacing-sm: var(--mat-sys-spacing-medium, 0.25rem)   // ~4px
+  $spacing-md: var(--mat-sys-spacing-large, 0.5rem)     // ~8px
+  $spacing-lg: var(--mat-sys-spacing-x-large, 0.75rem)  // ~12px
+  $spacing-xl: var(--mat-sys-spacing-xx-large, 1rem)    // ~16px
+  ```
+
   ThemeService Features:
   - Runtime theme switching (light/dark/auto)
   - Density control (-5 to 0)

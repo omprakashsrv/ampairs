@@ -1,9 +1,11 @@
 // Material Design 3 App Header Styles
+@use '../../../../theme/variables' as vars;
+
 .app-header-toolbar {
   position: sticky;
   top: 0;
-  z-index: 100;
-  padding: 0 16px;
+  z-index: vars.$z-index-sticky;
+  padding: 0 vars.$spacing-xl;
 
   // M3 Surface styling with consistent theming
   background-color: var(--mat-app-surface-container, var(--surface-container-color, #f3f3f3));
@@ -16,9 +18,9 @@
   }
 
   // Responsive padding
-  @media (max-width: 768px) {
-    padding: 0 8px;
-    min-height: 56px;
+  @media (max-width: vars.$breakpoint-sm) {
+    padding: 0 vars.$spacing-md;
+    min-height: 56px; // Mobile header height
   }
 }
 
@@ -26,20 +28,20 @@
 .header-title-section {
   display: flex;
   align-items: center;
-  margin-right: 24px;
+  margin-right: vars.$spacing-xxl;
 }
 
 .workspace-section {
   display: flex;
   align-items: center;
-  margin-right: 16px;
+  margin-right: vars.$spacing-xl;
 }
 
 .theme-controls {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-right: 16px;
+  gap: vars.$spacing-md;
+  margin-right: vars.$spacing-xl;
 }
 
 .user-profile-section {
@@ -55,13 +57,13 @@
 .logo {
   display: flex;
   align-items: center;
-  font-size: 20px;
+  font-size: vars.$font-size-xl;
   font-weight: 600;
   color: inherit;
 
   .logo-icon {
-    margin-right: 8px;
-    font-size: 24px;
+    margin-right: vars.$spacing-md;
+    font-size: vars.$font-size-xxl;
   }
 }
 
@@ -69,13 +71,13 @@
 .dynamic-title {
   display: flex;
   align-items: center;
-  font-size: 18px;
+  font-size: vars.$font-size-lg;
   font-weight: 500;
   color: inherit;
 
   .title-icon {
-    margin-right: 8px;
-    font-size: 22px;
+    margin-right: vars.$spacing-md;
+    font-size: vars.$font-size-xxl;
   }
 }
 
@@ -83,9 +85,9 @@
 .workspace-button {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 16px;
-  border-radius: 20px; // M3 rounded corners
+  gap: vars.$spacing-md;
+  padding: vars.$spacing-md vars.$spacing-xl;
+  border-radius: vars.$border-radius-xl; // M3 rounded corners
   border: 1px solid var(--mat-app-outline-variant, var(--outline-variant-color, #cac4d0));
   background-color: var(--mat-app-surface-variant, var(--surface-variant-color, #e7e0ec));
   color: var(--mat-app-on-surface-variant, var(--on-surface-variant-color, #49454f));
@@ -137,8 +139,8 @@
 .step-indicator {
   display: flex;
   align-items: center;
-  padding: 6px 12px;
-  border-radius: 16px; // M3 rounded corners
+  padding: vars.$spacing-sm vars.$spacing-lg;
+  border-radius: vars.$border-radius-lg; // M3 rounded corners
   background-color: var(--mat-app-tertiary-container, var(--tertiary-container-color, #ffd8e4));
   color: var(--mat-app-on-tertiary-container, var(--on-tertiary-container-color, #31111d));
   border: 1px solid var(--mat-app-outline-variant, var(--outline-variant-color, #cac4d0));
@@ -152,11 +154,11 @@
   }
 
   .step-text {
-    font-size: 12px;
+    font-size: vars.$font-size-sm;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.8px;
-    line-height: 1.2;
+    line-height: vars.$line-height-tight;
   }
 }
 
@@ -199,24 +201,24 @@
 // Menu styling improvements
 .workspace-menu {
   min-width: 280px;
-  margin-top: 8px;
+  margin-top: vars.$spacing-md;
 }
 
 .workspace-details {
-  padding: 16px;
+  padding: vars.$spacing-xl;
   border-bottom: 1px solid var(--mat-menu-divider-color);
 
   .workspace-header {
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 16px;
-    margin-bottom: 8px;
+    gap: vars.$spacing-xl;
+    margin-bottom: vars.$spacing-md;
 
     mat-icon {
-      font-size: 24px;
-      width: 24px;
-      height: 24px;
+      font-size: vars.$font-size-xxl;
+      width: vars.$font-size-xxl;
+      height: vars.$font-size-xxl;
       color: var(--mat-primary-color);
       flex-shrink: 0;
       display: block;
@@ -227,11 +229,11 @@
       min-width: 0;
       display: flex;
       flex-direction: column;
-      padding: 4px 2px;
+      padding: vars.$spacing-sm vars.$spacing-xs;
 
       .workspace-title {
-        margin: 0 0 4px 0;
-        font-size: 16px;
+        margin: 0 0 vars.$spacing-sm 0;
+        font-size: vars.$font-size-lg;
         font-weight: 600;
         color: var(--mat-menu-item-label-text-color);
         line-height: 1.2;
@@ -241,8 +243,8 @@
       }
 
       .workspace-slug {
-        margin: 0 0 4px 0;
-        font-size: 12px;
+        margin: 0 0 vars.$spacing-sm 0;
+        font-size: vars.$font-size-sm;
         color: var(--mat-menu-item-supporting-text-color);
         opacity: 0.7;
         line-height: 1.2;
@@ -254,8 +256,8 @@
   }
 
   .workspace-description {
-    margin: 0 0 4px 0;
-    font-size: 14px;
+    margin: 0 0 vars.$spacing-sm 0;
+    font-size: vars.$font-size-md;
     line-height: 1.4;
     color: var(--mat-menu-item-supporting-text-color);
     display: -webkit-box;
@@ -267,14 +269,14 @@
 
 .user-menu {
   min-width: 240px;
-  margin-top: 8px;
+  margin-top: vars.$spacing-md;
 }
 
 .user-info {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px;
+  gap: vars.$spacing-xl;
+  padding: vars.$spacing-xl;
   border-bottom: 1px solid var(--mat-menu-divider-color);
 
   .user-details {
@@ -282,8 +284,8 @@
     min-width: 0;
 
     .user-name {
-      margin: 0 0 4px 0;
-      font-size: 16px;
+      margin: 0 0 vars.$spacing-sm 0;
+      font-size: vars.$font-size-lg;
       font-weight: 600;
       color: var(--mat-menu-item-label-text-color);
       line-height: 1.2;
@@ -294,8 +296,8 @@
 
     .user-mobile,
     .user-email {
-      margin: 0 0 4px 0;
-      font-size: 12px;
+      margin: 0 0 vars.$spacing-sm 0;
+      font-size: vars.$font-size-sm;
       color: var(--mat-menu-item-supporting-text-color);
       opacity: 0.8;
       line-height: 1.2;
@@ -307,44 +309,44 @@
 }
 
 // Responsive design
-@media (max-width: 768px) {
+@media (max-width: vars.$breakpoint-sm) {
   .workspace-button .workspace-name {
     max-width: 120px;
   }
 
   .theme-controls {
-    gap: 4px;
-    margin-right: 8px;
+    gap: vars.$spacing-sm;
+    margin-right: vars.$spacing-md;
   }
 
   .header-title-section {
-    margin-right: 16px;
+    margin-right: vars.$spacing-xl;
   }
 
   .logo {
-    font-size: 18px;
+    font-size: vars.$font-size-lg;
 
     .logo-icon {
-      font-size: 22px;
+      font-size: vars.$font-size-xxl;
     }
   }
 
   .dynamic-title {
-    font-size: 16px;
+    font-size: vars.$font-size-lg;
 
     .title-icon {
-      font-size: 20px;
+      font-size: vars.$font-size-xl;
     }
   }
 }
 
-@media (max-width: 480px) {
+@media (max-width: vars.$breakpoint-xs) {
   .workspace-section {
-    margin-right: 8px;
+    margin-right: vars.$spacing-md;
   }
 
   .workspace-button {
-    padding: 6px 12px;
+    padding: vars.$spacing-sm vars.$spacing-lg;
 
     .workspace-name {
       max-width: 80px;
@@ -352,14 +354,14 @@
   }
 
   .theme-controls {
-    margin-right: 4px;
+    margin-right: vars.$spacing-sm;
   }
 
   .step-indicator {
-    padding: 4px 8px;
+    padding: vars.$spacing-sm vars.$spacing-md;
 
     .step-text {
-      font-size: 11px;
+      font-size: vars.$font-size-xs;
     }
   }
 }

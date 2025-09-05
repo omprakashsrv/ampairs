@@ -134,24 +134,27 @@ src/
 
 ### Theme Architecture
 ```scss
-// Color tokens
---primary-color
---secondary-color  
---surface-color
---surface-container-color
---on-surface-color
---outline-variant-color
+// Material 3 Color Tokens (from src/theme/variables.scss)
+$color-primary: var(--primary-color)
+$color-primary-container: var(--primary-container-color)
+$color-surface: var(--surface-color)
+$color-surface-container: var(--surface-container-color)
+$color-on-surface: var(--on-surface-color)
+$color-outline-variant: var(--outline-variant-color)
 
-// Typography tokens
---font-headline-large-size
---font-body-medium-size
---font-label-large-size
+// Material 3 Typography Tokens
+$font-body-large: var(--mat-sys-body-large)
+$font-body-medium: var(--mat-sys-body-medium)
+$font-headline-large: var(--mat-sys-headline-large)
+$font-headline-medium: var(--mat-sys-headline-medium)
+$font-label-large: var(--mat-sys-label-large)
 
-// Spacing tokens
---spacing-xs: 4px
---spacing-sm: 8px
---spacing-md: 16px
---spacing-lg: 24px
+// Material 3 Spacing Tokens
+$spacing-xs: var(--mat-sys-spacing-small, 0.125rem)    // ~2px
+$spacing-sm: var(--mat-sys-spacing-medium, 0.25rem)   // ~4px
+$spacing-md: var(--mat-sys-spacing-large, 0.5rem)     // ~8px
+$spacing-lg: var(--mat-sys-spacing-x-large, 0.75rem)  // ~12px
+$spacing-xl: var(--mat-sys-spacing-xx-large, 1rem)    // ~16px
 ```
 
 ## Authentication Flow
