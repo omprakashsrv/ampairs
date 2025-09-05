@@ -17,6 +17,7 @@ interface OrderDao {
     @Query("SELECT * FROM orderEntity WHERE id = :id")
     suspend fun selectById(id: String): OrderEntity?
 
+    @Transaction
     @Query("SELECT * FROM orderEntity WHERE id = :id")
     suspend fun getOrderById(id: String): OrderModel?
 

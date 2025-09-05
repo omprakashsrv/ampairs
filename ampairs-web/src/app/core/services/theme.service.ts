@@ -1,5 +1,5 @@
-import {DOCUMENT, Inject, Injectable} from '@angular/core';
-import {BehaviorSubject} from 'rxjs';
+import {computed, DOCUMENT, Inject, Injectable, signal} from '@angular/core';
+import {toObservable} from '@angular/core/rxjs-interop';
 
 /**
  * Material Design 3 Theme Configuration
@@ -264,14 +264,26 @@ export class ThemeService {
     }
   ];
 
-  // Current state observables
-  private readonly currentThemeSubject = new BehaviorSubject<M3ThemeConfig>(this.themes[0]!);
-  // Public observables
-  public readonly currentTheme$ = this.currentThemeSubject.asObservable();
-  private readonly currentDensitySubject = new BehaviorSubject<M3DensityConfig>(this.densityLevels[3]!); // Medium density (-2)
-  public readonly currentDensity$ = this.currentDensitySubject.asObservable();
-  private readonly currentTypographySubject = new BehaviorSubject<M3TypographyConfig>(this.typographyConfigs[0]!);
-  public readonly currentTypography$ = this.currentTypographySubject.asObservable();
+  // Signal-based state management
+  private readonly _currentTheme = signal<M3ThemeConfig>(this.themes[0]!);
+  private readonly _currentDensity = signal<M3DensityConfig>(this.densityLevels[3]!); // Medium density (-2)
+  private readonly _currentTypography = signal<M3TypographyConfig>(this.typographyConfigs[0]!);
+
+  // Public readonly signals
+  public readonly currentTheme = this._currentTheme.asReadonly();
+  public readonly currentDensity = this._currentDensity.asReadonly();
+  public readonly currentTypography = this._currentTypography.asReadonly();
+
+  // Backward compatibility observables
+  public readonly currentTheme$ = toObservable(this._currentTheme);
+  public readonly currentDensity$ = toObservable(this._currentDensity);
+  public readonly currentTypography$ = toObservable(this._currentTypography);
+
+  // Computed signals
+  public readonly isDarkMode = computed(() => this._currentTheme().isDark);
+  public readonly currentThemeName = computed(() => this._currentTheme().name);
+  public readonly currentDensityLevel = computed(() => this._currentDensity().level);
+  public readonly currentTypographyName = computed(() => this._currentTypography().name);
 
   constructor(@Inject(DOCUMENT) private document: Document) {
     this.initializeTheme();
@@ -291,15 +303,15 @@ export class ThemeService {
   }
 
   public getCurrentTheme(): M3ThemeConfig {
-    return this.currentThemeSubject.value;
+    return this._currentTheme();
   }
 
   public getCurrentDensity(): M3DensityConfig {
-    return this.currentDensitySubject.value;
+    return this._currentDensity();
   }
 
   public getCurrentTypography(): M3TypographyConfig {
-    return this.currentTypographySubject.value;
+    return this._currentTypography();
   }
 
   public setTheme(themeName: string): void {
@@ -449,7 +461,7 @@ export class ThemeService {
     root.style.setProperty('--text-color', colors.onBackground);
     root.style.setProperty('--text-secondary-color', colors.onSurfaceVariant);
 
-    this.currentThemeSubject.next(theme);
+    this._currentTheme.set(theme);
   }
 
   private setThemeProperties(root: HTMLElement, themeConfig: M3ThemeConfig, themePrefix: string): void {
@@ -509,7 +521,7 @@ export class ThemeService {
     root.style.setProperty('--spacing-lg', `${spacing * 3}px`);
     root.style.setProperty('--spacing-xl', `${spacing * 4}px`);
 
-    this.currentDensitySubject.next(density);
+    this._currentDensity.set(density);
   }
 
   private applyTypography(typography: M3TypographyConfig): void {
@@ -532,7 +544,7 @@ export class ThemeService {
     root.style.setProperty('--font-size-medium', scale.bodyMedium.size);
     root.style.setProperty('--font-size-large', scale.bodyLarge.size);
 
-    this.currentTypographySubject.next(typography);
+    this._currentTypography.set(typography);
   }
 
   private updateBodyClass(prefix: string, newClass: string): void {

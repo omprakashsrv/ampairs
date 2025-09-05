@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.RewriteQueriesToDropUnusedColumns
 import androidx.room.Update
 import com.ampairs.tally.db.entity.GodownEntity
 
@@ -42,6 +43,7 @@ interface GodownDao {
     @Query("SELECT * FROM godownEntity WHERE name LIKE '%' || :search || '%'")
     suspend fun searchGodowns(search: String): List<GodownEntity>
     
+    @RewriteQueriesToDropUnusedColumns
     @Query("""
         WITH RECURSIVE godown_hierarchy AS (
             SELECT *, 0 as level FROM godownEntity WHERE guid = :rootGuid
@@ -53,6 +55,7 @@ interface GodownDao {
     """)
     suspend fun getGodownHierarchy(rootGuid: String): List<GodownEntity>
     
+    @RewriteQueriesToDropUnusedColumns
     @Query("""
         WITH RECURSIVE parent_hierarchy AS (
             SELECT *, 0 as level FROM godownEntity WHERE guid = :childGuid

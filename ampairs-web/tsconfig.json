@@ -33,7 +33,6 @@
     "sourceMap": true,
     "declaration": false,
     "experimentalDecorators": true,
-    "emitDecoratorMetadata": true,
     "moduleResolution": "bundler",
     "importHelpers": true,
     "target": "ES2022",

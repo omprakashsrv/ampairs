@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.RewriteQueriesToDropUnusedColumns
 import androidx.room.Update
 import com.ampairs.tally.db.entity.TallyInventoryEntity
 
@@ -45,6 +46,7 @@ interface TallyInventoryDao {
     @Query("SELECT * FROM inventoryEntity WHERE name LIKE '%' || :search || '%'")
     suspend fun searchInventories(search: String): List<TallyInventoryEntity>
     
+    @RewriteQueriesToDropUnusedColumns
     @Query("""
         WITH RECURSIVE inventory_hierarchy AS (
             SELECT *, 0 as level FROM inventoryEntity WHERE guid = :rootGuid
@@ -56,6 +58,7 @@ interface TallyInventoryDao {
     """)
     suspend fun getInventoryHierarchy(rootGuid: String): List<TallyInventoryEntity>
     
+    @RewriteQueriesToDropUnusedColumns
     @Query("""
         WITH RECURSIVE parent_hierarchy AS (
             SELECT *, 0 as level FROM inventoryEntity WHERE guid = :childGuid

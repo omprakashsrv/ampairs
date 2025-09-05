@@ -24,6 +24,7 @@ interface ProductImageDao {
     @Query("SELECT * FROM productImageEntity WHERE image_id = :imageId")
     suspend fun getProductImagesByImageId(imageId: String): List<ProductImageEntity>
 
+    @Transaction
     @Query("SELECT * FROM productImageEntity WHERE product_id IN (:productIds)")
     suspend fun getProductImagesByProductIds(productIds: List<String>): List<ProductImageModel>
 

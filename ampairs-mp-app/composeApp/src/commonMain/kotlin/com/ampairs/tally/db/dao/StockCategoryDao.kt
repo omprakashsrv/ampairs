@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.RewriteQueriesToDropUnusedColumns
 import androidx.room.Update
 import com.ampairs.tally.db.entity.StockCategoryEntity
 
@@ -48,6 +49,7 @@ interface StockCategoryDao {
     @Query("SELECT * FROM stockCategoryEntity WHERE unitName LIKE '%' || :search || '%' OR reservedName LIKE '%' || :search || '%'")
     suspend fun searchStockCategories(search: String): List<StockCategoryEntity>
     
+    @RewriteQueriesToDropUnusedColumns
     @Query("""
         WITH RECURSIVE category_hierarchy AS (
             SELECT *, 0 as level FROM stockCategoryEntity WHERE guid = :rootGuid
@@ -59,6 +61,7 @@ interface StockCategoryDao {
     """)
     suspend fun getCategoryHierarchy(rootGuid: String): List<StockCategoryEntity>
     
+    @RewriteQueriesToDropUnusedColumns
     @Query("""
         WITH RECURSIVE parent_hierarchy AS (
             SELECT *, 0 as level FROM stockCategoryEntity WHERE guid = :childGuid

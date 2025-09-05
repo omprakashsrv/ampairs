@@ -5,10 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.UserRepository
-import com.ampairs.workspace.store.WorkspaceStore
-import com.ampairs.workspace.store.WorkspaceKey
+import com.ampairs.workspace.db.OfflineFirstWorkspaceRepository
 import com.ampairs.workspace.domain.Workspace
-import org.mobilenativefoundation.store.store5.StoreReadRequest
 import org.mobilenativefoundation.store.store5.StoreReadResponse
 import com.ampairs.workspace.ui.WorkspaceListState
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -19,7 +17,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 
 class WorkspaceListViewModel(
-    private val workspaceStore: WorkspaceStore,
+    private val workspaceRepository: OfflineFirstWorkspaceRepository,
     private val userWorkspaceRepository: UserWorkspaceRepository,
     private val tokenRepository: TokenRepository,
     private val userRepository: UserRepository,
@@ -69,17 +67,12 @@ class WorkspaceListViewModel(
             _state.value = _state.value.copy(error = null)
             
             try {
-                val userId = tokenRepository.getCurrentUserId() 
-                    ?: throw Exception("User not authenticated")
-                
-                val key = WorkspaceKey(workspaceId = null, userId = userId)
-                val request = if (forceRefresh) {
-                    StoreReadRequest.fresh(key)
-                } else {
-                    StoreReadRequest.cached(key, refresh = true)
-                }
-                
-                workspaceStore.stream(request).onEach { response ->
+                val workspacesFlow = workspaceRepository.getUserWorkspaces(
+                    page = 0,
+                    size = 50, // Load more workspaces for the list
+                    forceRefresh = forceRefresh
+                )
+                workspacesFlow.onEach { response ->
                     when (response) {
                         is StoreReadResponse.Loading -> {
                             // Show loading only when we don't have any cached data
@@ -136,13 +129,12 @@ class WorkspaceListViewModel(
             _state.value = _state.value.copy(isRefreshing = true, error = null)
             
             try {
-                val userId = tokenRepository.getCurrentUserId() 
-                    ?: throw Exception("User not authenticated")
-                
-                val key = WorkspaceKey(workspaceId = null, userId = userId)
-                val request = StoreReadRequest.fresh(key)
-                
-                workspaceStore.stream(request).onEach { response ->
+                val workspacesFlow = workspaceRepository.getUserWorkspaces(
+                    page = 0,
+                    size = 50,
+                    forceRefresh = true
+                )
+                workspacesFlow.onEach { response ->
                     when (response) {
                         is StoreReadResponse.Data -> {
                             val pageResult = response.value
@@ -193,50 +185,20 @@ class WorkspaceListViewModel(
 
         viewModelScope.launch {
             try {
-                val userId = tokenRepository.getCurrentUserId() 
-                    ?: throw Exception("User not authenticated")
-                
-                val key = WorkspaceKey(workspaceId = null, userId = userId)
-                val request = StoreReadRequest.cached(key, refresh = false)
-                
-                workspaceStore.stream(request).onEach { response ->
-                    when (response) {
-                        is StoreReadResponse.Data -> {
-                            // Filter workspaces locally based on search query
-                            val pageResult = response.value
-                            val filteredWorkspaces = if (query.isBlank()) {
-                                pageResult.content
-                            } else {
-                                pageResult.content.filter { workspace ->
-                                    workspace.name.contains(query, ignoreCase = true) ||
-                                    workspace.description?.contains(query, ignoreCase = true) == true
-                                }
-                            }
-                            
+                if (query.isBlank()) {
+                    // Load all workspaces when search is empty
+                    loadWorkspaces(forceRefresh = false)
+                } else {
+                    // Use repository's search functionality
+                    workspaceRepository.searchWorkspaces(query, page = 0, size = 50)
+                        .onEach { workspaces ->
                             _state.value = _state.value.copy(
-                                workspaces = filteredWorkspaces,
+                                workspaces = workspaces,
                                 isLoading = false,
                                 error = null
                             )
-                        }
-                        is StoreReadResponse.Error.Exception -> {
-                            _state.value = _state.value.copy(
-                                error = response.error.message ?: "Failed to search workspaces",
-                                isLoading = false
-                            )
-                        }
-                        is StoreReadResponse.Error.Message -> {
-                            _state.value = _state.value.copy(
-                                error = response.message,
-                                isLoading = false
-                            )
-                        }
-                        else -> {
-                            // Handle other states
-                        }
-                    }
-                }.launchIn(this)
-                
+                        }.launchIn(this)
+                }
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     error = e.message ?: "Failed to search workspaces",
@@ -263,14 +225,11 @@ class WorkspaceListViewModel(
     fun loadCachedWorkspaces() {
         viewModelScope.launch {
             try {
-                val userId = tokenRepository.getCurrentUserId() 
-                    ?: throw Exception("User not authenticated")
-                
-                val key = WorkspaceKey(workspaceId = null, userId = userId)
-                // Use cached-only request to avoid network calls
-                val request = StoreReadRequest.cached(key, refresh = false)
-                
-                workspaceStore.stream(request).onEach { response ->
+                val workspacesFlow = workspaceRepository.getCachedWorkspaces(
+                    page = 0,
+                    size = 50
+                )
+                workspacesFlow.onEach { response ->
                     when (response) {
                         is StoreReadResponse.Data -> {
                             val pageResult = response.value

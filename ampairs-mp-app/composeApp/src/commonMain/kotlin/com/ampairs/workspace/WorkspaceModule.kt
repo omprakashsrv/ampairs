@@ -56,6 +56,7 @@ fun workspaceModule() = module {
     
     // Repositories - now powered by Store5 for offline-first architecture
     single<WorkspaceRepository> { WorkspaceRepository(get(), get(), get()) }
+    single { OfflineFirstWorkspaceRepository(get(), get(), get(), get(named("workspaceStore"))) } // Store5 workspace repository
     single<WorkspaceMemberRepository> { WorkspaceMemberRepository(get(), get(), get()) }
     single { WorkspaceInvitationRepository(get(), get()) } // Legacy invitation management repository (kept for compatibility)
     single { OfflineFirstWorkspaceInvitationRepository(get(), get(), get(named("workspaceInvitationStore")), get()) } // Store5 invitation repository
@@ -78,7 +79,7 @@ fun workspaceModule() = module {
     single<WorkspaceMemberUpdateStore>(named("workspaceMemberUpdateStore")) { get<WorkspaceMemberUpdateStoreFactory>().create() }
 
     // ViewModels with parameter support
-    factory { WorkspaceListViewModel(get(named("workspaceStore")), get(), get(), get()) }
+    factory { WorkspaceListViewModel(get<OfflineFirstWorkspaceRepository>(), get(), get(), get()) }
     factoryOf(::WorkspaceCreateViewModel)
 
     // Member and invitation ViewModels with workspaceId parameter

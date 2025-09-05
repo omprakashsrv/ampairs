@@ -15,6 +15,7 @@ interface BrandDao {
     @Query("SELECT * FROM brandEntity WHERE id = :id")
     suspend fun brandById(id: String): BrandEntity?
 
+    @Transaction
     @Query("SELECT * FROM brandEntity ORDER BY name ASC, active DESC")
     suspend fun getBrands(): List<BrandModel>
 
