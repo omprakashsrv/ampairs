@@ -23,8 +23,8 @@ $light-theme: mat.define-theme((
     //use-system-variables: true,
   ),
   typography: (
-    brand-family: 'Lato',
-    plain-family: 'Lato',
+    brand-family: 'Roboto, sans-serif',
+    plain-family: 'Roboto, sans-serif',
   ),
   density: (
     scale: -2  // Default to medium-compact density

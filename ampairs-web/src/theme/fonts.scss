@@ -3,26 +3,26 @@
 .font-common {
   @include mat.all-component-typographies(mat.define-theme((
           typography: (
-                  brand-family: 'Lato',
-                  plain-family: 'Lato',
+                  brand-family: 'Roboto, sans-serif',
+                  plain-family: 'Roboto, sans-serif',
           )
   )));
   //font weight and style variables
-  --mat-sys-body-large-font: lato;
-  --mat-sys-body-medium-font: lato;
-  --mat-sys-body-small-font: lato;
-  --mat-sys-display-large-font: lato;
-  --mat-sys-display-medium-font: lato;
-  --mat-sys-display-small-font: lato;
-  --mat-sys-headline-large-font: lato;
-  --mat-sys-headline-medium-font: lato;
-  --mat-sys-headline-small-font: lato;
-  --mat-sys-label-large-font: lato;
-  --mat-sys-label-medium-font: lato;
-  --mat-sys-label-small-font: lato;
-  --mat-sys-title-large-font: lato;
-  --mat-sys-title-medium-font: lato;
-  --mat-sys-title-small-font: lato;
+  --mat-sys-body-large-font: Roboto, sans-serif;
+  --mat-sys-body-medium-font: Roboto, sans-serif;
+  --mat-sys-body-small-font: Roboto, sans-serif;
+  --mat-sys-display-large-font: Roboto, sans-serif;
+  --mat-sys-display-medium-font: Roboto, sans-serif;
+  --mat-sys-display-small-font: Roboto, sans-serif;
+  --mat-sys-headline-large-font: Roboto, sans-serif;
+  --mat-sys-headline-medium-font: Roboto, sans-serif;
+  --mat-sys-headline-small-font: Roboto, sans-serif;
+  --mat-sys-label-large-font: Roboto, sans-serif;
+  --mat-sys-label-medium-font: Roboto, sans-serif;
+  --mat-sys-label-small-font: Roboto, sans-serif;
+  --mat-sys-title-large-font: Roboto, sans-serif;
+  --mat-sys-title-medium-font: Roboto, sans-serif;
+  --mat-sys-title-small-font: Roboto, sans-serif;
   --mat-sys-body-large-weight: 400;
   --mat-sys-body-medium-weight: 400;
   --mat-sys-body-small-weight: 400;

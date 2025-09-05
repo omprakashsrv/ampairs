@@ -4,58 +4,58 @@
 
 .device-management-card {
   max-width: 800px;
-  margin: var(--spacing-lg, 20px) auto;
-  background-color: var(--surface-container-color);
-  color: var(--on-surface-color);
+  margin: variables.$spacing-xl auto;
+  background-color: variables.$color-surface-container;
+  color: variables.$color-on-surface;
 }
 
 .loading-container {
   @include theme.flex-column-center;
-  padding: var(--spacing-xl, 40px);
-  gap: var(--spacing-md, 16px);
+  padding: variables.$spacing-xxl;
+  gap: variables.$spacing-lg;
 }
 
 .loading-container p {
-  color: var(--on-surface-variant-color);
-  font-size: var(--font-body-medium-size, 0.875rem);
+  color: variables.$color-on-surface-variant;
+  font-size: variables.$font-size-sm;
 }
 
 .no-devices {
   @include theme.flex-column-center;
-  padding: var(--spacing-xl, 40px);
-  gap: var(--spacing-md, 16px);
-  color: var(--on-surface-variant-color);
+  padding: variables.$spacing-xxl;
+  gap: variables.$spacing-lg;
+  color: variables.$color-on-surface-variant;
 }
 
 .no-devices mat-icon {
   font-size: 48px;
   width: 48px;
   height: 48px;
-  color: var(--on-surface-variant-color);
+  color: variables.$color-on-surface-variant;
 }
 
 .devices-container {
   @include theme.flex-column;
-  gap: var(--spacing-md, 16px);
+  gap: variables.$spacing-lg;
 }
 
 .device-item {
-  transition: all variables.$transition-normal ease-in-out;
+  transition: all #{variables.$transition-normal} ease-in-out;
 
   &.current-device {
-    border-color: var(--primary-color);
-    background-color: var(--primary-container-color);
+    border-color: variables.$color-primary;
+    background-color: variables.$color-primary-container;
 
     .device-icon {
-      background-color: var(--primary-color);
-      color: var(--on-primary-color);
+      background-color: variables.$color-primary;
+      color: variables.$color-on-primary;
     }
   }
 }
 
 .device-icon {
-  background-color: var(--surface-container-high-color);
-  color: var(--on-surface-variant-color);
+  background-color: variables.$color-surface-container-high;
+  color: variables.$color-on-surface-variant;
   font-size: 24px;
   width: 40px;
   height: 40px;
@@ -74,32 +74,32 @@
 
 .device-metadata {
   @include theme.flex-column;
-  gap: var(--spacing-sm, 8px);
-  margin-top: var(--spacing-md, 16px);
-  padding-left: var(--spacing-md, 16px);
-  padding-right: var(--spacing-md, 16px);
+  gap: variables.$spacing-sm;
+  margin-top: variables.$spacing-lg;
+  padding-left: variables.$spacing-lg;
+  padding-right: variables.$spacing-lg;
 }
 
 .metadata-item {
   @include theme.flex-center;
   justify-content: flex-start;
-  gap: var(--spacing-sm, 8px);
-  font-size: var(--font-body-small-size, 0.875rem);
-  color: var(--on-surface-variant-color);
+  gap: variables.$spacing-sm;
+  font-size: variables.$font-size-sm;
+  color: variables.$color-on-surface-variant;
 }
 
 .metadata-item mat-icon {
   font-size: 16px;
   width: 16px;
   height: 16px;
-  color: var(--on-surface-variant-color);
+  color: variables.$color-on-surface-variant;
 }
 
 .actions-container {
   @include theme.flex-center;
-  margin-top: var(--spacing-lg, 24px);
-  padding-top: var(--spacing-md, 16px);
-  border-top: 1px solid var(--outline-variant-color);
+  margin-top: variables.$spacing-xl;
+  padding-top: variables.$spacing-lg;
+  border-top: 1px solid variables.$color-outline-variant;
 }
 
 
@@ -112,6 +112,6 @@
 
 @include theme.mobile {
   .device-management-card {
-    margin: var(--spacing-sm, 8px);
+    margin: variables.$spacing-sm;
   }
 }

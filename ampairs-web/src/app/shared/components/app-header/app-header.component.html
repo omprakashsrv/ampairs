@@ -46,15 +46,20 @@
         <!-- Workspace Details Header -->
         <div class="workspace-details">
           <div class="workspace-header">
+            <mat-icon>business</mat-icon>
             <div class="workspace-info-text">
               <div class="workspace-title">{{ currentWorkspace()?.name }}</div>
               <div class="workspace-slug">{{ currentWorkspace()?.slug }}</div>
             </div>
           </div>
-          @if (currentWorkspace()?.description) {
-            <div class="workspace-description">{{ currentWorkspace()?.description }}</div>
+          @if (currentWorkspace(); as workspace) {
+            @if (workspace.description && workspace.description.length > 0) {
+              <div class="workspace-description">{{ workspace.description }}</div>
+            }
           }
         </div>
+
+        <mat-divider></mat-divider>
 
         <!-- Workspace Management Options -->
         <button mat-menu-item (click)="manageMembers()">
@@ -133,6 +138,8 @@
             }
           </div>
         </div>
+
+        <mat-divider></mat-divider>
 
         <!-- Profile Management -->
         <button mat-menu-item (click)="editProfile()">

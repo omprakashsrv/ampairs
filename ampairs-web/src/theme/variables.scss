@@ -69,6 +69,9 @@ $transition-fast: 0.15s;
 $transition-normal: 0.3s;
 $transition-slow: 0.5s;
 
+// Complete transition properties for M3
+$transition-standard: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
 // Material 3 Color Variables (referenced from theme system)
 // Primary Colors
 $color-primary: var(--primary-color);
@@ -129,6 +132,11 @@ $color-info: var(--info-color);
 $color-border: var(--border-color);
 $color-divider: var(--divider-color);
 $color-disabled: var(--disabled-color);
+
+// Menu Colors
+$color-menu-item-label: var(--on-surface-color);
+$color-menu-item-supporting: var(--on-surface-variant-color);
+$color-menu-divider: var(--outline-variant-color);
 
 // Shadow Variables
 $shadow-1: var(--shadow-1);

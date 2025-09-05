@@ -4,7 +4,7 @@
 
 .workspace-create-container {
   // Remove min-height since header is now at layout level
-  background-color: var(--background-color);
+  background-color: variables.$color-background;
 }
 
 // M3 Toolbar Header
@@ -12,18 +12,18 @@
   position: sticky;
   top: 0;
   z-index: variables.$z-index-sticky;
-  box-shadow: var(--shadow-1);
+  box-shadow: variables.$shadow-1;
 }
 
 .header-title {
   @include theme.flex-center;
-  gap: var(--spacing-sm, 8px);
-  font-size: var(--font-title-large-size, 1.375rem);
-  font-weight: var(--font-title-large-weight, 400);
+  gap: variables.$spacing-md;
+  font-size: variables.$font-size-title;
+  font-weight: 400;
 }
 
 .header-icon {
-  font-size: var(--font-title-large-size, 1.375rem);
+  font-size: variables.$font-size-title;
   width: 24px;
   height: 24px;
 }
@@ -34,12 +34,12 @@
 
 .step-indicator {
   @include theme.flex-center;
-  gap: var(--spacing-xs, 4px);
+  gap: variables.$spacing-sm;
 }
 
 .step-text {
-  font-size: var(--font-body-small-size, 0.875rem);
-  color: var(--on-primary-color);
+  font-size: variables.$font-size-sm;
+  color: variables.$color-on-primary;
   opacity: 0.9;
 }
 
@@ -48,7 +48,7 @@
   flex: 1;
   max-width: 800px;
   margin: 0 auto;
-  padding: var(--spacing-xl, 32px);
+  padding: variables.$spacing-xxl;
   width: 100%;
 }
 
@@ -57,25 +57,25 @@
   background-color: transparent;
 
   .mat-stepper-horizontal-line {
-    background-color: var(--outline-variant-color);
+    background-color: variables.$color-outline-variant;
   }
 }
 
 // M3 Step Card
 .step-card {
-  margin: var(--spacing-lg, 24px) 0;
-  background-color: var(--surface-container-color);
-  border-radius: var(--border-radius-lg, 16px);
-  box-shadow: var(--shadow-1);
+  margin: variables.$spacing-xl 0;
+  background-color: variables.$color-surface-container;
+  border-radius: variables.$border-radius-lg;
+  box-shadow: variables.$shadow-1;
 }
 
 .step-avatar {
   @include theme.flex-center;
   width: 40px;
   height: 40px;
-  background-color: var(--primary-container-color);
-  color: var(--on-primary-container-color);
-  border-radius: var(--border-radius-full, 50%);
+  background-color: variables.$color-primary-container;
+  color: variables.$color-on-primary-container;
+  border-radius: variables.$border-radius-round;
 
   mat-icon {
     font-size: 20px;
@@ -87,7 +87,7 @@
 // M3 Form Styling
 .step-form {
   @include theme.flex-column;
-  gap: var(--spacing-lg, 24px);
+  gap: variables.$spacing-xl;
 }
 
 .full-width-field {
@@ -97,39 +97,39 @@
 // M3 Type Option Styling
 .type-option {
   @include theme.flex-center;
-  gap: var(--spacing-sm, 12px);
+  gap: variables.$spacing-md;
   align-items: flex-start;
-  padding: var(--spacing-xs, 4px) 0;
+  padding: variables.$spacing-sm 0;
 }
 
 .type-content {
   @include theme.flex-column;
-  gap: var(--spacing-xs, 2px);
+  gap: variables.$spacing-xs;
 }
 
 .type-name {
-  font-size: var(--font-body-medium-size, 0.875rem);
-  font-weight: var(--font-body-medium-weight, 500);
-  color: var(--on-surface-color);
+  font-size: variables.$font-size-sm;
+  font-weight: 500;
+  color: variables.$color-on-surface;
 }
 
 .type-desc {
-  font-size: var(--font-body-small-size, 0.75rem);
-  color: var(--on-surface-variant-color);
-  line-height: var(--font-body-small-line-height, 1rem);
+  font-size: variables.$font-size-xs;
+  color: variables.$color-on-surface-variant;
+  line-height: variables.$line-height-tight;
 }
 
 // M3 Info Cards
 .info-card,
 .success-card {
-  margin-top: var(--spacing-lg, 24px);
-  background-color: var(--surface-container-low-color);
-  border: 1px solid var(--outline-variant-color);
+  margin-top: variables.$spacing-xl;
+  background-color: variables.$color-surface-container-low;
+  border: 1px solid variables.$color-outline-variant;
 }
 
 .info-content {
   @include theme.flex-center;
-  gap: var(--spacing-sm, 12px);
+  gap: variables.$spacing-md;
   align-items: flex-start;
 }
 
@@ -137,25 +137,25 @@
   flex: 1;
 
   h4 {
-    margin: 0 0 var(--spacing-xs, 4px) 0;
-    font-size: var(--font-body-medium-size, 0.875rem);
-    font-weight: var(--font-body-medium-weight, 500);
-    color: var(--on-surface-color);
+    margin: 0 0 variables.$spacing-sm 0;
+    font-size: variables.$font-size-sm;
+    font-weight: 500;
+    color: variables.$color-on-surface;
   }
 
   p {
     margin: 0;
-    font-size: var(--font-body-small-size, 0.75rem);
-    color: var(--on-surface-variant-color);
-    line-height: var(--font-body-small-line-height, 1.25rem);
+    font-size: variables.$font-size-xs;
+    color: variables.$color-on-surface-variant;
+    line-height: variables.$line-height-normal;
   }
 }
 
 // M3 Card Actions
 .step-actions {
   @include theme.flex-between;
-  padding: var(--spacing-md, 16px) var(--spacing-lg, 24px);
-  border-top: 1px solid var(--outline-variant-color);
+  padding: variables.$spacing-lg variables.$spacing-xl;
+  border-top: 1px solid variables.$color-outline-variant;
 }
 
 .action-spacer {
@@ -165,15 +165,15 @@
 // M3 Slug Status Icons
 .slug-checking mat-icon {
   animation: spin 1s linear infinite;
-  color: var(--on-surface-variant-color);
+  color: variables.$color-on-surface-variant;
 }
 
 .slug-available mat-icon {
-  color: var(--success-color, #4caf50);
+  color: variables.$color-success;
 }
 
 .slug-unavailable mat-icon {
-  color: var(--error-color);
+  color: variables.$color-error;
 }
 
 @keyframes spin {
@@ -188,30 +188,30 @@
 // M3 Responsive Design
 @include theme.tablet {
   .content-container {
-    padding: var(--spacing-lg, 24px);
+    padding: variables.$spacing-xl;
   }
 
   .step-card {
-    margin: var(--spacing-md, 16px) 0;
+    margin: variables.$spacing-lg 0;
   }
 
   .header-title {
-    font-size: var(--font-title-medium-size, 1.125rem);
+    font-size: variables.$font-size-lg;
   }
 }
 
 @include theme.mobile {
   .content-container {
-    padding: var(--spacing-md, 16px);
+    padding: variables.$spacing-lg;
   }
 
   .step-form {
-    gap: var(--spacing-md, 16px);
+    gap: variables.$spacing-lg;
   }
 
   .step-actions {
     flex-direction: column;
-    gap: var(--spacing-sm, 8px);
+    gap: variables.$spacing-md;
     align-items: stretch;
 
     button {
@@ -226,12 +226,12 @@
   .info-content {
     flex-direction: column;
     text-align: center;
-    gap: var(--spacing-sm, 8px);
+    gap: variables.$spacing-md;
   }
 
   .type-option {
     flex-direction: column;
     text-align: center;
-    gap: var(--spacing-xs, 8px);
+    gap: variables.$spacing-sm;
   }
 }

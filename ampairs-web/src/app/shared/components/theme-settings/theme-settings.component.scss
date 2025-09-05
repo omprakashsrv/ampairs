@@ -6,8 +6,8 @@
   max-width: 600px;
   min-width: 480px;
   padding: 0;
-  background-color: var(--surface-container-color);
-  border: 1px solid var(--outline-variant-color);
+  background-color: vars.$color-surface-container;
+  border: 1px solid vars.$color-outline-variant;
 
   @include theme.tablet {
     min-width: 320px;
@@ -18,7 +18,7 @@
 .settings-header {
   padding: vars.$spacing-xxl vars.$spacing-xxl 0;
   text-align: center;
-  border-bottom: 1px solid var(--outline-variant-color);
+  border-bottom: 1px solid vars.$color-outline-variant;
 
   @include theme.tablet {
     padding: vars.$spacing-xl vars.$spacing-xl 0;
@@ -31,17 +31,17 @@
   margin: 0 0 vars.$spacing-md 0;
   font-size: vars.$font-size-title;
   font-weight: 400;
-  color: var(--on-surface-color);
+  color: vars.$color-on-surface;
 }
 
 .settings-icon {
   font-size: 1.5rem;
-  color: var(--primary-color);
+  color: vars.$color-primary;
 }
 
 .settings-subtitle {
   margin: 0 0 vars.$spacing-xl 0;
-  color: var(--on-surface-variant-color);
+  color: vars.$color-on-surface-variant;
   font-size: vars.$font-size-md;
 }
 
@@ -57,9 +57,9 @@
 }
 
 .settings-tabs .mat-mdc-tab-group {
-  --mat-tab-header-inactive-label-text-color: var(--on-surface-variant-color);
-  --mat-tab-header-active-label-text-color: var(--primary-color);
-  --mat-tab-header-indicator-color: var(--primary-color);
+  --mat-tab-header-inactive-label-text-color: #{vars.$color-on-surface-variant};
+  --mat-tab-header-active-label-text-color: #{vars.$color-primary};
+  --mat-tab-header-indicator-color: #{vars.$color-primary};
 }
 
 .tab-content {
@@ -81,13 +81,13 @@
   margin: 0 0 8px 0;
   font-size: 1rem;
   font-weight: 500;
-  color: var(--on-surface-color);
+  color: vars.$color-on-surface;
 }
 
 .section-description {
   margin: 0 0 16px 0;
   font-size: 0.875rem;
-  color: var(--on-surface-variant-color);
+  color: vars.$color-on-surface-variant;
   line-height: 1.25rem;
 }
 
@@ -102,22 +102,22 @@
 .theme-card {
   position: relative;
   padding: 12px;
-  border: 2px solid var(--outline-variant-color);
+  border: 2px solid vars.$color-outline-variant;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background-color: var(--surface-container-color);
+  background-color: vars.$color-surface-container;
 
   &:hover {
-    border-color: var(--primary-color);
+    border-color: vars.$color-primary;
     transform: translateY(-2px);
-    box-shadow: var(--shadow-2);
+    box-shadow: vars.$shadow-2;
   }
 
   &.selected {
-    border-color: var(--primary-color);
-    background-color: var(--primary-container-color);
-    box-shadow: var(--shadow-2);
+    border-color: vars.$color-primary;
+    background-color: vars.$color-primary-container;
+    box-shadow: vars.$shadow-2;
 
     &::after {
       content: '✓';
@@ -126,9 +126,9 @@
       right: 8px;
       width: 16px;
       height: 16px;
-      background-color: var(--primary-color);
+      background-color: vars.$color-primary;
       border-radius: 50%;
-      color: var(--on-primary-color);
+      color: vars.$color-on-primary;
       font-size: 10px;
       font-weight: bold;
       @include theme.flex-center;
@@ -146,7 +146,7 @@
 .color-swatch {
   flex: 1;
   border-radius: 4px;
-  border: 1px solid var(--outline-variant-color);
+  border: 1px solid vars.$color-outline-variant;
 
   &.primary {
     flex: 2;
@@ -156,7 +156,7 @@
 .theme-info {
   @include theme.flex-between;
   font-size: 0.75rem;
-  color: var(--on-surface-color);
+  color: vars.$color-on-surface;
 }
 
 .theme-name {
@@ -168,11 +168,11 @@
 }
 
 .dark-icon {
-  color: var(--on-surface-variant-color);
+  color: vars.$color-on-surface-variant;
 }
 
 .light-icon {
-  color: var(--tertiary-color);
+  color: vars.$color-tertiary;
 }
 
 .quick-actions {
@@ -197,7 +197,7 @@
 
 .slider-label {
   font-size: 0.75rem;
-  color: var(--on-surface-variant-color);
+  color: vars.$color-on-surface-variant;
   white-space: nowrap;
 }
 
@@ -205,9 +205,9 @@
   flex: 1;
 
   .mat-mdc-slider {
-    --mdc-slider-active-track-color: var(--primary-color);
-    --mdc-slider-inactive-track-color: var(--outline-variant-color);
-    --mdc-slider-handle-color: var(--primary-color);
+    --mdc-slider-active-track-color: #{vars.$color-primary};
+    --mdc-slider-inactive-track-color: #{vars.$color-outline-variant};
+    --mdc-slider-handle-color: #{vars.$color-primary};
   }
 }
 
@@ -217,14 +217,14 @@
 
 .density-level {
   font-weight: 500;
-  color: var(--on-surface-color);
+  color: vars.$color-on-surface;
   display: block;
   margin-bottom: 4px;
   font-size: 0.875rem;
 }
 
 .density-description {
-  color: var(--on-surface-variant-color);
+  color: vars.$color-on-surface-variant;
   font-size: 0.75rem;
 }
 
@@ -235,8 +235,8 @@
 .preview-card {
   max-width: 300px;
   margin: 0 auto;
-  background-color: var(--surface-container-low-color);
-  border: 1px solid var(--outline-variant-color);
+  background-color: vars.$color-surface-container-low;
+  border: 1px solid vars.$color-outline-variant;
 }
 
 .preview-buttons {
@@ -249,23 +249,23 @@
   width: 100%;
 
   .mat-mdc-form-field {
-    --mdc-outlined-text-field-label-text-color: var(--on-surface-variant-color);
-    --mdc-outlined-text-field-input-text-color: var(--on-surface-color);
-    --mdc-outlined-text-field-outline-color: var(--outline-color);
-    --mdc-outlined-text-field-focus-outline-color: var(--primary-color);
+    --mdc-outlined-text-field-label-text-color: #{vars.$color-on-surface-variant};
+    --mdc-outlined-text-field-input-text-color: #{vars.$color-on-surface};
+    --mdc-outlined-text-field-outline-color: #{vars.$color-outline};
+    --mdc-outlined-text-field-focus-outline-color: #{vars.$color-primary};
   }
 }
 
 .typography-preview {
-  background-color: var(--surface-container-low-color);
-  border: 1px solid var(--outline-variant-color);
+  background-color: vars.$color-surface-container-low;
+  border: 1px solid vars.$color-outline-variant;
   border-radius: 8px;
   padding: 24px;
 }
 
 .text-samples > * {
   margin: 0 0 16px 0;
-  color: var(--on-surface-color);
+  color: vars.$color-on-surface;
 
   &:last-child {
     margin-bottom: 0;
@@ -294,7 +294,7 @@
 }
 
 .reset-button {
-  color: var(--error-color);
+  color: vars.$color-error;
 }
 
 .import-wrapper {
@@ -309,7 +309,7 @@
 .setting-item {
   @include theme.flex-between;
   padding: 8px 0;
-  border-bottom: 1px solid var(--outline-variant-color);
+  border-bottom: 1px solid vars.$color-outline-variant;
 
   &:last-child {
     border-bottom: none;
@@ -322,19 +322,19 @@
 
 .setting-label {
   font-weight: 500;
-  color: var(--on-surface-variant-color);
+  color: vars.$color-on-surface-variant;
 }
 
 .setting-value {
   font-weight: 500;
-  color: var(--on-surface-color);
+  color: vars.$color-on-surface;
 }
 
 .settings-actions {
   padding: 16px 24px 24px;
   @include theme.flex-between;
   gap: 12px;
-  border-top: 1px solid var(--outline-variant-color);
+  border-top: 1px solid vars.$color-outline-variant;
   @include theme.tablet {
     padding: 16px;
     @include theme.flex-column;
@@ -342,7 +342,7 @@
 }
 
 .cancel-button {
-  color: var(--on-surface-variant-color);
+  color: vars.$color-on-surface-variant;
 }
 
 .apply-button {

@@ -1,14 +1,15 @@
 // M3 Material Design Devices Page
 @use '../../../theme/mixins' as theme;
+@use '../../../theme/variables' as variables;
 
 .devices-page {
-  padding: var(--spacing-lg, 24px);
+  padding: variables.$spacing-xl;
   max-width: 1200px;
   width: 100%;
   margin: 0 auto;
 
   @include theme.mobile {
-    padding: var(--spacing-md, 16px);
+    padding: variables.$spacing-lg;
   }
 }
 
