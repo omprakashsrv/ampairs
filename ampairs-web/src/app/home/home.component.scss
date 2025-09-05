@@ -1,6 +1,5 @@
 // M3 Material Design Home Component
-@use '../shared/styles/variables' as vars;
-@use '../shared/styles/mixins' as mixins;
+@use '../../theme/mixins' as theme;
 
 .home-container {
   // Remove min-height since header is now at layout level
@@ -83,7 +82,7 @@
 }
 
 .action-button {
-  @include mixins.flex-column-center;
+  @include theme.flex-column-center;
   gap: 4px;
 }
 
@@ -94,13 +93,13 @@
 }
 
 /* M3 Responsive Design */
-@include mixins.tablet {
+@include theme.tablet {
   .main-content {
     padding: var(--spacing-md, 16px);
   }
 
   .user-info {
-    @include mixins.flex-column-center;
+    @include theme.flex-column-center;
     text-align: center;
   }
 
@@ -113,7 +112,7 @@
   }
 }
 
-@include mixins.mobile {
+@include theme.mobile {
   .logo {
     font-size: var(--font-body-large-size, 1rem);
   }

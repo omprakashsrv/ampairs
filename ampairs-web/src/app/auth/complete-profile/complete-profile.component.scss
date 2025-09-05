@@ -1,9 +1,9 @@
 // M3 Material Design Complete Profile Component
-@use '../../shared/styles/variables' as vars;
-@use '../../shared/styles/mixins' as mixins;
+@use '../../../theme/mixins' as theme;
+@use '../../../theme/variables' as variables;
 
 .complete-profile-container {
-  @include mixins.flex-center;
+  @include theme.flex-center;
   padding: var(--spacing-md, 16px);
 
   // Full height only for standalone usage (not within home layout)
@@ -18,7 +18,7 @@
     background-color: var(--surface-dim-color, var(--background-color));
   }
 
-  @include mixins.tablet {
+  @include theme.tablet {
     padding: var(--spacing-sm, 8px);
 
     &:not(.in-layout) {
@@ -33,15 +33,15 @@
   max-width: 480px;
   min-width: 320px;
   box-shadow: var(--shadow-4);
-  border-radius: vars.$border-radius-xl;
+  border-radius: variables.$border-radius-xl;
   overflow: hidden;
   backdrop-filter: blur(10px);
   background: var(--surface-container-color);
   border: 1px solid var(--outline-variant-color);
 
-  @include mixins.mobile {
+  @include theme.mobile {
     margin: 0;
-    border-radius: vars.$border-radius-md;
+    border-radius: variables.$border-radius-md;
     max-width: 100%;
   }
 }
@@ -63,17 +63,17 @@
 }
 
 .profile-form {
-  @include mixins.flex-column;
+  @include theme.flex-column;
   gap: var(--spacing-md, 16px);
 }
 
 .form-actions {
   margin-top: var(--spacing-sm, 8px);
-  @include mixins.flex-center;
+  @include theme.flex-center;
 }
 
 .submit-button {
-  @include mixins.flex-center;
+  @include theme.flex-center;
   gap: var(--spacing-sm, 8px);
 
   .button-spinner {
@@ -83,7 +83,7 @@
 
 // Success state animation
 .form-success {
-  @include mixins.scale-in(0.6s);
+  @include theme.scale-in(0.6s);
 }
 
 // High contrast mode support

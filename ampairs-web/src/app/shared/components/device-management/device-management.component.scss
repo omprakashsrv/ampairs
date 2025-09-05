@@ -1,6 +1,6 @@
 // M3 Material Design Device Management Component
-@use '../../styles/variables' as vars;
-@use '../../styles/mixins' as mixins;
+@use '../../../../theme/mixins' as theme;
+@use '../../../../theme/variables' as variables;
 
 .device-management-card {
   max-width: 800px;
@@ -10,7 +10,7 @@
 }
 
 .loading-container {
-  @include mixins.flex-column-center;
+  @include theme.flex-column-center;
   padding: var(--spacing-xl, 40px);
   gap: var(--spacing-md, 16px);
 }
@@ -21,7 +21,7 @@
 }
 
 .no-devices {
-  @include mixins.flex-column-center;
+  @include theme.flex-column-center;
   padding: var(--spacing-xl, 40px);
   gap: var(--spacing-md, 16px);
   color: var(--on-surface-variant-color);
@@ -35,12 +35,12 @@
 }
 
 .devices-container {
-  @include mixins.flex-column;
+  @include theme.flex-column;
   gap: var(--spacing-md, 16px);
 }
 
 .device-item {
-  transition: all vars.$transition-normal ease-in-out;
+  transition: all variables.$transition-normal ease-in-out;
 
   &.current-device {
     border-color: var(--primary-color);
@@ -73,7 +73,7 @@
 }
 
 .device-metadata {
-  @include mixins.flex-column;
+  @include theme.flex-column;
   gap: var(--spacing-sm, 8px);
   margin-top: var(--spacing-md, 16px);
   padding-left: var(--spacing-md, 16px);
@@ -81,7 +81,7 @@
 }
 
 .metadata-item {
-  @include mixins.flex-center;
+  @include theme.flex-center;
   justify-content: flex-start;
   gap: var(--spacing-sm, 8px);
   font-size: var(--font-body-small-size, 0.875rem);
@@ -96,7 +96,7 @@
 }
 
 .actions-container {
-  @include mixins.flex-center;
+  @include theme.flex-center;
   margin-top: var(--spacing-lg, 24px);
   padding-top: var(--spacing-md, 16px);
   border-top: 1px solid var(--outline-variant-color);
@@ -104,13 +104,13 @@
 
 
 /* M3 Responsive Design */
-@include mixins.tablet {
+@include theme.tablet {
   .device-metadata {
     padding-left: 0;
   }
 }
 
-@include mixins.mobile {
+@include theme.mobile {
   .device-management-card {
     margin: var(--spacing-sm, 8px);
   }

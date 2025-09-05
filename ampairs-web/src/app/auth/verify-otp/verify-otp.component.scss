@@ -1,10 +1,9 @@
 // M3 Material Design Verify OTP Component
-@use '../../shared/styles/variables' as vars;
-@use '../../shared/styles/mixins' as mixins;
+@use '../../../theme/mixins' as theme;
 
 .auth-container {
   min-height: 100vh;
-  @include mixins.flex-center;
+  @include theme.flex-center;
   background-color: var(--surface-dim-color, var(--background-color));
   padding: var(--spacing-md, 16px);
 }
@@ -23,7 +22,7 @@
 }
 
 .auth-form {
-  @include mixins.flex-column;
+  @include theme.flex-column;
   gap: var(--spacing-md, 16px);
   margin-top: var(--spacing-md, 16px);
 }
@@ -53,17 +52,17 @@
 }
 
 .card-actions {
-  @include mixins.flex-column;
+  @include theme.flex-column;
   gap: var(--spacing-sm, 8px);
   padding: var(--spacing-md, 16px) var(--spacing-lg, 24px);
 }
 
 .resend-section {
-  @include mixins.flex-center;
+  @include theme.flex-center;
 }
 
 .timer-text {
-  @include mixins.flex-center;
+  @include theme.flex-center;
   gap: var(--spacing-sm, 8px);
   color: var(--on-surface-variant-color);
   font-size: var(--font-body-small-size, 0.875rem);
@@ -86,7 +85,7 @@
 }
 
 /* M3 Responsive design */
-@include mixins.mobile {
+@include theme.mobile {
   .auth-container {
     padding: var(--spacing-sm, 8px);
   }

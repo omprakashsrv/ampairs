@@ -1,6 +1,6 @@
 // M3 Material Design Workspace Select Component
-@use '../../../shared/styles/variables' as vars;
-@use '../../../shared/styles/mixins' as mixins;
+@use '../../../../theme/mixins' as theme;
+@use '../../../../theme/variables' as variables;
 
 .workspace-select-container {
   // Remove min-height since header is now at layout level
@@ -11,12 +11,12 @@
 .header-toolbar {
   position: sticky;
   top: 0;
-  z-index: vars.$z-index-sticky;
+  z-index: variables.$z-index-sticky;
   box-shadow: var(--shadow-1);
 }
 
 .header-title {
-  @include mixins.flex-center;
+  @include theme.flex-center;
   gap: var(--spacing-sm, 8px);
   font-size: var(--font-title-large-size, 1.375rem);
   font-weight: var(--font-title-large-weight, 400);
@@ -46,7 +46,7 @@
 }
 
 .user-info {
-  @include mixins.flex-center;
+  @include theme.flex-center;
   gap: var(--spacing-sm, 12px);
   padding: var(--spacing-md, 16px);
   align-items: flex-start;
@@ -81,7 +81,7 @@
 
 // M3 Loading State
 .loading-state {
-  @include mixins.flex-column-center;
+  @include theme.flex-column-center;
   gap: var(--spacing-md, 16px);
   padding: var(--spacing-xxl, 64px) 0;
   color: var(--on-surface-color);
@@ -144,7 +144,7 @@
 .workspace-avatar {
   width: 40px;
   height: 40px;
-  @include mixins.flex-center;
+  @include theme.flex-center;
   background-color: var(--primary-container-color);
   color: var(--on-primary-container-color);
   border-radius: var(--border-radius-full, 50%);
@@ -197,7 +197,7 @@
   }
 
   .selection-feedback {
-    @include mixins.flex-center;
+    @include theme.flex-center;
     gap: var(--spacing-xs, 4px);
     padding: var(--spacing-sm, 8px);
     color: var(--primary-color);
@@ -214,7 +214,7 @@
 
 // M3 Empty State
 .empty-state {
-  @include mixins.flex-center;
+  @include theme.flex-center;
   min-height: 400px;
   padding: var(--spacing-xl, 32px);
 }
@@ -226,7 +226,7 @@
 }
 
 .empty-state-content {
-  @include mixins.flex-column-center;
+  @include theme.flex-column-center;
   gap: var(--spacing-lg, 24px);
   padding: var(--spacing-xl, 32px);
 }
@@ -267,7 +267,7 @@
 
 .create-new-content {
   text-align: center;
-  @include mixins.flex-column-center;
+  @include theme.flex-column-center;
   gap: var(--spacing-md, 16px);
 }
 
@@ -282,7 +282,7 @@
 }
 
 // M3 Responsive Design
-@include mixins.tablet {
+@include theme.tablet {
   .content-container {
     padding: var(--spacing-lg, 24px);
   }
@@ -297,7 +297,7 @@
   }
 }
 
-@include mixins.mobile {
+@include theme.mobile {
   .content-container {
     padding: var(--spacing-md, 16px);
   }

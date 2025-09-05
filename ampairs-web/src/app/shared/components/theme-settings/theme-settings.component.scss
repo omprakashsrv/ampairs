@@ -1,6 +1,5 @@
 // M3 Material Design Theme Settings Component
-@use '../../styles/variables' as vars;
-@use '../../styles/mixins' as mixins;
+@use '../../../../theme/mixins' as theme;
 
 .theme-settings-container {
   max-width: 600px;
@@ -9,7 +8,7 @@
   background-color: var(--surface-container-color);
   border: 1px solid var(--outline-variant-color);
 
-  @include mixins.tablet {
+  @include theme.tablet {
     min-width: 320px;
     max-width: 100vw;
   }
@@ -20,13 +19,13 @@
   text-align: center;
   border-bottom: 1px solid var(--outline-variant-color);
 
-  @include mixins.tablet {
+  @include theme.tablet {
     padding: 16px 16px 0;
   }
 }
 
 .settings-title {
-  @include mixins.flex-center;
+  @include theme.flex-center;
   gap: 8px;
   margin: 0 0 8px 0;
   font-size: 1.5rem;
@@ -50,7 +49,7 @@
   max-height: 70vh;
   overflow-y: auto;
 
-  @include mixins.tablet {
+  @include theme.tablet {
     padding: 0 16px;
     max-height: 60vh;
   }
@@ -64,7 +63,7 @@
 
 .tab-content {
   padding: 24px 0;
-  @include mixins.tablet {
+  @include theme.tablet {
     padding: 16px 0;
   }
 }
@@ -131,7 +130,7 @@
       color: var(--on-primary-color);
       font-size: 10px;
       font-weight: bold;
-      @include mixins.flex-center;
+      @include theme.flex-center;
     }
   }
 }
@@ -154,7 +153,7 @@
 }
 
 .theme-info {
-  @include mixins.flex-between;
+  @include theme.flex-between;
   font-size: 0.75rem;
   color: var(--on-surface-color);
 }
@@ -176,11 +175,11 @@
 }
 
 .quick-actions {
-  @include mixins.flex-center;
+  @include theme.flex-center;
 }
 
 .toggle-button {
-  @include mixins.flex-center;
+  @include theme.flex-center;
   gap: 8px;
 }
 
@@ -190,7 +189,7 @@
 }
 
 .slider-container {
-  @include mixins.flex-center;
+  @include theme.flex-center;
   gap: 16px;
   margin-bottom: 12px;
 }
@@ -274,7 +273,7 @@
 
 // Configuration & Settings
 .config-actions {
-  @include mixins.flex-column;
+  @include theme.flex-column;
   gap: 12px;
   margin-bottom: 24px;
   @media (min-width: 600px) {
@@ -284,7 +283,7 @@
 }
 
 .config-button {
-  @include mixins.flex-center;
+  @include theme.flex-center;
   gap: 8px;
   flex: 1;
   @media (min-width: 600px) {
@@ -302,12 +301,12 @@
 }
 
 .current-settings {
-  @include mixins.flex-column;
+  @include theme.flex-column;
   gap: 12px;
 }
 
 .setting-item {
-  @include mixins.flex-between;
+  @include theme.flex-between;
   padding: 8px 0;
   border-bottom: 1px solid var(--outline-variant-color);
 
@@ -332,12 +331,12 @@
 
 .settings-actions {
   padding: 16px 24px 24px;
-  @include mixins.flex-between;
+  @include theme.flex-between;
   gap: 12px;
   border-top: 1px solid var(--outline-variant-color);
-  @include mixins.tablet {
+  @include theme.tablet {
     padding: 16px;
-    @include mixins.flex-column;
+    @include theme.flex-column;
   }
 }
 
@@ -346,20 +345,20 @@
 }
 
 .apply-button {
-  @include mixins.flex-center;
+  @include theme.flex-center;
   gap: 8px;
-  @include mixins.tablet {
+  @include theme.tablet {
     order: -1;
   }
 }
 
 // Responsive
-@include mixins.mobile {
+@include theme.mobile {
   .theme-grid {
     grid-template-columns: repeat(2, 1fr);
   }
   .slider-container {
-    @include mixins.flex-column;
+    @include theme.flex-column;
     gap: 8px;
 
     .density-slider {
@@ -367,7 +366,7 @@
     }
   }
   .preview-buttons {
-    @include mixins.flex-column;
+    @include theme.flex-column;
     align-items: stretch;
   }
 }

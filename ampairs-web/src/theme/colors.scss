@@ -1,0 +1,215 @@
+@use '@angular/material' as mat;
+@use 'theme';
+@use 'palettes';
+
+.light-theme {
+  @include mat.all-component-colors(theme.$light-theme);
+  @include mat.all-component-bases(theme.$light-theme);
+  //Variable values for primary,secondary,tertiary,error,neutral
+  //primary-variant-values:
+  --primary-10: var(--app-primary-10);
+  --primary-20: var(--app-primary-20);
+  --primary-30: var(--app-primary-30);
+  --primary-40: var(--app-primary-40);
+  --primary-50: var(--app-primary-50);
+  --primary-60: var(--app-primary-60);
+  --primary-70: var(--app-primary-70);
+  --primary-80: var(--app-primary-80);
+  --primary-90: var(--app-primary-90);
+  --primary-95: var(--app-primary-95);
+  --primary-98: var(--app-primary-98);
+  --primary-99: var(--app-primary-99);
+  --primary-100: var(--app-primary-100);
+
+
+  //secondary-variant-values:
+  --secondary-10: var(--app-secondary-10);
+  --secondary-20: var(--app-secondary-20);
+  --secondary-30: var(--app-secondary-30);
+  --secondary-40: var(--app-secondary-40);
+  --secondary-50: var(--app-secondary-50);
+  --secondary-60: var(--app-secondary-60);
+  --secondary-70: var(--app-secondary-70);
+  --secondary-80: var(--app-secondary-80);
+  --secondary-90: var(--app-secondary-90);
+  --secondary-95: var(--app-secondary-95);
+  --secondary-98: var(--app-secondary-98);
+  --secondary-99: var(--app-secondary-99);
+  --secondary-100: var(--app-secondary-100);
+
+
+  //tertiary-variant-values:
+  --tertiary-10: var(--app-tertiary-10);
+  --tertiary-20: var(--app-tertiary-20);
+  --tertiary-30: var(--app-tertiary-30);
+  --tertiary-40: var(--app-tertiary-40);
+  --tertiary-50: var(--app-tertiary-50);
+  --tertiary-60: var(--app-tertiary-60);
+  --tertiary-70: var(--app-tertiary-70);
+  --tertiary-80: var(--app-tertiary-80);
+  --tertiary-90: var(--app-tertiary-90);
+  --tertiary-95: var(--app-tertiary-95);
+  --tertiary-98: var(--app-tertiary-98);
+  --tertiary-99: var(--app-tertiary-99);
+  --tertiary-100: var(--app-tertiary-100);
+
+
+  //error-variant-values:
+  --error-10: var(--app-error-10);
+  --error-20: var(--app-error-20);
+  --error-30: var(--app-error-30);
+  --error-40: var(--app-error-40);
+  --error-50: var(--app-error-50);
+  --error-60: var(--app-error-60);
+  --error-70: var(--app-error-70);
+  --error-80: var(--app-error-80);
+  --error-90: var(--app-error-90);
+  --error-95: var(--app-error-95);
+  --error-98: var(--app-error-98);
+  --error-99: var(--app-error-99);
+  --error-100: var(--app-error-100);
+
+
+  //neutral-variant-values:
+  --neutral-10: var(--app-neutral-10);
+  --neutral-20: var(--app-neutral-20);
+  --neutral-30: var(--app-neutral-30);
+  --neutral-40: var(--app-neutral-40);
+  --neutral-50: var(--app-neutral-50);
+  --neutral-60: var(--app-neutral-60);
+  --neutral-70: var(--app-neutral-70);
+  --neutral-80: var(--app-neutral-80);
+  --neutral-90: var(--app-neutral-90);
+  --neutral-95: var(--app-neutral-95);
+  --neutral-98: var(--app-neutral-98);
+  --neutral-99: var(--app-neutral-99);
+  --neutral-100: var(--app-neutral-100);
+  --neutral-25: var(--app-neutral-25);
+  --neutral-35: var(--app-neutral-35);
+  --neutral-4: var(--app-neutral-4);
+  --neutral-6: var(--app-neutral-6);
+  --neutral-12: var(--app-neutral-12);
+  --neutral-17: var(--app-neutral-17);
+  --neutral-22: var(--app-neutral-22);
+  --neutral-24: var(--app-neutral-24);
+  --neutral-87: var(--app-neutral-87);
+  --neutral-92: var(--app-neutral-92);
+  --neutral-94: var(--app-neutral-94);
+  --neutral-96: var(--app-neutral-96);
+
+
+  // M3 Design Tokens for light theme
+  --primary-color: var(--app-light-primary);
+  --primary-container-color: var(--app-light-primary-container);
+  --on-primary-color: var(--app-light-on-primary);
+  --on-primary-container-color: var(--app-light-on-primary-container);
+
+  --secondary-color: var(--app-light-secondary);
+  --secondary-container-color: var(--app-light-secondary-container);
+  --on-secondary-color: var(--app-light-on-secondary);
+  --on-secondary-container-color: var(--app-light-on-secondary-container);
+
+  --tertiary-color: var(--app-light-tertiary);
+  --tertiary-container-color: var(--app-light-tertiary-container);
+  --on-tertiary-color: var(--app-light-on-tertiary);
+  --on-tertiary-container-color: var(--app-light-on-tertiary-container);
+
+  --surface-color: var(--app-light-surface);
+  --surface-container-color: var(--app-light-surface-container);
+  --surface-container-low-color: var(--app-light-surface-container-low);
+  --surface-container-high-color: var(--app-light-surface-container-high);
+  --surface-container-highest-color: var(--app-light-surface-container-highest);
+  --on-surface-color: var(--app-light-on-surface);
+  --on-surface-variant-color: var(--app-light-on-surface-variant);
+
+  --background-color: var(--app-light-background);
+  --on-background-color: var(--app-light-on-background);
+
+  --error-color: var(--app-light-error);
+  --error-container-color: var(--app-light-error-container);
+  --on-error-color: var(--app-light-on-error);
+  --on-error-container-color: var(--app-light-on-error-container);
+
+  --outline-color: var(--app-light-outline);
+  --outline-variant-color: var(--app-light-outline-variant);
+
+  // Legacy compatibility
+  --accent-color: var(--app-light-secondary);
+  --warn-color: var(--app-light-error);
+  --success-color: var(--app-light-tertiary);
+  --warning-color: #ff9800;
+  --info-color: #2196f3;
+  --text-color: var(--app-light-on-background);
+  --text-secondary-color: var(--app-light-on-surface-variant);
+  --text-disabled-color: color-mix(in srgb, var(--app-light-on-surface) 38%, transparent);
+  --text-hint-color: color-mix(in srgb, var(--app-light-on-surface) 60%, transparent);
+  --border-color: var(--app-light-outline-variant);
+  --divider-color: var(--app-light-outline-variant);
+  --disabled-color: var(--app-light-surface-container);
+
+  // M3 Elevation shadows
+  --shadow-1: 0 1px 2px color-mix(in srgb, var(--app-light-on-surface) 30%, transparent), 0 1px 3px 1px color-mix(in srgb, var(--app-light-on-surface) 15%, transparent);
+  --shadow-2: 0 1px 2px color-mix(in srgb, var(--app-light-on-surface) 30%, transparent), 0 2px 6px 2px color-mix(in srgb, var(--app-light-on-surface) 15%, transparent);
+  --shadow-3: 0 4px 8px 3px color-mix(in srgb, var(--app-light-on-surface) 15%, transparent), 0 1px 3px color-mix(in srgb, var(--app-light-on-surface) 30%, transparent);
+  --shadow-4: 0 6px 10px 4px color-mix(in srgb, var(--app-light-on-surface) 15%, transparent), 0 2px 3px color-mix(in srgb, var(--app-light-on-surface) 30%, transparent);
+}
+
+.dark-theme {
+  @include mat.all-component-colors(theme.$dark-theme);
+  @include mat.all-component-bases(theme.$dark-theme);
+
+  // M3 Design Tokens for dark theme
+  --primary-color: var(--app-dark-primary);
+  --primary-container-color: var(--app-dark-primary-container);
+  --on-primary-color: var(--app-dark-on-primary);
+  --on-primary-container-color: var(--app-dark-on-primary-container);
+
+  --secondary-color: var(--app-dark-secondary);
+  --secondary-container-color: var(--app-dark-secondary-container);
+  --on-secondary-color: var(--app-dark-on-secondary);
+  --on-secondary-container-color: var(--app-dark-on-secondary-container);
+
+  --tertiary-color: var(--app-dark-tertiary);
+  --tertiary-container-color: var(--app-dark-tertiary-container);
+  --on-tertiary-color: var(--app-dark-on-tertiary);
+  --on-tertiary-container-color: var(--app-dark-on-tertiary-container);
+
+  --surface-color: var(--app-dark-surface);
+  --surface-container-color: var(--app-dark-surface-container);
+  --surface-container-low-color: var(--app-dark-surface-container-low);
+  --surface-container-high-color: var(--app-dark-surface-container-high);
+  --surface-container-highest-color: var(--app-dark-surface-container-highest);
+  --on-surface-color: var(--app-dark-on-surface);
+  --on-surface-variant-color: var(--app-dark-on-surface-variant);
+
+  --background-color: var(--app-dark-background);
+  --on-background-color: var(--app-dark-on-background);
+
+  --error-color: var(--app-dark-error);
+  --error-container-color: var(--app-dark-error-container);
+  --on-error-color: var(--app-dark-on-error);
+  --on-error-container-color: var(--app-dark-on-error-container);
+
+  --outline-color: var(--app-dark-outline);
+  --outline-variant-color: var(--app-dark-outline-variant);
+
+  // Legacy compatibility
+  --accent-color: var(--app-dark-secondary);
+  --warn-color: var(--app-dark-error);
+  --success-color: var(--app-dark-tertiary);
+  --warning-color: #ff9800;
+  --info-color: #2196f3;
+  --text-color: var(--app-dark-on-background);
+  --text-secondary-color: var(--app-dark-on-surface-variant);
+  --text-disabled-color: color-mix(in srgb, var(--app-dark-on-surface) 38%, transparent);
+  --text-hint-color: color-mix(in srgb, var(--app-dark-on-surface) 60%, transparent);
+  --border-color: var(--app-dark-outline-variant);
+  --divider-color: var(--app-dark-outline-variant);
+  --disabled-color: var(--app-dark-surface-container);
+
+  // M3 Elevation shadows for dark theme
+  --shadow-1: 0 1px 2px color-mix(in srgb, black 30%, transparent), 0 1px 3px 1px color-mix(in srgb, black 15%, transparent);
+  --shadow-2: 0 1px 2px color-mix(in srgb, black 30%, transparent), 0 2px 6px 2px color-mix(in srgb, black 15%, transparent);
+  --shadow-3: 0 4px 8px 3px color-mix(in srgb, black 15%, transparent), 0 1px 3px color-mix(in srgb, black 30%, transparent);
+  --shadow-4: 0 6px 10px 4px color-mix(in srgb, black 15%, transparent), 0 2px 3px color-mix(in srgb, black 30%, transparent);
+}

@@ -1,0 +1,207 @@
+// Material 3 Theme Definitions
+@use '@angular/material' as mat;
+@use 'palettes' as palettes;
+
+// Material 3 Typography is now handled within the theme definition
+// No separate typography config needed for M3
+
+// M3 Light Theme
+//$light-theme: mat.define-theme((
+//  color: (
+//    theme-type: light,
+//    primary: palettes.$primary-palette,
+//    tertiary: palettes.$tertiary-palette,
+//    use-system-variables: true,
+//  )
+//));
+
+$light-theme: mat.define-theme((
+  color: (
+    theme-type: light,
+    primary: palettes.$primary-palette,
+    tertiary: palettes.$tertiary-palette,
+    //use-system-variables: true,
+  ),
+  typography: (
+    brand-family: 'Lato',
+    plain-family: 'Lato',
+  ),
+  density: (
+    scale: -2  // Default to medium-compact density
+  )
+));
+
+// M3 Dark Theme
+$dark-theme: mat.define-theme((
+  color: (
+    theme-type: dark,
+    primary: palettes.$primary-palette,
+    tertiary: palettes.$tertiary-palette,
+    use-system-variables: true,
+  )
+));
+
+// Export theme configurations for TypeScript service
+:root {
+  //primary-variant-values:
+  --app-primary-10: #{mat.get-theme-color($light-theme, primary, 10)};
+  --app-primary-20: #{mat.get-theme-color($light-theme, primary, 20)};
+  --app-primary-30: #{mat.get-theme-color($light-theme, primary, 30)};
+  --app-primary-40: #{mat.get-theme-color($light-theme, primary, 40)};
+  --app-primary-50: #{mat.get-theme-color($light-theme, primary, 50)};
+  --app-primary-60: #{mat.get-theme-color($light-theme, primary, 60)};
+  --app-primary-70: #{mat.get-theme-color($light-theme, primary, 70)};
+  --app-primary-80: #{mat.get-theme-color($light-theme, primary, 80)};
+  --app-primary-90: #{mat.get-theme-color($light-theme, primary, 90)};
+  --app-primary-95: #{mat.get-theme-color($light-theme, primary,95)};
+  --app-primary-98: #{mat.get-theme-color($light-theme, primary,98)};
+  --app-primary-99: #{mat.get-theme-color($light-theme, primary,99)};
+  --app-primary-100: #{mat.get-theme-color($light-theme, primary, 100)};
+
+
+  //secondary-variant-values:
+  --app-secondary-10: #{mat.get-theme-color($light-theme, secondary, 10)};
+  --app-secondary-20: #{mat.get-theme-color($light-theme, secondary, 20)};
+  --app-secondary-30: #{mat.get-theme-color($light-theme, secondary, 30)};
+  --app-secondary-40: #{mat.get-theme-color($light-theme, secondary, 40)};
+  --app-secondary-50: #{mat.get-theme-color($light-theme, secondary, 50)};
+  --app-secondary-60: #{mat.get-theme-color($light-theme, secondary, 60)};
+  --app-secondary-70: #{mat.get-theme-color($light-theme, secondary, 70)};
+  --app-secondary-80: #{mat.get-theme-color($light-theme, secondary, 80)};
+  --app-secondary-90: #{mat.get-theme-color($light-theme, secondary, 90)};
+  --app-secondary-95: #{mat.get-theme-color($light-theme, secondary,95)};
+  --app-secondary-98: #{mat.get-theme-color($light-theme, secondary,98)};
+  --app-secondary-99: #{mat.get-theme-color($light-theme, secondary,99)};
+  --app-secondary-100: #{mat.get-theme-color($light-theme, secondary, 100)};
+
+
+  //tertiary-variant-values:
+  --app-tertiary-10: #{mat.get-theme-color($light-theme, tertiary, 10)};
+  --app-tertiary-20: #{mat.get-theme-color($light-theme, tertiary, 20)};
+  --app-tertiary-30: #{mat.get-theme-color($light-theme, tertiary, 30)};
+  --app-tertiary-40: #{mat.get-theme-color($light-theme, tertiary, 40)};
+  --app-tertiary-50: #{mat.get-theme-color($light-theme, tertiary, 50)};
+  --app-tertiary-60: #{mat.get-theme-color($light-theme, tertiary, 60)};
+  --app-tertiary-70: #{mat.get-theme-color($light-theme, tertiary, 70)};
+  --app-tertiary-80: #{mat.get-theme-color($light-theme, tertiary, 80)};
+  --app-tertiary-90: #{mat.get-theme-color($light-theme, tertiary, 90)};
+  --app-tertiary-95: #{mat.get-theme-color($light-theme, tertiary,95)};
+  --app-tertiary-98: #{mat.get-theme-color($light-theme, tertiary,98)};
+  --app-tertiary-99: #{mat.get-theme-color($light-theme, tertiary,99)};
+  --app-tertiary-100: #{mat.get-theme-color($light-theme, tertiary, 100)};
+
+
+  //error-variant-values:
+  --app-error-10: #{mat.get-theme-color($light-theme, error, 10)};
+  --app-error-20: #{mat.get-theme-color($light-theme, error, 20)};
+  --app-error-30: #{mat.get-theme-color($light-theme, error, 30)};
+  --app-error-40: #{mat.get-theme-color($light-theme, error, 40)};
+  --app-error-50: #{mat.get-theme-color($light-theme, error, 50)};
+  --app-error-60: #{mat.get-theme-color($light-theme, error, 60)};
+  --app-error-70: #{mat.get-theme-color($light-theme, error, 70)};
+  --app-error-80: #{mat.get-theme-color($light-theme, error, 80)};
+  --app-error-90: #{mat.get-theme-color($light-theme, error, 90)};
+  --app-error-95: #{mat.get-theme-color($light-theme, error,95)};
+  --app-error-98: #{mat.get-theme-color($light-theme, error,98)};
+  --app-error-99: #{mat.get-theme-color($light-theme, error,99)};
+  --app-error-100: #{mat.get-theme-color($light-theme, error, 100)};
+
+
+  //neutral-variant-values:
+  --app-neutral-10: #{mat.get-theme-color($light-theme, neutral, 10)};
+  --app-neutral-20: #{mat.get-theme-color($light-theme, neutral, 20)};
+  --app-neutral-30: #{mat.get-theme-color($light-theme, neutral, 30)};
+  --app-neutral-40: #{mat.get-theme-color($light-theme, neutral, 40)};
+  --app-neutral-50: #{mat.get-theme-color($light-theme, neutral, 50)};
+  --app-neutral-60: #{mat.get-theme-color($light-theme, neutral, 60)};
+  --app-neutral-70: #{mat.get-theme-color($light-theme, neutral, 70)};
+  --app-neutral-80: #{mat.get-theme-color($light-theme, neutral, 80)};
+  --app-neutral-90: #{mat.get-theme-color($light-theme, neutral, 90)};
+  --app-neutral-95: #{mat.get-theme-color($light-theme, neutral,95)};
+  --app-neutral-98: #{mat.get-theme-color($light-theme, neutral,98)};
+  --app-neutral-99: #{mat.get-theme-color($light-theme, neutral,99)};
+  --app-neutral-100: #{mat.get-theme-color($light-theme, neutral, 100)};
+  --app-neutral-25: #{mat.get-theme-color($light-theme, neutral, 25)};
+  --app-neutral-35: #{mat.get-theme-color($light-theme, neutral, 35)};
+  --app-neutral-4: #{mat.get-theme-color($light-theme, neutral, 4)};
+  --app-neutral-6: #{mat.get-theme-color($light-theme, neutral, 6)};
+  --app-neutral-12: #{mat.get-theme-color($light-theme, neutral, 12)};
+  --app-neutral-17: #{mat.get-theme-color($light-theme, neutral, 17)};
+  --app-neutral-22: #{mat.get-theme-color($light-theme, neutral, 22)};
+  --app-neutral-24: #{mat.get-theme-color($light-theme, neutral, 24)};
+  --app-neutral-87: #{mat.get-theme-color($light-theme, neutral, 87)};
+  --app-neutral-92: #{mat.get-theme-color($light-theme, neutral, 92)};
+  --app-neutral-94: #{mat.get-theme-color($light-theme, neutral, 94)};
+  --app-neutral-96: #{mat.get-theme-color($light-theme, neutral, 96)};
+
+
+  // Light theme color tokens
+  --app-light-primary: #{mat.get-theme-color($light-theme, primary,40)};
+  --app-light-primary-container: #{mat.get-theme-color($light-theme, primary-container)};
+  --app-light-on-primary: #{mat.get-theme-color($light-theme, on-primary)};
+  --app-light-on-primary-container: #{mat.get-theme-color($light-theme, on-primary-container)};
+
+  --app-light-secondary: #{mat.get-theme-color($light-theme, secondary)};
+  --app-light-secondary-container: #{mat.get-theme-color($light-theme, secondary-container)};
+  --app-light-on-secondary: #{mat.get-theme-color($light-theme, on-secondary)};
+  --app-light-on-secondary-container: #{mat.get-theme-color($light-theme, on-secondary-container)};
+
+  --app-light-tertiary: #{mat.get-theme-color($light-theme, tertiary)};
+  --app-light-tertiary-container: #{mat.get-theme-color($light-theme, tertiary-container)};
+  --app-light-on-tertiary: #{mat.get-theme-color($light-theme, on-tertiary)};
+  --app-light-on-tertiary-container: #{mat.get-theme-color($light-theme, on-tertiary-container)};
+
+  --app-light-surface: #{mat.get-theme-color($light-theme, surface)};
+  --app-light-surface-container: #{mat.get-theme-color($light-theme, surface-container)};
+  --app-light-surface-container-low: #{mat.get-theme-color($light-theme, surface-container-low)};
+  --app-light-surface-container-high: #{mat.get-theme-color($light-theme, surface-container-high)};
+  --app-light-surface-container-highest: #{mat.get-theme-color($light-theme, surface-container-highest)};
+  --app-light-on-surface: #{mat.get-theme-color($light-theme, on-surface)};
+  --app-light-on-surface-variant: #{mat.get-theme-color($light-theme, on-surface-variant)};
+
+  --app-light-background: #{mat.get-theme-color($light-theme, background)};
+  --app-light-on-background: #{mat.get-theme-color($light-theme, on-background)};
+
+  --app-light-error: #{mat.get-theme-color($light-theme, error)};
+  --app-light-error-container: #{mat.get-theme-color($light-theme, error-container)};
+  --app-light-on-error: #{mat.get-theme-color($light-theme, on-error)};
+  --app-light-on-error-container: #{mat.get-theme-color($light-theme, on-error-container)};
+
+  --app-light-outline: #{mat.get-theme-color($light-theme, outline)};
+  --app-light-outline-variant: #{mat.get-theme-color($light-theme, outline-variant)};
+
+  // Dark theme color tokens
+  --app-dark-primary: #{mat.get-theme-color($dark-theme, primary)};
+  --app-dark-primary-container: #{mat.get-theme-color($dark-theme, primary-container)};
+  --app-dark-on-primary: #{mat.get-theme-color($dark-theme, on-primary)};
+  --app-dark-on-primary-container: #{mat.get-theme-color($dark-theme, on-primary-container)};
+
+  --app-dark-secondary: #{mat.get-theme-color($dark-theme, secondary)};
+  --app-dark-secondary-container: #{mat.get-theme-color($dark-theme, secondary-container)};
+  --app-dark-on-secondary: #{mat.get-theme-color($dark-theme, on-secondary)};
+  --app-dark-on-secondary-container: #{mat.get-theme-color($dark-theme, on-secondary-container)};
+
+  --app-dark-tertiary: #{mat.get-theme-color($dark-theme, tertiary)};
+  --app-dark-tertiary-container: #{mat.get-theme-color($dark-theme, tertiary-container)};
+  --app-dark-on-tertiary: #{mat.get-theme-color($dark-theme, on-tertiary)};
+  --app-dark-on-tertiary-container: #{mat.get-theme-color($dark-theme, on-tertiary-container)};
+
+  --app-dark-surface: #{mat.get-theme-color($dark-theme, surface)};
+  --app-dark-surface-container: #{mat.get-theme-color($dark-theme, surface-container)};
+  --app-dark-surface-container-low: #{mat.get-theme-color($dark-theme, surface-container-low)};
+  --app-dark-surface-container-high: #{mat.get-theme-color($dark-theme, surface-container-high)};
+  --app-dark-surface-container-highest: #{mat.get-theme-color($dark-theme, surface-container-highest)};
+  --app-dark-on-surface: #{mat.get-theme-color($dark-theme, on-surface)};
+  --app-dark-on-surface-variant: #{mat.get-theme-color($dark-theme, on-surface-variant)};
+
+  --app-dark-background: #{mat.get-theme-color($dark-theme, background)};
+  --app-dark-on-background: #{mat.get-theme-color($dark-theme, on-background)};
+
+  --app-dark-error: #{mat.get-theme-color($dark-theme, error)};
+  --app-dark-error-container: #{mat.get-theme-color($dark-theme, error-container)};
+  --app-dark-on-error: #{mat.get-theme-color($dark-theme, on-error)};
+  --app-dark-on-error-container: #{mat.get-theme-color($dark-theme, on-error-container)};
+
+  --app-dark-outline: #{mat.get-theme-color($dark-theme, outline)};
+  --app-dark-outline-variant: #{mat.get-theme-color($dark-theme, outline-variant)};
+}

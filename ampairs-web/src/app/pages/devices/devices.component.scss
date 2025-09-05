@@ -1,6 +1,5 @@
 // M3 Material Design Devices Page
-@use '../../shared/styles/variables' as vars;
-@use '../../shared/styles/mixins' as mixins;
+@use '../../../theme/mixins' as theme;
 
 .devices-page {
   padding: var(--spacing-lg, 24px);
@@ -8,7 +7,7 @@
   width: 100%;
   margin: 0 auto;
 
-  @include mixins.mobile {
+  @include theme.mobile {
     padding: var(--spacing-md, 16px);
   }
 }

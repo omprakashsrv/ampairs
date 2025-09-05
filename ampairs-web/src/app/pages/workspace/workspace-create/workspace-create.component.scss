@@ -1,6 +1,6 @@
 // M3 Material Design Workspace Create Component
-@use '../../../shared/styles/variables' as vars;
-@use '../../../shared/styles/mixins' as mixins;
+@use '../../../../theme/mixins' as theme;
+@use '../../../../theme/variables' as variables;
 
 .workspace-create-container {
   // Remove min-height since header is now at layout level
@@ -11,12 +11,12 @@
 .header-toolbar {
   position: sticky;
   top: 0;
-  z-index: vars.$z-index-sticky;
+  z-index: variables.$z-index-sticky;
   box-shadow: var(--shadow-1);
 }
 
 .header-title {
-  @include mixins.flex-center;
+  @include theme.flex-center;
   gap: var(--spacing-sm, 8px);
   font-size: var(--font-title-large-size, 1.375rem);
   font-weight: var(--font-title-large-weight, 400);
@@ -33,7 +33,7 @@
 }
 
 .step-indicator {
-  @include mixins.flex-center;
+  @include theme.flex-center;
   gap: var(--spacing-xs, 4px);
 }
 
@@ -70,7 +70,7 @@
 }
 
 .step-avatar {
-  @include mixins.flex-center;
+  @include theme.flex-center;
   width: 40px;
   height: 40px;
   background-color: var(--primary-container-color);
@@ -86,7 +86,7 @@
 
 // M3 Form Styling
 .step-form {
-  @include mixins.flex-column;
+  @include theme.flex-column;
   gap: var(--spacing-lg, 24px);
 }
 
@@ -96,14 +96,14 @@
 
 // M3 Type Option Styling
 .type-option {
-  @include mixins.flex-center;
+  @include theme.flex-center;
   gap: var(--spacing-sm, 12px);
   align-items: flex-start;
   padding: var(--spacing-xs, 4px) 0;
 }
 
 .type-content {
-  @include mixins.flex-column;
+  @include theme.flex-column;
   gap: var(--spacing-xs, 2px);
 }
 
@@ -128,7 +128,7 @@
 }
 
 .info-content {
-  @include mixins.flex-center;
+  @include theme.flex-center;
   gap: var(--spacing-sm, 12px);
   align-items: flex-start;
 }
@@ -153,7 +153,7 @@
 
 // M3 Card Actions
 .step-actions {
-  @include mixins.flex-between;
+  @include theme.flex-between;
   padding: var(--spacing-md, 16px) var(--spacing-lg, 24px);
   border-top: 1px solid var(--outline-variant-color);
 }
@@ -186,7 +186,7 @@
 }
 
 // M3 Responsive Design
-@include mixins.tablet {
+@include theme.tablet {
   .content-container {
     padding: var(--spacing-lg, 24px);
   }
@@ -200,7 +200,7 @@
   }
 }
 
-@include mixins.mobile {
+@include theme.mobile {
   .content-container {
     padding: var(--spacing-md, 16px);
   }

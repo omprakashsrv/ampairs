@@ -6,25 +6,34 @@
 // Angular Material core
 @use '@angular/material' as mat;
 
-// Import M3 theme system
-@use 'app/shared/styles/theme-m3' as m3;
+// Import comprehensive M3 theme system from src/theme
+@use 'theme/theme' as theme;
+@use 'theme/fonts' as fonts;
+@use 'theme/spacing' as spacing;
+@use 'theme/colors' as colors;
+@use 'theme/common' as common;
+@use 'theme/density' as density;
 
 // Include Material core (M3 compatible)
 @include mat.core();
+
+// Import theme definitions - use updated theme references
+$light-theme: theme.$light-theme;
+$dark-theme: theme.$dark-theme;
 
 // ================================
 // Material 3 Theme Application
 // ================================
 
 // Apply M3 light theme as default
-@include mat.all-component-themes(m3.$ampairs-light-theme);
+@include mat.all-component-themes($light-theme);
 
-// ================================
+// ================================  
 // Material 3 Theme Classes
 // ================================
 
 .light-theme {
-  @include mat.all-component-colors(m3.$ampairs-light-theme);
+  @include mat.all-component-colors($light-theme);
 
   // M3 Design Tokens for light theme
   --primary-color: var(--app-light-primary);
@@ -83,7 +92,7 @@
 }
 
 .dark-theme {
-  @include mat.all-component-colors(m3.$ampairs-dark-theme);
+  @include mat.all-component-colors($dark-theme);
 
   // M3 Design Tokens for dark theme
   --primary-color: var(--app-dark-primary);
@@ -166,7 +175,47 @@ body {
 // ================================
 
 // ================================
-// Material 3 Dynamic Density Classes
+// Apply Comprehensive Theme System
+// ================================
+
+// Apply font tokens from src/theme/fonts.scss
+// These provide responsive typography that adapts to user preferences
+body {
+  &.font-xs { @extend .font-xs; }
+  &.font-s { @extend .font-s; }
+  &.font-m { @extend .font-m; }
+  &.font-l { @extend .font-l; }
+  &.font-xl { @extend .font-xl; }
+}
+
+// Apply spacing tokens from src/theme/spacing.scss  
+// These provide responsive spacing that adapts to density settings
+body {
+  &.spacing-xs { @extend .spacing-xs; }
+  &.spacing-s { @extend .spacing-s; }
+  &.spacing-m { @extend .spacing-m; }
+  &.spacing-l { @extend .spacing-l; }
+  &.spacing-xl { @extend .spacing-xl; }
+}
+
+// Apply density tokens from src/theme/density.scss
+body {
+  &.density-comfortable { @extend .density-comfortable; }
+  &.density-compact { @extend .density-compact; }
+  &.density-cozy { @extend .density-cozy; }
+}
+
+// Apply common theme utilities
+body { @extend .common-theme; }
+
+// Apply font system by default (font-m is the baseline)
+body { @extend .font-common, .font-m; }
+
+// Apply spacing system by default (spacing-m is the baseline)
+body { @extend .spacing-m; }
+
+// ================================
+// Material 3 Dynamic Density Classes  
 // ================================
 
 // M3 Density classes for runtime theme switching
@@ -229,6 +278,49 @@ body {
 // ================================
 // Utility Classes
 // ================================
+
+// Typography utilities using M3 tokens
+.text-display-large { font: var(--mat-sys-display-large); }
+.text-display-medium { font: var(--mat-sys-display-medium); }
+.text-display-small { font: var(--mat-sys-display-small); }
+.text-headline-large { font: var(--mat-sys-headline-large); }
+.text-headline-medium { font: var(--mat-sys-headline-medium); }
+.text-headline-small { font: var(--mat-sys-headline-small); }
+.text-title-large { font: var(--mat-sys-title-large); }
+.text-title-medium { font: var(--mat-sys-title-medium); }
+.text-title-small { font: var(--mat-sys-title-small); }
+.text-body-large { font: var(--mat-sys-body-large); }
+.text-body-medium { font: var(--mat-sys-body-medium); }
+.text-body-small { font: var(--mat-sys-body-small); }
+.text-label-large { font: var(--mat-sys-label-large); }
+.text-label-medium { font: var(--mat-sys-label-medium); }
+.text-label-small { font: var(--mat-sys-label-small); }
+
+// Spacing utilities using M3 tokens
+.p-xs { padding: var(--mat-sys-spacing-x-small); }
+.p-sm { padding: var(--mat-sys-spacing-small); }
+.p-md { padding: var(--mat-sys-spacing-medium); }
+.p-lg { padding: var(--mat-sys-spacing-large); }
+.p-xl { padding: var(--mat-sys-spacing-x-large); }
+.p-2xl { padding: var(--mat-sys-spacing-xx-large); }
+.p-3xl { padding: var(--mat-sys-spacing-xxx-large); }
+
+.m-xs { margin: var(--mat-sys-spacing-x-small); }
+.m-sm { margin: var(--mat-sys-spacing-small); }
+.m-md { margin: var(--mat-sys-spacing-medium); }
+.m-lg { margin: var(--mat-sys-spacing-large); }
+.m-xl { margin: var(--mat-sys-spacing-x-large); }
+.m-2xl { margin: var(--mat-sys-spacing-xx-large); }
+.m-3xl { margin: var(--mat-sys-spacing-xxx-large); }
+
+// Gap utilities for flexbox/grid
+.gap-xs { gap: var(--mat-sys-spacing-x-small); }
+.gap-sm { gap: var(--mat-sys-spacing-small); }
+.gap-md { gap: var(--mat-sys-spacing-medium); }
+.gap-lg { gap: var(--mat-sys-spacing-large); }
+.gap-xl { gap: var(--mat-sys-spacing-x-large); }
+.gap-2xl { gap: var(--mat-sys-spacing-xx-large); }
+.gap-3xl { gap: var(--mat-sys-spacing-xxx-large); }
 
 // Color utilities
 .text-primary {
@@ -369,29 +461,29 @@ body {
   text-align: justify;
 }
 
-// Border radius utilities
+// Border radius utilities - now using M3 corner tokens
 .rounded-none {
-  border-radius: 0;
+  border-radius: var(--mat-sys-corner-none);
 }
 
 .rounded-sm {
-  border-radius: 4px;
+  border-radius: var(--mat-sys-corner-extra-small);
 }
 
 .rounded {
-  border-radius: 8px;
+  border-radius: var(--mat-sys-corner-small);
 }
 
 .rounded-lg {
-  border-radius: 12px;
+  border-radius: var(--mat-sys-corner-medium);
 }
 
 .rounded-xl {
-  border-radius: 16px;
+  border-radius: var(--mat-sys-corner-large);
 }
 
 .rounded-full {
-  border-radius: 9999px;
+  border-radius: var(--mat-sys-corner-full);
 }
 
 // Shadow utilities

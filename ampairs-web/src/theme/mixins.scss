@@ -1,28 +1,27 @@
 // Material 3 Compatible Mixins
 // Updated to use CSS custom properties from M3 theme system
-@use 'variables' as vars;
 
 // Responsive Mixins
 @mixin mobile {
-  @media (max-width: #{vars.$breakpoint-sm - 1px}) {
+  @media (max-width: 767px) {
     @content;
   }
 }
 
 @mixin tablet {
-  @media (min-width: vars.$breakpoint-sm) and (max-width: #{vars.$breakpoint-md - 1px}) {
+  @media (min-width: 768px) and (max-width: 1023px) {
     @content;
   }
 }
 
 @mixin desktop {
-  @media (min-width: vars.$breakpoint-md) {
+  @media (min-width: 1024px) {
     @content;
   }
 }
 
 @mixin large-desktop {
-  @media (min-width: vars.$breakpoint-lg) {
+  @media (min-width: 1200px) {
     @content;
   }
 }
@@ -50,14 +49,6 @@
   align-items: center;
 }
 
-// Note: Card, Button, Form, and Loading Spinner mixins removed
-// Use Angular Material M3 components instead:
-// - mat-card for cards
-// - mat-button, mat-raised-button, mat-stroked-button for buttons
-// - mat-form-field for forms
-// - mat-progress-spinner for loading indicators
-// All can be customized via M3 design tokens
-
 // Text Mixins
 @mixin text-truncate {
   overflow: hidden;
@@ -72,20 +63,16 @@
   overflow: hidden;
 }
 
-// Note: Shadow mixins removed - use M3 elevation tokens instead:
-// var(--shadow-1), var(--shadow-2), var(--shadow-3), var(--shadow-4)
-// Apply directly via CSS: box-shadow: var(--shadow-2);
-
-// Animation Mixins
-@mixin fade-in($duration: vars.$transition-normal) {
+// Animation Mixins using M3 tokens
+@mixin fade-in($duration: var(--transition-normal, 0.3s)) {
   animation: fadeIn $duration ease-in forwards;
 }
 
-@mixin slide-up($duration: vars.$transition-normal) {
+@mixin slide-up($duration: var(--transition-normal, 0.3s)) {
   animation: slideUp $duration ease-out forwards;
 }
 
-@mixin scale-in($duration: vars.$transition-normal) {
+@mixin scale-in($duration: var(--transition-normal, 0.3s)) {
   animation: scaleIn $duration ease-out forwards;
 }
 
@@ -102,7 +89,7 @@
 @keyframes slideUp {
   from {
     opacity: 0;
-    transform: translateY(20px);
+    transform: translateY(var(--mat-sys-spacing-large, 1rem));
   }
   to {
     opacity: 1;
@@ -139,5 +126,35 @@
     content: '';
     display: table;
     clear: both;
+  }
+}
+
+// M3-specific mixins for common patterns
+@mixin surface-elevated {
+  background-color: var(--surface-container-color);
+  box-shadow: var(--shadow-2);
+  border-radius: var(--mat-sys-corner-medium);
+}
+
+@mixin surface-card {
+  background-color: var(--surface-container-color);
+  box-shadow: var(--shadow-1);
+  border-radius: var(--mat-sys-corner-large);
+  border: 1px solid var(--outline-variant-color);
+}
+
+// Focus states using M3 tokens
+@mixin focus-ring {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+// Interactive states
+@mixin hover-lift {
+  transition: all var(--transition-fast, 0.15s) ease-out;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-3);
   }
 }

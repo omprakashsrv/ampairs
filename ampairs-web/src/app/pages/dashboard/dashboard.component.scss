@@ -1,5 +1,4 @@
-@use '../../shared/styles/variables' as vars;
-@use '../../shared/styles/mixins' as mixins;
+@use '../../../theme/mixins' as theme;
 
 .dashboard-container {
   padding: var(--spacing-lg, 24px);
@@ -47,7 +46,7 @@
   }
 
   .action-button {
-    @include mixins.flex-column;
+    @include theme.flex-column;
     gap: var(--spacing-sm, 8px);
     padding: var(--spacing-lg, 24px);
     height: auto;
@@ -64,7 +63,7 @@
   }
 }
 
-@include mixins.mobile {
+@include theme.mobile {
   .dashboard-container {
     padding: var(--spacing-md, 16px);
   }
