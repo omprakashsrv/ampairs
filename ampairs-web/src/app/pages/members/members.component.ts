@@ -266,7 +266,7 @@ export class MembersComponent implements OnInit {
     if (!workspace) return;
 
     const dialogRef = this.dialog.open(MemberInviteDialogComponent, {
-      width: '700px',
+      width: '540px',
       maxWidth: '95vw',
       maxHeight: '90vh',
       data: {

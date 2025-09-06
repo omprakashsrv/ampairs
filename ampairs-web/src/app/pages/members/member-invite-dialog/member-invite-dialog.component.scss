@@ -12,9 +12,7 @@
 // ========== HEADER ==========
 
 .dialog-header {
-  padding: vars.$spacing-xl vars.$spacing-xl vars.$spacing-lg !important;
   border-bottom: 1px solid vars.$color-outline-variant;
-  margin: 0 !important;
 
   .header-content {
     display: flex;
@@ -56,7 +54,6 @@
 
 .dialog-content {
   flex: 1;
-  padding: 0 !important;
   overflow: hidden;
 
   .mat-mdc-tab-group {
@@ -69,9 +66,13 @@
 
       .mat-mdc-tab-body {
         overflow-y: auto;
+        height: 100%;
 
         .mat-mdc-tab-body-content {
           overflow-y: auto;
+          height: 100%;
+          display: flex;
+          flex-direction: column;
         }
       }
     }
@@ -82,6 +83,9 @@
   padding: vars.$spacing-xl;
   height: 100%;
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 // ========== FORMS ==========
@@ -90,9 +94,41 @@
   display: flex;
   flex-direction: column;
   gap: vars.$spacing-lg;
+  flex: 1;
+  min-height: 0;
 
   .full-width {
     width: 100%;
+  }
+
+  // ========== PHONE FIELD STYLES ==========
+
+  .phone-field-container {
+    display: flex;
+    gap: vars.$spacing-md;
+    align-items: flex-start;
+    margin-bottom: vars.$spacing-sm;
+
+    .country-code-field {
+      flex: 0 0 120px;
+
+      input {
+        background-color: vars.$color-surface-container-low;
+        color: vars.$color-on-surface-variant;
+        font-weight: 500;
+      }
+    }
+
+    .phone-number-field {
+      flex: 1;
+    }
+  }
+
+  .phone-hint {
+    font-size: vars.$font-size-sm;
+    color: vars.$color-on-surface-variant;
+    margin-bottom: vars.$spacing-lg;
+    padding-left: vars.$spacing-md;
   }
 
   mat-form-field {
@@ -132,6 +168,28 @@
   }
 }
 
+// ========== ROLE TRIGGER ==========
+
+.role-trigger-content {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: vars.$spacing-sm;
+  width: 100%;
+
+  .role-icon {
+    font-size: 1.125rem;
+    width: 1.125rem;
+    height: 1.125rem;
+    color: vars.$color-primary;
+  }
+
+  .role-name {
+    font-weight: 500;
+    color: vars.$color-on-surface;
+  }
+}
+
 // ========== PREVIEW ==========
 
 .invitation-preview {
@@ -140,6 +198,7 @@
   background-color: vars.$color-surface-container-low;
   border-radius: vars.$border-radius-lg;
   border: 1px solid vars.$color-outline-variant;
+  flex-shrink: 0;
 
   h4 {
     margin: 0 0 vars.$spacing-md;
@@ -340,7 +399,6 @@
   }
 
   .dialog-header {
-    padding: vars.$spacing-lg !important;
 
     .header-content {
       .header-icon {
@@ -395,15 +453,6 @@
       width: 100%;
       min-width: unset;
     }
-  }
-}
-
-// ========== ACCESSIBILITY ==========
-
-.invite-dialog {
-  :focus-visible {
-    outline: 2px solid vars.$color-primary;
-    outline-offset: 2px;
   }
 }
 

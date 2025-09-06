@@ -67,18 +67,20 @@ export interface WorkspaceInvitation {
 }
 
 export interface CreateInvitationRequest {
-  email: string;
+  email?: string;
   phone?: string;
-  role: WorkspaceRole;
-  team_ids?: string[];
-  custom_message?: string;
-  expires_in?: string; // e.g., "7d", "24h"
+  country_code?: number;
+  invited_role: WorkspaceRole;
+  name?: string;
+  message?: string;
+  expires_in_days?: number;
+  send_notification?: boolean;
+  permissions?: string[];
 }
 
 export interface BulkInvitationRequest {
   invitations: CreateInvitationRequest[];
   default_message?: string;
-  expires_in?: string;
 }
 
 export interface UpdateMemberRequest {

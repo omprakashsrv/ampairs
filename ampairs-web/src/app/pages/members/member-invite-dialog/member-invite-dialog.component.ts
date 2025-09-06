@@ -53,6 +53,7 @@ export interface InviteDialogData {
 export class MemberInviteDialogComponent implements OnInit {
   loading = signal(false);
   currentTab = signal(0);
+  singleFormValid = signal(false);
   
   // Forms
   singleInviteForm: FormGroup;
@@ -71,7 +72,7 @@ export class MemberInviteDialogComponent implements OnInit {
 
   // Computed properties
   canSubmitSingle = computed(() => {
-    return this.singleInviteForm?.valid && !this.loading();
+    return this.singleFormValid() && !this.loading();
   });
 
   canSubmitBulk = computed(() => {
@@ -92,23 +93,30 @@ export class MemberInviteDialogComponent implements OnInit {
   ) {
     this.singleInviteForm = this.createSingleInviteForm();
     this.bulkInviteForm = this.createBulkInviteForm();
+    
+    // Track form validity changes
+    this.singleInviteForm.statusChanges.subscribe(() => {
+      this.singleFormValid.set(this.singleInviteForm.valid);
+    });
+    
+    // Set initial validity
+    this.singleFormValid.set(this.singleInviteForm.valid);
   }
 
   ngOnInit(): void {
     // Focus on email field after dialog opens
     setTimeout(() => {
-      const emailInput = document.querySelector('input[formControlName="email"]') as HTMLInputElement;
-      emailInput?.focus();
+      const phoneInput = document.querySelector('input[formControlName="phone"]') as HTMLInputElement;
+      phoneInput?.focus();
     }, 100);
   }
 
   private createSingleInviteForm(): FormGroup {
     return this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      phone: [''],
+      phone: ['', [Validators.required, Validators.pattern(/^[6-9]\d{9}$/)]],
       role: [WorkspaceRole.MEMBER, Validators.required],
       custom_message: [''],
-      expires_in: ['7d', Validators.required]
+      expires_in_days: [7, [Validators.required, Validators.min(1), Validators.max(30)]]
     });
   }
 
@@ -117,7 +125,7 @@ export class MemberInviteDialogComponent implements OnInit {
       emails: this.fb.array([this.fb.control('', [Validators.email])]),
       role: [WorkspaceRole.MEMBER, Validators.required],
       default_message: [''],
-      expires_in: ['7d', Validators.required]
+      expires_in_days: [7, [Validators.required, Validators.min(1), Validators.max(30)]]
     });
   }
 
@@ -146,16 +154,17 @@ export class MemberInviteDialogComponent implements OnInit {
     try {
       const formValue = this.singleInviteForm.value;
       const invitationData: CreateInvitationRequest = {
-        email: formValue.email.trim(),
-        phone: formValue.phone?.trim() || undefined,
-        role: formValue.role,
-        custom_message: formValue.custom_message?.trim() || undefined,
-        expires_in: formValue.expires_in
+        phone: formValue.phone.trim(),
+        country_code: 91,
+        invited_role: formValue.role,
+        message: formValue.custom_message?.trim() || undefined,
+        expires_in_days: formValue.expires_in_days,
+        send_notification: true
       };
 
       await this.memberService.createInvitation(this.data.workspaceId, invitationData);
       
-      this.showSuccess(`Invitation sent to ${invitationData.email}`);
+      this.showSuccess(`Invitation sent to +91${formValue.phone}`);
       this.dialogRef.close(true);
     } catch (error: any) {
       this.showError(error.message || 'Failed to send invitation');
@@ -226,10 +235,12 @@ export class MemberInviteDialogComponent implements OnInit {
       const bulkData: BulkInvitationRequest = {
         invitations: validEmails.map((email: string) => ({
           email: email.trim(),
-          role: formValue.role
+          invited_role: formValue.role,
+          message: formValue.default_message?.trim() || undefined,
+          expires_in_days: formValue.expires_in_days,
+          send_notification: true
         })),
-        default_message: formValue.default_message?.trim() || undefined,
-        expires_in: formValue.expires_in
+        default_message: formValue.default_message?.trim() || undefined
       };
 
       await this.memberService.createBulkInvitations(this.data.workspaceId, bulkData);
@@ -298,6 +309,10 @@ export class MemberInviteDialogComponent implements OnInit {
       default:
         return '';
     }
+  }
+
+  getRoleDisplayName(role: WorkspaceRole): string {
+    return ROLE_DISPLAY_NAMES[role] || role;
   }
 
   // ========== NOTIFICATION METHODS ==========
