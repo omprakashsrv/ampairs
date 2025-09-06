@@ -21,8 +21,6 @@ import {MatDialog, MatDialogModule} from '@angular/material/dialog';
 import {MatToolbarModule} from '@angular/material/toolbar';
 import {MatDividerModule} from '@angular/material/divider';
 import {MatTabsModule} from '@angular/material/tabs';
-import {MatCheckboxModule} from '@angular/material/checkbox';
-import {SelectionModel} from '@angular/cdk/collections';
 
 import {WorkspaceService} from '../../core/services/workspace.service';
 import {MemberService} from '../../core/services/member.service';
@@ -31,9 +29,7 @@ import {
   InvitationSearchFilters,
   InvitationStatus,
   MemberSearchFilters,
-  MemberStatus,
   ROLE_DISPLAY_NAMES,
-  STATUS_COLORS,
   WorkspaceInvitation,
   WorkspaceMemberListItem,
   WorkspaceRole
@@ -66,8 +62,7 @@ import {MemberEditDialogComponent} from './member-edit-dialog/member-edit-dialog
     MatDialogModule,
     MatToolbarModule,
     MatDividerModule,
-    MatTabsModule,
-    MatCheckboxModule
+    MatTabsModule
   ],
   templateUrl: './members.component.html',
   styleUrl: './members.component.scss'
@@ -98,12 +93,8 @@ export class MembersComponent implements OnInit {
   invitationStatistics = this.memberService.invitationStatistics;
 
   // Table configuration
-  memberColumns = ['select', 'member', 'role', 'status', 'lastActivity', 'actions'];
-  invitationColumns = ['select', 'email', 'role', 'status', 'invitedBy', 'expiresAt', 'actions'];
-
-  // Selection
-  memberSelection = new SelectionModel<WorkspaceMemberListItem>(true, []);
-  invitationSelection = new SelectionModel<WorkspaceInvitation>(true, []);
+  memberColumns = ['member', 'role', 'status', 'lastActivity', 'actions'];
+  invitationColumns = ['email', 'role', 'status', 'invitedBy', 'expiresAt', 'actions'];
 
   // Filters
   memberFilters: MemberSearchFilters = {};
@@ -116,15 +107,11 @@ export class MembersComponent implements OnInit {
 
   // Constants for template
   readonly WorkspaceRole = WorkspaceRole;
-  readonly MemberStatus = MemberStatus;
   readonly InvitationStatus = InvitationStatus;
   readonly ROLE_DISPLAY_NAMES = ROLE_DISPLAY_NAMES;
-  readonly STATUS_COLORS = STATUS_COLORS;
   readonly INVITATION_STATUS_COLORS = INVITATION_STATUS_COLORS;
 
   // Computed properties
-  hasSelectedMembers = computed(() => this.memberSelection.selected.length > 0);
-  hasSelectedInvitations = computed(() => this.invitationSelection.selected.length > 0);
 
   constructor() {
     this.searchForm = this.fb.group({
@@ -255,8 +242,6 @@ export class MembersComponent implements OnInit {
 
   onTabChange(tabIndex: number): void {
     this.selectedTab.set(tabIndex);
-    this.memberSelection.clear();
-    this.invitationSelection.clear();
   }
 
   // ========== MEMBER ACTIONS ==========
@@ -359,81 +344,6 @@ export class MembersComponent implements OnInit {
     }
   }
 
-  // ========== BULK ACTIONS ==========
-
-  async bulkRemoveMembers(): Promise<void> {
-    const selected = this.memberSelection.selected;
-    if (selected.length === 0) return;
-
-    const confirmed = confirm(`Are you sure you want to remove ${selected.length} member(s) from this workspace?`);
-    if (!confirmed) return;
-
-    const wId = this.workspaceId();
-    if (!wId) return;
-
-    try {
-      const memberIds = selected.map(m => m.id);
-      await this.memberService.bulkRemoveMembers(wId, memberIds);
-      this.showSuccess(`${selected.length} member(s) have been removed`);
-      this.memberSelection.clear();
-      await this.loadMembers();
-    } catch (error: any) {
-      this.showError(error.message || 'Failed to remove members');
-    }
-  }
-
-  async bulkCancelInvitations(): Promise<void> {
-    const selected = this.invitationSelection.selected;
-    if (selected.length === 0) return;
-
-    const confirmed = confirm(`Are you sure you want to cancel ${selected.length} invitation(s)?`);
-    if (!confirmed) return;
-
-    const wId = this.workspaceId();
-    if (!wId) return;
-
-    try {
-      // Cancel invitations one by one (API doesn't support bulk cancel yet)
-      for (const invitation of selected) {
-        await this.memberService.cancelInvitation(wId, invitation.id);
-      }
-      this.showSuccess(`${selected.length} invitation(s) have been cancelled`);
-      this.invitationSelection.clear();
-      await this.loadInvitations();
-    } catch (error: any) {
-      this.showError(error.message || 'Failed to cancel invitations');
-    }
-  }
-
-  // ========== SELECTION METHODS ==========
-
-  isAllMembersSelected(): boolean {
-    const numSelected = this.memberSelection.selected.length;
-    const numRows = this.members().length;
-    return numSelected === numRows;
-  }
-
-  masterToggleMembers(): void {
-    if (this.isAllMembersSelected()) {
-      this.memberSelection.clear();
-    } else {
-      this.members().forEach(row => this.memberSelection.select(row));
-    }
-  }
-
-  isAllInvitationsSelected(): boolean {
-    const numSelected = this.invitationSelection.selected.length;
-    const numRows = this.invitations().length;
-    return numSelected === numRows;
-  }
-
-  masterToggleInvitations(): void {
-    if (this.isAllInvitationsSelected()) {
-      this.invitationSelection.clear();
-    } else {
-      this.invitations().forEach(row => this.invitationSelection.select(row));
-    }
-  }
 
   // ========== UTILITY METHODS ==========
 
@@ -485,27 +395,8 @@ export class MembersComponent implements OnInit {
     return ROLE_DISPLAY_NAMES[role] || role;
   }
 
-  getStatusColor(status: MemberStatus): string {
-    return STATUS_COLORS[status] || '';
-  }
-
   getInvitationStatusColor(status: InvitationStatus): string {
     return INVITATION_STATUS_COLORS[status] || '';
-  }
-
-  getStatusIcon(status: MemberStatus): string {
-    switch (status) {
-      case MemberStatus.ACTIVE:
-        return 'check_circle';
-      case MemberStatus.INACTIVE:
-        return 'pause_circle';
-      case MemberStatus.SUSPENDED:
-        return 'block';
-      case MemberStatus.PENDING:
-        return 'schedule';
-      default:
-        return 'help';
-    }
   }
 
   getInvitationStatusIcon(status: InvitationStatus): string {

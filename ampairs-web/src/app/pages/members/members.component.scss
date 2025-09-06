@@ -2,7 +2,6 @@
 @use '../../../theme/mixins' as theme;
 
 .members-container {
-  height: 100vh;
   display: flex;
   flex-direction: column;
   background-color: vars.$color-background;
