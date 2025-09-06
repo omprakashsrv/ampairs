@@ -47,8 +47,7 @@
 }
 
 .profile-title {
-  font-size: variables.$font-size-title;
-  font-weight: 400;
+  font: variables.$font-headline-small;
   color: variables.$color-on-surface;
   margin-bottom: 4px;
   text-align: center;
@@ -56,7 +55,7 @@
 
 .profile-subtitle {
   color: variables.$color-on-surface-variant;
-  font-size: variables.$font-size-md;
+  font: variables.$font-body-medium;
   text-align: center;
   margin-bottom: variables.$spacing-md;
   line-height: variables.$line-height-normal;

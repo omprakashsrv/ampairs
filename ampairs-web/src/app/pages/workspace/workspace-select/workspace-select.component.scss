@@ -18,12 +18,11 @@
 .header-title {
   @include theme.flex-center;
   gap: variables.$spacing-md;
-  font-size: variables.$font-size-title;
-  font-weight: 400;
+  font: variables.$font-headline-small;
 }
 
 .header-icon {
-  font-size: variables.$font-size-title;
+  font-size: 1.5rem;
   width: 24px;
   height: 24px;
 }
@@ -58,15 +57,14 @@
 
 .user-name {
   margin: 0 0 4px 0;
-  font-size: variables.$font-size-md;
-  font-weight: 500;
+  font: variables.$font-body-medium;
   color: variables.$color-on-surface;
 }
 
 .user-mobile,
 .user-email {
   margin: 2px 0;
-  font-size: variables.$font-size-sm;
+  font: variables.$font-label-medium;
   color: variables.$color-on-surface-variant;
 }
 
@@ -89,8 +87,7 @@
 }
 
 .loading-text {
-  font-size: variables.$font-size-md;
-  font-weight: 400;
+  font: variables.$font-body-medium;
 }
 
 // M3 Workspaces Section
@@ -104,14 +101,14 @@
 }
 
 .section-title {
-  font-size: variables.$font-size-title;
+  font-size: 1.5rem;
   font-weight: 400;
   margin: 0 0 variables.$spacing-sm 0;
   color: variables.$color-on-surface;
 }
 
 .section-subtitle {
-  font-size: variables.$font-size-md;
+  font: variables.$font-body-medium;
   color: variables.$color-on-surface-variant;
   margin: 0;
 }
@@ -167,7 +164,7 @@
 // M3 Workspace Description
 .workspace-description {
   color: variables.$color-on-surface-variant;
-  font-size: variables.$font-size-sm;
+  font: variables.$font-label-medium;
   margin: variables.$spacing-md 0;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -182,7 +179,7 @@
 
   mat-list-item {
     --mdc-list-list-item-one-line-height: 32px;
-    font-size: variables.$font-size-xs;
+    font: variables.$font-label-small;
     color: variables.$color-on-surface-variant;
   }
 }
@@ -202,7 +199,7 @@
     gap: variables.$spacing-xs;
     padding: variables.$spacing-sm;
     color: variables.$color-primary;
-    font-size: variables.$font-size-xs;
+    font: variables.$font-label-small;
     font-weight: 400;
 
     mat-icon {
@@ -239,14 +236,13 @@
 }
 
 .empty-state-title {
-  font-size: variables.$font-size-lg;
-  font-weight: 400;
+  font: variables.$font-body-large;
   margin: 0;
   color: variables.$color-on-surface;
 }
 
 .empty-state-description {
-  font-size: variables.$font-size-md;
+  font: variables.$font-body-medium;
   color: variables.$color-on-surface-variant;
   margin: 0;
   line-height: variables.$line-height-normal;
@@ -273,7 +269,7 @@
 }
 
 .create-new-text {
-  font-size: variables.$font-size-md;
+  font: variables.$font-body-medium;
   color: variables.$color-on-surface-variant;
   margin: 0;
 }
@@ -294,7 +290,7 @@
   }
 
   .section-title {
-    font-size: variables.$font-size-lg;
+    font: variables.$font-body-large;
   }
 }
 
@@ -313,7 +309,7 @@
   }
 
   .section-title {
-    font-size: variables.$font-size-lg;
+    font: variables.$font-body-large;
   }
 
   .empty-state-content {

@@ -39,15 +39,13 @@
 
     h1 {
       margin: 0;
-      font-size: vars.$font-size-title;
-      font-weight: 500;
+      font: vars.$font-headline-small;
       color: vars.$color-on-surface;
     }
 
     .workspace-name {
       color: vars.$color-on-surface-variant;
-      font-size: vars.$font-size-md;
-      font-weight: 400;
+      font: vars.$font-body-medium;
 
       &::before {
         content: '·';
@@ -125,7 +123,7 @@
           }
 
           .stat-label {
-            font-size: vars.$font-size-sm;
+            font: vars.$font-label-medium;
             color: vars.$color-on-surface-variant;
             margin-top: 2px;
           }
@@ -223,8 +221,7 @@
   color: white;
   border-radius: vars.$border-radius-round;
   padding: 2px 6px;
-  font-size: vars.$font-size-xs;
-  font-weight: 500;
+  font: vars.$font-label-small;
   margin-left: vars.$spacing-sm;
   min-width: 18px;
   text-align: center;
@@ -272,8 +269,7 @@
 
     .mat-mdc-header-cell {
       color: vars.$color-on-surface;
-      font-weight: 600;
-      font-size: vars.$font-size-sm;
+      font: vars.$font-label-medium;
       border-bottom: 1px solid vars.$color-outline-variant;
     }
   }
@@ -292,7 +288,7 @@
 
     .mat-mdc-cell {
       color: vars.$color-on-surface;
-      font-size: vars.$font-size-md;
+      font: vars.$font-body-medium;
       padding: vars.$spacing-md vars.$spacing-lg;
     }
   }
@@ -333,8 +329,8 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        font: vars.$font-body-large;
         font-weight: 600;
-        font-size: vars.$font-size-lg;
       }
 
       .avatar {
@@ -370,7 +366,7 @@
       }
 
       .member-email {
-        font-size: vars.$font-size-sm;
+        font: vars.$font-label-medium;
         color: vars.$color-on-surface-variant;
         line-height: 1.2;
       }
@@ -415,7 +411,7 @@
       }
 
       .invitation-phone {
-        font-size: vars.$font-size-sm;
+        font: vars.$font-label-medium;
         color: vars.$color-on-surface-variant;
         line-height: 1.2;
       }
@@ -472,14 +468,13 @@
   h3 {
     margin: 0 0 vars.$spacing-md;
     color: vars.$color-on-surface;
-    font-size: vars.$font-size-xl;
-    font-weight: 500;
+    font: vars.$font-title-medium;
   }
 
   p {
     margin: 0 0 vars.$spacing-xl;
     color: vars.$color-on-surface-variant;
-    font-size: vars.$font-size-md;
+    font: vars.$font-body-medium;
     max-width: 400px;
   }
 }
@@ -501,7 +496,7 @@
   p {
     margin: 0;
     color: vars.$color-on-surface-variant;
-    font-size: vars.$font-size-md;
+    font: vars.$font-body-medium;
   }
 }
 
@@ -536,7 +531,7 @@
       justify-content: center;
 
       h1 {
-        font-size: vars.$font-size-lg;
+        font: vars.$font-body-large;
       }
     }
 
@@ -561,7 +556,7 @@
 
   .members-table,
   .invitations-table {
-    font-size: vars.$font-size-sm;
+    font: vars.$font-label-medium;
 
     .mat-mdc-cell,
     .mat-mdc-header-cell {
@@ -573,7 +568,7 @@
     .invitation-avatar .avatar-placeholder {
       width: 32px;
       height: 32px;
-      font-size: vars.$font-size-md;
+      font: vars.$font-body-medium;
     }
   }
 }

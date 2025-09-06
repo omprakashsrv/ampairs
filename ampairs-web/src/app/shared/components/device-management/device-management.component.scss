@@ -17,7 +17,7 @@
 
 .loading-container p {
   color: variables.$color-on-surface-variant;
-  font-size: variables.$font-size-sm;
+  font: variables.$font-label-medium;
 }
 
 .no-devices {
@@ -84,7 +84,7 @@
   @include theme.flex-center;
   justify-content: flex-start;
   gap: variables.$spacing-sm;
-  font-size: variables.$font-size-sm;
+  font: variables.$font-label-medium;
   color: variables.$color-on-surface-variant;
 }
 

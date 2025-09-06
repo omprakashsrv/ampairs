@@ -48,14 +48,14 @@
   @include theme.flex-center;
   gap: vars.$spacing-md;
   color: vars.$color-on-surface-variant;
-  font-size: vars.$font-size-sm;
+  font: vars.$font-label-medium;
   margin: vars.$spacing-xl 0 0 0;
 }
 
 .info-icon {
-  font-size: vars.$font-size-lg;
-  width: vars.$font-size-lg;
-  height: vars.$font-size-lg;
+  font-size: 1rem;
+  width: 1rem;
+  height: 1rem;
   color: vars.$color-primary;
 }
 
@@ -73,8 +73,7 @@ mat-card-header {
 
 mat-card-title h1 {
   margin: vars.$spacing-md 0;
-  font-size: vars.$font-size-title;
-  font-weight: 400;
+  font: vars.$font-headline-small;
   color: vars.$color-on-surface;
 }
 
@@ -95,6 +94,6 @@ mat-card-title h1 {
   }
 
   mat-card-title h1 {
-    font-size: vars.$font-size-xxl;
+    font: vars.$font-title-large;
   }
 }

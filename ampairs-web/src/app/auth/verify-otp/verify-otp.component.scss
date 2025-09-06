@@ -30,8 +30,7 @@
 
 .otp-input {
   text-align: center;
-  font-size: vars.$font-size-xxl;
-  font-weight: 500;
+  font: vars.$font-title-large;
   letter-spacing: vars.$spacing-sm;
   color: vars.$color-on-surface;
 }
@@ -66,7 +65,7 @@
   @include theme.flex-center;
   gap: vars.$spacing-md;
   color: vars.$color-on-surface-variant;
-  font-size: vars.$font-size-sm;
+  font: vars.$font-label-medium;
   margin: 0;
 }
 
@@ -96,7 +95,7 @@
   }
 
   .otp-input {
-    font-size: vars.$font-size-xl;
+    font: vars.$font-title-medium;
     letter-spacing: vars.$spacing-sm;
   }
 

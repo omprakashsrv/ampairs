@@ -29,7 +29,7 @@
 }
 
 .greeting {
-  font-size: vars.$font-size-title;
+  font: vars.$font-headline-small;
   font-weight: 400;
   margin: 0 0 vars.$spacing-md 0;
   color: vars.$color-on-surface;
@@ -38,7 +38,7 @@
 .login-info {
   margin: 0;
   color: vars.$color-on-surface-variant;
-  font-size: vars.$font-size-sm;
+  font: vars.$font-label-medium;
 }
 
 .features-grid {
@@ -67,7 +67,7 @@
 .feature-card p {
   margin: 0;
   color: vars.$color-on-surface-variant;
-  font-size: vars.$font-size-sm;
+  font: vars.$font-label-medium;
   line-height: vars.$line-height-normal;
 }
 
@@ -115,7 +115,7 @@
 
 @include theme.mobile {
   .logo {
-    font-size: vars.$font-size-lg;
+    font: vars.$font-body-large;
   }
 
   .workspace-info {

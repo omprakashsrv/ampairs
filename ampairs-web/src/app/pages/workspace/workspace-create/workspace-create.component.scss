@@ -18,12 +18,11 @@
 .header-title {
   @include theme.flex-center;
   gap: variables.$spacing-md;
-  font-size: variables.$font-size-title;
-  font-weight: 400;
+  font: variables.$font-headline-small;
 }
 
 .header-icon {
-  font-size: variables.$font-size-title;
+  font-size: 1.5rem;
   width: 24px;
   height: 24px;
 }
@@ -38,7 +37,7 @@
 }
 
 .step-text {
-  font-size: variables.$font-size-sm;
+  font: variables.$font-label-medium;
   color: variables.$color-on-primary;
   opacity: 0.9;
 }
@@ -108,13 +107,13 @@
 }
 
 .type-name {
-  font-size: variables.$font-size-sm;
+  font: variables.$font-label-medium;
   font-weight: 500;
   color: variables.$color-on-surface;
 }
 
 .type-desc {
-  font-size: variables.$font-size-xs;
+  font: variables.$font-label-small;
   color: variables.$color-on-surface-variant;
   line-height: variables.$line-height-tight;
 }
@@ -138,14 +137,14 @@
 
   h4 {
     margin: 0 0 variables.$spacing-sm 0;
-    font-size: variables.$font-size-sm;
+    font: variables.$font-label-medium;
     font-weight: 500;
     color: variables.$color-on-surface;
   }
 
   p {
     margin: 0;
-    font-size: variables.$font-size-xs;
+    font: variables.$font-label-small;
     color: variables.$color-on-surface-variant;
     line-height: variables.$line-height-normal;
   }
@@ -196,7 +195,7 @@
   }
 
   .header-title {
-    font-size: variables.$font-size-lg;
+    font: variables.$font-body-large;
   }
 }
 

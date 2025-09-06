@@ -29,8 +29,7 @@
   @include theme.flex-center;
   gap: vars.$spacing-md;
   margin: 0 0 vars.$spacing-md 0;
-  font-size: vars.$font-size-title;
-  font-weight: 400;
+  font: vars.$font-headline-small;
   color: vars.$color-on-surface;
 }
 
@@ -42,7 +41,7 @@
 .settings-subtitle {
   margin: 0 0 vars.$spacing-xl 0;
   color: vars.$color-on-surface-variant;
-  font-size: vars.$font-size-md;
+  font: vars.$font-body-medium;
 }
 
 .settings-content {

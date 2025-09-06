@@ -83,13 +83,22 @@
   $color-menu-item-supporting: var(--on-surface-variant-color);
   $color-menu-divider: var(--outline-variant-color);
 
-  // Typography Scale - M3 System
-  $font-size-xs: var(--mat-sys-typescale-label-small-size, 0.6875rem);   // 11px
-  $font-size-sm: var(--mat-sys-typescale-label-medium-size, 0.75rem);    // 12px  
-  $font-size-md: var(--mat-sys-typescale-body-medium-size, 0.875rem);    // 14px
-  $font-size-lg: var(--mat-sys-typescale-title-medium-size, 1rem);       // 16px
-  $font-size-xl: var(--mat-sys-typescale-title-large-size, 1.375rem);    // 22px
-  $font-size-title: var(--mat-sys-typescale-headline-small-size, 1.5rem); // 24px
+  // Typography - Material Design 3 System (Use proper M3 tokens)
+  $font-body-large: var(--mat-sys-body-large);
+  $font-body-medium: var(--mat-sys-body-medium);
+  $font-body-small: var(--mat-sys-body-small);
+  $font-display-large: var(--mat-sys-display-large);
+  $font-display-medium: var(--mat-sys-display-medium);
+  $font-display-small: var(--mat-sys-display-small);
+  $font-headline-large: var(--mat-sys-headline-large);
+  $font-headline-medium: var(--mat-sys-headline-medium);
+  $font-headline-small: var(--mat-sys-headline-small);
+  $font-label-large: var(--mat-sys-label-large);
+  $font-label-medium: var(--mat-sys-label-medium);
+  $font-label-small: var(--mat-sys-label-small);
+  $font-title-large: var(--mat-sys-title-large);
+  $font-title-medium: var(--mat-sys-title-medium);
+  $font-title-small: var(--mat-sys-title-small);
 
   // Spacing Scale - M3 System  
   $spacing-xs: var(--mat-sys-spacing-x-small, 0.25rem);      // 4px
@@ -117,23 +126,32 @@
   $shadow-2: var(--shadow-2);    // Medium elevation
   ```
   
-  Usage Pattern - Always use SCSS variables:
+  Usage Pattern - Always use SCSS variables with proper M3 typography:
   ```scss
-  // ✅ CORRECT - Use centralized SCSS variables
+  // ✅ CORRECT - Use centralized SCSS variables with M3 typography tokens
   .component {
     background-color: vars.$color-surface-container;
     color: vars.$color-on-surface;
+    font: vars.$font-body-medium;  // Complete M3 typography token
     padding: vars.$spacing-lg vars.$spacing-xl;
     border-radius: vars.$border-radius-lg;
     box-shadow: vars.$shadow-1;
     transition: vars.$transition-standard;
+    
+    h1 { font: vars.$font-headline-large; }
+    h2 { font: vars.$font-headline-medium; }
+    h3 { font: vars.$font-headline-small; }
+    p { font: vars.$font-body-medium; }
+    small { font: vars.$font-label-medium; }
+    .caption { font: vars.$font-label-small; }
   }
   
-  // ❌ INCORRECT - Never use CSS custom properties directly  
+  // ❌ INCORRECT - Never use explicit font sizes or CSS custom properties directly  
   .component {
     background-color: var(--surface-container-color);
     color: var(--on-surface-color);
-    padding: var(--spacing-lg, 16px);
+    font-size: 14px; // Don't use explicit sizes
+    font-size: vars.$font-size-md; // Don't use deprecated size variables
   }
   ```
 
@@ -166,6 +184,33 @@
   2. AuthInterceptor: JWT token management and refresh
   3. WorkspaceInterceptor: Workspace context headers
   4. LoadingInterceptor: Global loading state management
+
+  CRITICAL: API Response Structure Handling
+
+  The ApiResponseInterceptor automatically unwraps the backend's ApiResponse<T> wrapper structure:
+
+  ```typescript
+  // Backend returns: ApiResponse<T> = { success: boolean, data: T, error?: ErrorInfo }
+  // Interceptor unwraps to: T (just the data field)
+  
+  // ✅ CORRECT - Service methods expect unwrapped data
+  async getWorkspaceRoles(workspaceId: string): Promise<WorkspaceRoleResponse[]> {
+    return await firstValueFrom(
+      this.http.get<WorkspaceRoleResponse[]>(`/api/roles`) // Returns T directly
+    );
+  }
+
+  // ❌ INCORRECT - Don't expect ApiResponse wrapper
+  async getWorkspaceRoles(workspaceId: string): Promise<ApiResponse<WorkspaceRoleResponse[]>> {
+    // This will fail - interceptor already unwrapped the response
+  }
+  ```
+
+  Key Rules for New API Integration:
+  - Service method return types should be the unwrapped data type (T), not ApiResponse<T>
+  - HTTP client calls receive the actual data directly, not wrapped responses  
+  - Error handling is automatically converted to standard HTTP errors by the interceptor
+  - No manual response unwrapping needed in service methods
 
   Component Patterns
 

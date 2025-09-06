@@ -36,14 +36,13 @@
 
       h2 {
         margin: 0 0 4px;
-        font-size: vars.$font-size-xl;
-        font-weight: 600;
+        font: vars.$font-title-medium;
         color: vars.$color-on-surface;
       }
 
       p {
         margin: 0;
-        font-size: vars.$font-size-md;
+        font: vars.$font-body-medium;
         color: vars.$color-on-surface-variant;
       }
     }
@@ -116,7 +115,7 @@
   }
 
   .phone-hint {
-    font-size: vars.$font-size-sm;
+    font: vars.$font-label-medium;
     color: vars.$color-on-surface-variant;
     margin-bottom: vars.$spacing-lg;
     padding-left: vars.$spacing-md;
@@ -152,7 +151,7 @@
   }
 
   .role-description {
-    font-size: vars.$font-size-sm;
+    font: vars.$font-label-medium;
     color: vars.$color-on-surface-variant;
     line-height: 1.3;
     margin-left: 1.625rem; // Icon width + gap
@@ -192,8 +191,7 @@
 
   h4 {
     margin: 0 0 vars.$spacing-md;
-    font-size: vars.$font-size-lg;
-    font-weight: 500;
+    font: vars.$font-body-large;
     color: vars.$color-on-surface;
   }
 
@@ -219,7 +217,7 @@
       }
 
       span {
-        font-size: vars.$font-size-sm;
+        font: vars.$font-label-medium;
         font-weight: 500;
         color: vars.$color-on-surface;
       }
@@ -230,7 +228,7 @@
 
       p {
         margin: 0 0 vars.$spacing-sm;
-        font-size: vars.$font-size-sm;
+        font: vars.$font-label-medium;
         line-height: 1.4;
         color: vars.$color-on-surface;
 
@@ -251,14 +249,13 @@
 .bulk-email-section {
   h4 {
     margin: 0 0 vars.$spacing-sm;
-    font-size: vars.$font-size-lg;
-    font-weight: 500;
+    font: vars.$font-body-large;
     color: vars.$color-on-surface;
   }
 
   .section-description {
     margin: 0 0 vars.$spacing-lg;
-    font-size: vars.$font-size-sm;
+    font: vars.$font-label-medium;
     color: vars.$color-on-surface-variant;
     line-height: 1.4;
   }
@@ -310,8 +307,7 @@
 
   h4 {
     margin: 0 0 vars.$spacing-lg;
-    font-size: vars.$font-size-lg;
-    font-weight: 500;
+    font: vars.$font-body-large;
     color: vars.$color-on-surface;
   }
 }
@@ -323,8 +319,7 @@
 
   h4 {
     margin: 0 0 vars.$spacing-md;
-    font-size: vars.$font-size-lg;
-    font-weight: 500;
+    font: vars.$font-body-large;
     color: vars.$color-on-surface;
   }
 
@@ -352,7 +347,7 @@
       }
 
       span {
-        font-size: vars.$font-size-md;
+        font: vars.$font-body-medium;
         color: vars.$color-on-surface;
       }
     }
@@ -399,11 +394,11 @@
 
       .header-text {
         h2 {
-          font-size: vars.$font-size-lg;
+          font: vars.$font-body-large;
         }
 
         p {
-          font-size: vars.$font-size-sm;
+          font: vars.$font-label-medium;
         }
       }
     }

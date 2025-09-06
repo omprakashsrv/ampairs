@@ -11,7 +11,7 @@
   background-color: variables.$color-surface-container-low;
   padding: variables.$spacing-lg;
   border-radius: 4px;
-  font-size: variables.$font-size-xs;
+  font: variables.$font-label-small;
   line-height: variables.$line-height-normal;
   white-space: pre-wrap;
   word-wrap: break-word;
@@ -38,6 +38,6 @@ h2[mat-dialog-title] mat-icon {
   }
 
   .debug-content pre {
-    font-size: variables.$font-size-xs;
+    font: variables.$font-label-small;
   }
 }

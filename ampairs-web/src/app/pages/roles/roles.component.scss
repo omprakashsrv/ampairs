@@ -19,7 +19,7 @@
       .page-title {
         margin: 0 0 vars.$spacing-xs 0;
         color: vars.$color-on-surface;
-        font-size: vars.$font-size-title;
+        font: vars.$font-headline-small;
         font-weight: 500;
         line-height: 1.2;
       }
@@ -27,7 +27,7 @@
       .page-subtitle {
         margin: 0;
         color: vars.$color-on-surface-variant;
-        font-size: vars.$font-size-md;
+        font: vars.$font-body-medium;
       }
     }
 
@@ -123,14 +123,14 @@
             flex-direction: column;
 
             .stat-value {
-              font-size: vars.$font-size-xl;
+              font: vars.$font-title-medium;
               font-weight: 600;
               color: vars.$color-on-surface;
               line-height: 1.2;
             }
 
             .stat-label {
-              font-size: vars.$font-size-sm;
+              font: vars.$font-label-medium;
               color: vars.$color-on-surface-variant;
               margin-top: 2px;
             }
@@ -204,7 +204,7 @@
 
   .loading-text {
     color: vars.$color-on-surface-variant;
-    font-size: vars.$font-size-md;
+    font: vars.$font-body-medium;
     margin: 0;
   }
 }
@@ -232,7 +232,7 @@
 
       h3 {
         margin: 0 0 vars.$spacing-xs 0;
-        font-size: vars.$font-size-lg;
+        font: vars.$font-body-large;
       }
 
       p {
@@ -269,7 +269,7 @@
               color: vars.$color-on-primary-container;
               border-radius: vars.$border-radius-round;
               padding: 2px vars.$spacing-xs;
-              font-size: vars.$font-size-xs;
+              font: vars.$font-label-small;
               font-weight: 600;
               min-width: 20px;
               text-align: center;
@@ -323,7 +323,7 @@
 
   .selection-info {
     font-weight: 500;
-    font-size: vars.$font-size-md;
+    font: vars.$font-body-medium;
   }
 
   .bulk-actions {
@@ -361,13 +361,13 @@
   h3 {
     margin: 0 0 vars.$spacing-md 0;
     color: vars.$color-on-surface;
-    font-size: vars.$font-size-xl;
+    font: vars.$font-title-medium;
   }
 
   p {
     margin: 0 0 vars.$spacing-xl 0;
     color: vars.$color-on-surface-variant;
-    font-size: vars.$font-size-md;
+    font: vars.$font-body-medium;
     max-width: 400px;
   }
 }
@@ -385,7 +385,7 @@
       background-color: vars.$color-surface-container-low;
       color: vars.$color-on-surface-variant;
       font-weight: 500;
-      font-size: vars.$font-size-sm;
+      font: vars.$font-label-medium;
       text-transform: uppercase;
       letter-spacing: 0.5px;
       border-bottom: 1px solid vars.$color-outline-variant;
@@ -419,12 +419,12 @@
         .role-name {
           font-weight: 500;
           color: vars.$color-on-surface;
-          font-size: vars.$font-size-md;
+          font: vars.$font-body-medium;
         }
 
         .role-type,
         .role-description {
-          font-size: vars.$font-size-sm;
+          font: vars.$font-label-medium;
           color: vars.$color-on-surface-variant;
           margin-top: 2px;
           
@@ -441,7 +441,7 @@
     .base-role-chip {
       background-color: vars.$color-secondary-container;
       color: vars.$color-on-secondary-container;
-      font-size: vars.$font-size-sm;
+      font: vars.$font-label-medium;
       
       mat-icon {
         font-size: 1rem;
@@ -459,7 +459,7 @@
       .permission-chip {
         background-color: vars.$color-surface-variant;
         color: vars.$color-on-surface-variant;
-        font-size: vars.$font-size-xs;
+        font: vars.$font-label-small;
         padding: vars.$spacing-xs;
         
         mat-icon {
@@ -485,7 +485,7 @@
 
     .status-text {
       margin-left: vars.$spacing-sm;
-      font-size: vars.$font-size-sm;
+      font: vars.$font-label-medium;
       color: vars.$color-on-surface-variant;
 
       &.active {
@@ -542,13 +542,13 @@
         align-items: center;
         justify-content: space-between;
         margin-bottom: vars.$spacing-xs;
-        font-size: vars.$font-size-lg;
+        font: vars.$font-body-large;
         font-weight: 500;
 
         .popular-chip {
           background-color: vars.$color-warning;
           color: white;
-          font-size: vars.$font-size-xs;
+          font: vars.$font-label-small;
           
           mat-icon {
             font-size: 0.875rem;
@@ -559,7 +559,7 @@
       }
 
       mat-card-subtitle {
-        font-size: vars.$font-size-sm;
+        font: vars.$font-label-medium;
         color: vars.$color-on-surface-variant;
         line-height: 1.4;
       }
@@ -576,7 +576,7 @@
         .label {
           font-weight: 500;
           color: vars.$color-on-surface;
-          font-size: vars.$font-size-sm;
+          font: vars.$font-label-medium;
           margin-bottom: vars.$spacing-xs;
           display: block;
         }
@@ -609,13 +609,13 @@
         .business-type-chip {
           background-color: vars.$color-surface-variant;
           color: vars.$color-on-surface-variant;
-          font-size: vars.$font-size-xs;
+          font: vars.$font-label-small;
         }
 
         .permission-group-chip {
           background-color: vars.$color-primary-container;
           color: vars.$color-on-primary-container;
-          font-size: vars.$font-size-xs;
+          font: vars.$font-label-small;
           
           mat-icon {
             font-size: 0.875rem;
@@ -637,7 +637,7 @@
             align-items: center;
             gap: vars.$spacing-xs;
             color: vars.$color-on-surface-variant;
-            font-size: vars.$font-size-sm;
+            font: vars.$font-label-medium;
 
             mat-icon {
               font-size: 1rem;
@@ -654,7 +654,7 @@
         .tag-chip {
           background-color: vars.$color-outline-variant;
           color: vars.$color-on-surface-variant;
-          font-size: vars.$font-size-xs;
+          font: vars.$font-label-small;
         }
       }
     }
@@ -732,7 +732,7 @@
         }
         
         .stat-details .stat-value {
-          font-size: vars.$font-size-lg;
+          font: vars.$font-body-large;
         }
       }
     }
@@ -741,7 +741,7 @@
   .table-container .roles-table {
     th, td {
       padding: vars.$spacing-md vars.$spacing-sm;
-      font-size: vars.$font-size-sm;
+      font: vars.$font-label-medium;
     }
   }
 

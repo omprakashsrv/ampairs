@@ -12,8 +12,7 @@
   h2 {
     margin: 0;
     color: vars.$color-on-surface;
-    font-size: vars.$font-size-xl;
-    font-weight: 500;
+    font: vars.$font-title-medium;
   }
 
   .close-button {
@@ -108,7 +107,7 @@
             border: 1px solid vars.$color-outline-variant;
 
             .preview-label {
-              font-size: vars.$font-size-sm;
+              font: vars.$font-label-medium;
               color: vars.$color-on-surface-variant;
               margin-bottom: vars.$spacing-sm;
             }
@@ -161,7 +160,7 @@
           }
 
           .role-description {
-            font-size: vars.$font-size-sm;
+            font: vars.$font-label-medium;
             color: vars.$color-on-surface-variant;
             margin-top: 2px;
           }
@@ -178,13 +177,13 @@
         h4 {
           margin: 0 0 vars.$spacing-sm 0;
           color: vars.$color-on-surface;
-          font-size: vars.$font-size-lg;
+          font: vars.$font-body-large;
         }
 
         .preview-description {
           margin: 0 0 vars.$spacing-md 0;
           color: vars.$color-on-surface-variant;
-          font-size: vars.$font-size-md;
+          font: vars.$font-body-medium;
         }
 
         .inherited-permissions-list {
@@ -195,7 +194,7 @@
           .inherited-chip {
             background-color: vars.$color-secondary-container;
             color: vars.$color-on-secondary-container;
-            font-size: vars.$font-size-xs;
+            font: vars.$font-label-small;
 
             mat-icon {
               font-size: 0.875rem;
@@ -215,7 +214,7 @@
 
         p {
           margin: 0;
-          font-size: vars.$font-size-md;
+          font: vars.$font-body-medium;
         }
       }
 
@@ -243,7 +242,7 @@
 
           h4 {
             margin: 0 0 vars.$spacing-xs 0;
-            font-size: vars.$font-size-md;
+            font: vars.$font-body-medium;
           }
 
           ul {
@@ -252,7 +251,7 @@
 
             li {
               margin-bottom: vars.$spacing-xs;
-              font-size: vars.$font-size-sm;
+              font: vars.$font-label-medium;
             }
           }
         }
@@ -296,7 +295,7 @@
                     }
 
                     .group-summary {
-                      font-size: vars.$font-size-sm;
+                      font: vars.$font-label-medium;
                       color: vars.$color-on-surface-variant;
                       margin-top: 2px;
                     }
@@ -364,19 +363,19 @@
                   .permission-name {
                     font-weight: 500;
                     color: vars.$color-on-surface;
-                    font-size: vars.$font-size-md;
+                    font: vars.$font-body-medium;
                   }
 
                   .permission-description {
                     color: vars.$color-on-surface-variant;
-                    font-size: vars.$font-size-sm;
+                    font: vars.$font-label-medium;
                     line-height: 1.4;
                   }
 
                   .inherited-badge {
                     background-color: vars.$color-secondary;
                     color: vars.$color-on-secondary;
-                    font-size: vars.$font-size-xs;
+                    font: vars.$font-label-small;
                     padding: 2px vars.$spacing-xs;
                     border-radius: vars.$border-radius-sm;
                     font-weight: 500;
@@ -398,7 +397,7 @@
 
         h4 {
           margin: 0 0 vars.$spacing-md 0;
-          font-size: vars.$font-size-lg;
+          font: vars.$font-body-large;
         }
 
         .selected-permissions {
@@ -409,7 +408,7 @@
           .selected-permission-chip {
             background-color: vars.$color-primary;
             color: vars.$color-on-primary;
-            font-size: vars.$font-size-xs;
+            font: vars.$font-label-small;
 
             mat-icon {
               font-size: 0.875rem;
@@ -439,7 +438,7 @@
         p {
           margin: 0;
           color: vars.$color-on-surface-variant;
-          font-size: vars.$font-size-md;
+          font: vars.$font-body-medium;
         }
       }
     }
@@ -474,8 +473,7 @@
       }
 
       span {
-        font-size: vars.$font-size-sm;
-        font-weight: 500;
+        font: vars.$font-label-medium;
       }
     }
   }
@@ -531,17 +529,17 @@
 // Responsive adjustments
 @include theme.mobile {
   .dialog-header h2 {
-    font-size: vars.$font-size-lg;
+    font: vars.$font-body-large;
   }
 
   .step-content .form-row .permission-item {
     .permission-checkbox .permission-details {
       .permission-name {
-        font-size: vars.$font-size-sm;
+        font: vars.$font-label-medium;
       }
 
       .permission-description {
-        font-size: vars.$font-size-xs;
+        font: vars.$font-label-small;
       }
     }
   }

@@ -1,17 +1,6 @@
 // Material 3 Design System Variables
 // Comprehensive theme variables for the Ampairs application
 
-// Typography - References M3 typography scale
-// Use CSS custom properties for responsive typography
-$font-size-xs: var(--mat-sys-label-small-size, 0.688rem); // ~11px
-$font-size-sm: var(--mat-sys-label-medium-size, 0.75rem); // ~12px
-$font-size-md: var(--mat-sys-body-medium-size, 0.875rem); // ~14px
-$font-size-lg: var(--mat-sys-body-large-size, 1rem); // ~16px
-$font-size-xl: var(--mat-sys-title-medium-size, 1rem); // ~16px
-$font-size-xxl: var(--mat-sys-title-large-size, 1.075rem); // ~17px
-$font-size-title: var(--mat-sys-headline-small-size, 1.5rem); // ~24px
-$font-size-display: var(--mat-sys-headline-medium-size, 1.75rem); // ~28px
-
 // Material Design 3 Typography Tokens - Complete font definitions
 $font-body-large: var(--mat-sys-body-large);
 $font-body-medium: var(--mat-sys-body-medium);
