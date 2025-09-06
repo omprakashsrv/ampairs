@@ -23,7 +23,10 @@
   --on-tertiary-color: var(--app-light-on-tertiary);
   --on-tertiary-container-color: var(--app-light-on-tertiary-container);
 
-  --mat-sys-surface-container:  var(--app-light-surface);
+  --mat-sys-surface: var(--app-light-surface);
+  --mat-sys-surface-container: var(--app-light-surface-container);
+  --mat-sys-on-surface-variant: var(--app-light-on-surface-variant);
+
   --surface-color: var(--app-light-surface);
   --surface-container-color: var(--app-light-surface-container);
   --surface-container-low-color: var(--app-light-surface-container-low);
@@ -85,7 +88,10 @@
   --on-tertiary-color: var(--app-dark-on-tertiary);
   --on-tertiary-container-color: var(--app-dark-on-tertiary-container);
 
-  --mat-sys-surface-container:  var(--app-dark-surface);
+  --mat-sys-surface-container: var(--app-dark-surface-container);
+  --mat-sys-surface: var(--app-dark-surface);
+  --mat-sys-on-surface-variant: var(--app-dark-on-surface-variant);
+
   --surface-color: var(--app-dark-surface);
   --surface-container-color: var(--app-dark-surface-container);
   --surface-container-low-color: var(--app-dark-surface-container-low);

@@ -55,7 +55,7 @@
 
     .avatar-placeholder {
       background: linear-gradient(135deg, vars.$color-primary, vars.$color-secondary);
-      color: white;
+      color: vars.$color-on-primary;
       text-transform: uppercase;
     }
   }
@@ -110,45 +110,53 @@
 // ========== ROLE CHIPS ==========
 
 .role-chip-admin {
-  background-color: #ff5722;
-  color: white;
+  background-color: vars.$color-error-container;
+  color: vars.$color-on-error-container;
+  border: 1px solid transparent;
 }
 
 .role-chip-manager {
-  background-color: #ff9800;
-  color: white;
+  background-color: vars.$color-tertiary-container;
+  color: vars.$color-on-tertiary-container;
+  border: 1px solid transparent;
 }
 
 .role-chip-member {
-  background-color: #2196f3;
-  color: white;
+  background-color: vars.$color-primary-container;
+  color: vars.$color-on-primary-container;
+  border: 1px solid transparent;
 }
 
 .role-chip-guest {
-  background-color: #9c27b0;
-  color: white;
+  background-color: vars.$color-secondary-container;
+  color: vars.$color-on-secondary-container;
+  border: 1px solid transparent;
 }
 
 .role-chip-viewer {
-  background-color: #607d8b;
-  color: white;
+  background-color: vars.$color-surface-container-high;
+  color: vars.$color-on-surface-variant;
+  border: 1px solid vars.$color-outline-variant;
 }
 
 // ========== STATUS CHIPS ==========
 
 .status-chip-active {
-  background-color: vars.$color-success;
-  color: white;
+  background-color: vars.$color-primary-container;
+  color: vars.$color-on-primary-container;
+  border: 1px solid transparent;
 }
 
 .status-chip-inactive {
-  background-color: vars.$color-on-surface-variant;
-  color: white;
+  background-color: vars.$color-surface-container;
+  color: vars.$color-on-surface-variant;
+  border: 1px solid vars.$color-outline-variant;
 }
 
 .status-chip-suspended {
-  background-color: vars.$color-error;
-  color: white;
+  background-color: vars.$color-error-container;
+  color: vars.$color-on-error-container;
+  border: 1px solid transparent;
 }
 
 // ========== DIALOG ACTIONS ==========

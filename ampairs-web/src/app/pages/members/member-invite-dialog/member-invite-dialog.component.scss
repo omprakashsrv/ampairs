@@ -21,7 +21,7 @@
 
     .header-icon {
       background: linear-gradient(135deg, vars.$color-primary, vars.$color-secondary);
-      color: white;
+      color: vars.$color-on-primary;
       width: 48px;
       height: 48px;
       border-radius: 50%;
@@ -62,7 +62,6 @@
     .mat-mdc-tab-body-wrapper {
       flex: 1;
       overflow-y: auto;
-      max-height: 70vh;
 
       .mat-mdc-tab-body {
         overflow-y: auto;
@@ -94,8 +93,6 @@
   display: flex;
   flex-direction: column;
   gap: vars.$spacing-lg;
-  flex: 1;
-  min-height: 0;
 
   .full-width {
     width: 100%;
@@ -111,12 +108,6 @@
 
     .country-code-field {
       flex: 0 0 120px;
-
-      input {
-        background-color: vars.$color-surface-container-low;
-        color: vars.$color-on-surface-variant;
-        font-weight: 500;
-      }
     }
 
     .phone-number-field {
@@ -198,7 +189,6 @@
   background-color: vars.$color-surface-container-low;
   border-radius: vars.$border-radius-lg;
   border: 1px solid vars.$color-outline-variant;
-  flex-shrink: 0;
 
   h4 {
     margin: 0 0 vars.$spacing-md;
