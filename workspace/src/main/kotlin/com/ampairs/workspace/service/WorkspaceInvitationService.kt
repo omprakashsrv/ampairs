@@ -72,6 +72,7 @@ class WorkspaceInvitationService(
             this.workspaceId = workspaceId
             this.email = request.email
             this.phone = request.phone
+            this.countryCode = request.countryCode
             this.role = request.invitedRole
             this.message = request.message
             this.invitedBy = invitedBy
