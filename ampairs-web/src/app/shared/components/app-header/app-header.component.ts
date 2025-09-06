@@ -134,6 +134,13 @@ export class AppHeaderComponent implements OnInit {
     }
   }
 
+  manageRoles(): void {
+    const workspace = this.currentWorkspace();
+    if (workspace) {
+      this.router.navigate(['/w', workspace.slug, 'roles']);
+    }
+  }
+
   manageModules(): void {
     const workspace = this.currentWorkspace();
     if (workspace) {

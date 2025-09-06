@@ -7,6 +7,7 @@
   @include mat.all-component-bases(theme.$light-theme);
 
   // M3 Design Tokens for light theme
+  --mat-sys-primary: var(--app-light-primary);
   --primary-color: var(--app-light-primary);
   --primary-container-color: var(--app-light-primary-container);
   --on-primary-color: var(--app-light-on-primary);
@@ -22,6 +23,7 @@
   --on-tertiary-color: var(--app-light-on-tertiary);
   --on-tertiary-container-color: var(--app-light-on-tertiary-container);
 
+  --mat-sys-surface-container:  var(--app-light-surface);
   --surface-color: var(--app-light-surface);
   --surface-container-color: var(--app-light-surface-container);
   --surface-container-low-color: var(--app-light-surface-container-low);
@@ -67,6 +69,7 @@
   @include mat.all-component-bases(theme.$dark-theme);
 
   // M3 Design Tokens for dark theme
+  --mat-sys-primary: var(--app-dark-primary);
   --primary-color: var(--app-dark-primary);
   --primary-container-color: var(--app-dark-primary-container);
   --on-primary-color: var(--app-dark-on-primary);
@@ -82,6 +85,7 @@
   --on-tertiary-color: var(--app-dark-on-tertiary);
   --on-tertiary-container-color: var(--app-dark-on-tertiary-container);
 
+  --mat-sys-surface-container:  var(--app-dark-surface);
   --surface-color: var(--app-dark-surface);
   --surface-container-color: var(--app-dark-surface-container);
   --surface-container-low-color: var(--app-dark-surface-container-low);
@@ -120,4 +124,8 @@
   --shadow-2: 0 1px 2px color-mix(in srgb, black 30%, transparent), 0 2px 6px 2px color-mix(in srgb, black 15%, transparent);
   --shadow-3: 0 4px 8px 3px color-mix(in srgb, black 15%, transparent), 0 1px 3px color-mix(in srgb, black 30%, transparent);
   --shadow-4: 0 6px 10px 4px color-mix(in srgb, black 15%, transparent), 0 2px 3px color-mix(in srgb, black 30%, transparent);
+
+  // Material system variables for components
+  --mat-sys-primary: var(--app-dark-primary);
+  --mat-progress-spinner-active-indicator-color: var(--primary-color);
 }

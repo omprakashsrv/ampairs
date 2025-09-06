@@ -228,7 +228,7 @@
   3. Component Import Pattern: Always include '@use "../../../theme/variables" as vars;' and '@use "../../../theme/mixins" as theme;' in every component SCSS file.
   4. Snake Case APIs: Interface properties match backend naming (following Jackson snake_case configuration).
   5. Standalone Components: No NgModules in new code - use standalone component architecture.
-  6. Service State Management: Use Angular signals for reactive state (Angular 20 best practice), avoid BehaviorSubject.
+  6. Service State Management: Use Angular signals for reactive state (Angular 20 best practice), avoid BehaviorSubject, use @if @for @switch directives for template logic.
   7. Interceptor Chain: Respect established HTTP processing order (ApiResponse → Auth → Workspace → Loading).
   8. Workspace Context: All business APIs must be workspace-aware with proper tenant isolation.
   9. Theme Integration: All components must support complete M3 theming with proper color contrast and accessibility.

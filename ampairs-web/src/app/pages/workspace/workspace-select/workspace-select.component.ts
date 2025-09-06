@@ -1,6 +1,6 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, inject, signal} from '@angular/core';
 import {Router} from '@angular/router';
-import {CommonModule} from '@angular/common';
+import {CommonModule, NgOptimizedImage} from '@angular/common';
 import {MatCardModule} from '@angular/material/card';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
@@ -15,14 +15,13 @@ import {MatChipsModule} from '@angular/material/chips';
 import {MatRippleModule} from '@angular/material/core';
 import {MatMenuModule} from '@angular/material/menu';
 import {WorkspaceListItem, WorkspaceService} from '../../../core/services/workspace.service';
-import {AuthService, User} from '../../../core/services/auth.service';
-import {Observable} from 'rxjs';
 
 @Component({
   selector: 'app-workspace-select',
   standalone: true,
   imports: [
     CommonModule,
+    NgOptimizedImage,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
@@ -41,49 +40,44 @@ import {Observable} from 'rxjs';
   styleUrl: './workspace-select.component.scss'
 })
 export class WorkspaceSelectComponent implements OnInit {
-  workspaces: WorkspaceListItem[] = [];
-  isLoading = false;
-  isSelecting = false;
-  selectedWorkspaceId = '';
-  currentUser$: Observable<User | null>;
+  private workspaceService = inject(WorkspaceService);
+  private router = inject(Router);
+  private snackBar = inject(MatSnackBar);
 
-  constructor(
-    private workspaceService: WorkspaceService,
-    private authService: AuthService,
-    private router: Router,
-    private snackBar: MatSnackBar
-  ) {
-    this.currentUser$ = this.authService.currentUser$;
-  }
+  // Signals for reactive state management
+  workspaces = signal<WorkspaceListItem[]>([]);
+  isLoading = signal(false);
+  isSelecting = signal(false);
+  selectedWorkspaceId = signal('');
 
   ngOnInit(): void {
     this.loadWorkspaces();
   }
 
   async loadWorkspaces(): Promise<void> {
-    this.isLoading = true;
+    this.isLoading.set(true);
 
     try {
       const workspaces = await this.workspaceService.getUserWorkspaces();
-      this.workspaces = workspaces;
-      this.isLoading = false;
+      this.workspaces.set(workspaces);
+      this.isLoading.set(false);
 
       // If no workspaces found, show create workspace option
       if (workspaces.length === 0) {
         this.showNoWorkspacesMessage();
       }
     } catch (error: any) {
-      this.isLoading = false;
+      this.isLoading.set(false);
       console.error('Failed to load workspaces:', error);
       this.showError('Failed to load workspaces. Please try again.');
     }
   }
 
   selectWorkspace(workspace: WorkspaceListItem): void {
-    if (this.isSelecting) return;
+    if (this.isSelecting()) return;
 
-    this.isSelecting = true;
-    this.selectedWorkspaceId = workspace.id;
+    this.isSelecting.set(true);
+    this.selectedWorkspaceId.set(workspace.id);
 
     // Get full workspace details
     this.workspaceService.getWorkspaceById(workspace.id).subscribe({
@@ -100,8 +94,8 @@ export class WorkspaceSelectComponent implements OnInit {
         this.router.navigate(['/w', fullWorkspace.slug]);
       },
       error: (error) => {
-        this.isSelecting = false;
-        this.selectedWorkspaceId = '';
+        this.isSelecting.set(false);
+        this.selectedWorkspaceId.set('');
         console.error('Failed to select workspace:', error);
         this.showError('Failed to select workspace. Please try again.');
       }
@@ -112,13 +106,6 @@ export class WorkspaceSelectComponent implements OnInit {
     this.router.navigate(['/workspace/create']);
   }
 
-  logout(): void {
-    this.authService.logout('User logged out from workspace selection');
-  }
-
-  formatDate(dateString: string): string {
-    return new Date(dateString).toLocaleDateString();
-  }
 
   formatLastActivity(lastActivity?: string): string {
     if (!lastActivity) return 'No recent activity';

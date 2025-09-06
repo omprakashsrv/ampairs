@@ -39,7 +39,7 @@ body {
 
 // Apply common theme utilities
 body {
-  @extend .common-theme;
+  @extend .common-theme, .light-theme;
 }
 
 // Apply font system by default (font-m is the baseline)
