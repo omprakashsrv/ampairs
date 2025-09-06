@@ -1,7 +1,7 @@
-import {Component, OnInit, computed, signal, inject} from '@angular/core';
+import {Component, computed, inject, OnInit, signal} from '@angular/core';
 import {CommonModule} from '@angular/common';
-import {FormsModule, ReactiveFormsModule, FormBuilder, FormGroup} from '@angular/forms';
-import {Router, ActivatedRoute} from '@angular/router';
+import {FormBuilder, FormGroup, FormsModule, ReactiveFormsModule} from '@angular/forms';
+import {ActivatedRoute, Router} from '@angular/router';
 import {MatCardModule} from '@angular/material/card';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
@@ -17,7 +17,7 @@ import {MatMenuModule} from '@angular/material/menu';
 import {MatProgressSpinnerModule} from '@angular/material/progress-spinner';
 import {MatSnackBar, MatSnackBarModule} from '@angular/material/snack-bar';
 import {MatTooltipModule} from '@angular/material/tooltip';
-import {MatDialogModule, MatDialog} from '@angular/material/dialog';
+import {MatDialog, MatDialogModule} from '@angular/material/dialog';
 import {MatToolbarModule} from '@angular/material/toolbar';
 import {MatDividerModule} from '@angular/material/divider';
 import {MatTabsModule} from '@angular/material/tabs';
@@ -27,16 +27,16 @@ import {SelectionModel} from '@angular/cdk/collections';
 import {WorkspaceService} from '../../core/services/workspace.service';
 import {MemberService} from '../../core/services/member.service';
 import {
-  WorkspaceMemberListItem,
-  WorkspaceInvitation,
-  WorkspaceRole,
-  MemberStatus,
+  INVITATION_STATUS_COLORS,
+  InvitationSearchFilters,
   InvitationStatus,
   MemberSearchFilters,
-  InvitationSearchFilters,
+  MemberStatus,
   ROLE_DISPLAY_NAMES,
   STATUS_COLORS,
-  INVITATION_STATUS_COLORS
+  WorkspaceInvitation,
+  WorkspaceMemberListItem,
+  WorkspaceRole
 } from '../../core/models/member.interface';
 import {MemberInviteDialogComponent} from './member-invite-dialog/member-invite-dialog.component';
 
@@ -84,22 +84,22 @@ export class MembersComponent implements OnInit {
   workspaceId = signal<string>('');
   currentWorkspace = this.workspaceService.currentWorkspace;
   selectedTab = signal(0);
-  
+
   // Member management
   members = this.memberService.members;
   memberLoading = this.memberService.loading;
   memberError = this.memberService.error;
   memberStatistics = this.memberService.memberStatistics;
-  
-  // Invitation management  
+
+  // Invitation management
   invitations = this.memberService.invitations;
   pendingInvitations = this.memberService.pendingInvitations;
   invitationStatistics = this.memberService.invitationStatistics;
 
   // Table configuration
-  memberColumns = ['select', 'member', 'role', 'department', 'status', 'lastActivity', 'actions'];
+  memberColumns = ['select', 'member', 'role', 'status', 'lastActivity', 'actions'];
   invitationColumns = ['select', 'email', 'role', 'status', 'invitedBy', 'expiresAt', 'actions'];
-  
+
   // Selection
   memberSelection = new SelectionModel<WorkspaceMemberListItem>(true, []);
   invitationSelection = new SelectionModel<WorkspaceInvitation>(true, []);
@@ -115,7 +115,7 @@ export class MembersComponent implements OnInit {
 
   // Constants for template
   readonly WorkspaceRole = WorkspaceRole;
-  readonly MemberStatus = MemberStatus; 
+  readonly MemberStatus = MemberStatus;
   readonly InvitationStatus = InvitationStatus;
   readonly ROLE_DISPLAY_NAMES = ROLE_DISPLAY_NAMES;
   readonly STATUS_COLORS = STATUS_COLORS;
@@ -124,13 +124,12 @@ export class MembersComponent implements OnInit {
   // Computed properties
   hasSelectedMembers = computed(() => this.memberSelection.selected.length > 0);
   hasSelectedInvitations = computed(() => this.invitationSelection.selected.length > 0);
-  
+
   constructor() {
     this.searchForm = this.fb.group({
       searchQuery: [''],
       roleFilter: [''],
       statusFilter: [''],
-      departmentFilter: ['']
     });
 
     // Watch for search changes
@@ -227,12 +226,11 @@ export class MembersComponent implements OnInit {
 
   applyFilters(): void {
     const formValue = this.searchForm.value;
-    
+
     this.memberFilters = {
       search_query: formValue.searchQuery || undefined,
       role: formValue.roleFilter || undefined,
       status: formValue.statusFilter || undefined,
-      department: formValue.departmentFilter || undefined
     };
 
     this.invitationFilters = {
@@ -428,13 +426,13 @@ export class MembersComponent implements OnInit {
 
   formatRelativeTime(dateString?: string): string {
     if (!dateString) return 'Never';
-    
+
     const now = new Date();
     const date = new Date(dateString);
     const diffMs = now.getTime() - date.getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffHours / 24);
-    
+
     if (diffDays > 7) {
       return date.toLocaleDateString();
     } else if (diffDays > 0) {
@@ -448,13 +446,20 @@ export class MembersComponent implements OnInit {
 
   getRoleIcon(role: WorkspaceRole): string {
     switch (role) {
-      case WorkspaceRole.OWNER: return 'crown';
-      case WorkspaceRole.ADMIN: return 'admin_panel_settings';
-      case WorkspaceRole.MANAGER: return 'supervisor_account';
-      case WorkspaceRole.MEMBER: return 'person';
-      case WorkspaceRole.GUEST: return 'person_outline';
-      case WorkspaceRole.VIEWER: return 'visibility';
-      default: return 'person';
+      case WorkspaceRole.OWNER:
+        return 'crown';
+      case WorkspaceRole.ADMIN:
+        return 'admin_panel_settings';
+      case WorkspaceRole.MANAGER:
+        return 'supervisor_account';
+      case WorkspaceRole.MEMBER:
+        return 'person';
+      case WorkspaceRole.GUEST:
+        return 'person_outline';
+      case WorkspaceRole.VIEWER:
+        return 'visibility';
+      default:
+        return 'person';
     }
   }
 
@@ -472,22 +477,33 @@ export class MembersComponent implements OnInit {
 
   getStatusIcon(status: MemberStatus): string {
     switch (status) {
-      case MemberStatus.ACTIVE: return 'check_circle';
-      case MemberStatus.INACTIVE: return 'pause_circle';
-      case MemberStatus.SUSPENDED: return 'block';
-      case MemberStatus.PENDING: return 'schedule';
-      default: return 'help';
+      case MemberStatus.ACTIVE:
+        return 'check_circle';
+      case MemberStatus.INACTIVE:
+        return 'pause_circle';
+      case MemberStatus.SUSPENDED:
+        return 'block';
+      case MemberStatus.PENDING:
+        return 'schedule';
+      default:
+        return 'help';
     }
   }
 
   getInvitationStatusIcon(status: InvitationStatus): string {
     switch (status) {
-      case InvitationStatus.PENDING: return 'schedule';
-      case InvitationStatus.ACCEPTED: return 'check_circle';
-      case InvitationStatus.EXPIRED: return 'schedule';
-      case InvitationStatus.CANCELLED: return 'cancel';
-      case InvitationStatus.REJECTED: return 'close';
-      default: return 'help';
+      case InvitationStatus.PENDING:
+        return 'schedule';
+      case InvitationStatus.ACCEPTED:
+        return 'check_circle';
+      case InvitationStatus.EXPIRED:
+        return 'schedule';
+      case InvitationStatus.CANCELLED:
+        return 'cancel';
+      case InvitationStatus.REJECTED:
+        return 'close';
+      default:
+        return 'help';
     }
   }
 

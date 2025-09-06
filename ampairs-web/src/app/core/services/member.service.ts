@@ -45,7 +45,7 @@ export class MemberService {
 
   // Computed signals
   readonly memberCount = computed(() => this._members().length);
-  readonly activeMembers = computed(() => 
+  readonly activeMembers = computed(() =>
     this._members().filter(member => member.is_active && member.status === MemberStatus.ACTIVE)
   );
   readonly pendingInvitations = computed(() =>
@@ -88,13 +88,13 @@ export class MemberService {
       }
 
       const response = await firstValueFrom(
-        this.http.get<ApiResponse<PaginatedResponse<WorkspaceMemberListItem>>>(
+        this.http.get<PaginatedResponse<WorkspaceMemberListItem>>(
           `${this.getWorkspaceApiUrl(workspaceId)}/members`,
           { params }
         ).pipe(catchError(this.handleError))
       );
 
-      const members = response.data.content;
+      const members = response.content;
       this._members.set(members);
       return members;
     } catch (error: any) {
@@ -157,8 +157,8 @@ export class MemberService {
    * Update member
    */
   async updateMember(
-    workspaceId: string, 
-    memberId: string, 
+    workspaceId: string,
+    memberId: string,
     updateData: UpdateMemberRequest
   ): Promise<WorkspaceMember> {
     this._loading.set(true);
@@ -174,7 +174,7 @@ export class MemberService {
 
       // Refresh members list
       await this.getMembers(workspaceId);
-      
+
       return response;
     } catch (error: any) {
       this._error.set(error.message || 'Failed to update member');
@@ -252,13 +252,13 @@ export class MemberService {
       }
 
       const response = await firstValueFrom(
-        this.http.get<ApiResponse<PaginatedResponse<WorkspaceInvitation>>>(
+        this.http.get<PaginatedResponse<WorkspaceInvitation>>(
           `${this.getWorkspaceApiUrl(workspaceId)}/invitations`,
           { params }
         ).pipe(catchError(this.handleError))
       );
 
-      const invitations = response.data.content;
+      const invitations = response.content;
       this._invitations.set(invitations);
       return invitations;
     } catch (error: any) {

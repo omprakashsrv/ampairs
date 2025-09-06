@@ -17,55 +17,65 @@
   </mat-toolbar>
 
   <!-- Statistics Cards -->
-  <div class="stats-grid" *ngIf="memberStatistics() || invitationStatistics()">
-    <mat-card class="stat-card" *ngIf="memberStatistics() as stats">
-      <mat-card-content>
-        <div class="stat-content">
-          <mat-icon class="stat-icon">group</mat-icon>
-          <div class="stat-details">
-            <div class="stat-number">{{ stats.total_members }}</div>
-            <div class="stat-label">Total Members</div>
-          </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
+  @if (memberStatistics() || invitationStatistics()) {
+    <div class="stats-grid">
+      @if (memberStatistics(); as stats) {
+        <mat-card class="stat-card">
+          <mat-card-content>
+            <div class="stat-content">
+              <mat-icon class="stat-icon">group</mat-icon>
+              <div class="stat-details">
+                <div class="stat-number">{{ stats.total_members }}</div>
+                <div class="stat-label">Total Members</div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
 
-    <mat-card class="stat-card" *ngIf="memberStatistics() as stats">
-      <mat-card-content>
-        <div class="stat-content">
-          <mat-icon class="stat-icon success">check_circle</mat-icon>
-          <div class="stat-details">
-            <div class="stat-number">{{ stats.active_members }}</div>
-            <div class="stat-label">Active Members</div>
-          </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
+      @if (memberStatistics(); as stats) {
+        <mat-card class="stat-card">
+          <mat-card-content>
+            <div class="stat-content">
+              <mat-icon class="stat-icon success">check_circle</mat-icon>
+              <div class="stat-details">
+                <div class="stat-number">{{ stats.active_members }}</div>
+                <div class="stat-label">Active Members</div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
 
-    <mat-card class="stat-card" *ngIf="invitationStatistics() as stats">
-      <mat-card-content>
-        <div class="stat-content">
-          <mat-icon class="stat-icon accent">mail</mat-icon>
-          <div class="stat-details">
-            <div class="stat-number">{{ stats.pending_invitations }}</div>
-            <div class="stat-label">Pending Invitations</div>
-          </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
+      @if (invitationStatistics(); as stats) {
+        <mat-card class="stat-card">
+          <mat-card-content>
+            <div class="stat-content">
+              <mat-icon class="stat-icon accent">mail</mat-icon>
+              <div class="stat-details">
+                <div class="stat-number">{{ stats.pending_invitations }}</div>
+                <div class="stat-label">Pending Invitations</div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
 
-    <mat-card class="stat-card" *ngIf="memberStatistics() as stats">
-      <mat-card-content>
-        <div class="stat-content">
-          <mat-icon class="stat-icon online">radio_button_checked</mat-icon>
-          <div class="stat-details">
-            <div class="stat-number">{{ stats.online_members || 0 }}</div>
-            <div class="stat-label">Online Now</div>
-          </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
-  </div>
+      @if (memberStatistics(); as stats) {
+        <mat-card class="stat-card">
+          <mat-card-content>
+            <div class="stat-content">
+              <mat-icon class="stat-icon online">radio_button_checked</mat-icon>
+              <div class="stat-details">
+                <div class="stat-number">{{ stats.online_members || 0 }}</div>
+                <div class="stat-label">Online Now</div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      }
+    </div>
+  }
 
   <!-- Main Content -->
   <mat-card class="content-card">
@@ -74,7 +84,7 @@
       <div class="filters-section" [formGroup]="searchForm">
         <mat-form-field appearance="outline" class="search-field">
           <mat-label>Search members...</mat-label>
-          <input matInput formControlName="searchQuery" placeholder="Name, email, or department">
+          <input matInput formControlName="searchQuery" placeholder="Name, email, or phone">
           <mat-icon matSuffix>search</mat-icon>
         </mat-form-field>
 
@@ -111,38 +121,40 @@
     <mat-card-content>
       <!-- Tabs -->
       <mat-tab-group (selectedTabChange)="onTabChange($event.index)" [selectedIndex]="selectedTab()">
-        
+
         <!-- Members Tab -->
         <mat-tab>
           <ng-template mat-tab-label>
             Members <span class="tab-badge">{{ members().length }}</span>
           </ng-template>
           <div class="tab-content">
-            
+
             <!-- Bulk Actions Bar -->
-            <div class="bulk-actions" *ngIf="hasSelectedMembers()">
-              <span class="selected-count">{{ memberSelection.selected.length }} selected</span>
-              <button mat-button color="warn" (click)="bulkRemoveMembers()">
-                <mat-icon>delete</mat-icon>
-                Remove Selected
-              </button>
-            </div>
+            @if (hasSelectedMembers()) {
+              <div class="bulk-actions">
+                <span class="selected-count">{{ memberSelection.selected.length }} selected</span>
+                <button mat-button color="warn" (click)="bulkRemoveMembers()">
+                  <mat-icon>delete</mat-icon>
+                  Remove Selected
+                </button>
+              </div>
+            }
 
             <!-- Members Table -->
             <div class="table-container">
               <table mat-table [dataSource]="members()" class="members-table" matSort>
-                
+
                 <!-- Checkbox Column -->
                 <ng-container matColumnDef="select">
                   <th mat-header-cell *matHeaderCellDef>
-                    <mat-checkbox 
+                    <mat-checkbox
                       [checked]="memberSelection.hasValue() && isAllMembersSelected()"
                       [indeterminate]="memberSelection.hasValue() && !isAllMembersSelected()"
                       (change)="masterToggleMembers()">
                     </mat-checkbox>
                   </th>
                   <td mat-cell *matCellDef="let member">
-                    <mat-checkbox 
+                    <mat-checkbox
                       [checked]="memberSelection.isSelected(member)"
                       (change)="memberSelection.toggle(member)">
                     </mat-checkbox>
@@ -155,21 +167,22 @@
                   <td mat-cell *matCellDef="let member" class="member-cell">
                     <div class="member-info">
                       <div class="member-avatar">
-                        <img *ngIf="member.avatar_url; else defaultAvatar" 
-                             [src]="member.avatar_url" 
-                             [alt]="member.name"
-                             class="avatar">
-                        <ng-template #defaultAvatar>
+                        @if (member.avatar_url) {
+                          <img [src]="member.avatar_url"
+                               [alt]="member.user.display_name"
+                               class="avatar">
+                        } @else {
                           <div class="avatar-placeholder">
-                            {{ member.name.charAt(0).toUpperCase() }}
+                            {{ member.user.display_name.charAt(0).toUpperCase() }}
                           </div>
-                        </ng-template>
-                        <div class="online-indicator" *ngIf="member.is_online" 
-                             matTooltip="Online"></div>
+                        }
+                        @if (member.is_online) {
+                          <div class="online-indicator" matTooltip="Online"></div>
+                        }
                       </div>
                       <div class="member-details">
-                        <div class="member-name">{{ member.name }}</div>
-                        <div class="member-email">{{ member.email }}</div>
+                        <div class="member-name">{{ member.user.display_name }}</div>
+                        <div class="member-email">+ {{ member.user.country_code }} {{ member.user.phone }}</div>
                       </div>
                     </div>
                   </td>
@@ -180,29 +193,26 @@
                   <th mat-header-cell *matHeaderCellDef mat-sort-header="role">Role</th>
                   <td mat-cell *matCellDef="let member">
                     <mat-chip-listbox>
-                      <mat-chip [class]="'role-chip-' + member.role.toLowerCase()">
-                        <mat-icon matChipAvatar>{{ getRoleIcon(member.role) }}</mat-icon>
+                      <mat-chip>
+                        <mat-icon [class]="'role-chip-' + member.role.toLowerCase()"
+                                  matChipAvatar>{{ getRoleIcon(member.role) }}
+                        </mat-icon>
                         {{ getRoleDisplayName(member.role) }}
                       </mat-chip>
                     </mat-chip-listbox>
                   </td>
                 </ng-container>
 
-                <!-- Department Column -->
-                <ng-container matColumnDef="department">
-                  <th mat-header-cell *matHeaderCellDef mat-sort-header="department">Department</th>
-                  <td mat-cell *matCellDef="let member">
-                    {{ member.department || 'Not assigned' }}
-                  </td>
-                </ng-container>
 
                 <!-- Status Column -->
                 <ng-container matColumnDef="status">
                   <th mat-header-cell *matHeaderCellDef mat-sort-header="status">Status</th>
                   <td mat-cell *matCellDef="let member">
                     <mat-chip-listbox>
-                      <mat-chip [color]="getStatusColor(member.status)">
-                        <mat-icon matChipAvatar>{{ getStatusIcon(member.status) }}</mat-icon>
+                      <mat-chip>
+                        <mat-icon [color]="getStatusColor(member.status)"
+                                  matChipAvatar>{{ getStatusIcon(member.status) }}
+                        </mat-icon>
                         {{ member.status | titlecase }}
                       </mat-chip>
                     </mat-chip-listbox>
@@ -243,26 +253,30 @@
                 </ng-container>
 
                 <tr mat-header-row *matHeaderRowDef="memberColumns"></tr>
-                <tr mat-row *matRowDef="let row; columns: memberColumns;" 
+                <tr mat-row *matRowDef="let row; columns: memberColumns;"
                     [class.selected-row]="memberSelection.isSelected(row)"></tr>
               </table>
 
               <!-- Empty State -->
-              <div class="empty-state" *ngIf="!memberLoading() && members().length === 0">
-                <mat-icon class="empty-icon">group</mat-icon>
-                <h3>No members found</h3>
-                <p>Start building your team by inviting members to this workspace.</p>
-                <button mat-raised-button color="primary" (click)="openInviteDialog()">
-                  <mat-icon>person_add</mat-icon>
-                  Invite Members
-                </button>
-              </div>
+              @if (!memberLoading() && members().length === 0) {
+                <div class="empty-state">
+                  <mat-icon class="empty-icon">group</mat-icon>
+                  <h3>No members found</h3>
+                  <p>Start building your team by inviting members to this workspace.</p>
+                  <button mat-raised-button color="primary" (click)="openInviteDialog()">
+                    <mat-icon>person_add</mat-icon>
+                    Invite Members
+                  </button>
+                </div>
+              }
 
               <!-- Loading -->
-              <div class="loading-state" *ngIf="memberLoading()">
-                <mat-spinner></mat-spinner>
-                <p>Loading members...</p>
-              </div>
+              @if (memberLoading()) {
+                <div class="loading-state">
+                  <mat-spinner></mat-spinner>
+                  <p>Loading members...</p>
+                </div>
+              }
             </div>
           </div>
         </mat-tab>
@@ -273,31 +287,33 @@
             Invitations <span class="tab-badge tab-badge-accent">{{ pendingInvitations().length }}</span>
           </ng-template>
           <div class="tab-content">
-            
+
             <!-- Bulk Actions Bar -->
-            <div class="bulk-actions" *ngIf="hasSelectedInvitations()">
-              <span class="selected-count">{{ invitationSelection.selected.length }} selected</span>
-              <button mat-button color="warn" (click)="bulkCancelInvitations()">
-                <mat-icon>cancel</mat-icon>
-                Cancel Selected
-              </button>
-            </div>
+            @if (hasSelectedInvitations()) {
+              <div class="bulk-actions">
+                <span class="selected-count">{{ invitationSelection.selected.length }} selected</span>
+                <button mat-button color="warn" (click)="bulkCancelInvitations()">
+                  <mat-icon>cancel</mat-icon>
+                  Cancel Selected
+                </button>
+              </div>
+            }
 
             <!-- Invitations Table -->
             <div class="table-container">
               <table mat-table [dataSource]="invitations()" class="invitations-table" matSort>
-                
+
                 <!-- Checkbox Column -->
                 <ng-container matColumnDef="select">
                   <th mat-header-cell *matHeaderCellDef>
-                    <mat-checkbox 
+                    <mat-checkbox
                       [checked]="invitationSelection.hasValue() && isAllInvitationsSelected()"
                       [indeterminate]="invitationSelection.hasValue() && !isAllInvitationsSelected()"
                       (change)="masterToggleInvitations()">
                     </mat-checkbox>
                   </th>
                   <td mat-cell *matCellDef="let invitation">
-                    <mat-checkbox 
+                    <mat-checkbox
                       [checked]="invitationSelection.isSelected(invitation)"
                       (change)="invitationSelection.toggle(invitation)">
                     </mat-checkbox>
@@ -311,12 +327,19 @@
                     <div class="invitation-info">
                       <div class="invitation-avatar">
                         <div class="avatar-placeholder">
-                          <mat-icon>mail</mat-icon>
+                          @if (invitation.phone) {
+                            <mat-icon>phone</mat-icon>
+                          }
+                          @if (invitation.email) {
+                            <mat-icon>email</mat-icon>
+                          }
                         </div>
                       </div>
                       <div class="invitation-details">
                         <div class="invitation-email">{{ invitation.email }}</div>
-                        <div class="invitation-phone" *ngIf="invitation.phone">{{ invitation.phone }}</div>
+                        @if (invitation.phone) {
+                          <div class="invitation-phone">+ {{ invitation.country_code }}{{ invitation.phone }}</div>
+                        }
                       </div>
                     </div>
                   </td>
@@ -368,7 +391,7 @@
                 <ng-container matColumnDef="actions">
                   <th mat-header-cell *matHeaderCellDef>Actions</th>
                   <td mat-cell *matCellDef="let invitation">
-                    <button mat-icon-button [matMenuTriggerFor]="invitationMenu" 
+                    <button mat-icon-button [matMenuTriggerFor]="invitationMenu"
                             [disabled]="invitation.status !== InvitationStatus.PENDING">
                       <mat-icon>more_vert</mat-icon>
                     </button>
@@ -379,7 +402,7 @@
                         Resend Invitation
                       </button>
                       <mat-divider></mat-divider>
-                      <button mat-menu-item (click)="cancelInvitation(invitation)" 
+                      <button mat-menu-item (click)="cancelInvitation(invitation)"
                               class="warn-menu-item"
                               [disabled]="invitation.status !== InvitationStatus.PENDING">
                         <mat-icon>cancel</mat-icon>
@@ -395,17 +418,21 @@
               </table>
 
               <!-- Empty State -->
-              <div class="empty-state" *ngIf="!memberLoading() && invitations().length === 0">
-                <mat-icon class="empty-icon">mail</mat-icon>
-                <h3>No invitations found</h3>
-                <p>Invitations you send will appear here.</p>
-              </div>
+              @if (!memberLoading() && invitations().length === 0) {
+                <div class="empty-state">
+                  <mat-icon class="empty-icon">mail</mat-icon>
+                  <h3>No invitations found</h3>
+                  <p>Invitations you send will appear here.</p>
+                </div>
+              }
 
               <!-- Loading -->
-              <div class="loading-state" *ngIf="memberLoading()">
-                <mat-spinner></mat-spinner>
-                <p>Loading invitations...</p>
-              </div>
+              @if (memberLoading()) {
+                <div class="loading-state">
+                  <mat-spinner></mat-spinner>
+                  <p>Loading invitations...</p>
+                </div>
+              }
             </div>
           </div>
         </mat-tab>
