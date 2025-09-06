@@ -144,7 +144,7 @@
   max-width: 1200px;
   margin-left: auto;
   margin-right: auto;
-  width: calc(100% - 2 * vars.$spacing-xl);
+  width: calc(100% - 2 * 1rem);
   background-color: vars.$color-surface;
   border-radius: vars.$border-radius-lg;
   box-shadow: vars.$shadow-1;
@@ -537,7 +537,7 @@
 
   .content-card {
     margin: 0 vars.$spacing-lg vars.$spacing-lg;
-    width: calc(100% - 2 * vars.$spacing-lg);
+    width: calc(100% - 2 * 0.75rem);
   }
 
   .tab-content {

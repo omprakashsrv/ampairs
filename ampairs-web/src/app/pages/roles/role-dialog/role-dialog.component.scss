@@ -18,7 +18,7 @@
 
   .close-button {
     color: vars.$color-on-surface-variant;
-    
+
     &:hover {
       background-color: vars.$color-surface-variant;
     }
@@ -38,7 +38,7 @@
     margin-bottom: vars.$spacing-lg;
     border: 1px solid vars.$color-outline-variant;
     border-radius: vars.$border-radius-lg;
-    
+
     &:last-child {
       margin-bottom: 0;
     }
@@ -46,10 +46,10 @@
     ::ng-deep {
       .mat-expansion-panel-header {
         padding: vars.$spacing-lg;
-        
+
         .mat-expansion-panel-header-title {
           align-items: center;
-          
+
           .step-icon {
             margin-right: vars.$spacing-md;
             color: vars.$color-primary;
@@ -58,7 +58,7 @@
             height: 1.25rem;
           }
         }
-        
+
         .mat-expansion-panel-header-description {
           color: vars.$color-on-surface-variant;
           margin-top: 2px;
@@ -75,7 +75,7 @@
     .step-content {
       .form-row {
         margin-bottom: vars.$spacing-lg;
-        
+
         &.appearance-row {
           display: flex;
           align-items: flex-start;
@@ -131,7 +131,7 @@
             }
           }
         }
-        
+
         &.full-width,
         .full-width {
           width: 100%;
@@ -196,7 +196,7 @@
             background-color: vars.$color-secondary-container;
             color: vars.$color-on-secondary-container;
             font-size: vars.$font-size-xs;
-            
+
             mat-icon {
               font-size: 0.875rem;
               width: 0.875rem;
@@ -212,7 +212,7 @@
         background-color: vars.$color-primary-container;
         color: vars.$color-on-primary-container;
         border-radius: vars.$border-radius-md;
-        
+
         p {
           margin: 0;
           font-size: vars.$font-size-md;
@@ -322,10 +322,10 @@
 
               &.inherited {
                 background-color: vars.$color-surface-container-low;
-                margin: 0 calc(-1 * vars.$spacing-lg);
+                margin: 0 calc(-1 * 0.75rem);
                 padding-left: vars.$spacing-lg;
                 padding-right: vars.$spacing-lg;
-                
+
                 .permission-details {
                   .permission-name,
                   .permission-description {
@@ -336,10 +336,10 @@
 
               &.selected:not(.inherited) {
                 background-color: vars.$color-primary-container;
-                margin: 0 calc(-1 * vars.$spacing-lg);
+                margin: 0 calc(-1 * 0.75rem);
                 padding-left: vars.$spacing-lg;
                 padding-right: vars.$spacing-lg;
-                
+
                 .permission-details {
                   .permission-name {
                     color: vars.$color-on-primary-container;
@@ -350,7 +350,7 @@
 
               .permission-checkbox {
                 width: 100%;
-                
+
                 ::ng-deep .mat-mdc-checkbox-label {
                   width: 100%;
                 }
@@ -410,7 +410,7 @@
             background-color: vars.$color-primary;
             color: vars.$color-on-primary;
             font-size: vars.$font-size-xs;
-            
+
             mat-icon {
               font-size: 0.875rem;
               width: 0.875rem;
@@ -488,7 +488,7 @@
     @include theme.mobile {
       width: 100%;
       justify-content: stretch;
-      
+
       button {
         flex: 1;
       }
