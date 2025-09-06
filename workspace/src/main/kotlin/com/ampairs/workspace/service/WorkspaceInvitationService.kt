@@ -710,7 +710,7 @@ class WorkspaceInvitationService(
     // Private helper methods
 
     private fun findInvitationById(invitationId: String): WorkspaceInvitation {
-        return invitationRepository.findById(invitationId)
+        return invitationRepository.findByUid(invitationId)
             .orElseThrow { NotFoundException("Invitation not found: $invitationId") }
     }
 

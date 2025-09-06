@@ -20,6 +20,11 @@ import java.util.*
 interface WorkspaceInvitationRepository : JpaRepository<WorkspaceInvitation, String> {
 
     /**
+     * Find invitation by uid (string identifier)
+     */
+    fun findByUid(uid: String): Optional<WorkspaceInvitation>
+
+    /**
      * Find invitation by token
      */
     fun findByToken(token: String): Optional<WorkspaceInvitation>
