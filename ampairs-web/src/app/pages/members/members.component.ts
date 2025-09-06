@@ -39,6 +39,7 @@ import {
   WorkspaceRole
 } from '../../core/models/member.interface';
 import {MemberInviteDialogComponent} from './member-invite-dialog/member-invite-dialog.component';
+import {MemberEditDialogComponent} from './member-edit-dialog/member-edit-dialog.component';
 
 @Component({
   selector: 'app-members',
@@ -285,7 +286,7 @@ export class MembersComponent implements OnInit {
   }
 
   async removeMember(member: WorkspaceMemberListItem): Promise<void> {
-    const confirmed = confirm(`Are you sure you want to remove ${member.name} from this workspace?`);
+    const confirmed = confirm(`Are you sure you want to remove ${member.user.display_name} from this workspace?`);
     if (!confirmed) return;
 
     const wId = this.workspaceId();
@@ -293,7 +294,7 @@ export class MembersComponent implements OnInit {
 
     try {
       await this.memberService.removeMember(wId, member.id);
-      this.showSuccess(`${member.name} has been removed from the workspace`);
+      this.showSuccess(`${member.user.display_name} has been removed from the workspace`);
       await this.loadMembers();
     } catch (error: any) {
       this.showError(error.message || 'Failed to remove member');
@@ -301,13 +302,30 @@ export class MembersComponent implements OnInit {
   }
 
   editMember(member: WorkspaceMemberListItem): void {
-    // TODO: Open edit member dialog
-    this.showInfo('Edit member dialog will be implemented');
+    const dialogRef = this.dialog.open(MemberEditDialogComponent, {
+      width: '500px',
+      data: {
+        member: member,
+        currentWorkspace: this.currentWorkspace()
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(async result => {
+      if (result) {
+        await this.loadMembers();
+      }
+    });
   }
 
   viewMember(member: WorkspaceMemberListItem): void {
-    // TODO: Navigate to member profile
-    this.showInfo('Member profile view will be implemented');
+    const currentWorkspace = this.currentWorkspace();
+    if (currentWorkspace) {
+      // Navigate to member profile - we'll use the profile route for now
+      // In future, this could be a dedicated member profile route
+      this.router.navigate(['/w', currentWorkspace.slug, 'profile'], {
+        queryParams: { memberId: member.id }
+      });
+    }
   }
 
   // ========== INVITATION ACTIONS ==========
@@ -523,10 +541,4 @@ export class MembersComponent implements OnInit {
     });
   }
 
-  private showInfo(message: string): void {
-    this.snackBar.open(message, 'Close', {
-      duration: 3000,
-      panelClass: ['info-snackbar']
-    });
-  }
 }

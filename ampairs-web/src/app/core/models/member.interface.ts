@@ -24,16 +24,27 @@ export interface WorkspaceMember {
 export interface WorkspaceMemberListItem {
   id: string;
   user_id: string;
-  email: string;
-  name: string;
+  user: {
+    id: number;
+    uid: string;
+    country_code: number;
+    phone: string;
+    email?: string;
+    display_name: string;
+    full_name: string;
+    first_name: string;
+    last_name: string;
+    profile_picture_url?: string;
+    is_active: boolean;
+    is_enabled: boolean;
+  };
   role: WorkspaceRole;
-  status: MemberStatus;
   is_active: boolean;
-  department?: string;
-  avatar_url?: string;
   joined_at: string;
   last_activity_at?: string;
-  is_online: boolean;
+  primary_team?: any;
+  teams: any[];
+  job_title?: string;
 }
 
 export interface WorkspaceInvitation {

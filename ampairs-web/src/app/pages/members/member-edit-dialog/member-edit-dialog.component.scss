@@ -1,0 +1,196 @@
+@use '../../../../theme/variables' as vars;
+@use '../../../../theme/mixins' as theme;
+
+.dialog-container {
+  width: 100%;
+  max-width: 500px;
+}
+
+.dialog-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: vars.$spacing-lg vars.$spacing-xl vars.$spacing-md;
+  border-bottom: 1px solid vars.$color-outline-variant;
+  margin-bottom: vars.$spacing-lg;
+
+  h2 {
+    margin: 0;
+    color: vars.$color-on-surface;
+    font-size: vars.$font-size-xl;
+    font-weight: 500;
+  }
+}
+
+// ========== MEMBER INFO SECTION ==========
+
+.member-info-section {
+  display: flex;
+  align-items: center;
+  gap: vars.$spacing-lg;
+  padding: vars.$spacing-lg;
+  background-color: vars.$color-surface-container-low;
+  border-radius: vars.$border-radius-md;
+  margin-bottom: vars.$spacing-xl;
+
+  .member-avatar {
+    position: relative;
+
+    .avatar,
+    .avatar-placeholder {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: vars.$font-size-xl;
+    }
+
+    .avatar {
+      object-fit: cover;
+      border: 3px solid vars.$color-outline-variant;
+    }
+
+    .avatar-placeholder {
+      background: linear-gradient(135deg, vars.$color-primary, vars.$color-secondary);
+      color: white;
+      text-transform: uppercase;
+    }
+  }
+
+  .member-details {
+    flex: 1;
+
+    h3 {
+      margin: 0 0 vars.$spacing-xs 0;
+      color: vars.$color-on-surface;
+      font-size: vars.$font-size-lg;
+      font-weight: 500;
+    }
+
+    p {
+      margin: 0;
+      color: vars.$color-on-surface-variant;
+      font-size: vars.$font-size-md;
+    }
+  }
+}
+
+// ========== FORM STYLES ==========
+
+.full-width {
+  width: 100%;
+  margin-bottom: vars.$spacing-lg;
+}
+
+// ========== CURRENT INFO SECTION ==========
+
+.current-info {
+  margin-top: vars.$spacing-xl;
+  padding: vars.$spacing-lg;
+  background-color: vars.$color-surface-container-low;
+  border-radius: vars.$border-radius-md;
+
+  h4 {
+    margin: 0 0 vars.$spacing-md 0;
+    color: vars.$color-on-surface;
+    font-size: vars.$font-size-md;
+    font-weight: 500;
+  }
+
+  .current-chips {
+    display: flex;
+    gap: vars.$spacing-sm;
+    flex-wrap: wrap;
+  }
+}
+
+// ========== ROLE CHIPS ==========
+
+.role-chip-admin {
+  background-color: #ff5722;
+  color: white;
+}
+
+.role-chip-manager {
+  background-color: #ff9800;
+  color: white;
+}
+
+.role-chip-member {
+  background-color: #2196f3;
+  color: white;
+}
+
+.role-chip-guest {
+  background-color: #9c27b0;
+  color: white;
+}
+
+.role-chip-viewer {
+  background-color: #607d8b;
+  color: white;
+}
+
+// ========== STATUS CHIPS ==========
+
+.status-chip-active {
+  background-color: vars.$color-success;
+  color: white;
+}
+
+.status-chip-inactive {
+  background-color: vars.$color-on-surface-variant;
+  color: white;
+}
+
+.status-chip-suspended {
+  background-color: vars.$color-error;
+  color: white;
+}
+
+// ========== DIALOG ACTIONS ==========
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: vars.$spacing-md;
+  padding: vars.$spacing-lg vars.$spacing-xl;
+  border-top: 1px solid vars.$color-outline-variant;
+  margin-top: vars.$spacing-lg;
+
+  button {
+    display: flex;
+    align-items: center;
+    gap: vars.$spacing-sm;
+
+    mat-spinner {
+      margin-right: vars.$spacing-sm;
+    }
+  }
+}
+
+// ========== RESPONSIVE ==========
+
+@include theme.mobile {
+  .dialog-container {
+    max-width: 100%;
+  }
+
+  .member-info-section {
+    flex-direction: column;
+    text-align: center;
+    gap: vars.$spacing-md;
+  }
+
+  .dialog-actions {
+    flex-direction: column;
+    
+    button {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+}

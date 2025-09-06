@@ -46,7 +46,7 @@ export class MemberService {
   // Computed signals
   readonly memberCount = computed(() => this._members().length);
   readonly activeMembers = computed(() =>
-    this._members().filter(member => member.is_active && member.status === MemberStatus.ACTIVE)
+    this._members().filter(member => member.is_active)
   );
   readonly pendingInvitations = computed(() =>
     this._invitations().filter(invitation => invitation.status === InvitationStatus.PENDING)

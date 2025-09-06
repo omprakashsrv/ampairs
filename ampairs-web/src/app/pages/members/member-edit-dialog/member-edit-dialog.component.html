@@ -1,0 +1,97 @@
+<div class="dialog-container">
+  <div class="dialog-header">
+    <h2 mat-dialog-title>Edit Member</h2>
+    <button mat-icon-button (click)="onCancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <mat-dialog-content>
+    <!-- Member Info Display -->
+    <div class="member-info-section">
+      <div class="member-avatar">
+        @if (data.member.user.profile_picture_url) {
+          <img [src]="data.member.user.profile_picture_url"
+               [alt]="data.member.user.display_name"
+               class="avatar">
+        } @else {
+          <div class="avatar-placeholder">
+            {{ data.member.user.display_name.charAt(0).toUpperCase() }}
+          </div>
+        }
+      </div>
+      <div class="member-details">
+        <h3>{{ data.member.user.display_name }}</h3>
+        <p>+ {{ data.member.user.country_code }} {{ data.member.user.phone }}</p>
+      </div>
+    </div>
+
+    <!-- Edit Form -->
+    <form [formGroup]="editForm" (ngSubmit)="onSubmit()">
+      <!-- Role Selection -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Role</mat-label>
+        <mat-select formControlName="role">
+          @for (role of availableRoles; track role) {
+            <mat-option [value]="role">
+              {{ ROLE_DISPLAY_NAMES[role] }}
+            </mat-option>
+          }
+        </mat-select>
+        <mat-hint>Select the member's role in this workspace</mat-hint>
+      </mat-form-field>
+
+      <!-- Debug info (remove after testing) -->
+      <div style="font-size: 12px; color: #666; margin: 8px 0;">
+        <strong>Debug:</strong> Current Role: {{ data.member.role }} | Form Role: {{ editForm.get('role')?.value }}
+      </div>
+
+      <!-- Status Selection -->
+      <mat-form-field appearance="outline" class="full-width">
+        <mat-label>Status</mat-label>
+        <mat-select formControlName="is_active">
+          @for (status of availableStatuses; track status.value) {
+            <mat-option [value]="status.value">
+              {{ status.label }}
+            </mat-option>
+          }
+        </mat-select>
+        <mat-hint>Set the member's account status</mat-hint>
+      </mat-form-field>
+
+      <!-- Current Role & Status Display -->
+      <div class="current-info">
+        <h4>Current Settings</h4>
+        <div class="current-chips">
+          <mat-chip-listbox>
+            <mat-chip [class]="'role-chip-' + data.member.role.toLowerCase()">
+              {{ ROLE_DISPLAY_NAMES[data.member.role] }}
+            </mat-chip>
+            <mat-chip [class]="data.member.is_active ? 'status-chip-active' : 'status-chip-inactive'">
+              {{ data.member.is_active ? 'Active' : 'Inactive' }}
+            </mat-chip>
+          </mat-chip-listbox>
+        </div>
+      </div>
+    </form>
+  </mat-dialog-content>
+
+  <mat-dialog-actions class="dialog-actions">
+    <button mat-button (click)="onCancel()" [disabled]="isLoading()">
+      Cancel
+    </button>
+    <button mat-raised-button
+            color="primary"
+            (click)="onSubmit()"
+            [disabled]="editForm.invalid || isLoading()">
+      @if (isLoading()) {
+        <ng-container>
+          <mat-spinner diameter="20"></mat-spinner>
+          Updating...
+        </ng-container>
+      } @else {
+        Save Changes
+      }
+    </button>
+  </mat-dialog-actions>
+</div>
