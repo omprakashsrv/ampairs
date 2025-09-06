@@ -2,8 +2,8 @@ package com.ampairs.workspace.model.dto
 
 import com.ampairs.core.domain.User
 import com.ampairs.workspace.model.WorkspaceMember
-import com.ampairs.workspace.security.WorkspacePermission
 import com.ampairs.workspace.model.enums.WorkspaceRole
+import com.ampairs.workspace.security.WorkspacePermission
 import java.time.LocalDateTime
 
 /**
@@ -79,6 +79,8 @@ data class MemberListResponse(
     val isActive: Boolean,
 
     val joinedAt: LocalDateTime,
+
+    val permissions: Set<WorkspacePermission>,
 
     val lastActivityAt: LocalDateTime?,
 
@@ -192,6 +194,7 @@ fun WorkspaceMember.toListResponse(
         lastActivityAt = this.lastActiveAt,
         primaryTeam = primaryTeamSummary,
         teams = teamsList,
-        jobTitle = this.jobTitle
+        jobTitle = this.jobTitle,
+        permissions = this.permissions
     )
 }

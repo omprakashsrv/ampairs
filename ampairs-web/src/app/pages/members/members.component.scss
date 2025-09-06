@@ -298,6 +298,22 @@
   }
 }
 
+// ========== ACTIONS STYLING ==========
+
+.actions-row {
+  display: flex;
+  align-items: center;
+  gap: vars.$spacing-xs;
+
+  .edit-button {
+    color: vars.$color-primary;
+    
+    &:hover {
+      background-color: rgba(vars.$color-primary, 0.08);
+    }
+  }
+}
+
 // ========== MEMBER CELL ==========
 
 .member-cell {

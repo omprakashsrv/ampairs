@@ -302,16 +302,6 @@ export class MembersComponent implements OnInit {
     });
   }
 
-  viewMember(member: WorkspaceMemberListItem): void {
-    const currentWorkspace = this.currentWorkspace();
-    if (currentWorkspace) {
-      // Navigate to member profile - we'll use the profile route for now
-      // In future, this could be a dedicated member profile route
-      this.router.navigate(['/w', currentWorkspace.slug, 'profile'], {
-        queryParams: { memberId: member.id }
-      });
-    }
-  }
 
   // ========== INVITATION ACTIONS ==========
 

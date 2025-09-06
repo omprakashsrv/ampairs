@@ -39,6 +39,7 @@ export interface WorkspaceMemberListItem {
     is_enabled: boolean;
   };
   role: WorkspaceRole;
+  permissions: WorkspacePermission[];
   is_active: boolean;
   joined_at: string;
   last_activity_at?: string;
@@ -219,3 +220,18 @@ export const INVITATION_STATUS_COLORS: { [key in InvitationStatus]: string } = {
   [InvitationStatus.CANCELLED]: 'error',
   [InvitationStatus.REJECTED]: 'error'
 };
+
+// Backend API Response Interfaces
+export interface WorkspaceRoleResponse {
+  name: string;
+  display_name: string;  // snake_case from backend
+  level: number;
+  description: string;
+  manageable_roles: string[];  // snake_case from backend
+}
+
+export interface WorkspacePermissionResponse {
+  name: string;
+  permissionName: string;
+  description: string;
+}

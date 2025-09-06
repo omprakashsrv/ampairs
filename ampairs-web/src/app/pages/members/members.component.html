@@ -205,19 +205,18 @@
                 <ng-container matColumnDef="actions">
                   <th mat-header-cell *matHeaderCellDef>Actions</th>
                   <td mat-cell *matCellDef="let member">
-                    <button mat-icon-button [matMenuTriggerFor]="memberMenu">
-                      <mat-icon>more_vert</mat-icon>
-                    </button>
-                    <mat-menu #memberMenu="matMenu">
-                      <button mat-menu-item (click)="viewMember(member)">
-                        <mat-icon>visibility</mat-icon>
-                        View Profile
-                      </button>
-                      <button mat-menu-item (click)="editMember(member)">
+                    <div class="actions-row">
+                      <button mat-icon-button 
+                              (click)="editMember(member)"
+                              matTooltip="Edit Member"
+                              class="edit-button">
                         <mat-icon>edit</mat-icon>
-                        Edit Member
                       </button>
-                      <mat-divider></mat-divider>
+                      <button mat-icon-button [matMenuTriggerFor]="memberMenu">
+                        <mat-icon>more_vert</mat-icon>
+                      </button>
+                    </div>
+                    <mat-menu #memberMenu="matMenu">
                       <button mat-menu-item (click)="removeMember(member)" class="warn-menu-item">
                         <mat-icon>delete</mat-icon>
                         Remove Member

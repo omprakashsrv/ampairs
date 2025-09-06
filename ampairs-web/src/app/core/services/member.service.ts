@@ -5,19 +5,20 @@ import {catchError, map} from 'rxjs/operators';
 import {environment} from '../../../environments/environment';
 import {ApiResponse} from '../models/api-response.interface';
 import {
+  BulkInvitationRequest,
+  CreateInvitationRequest,
+  InvitationSearchFilters,
+  InvitationStatistics,
+  InvitationStatus,
+  MemberSearchFilters,
+  MemberStatistics,
+  UpdateMemberRequest,
+  WorkspaceInvitation,
   WorkspaceMember,
   WorkspaceMemberListItem,
-  WorkspaceInvitation,
-  CreateInvitationRequest,
-  BulkInvitationRequest,
-  UpdateMemberRequest,
-  MemberSearchFilters,
-  InvitationSearchFilters,
-  MemberStatistics,
-  InvitationStatistics,
+  WorkspacePermissionResponse,
   WorkspaceRole,
-  MemberStatus,
-  InvitationStatus
+  WorkspaceRoleResponse
 } from '../models/member.interface';
 import {PaginatedResponse} from './workspace.service';
 
@@ -90,7 +91,7 @@ export class MemberService {
       const response = await firstValueFrom(
         this.http.get<PaginatedResponse<WorkspaceMemberListItem>>(
           `${this.getWorkspaceApiUrl(workspaceId)}/members`,
-          { params }
+          {params}
         ).pipe(catchError(this.handleError))
       );
 
@@ -130,7 +131,7 @@ export class MemberService {
       const response = await firstValueFrom(
         this.http.get<ApiResponse<PaginatedResponse<WorkspaceMemberListItem>>>(
           `${this.getWorkspaceApiUrl(workspaceId)}/members/search`,
-          { params }
+          {params}
         ).pipe(catchError(this.handleError))
       );
 
@@ -254,7 +255,7 @@ export class MemberService {
       const response = await firstValueFrom(
         this.http.get<PaginatedResponse<WorkspaceInvitation>>(
           `${this.getWorkspaceApiUrl(workspaceId)}/invitations`,
-          { params }
+          {params}
         ).pipe(catchError(this.handleError))
       );
 
@@ -492,7 +493,7 @@ export class MemberService {
     try {
       await firstValueFrom(
         this.http.request('delete', `${this.getWorkspaceApiUrl(workspaceId)}/members/bulk`, {
-          body: { member_ids: memberIds }
+          body: {member_ids: memberIds}
         }).pipe(catchError(this.handleError))
       );
 
@@ -523,6 +524,44 @@ export class MemberService {
     this._invitationStatistics.set(null);
     this._error.set(null);
     this._loading.set(false);
+  }
+
+  /**
+   * Get available workspace roles from backend
+   */
+  async getWorkspaceRoles(workspaceId: string): Promise<WorkspaceRoleResponse[]> {
+    try {
+      return await firstValueFrom(
+        this.http.get<WorkspaceRoleResponse[]>(
+          `${this.getWorkspaceApiUrl(workspaceId)}/roles`
+        ).pipe(
+          map(apiResponse => apiResponse),
+          catchError(this.handleError)
+        )
+      );
+    } catch (error: any) {
+      console.error('Failed to fetch workspace roles:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get available workspace permissions from backend
+   */
+  async getWorkspacePermissions(workspaceId: string): Promise<WorkspacePermissionResponse[]> {
+    try {
+      return await firstValueFrom(
+        this.http.get<WorkspacePermissionResponse[]>(
+          `${this.getWorkspaceApiUrl(workspaceId)}/permissions`
+        ).pipe(
+          map(apiResponse => apiResponse),
+          catchError(this.handleError)
+        )
+      );
+    } catch (error: any) {
+      console.error('Failed to fetch workspace permissions:', error);
+      throw error;
+    }
   }
 
   /**
