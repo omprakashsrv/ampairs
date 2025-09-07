@@ -93,6 +93,37 @@
   width: 100%;
 }
 
+.half-width-field {
+  width: 48%;
+}
+
+// Form Organization
+.form-section {
+  margin-bottom: variables.$spacing-xxl;
+
+  .section-title {
+    font: variables.$font-headline-small;
+    color: variables.$color-on-surface;
+    margin: 0 0 variables.$spacing-lg 0;
+    padding-bottom: variables.$spacing-sm;
+    border-bottom: 1px solid variables.$color-outline-variant;
+  }
+}
+
+.form-row {
+  @include theme.flex-between;
+  gap: variables.$spacing-lg;
+  
+  @include theme.mobile {
+    flex-direction: column;
+    gap: 0;
+    
+    .half-width-field {
+      width: 100%;
+    }
+  }
+}
+
 // M3 Type Option Styling
 .type-option {
   @include theme.flex-center;
@@ -116,6 +147,13 @@
   font: variables.$font-label-small;
   color: variables.$color-on-surface-variant;
   line-height: variables.$line-height-tight;
+}
+
+.selected-type {
+  @include theme.flex-center;
+  gap: variables.$spacing-md;
+  font: variables.$font-label-medium;
+  color: variables.$color-on-surface;
 }
 
 // M3 Info Cards

@@ -50,6 +50,19 @@ export interface CreateWorkspaceRequest {
   timezone?: string;
   language?: string;
   slug?: string;
+  // Business Details
+  address_line1?: string;
+  address_line2?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  country?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  registration_number?: string;
+  business_hours_start?: string;
+  business_hours_end?: string;
 }
 
 export interface ApiResponse<T> {

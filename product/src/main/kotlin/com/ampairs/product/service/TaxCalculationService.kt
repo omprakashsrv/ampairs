@@ -34,7 +34,7 @@ class TaxCalculationService(
         transactionDate: LocalDateTime = LocalDateTime.now()
     ): TaxCalculationResult {
         
-        val taxCodeEntity = taxCodeRepository.findByCodeAndIsActive(taxCode, true)
+        val taxCodeEntity = taxCodeRepository.findByCodeAndActive(taxCode, true)
             .orElseThrow { IllegalArgumentException("Tax code not found or inactive: $taxCode") }
 
         if (!taxCodeEntity.isValidForDate(transactionDate)) {
@@ -151,7 +151,7 @@ class TaxCalculationService(
         businessType: String
     ): CompositionTaxResult {
         
-        val taxCodeEntity = taxCodeRepository.findByCodeAndIsActive(taxCode, true)
+        val taxCodeEntity = taxCodeRepository.findByCodeAndActive(taxCode, true)
             .orElseThrow { IllegalArgumentException("Tax code not found: $taxCode") }
 
         if (!taxCodeEntity.isCompositionApplicable) {

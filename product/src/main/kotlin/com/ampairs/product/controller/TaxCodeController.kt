@@ -69,7 +69,7 @@ class TaxCodeController(
 
     @GetMapping("/codes/{code}")
     fun getTaxCode(@PathVariable code: String): ApiResponse<TaxCodeResponse> {
-        val taxCode = taxCodeRepository.findByCodeAndIsActive(code, true)
+        val taxCode = taxCodeRepository.findByCodeAndActive(code, true)
             .orElseThrow { IllegalArgumentException("Tax code not found: $code") }
         
         return ApiResponse.success(taxCode.toResponse())
@@ -136,7 +136,7 @@ class TaxCodeController(
             minRate != null && maxRate != null -> taxCodeRepository.findByGstRateRange(minRate, maxRate)
             minRate != null -> taxCodeRepository.findByGstRateRange(minRate, 100.0)
             maxRate != null -> taxCodeRepository.findByGstRateRange(0.0, maxRate)
-            else -> taxCodeRepository.findByIsActive(true)
+            else -> taxCodeRepository.findByActive(true)
         }
         
         val rates = taxCodes.map { 

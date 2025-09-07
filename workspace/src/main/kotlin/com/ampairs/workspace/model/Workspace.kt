@@ -178,19 +178,19 @@ class Workspace : BaseDomain() {
      * Currency for business transactions
      */
     @Column(name = "currency", length = 3)
-    var currency: String = "USD"
+    var currency: String = "INR"
 
     /**
      * Date format preference
      */
     @Column(name = "date_format", length = 20)
-    var dateFormat: String = "DD/MM/YYYY"
+    var dateFormat: String = "DD-MM-YYYY"
 
     /**
      * Time format preference
      */
     @Column(name = "time_format", length = 10)
-    var timeFormat: String = "24H"
+    var timeFormat: String = "12H"
 
     /**
      * Subscription last updated timestamp

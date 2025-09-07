@@ -47,6 +47,27 @@
                     </mat-chip>
                   </mat-chip-set>
                 </mat-card-subtitle>
+
+                <!-- Workspace Actions Menu -->
+                <button 
+                  mat-icon-button 
+                  [matMenuTriggerFor]="workspaceMenu" 
+                  (click)="$event.stopPropagation()"
+                  class="workspace-menu-trigger">
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+
+                <mat-menu #workspaceMenu="matMenu">
+                  <button mat-menu-item (click)="editWorkspace(workspace)">
+                    <mat-icon>edit</mat-icon>
+                    <span>Edit Workspace</span>
+                  </button>
+                  <mat-divider></mat-divider>
+                  <button mat-menu-item (click)="viewWorkspaceSettings(workspace)">
+                    <mat-icon>settings</mat-icon>
+                    <span>Settings</span>
+                  </button>
+                </mat-menu>
               </mat-card-header>
 
               <mat-card-content>
@@ -110,7 +131,7 @@
     }
 
     <!-- M3 Create New Workspace FAB -->
-    @if (!isLoading && workspaces.length > 0) {
+    @if (!isLoading() && workspaces().length > 0) {
       <div class="create-new-section">
         <mat-divider class="section-divider"></mat-divider>
 

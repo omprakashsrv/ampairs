@@ -50,6 +50,31 @@ data class WorkspaceResponse(
         val isTrial: Boolean? = null,
 
         val storagePercentage: Double? = null,
+        
+        // Business address details
+        val addressLine1: String? = null,
+        val addressLine2: String? = null,
+        val city: String? = null,
+        val state: String? = null,
+        val postalCode: String? = null,
+        val country: String? = null,
+        
+        // Contact information
+        val phone: String? = null,
+        val email: String? = null,
+        val website: String? = null,
+        
+        // Legal/Tax details
+        val taxId: String? = null,
+        val registrationNumber: String? = null,
+        
+        // Business operations
+        val currency: String? = null,
+        val dateFormat: String? = null,
+        val timeFormat: String? = null,
+        val businessHoursStart: String? = null,
+        val businessHoursEnd: String? = null,
+        val workingDays: String? = null,
 )
 
 /**
@@ -75,6 +100,12 @@ data class WorkspaceListResponse(
         val lastActivityAt: LocalDateTime?,
 
         val createdAt: LocalDateTime,
+        
+        // Business contact information for list view
+        val phone: String? = null,
+        val email: String? = null,
+        val city: String? = null,
+        val country: String? = null,
 )
 
 /**
@@ -102,7 +133,32 @@ fun Workspace.toResponse(memberCount: Int? = null): WorkspaceResponse {
         trialExpiresAt = this.trialExpiresAt,
         memberCount = memberCount,
         isTrial = this.isInTrial(),
-        storagePercentage = if (storageLimitGb > 0) (storageUsedGb.toDouble() / storageLimitGb * 100) else 0.0
+        storagePercentage = if (storageLimitGb > 0) (storageUsedGb.toDouble() / storageLimitGb * 100) else 0.0,
+        
+        // Business address details
+        addressLine1 = this.addressLine1,
+        addressLine2 = this.addressLine2,
+        city = this.city,
+        state = this.state,
+        postalCode = this.postalCode,
+        country = this.country,
+        
+        // Contact information
+        phone = this.phone,
+        email = this.email,
+        website = this.website,
+        
+        // Legal/Tax details
+        taxId = this.taxId,
+        registrationNumber = this.registrationNumber,
+        
+        // Business operations
+        currency = this.currency,
+        dateFormat = this.dateFormat,
+        timeFormat = this.timeFormat,
+        businessHoursStart = this.businessHoursStart,
+        businessHoursEnd = this.businessHoursEnd,
+        workingDays = this.workingDays,
     )
 }
 
@@ -121,5 +177,11 @@ fun Workspace.toListResponse(memberCount: Int): WorkspaceListResponse {
         memberCount = memberCount,
         lastActivityAt = this.lastActivityAt,
         createdAt = this.createdAt ?: LocalDateTime.now(),
+        
+        // Business contact information for list view
+        phone = this.phone,
+        email = this.email,
+        city = this.city,
+        country = this.country,
     )
 }

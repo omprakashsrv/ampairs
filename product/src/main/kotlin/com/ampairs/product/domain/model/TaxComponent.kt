@@ -14,7 +14,7 @@ import java.time.LocalDateTime
     indexes = [
         Index(name = "idx_tax_component_code", columnList = "component_code"),
         Index(name = "idx_tax_component_type", columnList = "component_type"),
-        Index(name = "idx_tax_component_active", columnList = "is_active")
+        Index(name = "idx_tax_component_active", columnList = "active")
     ]
 )
 class TaxComponent : OwnableBaseDomain() {

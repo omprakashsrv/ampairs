@@ -61,6 +61,30 @@ class WorkspaceService(
             this.subscriptionPlan = SubscriptionPlan.FREE
             this.active = true
             this.lastActivityAt = LocalDateTime.now()
+
+            // Business address details
+            this.addressLine1 = request.addressLine1
+            this.addressLine2 = request.addressLine2
+            this.city = request.city
+            this.state = request.state
+            this.postalCode = request.postalCode
+            this.country = request.country
+
+            // Contact information
+            this.phone = request.phone
+            this.email = request.email
+            this.website = request.website
+
+            // Legal/Tax details
+            this.taxId = request.taxId ?: "GSTIN"
+            this.registrationNumber = request.registrationNumber
+
+            // Business operations
+            this.currency = request.currency
+            this.dateFormat = request.dateFormat
+            this.timeFormat = request.timeFormat
+            this.businessHoursStart = request.businessHoursStart
+            this.businessHoursEnd = request.businessHoursEnd
         }
 
         val savedWorkspace = workspaceRepository.save(workspace)
@@ -127,6 +151,30 @@ class WorkspaceService(
         request.avatarUrl?.let { workspace.avatarUrl = it }
         request.timezone?.let { workspace.timezone = it }
         request.language?.let { workspace.language = it }
+
+        // Update business address details
+        request.addressLine1?.let { workspace.addressLine1 = it }
+        request.addressLine2?.let { workspace.addressLine2 = it }
+        request.city?.let { workspace.city = it }
+        request.state?.let { workspace.state = it }
+        request.postalCode?.let { workspace.postalCode = it }
+        request.country?.let { workspace.country = it }
+
+        // Update contact information
+        request.phone?.let { workspace.phone = it }
+        request.email?.let { workspace.email = it }
+        request.website?.let { workspace.website = it }
+
+        // Update legal/Tax details
+        request.taxId?.let { workspace.taxId = it }
+        request.registrationNumber?.let { workspace.registrationNumber = it }
+
+        // Update business operations
+        request.currency?.let { workspace.currency = it }
+        request.dateFormat?.let { workspace.dateFormat = it }
+        request.timeFormat?.let { workspace.timeFormat = it }
+        request.businessHoursStart?.let { workspace.businessHoursStart = it }
+        request.businessHoursEnd?.let { workspace.businessHoursEnd = it }
 
         workspace.lastActivityAt = LocalDateTime.now()
 

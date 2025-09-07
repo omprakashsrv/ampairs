@@ -94,18 +94,46 @@ export class WorkspaceCreateComponent implements OnInit {
       description: ['', [Validators.maxLength(500)]],
       workspace_type: ['BUSINESS', [Validators.required]],
       timezone: ['Asia/Kolkata', [Validators.required]],
-      language: ['en', [Validators.required]]
+      language: ['en', [Validators.required]],
+      // Business Details
+      address_line1: ['', [Validators.maxLength(255)]],
+      address_line2: ['', [Validators.maxLength(255)]],
+      city: ['', [Validators.maxLength(100)]],
+      state: ['', [Validators.maxLength(100)]],
+      postal_code: ['', [Validators.maxLength(20)]],
+      country: ['', [Validators.maxLength(100)]],
+      phone: ['', [Validators.pattern(/^[+]?[0-9\s\-()]+$/), Validators.maxLength(20)]],
+      email: ['', [Validators.email, Validators.maxLength(255)]],
+      website: ['', [Validators.maxLength(255)]],
+      registration_number: ['', [Validators.maxLength(100)]],
+      business_hours_start: ['', [Validators.pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)]],
+      business_hours_end: ['', [Validators.pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)]]
     });
 
     // Initialize separate form groups for stepper validation
     this.step1FormGroup = this.fb.group({
       name: ['', [Validators.required, Validators.minLength(2), Validators.maxLength(100)]],
       slug: ['', [Validators.required, Validators.pattern(/^[a-z0-9-]+$/), Validators.minLength(3), Validators.maxLength(50)]],
-      workspace_type: ['BUSINESS', [Validators.required]]
+      workspace_type: ['BUSINESS', [Validators.required]],
+      description: ['', [Validators.maxLength(500)]]
     });
 
     this.step2FormGroup = this.fb.group({
-      description: ['', [Validators.maxLength(500)]]
+      // Business Contact Details
+      phone: ['', [Validators.pattern(/^[+]?[0-9\s\-()]+$/), Validators.maxLength(20)]],
+      email: ['', [Validators.email, Validators.maxLength(255)]],
+      website: ['', [Validators.maxLength(255)]],
+      registration_number: ['', [Validators.maxLength(100)]],
+      // Business Address
+      address_line1: ['', [Validators.maxLength(255)]],
+      address_line2: ['', [Validators.maxLength(255)]],
+      city: ['', [Validators.maxLength(100)]],
+      state: ['', [Validators.maxLength(100)]],
+      postal_code: ['', [Validators.maxLength(20)]],
+      country: ['', [Validators.maxLength(100)]],
+      // Business Hours
+      business_hours_start: ['', [Validators.pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)]],
+      business_hours_end: ['', [Validators.pattern(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)]]
     });
 
     this.step3FormGroup = this.fb.group({
@@ -140,6 +168,55 @@ export class WorkspaceCreateComponent implements OnInit {
 
   get languageField() {
     return this.step3FormGroup.get('language') || this.workspaceForm.get('language');
+  }
+
+  // Business Detail Field Getters
+  get phoneField() {
+    return this.step2FormGroup.get('phone') || this.workspaceForm.get('phone');
+  }
+
+  get emailField() {
+    return this.step2FormGroup.get('email') || this.workspaceForm.get('email');
+  }
+
+  get websiteField() {
+    return this.step2FormGroup.get('website') || this.workspaceForm.get('website');
+  }
+
+  get registrationNumberField() {
+    return this.step2FormGroup.get('registration_number') || this.workspaceForm.get('registration_number');
+  }
+
+  get addressLine1Field() {
+    return this.step2FormGroup.get('address_line1') || this.workspaceForm.get('address_line1');
+  }
+
+  get addressLine2Field() {
+    return this.step2FormGroup.get('address_line2') || this.workspaceForm.get('address_line2');
+  }
+
+  get cityField() {
+    return this.step2FormGroup.get('city') || this.workspaceForm.get('city');
+  }
+
+  get stateField() {
+    return this.step2FormGroup.get('state') || this.workspaceForm.get('state');
+  }
+
+  get postalCodeField() {
+    return this.step2FormGroup.get('postal_code') || this.workspaceForm.get('postal_code');
+  }
+
+  get countryField() {
+    return this.step2FormGroup.get('country') || this.workspaceForm.get('country');
+  }
+
+  get businessHoursStartField() {
+    return this.step2FormGroup.get('business_hours_start') || this.workspaceForm.get('business_hours_start');
+  }
+
+  get businessHoursEndField() {
+    return this.step2FormGroup.get('business_hours_end') || this.workspaceForm.get('business_hours_end');
   }
 
   ngOnInit(): void {
@@ -188,7 +265,20 @@ export class WorkspaceCreateComponent implements OnInit {
         description: this.workspaceForm.get('description')?.value?.trim() || undefined,
         workspace_type: this.workspaceForm.get('workspace_type')?.value,
         timezone: this.workspaceForm.get('timezone')?.value,
-        language: this.workspaceForm.get('language')?.value
+        language: this.workspaceForm.get('language')?.value,
+        // Business Details
+        address_line1: this.workspaceForm.get('address_line1')?.value?.trim() || undefined,
+        address_line2: this.workspaceForm.get('address_line2')?.value?.trim() || undefined,
+        city: this.workspaceForm.get('city')?.value?.trim() || undefined,
+        state: this.workspaceForm.get('state')?.value?.trim() || undefined,
+        postal_code: this.workspaceForm.get('postal_code')?.value?.trim() || undefined,
+        country: this.workspaceForm.get('country')?.value?.trim() || undefined,
+        phone: this.workspaceForm.get('phone')?.value?.trim() || undefined,
+        email: this.workspaceForm.get('email')?.value?.trim() || undefined,
+        website: this.workspaceForm.get('website')?.value?.trim() || undefined,
+        registration_number: this.workspaceForm.get('registration_number')?.value?.trim() || undefined,
+        business_hours_start: this.workspaceForm.get('business_hours_start')?.value?.trim() || undefined,
+        business_hours_end: this.workspaceForm.get('business_hours_end')?.value?.trim() || undefined
       };
 
       try {
@@ -236,12 +326,12 @@ export class WorkspaceCreateComponent implements OnInit {
   isStepCompleted(step: number): boolean {
     switch (step) {
       case 0: // Basic Info
-        const basicControls = ['name', 'slug', 'workspace_type'];
+        const basicControls = ['name', 'slug', 'workspace_type', 'description'];
         return basicControls.every(control =>
           this.workspaceForm.get(control)?.valid && this.slugAvailable
         );
-      case 1: // Details
-        return this.workspaceForm.get('description')?.valid !== false;
+      case 1: // Business Details (all optional)
+        return this.step2FormGroup.valid;
       case 2: // Preferences
         const prefControls = ['timezone', 'language'];
         return prefControls.every(control => this.workspaceForm.get(control)?.valid);
@@ -328,11 +418,23 @@ export class WorkspaceCreateComponent implements OnInit {
       this.step1FormGroup.patchValue({
         name: values.name,
         slug: values.slug,
-        workspace_type: values.workspace_type
+        workspace_type: values.workspace_type,
+        description: values.description
       }, {emitEvent: false});
 
       this.step2FormGroup.patchValue({
-        description: values.description
+        phone: values.phone,
+        email: values.email,
+        website: values.website,
+        registration_number: values.registration_number,
+        address_line1: values.address_line1,
+        address_line2: values.address_line2,
+        city: values.city,
+        state: values.state,
+        postal_code: values.postal_code,
+        country: values.country,
+        business_hours_start: values.business_hours_start,
+        business_hours_end: values.business_hours_end
       }, {emitEvent: false});
 
       this.step3FormGroup.patchValue({

@@ -136,6 +136,26 @@
     background-color: variables.$color-surface-container-high;
     border: 2px solid variables.$color-primary;
   }
+
+  // Workspace Actions Menu
+  .workspace-menu-trigger {
+    position: absolute;
+    top: variables.$spacing-md;
+    right: variables.$spacing-md;
+    z-index: 1;
+    color: variables.$color-on-surface-variant;
+    opacity: 0;
+    transition: opacity variables.$transition-fast;
+
+    &:hover {
+      background-color: variables.$color-surface-container-high;
+      color: variables.$color-on-surface;
+    }
+  }
+
+  &:hover .workspace-menu-trigger {
+    opacity: 1;
+  }
 }
 
 // M3 Workspace Avatar

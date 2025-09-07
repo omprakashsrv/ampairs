@@ -14,7 +14,9 @@ import {MatListModule} from '@angular/material/list';
 import {MatChipsModule} from '@angular/material/chips';
 import {MatRippleModule} from '@angular/material/core';
 import {MatMenuModule} from '@angular/material/menu';
+import {MatDialog} from '@angular/material/dialog';
 import {WorkspaceListItem, WorkspaceService} from '../../../core/services/workspace.service';
+import {WorkspaceEditDialogComponent} from '../workspace-edit-dialog/workspace-edit-dialog.component';
 
 @Component({
   selector: 'app-workspace-select',
@@ -43,6 +45,7 @@ export class WorkspaceSelectComponent implements OnInit {
   private workspaceService = inject(WorkspaceService);
   private router = inject(Router);
   private snackBar = inject(MatSnackBar);
+  private dialog = inject(MatDialog);
 
   // Signals for reactive state management
   workspaces = signal<WorkspaceListItem[]>([]);
@@ -171,6 +174,43 @@ export class WorkspaceSelectComponent implements OnInit {
     this.snackBar.open(message, 'Close', {
       duration: 5000,
       panelClass: ['error-snackbar']
+    });
+  }
+
+  editWorkspace(workspace: WorkspaceListItem): void {
+    const dialogRef = this.dialog.open(WorkspaceEditDialogComponent, {
+      width: '600px',
+      maxWidth: '90vw',
+      maxHeight: '90vh',
+      data: { workspace },
+      disableClose: false,
+      autoFocus: true
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        // Workspace was updated, refresh the list
+        this.loadWorkspaces();
+        
+        // Update current workspace if it was the one edited
+        const currentWorkspace = this.workspaceService.getCurrentWorkspace();
+        if (currentWorkspace && currentWorkspace.id === workspace.id) {
+          // Reload the full workspace details to update the current workspace
+          this.workspaceService.getWorkspaceById(workspace.id).subscribe({
+            next: (updatedWorkspace) => {
+              this.workspaceService.setCurrentWorkspace(updatedWorkspace);
+            }
+          });
+        }
+      }
+    });
+  }
+
+  viewWorkspaceSettings(workspace: WorkspaceListItem): void {
+    // Navigate to workspace settings - we can implement this route later
+    this.snackBar.open('Workspace settings coming soon!', 'Close', {
+      duration: 3000,
+      panelClass: ['info-snackbar']
     });
   }
 }

@@ -19,7 +19,8 @@ interface OrderRepository : CrudRepository<Order, Long>, PagingAndSortingReposit
     fun findByStatus(status: OrderStatus): List<Order>
     fun findByOrderType(orderType: String): List<Order>
     fun findByPaymentMethod(paymentMethod: String): List<Order>
-    fun findByIsWalkIn(isWalkIn: Boolean): List<Order>
+    @Query("SELECT o FROM customer_order o WHERE o.isWalkIn = :walkIn")
+    fun findByIsWalkIn(walkIn: Boolean): List<Order>
 
     @Query("SELECT MAX(CAST(co.orderNumber AS INTEGER)) FROM customer_order co")
     fun findMaxOrderNumber(): Optional<String>
