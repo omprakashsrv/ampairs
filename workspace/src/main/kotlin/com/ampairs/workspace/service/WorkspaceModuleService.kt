@@ -27,27 +27,29 @@ class WorkspaceModuleService(
     /**
      * Get comprehensive module overview for workspace
      */
-    fun getBasicModuleInfo(): WorkspaceModuleOverviewResponse? {
-        val workspaceId = TenantContextHolder.getCurrentTenant() ?: return null
+    fun getInstalledModules(): List<InstalledModuleResponse> {
+        val workspaceId = TenantContextHolder.getCurrentTenant() ?: return emptyList()
 
         val installedModules = workspaceModuleRepository.findByWorkspaceId(workspaceId)
         val activeModules = installedModules.filter { it.enabled && it.status == WorkspaceModuleStatus.ACTIVE }
-        val recentActivity = getRecentActivity(workspaceId)
-        val moduleCategories = getInstalledCategories(workspaceId)
 
-        return WorkspaceModuleOverviewResponse(
-            workspaceId = workspaceId,
-            message = "Module management is available",
-            totalModules = installedModules.size,
-            activeModules = activeModules.size,
-            moduleCategories = moduleCategories,
-            recentActivity = recentActivity,
-            quickActions = listOf(
-                "Browse Available Modules",
-                "Configure Existing Modules",
-                "View Module Analytics"
+
+        return activeModules.map { module ->
+            InstalledModuleResponse(
+                id = module.uid,
+                moduleCode = module.masterModule.moduleCode,
+                name = module.getEffectiveName(),
+                category = module.getEffectiveCategory(),
+                version = module.installedVersion,
+                status = module.status.displayName,
+                enabled = module.enabled,
+                installedAt = module.installedAt,
+                icon = module.getEffectiveIcon(),
+                primaryColor = module.getEffectiveColor(),
+                healthScore = module.getHealthScore(),
+                needsAttention = module.needsAttention()
             )
-        )
+        }
     }
 
     /**
@@ -87,29 +89,6 @@ class WorkspaceModuleService(
             healthScore = workspaceModule.getHealthScore(),
             needsAttention = workspaceModule.needsAttention()
         )
-    }
-
-    /**
-     * Perform various module management actions
-     */
-    fun performAction(moduleId: String, action: String): ModuleActionResponse? {
-        val workspaceId = TenantContextHolder.getCurrentTenant() ?: return null
-
-        val workspaceModule = findWorkspaceModule(workspaceId, moduleId) ?: return null
-
-        return when (action.lowercase()) {
-            "enable" -> enableModule(workspaceModule)
-            "disable" -> disableModule(workspaceModule)
-            "configure" -> configureModule(workspaceModule)
-            "reset" -> resetModule(workspaceModule)
-            "update" -> updateModule(workspaceModule)
-            "analyze" -> analyzeModule(workspaceModule)
-            "diagnose" -> diagnoseModule(workspaceModule)
-            "optimize" -> optimizeModule(workspaceModule)
-            "restart" -> restartModule(workspaceModule)
-            "refresh" -> refreshModule(workspaceModule)
-            else -> null
-        }
     }
 
     /**

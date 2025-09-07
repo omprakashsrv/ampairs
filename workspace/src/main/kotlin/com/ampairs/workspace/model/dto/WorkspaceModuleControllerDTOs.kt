@@ -3,16 +3,21 @@ package com.ampairs.workspace.model.dto
 import java.time.LocalDateTime
 
 /**
- * Response for workspace module overview (GET /workspace/v1/modules)
+ * Installed module information for overview
  */
-data class WorkspaceModuleOverviewResponse(
-    var workspaceId: String = "",
-    var message: String = "",
-    var totalModules: Int = 0,
-    var activeModules: Int = 0,
-    var moduleCategories: List<String> = emptyList(),
-    var recentActivity: RecentActivityResponse = RecentActivityResponse(),
-    var quickActions: List<String> = emptyList(),
+data class InstalledModuleResponse(
+    var id: String = "",
+    var moduleCode: String = "",
+    var name: String = "",
+    var category: String = "",
+    var version: String = "",
+    var status: String = "",
+    var enabled: Boolean = true,
+    var installedAt: LocalDateTime = LocalDateTime.now(),
+    var icon: String = "",
+    var primaryColor: String = "",
+    var healthScore: Double = 1.0,
+    var needsAttention: Boolean = false,
 )
 
 /**

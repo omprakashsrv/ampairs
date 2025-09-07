@@ -15,8 +15,6 @@ data class ModuleConfiguration(
     var requiredPermissions: List<String> = emptyList(),
     var optionalPermissions: List<String> = emptyList(),
     var defaultEnabled: Boolean = true,
-    var maxUsersLimit: Int? = null,
-    var storageRequirementMb: Int = 0,
     var dependencies: List<String> = emptyList(),
     var conflictsWith: List<String> = emptyList(),
     var customSettings: Map<String, Any> = emptyMap()

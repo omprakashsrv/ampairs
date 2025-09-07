@@ -113,27 +113,50 @@ class WorkspaceModuleController(
                         name = "Module Overview Response",
                         value = """{
   "success": true,
-  "data": {
-    "workspaceId": "WS_ABC123_XYZ789",
-    "message": "Module management is available",
-    "totalModules": 8,
-    "activeModules": 6,
-    "moduleCategories": [
-      "CUSTOMER_MANAGEMENT",
-      "SALES_MANAGEMENT", 
-      "INVENTORY_MANAGEMENT"
+  "data": [
+      {
+        "id": "MOD_CUSTOMER_CRM_001",
+        "moduleCode": "customer-management",
+        "name": "Customer CRM",
+        "category": "CUSTOMER_MANAGEMENT",
+        "version": "2.1.0",
+        "status": "ACTIVE",
+        "enabled": true,
+        "installedAt": "2025-01-10T09:15:00Z",
+        "icon": "people",
+        "primaryColor": "#2196F3",
+        "healthScore": 0.95,
+        "needsAttention": false
+      },
+      {
+        "id": "MOD_INVENTORY_MGT_002",
+        "moduleCode": "inventory-management",
+        "name": "Inventory Manager",
+        "category": "INVENTORY_MANAGEMENT",
+        "version": "1.5.2",
+        "status": "ACTIVE",
+        "enabled": true,
+        "installedAt": "2025-01-12T14:20:00Z",
+        "icon": "inventory",
+        "primaryColor": "#4CAF50",
+        "healthScore": 0.88,
+        "needsAttention": false
+      },
+      {
+        "id": "MOD_SALES_PIPELINE_003",
+        "moduleCode": "sales-management",
+        "name": "Sales Pipeline",
+        "category": "SALES_MANAGEMENT",
+        "version": "3.0.1",
+        "status": "INSTALLED",
+        "enabled": false,
+        "installedAt": "2025-01-14T16:45:00Z",
+        "icon": "trending_up",
+        "primaryColor": "#FF9800",
+        "healthScore": 0.72,
+        "needsAttention": true
+      }
     ],
-    "recentActivity": {
-      "lastInstalled": "Product Catalog Module",
-      "lastConfigured": "Customer CRM Module",
-      "lastAccessed": "2025-01-15T10:30:00Z"
-    },
-    "quickActions": [
-      "Browse Available Modules",
-      "Configure Existing Modules",
-      "View Module Analytics"
-    ]
-  },
   "timestamp": "2025-01-15T10:30:00Z"
 }"""
                     )]
@@ -155,13 +178,9 @@ class WorkspaceModuleController(
     )
     @GetMapping
     @PreAuthorize("@workspaceAuthorizationService.isCurrentTenantMember(authentication)")
-    fun getModules(): ResponseEntity<ApiResponse<WorkspaceModuleOverviewResponse>> {
-        val result = workspaceModuleService.getBasicModuleInfo()
-        return if (result != null) {
-            ResponseEntity.ok(ApiResponse.success(result))
-        } else {
-            ResponseEntity.badRequest().body(ApiResponse.error(ErrorCodes.INVALID_TENANT_CONTEXT, "No tenant context"))
-        }
+    fun getModules(): ResponseEntity<ApiResponse<List<InstalledModuleResponse>>> {
+        val result = workspaceModuleService.getInstalledModules()
+        return ResponseEntity.ok(ApiResponse.success(result))
     }
 
     @Operation(
@@ -281,171 +300,6 @@ class WorkspaceModuleController(
             ResponseEntity.ok(ApiResponse.success(result))
         } else {
             ResponseEntity.notFound().build()
-        }
-    }
-
-    @Operation(
-        summary = "Perform Module Action",
-        description = """
-        ## ⚡ **Execute Module Management Operations**
-        
-        Performs various management actions on workspace modules including activation,
-        deactivation, configuration updates, and maintenance operations.
-        
-        ### **Available Actions:**
-        
-        #### **🔧 Configuration Actions**
-        - **`configure`**: Update module settings and preferences
-        - **`reset`**: Reset module to default configuration
-        - **`backup`**: Create configuration backup
-        - **`restore`**: Restore from configuration backup
-        
-        #### **🔄 State Management Actions**  
-        - **`enable`**: Activate module for workspace usage
-        - **`disable`**: Temporarily deactivate module
-        - **`restart`**: Restart module services
-        - **`refresh`**: Refresh module data and cache
-        
-        #### **📊 Analytics Actions**
-        - **`analyze`**: Generate detailed usage analytics
-        - **`report`**: Create module performance report
-        - **`audit`**: Perform security and compliance audit
-        
-        #### **🛠️ Maintenance Actions**
-        - **`update`**: Update module to latest version
-        - **`diagnose`**: Run module health diagnostics
-        - **`optimize`**: Optimize module performance
-        - **`cleanup`**: Clean unused data and cache
-        
-        ### **Action Results:**
-        Each action returns detailed status information including:
-        - **Operation Status**: Success/failure indication
-        - **Action Details**: Specific action performed and parameters
-        - **Impact Summary**: What changed as a result of the action
-        - **Next Steps**: Recommended follow-up actions if any
-        
-        ### **Permission Requirements:**
-        - **Basic Actions** (enable/disable): **MANAGER** role required
-        - **Advanced Actions** (update/reset): **ADMIN** role required
-        - **Analytics Actions** (analyze/report): **MANAGER** role required
-        """,
-        tags = ["Module Actions"]
-    )
-    @ApiResponses(
-        value = [
-            SwaggerApiResponse(
-                responseCode = "200",
-                description = "✅ Action completed successfully",
-                content = [Content(
-                    mediaType = "application/json",
-                    schema = Schema(implementation = ApiResponse::class),
-                    examples = [ExampleObject(
-                        name = "Successful Action Response",
-                        value = """{
-  "success": true,
-  "data": {
-    "moduleId": "MOD_CUSTOMER_CRM_001",
-    "action": "enable",
-    "workspaceId": "WS_ABC123_XYZ789",
-    "success": true,
-    "message": "Action enable completed for module MOD_CUSTOMER_CRM_001",
-    "actionDetails": {
-      "executedAt": "2025-01-15T10:30:00Z",
-      "executedBy": "john.doe@example.com",
-      "duration": "2.3 seconds",
-      "affectedComponents": ["data-sync", "user-interface", "notifications"]
-    },
-    "impact": {
-      "usersAffected": 12,
-      "dataChanged": false,
-      "requiresRestart": false,
-      "immediatelyAvailable": true
-    },
-    "nextSteps": [
-      "Verify module functionality in user interface",
-      "Check integration with dependent modules",
-      "Monitor performance metrics"
-    ]
-  },
-  "timestamp": "2025-01-15T10:30:00Z"
-}"""
-                    )]
-                )]
-            ),
-            SwaggerApiResponse(
-                responseCode = "400",
-                description = "❌ Bad request - Invalid action or missing parameters"
-            ),
-            SwaggerApiResponse(
-                responseCode = "401",
-                description = "🚫 Authentication required - Invalid or missing JWT token"
-            ),
-            SwaggerApiResponse(
-                responseCode = "403",
-                description = "⛔ Access denied - Insufficient permissions for this action"
-            ),
-            SwaggerApiResponse(
-                responseCode = "404",
-                description = "🔍 Module not found - Invalid module ID"
-            ),
-            SwaggerApiResponse(
-                responseCode = "409",
-                description = "⚠️ Conflict - Action cannot be performed in current module state"
-            )
-        ]
-    )
-    @PostMapping("/{moduleId}/action")
-    @PreAuthorize("@workspaceAuthorizationService.isCurrentTenantManager(authentication)")
-    fun performModuleAction(
-        @Parameter(
-            name = "moduleId",
-            description = """
-            **Target Module Identifier**
-            
-            The unique identifier of the module on which to perform the action.
-            
-            **Module ID Format:** Usually follows pattern 'MOD_CATEGORY_NAME_###'
-            **Example:** 'MOD_CUSTOMER_CRM_001'
-            """,
-            required = true,
-            example = "MOD_CUSTOMER_CRM_001"
-        )
-        @PathVariable moduleId: String,
-
-        @Parameter(
-            name = "action",
-            description = """
-            **Action to Perform**
-            
-            The specific management action to execute on the module.
-            
-            **Common Actions:**
-            - `enable` - Activate module
-            - `disable` - Deactivate module  
-            - `configure` - Update settings
-            - `reset` - Reset to defaults
-            - `update` - Update version
-            - `analyze` - Generate analytics
-            - `diagnose` - Health check
-            - `optimize` - Performance optimization
-            
-            **Action Categories:**
-            - **State**: enable, disable, restart
-            - **Config**: configure, reset, backup, restore  
-            - **Maintenance**: update, diagnose, optimize, cleanup
-            - **Analytics**: analyze, report, audit
-            """,
-            required = true,
-            example = "enable"
-        )
-        @RequestParam action: String,
-    ): ResponseEntity<ApiResponse<ModuleActionResponse>> {
-        val result = workspaceModuleService.performAction(moduleId, action)
-        return if (result != null) {
-            ResponseEntity.ok(ApiResponse.success(result))
-        } else {
-            ResponseEntity.badRequest()
-                .body(ApiResponse.error(ErrorCodes.BAD_REQUEST, "Invalid action or module not found"))
         }
     }
 
