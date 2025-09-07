@@ -1,0 +1,139 @@
+name: Ampairs Service CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  test:
+    name: Test & Build
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: ampairs_test
+          POSTGRES_USER: ampairs_test
+          POSTGRES_PASSWORD: test123
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+
+    - name: Run tests
+      run: ./gradlew test
+      env:
+        SPRING_PROFILES_ACTIVE: test
+        SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/ampairs_test
+        SPRING_DATASOURCE_USERNAME: ampairs_test
+        SPRING_DATASOURCE_PASSWORD: test123
+
+    - name: Build application
+      run: ./gradlew :ampairs_service:bootJar
+      env:
+        SPRING_PROFILES_ACTIVE: production
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: ampairs-service-jar
+        path: ampairs_service/build/libs/*.jar
+
+  deploy:
+    name: Deploy to Server
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: ampairs-service-jar
+        path: ./artifacts
+
+    - name: Setup SSH Key
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+        ssh-passphrase: ${{ secrets.SSH_PASSPHRASE }}
+
+    - name: Add server to known hosts
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Copy JAR to server
+      run: |
+        scp ./artifacts/*.jar ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }}:/opt/ampairs/
+
+    - name: Copy deployment scripts
+      run: |
+        scp ./scripts/deploy.sh ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }}:/opt/ampairs/
+        scp ./scripts/ampairs.service ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }}:/tmp/
+
+    - name: Deploy application
+      run: |
+        ssh ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+          cd /opt/ampairs
+          chmod +x deploy.sh
+          sudo ./deploy.sh
+        EOF
+
+    - name: Health check
+      run: |
+        echo "Waiting for application to start..."
+        sleep 30
+        
+        # Check if application is responding
+        for i in {1..10}; do
+          if curl -f http://${{ secrets.SERVER_HOST }}:${{ secrets.APP_PORT }}/actuator/health; then
+            echo "✅ Application is healthy!"
+            exit 0
+          fi
+          echo "⏳ Attempt $i/10: Waiting for application..."
+          sleep 10
+        done
+        
+        echo "❌ Application health check failed"
+        exit 1
+
+  notification:
+    name: Send Notification
+    needs: [test, deploy]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Notify deployment status
+      run: |
+        if [ "${{ needs.deploy.result }}" == "success" ]; then
+          echo "🎉 Deployment successful!"
+          echo "✅ Ampairs service deployed to production"
+        else
+          echo "❌ Deployment failed!"
+          echo "🚨 Check the logs for details"
+        fi
