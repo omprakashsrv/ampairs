@@ -1,6 +1,7 @@
 import {Routes} from '@angular/router';
 import {AuthGuard} from './core/guards/auth.guard';
 import {WorkspaceGuard} from './core/guards/workspace.guard';
+import {ModuleGuard} from './core/guards/module.guard';
 
 export const routes: Routes = [
   {
@@ -47,8 +48,12 @@ export const routes: Routes = [
         children: [
           {
             path: '',
-            redirectTo: 'dashboard',
+            redirectTo: 'modules',
             pathMatch: 'full'
+          },
+          {
+            path: 'modules',
+            loadComponent: () => import('./pages/workspace/workspace-modules/workspace-modules.component').then(m => m.WorkspaceModulesComponent)
           },
           {
             path: 'dashboard',
@@ -69,6 +74,47 @@ export const routes: Routes = [
           {
             path: 'roles',
             loadComponent: () => import('./pages/roles/roles.component').then(m => m.RolesComponent)
+          },
+          // Module Routes (protected by ModuleGuard)
+          {
+            path: 'customers',
+            canActivate: [ModuleGuard],
+            loadChildren: () => import('./modules/customer/customer.routes').then(m => m.customerRoutes)
+          },
+          {
+            path: 'orders',
+            canActivate: [ModuleGuard],
+            loadChildren: () => import('./modules/order/order.routes').then(m => m.orderRoutes)
+          },
+          {
+            path: 'invoices',
+            canActivate: [ModuleGuard],
+            loadChildren: () => import('./modules/invoice/invoice.routes').then(m => m.invoiceRoutes)
+          },
+          {
+            path: 'products',
+            canActivate: [ModuleGuard],
+            loadChildren: () => import('./modules/product/product.routes').then(m => m.productRoutes)
+          },
+          {
+            path: 'inventory',
+            canActivate: [ModuleGuard],
+            loadChildren: () => import('./modules/inventory/inventory.routes').then(m => m.inventoryRoutes)
+          },
+          {
+            path: 'finance',
+            canActivate: [ModuleGuard],
+            loadChildren: () => import('./modules/finance/finance.routes').then(m => m.financeRoutes)
+          },
+          {
+            path: 'analytics',
+            canActivate: [ModuleGuard],
+            loadChildren: () => import('./modules/analytics/analytics.routes').then(m => m.analyticsRoutes)
+          },
+          // Fallback for generic module routing
+          {
+            path: 'modules/:moduleCode',
+            loadComponent: () => import('./pages/module-placeholder/module-placeholder.component').then(m => m.ModulePlaceholderComponent)
           }
         ]
       }

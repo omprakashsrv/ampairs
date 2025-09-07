@@ -192,8 +192,11 @@ class WorkspaceModuleService(
     /**
      * Get available modules from master registry
      */
-    fun getAvailableModules(category: String? = null, featured: Boolean = false): AvailableModulesCatalogResponse? {
-        val workspaceId = TenantContextHolder.getCurrentTenant() ?: return null
+    fun getAvailableModules(
+        category: String? = null,
+        featured: Boolean = false
+    ): List<AvailableModuleResponse> {
+        val workspaceId = TenantContextHolder.getCurrentTenant() ?: return emptyList()
 
         val installedCodes = workspaceModuleRepository.findByWorkspaceId(workspaceId)
             .map { it.masterModule.moduleCode }.toSet()
@@ -203,8 +206,8 @@ class WorkspaceModuleService(
             category != null -> {
                 val moduleCategory = try {
                     ModuleCategory.valueOf(category.uppercase())
-                } catch (e: IllegalArgumentException) {
-                    return null
+                } catch (_: IllegalArgumentException) {
+                    return emptyList()
                 }
                 masterModuleRepository.findByActiveTrueAndCategory(moduleCategory)
             }
@@ -229,21 +232,7 @@ class WorkspaceModuleService(
                 sizeMb = masterModule.sizeMb
             )
         }
-
-        val categories = ModuleCategory.values().map {
-            ModuleCategoryResponse(
-                code = it.name,
-                displayName = it.displayName,
-                description = it.description,
-                icon = it.icon
-            )
-        }
-
-        return AvailableModulesCatalogResponse(
-            availableModules = moduleData,
-            totalAvailable = moduleData.size,
-            categories = categories
-        )
+        return moduleData
     }
 
     // Helper methods

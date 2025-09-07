@@ -336,23 +336,6 @@ class WorkspaceModuleController(
         @Parameter(
             name = "category",
             description = """
-            **Filter by Module Category**
-            
-            Optional filter to show only modules in a specific category.
-            
-            **Available Categories:**
-            - CUSTOMER_MANAGEMENT
-            - SALES_MANAGEMENT
-            - FINANCIAL_MANAGEMENT
-            - INVENTORY_MANAGEMENT
-            - ORDER_MANAGEMENT
-            - ANALYTICS_REPORTING
-            - COMMUNICATION
-            - PROJECT_MANAGEMENT
-            - HR_MANAGEMENT
-            - MARKETING
-            - INTEGRATIONS
-            - ADMINISTRATION
             """,
             required = false,
             example = "CUSTOMER_MANAGEMENT"
@@ -371,14 +354,9 @@ class WorkspaceModuleController(
             example = "false"
         )
         @RequestParam(required = false, defaultValue = "false") featured: Boolean,
-    ): ResponseEntity<ApiResponse<AvailableModulesCatalogResponse>> {
+    ): ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> {
         val result = workspaceModuleService.getAvailableModules(category, featured)
-        return if (result != null) {
-            ResponseEntity.ok(ApiResponse.success(result))
-        } else {
-            ResponseEntity.badRequest()
-                .body(ApiResponse.error(ErrorCodes.BAD_REQUEST, "Invalid category or no tenant context"))
-        }
+        return ResponseEntity.ok(ApiResponse.success(result))
     }
 
     @Operation(

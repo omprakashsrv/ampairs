@@ -1,0 +1,116 @@
+<div class="workspace-modules-container">
+
+  <!-- Header Section -->
+  <div class="modules-header">
+    <div class="header-content">
+      <div class="header-text">
+        @if (currentWorkspace) {
+          <p class="page-subtitle">
+            My Apps
+          </p>
+        }
+      </div>
+
+      <div class="header-actions">
+        <button
+          mat-raised-button
+          color="primary"
+          (click)="goToModuleStore()"
+          class="store-button">
+          <mat-icon>store</mat-icon>
+          Browse Module Store
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Installed Modules -->
+  <div class="modules-content">
+    @if (isLoading()) {
+      <div class="loading-state">
+        <mat-spinner diameter="48"></mat-spinner>
+        <span class="loading-text">Loading installed modules...</span>
+      </div>
+    } @else {
+      @if (installedModules().length === 0) {
+        <div class="empty-state">
+          <mat-icon class="empty-icon">extension_off</mat-icon>
+          <h2>No Modules Installed</h2>
+          <p>Get started by installing your first business module.</p>
+          <button mat-raised-button color="primary" (click)="goToModuleStore()">
+            Browse Available Modules
+          </button>
+        </div>
+      } @else {
+        <div class="modules-grid">
+          @for (module of installedModules(); track module.id) {
+            <mat-card class="module-card" [class.active-module]="module.status === 'ACTIVE'"
+                      [class.inactive-module]="module.status !== 'ACTIVE'" (click)="openModule(module)">
+              <mat-card-header>
+                <div class="module-avatar" [style.background-color]="module.primary_color" mat-card-avatar>
+                  <mat-icon [style.color]="'white'">{{ module.icon || getCategoryIcon(module.category) }}</mat-icon>
+                </div>
+
+                <mat-card-title>{{ module.name }}</mat-card-title>
+                <mat-card-subtitle>{{ getCategoryDisplayName(module.category) }}</mat-card-subtitle>
+
+                <!-- Module Actions -->
+                <button
+                  mat-icon-button
+                  [matMenuTriggerFor]="moduleMenu"
+                  (click)="$event.stopPropagation()"
+                  class="module-menu-trigger">
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+
+                <mat-menu #moduleMenu="matMenu">
+                  <button mat-menu-item (click)="openModule(module)">
+                    <mat-icon>launch</mat-icon>
+                    <span>Open Module</span>
+                  </button>
+                  <mat-divider></mat-divider>
+                  <button mat-menu-item (click)="uninstallModule(module)">
+                    <mat-icon>delete</mat-icon>
+                    <span>Uninstall</span>
+                  </button>
+                </mat-menu>
+              </mat-card-header>
+
+              <mat-card-content>
+                <div class="module-status">
+                  <mat-chip [color]="getModuleStatusColor(module)">
+                    {{ getModuleStatusText(module) }}
+                  </mat-chip>
+                  <span class="module-version">v{{ module.version }}</span>
+                </div>
+
+                @if (module.health_score !== undefined) {
+                  <div class="module-health">
+                    <span class="health-label">Health Score:</span>
+                    <span class="health-score" [class.needs-attention]="module.needs_attention">
+                      {{ (module.health_score * 100) | number:'1.0-0' }}%
+                    </span>
+                  </div>
+                }
+              </mat-card-content>
+
+              <mat-card-actions class="module-actions">
+                @if (module.status === 'ACTIVE') {
+                  <button mat-button color="primary" (click)="openModule(module); $event.stopPropagation()">
+                    <mat-icon>launch</mat-icon>
+                    Open
+                  </button>
+                } @else {
+                  <button mat-button (click)="uninstallModule(module); $event.stopPropagation()">
+                    <mat-icon>delete</mat-icon>
+                    Uninstall
+                  </button>
+                }
+              </mat-card-actions>
+            </mat-card>
+          }
+        </div>
+      }
+    }
+  </div>
+</div>

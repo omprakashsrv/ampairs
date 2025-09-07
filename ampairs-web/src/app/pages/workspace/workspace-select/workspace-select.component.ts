@@ -93,8 +93,8 @@ export class WorkspaceSelectComponent implements OnInit {
           panelClass: ['success-snackbar']
         });
 
-        // Navigate to workspace using slug
-        this.router.navigate(['/w', fullWorkspace.slug]);
+        // Navigate to workspace modules page using slug
+        this.router.navigate(['/w', fullWorkspace.slug, 'modules']);
       },
       error: (error) => {
         this.isSelecting.set(false);
