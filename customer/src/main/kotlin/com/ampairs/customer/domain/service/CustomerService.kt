@@ -1,16 +1,20 @@
 package com.ampairs.customer.domain.service
 
 import com.ampairs.customer.domain.model.Customer
+import com.ampairs.customer.domain.model.CustomerType
 import com.ampairs.customer.domain.model.State
 import com.ampairs.customer.repository.CustomerPagingRepository
 import com.ampairs.customer.repository.CustomerRepository
 import com.ampairs.customer.repository.StateRepository
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
+import java.util.*
 
 @Service
 class CustomerService @Autowired constructor(
@@ -54,5 +58,115 @@ class CustomerService @Autowired constructor(
 
     fun getStates(): List<State> {
         return stateRepository.findAll().toMutableList()
+    }
+
+    /**
+     * Retail-specific customer management methods
+     */
+
+    @Transactional
+    fun createCustomer(customer: Customer): Customer {
+        // Generate customer number if not provided
+        if (customer.customerNumber.isNullOrBlank()) {
+            customer.customerNumber = customer.generateCustomerNumber()
+        }
+        
+        // Validate GST number if provided
+        if (!customer.isValidGstNumber()) {
+            throw IllegalArgumentException("Invalid GST number format: ${customer.gstNumber}")
+        }
+        
+        // Check for duplicates
+        customer.customerNumber?.let { 
+            if (customerRepository.findByCustomerNumber(it).isPresent) {
+                throw IllegalArgumentException("Customer number already exists: $it")
+            }
+        }
+        
+        customer.gstNumber?.let { 
+            if (customerRepository.findByGstNumber(it).isPresent) {
+                throw IllegalArgumentException("GST number already exists: $it")
+            }
+        }
+        
+        customer.status = "ACTIVE"
+        customer.lastUpdated = System.currentTimeMillis()
+        return customerRepository.save(customer)
+    }
+
+    @Transactional
+    fun updateCustomer(customerId: String, updates: Customer): Customer? {
+        val existingCustomer = customerRepository.findByUid(customerId) ?: return null
+        
+        // Update fields
+        existingCustomer.name = updates.name.takeIf { it.isNotBlank() } ?: existingCustomer.name
+        existingCustomer.businessName = updates.businessName ?: existingCustomer.businessName
+        existingCustomer.phone = updates.phone.takeIf { it.isNotBlank() } ?: existingCustomer.phone
+        existingCustomer.email = updates.email.takeIf { it.isNotBlank() } ?: existingCustomer.email
+        existingCustomer.customerType = updates.customerType
+        existingCustomer.creditLimit = updates.creditLimit.takeIf { it >= 0 } ?: existingCustomer.creditLimit
+        existingCustomer.creditDays = updates.creditDays.takeIf { it >= 0 } ?: existingCustomer.creditDays
+        existingCustomer.attributes = updates.attributes
+        existingCustomer.status = updates.status.takeIf { it.isNotBlank() } ?: existingCustomer.status
+        
+        // Validate GST number if updated
+        if (updates.gstNumber != existingCustomer.gstNumber && !existingCustomer.isValidGstNumber()) {
+            throw IllegalArgumentException("Invalid GST number format: ${updates.gstNumber}")
+        }
+        
+        existingCustomer.lastUpdated = System.currentTimeMillis()
+        return customerRepository.save(existingCustomer)
+    }
+
+    fun searchCustomers(
+        searchTerm: String?,
+        customerType: CustomerType?,
+        city: String?,
+        state: String?,
+        hasCredit: Boolean?,
+        hasOutstanding: Boolean?,
+        pageable: Pageable
+    ): Page<Customer> {
+        return when {
+            !searchTerm.isNullOrBlank() -> customerRepository.searchCustomers(searchTerm, pageable)
+            customerType != null -> customerRepository.findActiveCustomersByType(customerType, pageable)
+            !city.isNullOrBlank() -> customerRepository.findActiveCustomersByCity(city, pageable)
+            !state.isNullOrBlank() -> customerRepository.findActiveCustomersByState(state, pageable)
+            hasCredit == true -> customerRepository.findCustomersWithCredit(pageable)
+            hasOutstanding == true -> customerRepository.findCustomersWithOutstanding(pageable)
+            else -> customerRepository.findByStatus("ACTIVE").let { 
+                org.springframework.data.domain.PageImpl(it, pageable, it.size.toLong()) 
+            }
+        }
+    }
+
+    fun getCustomerByNumber(customerNumber: String): Customer? {
+        return customerRepository.findByCustomerNumber(customerNumber).orElse(null)
+    }
+
+    fun getCustomerByGstNumber(gstNumber: String): Customer? {
+        return customerRepository.findByGstNumber(gstNumber).orElse(null)
+    }
+
+    fun getActiveCustomers(pageable: Pageable): List<Customer> {
+        return customerRepository.findByStatus("ACTIVE")
+    }
+
+    @Transactional
+    fun updateOutstanding(customerId: String, amount: Double, isPayment: Boolean = false): Customer? {
+        val customer = customerRepository.findByUid(customerId) ?: return null
+        
+        if (isPayment) {
+            customer.reduceOutstanding(amount)
+        } else {
+            customer.addToOutstanding(amount)
+        }
+        
+        customer.lastUpdated = System.currentTimeMillis()
+        return customerRepository.save(customer)
+    }
+
+    fun validateGstNumber(gstNumber: String): Boolean {
+        return gstNumber.matches(Regex("^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$"))
     }
 }

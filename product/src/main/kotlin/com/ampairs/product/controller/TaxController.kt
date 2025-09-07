@@ -1,6 +1,7 @@
 package com.ampairs.product.controller
 
 import com.ampairs.product.domain.dto.tax.*
+import com.ampairs.product.domain.dto.tax.TaxCodeResponse as TaxDtoCodeResponse
 import com.ampairs.product.service.TaxService
 import org.springframework.web.bind.annotation.*
 
@@ -19,12 +20,12 @@ class TaxController(val taxService: TaxService) {
     }
 
     @PostMapping("/tax_codes")
-    fun updateTaxCodes(@RequestBody taxCodes: List<TaxCodeRequest>): List<TaxCodeResponse> {
+    fun updateTaxCodes(@RequestBody taxCodes: List<TaxCodeRequest>): List<TaxDtoCodeResponse> {
         return taxService.updateTaxCodes(taxCodes.asDatabaseModel()).asResponse()
     }
 
     @GetMapping("/tax_codes")
-    fun getTaxCodes(): List<TaxCodeResponse> {
+    fun getTaxCodes(): List<TaxDtoCodeResponse> {
         return taxService.getTaxCodes().asResponse()
     }
 

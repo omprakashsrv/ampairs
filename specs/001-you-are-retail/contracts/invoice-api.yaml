@@ -1,0 +1,629 @@
+openapi: 3.0.3
+info:
+  title: Invoice Management API
+  description: Invoice generation and billing management for retail platform
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+paths:
+  /invoice/v1:
+    post:
+      summary: Create new invoice
+      description: Create invoice directly (not from order)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInvoiceRequest'
+      responses:
+        '201':
+          description: Invoice created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_InvoiceResponse'
+        '400':
+          description: Invalid request data
+
+  /invoice/v1/list:
+    get:
+      summary: List invoices
+      description: Get paginated list of invoices with filtering
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: search
+          in: query
+          description: Search in invoice number or customer name
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/InvoiceStatus'
+        - name: customer_id
+          in: query
+          schema:
+            type: string
+        - name: from_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to_date
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: overdue_only
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: Invoice list retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_PagedInvoiceResponse'
+
+  /invoice/v1/{invoiceId}:
+    get:
+      summary: Get invoice details
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invoice details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_InvoiceResponse'
+        '404':
+          description: Invoice not found
+
+    put:
+      summary: Update invoice
+      description: Update invoice details (only for DRAFT status)
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateInvoiceRequest'
+      responses:
+        '200':
+          description: Invoice updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_InvoiceResponse'
+        '409':
+          description: Cannot update invoice in current status
+
+  /invoice/v1/{invoiceId}/status:
+    put:
+      summary: Update invoice status
+      description: Change invoice status with proper workflow validation
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateInvoiceStatusRequest'
+      responses:
+        '200':
+          description: Invoice status updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_InvoiceResponse'
+        '409':
+          description: Invalid status transition
+
+  /invoice/v1/{invoiceId}/send:
+    post:
+      summary: Send invoice to customer
+      description: Send invoice via email/SMS to customer
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendInvoiceRequest'
+      responses:
+        '200':
+          description: Invoice sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_InvoiceResponse'
+        '409':
+          description: Cannot send invoice in current status
+
+  /invoice/v1/{invoiceId}/payments:
+    post:
+      summary: Record payment against invoice
+      description: Record payment received for an invoice
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecordPaymentRequest'
+      responses:
+        '201':
+          description: Payment recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_PaymentResponse'
+
+    get:
+      summary: Get invoice payments
+      description: Get all payments made against an invoice
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Payment history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_List_PaymentResponse'
+
+  /invoice/v1/{invoiceId}/pdf:
+    get:
+      summary: Download invoice PDF
+      description: Generate and download invoice as PDF
+      parameters:
+        - name: invoiceId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Invoice PDF
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+
+components:
+  schemas:
+    CreateInvoiceRequest:
+      type: object
+      required:
+        - line_items
+      properties:
+        customer_id:
+          type: string
+        due_date:
+          type: string
+          format: date
+        line_items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/InvoiceLineItemRequest'
+        discount_amount:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+        payment_terms:
+          type: string
+          maxLength: 100
+        notes:
+          type: string
+          maxLength: 500
+
+    UpdateInvoiceRequest:
+      type: object
+      properties:
+        customer_id:
+          type: string
+        due_date:
+          type: string
+          format: date
+        line_items:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/InvoiceLineItemRequest'
+        discount_amount:
+          type: number
+          format: decimal
+          minimum: 0
+        payment_terms:
+          type: string
+          maxLength: 100
+        notes:
+          type: string
+          maxLength: 500
+
+    UpdateInvoiceStatusRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          $ref: '#/components/schemas/InvoiceStatus'
+        notes:
+          type: string
+          maxLength: 200
+
+    SendInvoiceRequest:
+      type: object
+      properties:
+        send_via:
+          type: array
+          items:
+            type: string
+            enum: [EMAIL, SMS, WHATSAPP]
+          default: [EMAIL]
+        custom_message:
+          type: string
+          maxLength: 500
+
+    RecordPaymentRequest:
+      type: object
+      required:
+        - amount
+        - payment_method
+      properties:
+        amount:
+          type: number
+          format: decimal
+          minimum: 0.01
+        payment_method:
+          type: string
+          enum: [CASH, CARD, UPI, BANK_TRANSFER, CHEQUE]
+        payment_date:
+          type: string
+          format: date
+        reference_number:
+          type: string
+          maxLength: 100
+        notes:
+          type: string
+          maxLength: 200
+
+    InvoiceLineItemRequest:
+      type: object
+      required:
+        - product_id
+        - quantity
+      properties:
+        product_id:
+          type: string
+        description:
+          type: string
+          maxLength: 200
+        quantity:
+          type: number
+          format: decimal
+          minimum: 0.01
+        unit_price:
+          type: number
+          format: decimal
+          minimum: 0
+        discount_amount:
+          type: number
+          format: decimal
+          minimum: 0
+          default: 0
+
+    InvoiceResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        invoice_number:
+          type: string
+        order_id:
+          type: string
+        customer:
+          $ref: '#/components/schemas/CustomerSummaryResponse'
+        invoice_date:
+          type: string
+          format: date-time
+        due_date:
+          type: string
+          format: date
+        line_items:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceLineItemResponse'
+        subtotal:
+          type: number
+          format: decimal
+        tax_amount:
+          type: number
+          format: decimal
+        discount_amount:
+          type: number
+          format: decimal
+        total_amount:
+          type: number
+          format: decimal
+        paid_amount:
+          type: number
+          format: decimal
+        balance_amount:
+          type: number
+          format: decimal
+        status:
+          $ref: '#/components/schemas/InvoiceStatus'
+        payment_terms:
+          type: string
+        notes:
+          type: string
+        gst_details:
+          $ref: '#/components/schemas/GstDetailsResponse'
+        last_sent_at:
+          type: string
+          format: date-time
+        created_by:
+          $ref: '#/components/schemas/UserSummaryResponse'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    InvoiceLineItemResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        product:
+          $ref: '#/components/schemas/ProductSummaryResponse'
+        description:
+          type: string
+        quantity:
+          type: number
+          format: decimal
+        unit_price:
+          type: number
+          format: decimal
+        tax_rate:
+          type: number
+          format: decimal
+        line_total:
+          type: number
+          format: decimal
+        tax_amount:
+          type: number
+          format: decimal
+        discount_amount:
+          type: number
+          format: decimal
+
+    PaymentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        invoice_id:
+          type: string
+        amount:
+          type: number
+          format: decimal
+        payment_method:
+          type: string
+        payment_date:
+          type: string
+          format: date
+        reference_number:
+          type: string
+        notes:
+          type: string
+        recorded_by:
+          $ref: '#/components/schemas/UserSummaryResponse'
+        recorded_at:
+          type: string
+          format: date-time
+
+    GstDetailsResponse:
+      type: object
+      properties:
+        gst_number:
+          type: string
+        place_of_supply:
+          type: string
+        tax_breakup:
+          type: object
+          additionalProperties:
+            type: number
+            format: decimal
+
+    CustomerSummaryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        gst_number:
+          type: string
+
+    ProductSummaryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        sku:
+          type: string
+        name:
+          type: string
+        unit_symbol:
+          type: string
+
+    UserSummaryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+
+    InvoiceStatus:
+      type: string
+      enum:
+        - DRAFT
+        - SENT
+        - PAID
+        - PARTIAL_PAID
+        - OVERDUE
+        - CANCELLED
+
+    ApiResponse_InvoiceResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/InvoiceResponse'
+
+    ApiResponse_PagedInvoiceResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/PagedResponse_InvoiceResponse'
+
+    ApiResponse_PaymentResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/PaymentResponse'
+
+    ApiResponse_List_PaymentResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: '#/components/schemas/PaymentResponse'
+
+    ApiResponse:
+      type: object
+      required:
+        - success
+        - timestamp
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+        error:
+          $ref: '#/components/schemas/ErrorDetails'
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+        trace_id:
+          type: string
+
+    ErrorDetails:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: string
+        validation_errors:
+          type: object
+          additionalProperties:
+            type: string
+        module:
+          type: string
+
+    PagedResponse_InvoiceResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/InvoiceResponse'
+        page:
+          type: integer
+        size:
+          type: integer
+        total_elements:
+          type: integer
+        total_pages:
+          type: integer
+        first:
+          type: boolean
+        last:
+          type: boolean
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

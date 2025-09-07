@@ -7,7 +7,9 @@ import com.ampairs.order.domain.dto.TaxInfo
 import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.annotations.Type
+import org.hibernate.type.SqlTypes
 
 @Entity(name = "order_item")
 class OrderItem : OwnableBaseDomain() {
@@ -29,6 +31,15 @@ class OrderItem : OwnableBaseDomain() {
 
     @Column(name = "index_no", nullable = false)
     var index: Int = 0
+
+    @Column(name = "unit_price", nullable = false)
+    var unitPrice: Double = 0.0
+
+    @Column(name = "line_total", nullable = false)
+    var lineTotal: Double = 0.0
+
+    @Column(name = "discount_amount", nullable = false)
+    var discountAmount: Double = 0.0
 
     @Column(name = "selling_price", nullable = false)
     var sellingPrice: Double = 0.0
@@ -59,7 +70,40 @@ class OrderItem : OwnableBaseDomain() {
     @Column(name = "discount", nullable = true, columnDefinition = "json")
     var discount: List<Discount>? = null
 
+    /**
+     * Item-specific attributes stored as JSON
+     * Examples:
+     * - JEWELRY: weight, purity, stone_details, customization_notes
+     * - KIRANA: expiry_date, batch_number, storage_requirements
+     * - HARDWARE: material_specifications, warranty_info, installation_notes
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "attributes", columnDefinition = "JSON")
+    var attributes: Map<String, Any> = emptyMap()
+
     override fun obtainSeqIdPrefix(): String {
         return Constants.ORDER_ITEM_PREFIX
+    }
+
+    /**
+     * Calculate line total with tax and discount
+     */
+    fun calculateLineTotal() {
+        lineTotal = (quantity * unitPrice) - discountAmount
+    }
+
+    /**
+     * Calculate line total including tax
+     */
+    fun calculateLineTotalWithTax() {
+        calculateLineTotal()
+        lineTotal += totalTax
+    }
+
+    /**
+     * Get effective unit price after discount
+     */
+    fun getEffectiveUnitPrice(): Double {
+        return if (quantity > 0) (lineTotal / quantity) else unitPrice
     }
 }

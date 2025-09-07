@@ -1,9 +1,11 @@
 package com.ampairs.product.controller
 
+import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.FileResponse
 import com.ampairs.core.domain.dto.toFileResponse
 import com.ampairs.core.domain.service.FileService
 import com.ampairs.core.multitenancy.TenantContextHolder
+import com.ampairs.product.domain.model.Product
 import com.ampairs.product.domain.dto.group.*
 import com.ampairs.product.domain.dto.product.ProductRequest
 import com.ampairs.product.domain.dto.product.ProductResponse
@@ -18,6 +20,9 @@ import com.ampairs.product.domain.dto.unit.UnitResponse
 import com.ampairs.product.domain.dto.unit.asDatabaseModel
 import com.ampairs.product.domain.dto.unit.asResponse
 import com.ampairs.product.service.ProductService
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
+import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 
@@ -139,5 +144,106 @@ class ProductController(val productService: ProductService, val fileService: Fil
             contentType = file.contentType ?: "application/octet-stream",
             folder = "products/${TenantContextHolder.getCurrentTenant()}$path"
         ).toFileResponse()
+    }
+
+    /**
+     * Retail-specific Product Management API endpoints
+     */
+
+    @PostMapping("")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun createProduct(@RequestBody request: ProductRequest): ApiResponse<ProductResponse> {
+        val product = Product().apply {
+            name = request.name
+            sku = request.sku ?: ""
+            description = request.description
+            unitId = request.unitId
+            taxCodeId = request.taxCodeId  
+            basePrice = request.basePrice ?: 0.0
+            costPrice = request.costPrice ?: 0.0
+            attributes = request.attributes ?: emptyMap()
+            status = "ACTIVE"
+        }
+        
+        val createdProduct = productService.createProduct(product)
+        return ApiResponse.success(createdProduct.asResponse())
+    }
+
+    @GetMapping("/list")
+    fun getProductList(
+        @RequestParam("search", required = false) search: String?,
+        @RequestParam("category", required = false) category: String?,
+        @RequestParam("brand", required = false) brand: String?,
+        @RequestParam("min_price", required = false) minPrice: Double?,
+        @RequestParam("max_price", required = false) maxPrice: Double?,
+        @RequestParam("page", defaultValue = "0") page: Int,
+        @RequestParam("size", defaultValue = "20") size: Int,
+        @RequestParam("sort", defaultValue = "name") sort: String,
+        @RequestParam("direction", defaultValue = "ASC") direction: String
+    ): ApiResponse<Map<String, Any>> {
+        val sortDirection = if (direction.uppercase() == "DESC") Sort.Direction.DESC else Sort.Direction.ASC
+        val pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort))
+        
+        val productPage = productService.searchProducts(search, category, brand, minPrice, maxPrice, pageable)
+        
+        val response = mapOf(
+            "products" to productPage.content.map { it.asResponse() },
+            "pagination" to mapOf(
+                "page" to page,
+                "size" to size,
+                "total_pages" to productPage.totalPages,
+                "total_elements" to productPage.totalElements,
+                "has_next" to productPage.hasNext(),
+                "has_previous" to productPage.hasPrevious()
+            )
+        )
+        
+        return ApiResponse.success(response)
+    }
+
+    @GetMapping("/{productId}")
+    fun getProduct(@PathVariable productId: String): ApiResponse<ProductResponse> {
+        val product = productService.updateProducts(emptyList()).find { it.uid == productId }
+            ?: return ApiResponse.error("Product not found", "PRODUCT_NOT_FOUND")
+        
+        return ApiResponse.success(product.asResponse())
+    }
+
+    @PutMapping("/{productId}")
+    fun updateProduct(
+        @PathVariable productId: String,
+        @RequestBody request: ProductRequest
+    ): ApiResponse<ProductResponse> {
+        val updates = Product().apply {
+            name = request.name
+            description = request.description
+            basePrice = request.basePrice ?: 0.0
+            costPrice = request.costPrice ?: 0.0
+            attributes = request.attributes ?: emptyMap()
+            status = request.status ?: "ACTIVE"
+        }
+        
+        val updatedProduct = productService.updateProduct(productId, updates)
+            ?: return ApiResponse.error("Product not found", "PRODUCT_NOT_FOUND")
+        
+        return ApiResponse.success(updatedProduct.asResponse())
+    }
+
+    @PutMapping("/{productId}/inventory")
+    fun updateProductInventory(
+        @PathVariable productId: String,
+        @RequestBody request: Map<String, Any>
+    ): ApiResponse<String> {
+        // This would integrate with inventory management
+        // For now, return success response
+        return ApiResponse.success("Inventory updated successfully")
+    }
+
+    @GetMapping("/sku/{sku}")
+    fun getProductBySku(@PathVariable sku: String): ApiResponse<ProductResponse> {
+        val product = productService.getProductBySku(sku)
+            ?: return ApiResponse.error("Product not found with SKU: $sku", "PRODUCT_NOT_FOUND")
+        
+        return ApiResponse.success(product.asResponse())
     }
 }

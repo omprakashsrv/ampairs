@@ -1,0 +1,568 @@
+openapi: 3.0.3
+info:
+  title: Product Management API
+  description: Product catalog and inventory management for retail platform
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080
+    description: Development server
+
+paths:
+  /product/v1:
+    post:
+      summary: Create new product
+      description: Add a new product to the catalog with categorization and pricing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+      responses:
+        '201':
+          description: Product created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_ProductResponse'
+        '400':
+          description: Invalid request data
+
+  /product/v1/list:
+    get:
+      summary: List products
+      description: Get paginated list of products with search and filtering
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 0
+        - name: size
+          in: query
+          schema:
+            type: integer
+            default: 20
+        - name: search
+          in: query
+          description: Search in product name, SKU, or description
+          schema:
+            type: string
+        - name: category_id
+          in: query
+          schema:
+            type: string
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ProductStatus'
+      responses:
+        '200':
+          description: Product list retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_PagedProductResponse'
+
+  /product/v1/{productId}:
+    get:
+      summary: Get product details
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_ProductResponse'
+        '404':
+          description: Product not found
+
+    put:
+      summary: Update product
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProductRequest'
+      responses:
+        '200':
+          description: Product updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_ProductResponse'
+
+    delete:
+      summary: Delete product
+      description: Soft delete a product (sets status to DISCONTINUED)
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Product deleted
+
+  /product/v1/{productId}/inventory:
+    get:
+      summary: Get product inventory
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Inventory details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_InventoryResponse'
+
+    put:
+      summary: Update inventory
+      description: Adjust product inventory levels
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateInventoryRequest'
+      responses:
+        '200':
+          description: Inventory updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponse_InventoryResponse'
+
+components:
+  schemas:
+    CreateProductRequest:
+      type: object
+      required:
+        - name
+        - sku
+        - unit_id
+        - tax_code_id
+        - base_price
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        sku:
+          type: string
+          pattern: '^[A-Za-z0-9-_]+$'
+          minLength: 1
+          maxLength: 50
+        description:
+          type: string
+          maxLength: 1000
+        category_id:
+          type: string
+        group_id:
+          type: string
+        brand_id:
+          type: string
+        unit_id:
+          type: string
+        tax_code_id:
+          type: string
+        base_price:
+          type: number
+          format: decimal
+          minimum: 0
+        cost_price:
+          type: number
+          format: decimal
+          minimum: 0
+        barcode:
+          type: string
+        attributes:
+          type: object
+          additionalProperties: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductImageRequest'
+
+    UpdateProductRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 1000
+        category_id:
+          type: string
+        group_id:
+          type: string
+        brand_id:
+          type: string
+        unit_id:
+          type: string
+        tax_code_id:
+          type: string
+        base_price:
+          type: number
+          format: decimal
+          minimum: 0
+        cost_price:
+          type: number
+          format: decimal
+          minimum: 0
+        barcode:
+          type: string
+        attributes:
+          type: object
+          additionalProperties: true
+        status:
+          $ref: '#/components/schemas/ProductStatus'
+
+    UpdateInventoryRequest:
+      type: object
+      required:
+        - adjustment_type
+        - quantity
+      properties:
+        adjustment_type:
+          type: string
+          enum: [SET, ADD, SUBTRACT]
+        quantity:
+          type: number
+          format: decimal
+        reason:
+          type: string
+          maxLength: 200
+        reorder_level:
+          type: number
+          format: decimal
+          minimum: 0
+        max_stock_level:
+          type: number
+          format: decimal
+          minimum: 0
+
+    ProductImageRequest:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          format: uri
+        alt:
+          type: string
+        is_primary:
+          type: boolean
+          default: false
+        sort_order:
+          type: integer
+          default: 0
+
+    ProductResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        sku:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          $ref: '#/components/schemas/CategoryResponse'
+        group:
+          $ref: '#/components/schemas/GroupResponse'
+        brand:
+          $ref: '#/components/schemas/BrandResponse'
+        unit:
+          $ref: '#/components/schemas/UnitResponse'
+        tax_code:
+          $ref: '#/components/schemas/TaxCodeResponse'
+        base_price:
+          type: number
+          format: decimal
+        cost_price:
+          type: number
+          format: decimal
+        barcode:
+          type: string
+        attributes:
+          type: object
+          additionalProperties: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductImageResponse'
+        status:
+          $ref: '#/components/schemas/ProductStatus'
+        current_stock:
+          type: number
+          format: decimal
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ProductImageResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+        alt:
+          type: string
+        is_primary:
+          type: boolean
+        sort_order:
+          type: integer
+
+    InventoryResponse:
+      type: object
+      properties:
+        product_id:
+          type: string
+        current_stock:
+          type: number
+          format: decimal
+        reserved_stock:
+          type: number
+          format: decimal
+        available_stock:
+          type: number
+          format: decimal
+        reorder_level:
+          type: number
+          format: decimal
+        max_stock_level:
+          type: number
+          format: decimal
+        last_updated:
+          type: string
+          format: date-time
+        recent_movements:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryMovementResponse'
+
+    InventoryMovementResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        movement_type:
+          $ref: '#/components/schemas/MovementType'
+        quantity:
+          type: number
+          format: decimal
+        previous_stock:
+          type: number
+          format: decimal
+        new_stock:
+          type: number
+          format: decimal
+        reason:
+          type: string
+        reference_type:
+          $ref: '#/components/schemas/ReferenceType'
+        reference_id:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+        user_name:
+          type: string
+
+    CategoryResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+
+    GroupResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+
+    BrandResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+
+    UnitResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        symbol:
+          type: string
+        description:
+          type: string
+
+    TaxCodeResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        rate:
+          type: number
+          format: decimal
+        tax_type:
+          type: string
+        components:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              rate:
+                type: number
+                format: decimal
+
+    ProductStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - INACTIVE
+        - DISCONTINUED
+
+    MovementType:
+      type: string
+      enum:
+        - IN
+        - OUT
+        - ADJUSTMENT
+        - TRANSFER
+
+    ReferenceType:
+      type: string
+      enum:
+        - ORDER
+        - INVOICE
+        - ADJUSTMENT
+        - PURCHASE
+        - RETURN
+
+    ApiResponse_ProductResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/ProductResponse'
+
+    ApiResponse_PagedProductResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/PagedResponse_ProductResponse'
+
+    ApiResponse_InventoryResponse:
+      allOf:
+        - $ref: '#/components/schemas/ApiResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/InventoryResponse'
+
+    ApiResponse:
+      type: object
+      required:
+        - success
+        - timestamp
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+        error:
+          type: object
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+        trace_id:
+          type: string
+
+    PagedResponse_ProductResponse:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProductResponse'
+        page:
+          type: integer
+        size:
+          type: integer
+        total_elements:
+          type: integer
+        total_pages:
+          type: integer
+        first:
+          type: boolean
+        last:
+          type: boolean
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

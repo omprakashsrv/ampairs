@@ -88,5 +88,35 @@ enum class WorkspaceType(
         "Franchise business with multi-location management",
         100,
         listOf("multi_location", "franchise_reporting", "centralized_inventory", "brand_compliance")
+    ),
+
+    /**
+     * Kirana store - Indian neighborhood grocery store
+     */
+    KIRANA(
+        "Kirana Store",
+        "Traditional Indian neighborhood store with local customer base",
+        15,
+        listOf("local_inventory", "credit_management", "neighborhood_delivery", "bulk_purchases")
+    ),
+
+    /**
+     * Jewelry store with precious metals and stones
+     */
+    JEWELRY(
+        "Jewelry Store",
+        "Jewelry retail with precious metals, gems, and custom designs",
+        20,
+        listOf("precious_metals", "custom_designs", "certification_tracking", "weight_based_pricing")
+    ),
+
+    /**
+     * Hardware and construction supplies store
+     */
+    HARDWARE(
+        "Hardware Store",
+        "Hardware and construction supplies with bulk inventory",
+        30,
+        listOf("bulk_inventory", "construction_supplies", "contractor_accounts", "delivery_logistics")
     )
 }

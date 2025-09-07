@@ -8,6 +8,8 @@ import com.ampairs.product.domain.model.group.ProductCategory
 import com.ampairs.product.domain.model.group.ProductGroup
 import com.ampairs.product.domain.model.group.ProductSubCategory
 import jakarta.persistence.*
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 
 @Entity(name = "product")
 @Table(
@@ -23,8 +25,29 @@ class Product : OwnableBaseDomain() {
     @Column(name = "code", nullable = false, length = 255)
     var code: String = ""
 
+    @Column(name = "sku", nullable = false, length = 100, unique = true)
+    var sku: String = ""
+
+    @Column(name = "description", columnDefinition = "TEXT")
+    var description: String? = null
+
+    @Column(name = "status", nullable = false, length = 20)
+    var status: String = "ACTIVE"
+
+    @Column(name = "tax_code_id", length = 36)
+    var taxCodeId: String? = null
+
     @Column(name = "tax_code", length = 20)
     var taxCode: String = ""
+
+    @Column(name = "unit_id", length = 36)
+    var unitId: String? = null
+
+    @Column(name = "base_price", nullable = false)
+    var basePrice: Double = 0.0
+
+    @Column(name = "cost_price", nullable = false)
+    var costPrice: Double = 0.0
 
     @Column(name = "group_id", length = 200)
     var groupId: String? = null
@@ -72,6 +95,17 @@ class Product : OwnableBaseDomain() {
 
     @Column(name = "index_no", nullable = false)
     var index: Int = 0
+
+    /**
+     * Retail business-specific attributes stored as JSON
+     * Examples:
+     * - JEWELRY: weight_grams, purity, metal_type, stone_type, certification
+     * - KIRANA: pack_size, brand, expiry_tracking, bulk_discount_threshold
+     * - HARDWARE: material, dimensions, warranty_months, safety_rating
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "attributes", columnDefinition = "JSON")
+    var attributes: Map<String, Any> = emptyMap()
 
     @OneToMany()
     @JoinColumn(

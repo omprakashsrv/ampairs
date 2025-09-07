@@ -17,11 +17,19 @@ data class ProductResponse(
     val id: String,
     val name: String,
     val code: String,
+    val sku: String,
+    val description: String?,
+    val status: String,
     val taxCode: String,
+    val taxCodeId: String?,
+    val unitId: String?,
+    val basePrice: Double,
+    val costPrice: Double,
     val groupId: String,
     val brandId: String,
     val categoryId: String,
     val subCategoryId: String,
+    val attributes: Map<String, Any>,
     val active: Boolean,
     val softDeleted: Boolean,
     val mrp: Double,
@@ -44,10 +52,18 @@ fun List<Product>.asResponse(): List<ProductResponse> {
             id = it.uid,
             name = it.name,
             code = it.code,
+            sku = it.sku,
+            description = it.description,
+            status = it.status,
+            taxCode = it.taxCode,
+            taxCodeId = it.taxCodeId,
+            unitId = it.unitId,
+            basePrice = it.basePrice,
+            costPrice = it.costPrice,
+            attributes = it.attributes,
             mrp = it.mrp,
             dp = it.dp,
             sellingPrice = it.sellingPrice,
-            taxCode = it.taxCode,
             active = it.active,
             taxCodes = it.taxCodes?.asResponse() ?: arrayListOf(),
             groupId = it.groupId ?: "",
@@ -69,4 +85,43 @@ fun List<Product>.asResponse(): List<ProductResponse> {
             inventory = if (it.inventory.size > 0) it.inventory[0].asResponse() else null
         )
     }
+}
+
+fun Product.asResponse(): ProductResponse {
+    return ProductResponse(
+        id = uid,
+        name = name,
+        code = code,
+        sku = sku,
+        description = description,
+        status = status,
+        taxCode = taxCode,
+        taxCodeId = taxCodeId,
+        unitId = unitId,
+        basePrice = basePrice,
+        costPrice = costPrice,
+        attributes = attributes,
+        mrp = mrp,
+        dp = dp,
+        sellingPrice = sellingPrice,
+        active = active,
+        taxCodes = taxCodes?.asResponse() ?: arrayListOf(),
+        groupId = groupId ?: "",
+        categoryId = categoryId ?: "",
+        subCategoryId = subCategoryId ?: "",
+        brandId = brandId ?: "",
+        lastUpdated = lastUpdated,
+        createdAt = createdAt,
+        updatedAt = updatedAt,
+        unitConversions = unitConversions.asUnitConversionResponse(),
+        baseUnit = baseUnit?.asResponse(),
+        images = images.map { productImage ->
+            val fileResponse = productImage.image?.toFileResponse() ?: FileResponse()
+            fileResponse.refId = productImage.uid
+            fileResponse
+        },
+        softDeleted = softDeleted,
+        baseUnitId = baseUnitId,
+        inventory = if (inventory.size > 0) inventory[0].asResponse() else null
+    )
 }

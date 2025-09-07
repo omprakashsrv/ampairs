@@ -85,8 +85,46 @@ data class AuthInitRequest(
 
 **Foundation**: core (shared utilities, AWS, multi-tenancy)
 **Security**: auth (JWT), workspace (roles, permissions)  
-**Business**: customer, product, order, invoice
+**Business**: customer, product, order, invoice, tax_code, notification
 **Application**: ampairs_service (main aggregator)
+
+## Recent Changes (Retail Management Platform - 2025-01-06)
+
+### **New API Contracts**
+- **Workspace Management**: `/workspace/v1` - Multi-tenant business environments with role-based access
+- **Product Catalog**: `/product/v1` - Product management with inventory tracking and tax codes
+- **Order Processing**: `/order/v1` - Sales transactions with status workflow (DRAFT→CONFIRMED→FULFILLED)
+- **Customer Management**: `/customer/v1` - Business contacts with GST compliance and credit limits
+- **Invoice Generation**: `/invoice/v1` - Billing with tax calculations, payment tracking, and PDF export
+- **Tax Code Management**: `/tax-code/v1` - GST compliance with component breakdown (SGST/CGST/IGST)
+
+### **Key Entity Patterns**
+```kotlin
+// All entities extend for multi-tenancy
+abstract class OwnableBaseDomain {
+    val workspaceId: String     // Tenant isolation
+    val ownerId: String         // Tenant context
+    val createdAt: LocalDateTime
+    val updatedAt: LocalDateTime
+}
+
+// Standard API response wrapper
+data class ApiResponse<T>(
+    val success: Boolean,
+    val data: T?,
+    val error: ErrorDetails?,
+    val timestamp: LocalDateTime,
+    val path: String?,
+    val traceId: String?
+)
+```
+
+### **Business Rules**
+- **Order Status Flow**: DRAFT → CONFIRMED → PROCESSING → FULFILLED (with CANCELLED/RETURNED branches)
+- **Invoice Status Flow**: DRAFT → SENT → PARTIAL_PAID → PAID (with OVERDUE/CANCELLED)
+- **Inventory Reservations**: Stock reserved on CONFIRMED orders, consumed on FULFILLED
+- **GST Compliance**: Tax codes support SGST+CGST (intrastate) or IGST (interstate) calculations
+- **Multi-tenant Data**: All operations filtered by workspace context automatically
 
 ## Build Commands
 

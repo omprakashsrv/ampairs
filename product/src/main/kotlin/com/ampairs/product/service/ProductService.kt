@@ -8,10 +8,13 @@ import com.ampairs.product.domain.model.group.ProductCategory
 import com.ampairs.product.domain.model.group.ProductGroup
 import com.ampairs.product.domain.model.group.ProductSubCategory
 import com.ampairs.product.repository.*
+import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.util.*
 
 @Service
 class ProductService(
@@ -178,4 +181,67 @@ class ProductService(
         return productCategoryRepository.findAll().toMutableList()
     }
 
+    /**
+     * Retail-specific methods for enhanced product management
+     */
+
+    @Transactional
+    fun createProduct(product: Product): Product {
+        // Generate SKU if not provided
+        if (product.sku.isBlank()) {
+            product.sku = generateSku(product.name, product.categoryId)
+        }
+        
+        // Validate SKU uniqueness
+        if (productRepository.findBySku(product.sku).isPresent) {
+            throw IllegalArgumentException("SKU already exists: ${product.sku}")
+        }
+        
+        product.status = "ACTIVE"
+        return productRepository.save(product)
+    }
+
+    @Transactional
+    fun updateProduct(productId: String, updates: Product): Product? {
+        val existingProduct = productRepository.findByUid(productId) ?: return null
+        
+        // Update fields
+        existingProduct.name = updates.name.takeIf { it.isNotBlank() } ?: existingProduct.name
+        existingProduct.description = updates.description ?: existingProduct.description
+        existingProduct.basePrice = updates.basePrice.takeIf { it > 0 } ?: existingProduct.basePrice
+        existingProduct.costPrice = updates.costPrice.takeIf { it > 0 } ?: existingProduct.costPrice
+        existingProduct.attributes = updates.attributes
+        existingProduct.status = updates.status.takeIf { it.isNotBlank() } ?: existingProduct.status
+        
+        return productRepository.save(existingProduct)
+    }
+
+    fun searchProducts(searchTerm: String?, category: String?, brand: String?, 
+                      minPrice: Double?, maxPrice: Double?, pageable: Pageable): Page<Product> {
+        return when {
+            !searchTerm.isNullOrBlank() -> productRepository.searchProducts(searchTerm, pageable)
+            !category.isNullOrBlank() -> productRepository.findActiveProductsByCategory(category, pageable)
+            !brand.isNullOrBlank() -> productRepository.findActiveProductsByBrand(brand, pageable)
+            minPrice != null && maxPrice != null -> 
+                productRepository.findActiveProductsByPriceRange(minPrice, maxPrice, pageable)
+            else -> productRepository.findByStatus("ACTIVE").let { 
+                org.springframework.data.domain.PageImpl(it, pageable, it.size.toLong()) 
+            }
+        }
+    }
+
+    fun getProductBySku(sku: String): Product? {
+        return productRepository.findBySku(sku).orElse(null)
+    }
+
+    fun getActiveProducts(pageable: Pageable): List<Product> {
+        return productRepository.findByStatus("ACTIVE")
+    }
+
+    private fun generateSku(name: String, categoryId: String?): String {
+        val prefix = categoryId?.take(3)?.uppercase() ?: "PRD"
+        val namePart = name.take(3).uppercase().replace(Regex("[^A-Z0-9]"), "")
+        val timestamp = System.currentTimeMillis().toString().takeLast(4)
+        return "$prefix-$namePart-$timestamp"
+    }
 }
