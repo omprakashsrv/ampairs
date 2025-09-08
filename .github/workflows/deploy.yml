@@ -5,26 +5,18 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Deploy to server'
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   test:
     name: Test & Build
     runs-on: ubuntu-latest
-    
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_DB: ampairs_test
-          POSTGRES_USER: ampairs_test
-          POSTGRES_PASSWORD: test123
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
 
     steps:
     - name: Checkout code
@@ -42,11 +34,6 @@ jobs:
 
     - name: Run tests
       run: cd ampairs-backend && ./gradlew test
-      env:
-        SPRING_PROFILES_ACTIVE: test
-        SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/ampairs_test
-        SPRING_DATASOURCE_USERNAME: ampairs_test
-        SPRING_DATASOURCE_PASSWORD: test123
 
     - name: Build application
       run: cd ampairs-backend && ./gradlew :ampairs_service:bootJar
@@ -63,7 +50,7 @@ jobs:
     name: Deploy to Server
     needs: test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    if: (github.ref == 'refs/heads/master' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
     
     steps:
     - name: Checkout code
