@@ -70,6 +70,7 @@ dependencies {
     testImplementation(project(":ampairs_service"))
     testImplementation("com.mysql:mysql-connector-j")
     testImplementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+    testImplementation("com.h2database:h2")
 }
 
 tasks.withType<Test> {

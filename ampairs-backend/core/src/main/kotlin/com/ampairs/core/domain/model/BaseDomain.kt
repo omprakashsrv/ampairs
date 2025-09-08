@@ -17,22 +17,18 @@ abstract class BaseDomain {
 
     @Column(
         name = "created_at",
-        insertable = false, updatable = false, nullable = false
+        updatable = false, nullable = false
     )
     var createdAt: LocalDateTime? = null
 
     @Column(
         name = "updated_at",
-        insertable = false,
-        updatable = false,
         nullable = false
     )
     var updatedAt: LocalDateTime? = null
 
     @Column(
         name = "last_updated",
-        insertable = false,
-        updatable = false,
         nullable = false
     )
     var lastUpdated: Long = 0

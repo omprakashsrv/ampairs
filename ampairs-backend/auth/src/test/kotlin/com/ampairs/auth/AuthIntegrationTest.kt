@@ -6,52 +6,23 @@ import com.ampairs.auth.model.dto.AuthMode
 import com.ampairs.auth.model.dto.AuthenticationRequest
 import com.ampairs.user.repository.UserRepository
 import com.fasterxml.jackson.databind.ObjectMapper
-import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestInstance
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.context.ApplicationContextInitializer
-import org.springframework.context.ConfigurableApplicationContext
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
-import org.springframework.test.context.ContextConfiguration
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.transaction.annotation.Transactional
-import java.sql.DriverManager
-
-class DatabaseInitializer : ApplicationContextInitializer<ConfigurableApplicationContext> {
-    override fun initialize(applicationContext: ConfigurableApplicationContext) {
-        // Create the test database before Spring context starts
-        try {
-            val dbPassword = System.getenv("DB_PASSWORD") ?: "pass"
-            val connection = DriverManager.getConnection(
-                "jdbc:mysql://localhost:3306/",
-                "root",
-                dbPassword
-            )
-            val statement = connection.createStatement()
-            statement.executeUpdate("DROP DATABASE IF EXISTS ampairs_auth_test")
-            statement.executeUpdate("CREATE DATABASE ampairs_auth_test")
-            statement.close()
-            connection.close()
-            println("Test database 'ampairs_auth_test' created successfully")
-        } catch (e: Exception) {
-            println("Warning: Could not create test database: ${e.message}")
-            e.printStackTrace()
-        }
-    }
-}
 
 @SpringBootTest(classes = [AmpairsApplication::class])
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@ContextConfiguration(initializers = [DatabaseInitializer::class])
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Transactional
 class AuthIntegrationTest {
@@ -59,27 +30,6 @@ class AuthIntegrationTest {
     companion object {
         // Test constants - should be configured via environment variables
         private val TEST_RECAPTCHA_TOKEN = System.getenv("TEST_RECAPTCHA_TOKEN") ?: "test-token-12345"
-        private val TEST_DB_PASSWORD = System.getenv("DB_PASSWORD") ?: "pass"
-
-        @JvmStatic
-        @AfterAll
-        fun cleanupDatabase() {
-            // Clean up the test database after all tests complete
-            try {
-                val connection = DriverManager.getConnection(
-                    "jdbc:mysql://localhost:3306/",
-                    "root",
-                    TEST_DB_PASSWORD
-                )
-                val statement = connection.createStatement()
-                statement.executeUpdate("DROP DATABASE IF EXISTS ampairs_auth_test")
-                statement.close()
-                connection.close()
-                println("Test database 'ampairs_auth_test' dropped successfully")
-            } catch (e: Exception) {
-                println("Warning: Could not drop test database: ${e.message}")
-            }
-        }
     }
 
     @Autowired
