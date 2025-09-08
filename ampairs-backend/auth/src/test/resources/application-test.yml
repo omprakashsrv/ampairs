@@ -1,11 +1,17 @@
 # Test configuration for auth module
 spring:
-  # Test database settings - H2 in-memory database
+  # Test database settings - H2 in-memory database (override any environment variables)
   datasource:
     url: jdbc:h2:mem:ampairs_auth_test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     username: sa
-    password: 
+    password: ""
     driver-class-name: org.h2.Driver
+    # Explicitly override environment variables that might be set in CI
+    hikari:
+      jdbc-url: jdbc:h2:mem:ampairs_auth_test;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+      username: sa
+      password: ""
+      driver-class-name: org.h2.Driver
 
   # Test JPA settings - Drop and create schema for clean tests
   jpa:
@@ -21,7 +27,6 @@ spring:
         dialect: org.hibernate.dialect.H2Dialect
         hbm2ddl:
           auto: create-drop
-
   # Jackson configuration for consistent JSON naming
   jackson:
     property-naming-strategy: SNAKE_CASE
