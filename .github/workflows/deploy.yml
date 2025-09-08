@@ -38,10 +38,10 @@ jobs:
         cache: gradle
 
     - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
+      run: chmod +x ampairs-backend/gradlew
 
     - name: Run tests
-      run: ./gradlew test
+      run: cd ampairs-backend && ./gradlew test
       env:
         SPRING_PROFILES_ACTIVE: test
         SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/ampairs_test
@@ -49,7 +49,7 @@ jobs:
         SPRING_DATASOURCE_PASSWORD: test123
 
     - name: Build application
-      run: ./gradlew :ampairs_service:bootJar
+      run: cd ampairs-backend && ./gradlew :ampairs_service:bootJar
       env:
         SPRING_PROFILES_ACTIVE: ${{ vars.SPRING_PROFILES_ACTIVE || 'production' }}
 
@@ -57,7 +57,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ampairs-service-jar
-        path: ampairs_service/build/libs/*.jar
+        path: ampairs-backend/ampairs_service/build/libs/*.jar
 
   deploy:
     name: Deploy to Server

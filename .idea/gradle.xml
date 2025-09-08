@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="GradleSettings">
+    <option name="linkedExternalProjectsSettings">
+      <GradleProjectSettings>
+        <compositeConfiguration>
+          <compositeBuild compositeDefinitionSource="SCRIPT">
+            <builds>
+              <build path="$PROJECT_DIR$/ampairs-backend" name="ampairs">
+                <projects>
+                  <project path="$PROJECT_DIR$/ampairs-backend" />
+                  <project path="$PROJECT_DIR$/ampairs-backend/ampairs_service" />
+                  <project path="$PROJECT_DIR$/ampairs-backend/auth" />
+                  <project path="$PROJECT_DIR$/ampairs-backend/core" />
+                  <project path="$PROJECT_DIR$/ampairs-backend/customer" />
+                  <project path="$PROJECT_DIR$/ampairs-backend/invoice" />
+                  <project path="$PROJECT_DIR$/ampairs-backend/notification" />
+                  <project path="$PROJECT_DIR$/ampairs-backend/order" />
+                  <project path="$PROJECT_DIR$/ampairs-backend/product" />
+                  <project path="$PROJECT_DIR$/ampairs-backend/workspace" />
+                </projects>
+              </build>
+            </builds>
+          </compositeBuild>
+        </compositeConfiguration>
+        <option name="externalProjectPath" value="$PROJECT_DIR$" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$" />
+            <option value="$PROJECT_DIR$/ampairs-backend" />
+            <option value="$PROJECT_DIR$/ampairs-backend/ampairs_service" />
+            <option value="$PROJECT_DIR$/ampairs-backend/auth" />
+            <option value="$PROJECT_DIR$/ampairs-backend/core" />
+            <option value="$PROJECT_DIR$/ampairs-backend/customer" />
+            <option value="$PROJECT_DIR$/ampairs-backend/invoice" />
+            <option value="$PROJECT_DIR$/ampairs-backend/notification" />
+            <option value="$PROJECT_DIR$/ampairs-backend/order" />
+            <option value="$PROJECT_DIR$/ampairs-backend/product" />
+            <option value="$PROJECT_DIR$/ampairs-backend/workspace" />
+          </set>
+        </option>
+      </GradleProjectSettings>
+    </option>
+  </component>
+</project>

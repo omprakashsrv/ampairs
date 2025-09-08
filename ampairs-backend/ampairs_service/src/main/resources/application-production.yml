@@ -1,0 +1,247 @@
+# Production Profile Configuration
+# Secure production settings with environment variable injection
+
+spring:
+  profiles:
+    active: production
+    
+  # Production Database Configuration - PostgreSQL
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/ampairs_prod}
+    username: ${DB_USERNAME:ampairs_user}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      pool-name: ampairs-production-pool
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      validation-timeout: 5000
+      leak-detection-threshold: 60000
+
+  # Production JPA Configuration
+  jpa:
+    hibernate:
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+      ddl-auto: validate  # Never auto-create in production
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+        connection:
+          provider_disables_autocommit: true
+          
+  # Liquibase for production schema management
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.xml
+    contexts: production
+    
+  # Production Cache Configuration
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=10000,expireAfterAccess=300s
+    cache-names: 
+      - userDetails
+      - workspaceSettings
+      - moduleConfigurations
+      
+  # Jackson JSON Configuration
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    serialization:
+      write-dates-as-timestamps: false
+      fail-on-empty-beans: false
+    deserialization:
+      fail-on-unknown-properties: false
+
+  # Production Mail Configuration
+  mail:
+    host: ${SMTP_HOST:smtp.gmail.com}
+    port: ${SMTP_PORT:587}
+    username: ${SMTP_USERNAME}
+    password: ${SMTP_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+          connectiontimeout: 5000
+          timeout: 5000
+          writetimeout: 5000
+
+# Server Configuration
+server:
+  port: ${SERVER_PORT:8080}
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/xml,text/plain,application/javascript,text/css
+    min-response-size: 1024
+  tomcat:
+    max-connections: 200
+    threads:
+      max: 100
+      min-spare: 20
+    accept-count: 100
+    connection-timeout: 60000
+    accesslog:
+      enabled: true
+      pattern: "%h %l %u %t \"%r\" %s %b %D \"%{Referer}i\" \"%{User-Agent}i\""
+      directory: /var/log/ampairs/
+      prefix: access_log
+      suffix: .log
+      rotate: true
+      max-days: 30
+
+# Production Logging Configuration
+logging:
+  level:
+    com.ampairs: ${LOG_LEVEL_AMPAIRS:INFO}
+    org.springframework: ${LOG_LEVEL_SPRING:WARN}
+    org.hibernate: WARN
+    org.springframework.security: INFO
+    org.springframework.web: INFO
+    root: ${LOG_LEVEL_ROOT:INFO}
+  pattern:
+    console: "%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{ISO8601} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: /var/log/ampairs/application.log
+  logback:
+    rollingpolicy:
+      max-file-size: 100MB
+      max-history: 30
+      total-size-cap: 3GB
+
+# Production Security Configuration
+application:
+  security:
+    jwt:
+      secret-key: ${JWT_SECRET}
+      expiration: ${JWT_EXPIRATION:86400000}  # 24 hours
+      refresh-token:
+        expiration: ${JWT_REFRESH_EXPIRATION:604800000}  # 7 days
+    cors:
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:https://app.ampairs.com,https://www.ampairs.com}
+      allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+      allowed-headers: "*"
+      allow-credentials: true
+      max-age: PT1H
+    rate-limiting:
+      enabled: true
+      default-capacity: 100
+      default-refill-tokens: 10
+      default-refill-period: PT1M
+      
+  # Production Cache Configuration
+  cache:
+    default-ttl: ${CACHE_TTL:PT15M}
+    max-size: ${CACHE_MAX_SIZE:10000}
+    
+  # Authentication Configuration
+  auth:
+    otp:
+      development-mode: false
+      allow-hardcoded: false
+      expiry-minutes: ${OTP_EXPIRY_MINUTES:5}
+      max-attempts: ${OTP_MAX_ATTEMPTS:3}
+
+# Google reCAPTCHA Configuration
+google:
+  recaptcha:
+    enabled: ${RECAPTCHA_ENABLED:true}
+    secret-key: ${RECAPTCHA_SECRET_KEY}
+    site-key: ${RECAPTCHA_SITE_KEY}
+    min-score: ${RECAPTCHA_MIN_SCORE:0.7}
+    timeout-ms: ${RECAPTCHA_TIMEOUT:5000}
+    verify-url: ${RECAPTCHA_VERIFY_URL:https://www.google.com/recaptcha/api/siteverify}
+
+# AWS Configuration
+aws:
+  region: ${AWS_REGION:ap-south-1}
+  credentials:
+    access-key: ${AWS_ACCESS_KEY_ID}
+    secret-key: ${AWS_SECRET_ACCESS_KEY}
+  s3:
+    bucket-name: ${AWS_S3_BUCKET:ampairs-prod-bucket}
+    endpoint: ${AWS_S3_ENDPOINT:}  # Leave empty for AWS
+  sns:
+    enabled: ${AWS_SNS_ENABLED:true}
+
+# Ampairs Application Configuration
+ampairs:
+  upload:
+    directory: ${AMPAIRS_UPLOAD_DIR:/opt/ampairs/uploads}
+    max-file-size: ${AMPAIRS_MAX_FILE_SIZE:10MB}
+    allowed-extensions: ${AMPAIRS_ALLOWED_EXTENSIONS:jpg,jpeg,png,pdf,doc,docx,xls,xlsx}
+  temp:
+    directory: ${AMPAIRS_TEMP_DIR:/tmp/ampairs}
+    cleanup-hours: ${AMPAIRS_TEMP_CLEANUP_HOURS:24}
+  aws:
+    s3:
+      default-bucket: ${AWS_S3_BUCKET:ampairs-prod-bucket}
+      upload-folder: ${AWS_S3_UPLOAD_FOLDER:uploads}
+      max-file-size: ${AWS_S3_MAX_FILE_SIZE:10MB}
+    sns:
+      enabled: ${AWS_SNS_ENABLED:true}
+
+# Management and Monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: when-authorized
+      show-components: always
+      roles: ADMIN
+    info:
+      enabled: true
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5,0.9,0.95,0.99
+    tags:
+      application: ampairs-service
+      environment: production
+
+# Notification Configuration
+notification:
+  batch-size: ${NOTIFICATION_BATCH_SIZE:50}
+  retry-delay-minutes: ${NOTIFICATION_RETRY_DELAY:5}
+  cleanup-days: ${NOTIFICATION_CLEANUP_DAYS:30}
+  sms:
+    primary-provider: ${SMS_PRIMARY_PROVIDER:MSG91}
+    msg91:
+      enabled: ${MSG91_ENABLED:true}
+      auth-key: ${MSG91_AUTH_KEY}
+      template-id: ${MSG91_TEMPLATE_ID}
+      sender-id: ${MSG91_SENDER_ID:AMPAIR}
+    aws-sns:
+      enabled: ${AWS_SNS_SMS_ENABLED:false}
+  email:
+    enabled: ${EMAIL_ENABLED:true}
+    from: ${EMAIL_FROM:noreply@ampairs.com}
+    reply-to: ${EMAIL_REPLY_TO:support@ampairs.com}

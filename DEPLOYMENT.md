@@ -241,7 +241,8 @@ SMTP_PASSWORD=your_app_password
 If you need to deploy manually:
 
 ```bash
-# On your local machine
+# On your local machine (from project root)
+cd ampairs-backend
 ./gradlew :ampairs_service:bootJar
 
 # Copy to server
