@@ -57,9 +57,6 @@ dependencies {
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
-    testImplementation("io.rest-assured:rest-assured")
-    testImplementation("io.rest-assured:json-path")
-    testImplementation("io.rest-assured:xml-path")
     testImplementation("org.mockito.kotlin:mockito-kotlin:4.1.0")
     testImplementation("org.mockito:mockito-inline:4.11.0")
     testImplementation("com.h2database:h2")}
