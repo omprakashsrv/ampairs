@@ -1,5 +1,7 @@
 package com.ampairs.customer
 
+import com.ampairs.AmpairsApplication
+
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.customer.controller.CustomerController
 import com.ampairs.customer.domain.dto.CustomerResponse
@@ -11,7 +13,9 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.DisplayName
 import org.mockito.kotlin.*
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
@@ -29,8 +33,10 @@ import java.time.LocalDateTime
  * Tests verify the GET /customer/v1/list endpoint using MockMvc with mocked services.
  * Covers customer listing with search, filtering, and pagination.
  */
-@WebMvcTest(controllers = [CustomerController::class])
+@SpringBootTest(classes = [AmpairsApplication::class])
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Transactional
 class CustomerListIntegrationTest {
 
     @Autowired

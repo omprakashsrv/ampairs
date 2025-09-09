@@ -1,5 +1,7 @@
 package com.ampairs.customer
 
+import com.ampairs.AmpairsApplication
+
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.customer.controller.CustomerAddressRequest
 import com.ampairs.customer.controller.CustomerCreateRequest
@@ -12,7 +14,8 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.DisplayName
 import org.mockito.kotlin.*
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.MediaType
@@ -29,9 +32,10 @@ import java.time.LocalDateTime
  * Tests verify the POST /customer/v1/create endpoint using MockMvc with mocked services.
  * Covers customer creation with retail business-specific fields and attributes.
  */
-@SpringBootTest(classes = [TestApplication::class])
+@SpringBootTest(classes = [AmpairsApplication::class])
+@AutoConfigureMockMvc
 @ActiveProfiles("test")
-@AutoConfigureWebMvc
+@Transactional
 class CustomerCreateIntegrationTest {
 
     @Autowired

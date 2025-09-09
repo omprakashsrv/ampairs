@@ -1,5 +1,7 @@
 package com.ampairs.order
 
+import com.ampairs.AmpairsApplication
+
 import com.ampairs.core.domain.model.Address
 import com.ampairs.order.domain.dto.*
 import com.ampairs.order.domain.enums.OrderStatus
@@ -10,13 +12,14 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.DisplayName
 import org.mockito.kotlin.*
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.transaction.annotation.Transactional
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import java.time.LocalDateTime
@@ -27,9 +30,15 @@ import java.time.LocalDateTime
  * Tests verify the POST /order/v1 endpoint using MockMvc with mocked services.
  * Covers order creation with line items, inventory checking, and tax calculations.
  */
-@SpringBootTest(classes = [TestApplication::class])
+@SpringBootTest(
+    classes = [AmpairsApplication::class],
+    properties = [
+        "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration"
+    ]
+)
+@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
-@AutoConfigureWebMvc
+@Transactional
 class OrderCreateIntegrationTest {
 
     @Autowired

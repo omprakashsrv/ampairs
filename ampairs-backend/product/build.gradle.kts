@@ -59,6 +59,7 @@ dependencies {
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("org.mockito.kotlin:mockito-kotlin:4.1.0")
     testImplementation("org.mockito:mockito-inline:4.11.0")
+    testImplementation(project(":ampairs_service"))
     testImplementation("com.h2database:h2")}
 
 tasks.withType<Test> {
