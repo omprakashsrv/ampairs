@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title th:text="'View Module: ' + ${module.name}">View Module</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row bg-primary text-white py-3 mb-4">
+        <div class="col">
+            <h1><i class="bi bi-eye me-2"></i>Module Details</h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb mb-0">
+                    <li class="breadcrumb-item"><a href="/admin/master-modules" class="text-white">Master Modules</a></li>
+                    <li class="breadcrumb-item active text-white" aria-current="page" th:text="${module.name}"></li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Main Information -->
+        <div class="col-lg-8">
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center">
+                        <i th:class="'bi bi-' + ${module.uiMetadata.icon} + ' fs-3 me-3'" 
+                           th:style="'color: ' + ${module.uiMetadata.primaryColor}"></i>
+                        <div>
+                            <h4 class="mb-0" th:text="${module.name}"></h4>
+                            <small class="text-muted" th:text="${module.moduleCode}"></small>
+                        </div>
+                    </div>
+                    <div>
+                        <span th:class="'badge fs-6 ' + ${module.status == T(com.ampairs.workspace.model.enums.ModuleStatus).ACTIVE ? 'bg-success' : 
+                                                        module.status == T(com.ampairs.workspace.model.enums.ModuleStatus).BETA ? 'bg-warning' : 
+                                                        module.status == T(com.ampairs.workspace.model.enums.ModuleStatus).DEPRECATED ? 'bg-danger' : 'bg-secondary'}" 
+                              th:text="${module.status.displayName}"></span>
+                        <i th:if="${module.featured}" class="bi bi-star-fill text-warning fs-5 ms-2"></i>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="lead" th:text="${module.tagline}" th:if="${module.tagline}"></p>
+                    <p th:text="${module.description}" th:if="${module.description}"></p>
+                    
+                    <!-- Key Metrics -->
+                    <div class="row text-center mt-4">
+                        <div class="col-md-3">
+                            <div class="border-end">
+                                <h3 class="mb-0" th:text="${module.installCount}"></h3>
+                                <small class="text-muted">Installs</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border-end">
+                                <h3 class="mb-0">
+                                    <span th:text="${#numbers.formatDecimal(module.rating, 1, 1)}"></span>
+                                    <small class="text-muted fs-6" th:text="'(' + ${module.ratingCount} + ')'"></small>
+                                </h3>
+                                <small class="text-muted">Rating</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="border-end">
+                                <h3 class="mb-0" th:text="${module.sizeMb} + ' MB'"></h3>
+                                <small class="text-muted">Size</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <h3 class="mb-0" th:text="${module.version}"></h3>
+                            <small class="text-muted">Version</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Business Relevance -->
+            <div class="card mb-4" th:if="${module.businessRelevance != null && !module.businessRelevance.isEmpty()}">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-graph-up me-2"></i>Business Relevance</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6" th:each="relevance : ${module.businessRelevance}">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <strong th:text="${relevance.businessType.displayName}"></strong>
+                                    <span th:if="${relevance.isEssential}" class="badge bg-danger ms-2">Essential</span>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge bg-primary" th:text="${relevance.relevanceScore} + '/10'"></span>
+                                </div>
+                            </div>
+                            <div class="progress mb-3" style="height: 8px;">
+                                <div class="progress-bar" role="progressbar" 
+                                     th:style="'width: ' + ${relevance.relevanceScore * 10} + '%'"
+                                     th:class="'progress-bar ' + ${relevance.relevanceScore >= 8 ? 'bg-success' : 
+                                                                   relevance.relevanceScore >= 6 ? 'bg-warning' : 'bg-danger'}">
+                                </div>
+                            </div>
+                            <small class="text-muted" th:text="${relevance.recommendationReason}" th:if="${relevance.recommendationReason}"></small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Release Notes -->
+            <div class="card" th:if="${module.releaseNotes}">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-journal-text me-2"></i>Release Notes</h5>
+                </div>
+                <div class="card-body">
+                    <pre th:text="${module.releaseNotes}" class="mb-0" style="white-space: pre-wrap;"></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-lg-4">
+            <!-- Actions -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-gear me-2"></i>Actions</h5>
+                </div>
+                <div class="card-body d-grid gap-2">
+                    <a th:href="@{/admin/master-modules/{id}/edit(id=${module.id})}" class="btn btn-warning">
+                        <i class="bi bi-pencil me-1"></i>Edit Module
+                    </a>
+                    <button type="button" class="btn btn-danger" 
+                            th:onclick="'confirmDelete(\'' + ${module.id} + '\', \'' + ${module.name} + '\')'">
+                        <i class="bi bi-trash me-1"></i>Delete Module
+                    </button>
+                    <a href="/admin/master-modules" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left me-1"></i>Back to List
+                    </a>
+                </div>
+            </div>
+
+            <!-- Module Information -->
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-info-circle me-2"></i>Module Information</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-5">Category:</dt>
+                        <dd class="col-sm-7">
+                            <span class="badge bg-secondary" th:text="${module.category.displayName}"></span>
+                        </dd>
+                        
+                        <dt class="col-sm-5">Complexity:</dt>
+                        <dd class="col-sm-7">
+                            <span class="badge bg-info" th:text="${module.complexity.displayName}"></span>
+                        </dd>
+                        
+                        <dt class="col-sm-5">Required Tier:</dt>
+                        <dd class="col-sm-7">
+                            <span class="badge bg-primary" th:text="${module.requiredTier.displayName}"></span>
+                        </dd>
+                        
+                        <dt class="col-sm-5">Required Role:</dt>
+                        <dd class="col-sm-7">
+                            <span class="badge bg-dark" th:text="${module.requiredRole.displayName}"></span>
+                        </dd>
+                        
+                        <dt class="col-sm-5">Provider:</dt>
+                        <dd class="col-sm-7" th:text="${module.provider}"></dd>
+                        
+                        <dt class="col-sm-5">Display Order:</dt>
+                        <dd class="col-sm-7" th:text="${module.displayOrder}"></dd>
+                        
+                        <dt class="col-sm-5">Active:</dt>
+                        <dd class="col-sm-7">
+                            <span th:class="'badge ' + ${module.active ? 'bg-success' : 'bg-danger'}" 
+                                  th:text="${module.active ? 'Yes' : 'No'}"></span>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Contact Information -->
+            <div class="card mb-4" th:if="${module.supportEmail || module.documentationUrl || module.homepageUrl || module.setupGuideUrl}">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-links me-2"></i>Links & Support</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a th:if="${module.supportEmail}" 
+                           th:href="'mailto:' + ${module.supportEmail}" 
+                           class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-envelope me-1"></i>Support Email
+                        </a>
+                        <a th:if="${module.documentationUrl}" 
+                           th:href="${module.documentationUrl}" 
+                           target="_blank" class="btn btn-outline-info btn-sm">
+                            <i class="bi bi-book me-1"></i>Documentation
+                        </a>
+                        <a th:if="${module.homepageUrl}" 
+                           th:href="${module.homepageUrl}" 
+                           target="_blank" class="btn btn-outline-success btn-sm">
+                            <i class="bi bi-house me-1"></i>Homepage
+                        </a>
+                        <a th:if="${module.setupGuideUrl}" 
+                           th:href="${module.setupGuideUrl}" 
+                           target="_blank" class="btn btn-outline-warning btn-sm">
+                            <i class="bi bi-gear-wide-connected me-1"></i>Setup Guide
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Timestamps -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="bi bi-clock me-2"></i>Timestamps</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-5">Created:</dt>
+                        <dd class="col-sm-7">
+                            <small th:text="${#temporals.format(module.createdAt, 'yyyy-MM-dd HH:mm')}" th:if="${module.createdAt}"></small>
+                        </dd>
+                        
+                        <dt class="col-sm-5">Updated:</dt>
+                        <dd class="col-sm-7">
+                            <small th:text="${#temporals.format(module.updatedAt, 'yyyy-MM-dd HH:mm')}" th:if="${module.updatedAt}"></small>
+                        </dd>
+                        
+                        <dt class="col-sm-5">Last Modified:</dt>
+                        <dd class="col-sm-7">
+                            <small th:text="${#temporals.format(module.lastUpdatedAt, 'yyyy-MM-dd HH:mm')}" th:if="${module.lastUpdatedAt}"></small>
+                        </dd>
+                    </dl>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the module "<span id="moduleNameToDelete"></span>"?</p>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    This action cannot be undone. The module can only be deleted if it's not installed in any workspace.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete Module</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function confirmDelete(moduleId, moduleName) {
+    document.getElementById('moduleNameToDelete').textContent = moduleName;
+    document.getElementById('deleteForm').action = '/admin/master-modules/' + moduleId + '/delete';
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+</script>
+</body>
+</html>

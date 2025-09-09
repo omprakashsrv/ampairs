@@ -159,6 +159,16 @@ spring:
 
 # Application-specific AWS properties
 ampairs:
+  # Super Admin Configuration
+  admin:
+    enabled: true
+    # Configure super admin users by phone (format: "countryCode:phoneNumber")
+    super-admin-phones:
+      - "91:9999999999"  # Example: Indian number
+    # Configure super admin users by username
+    super-admin-users:
+      - "super.admin@ampairs.com"
+      - "admin"
   aws:
     s3:
       default-bucket: ${AWS_S3_BUCKET:ampairs-files}

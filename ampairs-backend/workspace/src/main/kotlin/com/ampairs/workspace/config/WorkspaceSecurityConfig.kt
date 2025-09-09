@@ -15,4 +15,5 @@ class WorkspaceSecurityConfig {
     // - @PreAuthorize for pre-execution checks
     // - @PostAuthorize for post-execution checks  
     // - @Secured for role-based security
+    // - Custom expressions via @superAdminAuth.isSuperAdmin(authentication)
 }

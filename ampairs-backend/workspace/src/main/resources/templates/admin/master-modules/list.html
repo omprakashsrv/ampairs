@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Modules Administration</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+</head>
+<body>
+<div class="container-fluid">
+    <!-- Header -->
+    <div class="row bg-primary text-white py-3 mb-4">
+        <div class="col">
+            <h1><i class="bi bi-gear-fill me-2"></i>Master Modules Administration</h1>
+            <p class="mb-0">Manage the master module catalog for all workspaces</p>
+        </div>
+    </div>
+
+    <!-- Flash Messages -->
+    <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i><span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i><span th:text="${errorMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 th:text="${statistics.totalModules}">0</h4>
+                            <p class="mb-0">Total Modules</p>
+                        </div>
+                        <i class="bi bi-collection fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 th:text="${statistics.activeModules}">0</h4>
+                            <p class="mb-0">Active Modules</p>
+                        </div>
+                        <i class="bi bi-check-circle fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4 th:text="${statistics.featuredModules}">0</h4>
+                            <p class="mb-0">Featured Modules</p>
+                        </div>
+                        <i class="bi bi-star-fill fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>Dashboard</h4>
+                            <p class="mb-0"><a href="/admin/master-modules/dashboard" class="text-white text-decoration-none">View Analytics</a></p>
+                        </div>
+                        <i class="bi bi-graph-up fs-1 opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Controls -->
+    <div class="row mb-3">
+        <div class="col-md-8">
+            <!-- Filters -->
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <select name="category" class="form-select">
+                        <option value="">All Categories</option>
+                        <option th:each="cat : ${categories}" 
+                                th:value="${cat}" 
+                                th:text="${cat.displayName}"
+                                th:selected="${cat == selectedCategory}"></option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="status" class="form-select">
+                        <option value="">All Statuses</option>
+                        <option th:each="stat : ${statuses}" 
+                                th:value="${stat}" 
+                                th:text="${stat.displayName}"
+                                th:selected="${stat == selectedStatus}"></option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select name="active" class="form-select">
+                        <option value="">All</option>
+                        <option value="true" th:selected="${selectedActive == true}">Active Only</option>
+                        <option value="false" th:selected="${selectedActive == false}">Inactive Only</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-outline-primary">
+                        <i class="bi bi-funnel me-1"></i>Filter
+                    </button>
+                </div>
+                <input type="hidden" name="sortBy" th:value="${sortBy}">
+                <input type="hidden" name="sortDirection" th:value="${sortDirection}">
+            </form>
+        </div>
+        <div class="col-md-4 text-end">
+            <a href="/admin/master-modules/create" class="btn btn-success">
+                <i class="bi bi-plus-circle me-1"></i>Create Module
+            </a>
+        </div>
+    </div>
+
+    <!-- Modules Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th><input type="checkbox" id="selectAll" class="form-check-input"></th>
+                            <th>Icon</th>
+                            <th>
+                                <a th:href="@{/admin/master-modules(sortBy='name',sortDirection=${sortDirection == 'ASC' ? 'DESC' : 'ASC'})}" 
+                                   class="text-decoration-none">
+                                    Name <i class="bi bi-arrow-up-down"></i>
+                                </a>
+                            </th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th>Tier</th>
+                            <th>Installs</th>
+                            <th>Rating</th>
+                            <th>Featured</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="module : ${modules.content}" th:id="'row-' + ${module.id}">
+                            <td>
+                                <input type="checkbox" class="form-check-input module-checkbox" th:value="${module.id}">
+                            </td>
+                            <td>
+                                <i th:class="'bi bi-' + ${module.uiMetadata.icon} + ' fs-4'" 
+                                   th:style="'color: ' + ${module.uiMetadata.primaryColor}"></i>
+                            </td>
+                            <td>
+                                <div>
+                                    <strong th:text="${module.name}"></strong>
+                                    <br>
+                                    <small class="text-muted" th:text="${module.moduleCode}"></small>
+                                    <br>
+                                    <small class="text-muted" th:text="${module.tagline}" th:if="${module.tagline}"></small>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary" th:text="${module.category.displayName}"></span>
+                            </td>
+                            <td>
+                                <span th:class="'badge ' + ${module.status == T(com.ampairs.workspace.model.enums.ModuleStatus).ACTIVE ? 'bg-success' : 
+                                                            module.status == T(com.ampairs.workspace.model.enums.ModuleStatus).BETA ? 'bg-warning' : 
+                                                            module.status == T(com.ampairs.workspace.model.enums.ModuleStatus).DEPRECATED ? 'bg-danger' : 'bg-secondary'}" 
+                                      th:text="${module.status.displayName}"></span>
+                            </td>
+                            <td>
+                                <span class="badge bg-info" th:text="${module.requiredTier.displayName}"></span>
+                            </td>
+                            <td th:text="${module.installCount}"></td>
+                            <td>
+                                <span th:text="${#numbers.formatDecimal(module.rating, 1, 1)}"></span>
+                                <small class="text-muted" th:text="'(' + ${module.ratingCount} + ')'"></small>
+                            </td>
+                            <td>
+                                <i th:if="${module.featured}" class="bi bi-star-fill text-warning"></i>
+                                <span th:unless="${module.featured}" class="text-muted">-</span>
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a th:href="@{/admin/master-modules/{id}(id=${module.id})}" 
+                                       class="btn btn-outline-primary" title="View">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a th:href="@{/admin/master-modules/{id}/edit(id=${module.id})}" 
+                                       class="btn btn-outline-warning" title="Edit">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" 
+                                            th:onclick="'confirmDelete(\'' + ${module.id} + '\', \'' + ${module.name} + '\')'"
+                                            title="Delete">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <nav th:if="${modules.totalPages > 1}">
+                <ul class="pagination justify-content-center">
+                    <li class="page-item" th:class="${currentPage == 0} ? 'disabled'">
+                        <a class="page-link" th:href="@{/admin/master-modules(page=${currentPage - 1})}">Previous</a>
+                    </li>
+                    <li th:each="page : ${#numbers.sequence(0, modules.totalPages - 1)}" 
+                        class="page-item" th:class="${page == currentPage} ? 'active'">
+                        <a class="page-link" th:href="@{/admin/master-modules(page=${page})}" th:text="${page + 1}"></a>
+                    </li>
+                    <li class="page-item" th:class="${currentPage == modules.totalPages - 1} ? 'disabled'">
+                        <a class="page-link" th:href="@{/admin/master-modules(page=${currentPage + 1})}">Next</a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Bulk Actions -->
+    <div class="card mt-3" id="bulkActions" style="display: none;">
+        <div class="card-body">
+            <form id="bulkStatusForm" method="post" action="/admin/master-modules/bulk/status">
+                <div class="row align-items-end">
+                    <div class="col-md-3">
+                        <label class="form-label">Bulk Actions</label>
+                        <select name="status" class="form-select" required>
+                            <option value="">Select Status</option>
+                            <option th:each="stat : ${statuses}" th:value="${stat}" th:text="${stat.displayName}"></option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-lightning me-1"></i>Update Selected
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="clearSelection()">Cancel</button>
+                    </div>
+                </div>
+                <input type="hidden" name="moduleIds" id="selectedModuleIds">
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the module "<span id="moduleNameToDelete"></span>"?</p>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    This action cannot be undone. The module can only be deleted if it's not installed in any workspace.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">Delete Module</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Select all checkbox functionality
+document.getElementById('selectAll').addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.module-checkbox');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+    updateBulkActions();
+});
+
+// Individual checkbox functionality
+document.querySelectorAll('.module-checkbox').forEach(function(checkbox) {
+    checkbox.addEventListener('change', updateBulkActions);
+});
+
+function updateBulkActions() {
+    const selectedCheckboxes = document.querySelectorAll('.module-checkbox:checked');
+    const bulkActions = document.getElementById('bulkActions');
+    
+    if (selectedCheckboxes.length > 0) {
+        bulkActions.style.display = 'block';
+        const moduleIds = Array.from(selectedCheckboxes).map(cb => cb.value);
+        document.getElementById('selectedModuleIds').value = moduleIds.join(',');
+    } else {
+        bulkActions.style.display = 'none';
+    }
+}
+
+function clearSelection() {
+    document.querySelectorAll('.module-checkbox').forEach(cb => cb.checked = false);
+    document.getElementById('selectAll').checked = false;
+    updateBulkActions();
+}
+
+function confirmDelete(moduleId, moduleName) {
+    document.getElementById('moduleNameToDelete').textContent = moduleName;
+    document.getElementById('deleteForm').action = '/admin/master-modules/' + moduleId + '/delete';
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+// Auto-hide flash messages
+setTimeout(function() {
+    const alerts = document.querySelectorAll('.alert');
+    alerts.forEach(alert => {
+        const bootstrapAlert = new bootstrap.Alert(alert);
+        bootstrapAlert.close();
+    });
+}, 5000);
+</script>
+</body>
+</html>
