@@ -1,5 +1,6 @@
 package com.ampairs.workspace.model.dto
 
+import com.ampairs.workspace.model.enums.WorkspaceModuleStatus
 import java.time.LocalDateTime
 
 /**
@@ -11,7 +12,7 @@ data class InstalledModuleResponse(
     var name: String = "",
     var category: String = "",
     var version: String = "",
-    var status: String = "",
+    var status: WorkspaceModuleStatus = WorkspaceModuleStatus.ACTIVE,
     var enabled: Boolean = true,
     var installedAt: LocalDateTime = LocalDateTime.now(),
     var icon: String = "",

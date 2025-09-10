@@ -41,7 +41,7 @@ class WorkspaceModuleService(
                 name = module.getEffectiveName(),
                 category = module.getEffectiveCategory(),
                 version = module.installedVersion,
-                status = module.status.displayName,
+                status = module.status,
                 enabled = module.enabled,
                 installedAt = module.installedAt,
                 icon = module.getEffectiveIcon(),
