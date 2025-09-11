@@ -1,170 +1,48 @@
 package com.ampairs.workspace.api
 
-import com.ampairs.workspace.api.model.WorkspaceModuleApiModel
-import kotlinx.coroutines.flow.Flow
+import com.ampairs.workspace.api.model.InstalledModule
+import com.ampairs.workspace.api.model.AvailableModule
+import com.ampairs.workspace.api.model.ModuleInstallationResponse
+import com.ampairs.workspace.api.model.ModuleUninstallationResponse
 
 /**
- * Workspace Module Management API Interface
- *
- * Provides comprehensive module management functionality including:
- * - Module discovery and installation
- * - Configuration and customization
- * - Analytics and monitoring
- * - Bulk operations
+ * Workspace Module API that exactly matches the web service calls
+ * Maps directly to workspace-module.service.ts in the web app
  */
 interface WorkspaceModuleApi {
 
     /**
-     * Get workspace module overview and basic information
+     * Get all installed modules for the current workspace
+     * GET /workspace/v1/modules
+     * 
+     * Matches: async getInstalledModules(): Promise<InstalledModule[]>
      */
-    suspend fun getModuleOverview(): Result<WorkspaceModuleApiModel.ModuleOverviewResponse>
+    suspend fun getInstalledModules(workspaceId: String): Result<List<InstalledModule>>
 
     /**
-     * Get detailed information about a specific module
-     */
-    suspend fun getModule(moduleId: String): Result<WorkspaceModuleApiModel.ModuleDetailResponse>
-
-    /**
-     * Search and list installed modules with filtering and pagination
-     */
-    suspend fun searchInstalledModules(
-        query: String? = null,
-        category: String? = null,
-        status: String? = null,
-        enabled: Boolean? = null,
-        featured: Boolean? = null,
-        sortBy: String? = null,
-        sortDirection: String? = null,
-        page: Int = 0,
-        size: Int = 20,
-    ): Result<WorkspaceModuleApiModel.ModuleSearchResponse>
-
-    /**
-     * Get available modules that can be installed
+     * Get available modules from the master catalog
+     * GET /workspace/v1/modules/available?category={category}&featured={featured}
+     * 
+     * Matches: async getAvailableModules(category?: string, featured = false): Promise<AvailableModule[]>
      */
     suspend fun getAvailableModules(
-        businessType: String? = null,
-    ): Result<WorkspaceModuleApiModel.AvailableModulesResponse>
-
-    /**
-     * Search master modules (available for installation)
-     */
-    suspend fun searchMasterModules(
-        query: String? = null,
         category: String? = null,
-        featured: Boolean? = null,
-        sortBy: String? = null,
-        sortDirection: String? = null,
-        page: Int = 0,
-        size: Int = 20,
-    ): Result<WorkspaceModuleApiModel.MasterModuleSearchResponse>
+        featured: Boolean = false
+    ): Result<List<AvailableModule>>
 
     /**
-     * Get master module details
+     * Install a module in the current workspace
+     * POST /workspace/v1/modules/install/{moduleCode}
+     * 
+     * Matches: async installModule(moduleCode: string): Promise<ModuleInstallationResponse>
      */
-    suspend fun getMasterModule(moduleId: String): Result<WorkspaceModuleApiModel.MasterModule>
+    suspend fun installModule(workspaceId: String, moduleCode: String): Result<ModuleInstallationResponse>
 
     /**
-     * Perform an action on a specific module
+     * Uninstall a module from the current workspace
+     * DELETE /workspace/v1/modules/{moduleId}
+     * 
+     * Matches: async uninstallModule(moduleId: string): Promise<ModuleUninstallationResponse>
      */
-    suspend fun performModuleAction(
-        moduleId: String,
-        action: String,
-        parameters: Map<String, Any>? = null,
-    ): Result<WorkspaceModuleApiModel.ModuleActionResponse>
-
-    /**
-     * Install a new module
-     */
-    suspend fun installModule(
-        installRequest: WorkspaceModuleApiModel.ModuleInstallationRequest,
-    ): Result<WorkspaceModuleApiModel.ModuleOperationResponse>
-
-    /**
-     * Uninstall a module
-     */
-    suspend fun uninstallModule(
-        moduleId: String,
-        preserveData: Boolean = false,
-    ): Result<WorkspaceModuleApiModel.ModuleOperationResponse>
-
-    /**
-     * Update module configuration
-     */
-    suspend fun updateModuleConfiguration(
-        moduleId: String,
-        configRequest: WorkspaceModuleApiModel.ModuleConfigurationRequest,
-    ): Result<WorkspaceModuleApiModel.ModuleOperationResponse>
-
-    /**
-     * Bulk operations on multiple modules
-     */
-    suspend fun performBulkOperation(
-        bulkRequest: WorkspaceModuleApiModel.BulkOperationRequest,
-    ): Result<WorkspaceModuleApiModel.BulkOperationResponse>
-
-    /**
-     * Get module dashboard and analytics
-     */
-    suspend fun getModuleDashboard(): Result<WorkspaceModuleApiModel.ModuleDashboardResponse>
-
-    /**
-     * Get module analytics for a specific module
-     */
-    suspend fun getModuleAnalytics(
-        moduleId: String,
-        period: String = "30d",
-    ): Result<WorkspaceModuleApiModel.ModuleAnalyticsResponse>
-
-    /**
-     * Export module configuration
-     */
-    suspend fun exportModuleConfiguration(
-        moduleIds: List<String>? = null,
-    ): Result<WorkspaceModuleApiModel.ModuleConfigurationExportResponse>
-
-    /**
-     * Import module configuration
-     */
-    suspend fun importModuleConfiguration(
-        configData: Map<String, Any>,
-    ): Result<WorkspaceModuleApiModel.ModuleOperationResponse>
-
-    /**
-     * Get module categories
-     */
-    suspend fun getModuleCategories(): Result<List<String>>
-
-    /**
-     * Check for module updates
-     */
-    suspend fun checkForUpdates(): Result<WorkspaceModuleApiModel.ModuleUpdatesResponse>
-
-    /**
-     * Get module health status
-     */
-    suspend fun getModuleHealthStatus(moduleId: String): Result<WorkspaceModuleApiModel.ModuleHealthResponse>
-
-    /**
-     * Enable/disable module
-     */
-    suspend fun toggleModuleStatus(
-        moduleId: String,
-        enabled: Boolean,
-    ): Result<WorkspaceModuleApiModel.ModuleActionResponse>
-
-    /**
-     * Update a specific module to latest version
-     */
-    suspend fun updateModule(moduleId: String): Result<WorkspaceModuleApiModel.ModuleActionResponse>
-
-    /**
-     * Reset module to default configuration
-     */
-    suspend fun resetModuleConfiguration(moduleId: String): Result<WorkspaceModuleApiModel.ModuleActionResponse>
-
-    /**
-     * Run module diagnostics
-     */
-    suspend fun runModuleDiagnostics(moduleId: String): Result<WorkspaceModuleApiModel.ModuleActionResponse>
+    suspend fun uninstallModule(workspaceId: String, moduleId: String): Result<ModuleUninstallationResponse>
 }

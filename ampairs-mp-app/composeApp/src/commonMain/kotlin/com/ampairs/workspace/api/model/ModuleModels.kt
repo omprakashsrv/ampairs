@@ -1,0 +1,63 @@
+package com.ampairs.workspace.api.model
+
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+/**
+ * Simple API models that exactly match the web implementation
+ * These directly correspond to the TypeScript interfaces in workspace-module.service.ts
+ */
+
+@Serializable
+data class InstalledModule(
+    @SerialName("id") val id: String,
+    val workspaceId: String = "", // Set from current workspace context, not from API
+    @SerialName("module_code") val moduleCode: String,
+    @SerialName("name") val name: String,
+    @SerialName("category") val category: String,
+    @SerialName("version") val version: String,
+    @SerialName("status") val status: String, // ACTIVE | INSTALLED | INACTIVE
+    @SerialName("enabled") val enabled: Boolean,
+    @SerialName("installed_at") val installedAt: String,
+    @SerialName("icon") val icon: String,
+    @SerialName("primary_color") val primaryColor: String,
+    @SerialName("health_score") val healthScore: Double? = null,
+    @SerialName("needs_attention") val needsAttention: Boolean? = null,
+    @SerialName("description") val description: String? = null,
+)
+
+@Serializable
+data class AvailableModule(
+    @SerialName("module_code") val moduleCode: String,
+    @SerialName("name") val name: String,
+    @SerialName("description") val description: String? = null,
+    @SerialName("category") val category: String,
+    @SerialName("version") val version: String,
+    @SerialName("rating") val rating: Double,
+    @SerialName("install_count") val installCount: Int,
+    @SerialName("complexity") val complexity: String,
+    @SerialName("icon") val icon: String,
+    @SerialName("primary_color") val primaryColor: String,
+    @SerialName("featured") val featured: Boolean,
+    @SerialName("required_tier") val requiredTier: String,
+    @SerialName("size_mb") val sizeMb: Int,
+)
+
+@Serializable
+data class ModuleInstallationResponse(
+    @SerialName("module_id") val moduleId: String,
+    @SerialName("module_code") val moduleCode: String,
+    @SerialName("name") val name: String,
+    @SerialName("status") val status: String,
+    @SerialName("installed_at") val installedAt: String,
+    @SerialName("message") val message: String,
+)
+
+@Serializable
+data class ModuleUninstallationResponse(
+    @SerialName("module_id") val moduleId: String,
+    @SerialName("module_code") val moduleCode: String,
+    @SerialName("name") val name: String,
+    @SerialName("uninstalled_at") val uninstalledAt: String,
+    @SerialName("message") val message: String,
+)

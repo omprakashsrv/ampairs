@@ -9,11 +9,14 @@ import com.ampairs.workspace.db.dao.WorkspaceMemberDao
 import com.ampairs.workspace.db.dao.WorkspaceInvitationDao
 import com.ampairs.workspace.db.dao.WorkspaceRoleDao
 import com.ampairs.workspace.db.dao.WorkspacePermissionDao
+import com.ampairs.workspace.db.dao.WorkspaceModuleDao
 import com.ampairs.workspace.db.entity.WorkspaceEntity
 import com.ampairs.workspace.db.entity.WorkspaceMemberEntity
 import com.ampairs.workspace.db.entity.WorkspaceInvitationEntity
 import com.ampairs.workspace.db.entity.WorkspaceRoleEntity
 import com.ampairs.workspace.db.entity.WorkspacePermissionEntity
+import com.ampairs.workspace.db.entity.InstalledModuleEntity
+import com.ampairs.workspace.db.entity.AvailableModuleEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 
@@ -23,9 +26,11 @@ import kotlinx.coroutines.IO
         WorkspaceMemberEntity::class,
         WorkspaceInvitationEntity::class,
         WorkspaceRoleEntity::class,
-        WorkspacePermissionEntity::class
+        WorkspacePermissionEntity::class,
+        InstalledModuleEntity::class,
+        AvailableModuleEntity::class
     ],
-    version = 5,  // Increment version due to invitation schema change: recipient_email -> country_code + phone
+    version = 6,  // Increment version due to adding module entities
     exportSchema = false
 )
 abstract class WorkspaceRoomDatabase : RoomDatabase() {
@@ -34,5 +39,6 @@ abstract class WorkspaceRoomDatabase : RoomDatabase() {
     abstract fun workspaceInvitationDao(): WorkspaceInvitationDao
     abstract fun workspaceRoleDao(): WorkspaceRoleDao
     abstract fun workspacePermissionDao(): WorkspacePermissionDao
+    abstract fun workspaceModuleDao(): WorkspaceModuleDao
 }
 

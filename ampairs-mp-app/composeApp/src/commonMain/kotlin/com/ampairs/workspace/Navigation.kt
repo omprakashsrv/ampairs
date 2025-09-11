@@ -36,8 +36,8 @@ fun NavGraphBuilder.workspaceNavigation(navController: NavController, onWorkspac
                         navController.navigate(WorkspaceRoute.Create)
                     },
                     onWorkspaceSelected = { workspaceId: String ->
-                        // Call the callback to navigate to main app
-                        onWorkspaceSelected()
+                        // Navigate to modules list for the selected workspace
+                        navController.navigate(WorkspaceRoute.Modules(workspaceId))
                     },
                     onWorkspaceEdit = { workspaceId: String ->
                         navController.navigate(WorkspaceRoute.Edit(workspaceId))
@@ -169,14 +169,14 @@ fun NavGraphBuilder.workspaceNavigation(navController: NavController, onWorkspac
                 isWorkspaceSelection = false
             ) { paddingValues ->
                 WorkspaceModulesScreen(
-                    viewModel = koinInject(),
-                    onNavigateBack = {
+                    onBackClick = {
                         navController.popBackStack()
                     },
-                    onNavigateToModuleDetail = { moduleId ->
-                        // TODO: Add module detail navigation when implemented
-                        // navController.navigate(WorkspaceRoute.ModuleDetail(modulesRoute.workspaceId, moduleId))
-                    }
+                    onModuleSelected = { moduleCode ->
+                        // Navigate to main app after module selection
+                        onWorkspaceSelected()
+                    },
+                    workspaceId = modulesRoute.workspaceId
                 )
             }
         }

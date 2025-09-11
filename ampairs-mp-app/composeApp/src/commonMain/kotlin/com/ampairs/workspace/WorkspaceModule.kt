@@ -15,12 +15,14 @@ import com.ampairs.workspace.db.OfflineFirstWorkspaceMemberRepository
 import com.ampairs.workspace.db.WorkspaceInvitationRepository
 import com.ampairs.workspace.db.OfflineFirstWorkspaceInvitationRepository
 import com.ampairs.workspace.db.OfflineFirstRolesPermissionsRepository
+import com.ampairs.workspace.db.WorkspaceModuleRepository
 import com.ampairs.workspace.store.WorkspaceStoreFactory
 import com.ampairs.workspace.store.WorkspaceMemberStoreFactory
 import com.ampairs.workspace.store.WorkspaceInvitationStoreFactory
 import com.ampairs.workspace.store.WorkspaceRolesStoreFactory
 import com.ampairs.workspace.store.WorkspacePermissionsStoreFactory
 import com.ampairs.workspace.store.WorkspaceMemberUpdateStoreFactory
+import com.ampairs.workspace.store.WorkspaceModuleStoreFactory
 import com.ampairs.workspace.store.WorkspaceStore
 import com.ampairs.workspace.store.WorkspaceMemberStore
 import com.ampairs.workspace.store.WorkspaceInvitationStore
@@ -47,6 +49,7 @@ fun workspaceModule() = module {
     single { get<com.ampairs.workspace.db.WorkspaceRoomDatabase>().workspaceInvitationDao() }
     single { get<com.ampairs.workspace.db.WorkspaceRoomDatabase>().workspaceRoleDao() }
     single { get<com.ampairs.workspace.db.WorkspaceRoomDatabase>().workspacePermissionDao() }
+    single { get<com.ampairs.workspace.db.WorkspaceRoomDatabase>().workspaceModuleDao() }
 
     // APIs
     singleOf(::WorkspaceApiImpl) bind WorkspaceApi::class
@@ -61,6 +64,7 @@ fun workspaceModule() = module {
     single { WorkspaceInvitationRepository(get(), get()) } // Legacy invitation management repository (kept for compatibility)
     single { OfflineFirstWorkspaceInvitationRepository(get(), get(), get(named("workspaceInvitationStore")), get()) } // Store5 invitation repository
     single { OfflineFirstRolesPermissionsRepository(get(), get(), get(), get()) } // Roles & permissions offline-first repo
+    single { WorkspaceModuleRepository(get(), get(), get()) } // Module repository
 
     // Store5 Factories for proper offline-first architecture
     single { WorkspaceStoreFactory(get(), get()) }
@@ -69,6 +73,7 @@ fun workspaceModule() = module {
     single { WorkspaceRolesStoreFactory(get(), get()) }
     single { WorkspacePermissionsStoreFactory(get(), get()) }
     single { WorkspaceMemberUpdateStoreFactory(get(), get()) }
+    single { WorkspaceModuleStoreFactory(get(), get()) }
     
     // Store instances with qualifiers to prevent conflicts
     single<WorkspaceStore>(named("workspaceStore")) { get<WorkspaceStoreFactory>().create() }
@@ -87,6 +92,6 @@ fun workspaceModule() = module {
     factory { (workspaceId: String, memberId: String) -> MemberDetailsViewModel(workspaceId, memberId, get(named("workspaceMemberStore")), get(), get(), get(named("workspaceRolesStore")), get(named("workspacePermissionsStore")), get()) }
     factory { (workspaceId: String) -> WorkspaceInvitationsViewModel(workspaceId, get<OfflineFirstWorkspaceInvitationRepository>(), get<OfflineFirstRolesPermissionsRepository>()) }
 
-    // Module management ViewModel
-    factory { WorkspaceModulesViewModel(get()) }
+    // Module management ViewModels
+    factory { (workspaceId: String?) -> WorkspaceModulesViewModel(get(), workspaceId) } // ViewModel matching web
 }
