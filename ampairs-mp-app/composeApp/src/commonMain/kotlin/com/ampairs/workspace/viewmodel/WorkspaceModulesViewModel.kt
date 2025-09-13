@@ -81,17 +81,17 @@ class WorkspaceModulesViewModel(
             try {
                 _isLoading.value = true
                 _errorMessage.value = null
-                
-                // TODO: Replace with actual API call when backend is ready
-                // For now, using mock data for UI testing
-                val mockModules = createMockAvailableModules()
-                _availableModules.value = mockModules
-                
-                // Uncomment when backend is ready:
-                // val modules = moduleRepository.getAvailableModules(category, featured, refresh)
-                // _availableModules.value = modules
+
+                // Call actual API through repository
+                val modules = moduleRepository.getAvailableModules(category, featured, refresh)
+                _availableModules.value = modules
+
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Failed to load available modules"
+
+                // Fallback to mock data if API fails (for development)
+                val mockModules = createMockAvailableModules()
+                _availableModules.value = mockModules
             } finally {
                 _isLoading.value = false
             }
@@ -208,36 +208,17 @@ class WorkspaceModulesViewModel(
         viewModelScope.launch {
             try {
                 _errorMessage.value = null
-                
-                // TODO: Replace with actual API call when backend is ready
-                // For now, simulate installation
-                val mockResponse = ModuleInstallationResponse(
-                    moduleId = "inst_${moduleCode}_${System.currentTimeMillis()}",
-                    moduleCode = moduleCode,
-                    name = _availableModules.value.find { it.moduleCode == moduleCode }?.name ?: "Unknown Module",
-                    status = "INSTALLED",
-                    installedAt = "2025-01-11T10:30:00Z",
-                    message = "Module installed successfully"
-                )
-                
-                // Simulate network delay
-                kotlinx.coroutines.delay(1500)
-                
-                onResult(mockResponse)
-                
-                // Refresh installed modules to show the new installation
-                loadInstalledModules(refresh = true)
-                
-                // Uncomment when backend is ready:
-                // val result = moduleRepository.installModule(wsId, moduleCode)
-                // if (result.isSuccess) {
-                //     onResult(result.getOrThrow())
-                //     loadInstalledModules(refresh = true)
-                // } else {
-                //     val error = result.exceptionOrNull()?.message ?: "Failed to install module"
-                //     _errorMessage.value = error
-                //     onResult(null)
-                // }
+
+                // Call actual API through repository
+                val result = moduleRepository.installModule(wsId, moduleCode)
+                if (result.isSuccess) {
+                    onResult(result.getOrThrow())
+                    loadInstalledModules(refresh = true)
+                } else {
+                    val error = result.exceptionOrNull()?.message ?: "Failed to install module"
+                    _errorMessage.value = error
+                    onResult(null)
+                }
             } catch (e: Exception) {
                 val error = e.message ?: "Failed to install module"
                 _errorMessage.value = error

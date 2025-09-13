@@ -68,7 +68,7 @@ class WorkspaceModuleApiImpl(
             val response: Response<ModuleInstallationResponse> = post(
                 client,
                 MODULE_ENDPOINT + "$BASE_URL/install/$moduleCode",
-                emptyMap<String, Any>() // Empty body, workspace context sent via X-Workspace-ID header
+                null // No body, like other working POST endpoints
             )
             response.data?.let { Result.success(it) }
                 ?: Result.failure(Exception(response.error?.message ?: "Unknown error"))

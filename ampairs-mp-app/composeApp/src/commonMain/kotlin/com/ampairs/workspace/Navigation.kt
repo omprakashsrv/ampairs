@@ -176,7 +176,8 @@ fun NavGraphBuilder.workspaceNavigation(navController: NavController, onWorkspac
                         // Navigate to main app after module selection
                         onWorkspaceSelected()
                     },
-                    workspaceId = modulesRoute.workspaceId
+                    workspaceId = modulesRoute.workspaceId,
+                    showStoreByDefault = modulesRoute.showStoreByDefault
                 )
             }
         }

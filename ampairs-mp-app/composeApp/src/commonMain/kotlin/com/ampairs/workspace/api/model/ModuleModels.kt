@@ -45,19 +45,19 @@ data class AvailableModule(
 
 @Serializable
 data class ModuleInstallationResponse(
+    @SerialName("success") val success: Boolean,
     @SerialName("module_id") val moduleId: String,
     @SerialName("module_code") val moduleCode: String,
-    @SerialName("name") val name: String,
-    @SerialName("status") val status: String,
-    @SerialName("installed_at") val installedAt: String,
+    @SerialName("workspace_id") val workspaceId: String,
     @SerialName("message") val message: String,
+    @SerialName("installed_at") val installedAt: String,
 )
 
 @Serializable
 data class ModuleUninstallationResponse(
+    @SerialName("success") val success: Boolean,
     @SerialName("module_id") val moduleId: String,
-    @SerialName("module_code") val moduleCode: String,
-    @SerialName("name") val name: String,
-    @SerialName("uninstalled_at") val uninstalledAt: String,
+    @SerialName("workspace_id") val workspaceId: String,
     @SerialName("message") val message: String,
+    @SerialName("uninstalled_at") val uninstalledAt: String,
 )

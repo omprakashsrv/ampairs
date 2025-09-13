@@ -19,6 +19,10 @@ import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.workspace.viewmodel.WorkspaceModulesViewModel
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 /**
  * Workspace modules screen showing active modules
@@ -30,13 +34,15 @@ fun WorkspaceModulesScreen(
     onBackClick: () -> Unit = {},
     onModuleSelected: (moduleCode: String) -> Unit = {},
     workspaceId: String = "",
+    showStoreByDefault: Boolean = false, // New parameter to control if module store should be shown by default
     viewModel: WorkspaceModulesViewModel = koinInject { parametersOf(workspaceId.takeIf { it.isNotEmpty() }) }
 ) {
-    var showModuleStore by remember { mutableStateOf(false) }
+    var showModuleStore by remember { mutableStateOf(showStoreByDefault) }
     
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val activeModules by viewModel.activeModules.collectAsState()
+    val installedModules by viewModel.installedModules.collectAsState()
     val availableModules by viewModel.availableModules.collectAsState()
     val featuredModules by viewModel.featuredModules.collectAsState()
 
@@ -127,14 +133,25 @@ fun WorkspaceModulesScreen(
         ModuleStoreDialog(
             availableModules = availableModules,
             featuredModules = featuredModules,
+            installedModules = installedModules,
             onDismiss = { showModuleStore = false },
+            viewModel = viewModel,
             onInstall = { moduleCode ->
                 viewModel.installModule(moduleCode) { response ->
                     // Handle install result
-                    if (response != null) {
+                    if (response != null && response.success) {
                         showModuleStore = false
                     }
                 }
+            },
+            onUninstall = { moduleId ->
+                viewModel.uninstallModule(moduleId) { response ->
+                    // Handle uninstall result - no need to close dialog
+                }
+            },
+            onNavigate = { moduleCode ->
+                onModuleSelected(moduleCode)
+                showModuleStore = false
             },
             onLoadAvailable = { category, featured ->
                 viewModel.loadAvailableModules(category, featured)
@@ -257,12 +274,20 @@ private fun InstalledModuleCard(
 private fun ModuleStoreDialog(
     availableModules: List<AvailableModule>,
     featuredModules: List<AvailableModule>,
+    installedModules: List<InstalledModule>,
     onDismiss: () -> Unit,
     onInstall: (String) -> Unit,
-    onLoadAvailable: (String?, Boolean) -> Unit
+    onUninstall: (String) -> Unit,
+    onNavigate: (String) -> Unit,
+    onLoadAvailable: (String?, Boolean) -> Unit,
+    viewModel: WorkspaceModulesViewModel // Add ViewModel to observe error state
 ) {
     var selectedStoreTab by remember { mutableStateOf(0) }
     var installingModules by remember { mutableStateOf(setOf<String>()) }
+
+    // Observe ViewModel error state
+    val vmErrorMessage by viewModel.errorMessage.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     // Load initial data when dialog opens
     LaunchedEffect(Unit) {
@@ -297,6 +322,31 @@ private fun ModuleStoreDialog(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
+                // Error display
+                vmErrorMessage?.let { error ->
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = error,
+                                modifier = Modifier.weight(1f),
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                style = MaterialTheme.typography.bodySmall
+                            )
+                            TextButton(
+                                onClick = { viewModel.clearError() }
+                            ) {
+                                Text("Dismiss", fontSize = 12.sp)
+                            }
+                        }
+                    }
+                }
+
                 // Module list
                 val modulesToShow = if (selectedStoreTab == 0) featuredModules else availableModules
                 
@@ -326,11 +376,29 @@ private fun ModuleStoreDialog(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(modulesToShow) { module ->
+                            val installedModule = installedModules.find { it.moduleCode == module.moduleCode }
                             AvailableModuleCard(
                                 module = module,
-                                onInstall = { 
+                                installedModule = installedModule,
+                                onInstall = {
+                                    viewModel.clearError() // Clear any previous errors
                                     installingModules = installingModules + module.moduleCode
-                                    onInstall(module.moduleCode) 
+
+                                    // Call install and clear loading state when done
+                                    onInstall(module.moduleCode)
+
+                                    // Clear loading state after operation completes
+                                    CoroutineScope(Dispatchers.Main).launch {
+                                        delay(2000) // Give time for operation to complete
+                                        installingModules = installingModules - module.moduleCode
+                                    }
+                                },
+                                onUninstall = { moduleId ->
+                                    viewModel.clearError() // Clear any previous errors
+                                    onUninstall(moduleId)
+                                },
+                                onNavigate = { moduleCode ->
+                                    onNavigate(moduleCode)
                                 },
                                 isInstalling = installingModules.contains(module.moduleCode)
                             )
@@ -350,7 +418,10 @@ private fun ModuleStoreDialog(
 @Composable
 private fun AvailableModuleCard(
     module: AvailableModule,
+    installedModule: InstalledModule? = null,
     onInstall: () -> Unit,
+    onUninstall: (String) -> Unit,
+    onNavigate: (String) -> Unit,
     isInstalling: Boolean = false
 ) {
     Card(
@@ -444,24 +515,46 @@ private fun AvailableModuleCard(
                 }
             }
 
-            Button(
-                onClick = onInstall,
-                enabled = !isInstalling,
-                modifier = Modifier.height(32.dp)
-            ) {
-                if (isInstalling) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(16.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                } else {
-                    Text("Install", fontSize = 12.sp)
+            if (installedModule != null) {
+                // Module is installed - show Navigate and Uninstall actions
+                Column {
+                    Button(
+                        onClick = { onNavigate(module.moduleCode) },
+                        enabled = installedModule.status == "ACTIVE",
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Text("Navigate", fontSize = 12.sp)
+                    }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    OutlinedButton(
+                        onClick = { onUninstall(installedModule.id) },
+                        modifier = Modifier.height(28.dp)
+                    ) {
+                        Text("Uninstall", fontSize = 10.sp)
+                    }
+                }
+            } else {
+                // Module is not installed - show Install action
+                Button(
+                    onClick = onInstall,
+                    enabled = !isInstalling,
+                    modifier = Modifier.height(32.dp)
+                ) {
+                    if (isInstalling) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Text("Install", fontSize = 12.sp)
+                    }
                 }
             }
         }
     }
 }
+
 
 /**
  * Parse hex color string to Compose Color (cross-platform)
