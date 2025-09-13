@@ -88,4 +88,11 @@ class WorkspaceAuthorizationService(
     fun isCurrentTenantManager(authentication: Authentication): Boolean {
         return hasCurrentTenantRole(authentication, WorkspaceRole.MANAGER)
     }
+
+    /**
+     * Check if user is workspace owner (OWNER role) in current tenant
+     */
+    fun isCurrentTenantOwner(authentication: Authentication): Boolean {
+        return hasCurrentTenantRole(authentication, WorkspaceRole.OWNER)
+    }
 }

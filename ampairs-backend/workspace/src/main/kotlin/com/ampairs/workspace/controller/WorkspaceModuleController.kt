@@ -346,7 +346,7 @@ class WorkspaceModuleController(
             name = "featured",
             description = """
             **Show Featured Modules Only**
-            
+
             When true, returns only modules marked as featured/recommended.
             Featured modules are typically popular, well-rated, or essential for most businesses.
             """,
@@ -356,6 +356,227 @@ class WorkspaceModuleController(
         @RequestParam(required = false, defaultValue = "false") featured: Boolean,
     ): ResponseEntity<ApiResponse<List<AvailableModuleResponse>>> {
         val result = workspaceModuleService.getAvailableModules(category, featured)
+        return ResponseEntity.ok(ApiResponse.success(result))
+    }
+
+    @Operation(
+        summary = "Get Module Catalog with Actions",
+        description = """
+        ## 📚 **Get Unified Module Catalog with Install/Uninstall Options**
+
+        Retrieves a comprehensive view of all modules - both installed and available -
+        with their respective action options (install, uninstall, enable, disable, configure).
+        This endpoint is designed for frontend module management interfaces.
+
+        ### **Response Information:**
+        - **Installed Modules**: Currently installed modules with management actions
+        - **Available Modules**: Modules available for installation
+        - **Action Options**: Available actions per module based on user permissions
+        - **Installation Status**: Current status and health information
+        - **User Permissions**: What actions the current user can perform
+        - **Statistics**: Overview of module installation state
+
+        ### **Action Types Provided:**
+        - **INSTALL**: Install an available module
+        - **UNINSTALL**: Remove an installed module
+        - **ENABLE**: Activate a disabled module
+        - **DISABLE**: Deactivate an active module
+        - **CONFIGURE**: Access module configuration settings
+        - **UPDATE**: Update module to newer version
+
+        ### **Use Cases:**
+        - **Frontend Module Manager**: Display modules with action buttons
+        - **Workspace Dashboard**: Show module overview with management options
+        - **Admin Panel**: Comprehensive module management interface
+        - **Mobile App**: Module management with touch-friendly actions
+
+        ### **Business Benefits:**
+        - Unified interface for all module operations
+        - Clear visibility of available actions per module
+        - Permission-aware action presentation
+        - Streamlined module management workflow
+        """,
+        tags = ["Module Catalog"]
+    )
+    @ApiResponses(
+        value = [
+            SwaggerApiResponse(
+                responseCode = "200",
+                description = "✅ Successfully retrieved module catalog with actions",
+                content = [Content(
+                    mediaType = "application/json",
+                    schema = Schema(implementation = ApiResponse::class),
+                    examples = [ExampleObject(
+                        name = "Module Catalog Response",
+                        value = """{
+  "success": true,
+  "data": {
+    "installed_modules": [
+      {
+        "module_code": "customer-management",
+        "name": "Customer CRM",
+        "description": "Comprehensive customer relationship management",
+        "category": "CUSTOMER_MANAGEMENT",
+        "version": "2.1.0",
+        "icon": "people",
+        "primary_color": "#2196F3",
+        "featured": true,
+        "rating": 4.8,
+        "install_count": 1250,
+        "complexity": "MEDIUM",
+        "size_mb": 45,
+        "required_tier": "STANDARD",
+        "installation_status": {
+          "is_installed": true,
+          "workspace_module_id": "MOD_CUSTOMER_CRM_001",
+          "status": "ACTIVE",
+          "enabled": true,
+          "installed_at": "2025-01-10T09:15:00Z",
+          "health_score": 0.95,
+          "needs_attention": false
+        },
+        "available_actions": [
+          {
+            "action_type": "UNINSTALL",
+            "label": "Uninstall",
+            "description": "Remove module from workspace",
+            "enabled": true,
+            "requires_confirmation": true,
+            "confirmation_message": "This will remove all customer data. Continue?"
+          },
+          {
+            "action_type": "CONFIGURE",
+            "label": "Configure",
+            "description": "Modify module settings",
+            "enabled": true,
+            "requires_confirmation": false
+          },
+          {
+            "action_type": "DISABLE",
+            "label": "Disable",
+            "description": "Temporarily disable module",
+            "enabled": true,
+            "requires_confirmation": false
+          }
+        ],
+        "permissions": {
+          "can_install": false,
+          "can_uninstall": true,
+          "can_configure": true,
+          "can_enable": false,
+          "can_disable": true
+        }
+      }
+    ],
+    "available_modules": [
+      {
+        "module_code": "inventory-management",
+        "name": "Inventory Manager",
+        "description": "Track stock levels and manage inventory",
+        "category": "INVENTORY_MANAGEMENT",
+        "version": "1.8.0",
+        "icon": "inventory",
+        "primary_color": "#4CAF50",
+        "featured": false,
+        "rating": 4.3,
+        "install_count": 850,
+        "complexity": "EASY",
+        "size_mb": 32,
+        "required_tier": "STANDARD",
+        "installation_status": {
+          "is_installed": false
+        },
+        "available_actions": [
+          {
+            "action_type": "INSTALL",
+            "label": "Install",
+            "description": "Add to workspace",
+            "enabled": true,
+            "requires_confirmation": false
+          }
+        ],
+        "permissions": {
+          "can_install": true,
+          "can_uninstall": false,
+          "can_configure": false,
+          "can_enable": false,
+          "can_disable": false
+        }
+      }
+    ],
+    "categories": [
+      {
+        "code": "CUSTOMER_MANAGEMENT",
+        "display_name": "Customer Management",
+        "description": "CRM and customer relationship tools",
+        "icon": "people"
+      }
+    ],
+    "statistics": {
+      "total_installed": 3,
+      "total_available": 12,
+      "enabled_modules": 2,
+      "disabled_modules": 1,
+      "modules_needing_attention": 0
+    }
+  },
+  "timestamp": "2025-01-15T10:30:00Z"
+}"""
+                    )]
+                )]
+            ),
+            SwaggerApiResponse(
+                responseCode = "401",
+                description = "🚫 Authentication required - Invalid or missing JWT token"
+            ),
+            SwaggerApiResponse(
+                responseCode = "403",
+                description = "⛔ Access denied - Not a workspace member or missing workspace header"
+            ),
+            SwaggerApiResponse(
+                responseCode = "500",
+                description = "💥 Internal server error - System unavailable"
+            )
+        ]
+    )
+    @GetMapping("/catalog")
+    @PreAuthorize("@workspaceAuthorizationService.isCurrentTenantMember(authentication)")
+    fun getModuleCatalog(
+        @Parameter(
+            name = "category",
+            description = """
+            **Filter by Module Category**
+
+            Optional filter to show only modules from specific categories.
+            When provided, both installed and available modules will be filtered.
+
+            **Available Categories:**
+            - CUSTOMER_MANAGEMENT
+            - SALES_MANAGEMENT
+            - INVENTORY_MANAGEMENT
+            - FINANCIAL_MANAGEMENT
+            - PROJECT_MANAGEMENT
+            - ANALYTICS_REPORTING
+            """,
+            required = false,
+            example = "CUSTOMER_MANAGEMENT"
+        )
+        @RequestParam(required = false) category: String?,
+
+        @Parameter(
+            name = "include_disabled",
+            description = """
+            **Include Disabled Modules**
+
+            When true, includes disabled/inactive installed modules in the response.
+            When false (default), only shows active installed modules.
+            """,
+            required = false,
+            example = "false"
+        )
+        @RequestParam(required = false, defaultValue = "false") includeDisabled: Boolean,
+    ): ResponseEntity<ApiResponse<ModuleCatalogResponse>> {
+        val result = workspaceModuleService.getModuleCatalog(category, includeDisabled)
         return ResponseEntity.ok(ApiResponse.success(result))
     }
 
@@ -388,7 +609,7 @@ class WorkspaceModuleController(
         tags = ["Module Installation"]
     )
     @PostMapping("/install/{moduleCode}")
-    @PreAuthorize("@workspaceAuthorizationService.isCurrentTenantAdmin(authentication)")
+    @PreAuthorize("@workspaceAuthorizationService.isCurrentTenantAdmin(authentication) || @workspaceAuthorizationService.isCurrentTenantOwner(authentication)")
     fun installModule(
         @Parameter(
             name = "moduleCode",
@@ -406,10 +627,10 @@ class WorkspaceModuleController(
         @PathVariable moduleCode: String,
     ): ResponseEntity<ApiResponse<ModuleInstallationResponse>> {
         val result = workspaceModuleService.installModule(moduleCode)
-        return if (result != null) {
+        return if (result.success) {
             ResponseEntity.ok(ApiResponse.success(result))
         } else {
-            ResponseEntity.badRequest().body(ApiResponse.error(ErrorCodes.BAD_REQUEST, "Module installation failed"))
+            ResponseEntity.badRequest().body(ApiResponse.error(ErrorCodes.BAD_REQUEST, result.message))
         }
     }
 
@@ -442,7 +663,7 @@ class WorkspaceModuleController(
         tags = ["Module Management"]
     )
     @DeleteMapping("/{moduleId}")
-    @PreAuthorize("@workspaceAuthorizationService.isCurrentTenantAdmin(authentication)")
+    @PreAuthorize("@workspaceAuthorizationService.isCurrentTenantAdmin(authentication) || @workspaceAuthorizationService.isCurrentTenantOwner(authentication)")
     fun uninstallModule(
         @Parameter(
             name = "moduleId",
@@ -458,10 +679,10 @@ class WorkspaceModuleController(
         @PathVariable moduleId: String,
     ): ResponseEntity<ApiResponse<ModuleUninstallationResponse>> {
         val result = workspaceModuleService.uninstallModule(moduleId)
-        return if (result != null) {
+        return if (result.success) {
             ResponseEntity.ok(ApiResponse.success(result))
         } else {
-            ResponseEntity.badRequest().body(ApiResponse.error(ErrorCodes.BAD_REQUEST, "Module uninstallation failed"))
+            ResponseEntity.badRequest().body(ApiResponse.error(ErrorCodes.BAD_REQUEST, result.message))
         }
     }
 }
