@@ -169,15 +169,13 @@ fun NavGraphBuilder.workspaceNavigation(navController: NavController, onWorkspac
                 isWorkspaceSelection = false
             ) { paddingValues ->
                 WorkspaceModulesScreen(
-                    onBackClick = {
-                        navController.popBackStack()
-                    },
                     onModuleSelected = { moduleCode ->
                         // Navigate to main app after module selection
                         onWorkspaceSelected()
                     },
                     workspaceId = modulesRoute.workspaceId,
-                    showStoreByDefault = modulesRoute.showStoreByDefault
+                    showStoreByDefault = modulesRoute.showStoreByDefault,
+                    paddingValues = paddingValues
                 )
             }
         }

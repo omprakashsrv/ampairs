@@ -1,11 +1,14 @@
 package com.ampairs.workspace.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,10 +22,6 @@ import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.workspace.viewmodel.WorkspaceModulesViewModel
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 /**
  * Workspace modules screen showing active modules
@@ -31,97 +30,73 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkspaceModulesScreen(
-    onBackClick: () -> Unit = {},
     onModuleSelected: (moduleCode: String) -> Unit = {},
     workspaceId: String = "",
     showStoreByDefault: Boolean = false, // New parameter to control if module store should be shown by default
+    paddingValues: PaddingValues = PaddingValues(0.dp),
     viewModel: WorkspaceModulesViewModel = koinInject { parametersOf(workspaceId.takeIf { it.isNotEmpty() }) }
 ) {
     var showModuleStore by remember { mutableStateOf(showStoreByDefault) }
-    
+
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val activeModules by viewModel.activeModules.collectAsState()
-    val installedModules by viewModel.installedModules.collectAsState()
-    val availableModules by viewModel.availableModules.collectAsState()
-    val featuredModules by viewModel.featuredModules.collectAsState()
 
     // Load data on first composition - force refresh to get fresh data from backend
     LaunchedEffect(Unit) {
         viewModel.loadInstalledModules(refresh = true) // Force API call via Store5
-        viewModel.loadAvailableModules(refresh = true) // Force API call for available modules
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Active Modules") },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    TextButton(onClick = { onModuleSelected("") }) {
-                        Text("Skip")
-                    }
-                }
-            )
-        }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .padding(16.dp)
-        ) {
-            // Error handling
-            errorMessage?.let { error ->
-                Card(
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
-                ) {
-                    Text(
-                        text = error,
-                        modifier = Modifier.padding(16.dp),
-                        color = MaterialTheme.colorScheme.onErrorContainer
-                    )
-                }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .padding(16.dp)
+    ) {
+        // Error handling
+        errorMessage?.let { error ->
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+            ) {
+                Text(
+                    text = error,
+                    modifier = Modifier.padding(16.dp),
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
             }
+        }
 
-            // Loading indicator
-            if (isLoading) {
-                Box(
-                    modifier = Modifier.fillMaxWidth().padding(32.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
-                }
+        // Loading indicator
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxWidth().padding(32.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            // Active modules list
+            if (activeModules.isEmpty()) {
+                EmptyStateCard(
+                    title = "No Active Modules",
+                    description = "Install modules from the store to get started with your workspace",
+                    onInstallClick = { showModuleStore = true }
+                )
             } else {
-                // Active modules list
-                if (activeModules.isEmpty()) {
-                    EmptyStateCard(
-                        title = "No Active Modules",
-                        description = "Install modules from the store to get started with your workspace",
-                        onInstallClick = { showModuleStore = true }
-                    )
-                } else {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(activeModules) { module ->
-                            InstalledModuleCard(
-                                module = module,
-                                onUninstall = { moduleId ->
-                                    viewModel.uninstallModule(moduleId) { response ->
-                                        // Handle uninstall result
-                                    }
-                                },
-                                onSelect = { moduleCode ->
-                                    onModuleSelected(moduleCode)
-                                }
-                            )
-                        }
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(4.dp)
+                ) {
+                    items(activeModules) { module ->
+                        InstalledModuleCard(
+                            module = module,
+                            onSelect = { moduleCode ->
+                                onModuleSelected(moduleCode)
+                            }
+                        )
                     }
                 }
             }
@@ -131,30 +106,18 @@ fun WorkspaceModulesScreen(
     // Module Store Dialog (matching web module-store-dialog)
     if (showModuleStore) {
         ModuleStoreDialog(
-            availableModules = availableModules,
-            featuredModules = featuredModules,
-            installedModules = installedModules,
+            workspaceId = workspaceId,
             onDismiss = { showModuleStore = false },
-            viewModel = viewModel,
             onInstall = { moduleCode ->
-                viewModel.installModule(moduleCode) { response ->
-                    // Handle install result
-                    if (response != null && response.success) {
-                        showModuleStore = false
-                    }
-                }
+                // The dialog's ViewModel will handle the install
+                // No need to close dialog here - dialog will handle its own state
             },
             onUninstall = { moduleId ->
-                viewModel.uninstallModule(moduleId) { response ->
-                    // Handle uninstall result - no need to close dialog
-                }
+                // The dialog's ViewModel will handle the uninstall
             },
             onNavigate = { moduleCode ->
                 onModuleSelected(moduleCode)
                 showModuleStore = false
-            },
-            onLoadAvailable = { category, featured ->
-                viewModel.loadAvailableModules(category, featured)
             }
         )
     }
@@ -200,21 +163,35 @@ private fun EmptyStateCard(
 @Composable
 private fun InstalledModuleCard(
     module: InstalledModule,
-    onUninstall: (String) -> Unit,
     onSelect: (String) -> Unit = {}
 ) {
     Card(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(120.dp)
+            .clickable(enabled = module.status == "ACTIVE") {
+                onSelect(module.moduleCode)
+            },
+        colors = CardDefaults.cardColors(
+            containerColor = if (module.status == "ACTIVE")
+                MaterialTheme.colorScheme.surface
+            else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+        )
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
-            // Module icon (simplified - using first letter)
+            // Module icon
             Card(
                 modifier = Modifier.size(48.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = parseHexColor(module.primaryColor)
+                    containerColor = parseHexColor(module.primaryColor).copy(
+                        alpha = if (module.status == "ACTIVE") 1f else 0.6f
+                    )
                 )
             ) {
                 Box(
@@ -225,74 +202,50 @@ private fun InstalledModuleCard(
                         text = module.name.first().uppercase(),
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
+                        fontSize = 20.sp
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
 
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = module.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = module.category,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "Status: ${module.status}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (module.status == "ACTIVE") 
-                        MaterialTheme.colorScheme.primary 
-                        else MaterialTheme.colorScheme.error
-                )
-            }
-
-            Column {
-                Button(
-                    onClick = { onSelect(module.moduleCode) },
-                    enabled = module.status == "ACTIVE"
-                ) {
-                    Text("Select")
-                }
-                Spacer(modifier = Modifier.height(8.dp))
-                OutlinedButton(
-                    onClick = { onUninstall(module.id) }
-                ) {
-                    Text("Uninstall")
-                }
-            }
+            // Module name
+            Text(
+                text = module.name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                maxLines = 2,
+                color = if (module.status == "ACTIVE")
+                    MaterialTheme.colorScheme.onSurface
+                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+            )
         }
     }
 }
 
 @Composable
 private fun ModuleStoreDialog(
-    availableModules: List<AvailableModule>,
-    featuredModules: List<AvailableModule>,
-    installedModules: List<InstalledModule>,
+    workspaceId: String,
     onDismiss: () -> Unit,
     onInstall: (String) -> Unit,
     onUninstall: (String) -> Unit,
     onNavigate: (String) -> Unit,
-    onLoadAvailable: (String?, Boolean) -> Unit,
-    viewModel: WorkspaceModulesViewModel // Add ViewModel to observe error state
+    viewModel: WorkspaceModulesViewModel = koinInject { parametersOf(workspaceId.takeIf { it.isNotEmpty() }) }
 ) {
     var selectedStoreTab by remember { mutableStateOf(0) }
     var installingModules by remember { mutableStateOf(setOf<String>()) }
 
-    // Observe ViewModel error state
+    // Observe ViewModel state
     val vmErrorMessage by viewModel.errorMessage.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
+    val availableModules by viewModel.availableModules.collectAsState()
+    val featuredModules by viewModel.featuredModules.collectAsState()
+    val installedModules by viewModel.installedModules.collectAsState()
 
     // Load initial data when dialog opens
     LaunchedEffect(Unit) {
-        onLoadAvailable(null, true) // Load featured modules
-        onLoadAvailable(null, false) // Load all modules
+        viewModel.loadInstalledModules(refresh = true)
+        viewModel.loadAvailableModules(refresh = true) // Load all available modules
     }
 
     AlertDialog(
@@ -304,17 +257,23 @@ private fun ModuleStoreDialog(
                 TabRow(selectedTabIndex = selectedStoreTab) {
                     Tab(
                         selected = selectedStoreTab == 0,
-                        onClick = { 
+                        onClick = {
                             selectedStoreTab = 0
-                            onLoadAvailable(null, true) // Load featured
+                            viewModel.loadAvailableModules(
+                                featured = true,
+                                refresh = true
+                            ) // Load featured
                         },
                         text = { Text("Featured") }
                     )
                     Tab(
                         selected = selectedStoreTab == 1,
-                        onClick = { 
+                        onClick = {
                             selectedStoreTab = 1
-                            onLoadAvailable(null, false) // Load all
+                            viewModel.loadAvailableModules(
+                                featured = false,
+                                refresh = true
+                            ) // Load all
                         },
                         text = { Text("All") }
                     )
@@ -349,7 +308,7 @@ private fun ModuleStoreDialog(
 
                 // Module list
                 val modulesToShow = if (selectedStoreTab == 0) featuredModules else availableModules
-                
+
                 if (modulesToShow.isEmpty()) {
                     Box(
                         modifier = Modifier
@@ -376,7 +335,8 @@ private fun ModuleStoreDialog(
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
                         items(modulesToShow) { module ->
-                            val installedModule = installedModules.find { it.moduleCode == module.moduleCode }
+                            val installedModule =
+                                installedModules.find { it.moduleCode == module.moduleCode }
                             AvailableModuleCard(
                                 module = module,
                                 installedModule = installedModule,
@@ -384,18 +344,26 @@ private fun ModuleStoreDialog(
                                     viewModel.clearError() // Clear any previous errors
                                     installingModules = installingModules + module.moduleCode
 
-                                    // Call install and clear loading state when done
-                                    onInstall(module.moduleCode)
-
-                                    // Clear loading state after operation completes
-                                    CoroutineScope(Dispatchers.Main).launch {
-                                        delay(2000) // Give time for operation to complete
+                                    // Use dialog's ViewModel to install
+                                    viewModel.installModule(module.moduleCode) { response ->
+                                        // Clear loading state after operation completes
                                         installingModules = installingModules - module.moduleCode
+
+                                        // Call parent callback if needed
+                                        onInstall(module.moduleCode)
+
+                                        // Close dialog on successful install if needed
+                                        if (response != null && response.success) {
+                                            // Parent will handle dialog closing via onNavigate
+                                        }
                                     }
                                 },
                                 onUninstall = { moduleId ->
                                     viewModel.clearError() // Clear any previous errors
-                                    onUninstall(moduleId)
+                                    viewModel.uninstallModule(moduleId) { response ->
+                                        // Call parent callback
+                                        onUninstall(moduleId)
+                                    }
                                 },
                                 onNavigate = { moduleCode ->
                                     onNavigate(moduleCode)
@@ -496,7 +464,7 @@ private fun AvailableModuleCard(
                     Text(
                         text = module.complexity,
                         style = MaterialTheme.typography.bodySmall,
-                        color = when(module.complexity) {
+                        color = when (module.complexity) {
                             "Simple" -> MaterialTheme.colorScheme.primary
                             "Medium" -> MaterialTheme.colorScheme.tertiary
                             "Advanced" -> MaterialTheme.colorScheme.error
