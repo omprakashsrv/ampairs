@@ -36,18 +36,18 @@ class WorkspaceInvitationApiImpl(
             "sortBy" to sortBy,
             "sortDir" to sortDir
         )
-        return get(client, "$WORKSPACE_ENDPOINT/workspace/v1/$workspaceId/invitations", params)
+        return get(client, "$WORKSPACE_ENDPOINT/workspace/v1/invitation", params)
     }
 
     override suspend fun createInvitation(
         workspaceId: String,
         request: CreateInvitationRequest,
     ): Response<InvitationApiModel> {
-        return post(client, "$WORKSPACE_ENDPOINT/workspace/v1/$workspaceId/invitations", request)
+        return post(client, "$WORKSPACE_ENDPOINT/workspace/v1/invitation", request)
     }
 
     override suspend fun acceptInvitation(token: String): Response<AcceptInvitationResponse> {
-        return post(client, "$WORKSPACE_ENDPOINT/workspace/v1/invitations/$token/accept", null)
+        return post(client, "$WORKSPACE_ENDPOINT/workspace/v1/invitation/$token/accept", null)
     }
 
     override suspend fun resendInvitation(
@@ -55,13 +55,13 @@ class WorkspaceInvitationApiImpl(
         invitationId: String,
         request: ResendInvitationRequest,
     ): Response<InvitationApiModel> {
-        return post(client, "$WORKSPACE_ENDPOINT/workspace/v1/$workspaceId/invitations/$invitationId/resend", request)
+        return post(client, "$WORKSPACE_ENDPOINT/workspace/v1/invitation/$invitationId/resend", request)
     }
 
     override suspend fun cancelInvitation(
         workspaceId: String,
         invitationId: String,
     ): Response<String> {
-        return delete(client, "$WORKSPACE_ENDPOINT/workspace/v1/$workspaceId/invitations/$invitationId")
+        return delete(client, "$WORKSPACE_ENDPOINT/workspace/v1/invitation/$invitationId")
     }
 }

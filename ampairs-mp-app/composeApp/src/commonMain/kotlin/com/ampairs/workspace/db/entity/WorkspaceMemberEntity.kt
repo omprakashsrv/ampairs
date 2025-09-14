@@ -7,10 +7,9 @@ import androidx.room.PrimaryKey
 @Entity(
     tableName = "workspaceMemberEntity",
     indices = [
-        Index(value = ["id"], unique = false),
+        Index(value = ["id"], unique = true),
         Index(value = ["user_id"], unique = false),
         Index(value = ["workspace_id"], unique = false),
-        Index(value = ["user_id", "workspace_id"], unique = true), // Unique per user-workspace combination
         Index(value = ["sync_state"], unique = false),
         Index(value = ["last_synced_at"], unique = false)
     ]
