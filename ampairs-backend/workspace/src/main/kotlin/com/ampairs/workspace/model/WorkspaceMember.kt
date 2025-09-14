@@ -2,6 +2,7 @@ package com.ampairs.workspace.model
 
 import com.ampairs.core.config.Constants
 import com.ampairs.core.domain.model.BaseDomain
+import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.workspace.model.enums.WorkspaceRole
 import com.ampairs.workspace.security.WorkspacePermission
 import jakarta.persistence.*
@@ -34,7 +35,7 @@ class WorkspaceMember : BaseDomain() {
      */
     @Column(name = "workspace_id", nullable = false, length = 36)
     @TenantId
-    var workspaceId: String = ""
+    var workspaceId: String = TenantContextHolder.getCurrentTenant() ?: ""
 
     /**
      * ID of the user who is a member

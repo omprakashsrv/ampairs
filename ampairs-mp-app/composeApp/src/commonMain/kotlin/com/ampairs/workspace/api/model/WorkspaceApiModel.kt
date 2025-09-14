@@ -215,6 +215,36 @@ data class UserRoleResponse(
     @SerialName("module_access") val moduleAccess: List<String>,
 )
 
+// ===== USER INVITATION MODELS =====
+
+@Serializable
+data class UserInvitationResponse(
+    @SerialName("id") val id: String,
+    @SerialName("workspace_id") val workspaceId: String,
+    @SerialName("workspace_name") val workspaceName: String,
+    @SerialName("workspace_description") val workspaceDescription: String? = null,
+    @SerialName("workspace_type") val workspaceType: String? = null,
+    @SerialName("role") val role: String,
+    @SerialName("message") val message: String? = null,
+    @SerialName("invited_by") val invitedBy: String? = null,
+    @SerialName("inviter_name") val inviterName: String? = null,
+    @SerialName("expires_at") val expiresAt: String,
+    @SerialName("created_at") val createdAt: String,
+    @SerialName("days_until_expiry") val daysUntilExpiry: Long? = null,
+)
+
+@Serializable
+data class InvitationActionResponse(
+    @SerialName("success") val success: Boolean,
+    @SerialName("message") val message: String? = null,
+    @SerialName("invitation_id") val invitationId: String,
+    @SerialName("workspace_id") val workspaceId: String? = null,
+    @SerialName("workspace_name") val workspaceName: String? = null,
+    @SerialName("member_id") val memberId: String? = null,
+    @SerialName("action") val action: String, // "accept" or "reject"
+    @SerialName("processed_at") val processedAt: String,
+)
+
 // ===== WORKSPACE INVITATION MANAGEMENT MODELS =====
 
 @Serializable

@@ -52,7 +52,7 @@ class WorkspaceMemberService(
         }
 
         val member = WorkspaceMember().apply {
-            this.workspaceId = workspaceId
+            // workspaceId will be automatically populated by @TenantId from current tenant context
             this.userId = userId
             this.role = WorkspaceRole.OWNER
             this.isActive = true
@@ -75,7 +75,7 @@ class WorkspaceMemberService(
         }
 
         val member = WorkspaceMember().apply {
-            this.workspaceId = workspaceId
+            // workspaceId will be automatically populated by @TenantId from current tenant context
             this.userId = userId
             this.role = role
             this.isActive = true

@@ -8,6 +8,8 @@ import com.ampairs.workspace.api.WorkspaceInvitationApi
 import com.ampairs.workspace.api.WorkspaceInvitationApiImpl
 import com.ampairs.workspace.api.WorkspaceModuleApi
 import com.ampairs.workspace.api.WorkspaceModuleApiImpl
+import com.ampairs.workspace.api.UserInvitationApi
+import com.ampairs.workspace.api.UserInvitationApiImpl
 import com.ampairs.workspace.db.WorkspaceRepository
 import com.ampairs.workspace.db.OfflineFirstWorkspaceRepository
 import com.ampairs.workspace.db.WorkspaceMemberRepository
@@ -16,6 +18,7 @@ import com.ampairs.workspace.db.WorkspaceInvitationRepository
 import com.ampairs.workspace.db.OfflineFirstWorkspaceInvitationRepository
 import com.ampairs.workspace.db.OfflineFirstRolesPermissionsRepository
 import com.ampairs.workspace.db.WorkspaceModuleRepository
+import com.ampairs.workspace.db.UserInvitationRepository
 import com.ampairs.workspace.store.WorkspaceStoreFactory
 import com.ampairs.workspace.store.WorkspaceMemberStoreFactory
 import com.ampairs.workspace.store.WorkspaceInvitationStoreFactory
@@ -23,12 +26,14 @@ import com.ampairs.workspace.store.WorkspaceRolesStoreFactory
 import com.ampairs.workspace.store.WorkspacePermissionsStoreFactory
 import com.ampairs.workspace.store.WorkspaceMemberUpdateStoreFactory
 import com.ampairs.workspace.store.WorkspaceModuleStoreFactory
+import com.ampairs.workspace.store.UserInvitationStoreFactory
 import com.ampairs.workspace.store.WorkspaceStore
 import com.ampairs.workspace.store.WorkspaceMemberStore
 import com.ampairs.workspace.store.WorkspaceInvitationStore
 import com.ampairs.workspace.store.WorkspaceRolesStore
 import com.ampairs.workspace.store.WorkspacePermissionsStore
 import com.ampairs.workspace.store.WorkspaceMemberUpdateStore
+import com.ampairs.workspace.store.UserInvitationStore
 import com.ampairs.workspace.viewmodel.WorkspaceCreateViewModel
 import com.ampairs.workspace.viewmodel.WorkspaceListViewModel
 import com.ampairs.workspace.viewmodel.WorkspaceMembersViewModel
@@ -50,12 +55,14 @@ fun workspaceModule() = module {
     single { get<com.ampairs.workspace.db.WorkspaceRoomDatabase>().workspaceRoleDao() }
     single { get<com.ampairs.workspace.db.WorkspaceRoomDatabase>().workspacePermissionDao() }
     single { get<com.ampairs.workspace.db.WorkspaceRoomDatabase>().workspaceModuleDao() }
+    single { get<com.ampairs.workspace.db.WorkspaceRoomDatabase>().userInvitationDao() }
 
     // APIs
     singleOf(::WorkspaceApiImpl) bind WorkspaceApi::class
     singleOf(::WorkspaceMemberApiImpl) bind WorkspaceMemberApi::class
     singleOf(::WorkspaceInvitationApiImpl) bind WorkspaceInvitationApi::class
     singleOf(::WorkspaceModuleApiImpl) bind WorkspaceModuleApi::class
+    singleOf(::UserInvitationApiImpl) bind UserInvitationApi::class
     
     // Repositories - now powered by Store5 for offline-first architecture
     single<WorkspaceRepository> { WorkspaceRepository(get(), get(), get()) }
@@ -65,6 +72,7 @@ fun workspaceModule() = module {
     single { OfflineFirstWorkspaceInvitationRepository(get(), get(), get(named("workspaceInvitationStore")), get()) } // Store5 invitation repository
     single { OfflineFirstRolesPermissionsRepository(get(), get(), get(), get()) } // Roles & permissions offline-first repo
     single { WorkspaceModuleRepository(get(), get(), get()) } // Module repository
+    single { UserInvitationRepository(get(named("userInvitationStore")), get()) } // User invitation repository
 
     // Store5 Factories for proper offline-first architecture
     single { WorkspaceStoreFactory(get(), get()) }
@@ -74,6 +82,7 @@ fun workspaceModule() = module {
     single { WorkspacePermissionsStoreFactory(get(), get()) }
     single { WorkspaceMemberUpdateStoreFactory(get(), get()) }
     single { WorkspaceModuleStoreFactory(get(), get()) }
+    single { UserInvitationStoreFactory(get(), get()) }
     
     // Store instances with qualifiers to prevent conflicts
     single<WorkspaceStore>(named("workspaceStore")) { get<WorkspaceStoreFactory>().create() }
@@ -82,9 +91,10 @@ fun workspaceModule() = module {
     single<WorkspaceRolesStore>(named("workspaceRolesStore")) { get<WorkspaceRolesStoreFactory>().create() }
     single<WorkspacePermissionsStore>(named("workspacePermissionsStore")) { get<WorkspacePermissionsStoreFactory>().create() }
     single<WorkspaceMemberUpdateStore>(named("workspaceMemberUpdateStore")) { get<WorkspaceMemberUpdateStoreFactory>().create() }
+    single<UserInvitationStore>(named("userInvitationStore")) { get<UserInvitationStoreFactory>().create() }
 
     // ViewModels with parameter support
-    factory { WorkspaceListViewModel(get<OfflineFirstWorkspaceRepository>(), get(), get(), get()) }
+    factory { WorkspaceListViewModel(get<OfflineFirstWorkspaceRepository>(), get(), get(), get(), get()) }
     factoryOf(::WorkspaceCreateViewModel)
 
     // Member and invitation ViewModels with workspaceId parameter

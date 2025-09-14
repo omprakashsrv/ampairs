@@ -2,6 +2,7 @@ package com.ampairs.workspace.service
 
 import com.ampairs.core.exception.BusinessException
 import com.ampairs.core.exception.NotFoundException
+import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.workspace.model.WorkspaceInvitation
 import com.ampairs.workspace.model.dto.*
 import com.ampairs.workspace.model.enums.InvitationStatus
@@ -143,7 +144,7 @@ class WorkspaceInvitationService(
                 invitationRepository.save(invitation)
             }
         } else {
-            // Add user as member
+            // Add user as member - tenant context should already be set at controller level
             memberService.addMember(invitation.workspaceId, userId, invitation.role)
 
             // Update invitation status
@@ -780,7 +781,7 @@ class WorkspaceInvitationService(
         logger.debug("User validation passed for invitation ${invitation.id} and user $userId")
     }
 
-    private fun findInvitationById(invitationId: String): WorkspaceInvitation {
+    fun findInvitationById(invitationId: String): WorkspaceInvitation {
         return invitationRepository.findByUid(invitationId)
             .orElseThrow { NotFoundException("Invitation not found: $invitationId") }
     }

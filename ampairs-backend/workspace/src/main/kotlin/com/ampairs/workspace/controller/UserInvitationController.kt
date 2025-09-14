@@ -1,6 +1,7 @@
 package com.ampairs.workspace.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.core.security.AuthenticationHelper
 import com.ampairs.workspace.model.dto.InvitationResponse
 import com.ampairs.workspace.service.WorkspaceInvitationService
@@ -301,8 +302,19 @@ class UserInvitationController(
         val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
-        val invitation = invitationService.acceptInvitationById(id, userId)
-        return ApiResponse.success(invitation)
+        // First, get the invitation to determine workspace context
+        val invitation = invitationService.findInvitationById(id)
+
+        // Set tenant context to invitation's workspace before service call
+        val currentTenant = TenantContextHolder.getCurrentTenant()
+        try {
+            TenantContextHolder.setCurrentTenant(invitation.workspaceId)
+            val acceptedInvitation = invitationService.acceptInvitationById(id, userId)
+            return ApiResponse.success(acceptedInvitation)
+        } finally {
+            // Restore original tenant context
+            TenantContextHolder.setCurrentTenant(currentTenant)
+        }
     }
 
     @Operation(

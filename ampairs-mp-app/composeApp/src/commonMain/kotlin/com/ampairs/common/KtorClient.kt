@@ -49,7 +49,7 @@ fun httpClient(engine: HttpClientEngine, tokenRepository: TokenRepository) = Htt
     
     // Default request configuration
     defaultRequest {
-        // Add workspace header if available
+        // Add workspace header only if available and user has selected a workspace
         val workspaceId = runBlocking { tokenRepository.getWorkspaceId() }
         if (workspaceId.isNotEmpty()) {
             header("X-Workspace-ID", workspaceId)

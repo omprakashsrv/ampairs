@@ -10,6 +10,7 @@ import com.ampairs.workspace.db.dao.WorkspaceInvitationDao
 import com.ampairs.workspace.db.dao.WorkspaceRoleDao
 import com.ampairs.workspace.db.dao.WorkspacePermissionDao
 import com.ampairs.workspace.db.dao.WorkspaceModuleDao
+import com.ampairs.workspace.db.dao.UserInvitationDao
 import com.ampairs.workspace.db.entity.WorkspaceEntity
 import com.ampairs.workspace.db.entity.WorkspaceMemberEntity
 import com.ampairs.workspace.db.entity.WorkspaceInvitationEntity
@@ -17,20 +18,22 @@ import com.ampairs.workspace.db.entity.WorkspaceRoleEntity
 import com.ampairs.workspace.db.entity.WorkspacePermissionEntity
 import com.ampairs.workspace.db.entity.InstalledModuleEntity
 import com.ampairs.workspace.db.entity.AvailableModuleEntity
+import com.ampairs.workspace.db.entity.UserInvitationEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 
 @Database(
     entities = [
-        WorkspaceEntity::class, 
+        WorkspaceEntity::class,
         WorkspaceMemberEntity::class,
         WorkspaceInvitationEntity::class,
         WorkspaceRoleEntity::class,
         WorkspacePermissionEntity::class,
         InstalledModuleEntity::class,
-        AvailableModuleEntity::class
+        AvailableModuleEntity::class,
+        UserInvitationEntity::class
     ],
-    version = 6,  // Increment version due to adding module entities
+    version = 7,  // Increment version due to adding UserInvitationEntity
     exportSchema = false
 )
 abstract class WorkspaceRoomDatabase : RoomDatabase() {
@@ -40,5 +43,6 @@ abstract class WorkspaceRoomDatabase : RoomDatabase() {
     abstract fun workspaceRoleDao(): WorkspaceRoleDao
     abstract fun workspacePermissionDao(): WorkspacePermissionDao
     abstract fun workspaceModuleDao(): WorkspaceModuleDao
+    abstract fun userInvitationDao(): UserInvitationDao
 }
 

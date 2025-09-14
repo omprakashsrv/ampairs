@@ -6,6 +6,7 @@ import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.UserRepository
 import com.ampairs.workspace.db.OfflineFirstWorkspaceRepository
+import com.ampairs.workspace.db.UserInvitationRepository
 import com.ampairs.workspace.domain.Workspace
 import org.mobilenativefoundation.store.store5.StoreReadResponse
 import com.ampairs.workspace.ui.WorkspaceListState
@@ -21,6 +22,7 @@ class WorkspaceListViewModel(
     private val userWorkspaceRepository: UserWorkspaceRepository,
     private val tokenRepository: TokenRepository,
     private val userRepository: UserRepository,
+    private val invitationRepository: UserInvitationRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(WorkspaceListState())
@@ -28,6 +30,7 @@ class WorkspaceListViewModel(
 
     init {
         loadUserData()
+        loadInvitations()
     }
 
     private fun loadUserData() {
@@ -272,5 +275,146 @@ class WorkspaceListViewModel(
                 )
             }
         }
+    }
+
+    // ===== INVITATION MANAGEMENT =====
+
+    private fun loadInvitations() {
+        viewModelScope.launch {
+            try {
+                val userId = tokenRepository.getCurrentUserId()
+                if (userId != null) {
+                    _state.value = _state.value.copy(isInvitationsLoading = true, invitationsError = null)
+
+                    invitationRepository.getUserInvitationsFlow(userId).onEach { response ->
+                        when (response) {
+                            is StoreReadResponse.Data -> {
+                                _state.value = _state.value.copy(
+                                    invitations = response.value,
+                                    isInvitationsLoading = false,
+                                    invitationsError = null
+                                )
+                            }
+                            is StoreReadResponse.Error.Exception -> {
+                                _state.value = _state.value.copy(
+                                    invitationsError = response.error.message ?: "Failed to load invitations",
+                                    isInvitationsLoading = false
+                                )
+                            }
+                            is StoreReadResponse.Error.Message -> {
+                                _state.value = _state.value.copy(
+                                    invitationsError = response.message,
+                                    isInvitationsLoading = false
+                                )
+                            }
+                            is StoreReadResponse.Loading -> {
+                                _state.value = _state.value.copy(isInvitationsLoading = true)
+                            }
+                            else -> {
+                                // Handle other states
+                            }
+                        }
+                    }.launchIn(this)
+                }
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    invitationsError = e.message ?: "Failed to load invitations",
+                    isInvitationsLoading = false
+                )
+            }
+        }
+    }
+
+    fun refreshInvitations() {
+        viewModelScope.launch {
+            try {
+                val userId = tokenRepository.getCurrentUserId()
+                if (userId != null) {
+                    invitationRepository.refreshUserInvitations(userId)
+                }
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    invitationsError = e.message ?: "Failed to refresh invitations"
+                )
+            }
+        }
+    }
+
+    fun acceptInvitation(invitationId: String) {
+        viewModelScope.launch {
+            try {
+                // Add to processing set
+                _state.value = _state.value.copy(
+                    processingInvitationIds = _state.value.processingInvitationIds + invitationId,
+                    invitationsError = null
+                )
+
+                val result = invitationRepository.acceptInvitation(invitationId)
+                result.fold(
+                    onSuccess = { response ->
+                        // Remove from processing set
+                        _state.value = _state.value.copy(
+                            processingInvitationIds = _state.value.processingInvitationIds - invitationId
+                        )
+
+                        // Refresh invitations to remove accepted one
+                        refreshInvitations()
+                        // Also refresh workspaces to show new workspace
+                        refreshWorkspaces()
+                    },
+                    onFailure = { error ->
+                        _state.value = _state.value.copy(
+                            processingInvitationIds = _state.value.processingInvitationIds - invitationId,
+                            invitationsError = error.message ?: "Failed to accept invitation"
+                        )
+                    }
+                )
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    processingInvitationIds = _state.value.processingInvitationIds - invitationId,
+                    invitationsError = e.message ?: "Failed to accept invitation"
+                )
+            }
+        }
+    }
+
+    fun rejectInvitation(invitationId: String) {
+        viewModelScope.launch {
+            try {
+                // Add to processing set
+                _state.value = _state.value.copy(
+                    processingInvitationIds = _state.value.processingInvitationIds + invitationId,
+                    invitationsError = null
+                )
+
+                val result = invitationRepository.rejectInvitation(invitationId)
+                result.fold(
+                    onSuccess = { response ->
+                        // Remove from processing set
+                        _state.value = _state.value.copy(
+                            processingInvitationIds = _state.value.processingInvitationIds - invitationId
+                        )
+
+                        // Refresh invitations to remove rejected one
+                        refreshInvitations()
+                    },
+                    onFailure = { error ->
+                        _state.value = _state.value.copy(
+                            processingInvitationIds = _state.value.processingInvitationIds - invitationId,
+                            invitationsError = error.message ?: "Failed to reject invitation"
+                        )
+                    }
+                )
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    processingInvitationIds = _state.value.processingInvitationIds - invitationId,
+                    invitationsError = e.message ?: "Failed to reject invitation"
+                )
+            }
+        }
+    }
+
+    fun clearInvitationsError() {
+        _state.value = _state.value.copy(invitationsError = null)
     }
 }
