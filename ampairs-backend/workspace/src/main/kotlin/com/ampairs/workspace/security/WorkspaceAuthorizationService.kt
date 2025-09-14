@@ -28,7 +28,7 @@ class WorkspaceAuthorizationService(
         permission: WorkspacePermission
     ): Boolean {
         val userId = AuthenticationHelper.getCurrentUserId(authentication) ?: return false
-        return memberService.hasPermission(workspaceId, userId, permission)
+        return memberService.hasPermission(userId, permission)
     }
 
     /**
@@ -36,7 +36,7 @@ class WorkspaceAuthorizationService(
      */
     fun isWorkspaceMember(authentication: Authentication, workspaceId: String): Boolean {
         val userId = AuthenticationHelper.getCurrentUserId(authentication) ?: return false
-        return memberService.isWorkspaceMember(workspaceId, userId)
+        return memberService.isWorkspaceMember(userId)
     }
 
     /**
@@ -46,7 +46,7 @@ class WorkspaceAuthorizationService(
     fun hasCurrentTenantPermission(authentication: Authentication, permission: WorkspacePermission): Boolean {
         val workspaceId = TenantContextHolder.getCurrentTenant() ?: return false
         val userId = AuthenticationHelper.getCurrentUserId(authentication) ?: return false
-        return memberService.hasPermission(workspaceId, userId, permission)
+        return memberService.hasPermission(userId, permission)
     }
 
     /**
@@ -55,7 +55,7 @@ class WorkspaceAuthorizationService(
     fun isCurrentTenantMember(authentication: Authentication): Boolean {
         val workspaceId = TenantContextHolder.getCurrentTenant() ?: return false
         val userId = AuthenticationHelper.getCurrentUserId(authentication) ?: return false
-        return memberService.isWorkspaceMember(workspaceId, userId)
+        return memberService.isWorkspaceMember(userId)
     }
 
     /**

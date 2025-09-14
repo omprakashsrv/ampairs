@@ -109,7 +109,7 @@ class WorkspaceService(
         val workspace = findWorkspaceById(workspaceId)
 
         // Check if user has access to this workspace
-        if (!memberService.isWorkspaceMember(workspace.uid, userId)) {
+        if (!memberService.isWorkspaceMember(userId)) {
             throw BusinessException("ACCESS_DENIED", "You don't have access to this workspace")
         }
 
@@ -125,7 +125,7 @@ class WorkspaceService(
             .orElseThrow { NotFoundException("Workspace not found with slug: $slug") }
 
         // Check if user has access to this workspace
-        if (!memberService.isWorkspaceMember(workspace.uid, userId)) {
+        if (!memberService.isWorkspaceMember(userId)) {
             throw BusinessException("ACCESS_DENIED", "You don't have access to this workspace")
         }
 
@@ -140,7 +140,7 @@ class WorkspaceService(
         val workspace = findWorkspaceById(workspaceId)
 
         // Check permissions
-        if (!memberService.hasPermission(workspaceId, updatedBy, WorkspacePermission.WORKSPACE_MANAGE)) {
+        if (!memberService.hasPermission(updatedBy, WorkspacePermission.WORKSPACE_MANAGE)) {
             throw BusinessException("INSUFFICIENT_PERMISSIONS", "You don't have permission to update this workspace")
         }
 
@@ -237,7 +237,7 @@ class WorkspaceService(
         val workspace = findWorkspaceById(workspaceId)
 
         // Check permissions - only owners can archive
-        if (!memberService.isWorkspaceOwner(workspaceId, archivedBy)) {
+        if (!memberService.isWorkspaceOwner(archivedBy)) {
             throw BusinessException("INSUFFICIENT_PERMISSIONS", "Only workspace owners can archive workspaces")
         }
 
@@ -262,7 +262,7 @@ class WorkspaceService(
         val workspace = findWorkspaceById(workspaceId)
 
         // Check permissions - only owners can delete
-        if (!memberService.isWorkspaceOwner(workspaceId, deletedBy)) {
+        if (!memberService.isWorkspaceOwner(deletedBy)) {
             throw BusinessException("INSUFFICIENT_PERMISSIONS", "Only workspace owners can delete workspaces")
         }
 

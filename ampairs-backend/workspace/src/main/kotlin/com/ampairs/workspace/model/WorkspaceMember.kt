@@ -6,6 +6,7 @@ import com.ampairs.workspace.model.enums.WorkspaceRole
 import com.ampairs.workspace.security.WorkspacePermission
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.annotations.TenantId
 import org.hibernate.type.SqlTypes
 import java.time.LocalDateTime
 
@@ -32,6 +33,7 @@ class WorkspaceMember : BaseDomain() {
      * ID of the workspace this membership belongs to
      */
     @Column(name = "workspace_id", nullable = false, length = 36)
+    @TenantId
     var workspaceId: String = ""
 
     /**
