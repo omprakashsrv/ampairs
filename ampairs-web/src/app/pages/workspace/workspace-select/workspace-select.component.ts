@@ -102,7 +102,7 @@ export class WorkspaceSelectComponent implements OnInit {
 
     this.isSelecting.set(true);
     this.selectedWorkspaceId.set(workspace.id);
-
+    localStorage.setItem('workspace_id', workspace.id);
     // Get full workspace details
     this.workspaceService.getWorkspaceById(workspace.id).subscribe({
       next: (fullWorkspace) => {
@@ -212,7 +212,7 @@ export class WorkspaceSelectComponent implements OnInit {
       if (result) {
         // Workspace was updated, refresh the list
         this.loadWorkspaces();
-        
+
         // Update current workspace if it was the one edited
         const currentWorkspace = this.workspaceService.getCurrentWorkspace();
         if (currentWorkspace && currentWorkspace.id === workspace.id) {

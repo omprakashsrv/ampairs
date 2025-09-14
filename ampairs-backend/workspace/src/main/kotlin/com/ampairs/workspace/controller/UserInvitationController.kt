@@ -31,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController
     description = "User-scoped invitation management endpoints"
 )
 @RestController
-@RequestMapping("/user/v1/invitations")
+@RequestMapping("/user/v1/invitation")
 class UserInvitationController(
     private val invitationService: WorkspaceInvitationService,
 ) {

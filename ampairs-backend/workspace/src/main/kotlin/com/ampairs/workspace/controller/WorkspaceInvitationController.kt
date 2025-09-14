@@ -2,6 +2,7 @@ package com.ampairs.workspace.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
+import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.core.security.AuthenticationHelper
 import com.ampairs.core.service.UserService
 import com.ampairs.workspace.model.dto.CreateInvitationRequest
@@ -95,7 +96,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
     """
 )
 @RestController
-@RequestMapping("/workspace/v1")
+@RequestMapping("/workspace/v1/invitation")
 @SecurityRequirement(name = "BearerAuth")
 @SecurityRequirement(name = "WorkspaceContext")
 class WorkspaceInvitationController(
@@ -237,16 +238,9 @@ class WorkspaceInvitationController(
             )
         ]
     )
-    @GetMapping("/{workspaceId}/invitations")
-    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    @GetMapping
+    @PreAuthorize("@workspaceAuthorizationService.hasCurrentTenantPermission(authentication, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
     fun getWorkspaceInvitations(
-        @Parameter(
-            name = "workspaceId",
-            description = "**Target workspace identifier** containing the invitations to retrieve",
-            required = true,
-            example = "WS_ABC123_XYZ789"
-        )
-        @PathVariable workspaceId: String,
 
         @Parameter(
             name = "page",
@@ -286,6 +280,8 @@ class WorkspaceInvitationController(
         val sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy)
         val pageable = PageRequest.of(page, size, sort)
 
+        val workspaceId = TenantContextHolder.getCurrentTenant()
+            ?: throw IllegalStateException("Workspace context is required")
         val invitations = invitationService.getWorkspaceInvitations(workspaceId, null, pageable)
         return ApiResponse.success(PageResponse.from(invitations))
     }
@@ -429,17 +425,10 @@ class WorkspaceInvitationController(
             )
         ]
     )
-    @PostMapping("/{workspaceId}/invitations")
+    @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    @PreAuthorize("@workspaceAuthorizationService.hasCurrentTenantPermission(authentication, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
     fun createInvitation(
-        @Parameter(
-            name = "workspaceId",
-            description = "**Target workspace identifier** where the invitee will become a member",
-            required = true,
-            example = "WS_ABC123_XYZ789"
-        )
-        @PathVariable workspaceId: String,
 
         @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = """
@@ -483,6 +472,8 @@ class WorkspaceInvitationController(
         val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
+        val workspaceId = TenantContextHolder.getCurrentTenant()
+            ?: throw IllegalStateException("Workspace context is required")
         val invitation = invitationService.createInvitation(workspaceId, request, userId)
         return ApiResponse.success(invitation)
     }
@@ -635,16 +626,9 @@ class WorkspaceInvitationController(
             )
         ]
     )
-    @PostMapping("/{workspaceId}/invitations/{invitationId}/resend")
-    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    @PostMapping("/{invitationId}/resend")
+    @PreAuthorize("@workspaceAuthorizationService.hasCurrentTenantPermission(authentication, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
     fun resendInvitation(
-        @Parameter(
-            name = "workspaceId",
-            description = "**Target workspace identifier** containing the invitation to resend",
-            required = true,
-            example = "WS_ABC123_XYZ789"
-        )
-        @PathVariable workspaceId: String,
 
         @Parameter(
             name = "invitationId",
@@ -859,16 +843,9 @@ class WorkspaceInvitationController(
             )
         ]
     )
-    @DeleteMapping("/{workspaceId}/invitations/{invitationId}")
-    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    @DeleteMapping("/{invitationId}")
+    @PreAuthorize("@workspaceAuthorizationService.hasCurrentTenantPermission(authentication, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
     fun cancelInvitation(
-        @Parameter(
-            name = "workspaceId",
-            description = "**Target workspace identifier** containing the invitation to cancel",
-            required = true,
-            example = "WS_ABC123_XYZ789"
-        )
-        @PathVariable workspaceId: String,
 
         @Parameter(
             name = "invitationId",
@@ -943,10 +920,9 @@ class WorkspaceInvitationController(
         """,
         tags = ["Invitation Search"]
     )
-    @GetMapping("/{workspaceId}/invitations/search")
-    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    @GetMapping("/search")
+    @PreAuthorize("@workspaceAuthorizationService.hasCurrentTenantPermission(authentication, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
     fun searchWorkspaceInvitations(
-        @PathVariable workspaceId: String,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
         @RequestParam(defaultValue = "createdAt") sortBy: String,
@@ -961,6 +937,8 @@ class WorkspaceInvitationController(
         val sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy)
         val pageable = PageRequest.of(page, size, sort)
 
+        val workspaceId = TenantContextHolder.getCurrentTenant()
+            ?: throw IllegalStateException("Workspace context is required")
         val invitations = invitationService.searchWorkspaceInvitations(
             workspaceId,
             pageable,
@@ -997,11 +975,11 @@ class WorkspaceInvitationController(
         """,
         tags = ["Invitation Analytics"]
     )
-    @GetMapping("/{workspaceId}/invitations/statistics")
-    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
-    fun getInvitationStatistics(
-        @PathVariable workspaceId: String
-    ): ApiResponse<Map<String, Any>> {
+    @GetMapping("/statistics")
+    @PreAuthorize("@workspaceAuthorizationService.hasCurrentTenantPermission(authentication, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    fun getInvitationStatistics(): ApiResponse<Map<String, Any>> {
+        val workspaceId = TenantContextHolder.getCurrentTenant()
+            ?: throw IllegalStateException("Workspace context is required")
         val statistics = invitationService.getInvitationStatistics(workspaceId)
         return ApiResponse.success(statistics)
     }
@@ -1022,16 +1000,17 @@ class WorkspaceInvitationController(
         """,
         tags = ["Bulk Operations"]
     )
-    @DeleteMapping("/{workspaceId}/invitations/bulk")
-    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    @DeleteMapping("/bulk")
+    @PreAuthorize("@workspaceAuthorizationService.hasCurrentTenantPermission(authentication, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
     fun bulkCancelInvitations(
-        @PathVariable workspaceId: String,
         @RequestBody request: Map<String, Any>,
         authentication: Authentication
     ): ApiResponse<Map<String, Any>> {
         val invitationIds = request["invitation_ids"] as? List<String> ?: emptyList()
         val reason = request["reason"] as? String
         val currentUserId = authentication.name
+        val workspaceId = TenantContextHolder.getCurrentTenant()
+            ?: throw IllegalStateException("Workspace context is required")
         val result = invitationService.bulkCancelInvitations(workspaceId, invitationIds, reason, currentUserId)
         return ApiResponse.success(result)
     }
@@ -1052,16 +1031,17 @@ class WorkspaceInvitationController(
         """,
         tags = ["Bulk Operations"]
     )
-    @PostMapping("/{workspaceId}/invitations/bulk-resend")
-    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    @PostMapping("/bulk-resend")
+    @PreAuthorize("@workspaceAuthorizationService.hasCurrentTenantPermission(authentication, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
     fun bulkResendInvitations(
-        @PathVariable workspaceId: String,
         @RequestBody request: Map<String, Any>,
         authentication: Authentication
     ): ApiResponse<Map<String, Any>> {
         val invitationIds = request["invitation_ids"] as? List<String> ?: emptyList()
         val message = request["message"] as? String
         val currentUserId = authentication.name
+        val workspaceId = TenantContextHolder.getCurrentTenant()
+            ?: throw IllegalStateException("Workspace context is required")
         val result = invitationService.bulkResendInvitations(workspaceId, invitationIds, message, currentUserId)
         return ApiResponse.success(result)
     }
@@ -1086,10 +1066,9 @@ class WorkspaceInvitationController(
         """,
         tags = ["Data Export"]
     )
-    @GetMapping("/{workspaceId}/invitations/export")
-    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    @GetMapping("/export")
+    @PreAuthorize("@workspaceAuthorizationService.hasCurrentTenantPermission(authentication, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
     fun exportInvitations(
-        @PathVariable workspaceId: String,
         @RequestParam(defaultValue = "CSV") format: String,
         @RequestParam(required = false) status: String?,
         @RequestParam(required = false) role: String?,
@@ -1098,6 +1077,8 @@ class WorkspaceInvitationController(
         @RequestParam(required = false) start_date: String?,
         @RequestParam(required = false) end_date: String?
     ): ResponseEntity<ByteArray> {
+        val workspaceId = TenantContextHolder.getCurrentTenant()
+            ?: throw IllegalStateException("Workspace context is required")
         val exportData = invitationService.exportInvitations(
             workspaceId,
             format,

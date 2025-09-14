@@ -90,7 +90,7 @@ export class MemberService {
 
       const response = await firstValueFrom(
         this.http.get<PaginatedResponse<WorkspaceMemberListItem>>(
-          `${this.getWorkspaceApiUrl(workspaceId)}/members`,
+          `${environment.apiBaseUrl}/workspace/v1/member`,
           {params}
         ).pipe(catchError(this.handleError))
       );
@@ -130,7 +130,7 @@ export class MemberService {
 
       const response = await firstValueFrom(
         this.http.get<ApiResponse<PaginatedResponse<WorkspaceMemberListItem>>>(
-          `${this.getWorkspaceApiUrl(workspaceId)}/members/search`,
+          `${environment.apiBaseUrl}/workspace/v1/member/search`,
           {params}
         ).pipe(catchError(this.handleError))
       );
@@ -150,7 +150,7 @@ export class MemberService {
    * Get member by ID
    */
   getMemberById(workspaceId: string, memberId: string): Observable<WorkspaceMember> {
-    return this.http.get<WorkspaceMember>(`${this.getWorkspaceApiUrl(workspaceId)}/members/${memberId}`)
+    return this.http.get<WorkspaceMember>(`${environment.apiBaseUrl}/workspace/v1/member/${memberId}`)
       .pipe(catchError(this.handleError));
   }
 
@@ -168,7 +168,7 @@ export class MemberService {
     try {
       const response = await firstValueFrom(
         this.http.put<WorkspaceMember>(
-          `${this.getWorkspaceApiUrl(workspaceId)}/members/${memberId}`,
+          `${environment.apiBaseUrl}/workspace/v1/member/${memberId}`,
           updateData
         ).pipe(catchError(this.handleError))
       );
@@ -194,7 +194,7 @@ export class MemberService {
 
     try {
       await firstValueFrom(
-        this.http.delete(`${this.getWorkspaceApiUrl(workspaceId)}/members/${memberId}`)
+        this.http.delete(`${environment.apiBaseUrl}/workspace/v1/member/${memberId}`)
           .pipe(catchError(this.handleError))
       );
 
@@ -214,7 +214,7 @@ export class MemberService {
   async getMemberStatistics(workspaceId: string): Promise<MemberStatistics> {
     try {
       const response = await firstValueFrom(
-        this.http.get<MemberStatistics>(`${this.getWorkspaceApiUrl(workspaceId)}/members/statistics`)
+        this.http.get<MemberStatistics>(`${environment.apiBaseUrl}/workspace/v1/member/statistics`)
           .pipe(catchError(this.handleError))
       );
 
@@ -254,7 +254,7 @@ export class MemberService {
 
       const response = await firstValueFrom(
         this.http.get<PaginatedResponse<WorkspaceInvitation>>(
-          `${this.getWorkspaceApiUrl(workspaceId)}/invitations`,
+          `${environment.apiBaseUrl}/workspace/v1/invitation/search`,
           {params}
         ).pipe(catchError(this.handleError))
       );
@@ -283,7 +283,7 @@ export class MemberService {
     try {
       const response = await firstValueFrom(
         this.http.post<WorkspaceInvitation>(
-          `${this.getWorkspaceApiUrl(workspaceId)}/invitations`,
+          `${environment.apiBaseUrl}/workspace/v1/invitation`,
           invitationData
         ).pipe(catchError(this.handleError))
       );
@@ -313,7 +313,7 @@ export class MemberService {
     try {
       const response = await firstValueFrom(
         this.http.post<WorkspaceInvitation[]>(
-          `${this.getWorkspaceApiUrl(workspaceId)}/invitations/bulk`,
+          `${environment.apiBaseUrl}/workspace/v1/invitation/bulk`,
           bulkData
         ).pipe(catchError(this.handleError))
       );
@@ -339,7 +339,7 @@ export class MemberService {
 
     try {
       await firstValueFrom(
-        this.http.post(`${this.getWorkspaceApiUrl(workspaceId)}/invitations/${invitationId}/resend`, {})
+        this.http.post(`${environment.apiBaseUrl}/workspace/v1/invitation/${invitationId}/resend`, {})
           .pipe(catchError(this.handleError))
       );
 
@@ -362,7 +362,7 @@ export class MemberService {
 
     try {
       await firstValueFrom(
-        this.http.delete(`${this.getWorkspaceApiUrl(workspaceId)}/invitations/${invitationId}`)
+        this.http.delete(`${environment.apiBaseUrl}/workspace/v1/invitation/${invitationId}`)
           .pipe(catchError(this.handleError))
       );
 
@@ -385,7 +385,7 @@ export class MemberService {
 
     try {
       await firstValueFrom(
-        this.http.post(`${environment.apiBaseUrl}/workspace/v1/invitations/${token}/accept`, {})
+        this.http.post(`${environment.apiBaseUrl}/workspace/v1/invitation/${token}/accept`, {})
           .pipe(catchError(this.handleError))
       );
     } catch (error: any) {
@@ -402,7 +402,7 @@ export class MemberService {
   async getInvitationStatistics(workspaceId: string): Promise<InvitationStatistics> {
     try {
       const response = await firstValueFrom(
-        this.http.get<InvitationStatistics>(`${this.getWorkspaceApiUrl(workspaceId)}/invitations/statistics`)
+        this.http.get<InvitationStatistics>(`${environment.apiBaseUrl}/workspace/v1/invitation/statistics`)
           .pipe(catchError(this.handleError))
       );
 
@@ -420,7 +420,7 @@ export class MemberService {
    * Get available roles for the workspace
    */
   getAvailableRoles(workspaceId: string): Observable<WorkspaceRole[]> {
-    return this.http.get<WorkspaceRole[]>(`${this.getWorkspaceApiUrl(workspaceId)}/roles`)
+    return this.http.get<WorkspaceRole[]>(`${environment.apiBaseUrl}/workspace/v1/member/roles`)
       .pipe(catchError(this.handleError));
   }
 
@@ -428,7 +428,7 @@ export class MemberService {
    * Get available departments
    */
   getDepartments(workspaceId: string): Observable<string[]> {
-    return this.http.get<string[]>(`${this.getWorkspaceApiUrl(workspaceId)}/members/departments`)
+    return this.http.get<string[]>(`${environment.apiBaseUrl}/workspace/v1/member/departments`)
       .pipe(catchError(this.handleError));
   }
 
@@ -448,7 +448,7 @@ export class MemberService {
       if (filters.department) params = params.set('department', filters.department);
     }
 
-    return this.http.get(`${this.getWorkspaceApiUrl(workspaceId)}/members/export`, {
+    return this.http.get(`${environment.apiBaseUrl}/workspace/v1/member/export`, {
       params,
       responseType: 'blob'
     }).pipe(catchError(this.handleError));
@@ -467,7 +467,7 @@ export class MemberService {
 
     try {
       await firstValueFrom(
-        this.http.put(`${this.getWorkspaceApiUrl(workspaceId)}/members/bulk`, {
+        this.http.put(`${environment.apiBaseUrl}/workspace/v1/member/bulk`, {
           member_ids: memberIds,
           ...updateData
         }).pipe(catchError(this.handleError))
@@ -492,7 +492,7 @@ export class MemberService {
 
     try {
       await firstValueFrom(
-        this.http.request('delete', `${this.getWorkspaceApiUrl(workspaceId)}/members/bulk`, {
+        this.http.request('delete', `${environment.apiBaseUrl}/workspace/v1/member/bulk`, {
           body: {member_ids: memberIds}
         }).pipe(catchError(this.handleError))
       );
@@ -533,7 +533,7 @@ export class MemberService {
     try {
       return await firstValueFrom(
         this.http.get<WorkspaceRoleResponse[]>(
-          `${this.getWorkspaceApiUrl(workspaceId)}/roles`
+          `${environment.apiBaseUrl}/workspace/v1/member/roles`
         ).pipe(
           map(apiResponse => apiResponse),
           catchError(this.handleError)
@@ -552,7 +552,7 @@ export class MemberService {
     try {
       return await firstValueFrom(
         this.http.get<WorkspacePermissionResponse[]>(
-          `${this.getWorkspaceApiUrl(workspaceId)}/permissions`
+          `${environment.apiBaseUrl}/workspace/v1/member/permissions`
         ).pipe(
           map(apiResponse => apiResponse),
           catchError(this.handleError)

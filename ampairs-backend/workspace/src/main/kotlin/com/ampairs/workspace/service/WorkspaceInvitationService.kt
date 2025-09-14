@@ -133,7 +133,7 @@ class WorkspaceInvitationService(
         validateUserIsInvitationRecipient(invitation, userId)
 
         // Check if user is already a member
-        if (memberService.isWorkspaceMember(invitation.workspaceId, userId)) {
+        if (memberService.isWorkspaceMember(userId)) {
             logger.info("User $userId is already a member of workspace ${invitation.workspaceId}, marking invitation as accepted")
 
             // Mark invitation as accepted if not already

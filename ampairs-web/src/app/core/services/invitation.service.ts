@@ -46,7 +46,7 @@ export interface PublicInvitationDetails {
   providedIn: 'root'
 })
 export class InvitationService {
-  private readonly INVITATION_API_URL = `${environment.apiBaseUrl}/user/v1/invitations`;
+  private readonly INVITATION_API_URL = `${environment.apiBaseUrl}/user/v1/invitation`;
   private http = inject(HttpClient);
 
   // Signal-based state management

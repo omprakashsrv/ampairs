@@ -31,8 +31,7 @@ import { ModuleStoreDialogComponent } from '../module-store-dialog/module-store-
     MatChipsModule,
     MatMenuModule,
     MatTabsModule,
-    MatBadgeModule,
-    MatDivider
+    MatBadgeModule
   ],
   templateUrl: './workspace-modules.component.html',
   styleUrl: './workspace-modules.component.scss'

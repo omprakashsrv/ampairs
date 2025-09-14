@@ -24,11 +24,7 @@ export class WorkspaceInterceptor implements HttpInterceptor {
       request.url.includes('/workspace/v1/create') ||
       request.url.includes('/workspace/v1/check-slug');
 
-    // Special case: workspace detail endpoints (GET /workspace/v1/{id}) should not have workspace header
-    // as they are used to fetch workspace details before setting the workspace context
-    const isWorkspaceDetailEndpoint = /\/workspace\/v1\/[A-Z0-9]+$/.test(request.url) && request.method === 'GET';
-
-    if (isApiRequest && !isAuthEndpoint && !isUserEndpoint && !isWorkspaceListEndpoint && !isWorkspaceDetailEndpoint && workspaceId) {
+    if (isApiRequest && !isAuthEndpoint && !isUserEndpoint && !isWorkspaceListEndpoint && workspaceId) {
       // Clone the request and add the workspace header
       const modifiedRequest = request.clone({
         setHeaders: {
