@@ -21,8 +21,7 @@ import org.springframework.web.filter.OncePerRequestFilter
 @Component
 class SessionUserFilter @Autowired constructor(
     private val memberService: WorkspaceMemberService,
-    private val objectMapper: ObjectMapper,
-    private val userService: UserService,
+    private val objectMapper: ObjectMapper
 ) : OncePerRequestFilter() {
 
     companion object {
@@ -98,6 +97,7 @@ class SessionUserFilter @Autowired constructor(
                 requestPath.contains("/workspace/v1/check-slug") ||
                 requestPath.contains("/workspace/v1/search") ||
                 requestPath.contains("/workspace/v1/invitations/") && requestPath.contains("/accept") ||
+                requestPath.contains("/workspace/v1/invitations/my-pending") || // User-scoped endpoint (deprecated, use /user/v1/invitations/pending)
                 isWorkspaceListEndpoint(requestPath) ||
                 isWorkspaceDetailEndpoint(requestPath) ||
                 requestPath.contains("/actuator/health") ||

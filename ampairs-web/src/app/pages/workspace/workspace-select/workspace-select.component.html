@@ -11,6 +11,28 @@
       </div>
     }
 
+    <!-- M3 Pending Invitations Section -->
+    @if (!isLoading() && !isLoadingInvitations() && pendingInvitations().length > 0) {
+      <div class="invitations-section">
+        <div class="section-header">
+          <h2 class="section-title">Pending Invitations</h2>
+          <p class="section-subtitle">You have workspace invitations waiting for your response</p>
+        </div>
+
+        <div class="invitations-grid">
+          @for (invitation of pendingInvitations(); track invitation.id) {
+            <app-pending-invitation-card
+              [invitation]="invitation"
+              (accepted)="onInvitationAccepted($event)"
+              (rejected)="onInvitationRejected($event)"
+              (error)="onInvitationError($event)" />
+          }
+        </div>
+      </div>
+
+      <mat-divider class="section-divider"></mat-divider>
+    }
+
     <!-- M3 Workspaces Grid -->
     @if (!isLoading() && workspaces().length > 0) {
       <div class="workspaces-section">

@@ -18,6 +18,10 @@ export const routes: Routes = [
     path: 'verify-otp',
     loadComponent: () => import('./auth/verify-otp/verify-otp.component').then(m => m.VerifyOtpComponent)
   },
+  {
+    path: 'accept-invitation/:token',
+    loadComponent: () => import('./pages/accept-invitation/accept-invitation.component').then(m => m.AcceptInvitationComponent)
+  },
   // Authenticated routes (with main layout)
   {
     path: '',

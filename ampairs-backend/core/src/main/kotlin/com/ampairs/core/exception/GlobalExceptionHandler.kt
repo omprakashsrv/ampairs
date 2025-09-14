@@ -157,6 +157,37 @@ class GlobalExceptionHandler : BaseExceptionHandler() {
         )
     }
 
+    // Business Exceptions
+    @ExceptionHandler(BusinessException::class)
+    fun handleBusinessException(
+        ex: BusinessException,
+        request: HttpServletRequest,
+    ): ResponseEntity<ApiResponse<Any>> {
+        return createErrorResponse(
+            httpStatus = HttpStatus.BAD_REQUEST,
+            errorCode = ex.errorCode,
+            message = ex.message ?: "Business rule violation",
+            details = null,
+            request = request,
+            moduleName = "global"
+        )
+    }
+
+    @ExceptionHandler(NotFoundException::class)
+    fun handleNotFoundException(
+        ex: NotFoundException,
+        request: HttpServletRequest,
+    ): ResponseEntity<ApiResponse<Any>> {
+        return createErrorResponse(
+            httpStatus = HttpStatus.NOT_FOUND,
+            errorCode = ErrorCodes.NOT_FOUND,
+            message = ex.message ?: "Resource not found",
+            details = null,
+            request = request,
+            moduleName = "global"
+        )
+    }
+
     // Rate Limiting Exception
     @ExceptionHandler(RateLimitExceededException::class)
     fun handleRateLimitExceededException(

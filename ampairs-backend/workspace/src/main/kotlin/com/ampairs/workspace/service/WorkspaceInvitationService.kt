@@ -7,6 +7,7 @@ import com.ampairs.workspace.model.dto.*
 import com.ampairs.workspace.model.enums.InvitationStatus
 import com.ampairs.workspace.repository.WorkspaceInvitationRepository
 import com.ampairs.workspace.repository.WorkspaceRepository
+import com.ampairs.core.service.UserService
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
@@ -27,6 +28,7 @@ class WorkspaceInvitationService(
     private val workspaceRepository: WorkspaceRepository,
     private val memberService: WorkspaceMemberService,
     private val activityService: WorkspaceActivityService,
+    private val userService: UserService,
 ) {
 
     companion object {
@@ -119,26 +121,38 @@ class WorkspaceInvitationService(
     }
 
     /**
-     * Accept invitation
+     * Accept invitation by ID (for user-scoped operations)
      */
-    fun acceptInvitation(token: String, userId: String): InvitationResponse {
-        val invitation = findInvitationByToken(token)
+    fun acceptInvitationById(invitationId: String, userId: String): InvitationResponse {
+        val invitation = findInvitationById(invitationId)
 
         // Validate invitation
         validateInvitation(invitation)
 
+        // Validate that the user is the actual recipient
+        validateUserIsInvitationRecipient(invitation, userId)
+
         // Check if user is already a member
         if (memberService.isWorkspaceMember(invitation.workspaceId, userId)) {
-            throw BusinessException("ALREADY_MEMBER", "You are already a member of this workspace")
+            logger.info("User $userId is already a member of workspace ${invitation.workspaceId}, marking invitation as accepted")
+
+            // Mark invitation as accepted if not already
+            if (invitation.status != InvitationStatus.ACCEPTED) {
+                invitation.status = InvitationStatus.ACCEPTED
+                invitation.acceptedAt = LocalDateTime.now()
+                invitationRepository.save(invitation)
+            }
+        } else {
+            // Add user as member
+            memberService.addMember(invitation.workspaceId, userId, invitation.role)
+
+            // Update invitation status
+            invitation.status = InvitationStatus.ACCEPTED
+            invitation.acceptedAt = LocalDateTime.now()
+            invitationRepository.save(invitation)
         }
 
-        // Add user as member
-        memberService.addMember(invitation.workspaceId, userId, invitation.role)
-
-        // Update invitation status
-        invitation.status = InvitationStatus.ACCEPTED
-        invitation.acceptedAt = LocalDateTime.now()
-        val updatedInvitation = invitationRepository.save(invitation)
+        val updatedInvitation = invitationRepository.findByUid(invitation.uid).get()
 
         // Log activity
         activityService.logInvitationAccepted(
@@ -150,17 +164,25 @@ class WorkspaceInvitationService(
         )
 
         logger.info("Invitation accepted: ${invitation.id} by user: $userId")
-        return updatedInvitation.toResponse()
+
+        // Get workspace details and return response with workspace name
+        val workspace = workspaceRepository.findByUid(invitation.workspaceId).orElse(null)
+        return updatedInvitation.toResponse().copy(
+            workspaceName = workspace?.name ?: "Unknown Workspace"
+        )
     }
 
     /**
-     * Decline invitation
+     * Decline invitation by token (for public/email links)
      */
-    fun declineInvitation(token: String, reason: String?): InvitationResponse {
+    fun declineInvitation(token: String, userId: String, reason: String?): InvitationResponse {
         val invitation = findInvitationByToken(token)
 
         // Validate invitation
         validateInvitation(invitation)
+
+        // Validate that the user is the actual recipient
+        validateUserIsInvitationRecipient(invitation, userId)
 
         // Update invitation status
         invitation.status = InvitationStatus.DECLINED
@@ -173,6 +195,36 @@ class WorkspaceInvitationService(
 
         logger.info("Invitation declined: ${invitation.id}")
         return updatedInvitation.toResponse()
+    }
+
+    /**
+     * Decline invitation by ID (for user-scoped operations)
+     */
+    fun declineInvitationById(invitationId: String, userId: String, reason: String?): InvitationResponse {
+        val invitation = findInvitationById(invitationId)
+
+        // Validate invitation
+        validateInvitation(invitation)
+
+        // Validate that the user is the actual recipient
+        validateUserIsInvitationRecipient(invitation, userId)
+
+        // Update invitation status
+        invitation.status = InvitationStatus.DECLINED
+        invitation.rejectedAt = LocalDateTime.now()
+        invitation.rejectionReason = reason
+        val updatedInvitation = invitationRepository.save(invitation)
+
+        // Log activity
+        activityService.logInvitationDeclined(invitation.workspaceId, invitation.email ?: "", reason, invitation.uid)
+
+        logger.info("Invitation declined: ${invitation.id}")
+
+        // Get workspace details and return response with workspace name
+        val workspace = workspaceRepository.findByUid(invitation.workspaceId).orElse(null)
+        return updatedInvitation.toResponse().copy(
+            workspaceName = workspace?.name ?: "Unknown Workspace"
+        )
     }
 
     /**
@@ -710,6 +762,24 @@ class WorkspaceInvitationService(
 
     // Private helper methods
 
+    private fun validateUserIsInvitationRecipient(invitation: WorkspaceInvitation, userId: String) {
+        val currentUser = userService.getCurrentUser()
+            ?: throw BusinessException("USER_NOT_AUTHENTICATED", "User must be authenticated")
+
+        // Check if the invitation was sent to this user's email or phone
+        val isEmailMatch = invitation.email != null && invitation.email == currentUser.email
+        val isPhoneMatch = invitation.phone != null && invitation.phone == currentUser.phone
+
+        if (!isEmailMatch && !isPhoneMatch) {
+            throw BusinessException(
+                "INVITATION_RECIPIENT_MISMATCH",
+                "You are not the intended recipient of this invitation"
+            )
+        }
+
+        logger.debug("User validation passed for invitation ${invitation.id} and user $userId")
+    }
+
     private fun findInvitationById(invitationId: String): WorkspaceInvitation {
         return invitationRepository.findByUid(invitationId)
             .orElseThrow { NotFoundException("Invitation not found: $invitationId") }
@@ -770,5 +840,58 @@ class WorkspaceInvitationService(
         // For now, return CSV format with Excel MIME type
         // In production, implement proper Excel generation using Apache POI
         return generateCsvExport(invitations)
+    }
+
+    /**
+     * Get user's pending workspace invitations
+     * Returns all pending invitations for the current authenticated user
+     */
+    fun getUserPendingInvitations(): List<InvitationResponse> {
+        val currentUser = userService.getCurrentUser()
+            ?: throw BusinessException("USER_NOT_AUTHENTICATED", "User must be authenticated")
+
+        // Get invitations for both email and phone
+        val invitationsList = mutableListOf<WorkspaceInvitation>()
+
+        // Add email-based invitations if user has email
+        currentUser.email?.let { userEmail ->
+            logger.info("Fetching pending invitations for user email: $userEmail")
+            invitationsList.addAll(
+                invitationRepository.findByEmailAndStatus(userEmail, InvitationStatus.PENDING)
+            )
+        }
+
+        // Add phone-based invitations if user has phone
+        currentUser.phone?.let { userPhone ->
+            logger.info("Fetching pending invitations for user phone: $userPhone")
+            invitationsList.addAll(
+                invitationRepository.findByPhoneAndStatus(userPhone, InvitationStatus.PENDING)
+            )
+        }
+
+        // Check if user has neither email nor phone
+        if (currentUser.email == null && currentUser.phone == null) {
+            throw BusinessException("USER_CONTACT_REQUIRED", "User must have either email or phone number to fetch invitations")
+        }
+
+        val pendingInvitations = invitationsList.distinctBy { it.id }
+
+        // Filter out expired invitations (even if status is still PENDING)
+        val now = LocalDateTime.now()
+        val validInvitations = pendingInvitations.filter {
+            it.expiresAt.isAfter(now)
+        }
+
+        val userIdentifier = currentUser.email ?: currentUser.phone ?: "unknown"
+        logger.info("Found ${validInvitations.size} valid pending invitations for user: $userIdentifier")
+
+        return validInvitations.map { invitation ->
+            val workspace = workspaceRepository.findByUid(invitation.workspaceId).orElse(null)
+
+            // Use the extension function and add workspace name
+            invitation.toResponse().copy(
+                workspaceName = workspace?.name ?: "Unknown Workspace"
+            )
+        }
     }
 }
