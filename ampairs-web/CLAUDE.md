@@ -282,3 +282,47 @@
   12. Performance: Leverage build-time SCSS compilation while maintaining runtime theme switching capabilities.
 
   This architecture supports a scalable, secure, multi-tenant business management platform with excellent UX and maintainable code patterns.
+
+## Recent Updates & Features (2025-01-15)
+
+### Workspace Invitation System
+- **Components**: `InvitationService`, `MemberService`, `PendingInvitationCardComponent`, `AcceptInvitationComponent`
+- **Flow**: Email Link → Login (if needed) → Accept/Reject
+- **Features**: Role-based invitations, expiry warnings, token validation
+- **APIs**:
+  - User: `/user/v1/invitation/*` (JWT only)
+  - Admin: `/workspace/v1/invitation/*` (X-Workspace-ID header)
+- **Integration**: Pending invitations on workspace selection page
+
+### Enhanced Theme System
+- **Modes**: `system` (default), `light`, `dark`
+- **Toggle**: Cycles through all three options
+- **Detection**: OS preference via `matchMedia('(prefers-color-scheme: dark)')`
+- **Storage**: `app_theme_mode` localStorage key
+- **Icons**: `brightness_auto`, `light_mode`, `dark_mode`
+- **Service**: `ThemeMode` type, `setThemeMode()`, signal-based
+
+### API Endpoint Migration
+- **Pattern**: Singular resources with X-Workspace-ID header
+- **Members**: `/workspace/v1/member/*` (was `/members`)
+- **Invitations**: `/workspace/v1/invitation/*` (was `/invitations`)
+- **Benefits**: Cleaner URLs, better REST compliance
+
+### Material Design 3 Fixes
+- **Content Projection**: Use `<ng-container>` for multiple nodes in `@else` blocks
+- **Icon Alignment**: `vertical-align: middle` for text baseline alignment
+- **Module Store**: Simplified cards, "Installed" tab, fixed scrolling
+
+### Development Patterns
+- **State**: Prefer Angular signals over BehaviorSubject
+- **Components**: Standalone architecture, input/output signals
+- **Styling**: SCSS variables, M3 tokens, responsive breakpoints
+- **APIs**: Snake case interfaces, unwrapped responses
+
+### Updated Best Practices
+13. **Invitation Flows**: Complete auth integration with workspace context
+14. **Theme Support**: Three-mode system with visual indicators
+15. **API Consistency**: Singular naming, header-based context
+16. **Content Projection**: `<ng-container>` for Material compliance
+17. **Icon Alignment**: `vertical-align: middle` standard
+18. **Signals First**: Modern reactive patterns over observables

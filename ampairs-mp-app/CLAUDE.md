@@ -56,6 +56,7 @@ The app implements **Store5 pattern** for robust offline-first data management:
 ### **Technology Stack**
 
 - **UI Framework**: Jetpack Compose Multiplatform with Material 3 Design System
+- **Theme Management**: Reactive theme switching with Light/Dark/System modes (default: System)
 - **Dependency Injection**: Koin with modular setup per feature
 - **Local Database**: Room Database (replaces SQLDelight) with platform-specific drivers
 - **Offline-First**: Store5 for caching, synchronization, and conflict resolution
@@ -370,6 +371,66 @@ The app provides complete feature parity with the backend system:
 - **Error Recovery**: Graceful degradation when network/sync fails
 - **Performance**: Lazy loading, pagination, and efficient caching
 - **Testing**: Unit tests for ViewModels, integration tests for repositories
+
+## **Theme Management System**
+
+The app includes a comprehensive theme switching system implemented in January 2025:
+
+### **Architecture**
+```kotlin
+// Theme options
+enum class ThemePreference {
+    SYSTEM,  // Follow device theme (default)
+    LIGHT,   // Always light mode
+    DARK     // Always dark mode
+}
+
+// Singleton theme manager
+class ThemeManager {
+    val themePreference: StateFlow<ThemePreference>
+    fun setThemePreference(preference: ThemePreference)
+    @Composable fun isDarkTheme(): Boolean
+}
+```
+
+### **Implementation Files**
+- **Theme System**: `/composeApp/src/commonMain/kotlin/com/ampairs/common/theme/`
+  - `ThemePreference.kt` - Theme options enum
+  - `ThemeManager.kt` - Singleton theme state manager with reactive updates
+- **UI Integration**: `/composeApp/src/commonMain/kotlin/com/ampairs/common/ui/AppHeader.kt`
+  - `ThemeToggleButton` - Standalone theme selector beside user menu
+- **App Integration**: `/composeApp/src/commonMain/kotlin/App.kt`
+  - Main app theme application using `ThemeManager.isDarkTheme()`
+
+### **Features**
+- **🎯 Prominent Placement**: Theme toggle button beside user menu in AppHeader
+- **🔄 Reactive Updates**: Instant theme changes using StateFlow and Compose reactivity
+- **🌍 System Integration**: Respects device dark/light mode when set to System
+- **💾 Persistent**: Ready for local storage integration (localStorage/SharedPreferences)
+- **🎨 Material 3**: Full Material Design 3 color scheme support
+- **📱 Platform Support**: Works across Android, iOS, and Desktop
+
+### **User Experience**
+- **Default**: System theme (follows device settings)
+- **Access**: Click theme icon (🌞/🌙/⚙️) in top-right header
+- **Options**: System Default, Light Mode, Dark Mode
+- **Feedback**: Visual indicators with checkmarks and primary color highlights
+- **Performance**: Instant switching without app restart
+
+### **Usage in Code**
+```kotlin
+// Get theme manager instance
+val themeManager = remember { ThemeManager.getInstance() }
+val isDarkTheme = themeManager.isDarkTheme()
+
+// Apply theme to MaterialTheme
+PlatformAmpairsTheme(darkTheme = isDarkTheme) {
+    // App content
+}
+
+// Set theme programmatically
+themeManager.setThemePreference(ThemePreference.DARK)
+```
 
 ## **Common Issues & Solutions**
 
