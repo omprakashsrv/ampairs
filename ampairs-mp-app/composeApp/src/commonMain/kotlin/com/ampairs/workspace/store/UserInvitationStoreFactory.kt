@@ -75,7 +75,7 @@ private fun UserInvitationResponse.toDomainModel(): UserInvitation {
     return UserInvitation(
         id = this.id,
         workspaceId = this.workspaceId,
-        workspaceName = this.workspaceName,
+        workspaceName = this.workspaceName ?: "",
         workspaceDescription = this.workspaceDescription,
         workspaceType = this.workspaceType,
         role = this.role,

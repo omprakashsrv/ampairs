@@ -221,28 +221,42 @@ data class UserRoleResponse(
 data class UserInvitationResponse(
     @SerialName("id") val id: String,
     @SerialName("workspace_id") val workspaceId: String,
-    @SerialName("workspace_name") val workspaceName: String,
+    @SerialName("workspace_name") val workspaceName: String? = null,
     @SerialName("workspace_description") val workspaceDescription: String? = null,
     @SerialName("workspace_type") val workspaceType: String? = null,
+    @SerialName("email") val email: String? = null,
+    @SerialName("phone") val phone: String? = null,
+    @SerialName("country_code") val countryCode: Int? = null,
     @SerialName("role") val role: String,
+    @SerialName("status") val status: String? = null,
+    @SerialName("token") val token: String? = null,
     @SerialName("message") val message: String? = null,
     @SerialName("invited_by") val invitedBy: String? = null,
     @SerialName("inviter_name") val inviterName: String? = null,
     @SerialName("expires_at") val expiresAt: String,
+    @SerialName("accepted_at") val acceptedAt: String? = null,
+    @SerialName("rejected_at") val rejectedAt: String? = null,
+    @SerialName("cancelled_at") val cancelledAt: String? = null,
+    @SerialName("cancelled_by") val cancelledBy: String? = null,
+    @SerialName("cancellation_reason") val cancellationReason: String? = null,
+    @SerialName("send_count") val sendCount: Int? = null,
+    @SerialName("last_sent_at") val lastSentAt: String? = null,
     @SerialName("created_at") val createdAt: String,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("is_expired") val isExpired: Boolean? = null,
     @SerialName("days_until_expiry") val daysUntilExpiry: Long? = null,
 )
 
 @Serializable
 data class InvitationActionResponse(
-    @SerialName("success") val success: Boolean,
+    @SerialName("success") val success: Boolean? = null,
     @SerialName("message") val message: String? = null,
-    @SerialName("invitation_id") val invitationId: String,
+    @SerialName("invitation_id") val invitationId: String? = null,
     @SerialName("workspace_id") val workspaceId: String? = null,
     @SerialName("workspace_name") val workspaceName: String? = null,
     @SerialName("member_id") val memberId: String? = null,
-    @SerialName("action") val action: String, // "accept" or "reject"
-    @SerialName("processed_at") val processedAt: String,
+    @SerialName("action") val action: String? = null, // "accept" or "reject"
+    @SerialName("processed_at") val processedAt: String? = null,
 )
 
 // ===== WORKSPACE INVITATION MANAGEMENT MODELS =====

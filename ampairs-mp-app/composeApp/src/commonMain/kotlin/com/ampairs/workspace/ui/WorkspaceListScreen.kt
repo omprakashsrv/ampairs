@@ -64,6 +64,22 @@ fun WorkspaceListScreen(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
+
+            // Invitations section - placed above workspace search/content
+            if (state.invitations.isNotEmpty()) {
+                InvitationsSection(
+                    invitations = state.invitations,
+                    isLoading = state.isInvitationsLoading,
+                    error = state.invitationsError,
+                    processingIds = state.processingInvitationIds,
+                    onAccept = viewModel::acceptInvitation,
+                    onReject = viewModel::rejectInvitation,
+                    onClearError = viewModel::clearInvitationsError,
+                    onRefresh = viewModel::refreshInvitations
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
             // Search Bar with offline/online indicator
             Row(
                 modifier = Modifier
@@ -81,7 +97,7 @@ fun WorkspaceListScreen(
                     modifier = Modifier.weight(1f),
                     singleLine = true
                 )
-                
+
                 // Offline Mode Indicator (only show when offline)
                 if (state.isOfflineMode) {
                     Spacer(modifier = Modifier.width(8.dp))
@@ -119,7 +135,7 @@ fun WorkspaceListScreen(
                     colors = CardDefaults.cardColors(
                         containerColor = if (state.isOfflineMode && state.workspaces.isNotEmpty())
                             MaterialTheme.colorScheme.secondaryContainer
-                        else 
+                        else
                             MaterialTheme.colorScheme.errorContainer
                     )
                 ) {
@@ -132,25 +148,25 @@ fun WorkspaceListScreen(
                             contentDescription = null,
                             tint = if (state.isOfflineMode && state.workspaces.isNotEmpty())
                                 MaterialTheme.colorScheme.onSecondaryContainer
-                            else 
+                            else
                                 MaterialTheme.colorScheme.onErrorContainer
                         )
-                        
+
                         Spacer(modifier = Modifier.width(8.dp))
-                        
+
                         Text(
-                            text = if (state.isOfflineMode && state.workspaces.isNotEmpty()) 
+                            text = if (state.isOfflineMode && state.workspaces.isNotEmpty())
                                 "Showing cached data • $error"
-                            else 
+                            else
                                 error,
                             color = if (state.isOfflineMode && state.workspaces.isNotEmpty())
                                 MaterialTheme.colorScheme.onSecondaryContainer
-                            else 
+                            else
                                 MaterialTheme.colorScheme.onErrorContainer,
                             modifier = Modifier.weight(1f),
                             style = MaterialTheme.typography.bodyMedium
                         )
-                        
+
                         Row {
                             // Retry button for network errors
                             if (!state.isRefreshing) {
@@ -162,12 +178,12 @@ fun WorkspaceListScreen(
                                         contentDescription = "Retry",
                                         tint = if (state.isOfflineMode && state.workspaces.isNotEmpty())
                                             MaterialTheme.colorScheme.onSecondaryContainer
-                                        else 
+                                        else
                                             MaterialTheme.colorScheme.onErrorContainer
                                     )
                                 }
                             }
-                            
+
                             TextButton(
                                 onClick = { viewModel.clearError() }
                             ) {
@@ -176,21 +192,6 @@ fun WorkspaceListScreen(
                         }
                     }
                 }
-            }
-
-            // Invitations section
-            if (state.invitations.isNotEmpty()) {
-                InvitationsSection(
-                    invitations = state.invitations,
-                    isLoading = state.isInvitationsLoading,
-                    error = state.invitationsError,
-                    processingIds = state.processingInvitationIds,
-                    onAccept = viewModel::acceptInvitation,
-                    onReject = viewModel::rejectInvitation,
-                    onClearError = viewModel::clearInvitationsError,
-                    onRefresh = viewModel::refreshInvitations
-                )
-                Spacer(modifier = Modifier.height(16.dp))
             }
 
             // Content
@@ -301,7 +302,7 @@ fun WorkspaceListScreen(
                                 }
                             }
                         }
-                        
+
                         items(state.workspaces) { workspace ->
                             WorkspaceCard(
                                 workspace = workspace,
@@ -326,7 +327,7 @@ fun WorkspaceListScreen(
                 }
             }
         }
-        
+
         // Floating Action Button
         FloatingActionButton(
             onClick = onNavigateToCreateWorkspace,
@@ -353,9 +354,9 @@ private fun WorkspaceCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isOfflineMode) 
+            containerColor = if (isOfflineMode)
                 MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.8f)
-            else 
+            else
                 MaterialTheme.colorScheme.surface
         )
     ) {
@@ -441,7 +442,7 @@ private fun WorkspaceCard(
                             color = MaterialTheme.colorScheme.outline
                         )
                     }
-                    
+
                     // Offline sync indicator
                     if (isOfflineMode) {
                         Spacer(modifier = Modifier.width(8.dp))
@@ -471,7 +472,7 @@ private fun WorkspaceCard(
                     }
                 }
             }
-            
+
             // Edit button
             IconButton(
                 onClick = onEdit,
