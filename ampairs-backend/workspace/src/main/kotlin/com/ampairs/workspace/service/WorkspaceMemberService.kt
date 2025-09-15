@@ -240,22 +240,6 @@ class WorkspaceMemberService(
         }
     }
 
-    /**
-     * Extract first name from full name
-     */
-    private fun extractFirstName(fullName: String?): String? {
-        return fullName?.split(" ")?.firstOrNull()
-    }
-
-    /**
-     * Extract last name from full name
-     */
-    private fun extractLastName(fullName: String?): String? {
-        val nameParts = fullName?.split(" ")
-        return if (nameParts != null && nameParts.size > 1) {
-            nameParts.drop(1).joinToString(" ")
-        } else null
-    }
 
     /**
      * Get member by ID with user details and team information using EntityGraph

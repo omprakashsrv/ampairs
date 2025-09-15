@@ -2,7 +2,6 @@ package com.ampairs.workspace.service
 
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.workspace.model.MasterModule
-import com.ampairs.workspace.model.ModuleSettings
 import com.ampairs.workspace.model.WorkspaceModule
 import com.ampairs.workspace.model.dto.*
 import com.ampairs.workspace.model.enums.ModuleCategory
@@ -109,7 +108,8 @@ class WorkspaceModuleService(
 
         // Check if already installed
         if (workspaceModuleRepository.existsByWorkspaceIdAndMasterModuleModuleCode(workspaceId, moduleCode)) {
-            val existingModule = workspaceModuleRepository.findByWorkspaceIdAndMasterModuleModuleCode(workspaceId, moduleCode)
+            val existingModule =
+                workspaceModuleRepository.findByWorkspaceIdAndMasterModuleModuleCode(workspaceId, moduleCode)
             return ModuleInstallationResponse(
                 success = true,
                 moduleId = existingModule?.uid ?: "",
@@ -220,7 +220,11 @@ class WorkspaceModuleService(
                 success = false,
                 moduleId = moduleId,
                 workspaceId = workspaceId,
-                message = "Cannot uninstall ${workspaceModule.getEffectiveName()}. Required by: ${dependentNames.joinToString(", ")}"
+                message = "Cannot uninstall ${workspaceModule.getEffectiveName()}. Required by: ${
+                    dependentNames.joinToString(
+                        ", "
+                    )
+                }"
             )
         }
 
@@ -375,6 +379,7 @@ class WorkspaceModuleService(
                 }
                 masterModuleRepository.findByActiveTrueAndCategory(moduleCategory)
             }
+
             else -> masterModuleRepository.findByActiveTrueOrderByDisplayOrderAsc()
         }
 
@@ -537,28 +542,6 @@ class WorkspaceModuleService(
         )
     }
 
-    // Helper methods
-
-    private fun getRecentActivity(workspaceId: String): RecentActivityResponse {
-        val recentlyInstalled = workspaceModuleRepository
-            .findByWorkspaceIdAndInstalledAtAfterOrderByInstalledAtDesc(
-                workspaceId,
-                LocalDateTime.now().minusDays(30)
-            )
-
-        return RecentActivityResponse(
-            lastInstalled = recentlyInstalled.firstOrNull()?.masterModule?.name,
-            lastConfigured = null, // Could be enhanced with configuration tracking
-            lastAccessed = LocalDateTime.now()
-        )
-    }
-
-    private fun getInstalledCategories(workspaceId: String): List<String> {
-        return workspaceModuleRepository.findByWorkspaceIdAndEnabledTrue(workspaceId)
-            .map { it.getEffectiveCategory() }
-            .distinct()
-    }
-
     private fun buildModuleAnalytics(workspaceModule: WorkspaceModule): ModuleAnalyticsResponse {
         val metrics = workspaceModule.usageMetrics
         return ModuleAnalyticsResponse(
@@ -594,107 +577,6 @@ class WorkspaceModuleService(
             ?: workspaceModuleRepository.findByWorkspaceIdAndMasterModuleModuleCode(workspaceId, moduleId)
     }
 
-    private fun enableModule(workspaceModule: WorkspaceModule): ModuleActionResponse {
-        workspaceModule.enabled = true
-        workspaceModule.status = WorkspaceModuleStatus.ACTIVE
-        workspaceModuleRepository.save(workspaceModule)
-
-        return buildActionResponse(workspaceModule, "enable", "Module enabled successfully")
-    }
-
-    private fun disableModule(workspaceModule: WorkspaceModule): ModuleActionResponse {
-        workspaceModule.enabled = false
-        workspaceModule.status = WorkspaceModuleStatus.SUSPENDED
-        workspaceModuleRepository.save(workspaceModule)
-
-        return buildActionResponse(workspaceModule, "disable", "Module disabled successfully")
-    }
-
-    private fun configureModule(workspaceModule: WorkspaceModule): ModuleActionResponse {
-        // Configuration logic would be implemented here
-        return buildActionResponse(workspaceModule, "configure", "Module configuration updated")
-    }
-
-    private fun resetModule(workspaceModule: WorkspaceModule): ModuleActionResponse {
-        workspaceModule.settings = ModuleSettings()
-        workspaceModuleRepository.save(workspaceModule)
-
-        return buildActionResponse(workspaceModule, "reset", "Module reset to defaults")
-    }
-
-    private fun updateModule(workspaceModule: WorkspaceModule): ModuleActionResponse? {
-        if (!workspaceModule.canBeUpdated()) {
-            return null
-        }
-
-        workspaceModule.updateToLatestVersion()
-        workspaceModuleRepository.save(workspaceModule)
-
-        return buildActionResponse(workspaceModule, "update", "Module updated to latest version")
-    }
-
-    private fun analyzeModule(workspaceModule: WorkspaceModule): ModuleActionResponse {
-        return buildActionResponse(workspaceModule, "analyze", "Module analysis completed")
-    }
-
-    private fun diagnoseModule(workspaceModule: WorkspaceModule): ModuleActionResponse {
-        workspaceModule.getHealthScore()
-        val issues = mutableListOf<String>()
-
-        if (!workspaceModule.isOperational()) issues.add("Module is not operational")
-        if (!workspaceModule.hasValidLicense()) issues.add("License expired or invalid")
-        if (workspaceModule.canBeUpdated()) issues.add("Update available")
-        if (workspaceModule.usageMetrics.errorCount > 0) issues.add("Errors detected")
-
-        val message =
-            if (issues.isEmpty()) "Module diagnosis completed - Healthy" else "Module diagnosis completed - Needs attention"
-        return buildActionResponse(workspaceModule, "diagnose", message)
-    }
-
-    private fun optimizeModule(workspaceModule: WorkspaceModule): ModuleActionResponse {
-        // Optimization logic would be implemented here
-        return buildActionResponse(workspaceModule, "optimize", "Module optimization completed")
-    }
-
-    private fun restartModule(workspaceModule: WorkspaceModule): ModuleActionResponse {
-        // Restart logic would be implemented here
-        return buildActionResponse(workspaceModule, "restart", "Module restarted successfully")
-    }
-
-    private fun refreshModule(workspaceModule: WorkspaceModule): ModuleActionResponse {
-        // Refresh logic would be implemented here
-        return buildActionResponse(workspaceModule, "refresh", "Module data refreshed")
-    }
-
-    private fun buildActionResponse(
-        workspaceModule: WorkspaceModule,
-        action: String,
-        message: String,
-    ): ModuleActionResponse {
-        return ModuleActionResponse(
-            moduleId = workspaceModule.uid,
-            action = action,
-            workspaceId = workspaceModule.workspaceId,
-            success = true,
-            message = message,
-            actionDetails = ActionDetailsResponse(
-                executedAt = LocalDateTime.now(),
-                duration = "1.2 seconds",
-                affectedComponents = listOf("configuration", "user-interface")
-            ),
-            impact = ActionImpactResponse(
-                usersAffected = workspaceModule.usageMetrics.dailyActiveUsers,
-                dataChanged = false,
-                requiresRestart = false,
-                immediatelyAvailable = true
-            ),
-            nextSteps = listOf(
-                "Verify functionality in user interface",
-                "Monitor performance metrics"
-            )
-        )
-    }
-
     private fun checkMissingDependencies(workspaceId: String, masterModule: MasterModule): List<String> {
         val installedModules = workspaceModuleRepository.findByWorkspaceIdAndEnabledTrue(workspaceId)
             .map { it.masterModule.moduleCode }.toSet()
@@ -724,10 +606,4 @@ class WorkspaceModuleService(
         return maxOrder + 10
     }
 
-    private fun getSupportedActions(): List<String> {
-        return listOf(
-            "enable", "disable", "configure", "reset", "update",
-            "analyze", "diagnose", "optimize", "restart", "refresh"
-        )
-    }
 }

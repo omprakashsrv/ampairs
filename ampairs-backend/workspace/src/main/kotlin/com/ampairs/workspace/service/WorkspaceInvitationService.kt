@@ -2,7 +2,6 @@ package com.ampairs.workspace.service
 
 import com.ampairs.core.exception.BusinessException
 import com.ampairs.core.exception.NotFoundException
-import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.workspace.model.WorkspaceInvitation
 import com.ampairs.workspace.model.dto.*
 import com.ampairs.workspace.model.enums.InvitationStatus
@@ -173,30 +172,6 @@ class WorkspaceInvitationService(
         )
     }
 
-    /**
-     * Decline invitation by token (for public/email links)
-     */
-    fun declineInvitation(token: String, userId: String, reason: String?): InvitationResponse {
-        val invitation = findInvitationByToken(token)
-
-        // Validate invitation
-        validateInvitation(invitation)
-
-        // Validate that the user is the actual recipient
-        validateUserIsInvitationRecipient(invitation, userId)
-
-        // Update invitation status
-        invitation.status = InvitationStatus.DECLINED
-        invitation.rejectedAt = LocalDateTime.now()
-        invitation.rejectionReason = reason
-        val updatedInvitation = invitationRepository.save(invitation)
-
-        // Log activity
-        activityService.logInvitationDeclined(invitation.workspaceId, invitation.email ?: "", reason, invitation.uid)
-
-        logger.info("Invitation declined: ${invitation.id}")
-        return updatedInvitation.toResponse()
-    }
 
     /**
      * Decline invitation by ID (for user-scoped operations)
@@ -321,26 +296,6 @@ class WorkspaceInvitationService(
         }
 
         return invitations.map { it.toListResponse() }
-    }
-
-    /**
-     * Get invitation by token (for public access)
-     */
-    fun getPublicInvitation(token: String): PublicInvitationResponse {
-        val invitation = findInvitationByToken(token)
-        val workspace = workspaceRepository.findById(invitation.workspaceId)
-            .orElseThrow { NotFoundException("Workspace not found") }
-
-        return PublicInvitationResponse(
-            workspaceName = workspace.name,
-            workspaceDescription = workspace.description,
-            workspaceAvatarUrl = workspace.avatarUrl,
-            inviterName = "Workspace Member", // TODO: Get actual inviter name
-            role = invitation.role,
-            expiresAt = invitation.expiresAt,
-            isExpired = LocalDateTime.now().isAfter(invitation.expiresAt),
-            isValid = invitation.status == InvitationStatus.PENDING && !LocalDateTime.now().isAfter(invitation.expiresAt)
-        )
     }
 
     /**
@@ -510,20 +465,6 @@ class WorkspaceInvitationService(
         logger.info("Deleted ${invitations.size} invitations for workspace: $workspaceId")
     }
 
-    /**
-     * Mark expired invitations
-     */
-    fun markExpiredInvitations(): Int {
-        return invitationRepository.markExpiredInvitations(LocalDateTime.now())
-    }
-
-    /**
-     * Clean up old invitations
-     */
-    fun cleanupOldInvitations(daysOld: Int = 30): Int {
-        val cleanupDate = LocalDateTime.now().minusDays(daysOld.toLong())
-        return invitationRepository.deleteOldInvitations(cleanupDate)
-    }
 
     /**
      * Bulk cancel invitations
@@ -697,69 +638,6 @@ class WorkspaceInvitationService(
         }
     }
 
-    /**
-     * Bulk invitation operations (legacy method for backward compatibility)
-     */
-    fun bulkInvitationOperation(workspaceId: String, request: BulkInvitationRequest, operatedBy: String): String {
-        val invitations = invitationRepository.findAllById(request.invitationIds)
-
-        // Validate all invitations belong to workspace
-        invitations.forEach { invitation ->
-            if (invitation.workspaceId != workspaceId) {
-                throw BusinessException("INVALID_INVITATION", "One or more invitations don't belong to this workspace")
-            }
-        }
-
-        when (request.action) {
-            "resend" -> {
-                val pendingInvitations = invitations.filter { it.status == InvitationStatus.PENDING }
-                pendingInvitations.forEach { invitation ->
-                    invitation.sendCount += 1
-                    invitation.lastSentAt = LocalDateTime.now()
-                }
-                invitationRepository.saveAll(pendingInvitations)
-                // TODO: Send bulk emails
-                activityService.logBulkInvitationResend(
-                    workspaceId,
-                    pendingInvitations.size,
-                    operatedBy,
-                    "Unknown User"
-                )
-            }
-
-            "cancel" -> {
-                val pendingInvitations = invitations.filter { it.status == InvitationStatus.PENDING }
-                pendingInvitations.forEach { invitation ->
-                    invitation.status = InvitationStatus.CANCELLED
-                    invitation.cancelledAt = LocalDateTime.now()
-                    invitation.cancelledBy = operatedBy
-                    invitation.cancellationReason = request.reason
-                }
-                invitationRepository.saveAll(pendingInvitations)
-                activityService.logBulkInvitationCancellation(
-                    workspaceId,
-                    pendingInvitations.size,
-                    operatedBy,
-                    "Unknown User"
-                )
-            }
-
-            "revoke" -> {
-                invitations.forEach { invitation ->
-                    invitation.status = InvitationStatus.REVOKED
-                    invitation.cancelledAt = LocalDateTime.now()
-                    invitation.cancelledBy = operatedBy
-                    invitation.cancellationReason = request.reason ?: "Bulk revoke operation"
-                }
-                invitationRepository.saveAll(invitations)
-                activityService.logBulkInvitationRevoke(workspaceId, invitations.size, operatedBy, "Unknown User")
-            }
-
-            else -> throw BusinessException("INVALID_ACTION", "Invalid bulk action: ${request.action}")
-        }
-
-        return "${request.action} operation completed for ${invitations.size} invitations"
-    }
 
     // Private helper methods
 
@@ -801,9 +679,6 @@ class WorkspaceInvitationService(
         }
     }
 
-    private fun generateInvitationToken(): String {
-        return UUID.randomUUID().toString().replace("-", "").uppercase()
-    }
 
     /**
      * Generate CSV export for invitations

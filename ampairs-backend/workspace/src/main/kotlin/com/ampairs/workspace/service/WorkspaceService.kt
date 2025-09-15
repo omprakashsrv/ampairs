@@ -292,22 +292,6 @@ class WorkspaceService(
         return mapOf("available" to isAvailable)
     }
 
-    /**
-     * Get workspace member count
-     */
-    fun getWorkspaceMemberCount(workspaceId: String): Int {
-        return memberService.getActiveMemberCount(workspaceId)
-    }
-
-    /**
-     * Update workspace activity timestamp
-     */
-    fun updateLastActivity(workspaceId: String) {
-        workspaceRepository.updateLastActivity(workspaceId, LocalDateTime.now())
-    }
-
-    // Private helper methods
-
     private fun findWorkspaceById(workspaceId: String): Workspace {
         return workspaceRepository.findByUid(workspaceId)
             .orElseThrow { NotFoundException("Workspace not found: $workspaceId") }
