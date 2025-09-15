@@ -30,11 +30,35 @@ class MasterModuleSeederService(
         val existingModules = masterModuleRepository.findAll().associateBy { it.moduleCode }
         
         getSystemModules().forEach { moduleData ->
-            if (!existingModules.containsKey(moduleData.moduleCode)) {
-                logger.info("Seeding master module: {}", moduleData.moduleCode)
+            val existingModule = existingModules[moduleData.moduleCode]
+            if (existingModule == null) {
+                logger.info("Seeding new master module: {}", moduleData.moduleCode)
                 masterModuleRepository.save(moduleData)
             } else {
-                logger.debug("Master module already exists: {}", moduleData.moduleCode)
+                logger.info("Updating existing master module: {}", moduleData.moduleCode)
+                // Update existing module with all new data
+                existingModule.apply {
+                    name = moduleData.name
+                    description = moduleData.description
+                    tagline = moduleData.tagline
+                    category = moduleData.category
+                    status = moduleData.status
+                    requiredTier = moduleData.requiredTier
+                    requiredRole = moduleData.requiredRole
+                    complexity = moduleData.complexity
+                    version = moduleData.version
+                    businessRelevance = moduleData.businessRelevance
+                    configuration = moduleData.configuration
+                    uiMetadata = moduleData.uiMetadata
+                    routeInfo = moduleData.routeInfo
+                    navigationIndex = moduleData.navigationIndex
+                    provider = moduleData.provider
+                    sizeMb = moduleData.sizeMb
+                    featured = moduleData.featured
+                    displayOrder = moduleData.displayOrder
+                    active = moduleData.active
+                }
+                masterModuleRepository.save(existingModule)
             }
         }
         
@@ -81,6 +105,17 @@ class MasterModuleSeederService(
             primaryColor = "#1976D2",
             tags = listOf("CRM", "Contacts", "GST", "Credit Management")
         )
+        routeInfo = createRouteInfo(
+            basePath = "/customers",
+            displayName = "Customers",
+            iconName = "people",
+            menuItems = listOf(
+                createMenuItem("customer-list", "All Customers", "/customers", "people", 1, true),
+                createMenuItem("customer-create", "Create Customer", "/customers/create", "person_add", 2),
+                createMenuItem("customer-import", "Import Customers", "/customers/import", "upload", 3)
+            )
+        )
+        navigationIndex = 20
         provider = "Ampairs"
         sizeMb = 5
         featured = true
@@ -114,6 +149,17 @@ class MasterModuleSeederService(
             primaryColor = "#388E3C",
             tags = listOf("Inventory", "Catalog", "Pricing", "Stock Management")
         )
+        routeInfo = createRouteInfo(
+            basePath = "/products",
+            displayName = "Products",
+            iconName = "inventory",
+            menuItems = listOf(
+                createMenuItem("product-list", "All Products", "/products", "inventory", 1, true),
+                createMenuItem("product-create", "Create Product", "/products/create", "add", 2),
+                createMenuItem("product-categories", "Categories", "/products/categories", "category", 3)
+            )
+        )
+        navigationIndex = 30
         provider = "Ampairs"
         sizeMb = 8
         featured = true
@@ -147,6 +193,17 @@ class MasterModuleSeederService(
             primaryColor = "#F57C00",
             tags = listOf("Sales", "Orders", "Workflow", "Processing")
         )
+        routeInfo = createRouteInfo(
+            basePath = "/orders",
+            displayName = "Orders",
+            iconName = "shopping_cart",
+            menuItems = listOf(
+                createMenuItem("order-list", "All Orders", "/orders", "shopping_cart", 1, true),
+                createMenuItem("order-create", "Create Order", "/orders/create", "add_shopping_cart", 2),
+                createMenuItem("order-drafts", "Draft Orders", "/orders/drafts", "drafts", 3)
+            )
+        )
+        navigationIndex = 40
         provider = "Ampairs"
         sizeMb = 12
         featured = true
@@ -374,6 +431,16 @@ class MasterModuleSeederService(
             primaryColor = "#00BCD4",
             tags = listOf("Dashboard", "KPIs", "Monitoring", "Widgets")
         )
+        routeInfo = createRouteInfo(
+            basePath = "/dashboard",
+            displayName = "Dashboard",
+            iconName = "dashboard",
+            menuItems = listOf(
+                createMenuItem("main-dashboard", "Overview", "/dashboard", "dashboard", 1, true),
+                createMenuItem("dashboard-config", "Customize", "/dashboard/configure", "tune", 2)
+            )
+        )
+        navigationIndex = 10
         provider = "Ampairs"
         sizeMb = 8
         featured = false
@@ -432,5 +499,33 @@ class MasterModuleSeederService(
         videoUrl = videoUrl,
         tags = tags,
         keywords = keywords
+    )
+
+    private fun createRouteInfo(
+        basePath: String,
+        displayName: String,
+        iconName: String,
+        menuItems: List<com.ampairs.workspace.model.ModuleMenuItem> = emptyList()
+    ) = com.ampairs.workspace.model.ModuleRouteInfo(
+        basePath = basePath,
+        displayName = displayName,
+        iconName = iconName,
+        menuItems = menuItems
+    )
+
+    private fun createMenuItem(
+        id: String,
+        label: String,
+        routePath: String,
+        icon: String,
+        order: Int,
+        isDefault: Boolean = false
+    ) = com.ampairs.workspace.model.ModuleMenuItem(
+        id = id,
+        label = label,
+        routePath = routePath,
+        icon = icon,
+        order = order,
+        isDefault = isDefault
     )
 }

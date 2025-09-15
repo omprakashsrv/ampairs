@@ -21,6 +21,28 @@ data class ModuleConfiguration(
 )
 
 /**
+ * Module navigation menu item
+ */
+data class ModuleMenuItem(
+    var id: String = "",                 // "create-customer", "customer-list"
+    var label: String = "",              // "Create Customer", "Customer List"
+    var routePath: String = "",          // "/customers/create", "/customers"
+    var icon: String = "",               // "person_add", "people"
+    var order: Int = 0,                  // Display order in menu
+    var isDefault: Boolean = false       // Default route when module is accessed
+)
+
+/**
+ * Module route and navigation information
+ */
+data class ModuleRouteInfo(
+    var basePath: String = "",           // "/customers"
+    var displayName: String = "",        // "Customer Management"
+    var iconName: String = "",           // "people"
+    var menuItems: List<ModuleMenuItem> = emptyList()
+)
+
+/**
  * Module UI and presentation metadata
  */
 data class ModuleUIMetadata(
@@ -150,6 +172,19 @@ class MasterModule : BaseDomain() {
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "ui_metadata", columnDefinition = "JSON")
     var uiMetadata: ModuleUIMetadata = ModuleUIMetadata()
+
+    /**
+     * Route and navigation information (JSON)
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "route_info", columnDefinition = "JSON")
+    var routeInfo: ModuleRouteInfo = ModuleRouteInfo()
+
+    /**
+     * Navigation index for ordering modules in menu
+     */
+    @Column(name = "navigation_index", nullable = false)
+    var navigationIndex: Int = 999
 
     /**
      * Module developer/provider

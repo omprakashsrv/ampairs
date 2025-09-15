@@ -47,13 +47,18 @@ export const ModuleGuard: CanActivateFn = (route: ActivatedRouteSnapshot) => {
  */
 function getModuleCodeFromRoute(route: ActivatedRouteSnapshot): string | null {
   const path = route.routeConfig?.path || '';
-  
-  // Map route paths to module codes
+
+  // Check if it's a parameterized module route (modules/:moduleCode)
+  if (path === 'modules/:moduleCode' || path === 'modules/:moduleCode/**') {
+    return route.paramMap.get('moduleCode');
+  }
+
+  // Legacy static route mapping (for backward compatibility)
   const routeToModuleMap: Record<string, string> = {
     'customers': 'customer-management',
     'orders': 'order-management',
     'invoices': 'invoice-management',
-    'products': 'product-management',
+    'products': 'product-catalog',
     'inventory': 'inventory-management',
     'finance': 'financial-management',
     'analytics': 'analytics-reporting',
@@ -68,11 +73,6 @@ function getModuleCodeFromRoute(route: ActivatedRouteSnapshot): string | null {
   // Check if the path matches any known module route
   if (routeToModuleMap[path]) {
     return routeToModuleMap[path];
-  }
-
-  // Check if it's a parameterized module route (modules/:moduleCode)
-  if (path === 'modules/:moduleCode') {
-    return route.paramMap.get('moduleCode');
   }
 
   // For child routes, check the parent route

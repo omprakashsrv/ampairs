@@ -42,6 +42,7 @@
           </button>
         </div>
       } @else {
+        <!-- Module Grid -->
         <div class="modules-grid">
           @for (module of installedModules(); track module.id) {
             <mat-card class="module-card" (click)="openModule(module)">

@@ -4,6 +4,7 @@ import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.workspace.model.MasterModule
 import com.ampairs.workspace.model.WorkspaceModule
 import com.ampairs.workspace.model.dto.*
+import com.ampairs.workspace.model.ModuleRouteInfo
 import com.ampairs.workspace.model.enums.ModuleCategory
 import com.ampairs.workspace.model.enums.WorkspaceModuleStatus
 import com.ampairs.workspace.repository.MasterModuleRepository
@@ -20,7 +21,7 @@ import java.time.LocalDateTime
 @Transactional
 class WorkspaceModuleService(
     private val workspaceModuleRepository: WorkspaceModuleRepository,
-    private val masterModuleRepository: MasterModuleRepository,
+    private val masterModuleRepository: MasterModuleRepository
 ) {
 
     /**
@@ -46,9 +47,11 @@ class WorkspaceModuleService(
                 icon = module.getEffectiveIcon(),
                 primaryColor = module.getEffectiveColor(),
                 healthScore = module.getHealthScore(),
-                needsAttention = module.needsAttention()
+                needsAttention = module.needsAttention(),
+                routeInfo = module.masterModule.routeInfo,
+                navigationIndex = module.masterModule.navigationIndex
             )
-        }
+        }.sortedBy { it.navigationIndex }
     }
 
     /**
@@ -286,7 +289,9 @@ class WorkspaceModuleService(
                 primaryColor = masterModule.getPrimaryColor(),
                 featured = masterModule.featured,
                 requiredTier = masterModule.requiredTier.displayName,
-                sizeMb = masterModule.sizeMb
+                sizeMb = masterModule.sizeMb,
+                routeInfo = masterModule.routeInfo,
+                navigationIndex = masterModule.navigationIndex
             )
         }
         return moduleData
@@ -358,9 +363,11 @@ class WorkspaceModuleService(
                     needsAttention = workspaceModule.needsAttention()
                 ),
                 availableActions = buildAvailableActions(workspaceModule),
-                permissions = buildActionPermissions(workspaceModule)
+                permissions = buildActionPermissions(workspaceModule),
+                routeInfo = masterModule.routeInfo,
+                navigationIndex = masterModule.navigationIndex
             )
-        }
+        }.sortedBy { it.navigationIndex }
     }
 
     private fun getAvailableModulesWithActions(
@@ -429,9 +436,11 @@ class WorkspaceModuleService(
                     canConfigure = false,
                     canEnable = false,
                     canDisable = false
-                )
+                ),
+                routeInfo = masterModule.routeInfo,
+                navigationIndex = masterModule.navigationIndex
             )
-        }
+        }.sortedBy { it.navigationIndex }
     }
 
     private fun buildAvailableActions(workspaceModule: WorkspaceModule): List<ModuleActionOption> {
@@ -512,7 +521,7 @@ class WorkspaceModuleService(
     }
 
     private fun getAllCategories(): List<ModuleCategoryResponse> {
-        return ModuleCategory.values().map { category ->
+        return ModuleCategory.entries.map { category ->
             ModuleCategoryResponse(
                 code = category.name,
                 displayName = category.displayName,

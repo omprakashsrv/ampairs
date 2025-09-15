@@ -4,6 +4,22 @@ import { Observable, firstValueFrom } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
+export interface ModuleMenuItemResponse {
+  id: string;
+  label: string;
+  route_path: string;
+  icon: string;
+  order: number;
+  is_default: boolean;
+}
+
+export interface ModuleRouteInfoResponse {
+  base_path: string;
+  display_name: string;
+  icon_name: string;
+  menu_items: ModuleMenuItemResponse[];
+}
+
 export interface InstalledModule {
   id: string;
   module_code: string;
@@ -18,6 +34,8 @@ export interface InstalledModule {
   health_score?: number;
   needs_attention?: boolean;
   description?: string;
+  route_info: ModuleRouteInfoResponse;
+  navigation_index: number;
 }
 
 export interface AvailableModule {

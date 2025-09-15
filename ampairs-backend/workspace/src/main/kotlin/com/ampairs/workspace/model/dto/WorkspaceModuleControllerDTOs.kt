@@ -1,6 +1,7 @@
 package com.ampairs.workspace.model.dto
 
 import com.ampairs.workspace.model.enums.WorkspaceModuleStatus
+import com.ampairs.workspace.model.ModuleRouteInfo
 import java.time.LocalDateTime
 
 /**
@@ -19,6 +20,8 @@ data class InstalledModuleResponse(
     var primaryColor: String = "",
     var healthScore: Double = 1.0,
     var needsAttention: Boolean = false,
+    var routeInfo: ModuleRouteInfo = ModuleRouteInfo(),
+    var navigationIndex: Int = 0
 )
 
 /**
@@ -144,6 +147,8 @@ data class AvailableModuleResponse(
     var featured: Boolean = false,
     var requiredTier: String = "",
     var sizeMb: Int = 0,
+    var routeInfo: ModuleRouteInfo = ModuleRouteInfo(),
+    var navigationIndex: Int = 0
 )
 
 /**
@@ -210,6 +215,8 @@ data class ModuleWithActionsResponse(
     var installationStatus: ModuleInstallationStatus = ModuleInstallationStatus(),
     var availableActions: List<ModuleActionOption> = emptyList(),
     var permissions: ModuleActionPermissions = ModuleActionPermissions(),
+    var routeInfo: ModuleRouteInfo = ModuleRouteInfo(),
+    var navigationIndex: Int = 0
 )
 
 /**

@@ -2,6 +2,16 @@
 <mat-toolbar
   class="app-header-toolbar">
 
+  <!-- Sidenav Toggle -->
+  @if (shouldShowSidenavToggle()) {
+    <button
+      mat-icon-button
+      (click)="onToggleSidenav()"
+      matTooltip="Toggle Navigation">
+      <mat-icon>menu</mat-icon>
+    </button>
+  }
+
   <!-- Back Button (conditional) -->
   @if (headerContext().showBackButton) {
     <button
@@ -175,3 +185,4 @@
   }
 
 </mat-toolbar>
+

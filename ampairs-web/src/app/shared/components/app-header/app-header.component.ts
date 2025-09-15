@@ -1,4 +1,4 @@
-import {ChangeDetectionStrategy, Component, computed, inject, OnInit, signal} from '@angular/core';
+import {ChangeDetectionStrategy, Component, computed, inject, OnInit, signal, Output, EventEmitter} from '@angular/core';
 import {ActivatedRoute, NavigationEnd, Router} from '@angular/router';
 import {CommonModule, Location} from '@angular/common';
 import {MatToolbarModule} from '@angular/material/toolbar';
@@ -15,10 +15,12 @@ import {ThemeService} from '../../../core/services/theme.service';
 import {DeviceManagementComponent} from '../device-management/device-management.component';
 import {ThemeSettingsComponent} from '../theme-settings/theme-settings.component';
 import {MatTooltip} from "@angular/material/tooltip";
+import {DynamicNavigationService} from '../../../core/services/dynamic-navigation.service';
 
 export interface HeaderContext {
   showWorkspaceInfo: boolean;
   showBackButton: boolean;
+  showSidenavToggle: boolean;
   backAction?: () => void;
   title?: string;
   titleIcon?: string;
@@ -54,6 +56,10 @@ export class AppHeaderComponent implements OnInit {
   private location = inject(Location);
   private dialog = inject(MatDialog);
   private route = inject(ActivatedRoute);
+  private dynamicNavigation = inject(DynamicNavigationService);
+
+  // Output for sidenav toggle
+  @Output() toggleSidenav = new EventEmitter<void>();
 
   // Signal-based state
   readonly currentUser = this.authService.currentUser;
@@ -61,6 +67,7 @@ export class AppHeaderComponent implements OnInit {
   readonly isAuthenticated = this.authService.isAuthenticated;
   readonly themeMode = this.themeService.themeMode;
   readonly isDarkMode = this.themeService.isDarkMode;
+  readonly navigationRoutes = this.dynamicNavigation.navigationRoutes;
 
   // Reactive header context using signals
   private _currentUrl = signal('');
@@ -80,11 +87,12 @@ export class AppHeaderComponent implements OnInit {
 
   private getHeaderContext(url: string = this.router.url): HeaderContext {
 
-    // Home/Dashboard routes - show full workspace info
+    // Home/Dashboard routes - show full workspace info and sidenav toggle
     if (url.includes('/home') || url.includes('/w/')) {
       return {
         showWorkspaceInfo: true,
-        showBackButton: false
+        showBackButton: false,
+        showSidenavToggle: true
       };
     }
 
@@ -93,6 +101,7 @@ export class AppHeaderComponent implements OnInit {
       return {
         showWorkspaceInfo: false,
         showBackButton: false,
+        showSidenavToggle: false,
         title: 'Select Workspace',
         titleIcon: 'business'
       };
@@ -103,6 +112,7 @@ export class AppHeaderComponent implements OnInit {
       return {
         showWorkspaceInfo: false,
         showBackButton: true,
+        showSidenavToggle: false,
         backAction: () => this.router.navigate(['/workspaces']),
         title: 'Create Workspace',
         titleIcon: 'add_business',
@@ -115,6 +125,7 @@ export class AppHeaderComponent implements OnInit {
       return {
         showWorkspaceInfo: false,
         showBackButton: true,
+        showSidenavToggle: false,
         backAction: () => this.location.back(),
         title: 'Complete Profile',
         titleIcon: 'person'
@@ -124,7 +135,8 @@ export class AppHeaderComponent implements OnInit {
     // Default context
     return {
       showWorkspaceInfo: true,
-      showBackButton: false
+      showBackButton: false,
+      showSidenavToggle: false
     };
   }
 
@@ -243,6 +255,14 @@ export class AppHeaderComponent implements OnInit {
   shouldShowThemeControls(): boolean {
     // Show theme controls only on authenticated pages
     return this.isAuthenticated() === true;
+  }
+
+  shouldShowSidenavToggle(): boolean {
+    return this.headerContext().showSidenavToggle && this.isAuthenticated() === true;
+  }
+
+  onToggleSidenav(): void {
+    this.toggleSidenav.emit();
   }
 
   // Dynamic step indicator (for workspace creation)

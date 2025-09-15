@@ -60,6 +60,16 @@ export const routes: Routes = [
             loadComponent: () => import('./pages/workspace/workspace-modules/workspace-modules.component').then(m => m.WorkspaceModulesComponent)
           },
           {
+            path: 'modules/:moduleCode',
+            loadComponent: () => import('./shared/components/dynamic-module-router/dynamic-module-router.component').then(m => m.DynamicModuleRouterComponent),
+            canActivate: [ModuleGuard]
+          },
+          {
+            path: 'modules/:moduleCode/**',
+            loadComponent: () => import('./shared/components/dynamic-module-router/dynamic-module-router.component').then(m => m.DynamicModuleRouterComponent),
+            canActivate: [ModuleGuard]
+          },
+          {
             path: 'dashboard',
             loadComponent: () => import('./pages/dashboard/dashboard.component').then(m => m.DashboardComponent)
           },
