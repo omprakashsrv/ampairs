@@ -60,6 +60,11 @@ export interface M3ThemeConfig {
 }
 
 /**
+ * Theme mode configuration
+ */
+export type ThemeMode = 'system' | 'light' | 'dark';
+
+/**
  * Material Design 3 Density Configuration
  */
 export interface M3DensityConfig {
@@ -109,7 +114,7 @@ export interface M3TypographyConfig {
 export class ThemeService {
   // Storage keys for persistence
   private static readonly STORAGE_KEYS = {
-    theme: 'app_theme',
+    themeMode: 'app_theme_mode',
     density: 'app_density',
     typography: 'app_typography'
   } as const;
@@ -265,16 +270,19 @@ export class ThemeService {
   ];
 
   // Signal-based state management
+  private readonly _themeMode = signal<ThemeMode>('system');
   private readonly _currentTheme = signal<M3ThemeConfig>(this.themes[0]!);
   private readonly _currentDensity = signal<M3DensityConfig>(this.densityLevels[3]!); // Medium density (-2)
   private readonly _currentTypography = signal<M3TypographyConfig>(this.typographyConfigs[0]!);
 
   // Public readonly signals
+  public readonly themeMode = this._themeMode.asReadonly();
   public readonly currentTheme = this._currentTheme.asReadonly();
   public readonly currentDensity = this._currentDensity.asReadonly();
   public readonly currentTypography = this._currentTypography.asReadonly();
 
   // Backward compatibility observables
+  public readonly themeMode$ = toObservable(this._themeMode);
   public readonly currentTheme$ = toObservable(this._currentTheme);
   public readonly currentDensity$ = toObservable(this._currentDensity);
   public readonly currentTypography$ = toObservable(this._currentTypography);
@@ -314,12 +322,22 @@ export class ThemeService {
     return this._currentTypography();
   }
 
+  public getCurrentThemeMode(): ThemeMode {
+    return this._themeMode();
+  }
+
   public setTheme(themeName: string): void {
     const theme = this.themes.find(t => t.name === themeName);
     if (theme) {
       this.applyTheme(theme);
-      localStorage.setItem(ThemeService.STORAGE_KEYS.theme, themeName);
+      // Note: Individual theme setting doesn't persist mode, only direct theme changes
     }
+  }
+
+  public setThemeMode(mode: ThemeMode): void {
+    this._themeMode.set(mode);
+    localStorage.setItem(ThemeService.STORAGE_KEYS.themeMode, mode);
+    this.applyThemeMode(mode);
   }
 
   public setDensity(level: number): void {
@@ -340,20 +358,21 @@ export class ThemeService {
   }
 
   public toggleTheme(): void {
-    const currentTheme = this.getCurrentTheme();
-    const nextTheme = currentTheme.isDark ? 'light' : 'dark';
-    this.setTheme(nextTheme);
+    const currentMode = this._themeMode();
+    const nextMode: ThemeMode = currentMode === 'system' ? 'light' :
+                                currentMode === 'light' ? 'dark' : 'system';
+    this.setThemeMode(nextMode);
   }
 
   public resetToDefaults(): void {
-    this.setTheme('light');
+    this.setThemeMode('system');
     this.setDensity(-2); // Medium density
     this.setTypography('Roboto');
   }
 
   public exportConfiguration(): string {
     return JSON.stringify({
-      theme: this.getCurrentTheme().name,
+      themeMode: this.getCurrentThemeMode(),
       density: this.getCurrentDensity().level,
       typography: this.getCurrentTypography().name,
       version: '1.0',
@@ -365,7 +384,9 @@ export class ThemeService {
     try {
       const config = JSON.parse(configJson);
 
-      if (config.theme) this.setTheme(config.theme);
+      // Support both old and new format
+      if (config.themeMode) this.setThemeMode(config.themeMode);
+      else if (config.theme) this.setTheme(config.theme); // Backward compatibility
       if (config.density !== undefined) this.setDensity(config.density);
       if (config.typography) this.setTypography(config.typography);
 
@@ -377,17 +398,49 @@ export class ThemeService {
   }
 
   // Private methods
+  private applyThemeMode(mode: ThemeMode): void {
+    let themeName: string;
+
+    if (mode === 'system') {
+      // Detect system preference
+      if (typeof window !== 'undefined' && window.matchMedia) {
+        const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        themeName = isDarkMode ? 'dark' : 'light';
+      } else {
+        themeName = 'light'; // Fallback
+      }
+    } else {
+      themeName = mode;
+    }
+
+    const theme = this.themes.find(t => t.name === themeName);
+    if (theme) {
+      this.applyTheme(theme);
+    }
+  }
+
   private initializeTheme(): void {
     // Load saved preferences
-    const savedTheme = localStorage.getItem(ThemeService.STORAGE_KEYS.theme);
+    const savedThemeMode = localStorage.getItem(ThemeService.STORAGE_KEYS.themeMode) as ThemeMode;
     const savedDensity = localStorage.getItem(ThemeService.STORAGE_KEYS.density);
     const savedTypography = localStorage.getItem(ThemeService.STORAGE_KEYS.typography);
 
-    // Apply saved or default theme
-    const theme = savedTheme
-      ? this.themes.find(t => t.name === savedTheme) ?? this.themes[0]!
-      : this.themes[0]!;
-    this.applyTheme(theme);
+    // Set theme mode (default to 'system')
+    const themeMode = savedThemeMode || 'system';
+    this._themeMode.set(themeMode);
+
+    // Apply theme based on mode
+    this.applyThemeMode(themeMode);
+
+    // Listen for system theme changes
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      mediaQuery.addEventListener('change', () => {
+        if (this._themeMode() === 'system') {
+          this.applyThemeMode('system');
+        }
+      });
+    }
 
     // Apply saved or default density
     const density = savedDensity

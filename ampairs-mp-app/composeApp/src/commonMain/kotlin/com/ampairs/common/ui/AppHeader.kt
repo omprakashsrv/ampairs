@@ -18,6 +18,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import com.ampairs.common.theme.ThemeManager
+import com.ampairs.common.theme.ThemePreference
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,17 +74,26 @@ fun AppHeader(
                 modifier = Modifier.widthIn(min = 120.dp, max = 200.dp)
             )
 
-            // Spacer to push user profile to the right
+            // Spacer to push right-side elements to the right
             Spacer(modifier = Modifier.weight(1f))
-            
-            // Right side - User profile menu
-            UserProfileMenu(
-                userFullName = userFullName,
-                isLoading = isUserLoading,
-                onEditProfile = onEditProfile,
-                onLogout = onLogout,
-                onSwitchUser = onSwitchUser
-            )
+
+            // Right side - Theme toggle and user profile menu
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Theme toggle button
+                ThemeToggleButton()
+
+                // User profile menu
+                UserProfileMenu(
+                    userFullName = userFullName,
+                    isLoading = isUserLoading,
+                    onEditProfile = onEditProfile,
+                    onLogout = onLogout,
+                    onSwitchUser = onSwitchUser
+                )
+            }
         }
     }
 }
@@ -97,7 +108,7 @@ private fun WorkspaceSelector(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
-    
+
     Box(modifier = modifier) {
         Card(
             modifier = Modifier
@@ -117,16 +128,16 @@ private fun WorkspaceSelector(
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
                 )
-                
+
                 Spacer(modifier = Modifier.width(8.dp))
-                
+
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = "Workspace",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.outline
                     )
-                    
+
                     if (isLoading) {
                         Text(
                             text = "Loading...",
@@ -149,7 +160,7 @@ private fun WorkspaceSelector(
                         )
                     }
                 }
-                
+
                 Icon(
                     Icons.Default.KeyboardArrowDown,
                     contentDescription = "Workspace menu",
@@ -158,7 +169,7 @@ private fun WorkspaceSelector(
                 )
             }
         }
-        
+
         // Workspace Menu
         DropdownMenu(
             expanded = expanded,
@@ -177,14 +188,14 @@ private fun WorkspaceSelector(
                     onWorkspaceClick()
                 }
             )
-            
+
             // Only show management options when a workspace is selected
             if (workspaceName != null && workspaceId != null) {
                 HorizontalDivider(
                     color = MaterialTheme.colorScheme.outlineVariant,
                     thickness = 0.5.dp
                 )
-                
+
                 WorkspaceMenuItem(
                     icon = Icons.Default.Group,
                     text = "Team Members",
@@ -193,7 +204,7 @@ private fun WorkspaceSelector(
                         navController.navigate(WorkspaceRoute.Members(workspaceId = workspaceId))
                     }
                 )
-                
+
                 WorkspaceMenuItem(
                     icon = Icons.Default.Apps,
                     text = "Manage Modules",
@@ -202,7 +213,7 @@ private fun WorkspaceSelector(
                         navController.navigate(WorkspaceRoute.Modules(workspaceId = workspaceId, showStoreByDefault = true))
                     }
                 )
-                
+
                 WorkspaceMenuItem(
                     icon = Icons.Default.Mail,
                     text = "Invitations",
@@ -240,9 +251,9 @@ private fun UserProfileMenu(
                 isLoading = isLoading,
                 size = 36.dp
             )
-            
+
             Spacer(modifier = Modifier.width(8.dp))
-            
+
             // User Name
             Column {
                 Text(
@@ -254,9 +265,9 @@ private fun UserProfileMenu(
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
-            
+
             Spacer(modifier = Modifier.width(4.dp))
-            
+
             // Menu Button
             Icon(
                 Icons.Default.KeyboardArrowDown,
@@ -265,7 +276,7 @@ private fun UserProfileMenu(
                 modifier = Modifier.size(20.dp)
             )
         }
-        
+
         // Dropdown Menu
         DropdownMenu(
             expanded = expanded,
@@ -283,7 +294,7 @@ private fun UserProfileMenu(
                     onEditProfile()
                 }
             )
-            
+
             ProfileMenuItem(
                 icon = Icons.Default.SwapHoriz,
                 text = "Switch User",
@@ -292,12 +303,12 @@ private fun UserProfileMenu(
                     onSwitchUser()
                 }
             )
-            
+
             HorizontalDivider(
                 color = MaterialTheme.colorScheme.outlineVariant,
                 thickness = 0.5.dp
             )
-            
+
             ProfileMenuItem(
                 icon = Icons.AutoMirrored.Filled.Logout,
                 text = "Logout",
@@ -337,7 +348,7 @@ private fun UserAvatar(
                 .mapNotNull { it.firstOrNull()?.uppercaseChar() }
                 .take(2)
                 .joinToString("")
-            
+
             if (initials.isNotEmpty()) {
                 Text(
                     text = initials,
@@ -418,4 +429,95 @@ private fun WorkspaceMenuItem(
         },
         onClick = onClick
     )
+}
+
+@Composable
+private fun ThemeToggleButton(
+    modifier: Modifier = Modifier
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val themeManager = remember { ThemeManager.getInstance() }
+    val currentTheme by themeManager.themePreference.collectAsState()
+
+    Box(modifier = modifier) {
+        // Theme toggle button
+        IconButton(
+            onClick = { expanded = true },
+            modifier = Modifier.size(40.dp)
+        ) {
+            Icon(
+                when (currentTheme) {
+                    ThemePreference.LIGHT -> Icons.Default.LightMode
+                    ThemePreference.DARK -> Icons.Default.DarkMode
+                    ThemePreference.SYSTEM -> Icons.Default.Settings
+                },
+                contentDescription = "Theme: ${currentTheme.displayName}",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        // Theme selection dropdown
+        DropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false },
+            modifier = Modifier.background(
+                MaterialTheme.colorScheme.surface,
+                RoundedCornerShape(8.dp)
+            )
+        ) {
+            ThemePreference.entries.forEach { theme ->
+                DropdownMenuItem(
+                    text = {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                when (theme) {
+                                    ThemePreference.LIGHT -> Icons.Default.LightMode
+                                    ThemePreference.DARK -> Icons.Default.DarkMode
+                                    ThemePreference.SYSTEM -> Icons.Default.Settings
+                                },
+                                contentDescription = null,
+                                modifier = Modifier.size(20.dp),
+                                tint = if (theme == currentTheme) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = theme.displayName,
+                                color = if (theme == currentTheme) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.onSurface
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = if (theme == currentTheme) {
+                                    FontWeight.Medium
+                                } else {
+                                    FontWeight.Normal
+                                }
+                            )
+                            Spacer(modifier = Modifier.weight(1f))
+                            if (theme == currentTheme) {
+                                Icon(
+                                    Icons.Default.Check,
+                                    contentDescription = "Selected",
+                                    modifier = Modifier.size(16.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                    },
+                    onClick = {
+                        themeManager.setThemePreference(theme)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
 }

@@ -11,7 +11,7 @@ export interface InvitationResponse {
   email?: string;
   phone?: string;
   country_code?: number;
-  role: 'ADMIN' | 'MANAGER' | 'MEMBER' | 'VIEWER';
+  role: 'ADMIN' | 'MANAGER' | 'MEMBER' | 'VIEWER' | 'OWNER' | 'GUEST';
   status: 'PENDING' | 'ACCEPTED' | 'REJECTED' | 'EXPIRED' | 'CANCELLED';
   token: string;
   message?: string;

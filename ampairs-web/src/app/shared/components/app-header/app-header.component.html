@@ -107,8 +107,9 @@
       <button
         (click)="toggleTheme()"
         mat-icon-button
-        matTooltip="Toggle Theme">
-        <mat-icon>palette</mat-icon>
+        [matTooltip]="'Theme: ' + getThemeModeLabel() + ' (click to cycle)'"
+        class="theme-toggle-button">
+        <mat-icon>{{ getThemeModeIcon() }}</mat-icon>
       </button>
 
       <!-- Theme Settings Button -->

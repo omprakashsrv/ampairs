@@ -59,6 +59,8 @@ export class AppHeaderComponent implements OnInit {
   readonly currentUser = this.authService.currentUser;
   readonly currentWorkspace = this.workspaceService.currentWorkspace;
   readonly isAuthenticated = this.authService.isAuthenticated;
+  readonly themeMode = this.themeService.themeMode;
+  readonly isDarkMode = this.themeService.isDarkMode;
 
   // Reactive header context using signals
   private _currentUrl = signal('');
@@ -176,6 +178,26 @@ export class AppHeaderComponent implements OnInit {
   // Theme management
   toggleTheme(): void {
     this.themeService.toggleTheme();
+  }
+
+  getThemeModeIcon(): string {
+    const mode = this.themeMode();
+    switch (mode) {
+      case 'system': return 'brightness_auto';
+      case 'light': return 'light_mode';
+      case 'dark': return 'dark_mode';
+      default: return 'brightness_auto';
+    }
+  }
+
+  getThemeModeLabel(): string {
+    const mode = this.themeMode();
+    switch (mode) {
+      case 'system': return 'System';
+      case 'light': return 'Light';
+      case 'dark': return 'Dark';
+      default: return 'System';
+    }
   }
 
   openThemeSettings(): void {
