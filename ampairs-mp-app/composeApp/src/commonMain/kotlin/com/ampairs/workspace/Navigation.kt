@@ -22,7 +22,11 @@ import com.ampairs.workspace.ui.WorkspaceInvitationCreateScreen
 import com.ampairs.workspace.ui.WorkspaceModulesScreen
 import org.koin.compose.koinInject
 
-fun NavGraphBuilder.workspaceNavigation(navController: NavController, onWorkspaceSelected: () -> Unit) {
+fun NavGraphBuilder.workspaceNavigation(
+    navController: NavController,
+    onNavigationServiceReady: ((com.ampairs.workspace.navigation.DynamicModuleNavigationService?) -> Unit)? = null,
+    onWorkspaceSelected: () -> Unit
+) {
     navigation<Route.Workspace>(startDestination = WorkspaceRoute.Root) {
         
         // Workspace list screen (with offline-first data synchronization)
@@ -173,6 +177,7 @@ fun NavGraphBuilder.workspaceNavigation(navController: NavController, onWorkspac
                         // Navigate to main app after module selection
                         onWorkspaceSelected()
                     },
+                    onNavigationServiceReady = onNavigationServiceReady,
                     workspaceId = modulesRoute.workspaceId,
                     showStoreByDefault = modulesRoute.showStoreByDefault,
                     paddingValues = paddingValues

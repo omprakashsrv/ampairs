@@ -6,12 +6,15 @@ import com.ampairs.workspace.api.model.AvailableModule
 import com.ampairs.workspace.api.model.ModuleInstallationResponse
 import com.ampairs.workspace.api.model.ModuleUninstallationResponse
 import com.ampairs.workspace.db.dao.WorkspaceModuleDao
+import com.ampairs.workspace.db.entity.AvailableModuleEntity
+import com.ampairs.workspace.db.entity.InstalledModuleWithMenuItems
 import com.ampairs.workspace.store.WorkspaceModuleStoreFactory
 import com.ampairs.workspace.store.InstalledModuleKey
 import com.ampairs.workspace.store.AvailableModuleKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
+import org.mobilenativefoundation.store.core5.ExperimentalStoreApi
 import org.mobilenativefoundation.store.store5.StoreReadRequest
 import org.mobilenativefoundation.store.store5.StoreReadResponse
 
@@ -32,14 +35,19 @@ class WorkspaceModuleRepository(
      * Get installed modules as Flow for reactive UI updates
      * Matches web: this.installedModules = signal<InstalledModule[]>([])
      */
-    fun getInstalledModulesFlow(workspaceId: String, refresh: Boolean = false): Flow<List<InstalledModule>> {
-        val key = if (refresh) InstalledModuleKey.refresh(workspaceId) else InstalledModuleKey.all(workspaceId)
+    fun getInstalledModulesFlow(
+        workspaceId: String,
+        refresh: Boolean = false
+    ): Flow<List<InstalledModule>> {
+        val key = if (refresh) InstalledModuleKey.refresh(workspaceId) else InstalledModuleKey.all(
+            workspaceId
+        )
         val request = if (refresh) {
             StoreReadRequest.fresh(key) // Force API call
         } else {
             StoreReadRequest.cached(key, refresh = false) // Use cache first
         }
-        
+
         return installedModuleStore.stream(request)
             .map { response ->
                 when (response) {
@@ -56,15 +64,21 @@ class WorkspaceModuleRepository(
      * Get installed modules (suspending)
      * Matches web: async getInstalledModules(): Promise<InstalledModule[]>
      */
-    suspend fun getInstalledModules(workspaceId: String, refresh: Boolean = false): List<InstalledModule> {
+    suspend fun getInstalledModules(
+        workspaceId: String,
+        refresh: Boolean = false
+    ): List<InstalledModule> {
         return try {
-            val key = if (refresh) InstalledModuleKey.refresh(workspaceId) else InstalledModuleKey.all(workspaceId)
+            val key =
+                if (refresh) InstalledModuleKey.refresh(workspaceId) else InstalledModuleKey.all(
+                    workspaceId
+                )
             val request = if (refresh) {
                 StoreReadRequest.fresh(key) // Force API call
             } else {
                 StoreReadRequest.cached(key, refresh = false) // Use cache first
             }
-            
+
             // Get first valid response from Store5
             installedModuleStore.stream(request)
                 .map { response ->
@@ -78,8 +92,8 @@ class WorkspaceModuleRepository(
                 }
                 .first { it.isNotEmpty() || !refresh } // Get first non-empty or accept empty if not refreshing
         } catch (e: Exception) {
-            // Fallback to cached data
-            moduleDao.getInstalledModules(workspaceId).map { it.toApiModel() }
+            // Fallback to cached data with menu items
+            moduleDao.getInstalledModulesWithMenuItems(workspaceId).map { it.toApiModel() }
         }
     }
 
@@ -98,13 +112,13 @@ class WorkspaceModuleRepository(
                 category != null -> AvailableModuleKey.category(category)
                 else -> AvailableModuleKey.all()
             }
-            
+
             val request = if (refresh) {
                 StoreReadRequest.fresh(key)
             } else {
                 StoreReadRequest.cached(key, refresh = false)
             }
-            
+
             // Get first valid response from Store5
             availableModuleStore.stream(request)
                 .map { response ->
@@ -132,15 +146,18 @@ class WorkspaceModuleRepository(
      * Install a module
      * Matches web: async installModule(moduleCode: string): Promise<ModuleInstallationResponse>
      */
-    suspend fun installModule(workspaceId: String, moduleCode: String): Result<ModuleInstallationResponse> {
+    suspend fun installModule(
+        workspaceId: String,
+        moduleCode: String
+    ): Result<ModuleInstallationResponse> {
         return try {
             val result = moduleApi.installModule(workspaceId, moduleCode)
-            
+
             if (result.isSuccess) {
                 // Store5 will automatically refresh via SourceOfTruth
                 // ViewModel's flow will pick up the changes automatically
             }
-            
+
             result
         } catch (e: Exception) {
             Result.failure(e)
@@ -151,15 +168,18 @@ class WorkspaceModuleRepository(
      * Uninstall a module
      * Matches web: async uninstallModule(moduleId: string): Promise<ModuleUninstallationResponse>
      */
-    suspend fun uninstallModule(workspaceId: String, moduleId: String): Result<ModuleUninstallationResponse> {
+    suspend fun uninstallModule(
+        workspaceId: String,
+        moduleId: String
+    ): Result<ModuleUninstallationResponse> {
         return try {
             val result = moduleApi.uninstallModule(workspaceId, moduleId)
-            
+
             if (result.isSuccess) {
                 // Remove from local database - Store5 will handle sync automatically
                 moduleDao.deleteInstalledModuleById(moduleId, workspaceId)
             }
-            
+
             result
         } catch (e: Exception) {
             Result.failure(e)
@@ -178,8 +198,8 @@ class WorkspaceModuleRepository(
      * Get module by code (matches web service method)
      */
     suspend fun getModuleByCode(workspaceId: String, moduleCode: String): InstalledModule? {
-        return moduleDao.getInstalledModules(workspaceId)
-            .find { it.moduleCode == moduleCode }
+        return moduleDao.getInstalledModulesWithMenuItems(workspaceId)
+            .find { it.module.moduleCode == moduleCode }
             ?.toApiModel()
     }
 
@@ -188,7 +208,9 @@ class WorkspaceModuleRepository(
      * Matches web: get activeModules() { return this.installedModules().filter(m => m.status === 'ACTIVE' && m.enabled); }
      */
     suspend fun getActiveModules(workspaceId: String): List<InstalledModule> {
-        return moduleDao.getActiveModules(workspaceId).map { it.toApiModel() }
+        return moduleDao.getInstalledModulesWithMenuItems(workspaceId)
+            .filter { it.module.status == "ACTIVE" && it.module.enabled }
+            .map { it.toApiModel() }
     }
 
     /**
@@ -196,12 +218,15 @@ class WorkspaceModuleRepository(
      * Matches web: get inactiveModules() { return this.installedModules().filter(m => m.status !== 'ACTIVE' || !m.enabled); }
      */
     suspend fun getInactiveModules(workspaceId: String): List<InstalledModule> {
-        return moduleDao.getInactiveModules(workspaceId).map { it.toApiModel() }
+        return moduleDao.getInstalledModulesWithMenuItems(workspaceId)
+            .filter { it.module.status != "ACTIVE" || !it.module.enabled }
+            .map { it.toApiModel() }
     }
 
     /**
      * Clear all caches and refresh from server
      */
+    @OptIn(ExperimentalStoreApi::class)
     suspend fun refresh() {
         installedModuleStore.clear()
         availableModuleStore.clear()
@@ -210,6 +235,7 @@ class WorkspaceModuleRepository(
     /**
      * Clear all cached data
      */
+    @OptIn(ExperimentalStoreApi::class)
     suspend fun clearCache(workspaceId: String) {
         moduleDao.deleteAllInstalledModules(workspaceId)
         moduleDao.deleteAllAvailableModules()
@@ -234,11 +260,54 @@ private fun com.ampairs.workspace.db.entity.InstalledModuleEntity.toApiModel(): 
         primaryColor = primaryColor,
         healthScore = healthScore,
         needsAttention = needsAttention,
-        description = description
+        description = description,
+        routeInfo = com.ampairs.workspace.api.model.ModuleRouteInfo(
+            basePath = routeBasePath,
+            displayName = routeDisplayName,
+            iconName = routeIconName,
+            menuItems = emptyList() // Will be populated by DAO with relations
+        ),
+        navigationIndex = navigationIndex
     )
 }
 
-private fun com.ampairs.workspace.db.entity.AvailableModuleEntity.toApiModel(): AvailableModule {
+// Extension function for complete entity with menu items
+private fun InstalledModuleWithMenuItems.toApiModel(): InstalledModule {
+    return InstalledModule(
+        id = module.id,
+        workspaceId = module.workspaceId,
+        moduleCode = module.moduleCode,
+        name = module.name,
+        category = module.category,
+        version = module.version,
+        status = module.status,
+        enabled = module.enabled,
+        installedAt = module.installedAt,
+        icon = module.icon,
+        primaryColor = module.primaryColor,
+        healthScore = module.healthScore,
+        needsAttention = module.needsAttention,
+        description = module.description,
+        routeInfo = com.ampairs.workspace.api.model.ModuleRouteInfo(
+            basePath = module.routeBasePath,
+            displayName = module.routeDisplayName,
+            iconName = module.routeIconName,
+            menuItems = menuItems.map { menuItem ->
+                com.ampairs.workspace.api.model.ModuleMenuItem(
+                    id = menuItem.id,
+                    label = menuItem.label,
+                    routePath = menuItem.routePath,
+                    icon = menuItem.icon,
+                    order = menuItem.order,
+                    isDefault = menuItem.isDefault
+                )
+            }
+        ),
+        navigationIndex = module.navigationIndex
+    )
+}
+
+private fun AvailableModuleEntity.toApiModel(): AvailableModule {
     return AvailableModule(
         moduleCode = moduleCode,
         name = name,

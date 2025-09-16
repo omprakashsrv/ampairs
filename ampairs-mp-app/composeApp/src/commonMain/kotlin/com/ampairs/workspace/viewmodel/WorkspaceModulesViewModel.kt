@@ -7,6 +7,7 @@ import com.ampairs.workspace.api.model.AvailableModule
 import com.ampairs.workspace.api.model.ModuleInstallationResponse
 import com.ampairs.workspace.api.model.ModuleUninstallationResponse
 import com.ampairs.workspace.db.WorkspaceModuleRepository
+import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -16,7 +17,8 @@ import kotlinx.coroutines.launch
  */
 class WorkspaceModulesViewModel(
     private val moduleRepository: WorkspaceModuleRepository,
-    private val workspaceId: String? = null // Optional workspace context
+    private val workspaceId: String? = null, // Optional workspace context
+    val navigationService: DynamicModuleNavigationService = DynamicModuleNavigationService() // Navigation service for dynamic routing
 ) : ViewModel() {
 
     private val _isLoading = MutableStateFlow(false)
@@ -53,6 +55,29 @@ class WorkspaceModulesViewModel(
 
     // Note: Data loading is handled by the UI screen with explicit refresh=true
     // This ensures fresh data is fetched from the backend via Store5
+
+    init {
+        // Update navigation service when installed modules change
+        viewModelScope.launch {
+            installedModules.collect { modules ->
+                navigationService.updateInstalledModules(modules)
+            }
+        }
+
+        // Sync loading state with navigation service
+        viewModelScope.launch {
+            isLoading.collect { loading ->
+                navigationService.setLoading(loading)
+            }
+        }
+
+        // Sync error state with navigation service
+        viewModelScope.launch {
+            errorMessage.collect { error ->
+                navigationService.setError(error)
+            }
+        }
+    }
 
     /**
      * Load installed modules - matches web: async getInstalledModules()

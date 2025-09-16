@@ -9,6 +9,24 @@ import kotlinx.serialization.Serializable
  */
 
 @Serializable
+data class ModuleMenuItem(
+    @SerialName("id") val id: String,
+    @SerialName("label") val label: String,
+    @SerialName("route_path") val routePath: String,
+    @SerialName("icon") val icon: String,
+    @SerialName("order") val order: Int,
+    @SerialName("is_default") val isDefault: Boolean
+)
+
+@Serializable
+data class ModuleRouteInfo(
+    @SerialName("base_path") val basePath: String,
+    @SerialName("display_name") val displayName: String,
+    @SerialName("icon_name") val iconName: String,
+    @SerialName("menu_items") val menuItems: List<ModuleMenuItem>
+)
+
+@Serializable
 data class InstalledModule(
     @SerialName("id") val id: String,
     val workspaceId: String = "", // Set from current workspace context, not from API
@@ -24,6 +42,8 @@ data class InstalledModule(
     @SerialName("health_score") val healthScore: Double? = null,
     @SerialName("needs_attention") val needsAttention: Boolean? = null,
     @SerialName("description") val description: String? = null,
+    @SerialName("route_info") val routeInfo: ModuleRouteInfo,
+    @SerialName("navigation_index") val navigationIndex: Int
 )
 
 @Serializable

@@ -3,6 +3,8 @@ package com.ampairs.workspace.db.dao
 import androidx.room.*
 import com.ampairs.workspace.db.entity.InstalledModuleEntity
 import com.ampairs.workspace.db.entity.AvailableModuleEntity
+import com.ampairs.workspace.db.entity.ModuleMenuItemEntity
+import com.ampairs.workspace.db.entity.InstalledModuleWithMenuItems
 import kotlinx.coroutines.flow.Flow
 
 /**
@@ -13,6 +15,14 @@ import kotlinx.coroutines.flow.Flow
 interface WorkspaceModuleDao {
 
     // Installed Modules Operations (workspace-scoped)
+
+    @Transaction
+    @Query("SELECT * FROM installed_module WHERE workspaceId = :workspaceId ORDER BY navigationIndex ASC, name ASC")
+    fun getInstalledModulesWithMenuItemsFlow(workspaceId: String): Flow<List<InstalledModuleWithMenuItems>>
+
+    @Transaction
+    @Query("SELECT * FROM installed_module WHERE workspaceId = :workspaceId ORDER BY navigationIndex ASC, name ASC")
+    suspend fun getInstalledModulesWithMenuItems(workspaceId: String): List<InstalledModuleWithMenuItems>
 
     @Query("SELECT * FROM installed_module WHERE workspaceId = :workspaceId ORDER BY name ASC")
     fun getInstalledModulesFlow(workspaceId: String): Flow<List<InstalledModuleEntity>>
@@ -49,6 +59,17 @@ interface WorkspaceModuleDao {
 
     @Query("DELETE FROM installed_module WHERE workspaceId = :workspaceId")
     suspend fun deleteAllInstalledModules(workspaceId: String)
+
+    // Module Menu Item Operations
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMenuItems(menuItems: List<ModuleMenuItemEntity>)
+
+    @Query("DELETE FROM module_menu_item WHERE moduleId = :moduleId")
+    suspend fun deleteMenuItemsByModuleId(moduleId: String)
+
+    @Query("DELETE FROM module_menu_item WHERE moduleId IN (SELECT id FROM installed_module WHERE workspaceId = :workspaceId)")
+    suspend fun deleteAllMenuItemsByWorkspace(workspaceId: String)
 
     // Available Modules Operations
 

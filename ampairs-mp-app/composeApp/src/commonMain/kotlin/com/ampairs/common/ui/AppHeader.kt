@@ -20,6 +20,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.ampairs.common.theme.ThemeManager
 import com.ampairs.common.theme.ThemePreference
+import com.ampairs.workspace.navigation.PlatformNavigationDetector
+import com.ampairs.workspace.navigation.NavigationPattern
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,6 +36,7 @@ fun AppHeader(
     onEditProfile: () -> Unit,
     onLogout: () -> Unit,
     onSwitchUser: () -> Unit,
+    onNavigationDrawerClick: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -47,21 +50,37 @@ fun AppHeader(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Back button (conditionally shown)
-            val canNavigateBack = navController.previousBackStackEntry != null
-            if (canNavigateBack) {
+            // Hamburger menu for mobile platforms (when using navigation drawer)
+            if (PlatformNavigationDetector.getNavigationPattern() == NavigationPattern.SIDE_DRAWER) {
                 IconButton(
-                    onClick = { navController.popBackStack() },
+                    onClick = onNavigationDrawerClick,
                     modifier = Modifier.size(40.dp)
                 ) {
                     Icon(
-                        Icons.AutoMirrored.Filled.ArrowBack,
-                        contentDescription = "Back",
+                        Icons.Default.Menu,
+                        contentDescription = "Open navigation menu",
                         tint = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.size(24.dp)
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
+            } else {
+                // Back button (conditionally shown on desktop)
+                val canNavigateBack = navController.previousBackStackEntry != null
+                if (canNavigateBack) {
+                    IconButton(
+                        onClick = { navController.popBackStack() },
+                        modifier = Modifier.size(40.dp)
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
             }
 
             // Center - Workspace selector with management menu

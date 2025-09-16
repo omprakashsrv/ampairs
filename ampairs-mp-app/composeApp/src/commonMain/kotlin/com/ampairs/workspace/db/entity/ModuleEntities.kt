@@ -3,6 +3,8 @@ package com.ampairs.workspace.db.entity
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import androidx.room.Embedded
+import androidx.room.Relation
 
 /**
  * Simple database entities that match the web service models
@@ -38,12 +40,47 @@ data class InstalledModuleEntity(
     val healthScore: Double? = null,
     val needsAttention: Boolean? = null,
     val description: String? = null,
-    
+    val navigationIndex: Int,
+
+    // Route info fields (embedded from ModuleRouteInfo)
+    val routeBasePath: String,
+    val routeDisplayName: String,
+    val routeIconName: String,
+
     // Store5 sync metadata - following existing pattern
     val sync_state: String = "SYNCED", // SYNCED | PENDING | UPLOADING | ERROR
     val created_at: Long = System.currentTimeMillis(),
     val updated_at: Long = System.currentTimeMillis(),
     val last_synced_at: Long? = null,
+)
+
+@Entity(
+    tableName = "module_menu_item",
+    indices = [
+        Index(value = ["id"], unique = true),
+        Index(value = ["moduleId"], unique = false),
+        Index(value = ["order"], unique = false)
+    ]
+)
+data class ModuleMenuItemEntity(
+    @PrimaryKey
+    val id: String,
+    val moduleId: String, // Foreign key to installed_module.id
+    val label: String,
+    val routePath: String,
+    val icon: String,
+    val order: Int,
+    val isDefault: Boolean
+)
+
+// Data class for complete module with menu items
+data class InstalledModuleWithMenuItems(
+    @Embedded val module: InstalledModuleEntity,
+    @Relation(
+        parentColumn = "id",
+        entityColumn = "moduleId"
+    )
+    val menuItems: List<ModuleMenuItemEntity>
 )
 
 @Entity(

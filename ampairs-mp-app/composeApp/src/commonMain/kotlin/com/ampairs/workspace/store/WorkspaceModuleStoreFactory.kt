@@ -6,6 +6,8 @@ import com.ampairs.workspace.api.model.AvailableModule
 import com.ampairs.workspace.db.dao.WorkspaceModuleDao
 import com.ampairs.workspace.db.entity.InstalledModuleEntity
 import com.ampairs.workspace.db.entity.AvailableModuleEntity
+import com.ampairs.workspace.db.entity.ModuleMenuItemEntity
+import com.ampairs.workspace.db.entity.InstalledModuleWithMenuItems
 import org.mobilenativefoundation.store.store5.*
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -75,20 +77,45 @@ class WorkspaceModuleStoreFactory(
     private fun createInstalledModuleSourceOfTruth(): SourceOfTruth<InstalledModuleKey, List<InstalledModule>, List<InstalledModule>> {
         return SourceOfTruth.of(
             reader = { key ->
-                moduleDao.getInstalledModulesFlow(key.workspaceId).map { entities ->
-                    entities.map { it.toApiModel() }
+                moduleDao.getInstalledModulesWithMenuItemsFlow(key.workspaceId).map { entitiesWithMenuItems ->
+                    entitiesWithMenuItems.map { entityWithMenuItems ->
+                        // Convert to InstalledModule using the repository extension function
+                        entityWithMenuItems.toInstalledModule()
+                    }
                 }
             },
             writer = { key, modules ->
                 val entities = modules.map { it.toEntity(key.workspaceId) }
                 moduleDao.insertInstalledModules(entities)
-                
+
+                // Insert menu items for each module
+                modules.forEach { module ->
+                    // Delete old menu items first
+                    moduleDao.deleteMenuItemsByModuleId(module.id)
+
+                    // Insert new menu items
+                    val menuItems = module.routeInfo.menuItems.map { menuItem ->
+                        ModuleMenuItemEntity(
+                            id = "${module.id}_${menuItem.id}",
+                            moduleId = module.id,
+                            label = menuItem.label,
+                            routePath = menuItem.routePath,
+                            icon = menuItem.icon,
+                            order = menuItem.order,
+                            isDefault = menuItem.isDefault
+                        )
+                    }
+                    if (menuItems.isNotEmpty()) {
+                        moduleDao.insertMenuItems(menuItems)
+                    }
+                }
+
                 // Mark all as synced
                 entities.forEach { entity ->
                     moduleDao.updateInstalledModuleSyncState(
                         entity.id,
                         entity.workspaceId,
-                        "SYNCED", 
+                        "SYNCED",
                         System.currentTimeMillis()
                     )
                 }
@@ -152,6 +179,10 @@ private fun InstalledModule.toEntity(workspaceId: String): InstalledModuleEntity
         healthScore = healthScore,
         needsAttention = needsAttention,
         description = description,
+        navigationIndex = navigationIndex,
+        routeBasePath = routeInfo.basePath,
+        routeDisplayName = routeInfo.displayName,
+        routeIconName = routeInfo.iconName,
         sync_state = "SYNCED",
         created_at = System.currentTimeMillis(),
         updated_at = System.currentTimeMillis(),
@@ -174,7 +205,50 @@ private fun InstalledModuleEntity.toApiModel(): InstalledModule {
         primaryColor = primaryColor,
         healthScore = healthScore,
         needsAttention = needsAttention,
-        description = description
+        description = description,
+        routeInfo = com.ampairs.workspace.api.model.ModuleRouteInfo(
+            basePath = routeBasePath,
+            displayName = routeDisplayName,
+            iconName = routeIconName,
+            menuItems = emptyList() // Menu items will be loaded separately by relations
+        ),
+        navigationIndex = navigationIndex
+    )
+}
+
+// Extension function for complete entity with menu items
+private fun InstalledModuleWithMenuItems.toInstalledModule(): InstalledModule {
+    return InstalledModule(
+        id = module.id,
+        workspaceId = module.workspaceId,
+        moduleCode = module.moduleCode,
+        name = module.name,
+        category = module.category,
+        version = module.version,
+        status = module.status,
+        enabled = module.enabled,
+        installedAt = module.installedAt,
+        icon = module.icon,
+        primaryColor = module.primaryColor,
+        healthScore = module.healthScore,
+        needsAttention = module.needsAttention,
+        description = module.description,
+        routeInfo = com.ampairs.workspace.api.model.ModuleRouteInfo(
+            basePath = module.routeBasePath,
+            displayName = module.routeDisplayName,
+            iconName = module.routeIconName,
+            menuItems = menuItems.sortedBy { it.order }.map { menuItem ->
+                com.ampairs.workspace.api.model.ModuleMenuItem(
+                    id = menuItem.id,
+                    label = menuItem.label,
+                    routePath = menuItem.routePath,
+                    icon = menuItem.icon,
+                    order = menuItem.order,
+                    isDefault = menuItem.isDefault
+                )
+            }
+        ),
+        navigationIndex = module.navigationIndex
     )
 }
 

@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.sp
 import com.ampairs.workspace.api.model.AvailableModule
 import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.workspace.viewmodel.WorkspaceModulesViewModel
+import com.ampairs.workspace.navigation.DynamicModuleNavigation
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 
@@ -31,6 +32,7 @@ import org.koin.core.parameter.parametersOf
 @Composable
 fun WorkspaceModulesScreen(
     onModuleSelected: (moduleCode: String) -> Unit = {},
+    onNavigationServiceReady: ((com.ampairs.workspace.navigation.DynamicModuleNavigationService?) -> Unit)? = null,
     workspaceId: String = "",
     showStoreByDefault: Boolean = false, // New parameter to control if module store should be shown by default
     paddingValues: PaddingValues = PaddingValues(0.dp),
@@ -45,6 +47,12 @@ fun WorkspaceModulesScreen(
     // Load data on first composition - force refresh to get fresh data from backend
     LaunchedEffect(Unit) {
         viewModel.loadInstalledModules(refresh = true) // Force API call via Store5
+    }
+
+    // Pass navigationService to callback for desktop menu bar integration
+    LaunchedEffect(viewModel.navigationService) {
+        println("WorkspaceModulesScreen: Calling onNavigationServiceReady with navigationService: ${if (viewModel.navigationService != null) "NOT NULL" else "NULL"}")
+        onNavigationServiceReady?.invoke(viewModel.navigationService)
     }
 
     Column(
@@ -76,7 +84,21 @@ fun WorkspaceModulesScreen(
                 CircularProgressIndicator()
             }
         } else {
-            // Active modules list
+            // Dynamic Module Navigation
+            DynamicModuleNavigation(
+                navigationService = viewModel.navigationService,
+                onNavigate = { route ->
+                    // Extract module code from route and navigate
+                    val moduleCode = extractModuleCodeFromRoute(route)
+                    if (moduleCode != null) {
+                        onModuleSelected(moduleCode)
+                    }
+                }
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Active modules list (legacy view)
             if (activeModules.isEmpty()) {
                 EmptyStateCard(
                     title = "No Active Modules",
@@ -84,6 +106,7 @@ fun WorkspaceModulesScreen(
                     onInstallClick = { showModuleStore = true }
                 )
             } else {
+
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -523,6 +546,15 @@ private fun AvailableModuleCard(
     }
 }
 
+
+/**
+ * Extract module code from dynamic route
+ * Example: "/workspace/modules/customer-management/customers" -> "customer-management"
+ */
+private fun extractModuleCodeFromRoute(route: String): String? {
+    val regex = "/workspace/modules/([^/]+)".toRegex()
+    return regex.find(route)?.groupValues?.get(1)
+}
 
 /**
  * Parse hex color string to Compose Color (cross-platform)

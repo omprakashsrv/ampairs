@@ -18,13 +18,29 @@ import com.ampairs.workspace.workspaceNavigation
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    onNavigationServiceReady: ((com.ampairs.workspace.navigation.DynamicModuleNavigationService?) -> Unit)? = null
+) {
     val navController = rememberNavController()
 
     LaunchedEffect(Unit) {
         UnauthenticatedHandler.onUnauthenticated.collectLatest {
             navController.navigate(Route.Login) {
                 popUpTo(0)
+            }
+        }
+    }
+
+    // Clear navigationService when navigating away from workspace modules
+    LaunchedEffect(navController) {
+        navController.currentBackStackEntryFlow.collectLatest { backStackEntry ->
+            val currentRoute = backStackEntry.destination.route
+            println("AppNavigation: Current route: $currentRoute")
+
+            // Clear navigationService when not in workspace modules
+            if (currentRoute != null && !currentRoute.contains("workspace/modules")) {
+                println("AppNavigation: Clearing navigationService - not in workspace modules")
+                onNavigationServiceReady?.invoke(null)
             }
         }
     }
@@ -45,7 +61,7 @@ fun AppNavigation() {
                 navOptions = options
             )
         }
-        workspaceNavigation(navController) {
+        workspaceNavigation(navController, onNavigationServiceReady) {
             navController.navigate(Route.Home)
         }
         homeNavigation(navController) {

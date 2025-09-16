@@ -18,6 +18,7 @@ import com.ampairs.workspace.db.entity.WorkspaceRoleEntity
 import com.ampairs.workspace.db.entity.WorkspacePermissionEntity
 import com.ampairs.workspace.db.entity.InstalledModuleEntity
 import com.ampairs.workspace.db.entity.AvailableModuleEntity
+import com.ampairs.workspace.db.entity.ModuleMenuItemEntity
 import com.ampairs.workspace.db.entity.UserInvitationEntity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -31,9 +32,10 @@ import kotlinx.coroutines.IO
         WorkspacePermissionEntity::class,
         InstalledModuleEntity::class,
         AvailableModuleEntity::class,
+        ModuleMenuItemEntity::class,
         UserInvitationEntity::class
     ],
-    version = 7,  // Increment version due to adding UserInvitationEntity
+    version = 8,  // Increment version due to adding ModuleMenuItemEntity and updating InstalledModuleEntity
     exportSchema = false
 )
 abstract class WorkspaceRoomDatabase : RoomDatabase() {
