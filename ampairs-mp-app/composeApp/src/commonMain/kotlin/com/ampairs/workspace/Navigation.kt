@@ -1,9 +1,10 @@
 package com.ampairs.workspace
 
-import AuthRoute
 import Route
 import WorkspaceRoute
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -13,14 +14,13 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
 import com.ampairs.common.ui.AppScreenWithHeader
+import com.ampairs.workspace.ui.MemberDetailsScreen
 import com.ampairs.workspace.ui.WorkspaceCreateScreen
+import com.ampairs.workspace.ui.WorkspaceInvitationCreateScreen
+import com.ampairs.workspace.ui.WorkspaceInvitationsScreen
 import com.ampairs.workspace.ui.WorkspaceListScreen
 import com.ampairs.workspace.ui.WorkspaceMembersScreen
-import com.ampairs.workspace.ui.MemberDetailsScreen
-import com.ampairs.workspace.ui.WorkspaceInvitationsScreen
-import com.ampairs.workspace.ui.WorkspaceInvitationCreateScreen
 import com.ampairs.workspace.ui.WorkspaceModulesScreen
-import org.koin.compose.koinInject
 
 fun NavGraphBuilder.workspaceNavigation(
     navController: NavController,

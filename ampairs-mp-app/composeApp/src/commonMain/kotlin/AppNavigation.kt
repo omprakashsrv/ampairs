@@ -14,6 +14,7 @@ import com.ampairs.inventory.inventoryNavigation
 import com.ampairs.invoice.invoiceNavigation
 import com.ampairs.order.orderNavigation
 import com.ampairs.product.productNavigation
+import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.workspace.workspaceNavigation
 import kotlinx.coroutines.flow.collectLatest
 
@@ -22,9 +23,12 @@ fun AppNavigation(
     onNavigationServiceReady: ((com.ampairs.workspace.navigation.DynamicModuleNavigationService?) -> Unit)? = null
 ) {
     val navController = rememberNavController()
+    val workspaceManager = WorkspaceContextManager.getInstance()
 
     LaunchedEffect(Unit) {
         UnauthenticatedHandler.onUnauthenticated.collectLatest {
+            // Clear workspace context on logout
+            workspaceManager.clearWorkspaceContext()
             navController.navigate(Route.Login) {
                 popUpTo(0)
             }
@@ -44,6 +48,10 @@ fun AppNavigation(
             }
         }
     }
+
+    // Remove the automatic workspace selection redirection for now
+    // This was causing infinite loops and should be handled differently
+    // The workspace selection should be handled by the individual screens that require workspace context
 
     NavHost(
         modifier = Modifier.background(MaterialTheme.colorScheme.background),
