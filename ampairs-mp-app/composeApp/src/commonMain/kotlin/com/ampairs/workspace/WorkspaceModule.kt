@@ -93,6 +93,9 @@ fun workspaceModule() = module {
     single<WorkspaceMemberUpdateStore>(named("workspaceMemberUpdateStore")) { get<WorkspaceMemberUpdateStoreFactory>().create() }
     single<UserInvitationStore>(named("userInvitationStore")) { get<UserInvitationStoreFactory>().create() }
 
+    // Workspace Database Manager for switching contexts
+    single { WorkspaceDatabaseManager() }
+
     // ViewModels with parameter support
     factory { WorkspaceListViewModel(get<OfflineFirstWorkspaceRepository>(), get(), get(), get(), get()) }
     factoryOf(::WorkspaceCreateViewModel)

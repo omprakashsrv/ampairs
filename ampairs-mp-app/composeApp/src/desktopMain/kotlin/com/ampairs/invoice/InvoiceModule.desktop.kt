@@ -1,23 +1,16 @@
 package com.ampairs.invoice
 
-import androidx.room.Room
-import androidx.sqlite.driver.bundled.BundledSQLiteDriver
+import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
 import com.ampairs.invoice.db.InvoiceRoomDatabase
-import getDatabaseDir
-import kotlinx.coroutines.Dispatchers
 import org.koin.core.module.Module
 import org.koin.dsl.module
-import java.io.File
 
 val invoicePlatformModule: Module = module {
     single<InvoiceRoomDatabase> {
-        val dbFile = File(getDatabaseDir(), "invoice.db")
-        Room.databaseBuilder<InvoiceRoomDatabase>(
-            name = dbFile.absolutePath
+        val factory = get<WorkspaceAwareDatabaseFactory>()
+        factory.createDatabase(
+            klass = InvoiceRoomDatabase::class,
+            moduleName = "invoice"
         )
-            .setDriver(BundledSQLiteDriver())
-            .setQueryCoroutineContext(Dispatchers.IO)
-            .fallbackToDestructiveMigration(true)
-            .build()
     }
 }

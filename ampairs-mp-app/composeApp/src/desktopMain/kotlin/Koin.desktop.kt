@@ -2,6 +2,9 @@ import com.ampairs.aws.s3.AwsS3Client
 import com.ampairs.aws.s3.S3Client
 import com.ampairs.common.DeviceService
 import com.ampairs.common.ImageCacheKeyer
+import com.ampairs.common.database.DatabasePathProvider
+import com.ampairs.common.database.DesktopDatabasePathProvider
+import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
 import com.ampairs.tally.TallyApi
 import com.ampairs.tally.TallyApiImpl
 import com.ampairs.tally.TallyRepository
@@ -11,6 +14,7 @@ import com.seiko.imageloader.cache.CachePolicy
 import com.seiko.imageloader.component.setupDefaultComponents
 import com.seiko.imageloader.intercept.bitmapMemoryCacheConfig
 import io.ktor.client.engine.okhttp.OkHttp
+import kotlinx.coroutines.Dispatchers
 import okio.Path.Companion.toOkioPath
 import org.koin.core.module.Module
 import org.koin.dsl.bind
@@ -26,6 +30,10 @@ actual val platformModule: Module = module {
     single { TallyApiImpl(get()) } bind (TallyApi::class)
     single { TallyRepository(get()) }
     single { TallyViewModel(get(), get(), get(), get(), get()) }
+
+    // Database path provider and factory for workspace-aware databases
+    single<DatabasePathProvider> { DesktopDatabasePathProvider() }
+    single { WorkspaceAwareDatabaseFactory(get(), Dispatchers.IO) }
 }
 
 fun generateImageLoader(): ImageLoader {

@@ -20,6 +20,7 @@ import org.koin.core.module.Module
 import org.koin.dsl.module
 
 val authPlatformModule: Module = module {
+    // Auth database is NOT workspace-aware - login happens before workspace selection
     single<AuthRoomDatabase> {
         val context = androidContext()
         val dbFile = context.getDatabasePath("auth.db")

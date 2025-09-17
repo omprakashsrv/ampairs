@@ -1,6 +1,10 @@
 import com.ampairs.aws.s3.IosS3Client
 import com.ampairs.aws.s3.S3Client
 import com.ampairs.common.DeviceService
+import com.ampairs.common.coroutines.DispatcherProvider
+import com.ampairs.common.database.DatabasePathProvider
+import com.ampairs.common.database.IosDatabasePathProvider
+import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
 import io.ktor.client.engine.darwin.Darwin
 import org.koin.core.module.Module
 import org.koin.dsl.bind
@@ -11,6 +15,10 @@ actual val platformModule: Module = module {
         Darwin.create()
     }
     single<DeviceService> { IosDeviceService() }
+
+    // Database path provider and factory for workspace-aware databases
+    single<DatabasePathProvider> { IosDatabasePathProvider() }
+    single { WorkspaceAwareDatabaseFactory(get(), DispatcherProvider.io) }
 }
 
 actual val awsModule: Module = module {
