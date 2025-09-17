@@ -20,38 +20,9 @@ This mobile app is part of a **three-tier Ampairs ecosystem**:
 
 ### **🔄 Offline-First Architecture with Store5**
 
-The app implements **Store5 pattern** for robust offline-first data management:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                    Presentation Layer                           │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │   Compose   │  │     MVI     │  │  UI State   │             │
-│  │ Multiplatform │  │  Actions   │  │ Management  │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────┬───────────────────────────────────────────┘
-                      │
-┌─────────────────────▼───────────────────────────────────────────┐
-│                   Store5 Layer                                  │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │   Store     │  │  Fetcher    │  │ SourceOfTruth│            │
-│  │ Controller  │  │ (Network)   │  │ (Local DB)   │            │
-│  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────┬───────────────────────────────────────────┘
-                      │
-┌─────────────────────▼───────────────────────────────────────────┐
-│                   Data Layer                                    │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐             │
-│  │    Room     │  │    Ktor     │  │   Cache     │             │
-│  │  Database   │  │ HTTP Client │  │ Management  │             │
-│  └─────────────┘  └─────────────┘  └─────────────┘             │
-└─────────────────────┬───────────────────────────────────────────┘
-                      │ REST API Calls
-┌─────────────────────▼───────────────────────────────────────────┐
-│              Spring Boot Backend                                │
-│           (JWT Auth + Multi-tenancy)                           │
-└─────────────────────────────────────────────────────────────────┘
-```
+- **Pattern**: Store5 for robust offline-first data management
+- **Layers**: Presentation (Compose/MVI) → Store5 (Fetcher/SourceOfTruth) → Data (Room/Ktor)
+- **Integration**: Spring Boot backend with JWT auth and multi-tenancy
 
 ### **Technology Stack**
 
@@ -75,175 +46,41 @@ The app implements **Store5 pattern** for robust offline-first data management:
 
 ### **Module Structure**
 
-```
-ampairs-mp-app/
-├── composeApp/                    # Main application module
-│   ├── src/commonMain/kotlin/
-│   │   ├── com.ampairs.auth/      # Authentication & user management
-│   │   ├── com.ampairs.workspace/ # Multi-tenant workspace management
-│   │   ├── com.ampairs.customer/  # Customer relationship management
-│   │   ├── com.ampairs.product/   # Product catalog & inventory
-│   │   ├── com.ampairs.order/     # Order processing & management
-│   │   ├── com.ampairs.invoice/   # Invoice generation & management
-│   │   └── com.ampairs.tally/     # ERP system integration
-│   ├── src/androidMain/kotlin/    # Android-specific implementations
-│   ├── src/iosMain/kotlin/        # iOS-specific implementations (commented out)
-│   └── src/desktopMain/kotlin/    # Desktop-specific implementations
-├── core/                          # Cross-cutting concerns
-├── common/                        # Shared UI components and utilities
-└── shared/                        # Business logic and data models
-```
+- **Main Module**: `composeApp/` with `commonMain/`, `androidMain/`, `iosMain/`, `desktopMain/`
+- **Domain Modules**: auth, workspace, customer, product, order, invoice, tally
+- **Support**: core/, common/, shared/
 
 ## **🔑 Key Development Patterns**
 
 ### **Store5 Implementation Pattern**
-
-Each domain module implements the Store5 pattern for offline-first data access:
-
-```kotlin
-class CustomerStore {
-    private val store = StoreBuilder
-        .from(
-            fetcher = Fetcher.of { key: CustomerKey ->
-                // Network call to Spring Boot API
-                customerApi.getCustomers(
-                    tenantId = key.tenantId,
-                    page = key.page,
-                    size = key.size
-                )
-            },
-            sourceOfTruth = SourceOfTruth.of(
-                reader = { key: CustomerKey ->
-                    // Read from Room database
-                    customerRepository
-                        .getCustomers(key.tenantId, key.page, key.size)
-                        .asFlow()
-                },
-                writer = { key: CustomerKey, customers: List<Customer> ->
-                    // Write to Room database
-                    customerRepository.insertOrReplaceCustomers(customers)
-                }
-            )
-        )
-        .build()
-        
-    fun stream(key: CustomerKey): Flow<StoreReadResponse<List<Customer>>> = 
-        store.stream(StoreReadRequest.cached(key, refresh = false))
-}
-```
+- **Pattern**: Each domain module implements Store5 with Fetcher (Network) + SourceOfTruth (Room DB)
+- **Usage**: `store.stream(StoreReadRequest.cached(key, refresh = false))`
 
 ### **Room Database Architecture**
-
-- **Platform-specific databases**: Room for Android, Core Data bridge for iOS, JDBC for Desktop
-- **Multi-tenant isolation**: All entities include tenant_id for proper data segregation
-- **Offline sync metadata**: Entities track sync state, last sync time, and pending changes
-- **Automatic migrations**: Room handles schema migrations across app updates
-
-```kotlin
-@Entity(tableName = "customer")
-data class CustomerEntity(
-    @PrimaryKey val id: String,
-    val tenantId: String,
-    val name: String,
-    val email: String?,
-    val phone: String?,
-    // Address fields
-    val addressLine1: String?,
-    val addressLine2: String?,
-    val city: String?,
-    val state: String?,
-    val country: String?,
-    val pincode: String?,
-    val gstNumber: String?,
-    // Sync metadata
-    val syncStatus: String = "SYNCED", // SYNCED, PENDING_UPLOAD, PENDING_DELETE
-    val createdAt: Long,
-    val updatedAt: Long,
-)
-```
+- **Platform-specific**: Room (Android), Core Data bridge (iOS), JDBC (Desktop)
+- **Multi-tenant**: All entities include `tenant_id` for data segregation
+- **Sync metadata**: Entities track `syncStatus`, timestamps for offline-first
 
 ### **Authentication & Multi-tenancy**
-
-- **Backend Integration**: Follows same JWT authentication as Spring Boot backend
-- **Phone + OTP Flow**: Matches backend authentication endpoint patterns
-- **Multi-device Support**: JWT tokens include device_id for concurrent session management
-- **Tenant Context**: HTTP headers automatically include workspace/company context
-- **Token Storage**: Secure token storage using Room database with encryption
+- **JWT Auth**: Phone + OTP flow with device_id for multi-device support
+- **Tenant Context**: HTTP headers include workspace/company context
+- **Token Storage**: Secure storage via Room database with encryption
 
 ### **API Integration with Backend**
-
-```kotlin
-// Matches backend API patterns exactly
-interface CustomerApi {
-    @GET("/customer/v1/list")
-    suspend fun getCustomers(
-        @Header("X-Company-ID") companyId: String,
-        @Query("page") page: Int = 0,
-        @Query("size") size: Int = 20,
-        @Query("sortBy") sortBy: String = "createdAt",
-        @Query("sortDir") sortDir: String = "desc"
-    ): Response<PagedCustomerResponse>
-    
-    @POST("/customer/v1")
-    suspend fun createCustomer(
-        @Header("X-Company-ID") companyId: String,
-        @Body request: CreateCustomerRequest
-    ): Response<CustomerApiModel>
-}
-```
+- **Endpoints**: Follow backend REST patterns (`/api/v1/{resource}`)
+- **Headers**: Include `X-Workspace-ID` for multi-tenant context
+- **Responses**: Use backend `ApiResponse<T>` wrapper format
 
 ### **Dependency Injection with Koin**
-
-- **Feature-based modules**: Each domain has its own `FeatureModule.kt`
-- **Platform-specific dependencies**: Android, iOS, Desktop implementations
-- **ViewModel injection pattern**: `val viewModel: MyViewModel = koinInject { parametersOf(id) }`
-- **Repository pattern**: Clean separation between API, database, and domain layers
-
-```kotlin
-val customerModule = module {
-    // API layer
-    single<CustomerApi> { CustomerApiImpl(get()) }
-    
-    // Database layer
-    single<CustomerDao> { get<AppDatabase>().customerDao() }
-    single<CustomerRepository> { OfflineFirstCustomerRepository(get(), get(), get()) }
-    
-    // Store5 integration
-    single { CustomerStore(get(), get()) }
-    
-    // ViewModels
-    factory { (customerId: String?) -> CustomerDetailsViewModel(customerId, get(), get()) }
-    factory { CustomerListViewModel(get(), get()) }
-}
-```
+- **Modular**: Feature-based modules per domain
+- **Platform-specific**: Separate Android/iOS/Desktop implementations
+- **ViewModel pattern**: `koinInject { parametersOf(id) }`
+- **Layers**: API → Repository → Store5 → ViewModel
 
 ### **Navigation with Type Safety**
-
-```kotlin
-// Type-safe navigation routes
-@Serializable sealed interface Route {
-    @Serializable data object CustomerList : Route
-    @Serializable data class CustomerDetails(val customerId: String) : Route
-    @Serializable data class ProductDetails(val productId: String) : Route
-    @Serializable data class OrderView(val orderId: String) : Route
-}
-
-// Usage in Compose
-NavHost(navController, startDestination = Route.CustomerList) {
-    composable<Route.CustomerList> {
-        CustomerListScreen(
-            onCustomerClick = { customerId ->
-                navController.navigate(Route.CustomerDetails(customerId))
-            }
-        )
-    }
-    
-    composable<Route.CustomerDetails> { backStackEntry ->
-        val args = backStackEntry.toRoute<Route.CustomerDetails>()
-        CustomerDetailsScreen(customerId = args.customerId)
-    }
-}
-```
+- **Routes**: `@Serializable sealed interface Route` with data classes
+- **Usage**: `navController.navigate(Route.CustomerDetails(customerId))`
+- **Type safety**: `backStackEntry.toRoute<Route.CustomerDetails>()`
 
 ## **Build Commands**
 
@@ -271,24 +108,13 @@ NavHost(navController, startDestination = Route.CustomerList) {
 ```
 
 ## **Version Catalog**
-
-Current versions from `gradle/libs.versions.toml`:
-
-- **Kotlin**: 2.2.0  
-- **Compose Multiplatform**: 1.8.2
-- **Room**: 2.7.0-alpha11 (replaces SQLDelight)
-- **Store5**: 5.1.0 (offline-first architecture)
-- **Ktor**: 3.2.1
-- **Koin**: 4.1.0
-- **Kotlinx Serialization**: 1.7.3
+**Key Dependencies** (`gradle/libs.versions.toml`):
+- Kotlin 2.2.0, Compose Multiplatform 1.8.2, Room 2.7.0-alpha11
+- Store5 5.1.0, Ktor 3.2.1, Koin 4.1.0, Kotlinx Serialization 1.7.3
 
 ## **Development Environment**
-
-- **IDE**: Android Studio with Kotlin Multiplatform plugin
-- **Environment Check**: Use `kdoctor` to validate multiplatform setup
-- **Android**: Min SDK 24, Target SDK 35, Compile SDK 36
-- **Desktop**: Java 21+ required
-- **iOS**: Xcode 15+ (when iOS target is enabled)
+- **IDE**: Android Studio with KMP plugin, `kdoctor` for validation
+- **Requirements**: Android Min SDK 24/Target 35, Java 21+, Xcode 15+ (iOS)
 
 ## **Business Domain Integration**
 
@@ -305,323 +131,112 @@ The app provides complete feature parity with the backend system:
 - **Tally Integration**: ERP system synchronization and data exchange
 
 ### **Data Flow & Synchronization**
-
-1. **Offline-first Operations**: All CRUD operations work offline and sync automatically
-2. **Conflict Resolution**: Store5 handles data conflicts with last-write-wins strategy
-3. **Background Sync**: Platform-specific background tasks ensure data consistency
-4. **Real-time Updates**: WebSocket connections for live data updates (when online)
-5. **Bulk Operations**: Efficient batch processing for large data sets
+- **Offline-first**: All CRUD operations work offline with auto-sync
+- **Conflict Resolution**: Store5 last-write-wins strategy
+- **Background Sync**: Platform-specific tasks for data consistency
+- **Real-time**: WebSocket connections for live updates when online
 
 ## **Platform-Specific Implementations**
-
-### **Android**
-- **Database**: Room with SQLite driver
-- **Background Sync**: WorkManager for periodic and network-triggered sync
-- **Notifications**: Local notifications for sync status and business alerts
-- **File Storage**: Android-specific external storage for documents and images
-
-### **iOS** 
-- **Database**: Room with Core Data bridge (when iOS target is enabled)
-- **Background Sync**: Background App Refresh for data synchronization
-- **Notifications**: iOS push notifications and local alerts
-- **File Storage**: iOS document directory for secure file management
-
-### **Desktop (JVM)**
-- **Database**: Room with JDBC drivers (H2 or SQLite)
-- **Background Sync**: Timer-based coordination and network state monitoring
-- **File Storage**: Platform-specific app data directories
-- **Window Management**: Native window controls and system integration
+- **Android**: Room SQLite, WorkManager sync, local notifications
+- **iOS**: Room Core Data bridge, Background App Refresh, push notifications
+- **Desktop**: Room JDBC drivers, timer-based sync, native window controls
 
 ## **Recent Updates & Migration Notes**
-
-### **Database Migration (Room replacing SQLDelight)**
-- ✅ **Completed**: Full migration from SQLDelight to Room database
-- ✅ **Store5 Integration**: Offline-first architecture with automatic conflict resolution
-- ✅ **Cross-platform**: Room works consistently across Android, iOS, and Desktop
-- ✅ **Migration Scripts**: Automatic data migration from old SQLDelight schemas
-
-### **Store5 Implementation (January 2025)**
-- ✅ **Offline-first**: Complete offline functionality with automatic sync
-- ✅ **Conflict Resolution**: Handles concurrent modifications across devices  
-- ✅ **Performance**: Optimized caching and lazy loading for large datasets
-- ✅ **Real-time**: Live data updates when connected to backend
-
-### **ViewModel Architecture (January 2025)**
-- ✅ **Koin Injection**: Clean dependency injection with `koinInject { parametersOf() }`
-- ✅ **MVI Pattern**: Consistent state management across all screens
-- ✅ **Type Safety**: Eliminated ViewModelFactory complexity
-- ✅ **Parameter Support**: Seamless ViewModel parameterization for detail screens
+- **Database**: ✅ Migrated SQLDelight → Room with Store5 integration
+- **Architecture**: ✅ Store5 offline-first with conflict resolution
+- **ViewModels**: ✅ Koin injection with `koinInject { parametersOf() }`
 
 ## **Development Guidelines**
-
-### **Naming Conventions**
-- **Package Structure**: `com.ampairs.{domain}.{layer}` (matches backend)
-- **API Models**: Use `@SerialName` for snake_case backend compatibility
-- **Database Entities**: Room entities with proper indexing and relationships
-- **Navigation Routes**: Sealed classes with `@Serializable` for type safety
-
-### **Backend Integration**
-- **API Endpoints**: Follow backend REST patterns exactly (`/api/v1/{resource}`)
-- **Error Handling**: Use backend `ApiResponse<T>` wrapper format
-- **Authentication**: JWT tokens with automatic refresh and device tracking
-- **Multi-tenancy**: Include workspace context in all API calls
-
-### **Code Quality**
-- **Offline-first**: Always design for offline operation with sync fallback
-- **Error Recovery**: Graceful degradation when network/sync fails
-- **Performance**: Lazy loading, pagination, and efficient caching
-- **Testing**: Unit tests for ViewModels, integration tests for repositories
+- **Naming**: `com.ampairs.{domain}.{layer}`, `@SerialName` for snake_case API compatibility
+- **Backend**: Follow REST patterns (`/api/v1/{resource}`), use `ApiResponse<T>` wrapper
+- **Quality**: Offline-first design, graceful error recovery, lazy loading
 
 ## **Theme Management System**
 
 The app includes a comprehensive theme switching system implemented in January 2025:
 
 ### **Architecture**
-```kotlin
-// Theme options
-enum class ThemePreference {
-    SYSTEM,  // Follow device theme (default)
-    LIGHT,   // Always light mode
-    DARK     // Always dark mode
-}
-
-// Singleton theme manager
-class ThemeManager {
-    val themePreference: StateFlow<ThemePreference>
-    fun setThemePreference(preference: ThemePreference)
-    @Composable fun isDarkTheme(): Boolean
-}
-```
+- **Options**: `ThemePreference.SYSTEM/LIGHT/DARK` (default: LIGHT)
+- **Manager**: `ThemeManager` with `StateFlow<ThemePreference>` and `@Composable isDarkTheme()`
 
 ### **Implementation Files**
-- **Theme System**: `/composeApp/src/commonMain/kotlin/com/ampairs/common/theme/`
-  - `ThemePreference.kt` - Theme options enum
-  - `ThemeManager.kt` - Singleton theme state manager with reactive updates
-- **UI Integration**: `/composeApp/src/commonMain/kotlin/com/ampairs/common/ui/AppHeader.kt`
-  - `ThemeToggleButton` - Standalone theme selector beside user menu
-- **App Integration**: `/composeApp/src/commonMain/kotlin/App.kt`
-  - Main app theme application using `ThemeManager.isDarkTheme()`
+- **Core**: `ThemePreference.kt`, `ThemeManager.kt`, `ThemeRepository.kt`
+- **UI**: `AppHeader.kt` with `ThemeToggleButton`
+- **Integration**: `App.kt` uses `ThemeManager.isDarkTheme()`
 
 ### **Features**
-- **🎯 Prominent Placement**: Theme toggle button beside user menu in AppHeader
-- **🔄 Reactive Updates**: Instant theme changes using StateFlow and Compose reactivity
-- **🌍 System Integration**: Respects device dark/light mode when set to System
-- **💾 Persistent**: Ready for local storage integration (localStorage/SharedPreferences)
-- **🎨 Material 3**: Full Material Design 3 color scheme support
-- **📱 Platform Support**: Works across Android, iOS, and Desktop
+- **UI**: Prominent placement beside user menu with instant reactive updates
+- **Integration**: System theme respect, Material 3 color schemes, cross-platform
 
 ### **User Experience**
-- **Default**: System theme (follows device settings)
-- **Access**: Click theme icon (🌞/🌙/⚙️) in top-right header
-- **Options**: System Default, Light Mode, Dark Mode
-- **Feedback**: Visual indicators with checkmarks and primary color highlights
-- **Performance**: Instant switching without app restart
+- **Default**: Light theme (changed from System)
+- **Access**: Theme icon in header with System/Light/Dark options
+- **Performance**: Instant switching with visual feedback
 
 ### **Usage in Code**
-```kotlin
-// Get theme manager instance
-val themeManager = remember { ThemeManager.getInstance() }
-val isDarkTheme = themeManager.isDarkTheme()
+- **Injection**: `val themeManager: ThemeManager = koinInject()`
+- **Theme**: `PlatformAmpairsTheme(darkTheme = themeManager.isDarkTheme())`
+- **Set**: `themeManager.setThemePreference(ThemePreference.DARK)`
 
-// Apply theme to MaterialTheme
-PlatformAmpairsTheme(darkTheme = isDarkTheme) {
-    // App content
-}
+## **DataStore Configuration & Key-Value Storage**
 
-// Set theme programmatically
-themeManager.setThemePreference(ThemePreference.DARK)
-```
+### **📦 Existing DataStore Implementation (January 2025)**
+
+**IMPORTANT**: The app has a **fully configured DataStore Preferences system** for cross-platform key-value storage. **Always reuse this existing setup** for any new persistence needs.
+
+#### **Key Files & Structure**
+- **Common Factory**: `/composeApp/src/commonMain/kotlin/com/ampairs/common/theme/createThemeDataStore.kt`
+- **Platform Implementations**: `createThemeDataStore.android.kt`, `createThemeDataStore.desktop.kt`, `createThemeDataStore.ios.kt`
+- **Repository Pattern**: `/composeApp/src/commonMain/kotlin/com/ampairs/common/theme/ThemeRepository.kt`
+- **Koin Modules**: `androidAppConfigModule`, `desktopAppConfigModule`, `iosAppConfigModule`
+
+#### **Storage Locations**
+- **Android**: `context.filesDir/theme_preferences.preferences_pb`
+- **Desktop**: `~/.ampairs/theme_preferences.preferences_pb`
+- **iOS**: `Documents/theme_preferences.preferences_pb` (requires `@OptIn(ExperimentalForeignApi::class)`)
+
+#### **Integration Pattern**
+- All platform Koin modules include their respective app config modules via `includes()`
+- DataStore injected as `DataStore<Preferences>` singleton
+- Repository pattern with Flow-based reactive updates
+- StateFlow conversion via `stateIn()` for Compose integration
+
+#### **Usage Guidelines**
+- ✅ **DO**: Inject existing `DataStore<Preferences>` and add new preference keys
+- ❌ **DON'T**: Create separate DataStore instances
+- **Pattern**: Repository → Manager → UI (with proper error handling and defaults)
 
 ## **iOS Target Development**
 
-### **📱 iOS Target Setup & Compatibility (January 2025)**
+### **📱 iOS Implementation Status (January 2025)**
 
-The iOS target has been **fully implemented and tested** with complete multiplatform compatibility. All compilation errors have been resolved and the app runs successfully on iOS simulators.
+**Status**: ✅ **Fully implemented and production-ready**
 
-#### **🔧 Key iOS Implementations Created**
+#### **Key iOS Configurations**
+- **Dispatchers**: iOS uses `Dispatchers.Default` for IO operations (no IO dispatcher)
+- **Database**: Room with iOS Documents directory paths via `getIosDatabasePath()`
+- **Platform APIs**: UIKit integration with `@OptIn(ExperimentalForeignApi::class)` for Foundation APIs
+- **Koin**: Proper initialization in `MainViewController` before app launch
+- **Navigation**: Side drawer pattern (no hardware back button)
 
-**Multiplatform Compatibility Layer:**
-```kotlin
-// Time handling - iOS compatible
-// /composeApp/src/commonMain/kotlin/com/ampairs/common/time/TimeUtils.kt
-@OptIn(ExperimentalTime::class)
-fun currentTimeMillis(): Long = Clock.System.now().toEpochMilliseconds()
+#### **iOS-Specific Requirements**
+- **File Paths**: Always use Documents directory for writable storage
+- **Time Handling**: Use `kotlin.time.Clock` for cross-platform compatibility
+- **Compilation**: `compileKotlinIosSimulatorArm64` for testing
+- **Threading**: iOS-specific `synchronized()` and `Volatile` implementations
 
-// Dispatcher provider - iOS uses default for IO operations
-// /composeApp/src/iosMain/kotlin/com/ampairs/common/coroutines/DispatcherProvider.ios.kt
-actual object DispatcherProvider {
-    val main: CoroutineDispatcher = Dispatchers.Main
-    val io: CoroutineDispatcher = Dispatchers.Default // iOS doesn't have IO dispatcher
-    val default: CoroutineDispatcher = Dispatchers.Default
-}
-
-// Concurrency utilities - iOS threading compatibility
-// /composeApp/src/iosMain/kotlin/com/ampairs/common/concurrency/ConcurrencyUtils.ios.kt
-actual typealias Volatile = kotlin.concurrent.Volatile
-actual fun <T> synchronized(lock: Any, block: () -> T): T = kotlin.native.concurrent.synchronized(lock, block)
-```
-
-**Platform Services:**
-```kotlin
-// iOS Device Service - Native UIKit integration
-// /composeApp/src/iosMain/kotlin/DeviceService.ios.kt
-class IosDeviceService : DeviceService {
-    override fun getDeviceInfo(): DeviceInfo {
-        val device = UIDevice.currentDevice
-        return DeviceInfo(
-            deviceId = generateDeviceId(),
-            deviceName = device.name,
-            deviceType = when (device.userInterfaceIdiom) {
-                UIUserInterfaceIdiomPad -> "Tablet"
-                UIUserInterfaceIdiomPhone -> "Mobile"
-                else -> "Mobile"
-            },
-            platform = "iOS",
-            os = "iOS ${device.systemVersion}"
-        )
-    }
-}
-```
-
-**Database Configuration:**
-```kotlin
-// iOS database helper - Proper file paths
-// /composeApp/src/iosMain/kotlin/com/ampairs/common/platform/IosDatabasePath.kt
-fun getIosDatabasePath(databaseName: String): String {
-    val documentsPath = NSSearchPathForDirectoriesInDomains(
-        NSDocumentDirectory,
-        NSUserDomainMask,
-        true
-    ).first() as String
-    return "$documentsPath/$databaseName"
-}
-
-// Platform modules use proper iOS paths
-val authPlatformModule: Module = module {
-    single<AuthRoomDatabase> {
-        Room.databaseBuilder<AuthRoomDatabase>(
-            name = getIosDatabasePath("auth.db") // Writes to iOS Documents directory
-        )
-            .setDriver(BundledSQLiteDriver())
-            .setQueryCoroutineContext(DispatcherProvider.io)
-            .fallbackToDestructiveMigration(true)
-            .build()
-    }
-}
-```
-
-**Dependency Injection:**
-```kotlin
-// iOS Koin initialization - MainViewController.kt
-fun MainViewController() = ComposeUIViewController {
-    // Initialize Koin for iOS
-    if (org.koin.mp.KoinPlatform.getKoinOrNull() == null) {
-        val koinApplication = startKoin { }
-        initKoin(koinApplication)
-    }
-    App({})
-}
-```
-
-#### **🗂️ iOS Platform Module Structure**
-
-All iOS platform modules have been created with proper implementations:
-
-- **`/composeApp/src/iosMain/kotlin/com/ampairs/auth/AuthModule.ios.kt`** - Authentication & JWT handling
-- **`/composeApp/src/iosMain/kotlin/com/ampairs/workspace/WorkspaceModule.ios.kt`** - Multi-tenant workspace management
-- **`/composeApp/src/iosMain/kotlin/com/ampairs/customer/CustomerModule.ios.kt`** - Customer relationship management
-- **`/composeApp/src/iosMain/kotlin/com/ampairs/product/ProductModule.ios.kt`** - Product catalog & inventory
-- **`/composeApp/src/iosMain/kotlin/com/ampairs/order/OrderModule.ios.kt`** - Order processing & management
-- **`/composeApp/src/iosMain/kotlin/com/ampairs/invoice/InvoiceModule.ios.kt`** - Invoice generation & management
-- **`/composeApp/src/iosMain/kotlin/com/ampairs/inventory/InventoryModule.ios.kt`** - Inventory tracking
-- **`/composeApp/src/iosMain/kotlin/com/ampairs/tally/TallyModule.ios.kt`** - ERP system integration
-
-#### **🚀 iOS Development Workflow**
-
-**Compilation & Building:**
-```bash
-# Test iOS compilation (works successfully)
-./gradlew composeApp:compileKotlinIosSimulatorArm64
-
-# iOS-specific builds (when iOS target enabled)
-./gradlew composeApp:embedAndSignAppleFrameworkForXcode
-```
-
-**Key iOS Compatibility Patterns:**
-1. **Platform-Specific Imports**: Use proper iOS Foundation/UIKit imports
-2. **Database Paths**: Always use iOS Documents directory for file storage
-3. **Dispatcher Mapping**: Map Dispatchers.IO to Dispatchers.Default on iOS
-4. **Time Handling**: Use kotlin.time.Clock for cross-platform time operations
-5. **Concurrency**: Implement iOS-specific threading and synchronization
-6. **Navigation**: iOS uses side drawer navigation pattern (no hardware back button)
-
-#### **📊 iOS Development Status**
-
-✅ **Fully Implemented:**
-- Koin dependency injection initialization
-- Room database with proper iOS file paths
-- All platform-specific expect/actual implementations
-- Device information and platform services
-- Theme management with iOS-specific density handling
-- Navigation patterns appropriate for iOS
-- JWT authentication and multi-tenant support
-- Material 3 design system integration
-
-✅ **Compilation Status:**
-- **Compiles successfully** without errors
-- **Runs on iOS simulators** without crashes
-- **All expect/actual declarations** resolved
-- **Room databases** create and function properly
-- **Only warnings remain** (expect/actual beta warnings - safe to ignore)
-
-#### **🔍 iOS Testing & Verification**
-
-The iOS target has been tested with:
-- **iPhone 16 Pro iOS Simulator** - App launches and initializes successfully
-- **Complete dependency injection** - No more "KoinApplication has not been started" errors
-- **Database operations** - Room databases create in iOS Documents directory
-- **Theme switching** - iOS-appropriate density and theme handling
-- **Navigation flows** - Proper iOS navigation patterns without hardware back button
-
-#### **💡 iOS Development Tips**
-
-1. **Always use `getIosDatabasePath()`** for Room database file paths
-2. **Import iOS platform APIs explicitly** (UIKit, Foundation) for type safety
-3. **Use DispatcherProvider.io** instead of Dispatchers.IO directly
-4. **Test compilation frequently** with `compileKotlinIosSimulatorArm64`
-5. **iOS requires proper file permissions** - Documents directory is writable
-6. **Theme management respects iOS system settings** by default
-
-#### **🎯 Ready for Production**
-
-The iOS target is now **production-ready** with:
-- Complete offline-first architecture with Store5
-- Full feature parity with Android version
-- Proper iOS platform integration
-- Material 3 theming with iOS-specific adaptations
-- Robust error handling and database management
-- JWT authentication and multi-tenant support
 
 ## **Common Issues & Solutions**
 
-- **iOS Target**: ✅ **Fully functional** - All implementations created and tested successfully
-- **iOS Database Errors**: Use `getIosDatabasePath()` helper for proper iOS Documents directory paths
-- **iOS Koin Initialization**: Ensure Koin is initialized in `MainViewController` before app launch
-- **iOS Dispatchers**: Use `DispatcherProvider.io` instead of `Dispatchers.IO` directly
-- **iOS UIKit Imports**: Import specific UIKit constants (`UIUserInterfaceIdiomPad`, `UIUserInterfaceIdiomPhone`) explicitly
-- **KSP Compatibility**: Version warnings may appear but don't affect functionality
-- **Room Migration**: Check migration scripts when updating database schemas
-- **Store5 Conflicts**: Use timestamp-based resolution for concurrent modifications
-- **Network Timeouts**: Ktor client configured with proper timeout and retry policies
+- **iOS**: Use `getIosDatabasePath()`, initialize Koin in `MainViewController`, `DispatcherProvider.io` instead of `Dispatchers.IO`
+- **Room**: Check migration scripts when updating schemas
+- **Store5**: Timestamp-based conflict resolution for concurrent modifications
+- **Network**: Ktor client with proper timeout and retry policies
 
 ## **Integration with Backend**
 
-This mobile app integrates seamlessly with the **Ampairs Spring Boot backend** by:
+- **Domain Models**: Identical patterns with Spring Boot backend
+- **API Contracts**: Exact REST endpoint compatibility with JWT auth and multi-tenancy
+- **Feature Parity**: Consistent across web, mobile, and API clients
 
-1. **Using identical domain models** and business logic patterns
-2. **Following backend API contracts** exactly for REST endpoints  
-3. **Implementing same authentication flows** with JWT and multi-device support
-4. **Supporting multi-tenancy** with workspace-aware data isolation
-5. **Maintaining feature parity** across web, mobile, and API clients
-
-For backend development guidelines, refer to the main `/ampairs/CLAUDE.md` file.
+*Refer to main `/ampairs/CLAUDE.md` for backend guidelines.*
