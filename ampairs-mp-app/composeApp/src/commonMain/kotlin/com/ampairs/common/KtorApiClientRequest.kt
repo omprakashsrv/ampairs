@@ -1,6 +1,6 @@
 package com.ampairs.common
 
-import com.ampairs.auth.api.AUTH_ENDPOINT
+import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.auth.api.model.RefreshToken
 import com.ampairs.auth.api.model.Token
 import com.ampairs.auth.domain.asRefreshTokens
@@ -316,7 +316,7 @@ suspend fun refreshTokens(tokenRepository: com.ampairs.auth.api.TokenRepository)
         
         println("🔑 Using device ID for refresh: ${deviceId.take(10)}...")
         
-        val response = refreshClient.post("$AUTH_ENDPOINT/auth/v1/refresh_token") {
+        val response = refreshClient.post(ApiUrlBuilder.authUrl("auth/v1/refresh_token")) {
             contentType(ContentType.Application.Json)
             setBody(RefreshToken(refreshToken, deviceId))
         }

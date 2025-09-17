@@ -1,6 +1,7 @@
 package com.ampairs.common
 
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.common.config.ConfigurationManager
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.HttpTimeout
@@ -23,6 +24,9 @@ import kotlinx.serialization.json.Json
 class NetworkException(message: String, cause: Throwable? = null) : Exception(message, cause)
 
 fun httpClient(engine: HttpClientEngine, tokenRepository: TokenRepository) = HttpClient(engine) {
+
+    // Log configuration for debugging
+    println(ConfigurationManager.logCurrentConfig())
     
     install(ContentNegotiation) {
         json(

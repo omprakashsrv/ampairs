@@ -5,6 +5,7 @@ import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.database.DatabasePathProvider
 import com.ampairs.common.database.IosDatabasePathProvider
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
+import com.ampairs.common.theme.iosAppConfigModule
 import io.ktor.client.engine.darwin.Darwin
 import org.koin.core.module.Module
 import org.koin.dsl.bind
@@ -19,6 +20,9 @@ actual val platformModule: Module = module {
     // Database path provider and factory for workspace-aware databases
     single<DatabasePathProvider> { IosDatabasePathProvider() }
     single { WorkspaceAwareDatabaseFactory(get(), DispatcherProvider.io) }
+
+    // Include theme DataStore module for iOS
+    includes(iosAppConfigModule)
 }
 
 actual val awsModule: Module = module {

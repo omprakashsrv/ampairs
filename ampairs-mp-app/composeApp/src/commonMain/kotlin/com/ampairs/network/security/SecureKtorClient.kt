@@ -1,7 +1,7 @@
 
 package com.ampairs.network.security
 
-import com.ampairs.auth.api.AUTH_ENDPOINT
+import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.model.RefreshToken
 import com.ampairs.auth.api.model.Token
@@ -114,7 +114,7 @@ class SecureKtorClientFactory(
 
                         try {
                             val tokenResponse: Response<Token> = client.post {
-                                url(AUTH_ENDPOINT + "/auth/v1/refresh_token")
+                                url(ApiUrlBuilder.authUrl("auth/v1/refresh_token"))
                                 contentType(ContentType.Application.Json)
                                 setBody(
                                     RefreshToken(

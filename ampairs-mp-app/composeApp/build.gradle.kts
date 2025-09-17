@@ -78,6 +78,10 @@ kotlin {
                 
                 // Store5 for offline-first caching
                 implementation(libs.store5)
+
+                // DataStore for preferences
+                implementation(libs.datastore)
+                implementation(libs.datastore.preferences)
             }
         }
 
@@ -126,6 +130,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources {
@@ -141,6 +146,10 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+
+        // Environment configuration
+        buildConfigField("String", "API_BASE_URL", "\"http://192.168.1.100:8080\"")
+        buildConfigField("String", "ENVIRONMENT", "\"dev\"")
     }
 
     signingConfigs {
@@ -153,9 +162,13 @@ android {
     }
     buildTypes {
         val debug by getting {
+            buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.7:8080\"")
+            buildConfigField("String", "ENVIRONMENT", "\"dev\"")
             signingConfig = signingConfigs["release"]
         }
         val release by getting {
+            buildConfigField("String", "API_BASE_URL", "\"https://api.ampairs.com\"")
+            buildConfigField("String", "ENVIRONMENT", "\"production\"")
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"

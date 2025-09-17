@@ -1,4 +1,5 @@
 import com.ampairs.auth.authModule
+import com.ampairs.common.theme.themeModule
 import com.ampairs.workspace.workspaceModule
 import com.ampairs.customer.customerModule
 import com.ampairs.home.homeModule
@@ -14,6 +15,7 @@ import org.koin.core.module.Module
 fun initKoin(koinApplication: KoinApplication): KoinApplication {
     koinApplication.modules(
         listOf(
+            themeModule,
             platformModule,
             awsModule,
             // Platform-specific Room database modules

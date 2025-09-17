@@ -5,6 +5,7 @@ import com.ampairs.common.ImageCacheKeyer
 import com.ampairs.common.database.DatabasePathProvider
 import com.ampairs.common.database.DesktopDatabasePathProvider
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
+import com.ampairs.common.config.desktopAppConfigModule
 import com.ampairs.tally.TallyApi
 import com.ampairs.tally.TallyApiImpl
 import com.ampairs.tally.TallyRepository
@@ -34,6 +35,9 @@ actual val platformModule: Module = module {
     // Database path provider and factory for workspace-aware databases
     single<DatabasePathProvider> { DesktopDatabasePathProvider() }
     single { WorkspaceAwareDatabaseFactory(get(), Dispatchers.IO) }
+
+    // Include theme DataStore module for Desktop
+    includes(desktopAppConfigModule)
 }
 
 fun generateImageLoader(): ImageLoader {

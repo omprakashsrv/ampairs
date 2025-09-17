@@ -455,7 +455,7 @@ private fun ThemeToggleButton(
     modifier: Modifier = Modifier
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val themeManager = remember { ThemeManager.getInstance() }
+    val themeManager: ThemeManager = org.koin.compose.koinInject()
     val currentTheme by themeManager.themePreference.collectAsState()
 
     Box(modifier = modifier) {

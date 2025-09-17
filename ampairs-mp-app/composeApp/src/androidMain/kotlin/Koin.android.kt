@@ -4,6 +4,7 @@ import com.ampairs.common.DeviceService
 import com.ampairs.common.database.AndroidDatabasePathProvider
 import com.ampairs.common.database.DatabasePathProvider
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
+import com.ampairs.common.theme.androidAppConfigModule
 import io.ktor.client.engine.okhttp.OkHttp
 import kotlinx.coroutines.Dispatchers
 import org.koin.android.ext.koin.androidContext
@@ -20,6 +21,9 @@ actual val platformModule: Module = module {
     // Database path provider and factory for workspace-aware databases
     single<DatabasePathProvider> { AndroidDatabasePathProvider(androidContext()) }
     single { WorkspaceAwareDatabaseFactory(get(), Dispatchers.IO) }
+
+    // Include theme DataStore module for Android
+    includes(androidAppConfigModule)
 }
 
 actual val awsModule: Module = module {
