@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.db.UserRepository
+import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.customer.db.CustomerRepository
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.asDomainModel
@@ -19,7 +20,6 @@ import com.ampairs.invoice.domain.asDatabaseModel
 import com.ampairs.product.domain.Product
 import com.ampairs.product.ui.product.ProductViewModel
 import com.ampairs.repository.ProductRepository
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 
@@ -51,7 +51,7 @@ class InvoiceViewModel(
 
     fun saveInvoice(onInvoiceSaved: (String) -> Unit) {
         savingInvoice = true
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             invoice.updateTaxes()
             invoice.updateDiscount()
             if (invoice.createdBy.isEmpty()) {
@@ -69,7 +69,7 @@ class InvoiceViewModel(
     }
 
     fun updateTaxInfos() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             invoiceItems.forEach { invoiceItem ->
                 if (invoiceItem.product != null && invoiceItem.product?.taxInfos == null) {
                     invoiceItem.product?.taxInfos =
@@ -99,7 +99,7 @@ class InvoiceViewModel(
     var invoice = Invoice()
 
     init {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             if (!id.isNullOrEmpty()) {
                 invoice = invoiceRepository.getInvoice(id)
                 fromCustomer = invoice.fromCustomer

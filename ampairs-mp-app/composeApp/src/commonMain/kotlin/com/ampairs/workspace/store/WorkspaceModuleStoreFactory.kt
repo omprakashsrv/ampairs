@@ -1,16 +1,19 @@
 package com.ampairs.workspace.store
 
+import com.ampairs.common.time.currentTimeMillis
 import com.ampairs.workspace.api.WorkspaceModuleApi
-import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.workspace.api.model.AvailableModule
+import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.workspace.db.dao.WorkspaceModuleDao
-import com.ampairs.workspace.db.entity.InstalledModuleEntity
 import com.ampairs.workspace.db.entity.AvailableModuleEntity
-import com.ampairs.workspace.db.entity.ModuleMenuItemEntity
+import com.ampairs.workspace.db.entity.InstalledModuleEntity
 import com.ampairs.workspace.db.entity.InstalledModuleWithMenuItems
-import org.mobilenativefoundation.store.store5.*
-import kotlinx.coroutines.flow.Flow
+import com.ampairs.workspace.db.entity.ModuleMenuItemEntity
 import kotlinx.coroutines.flow.map
+import org.mobilenativefoundation.store.store5.Fetcher
+import org.mobilenativefoundation.store.store5.SourceOfTruth
+import org.mobilenativefoundation.store.store5.Store
+import org.mobilenativefoundation.store.store5.StoreBuilder
 
 /**
  * Store5 Factory for Module data management following existing patterns
@@ -116,7 +119,7 @@ class WorkspaceModuleStoreFactory(
                         entity.id,
                         entity.workspaceId,
                         "SYNCED",
-                        System.currentTimeMillis()
+                        currentTimeMillis()
                     )
                 }
             }
@@ -154,7 +157,7 @@ class WorkspaceModuleStoreFactory(
                     moduleDao.updateAvailableModuleSyncState(
                         entity.moduleCode, 
                         "SYNCED", 
-                        System.currentTimeMillis()
+                        currentTimeMillis()
                     )
                 }
             }
@@ -184,9 +187,9 @@ private fun InstalledModule.toEntity(workspaceId: String): InstalledModuleEntity
         routeDisplayName = routeInfo.displayName,
         routeIconName = routeInfo.iconName,
         sync_state = "SYNCED",
-        created_at = System.currentTimeMillis(),
-        updated_at = System.currentTimeMillis(),
-        last_synced_at = System.currentTimeMillis()
+        created_at = currentTimeMillis(),
+        updated_at = currentTimeMillis(),
+        last_synced_at = currentTimeMillis()
     )
 }
 
@@ -268,9 +271,9 @@ private fun AvailableModule.toEntity(): AvailableModuleEntity {
         requiredTier = requiredTier,
         sizeMb = sizeMb,
         sync_state = "SYNCED",
-        created_at = System.currentTimeMillis(),
-        updated_at = System.currentTimeMillis(),
-        last_synced_at = System.currentTimeMillis()
+        created_at = currentTimeMillis(),
+        updated_at = currentTimeMillis(),
+        last_synced_at = currentTimeMillis()
     )
 }
 

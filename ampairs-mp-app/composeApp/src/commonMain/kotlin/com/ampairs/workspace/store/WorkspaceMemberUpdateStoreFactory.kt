@@ -1,15 +1,16 @@
 package com.ampairs.workspace.store
 
+import com.ampairs.common.time.currentTimeMillis
 import com.ampairs.workspace.api.WorkspaceMemberApi
-import com.ampairs.workspace.api.model.UpdateMemberRequest
 import com.ampairs.workspace.api.model.MemberDetailsResponse
+import com.ampairs.workspace.api.model.UpdateMemberRequest
 import com.ampairs.workspace.db.dao.WorkspaceMemberDao
-import com.ampairs.workspace.domain.WorkspaceMember
-import org.mobilenativefoundation.store.store5.*
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import org.mobilenativefoundation.store.store5.Fetcher
+import org.mobilenativefoundation.store.store5.SourceOfTruth
+import org.mobilenativefoundation.store.store5.Store
+import org.mobilenativefoundation.store.store5.StoreBuilder
 
 /**
  * Store5 Factory for WorkspaceMember UPDATE operations
@@ -59,7 +60,7 @@ class WorkspaceMemberUpdateStoreFactory(
                 if (success) {
                     // Mark member as synced
                     memberDao.updateSyncState("", key.workspaceId, key.memberId, "SYNCED")
-                    memberDao.updateLastSyncedAt("", key.workspaceId, key.memberId, System.currentTimeMillis())
+                    memberDao.updateLastSyncedAt("", key.workspaceId, key.memberId, currentTimeMillis())
                     memberDao.updatePendingChanges("", key.workspaceId, key.memberId, "")
                     memberDao.updateRetryCount("", key.workspaceId, key.memberId, 0)
                 }
@@ -122,8 +123,8 @@ class WorkspaceMemberUpdateStoreFactory(
                 status = memberDetails.status,
                 permissions = Json.encodeToString(memberDetails.permissions),
                 sync_state = "SYNCED",
-                last_synced_at = System.currentTimeMillis(),
-                server_updated_at = System.currentTimeMillis(),
+                last_synced_at = currentTimeMillis(),
+                server_updated_at = currentTimeMillis(),
                 pending_changes = "",
                 retry_count = 0
             )
@@ -141,7 +142,7 @@ class WorkspaceMemberUpdateStoreFactory(
             val updated = existing.copy(
                 sync_state = "PENDING_DELETE",
                 retry_count = existing.retry_count + 1,
-                local_updated_at = System.currentTimeMillis(),
+                local_updated_at = currentTimeMillis(),
                 conflict_data = errorMessage ?: ""
             )
             memberDao.insertWorkspaceMember(updated)
@@ -159,7 +160,7 @@ class WorkspaceMemberUpdateStoreFactory(
                 sync_state = "PENDING_UPLOAD",
                 pending_changes = Json.encodeToString(UpdateMemberRequest.serializer(), request),
                 retry_count = existing.retry_count + 1,
-                local_updated_at = System.currentTimeMillis(),
+                local_updated_at = currentTimeMillis(),
                 conflict_data = errorMessage ?: ""
             )
             memberDao.insertWorkspaceMember(updated)

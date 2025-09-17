@@ -1,19 +1,19 @@
 package com.ampairs.workspace.store
 
+import com.ampairs.common.time.currentTimeMillis
 import com.ampairs.workspace.api.WorkspaceMemberApi
 import com.ampairs.workspace.api.model.WorkspaceRole
-import com.ampairs.workspace.api.model.WorkspacePermissionResponse
-import com.ampairs.workspace.db.dao.WorkspaceRoleDao
-import com.ampairs.workspace.db.dao.WorkspacePermissionDao
-import com.ampairs.workspace.db.entity.WorkspaceRoleEntity
-import com.ampairs.workspace.db.entity.WorkspacePermissionEntity
 import com.ampairs.workspace.db.convertPermissionsListToMap
-import org.mobilenativefoundation.store.store5.*
-import kotlinx.coroutines.flow.Flow
+import com.ampairs.workspace.db.dao.WorkspacePermissionDao
+import com.ampairs.workspace.db.dao.WorkspaceRoleDao
+import com.ampairs.workspace.db.entity.WorkspacePermissionEntity
+import com.ampairs.workspace.db.entity.WorkspaceRoleEntity
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.decodeFromString
+import org.mobilenativefoundation.store.store5.Fetcher
+import org.mobilenativefoundation.store.store5.SourceOfTruth
+import org.mobilenativefoundation.store.store5.Store
+import org.mobilenativefoundation.store.store5.StoreBuilder
 
 /**
  * Store5 Factory for Workspace Roles data management
@@ -123,9 +123,9 @@ class WorkspacePermissionsStoreFactory(
                         actions = Json.encodeToString(actions), // Store the complete actions map
                         description = "Permissions for $module module",
                         sync_state = "SYNCED",
-                        last_synced_at = System.currentTimeMillis(),
-                        local_updated_at = System.currentTimeMillis(),
-                        server_updated_at = System.currentTimeMillis()
+                        last_synced_at = currentTimeMillis(),
+                        local_updated_at = currentTimeMillis(),
+                        server_updated_at = currentTimeMillis()
                     )
                 }
                 
@@ -165,9 +165,9 @@ private fun WorkspaceRole.toEntity(userId: String, workspaceId: String): Workspa
         created_at = "",
         updated_at = "",
         sync_state = "SYNCED",
-        last_synced_at = System.currentTimeMillis(),
-        local_updated_at = System.currentTimeMillis(),
-        server_updated_at = System.currentTimeMillis()
+        last_synced_at = currentTimeMillis(),
+        local_updated_at = currentTimeMillis(),
+        server_updated_at = currentTimeMillis()
     )
 }
 

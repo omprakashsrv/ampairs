@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.flower_core.Resource
 import com.ampairs.common.id_generator.IdUtils
 import com.ampairs.common.model.UiState
@@ -31,7 +32,7 @@ class ProductGroupEditViewModel(
     }
 
     fun syncGroups() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             productRepository.getGroupResource(groupType).collect { response ->
                 viewModelScope.launch(Dispatchers.Main) {
                     when (response.status) {
@@ -69,7 +70,7 @@ class ProductGroupEditViewModel(
 
     fun uploadImage(files: MPFile<Any>?) {
         if (files != null) {
-            viewModelScope.launch(Dispatchers.IO) {
+            viewModelScope.launch(DispatcherProvider.io) {
                 group?.uploading = true
                 val file = files.getFileByteArray()
                 val uploadedImage =
@@ -93,7 +94,7 @@ class ProductGroupEditViewModel(
                 it.group.image = it.image
             }
             productRepository.saveGroups(groups.map { it.group }, groupType)
-            viewModelScope.launch(Dispatchers.IO) {
+            viewModelScope.launch(DispatcherProvider.io) {
                 productRepository.updateGroups(groupType)
                 syncGroups()
             }

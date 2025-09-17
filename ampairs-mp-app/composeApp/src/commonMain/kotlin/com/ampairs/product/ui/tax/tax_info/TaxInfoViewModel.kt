@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.id_generator.IdUtils
 import com.ampairs.product.db.TaxRepository
 import com.ampairs.product.domain.Constants
@@ -20,7 +21,7 @@ class TaxInfoViewModel(val id: String?, private val taxRepository: TaxRepository
     
     init {
         // Load data asynchronously
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             val taxInfo = id?.let { taxRepository.getTaxInfo(it)?.asTaxInfoDomainModel() } ?: TaxInfo()
             
             viewModelScope.launch(Dispatchers.Main) {
@@ -30,7 +31,7 @@ class TaxInfoViewModel(val id: String?, private val taxRepository: TaxRepository
     }
 
     fun reSyncTaxInfo(id: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             val taxInfo = taxRepository.getTaxInfo(id)?.asTaxInfoDomainModel() ?: TaxInfo()
             
             viewModelScope.launch(Dispatchers.Main) {
@@ -48,7 +49,7 @@ class TaxInfoViewModel(val id: String?, private val taxRepository: TaxRepository
                 Constants.ID_LENGTH
             )
         }
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             taxRepository.updateTaxInfo(taxInfoToUpdate)
             viewModelScope.launch(Dispatchers.Main) {
                 loading = false

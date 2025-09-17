@@ -1,16 +1,18 @@
 package com.ampairs.workspace.store
 
+import com.ampairs.common.model.PageResult
+import com.ampairs.common.time.currentTimeMillis
 import com.ampairs.workspace.api.WorkspaceInvitationApi
-import com.ampairs.workspace.api.model.PagedInvitationResponse
 import com.ampairs.workspace.api.model.InvitationApiModel
 import com.ampairs.workspace.api.model.InvitationListResponse
 import com.ampairs.workspace.db.dao.WorkspaceInvitationDao
 import com.ampairs.workspace.db.entity.WorkspaceInvitationEntity
 import com.ampairs.workspace.domain.WorkspaceInvitation
-import com.ampairs.common.model.PageResult
-import org.mobilenativefoundation.store.store5.*
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import org.mobilenativefoundation.store.store5.Fetcher
+import org.mobilenativefoundation.store.store5.SourceOfTruth
+import org.mobilenativefoundation.store.store5.Store
+import org.mobilenativefoundation.store.store5.StoreBuilder
 
 /**
  * Store5 Factory for WorkspaceInvitation data management with pagination support
@@ -219,7 +221,7 @@ class WorkspaceInvitationStoreFactory(
             },
             writer = { key, pageResult ->
                 // Convert Domain models to entities with sync metadata
-                val currentTime = System.currentTimeMillis()
+                val currentTime = currentTimeMillis()
                 val entities = pageResult.content.map { invitation: WorkspaceInvitation ->
                     invitation.toEntityModel(key.userId).copy(
                         sync_state = "SYNCED",
@@ -338,8 +340,8 @@ private fun WorkspaceInvitation.toEntityModel(userId: String): WorkspaceInvitati
         resend_count = this.resendCount,
         invitation_message = this.invitationMessage,
         sync_state = "SYNCED",
-        last_synced_at = System.currentTimeMillis(),
-        local_updated_at = System.currentTimeMillis(),
-        server_updated_at = System.currentTimeMillis()
+        last_synced_at = currentTimeMillis(),
+        local_updated_at = currentTimeMillis(),
+        server_updated_at = currentTimeMillis()
     )
 }

@@ -1,22 +1,22 @@
 package com.ampairs.workspace.db
 
+import com.ampairs.auth.api.TokenRepository
+import com.ampairs.common.model.PageResult
+import com.ampairs.common.time.currentTimeMillis
 import com.ampairs.workspace.api.WorkspaceInvitationApi
 import com.ampairs.workspace.api.model.CreateInvitationRequest
 import com.ampairs.workspace.api.model.ResendInvitationRequest
 import com.ampairs.workspace.db.dao.WorkspaceInvitationDao
-import com.ampairs.workspace.domain.WorkspaceInvitation
 import com.ampairs.workspace.domain.InvitationAcceptanceResult
-import com.ampairs.workspace.store.WorkspaceInvitationStore
+import com.ampairs.workspace.domain.WorkspaceInvitation
 import com.ampairs.workspace.store.WorkspaceInvitationKey
-import com.ampairs.common.model.PageResult
-import com.ampairs.auth.api.TokenRepository
-import org.mobilenativefoundation.store.store5.StoreReadRequest
-import org.mobilenativefoundation.store.store5.StoreReadResponse
-import org.mobilenativefoundation.store.store5.StoreWriteRequest
+import com.ampairs.workspace.store.WorkspaceInvitationStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import org.mobilenativefoundation.store.core5.ExperimentalStoreApi
+import org.mobilenativefoundation.store.store5.StoreReadRequest
+import org.mobilenativefoundation.store.store5.StoreReadResponse
 
 /**
  * Offline-first workspace invitation repository using Store5 pattern
@@ -271,7 +271,7 @@ class OfflineFirstWorkspaceInvitationRepository(
                 )
 
                 // Update local database with server data
-                val currentTime = System.currentTimeMillis()
+                val currentTime = currentTimeMillis()
                 val entity = invitation.toEntityModel(currentUserId).copy(
                     sync_state = "SYNCED",
                     last_synced_at = currentTime,
@@ -306,7 +306,7 @@ class OfflineFirstWorkspaceInvitationRepository(
 
             if (response.error == null && response.data != null) {
                 // Update sync state to confirm successful cancellation
-                val currentTime = System.currentTimeMillis()
+                val currentTime = currentTimeMillis()
                 invitationDao.updateSyncState(invitationId, currentUserId, "SYNCED", currentTime)
                 
                 return response.data!!
@@ -387,9 +387,9 @@ private fun WorkspaceInvitation.toEntityModel(userId: String): com.ampairs.works
         resend_count = this.resendCount,
         invitation_message = this.invitationMessage,
         sync_state = "SYNCED",
-        last_synced_at = System.currentTimeMillis(),
-        local_updated_at = System.currentTimeMillis(),
-        server_updated_at = System.currentTimeMillis()
+        last_synced_at = currentTimeMillis(),
+        local_updated_at = currentTimeMillis(),
+        server_updated_at = currentTimeMillis()
     )
 }
 

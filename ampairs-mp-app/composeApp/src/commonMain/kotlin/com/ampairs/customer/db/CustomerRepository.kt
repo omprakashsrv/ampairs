@@ -10,7 +10,7 @@ import com.ampairs.customer.db.entity.CustomerEntity
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.asDatabaseModel
 import com.ampairs.common.model.Response
-import kotlinx.coroutines.Dispatchers
+import com.ampairs.common.coroutines.DispatcherProvider
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOn
@@ -67,7 +67,7 @@ class CustomerRepository(
                 it.asDatabaseModel().forEach { customer ->
                     customerDao.insert(customer)
                 }
-            }).flowOn(Dispatchers.IO)
+            }).flowOn(DispatcherProvider.io)
     }
 
 }

@@ -10,6 +10,7 @@ import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
 import androidx.paging.map
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.flower_core.Resource
 import com.ampairs.common.model.UiState
 import com.ampairs.customer.db.CustomerRepository
@@ -37,7 +38,7 @@ class CustomersViewModel(
     }
 
     private fun loadDefaultCustomer() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
 //            val workspaceId = tokenRepository.getWorkspaceId()
             val workspaceId = ""
             company = customerRepository.getDefaultCustomer(workspaceId)
@@ -46,7 +47,7 @@ class CustomersViewModel(
     }
 
     private fun syncCustomers() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             customerRepository.getCustomerResource().collect { response ->
                 viewModelScope.launch(Dispatchers.Main) {
                     when (response.status) {

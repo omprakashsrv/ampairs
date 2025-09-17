@@ -2,11 +2,12 @@ package com.ampairs.order.db
 
 import androidx.paging.PagingSource
 import androidx.room.Transaction
+import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.flower_core.Resource
 import com.ampairs.common.flower_core.networkResource
+import com.ampairs.common.model.Response
 import com.ampairs.customer.db.dao.CustomerDao
 import com.ampairs.customer.domain.asDomainModel
-import com.ampairs.common.model.Response
 import com.ampairs.order.api.OrderApi
 import com.ampairs.order.api.model.OrderApiModel
 import com.ampairs.order.api.model.toApiModel
@@ -21,7 +22,6 @@ import com.ampairs.order.domain.Order
 import com.ampairs.order.domain.asDomainModel
 import com.ampairs.product.db.dao.ProductDao
 import com.ampairs.product.domain.asDomainModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flowOn
@@ -102,7 +102,7 @@ class OrderRepository(
             sharedFlow
         }, processNetworkResponse = {
 
-        }).flowOn(Dispatchers.IO)
+        }).flowOn(DispatcherProvider.io)
     }
 
     fun getOrders(searchText: String): PagingSource<Int, OrderEntity> {

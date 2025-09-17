@@ -3,6 +3,7 @@ package com.ampairs.workspace.db.entity
 import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import com.ampairs.common.time.currentTimeMillis
 import kotlinx.serialization.Serializable
 
 /**
@@ -150,10 +151,10 @@ data class WorkspaceModuleEntity(
     val lastSyncAt: String? = null,
     
     @ColumnInfo(name = "local_created_at") 
-    val localCreatedAt: Long = System.currentTimeMillis(),
+    val localCreatedAt: Long = currentTimeMillis(),
     
     @ColumnInfo(name = "local_updated_at") 
-    val localUpdatedAt: Long = System.currentTimeMillis(),
+    val localUpdatedAt: Long = currentTimeMillis(),
 )
 
 /**
@@ -264,8 +265,8 @@ data class MasterModuleEntity(
     val lastSyncAt: String? = null,
     
     @ColumnInfo(name = "local_created_at") 
-    val localCreatedAt: Long = System.currentTimeMillis(),
+    val localCreatedAt: Long = currentTimeMillis(),
     
     @ColumnInfo(name = "local_updated_at") 
-    val localUpdatedAt: Long = System.currentTimeMillis(),
+    val localUpdatedAt: Long = currentTimeMillis(),
 )

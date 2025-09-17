@@ -3,6 +3,7 @@ package com.ampairs.workspace.db.entity
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.ampairs.common.time.currentTimeMillis
 import androidx.room.Embedded
 import androidx.room.Relation
 
@@ -49,8 +50,8 @@ data class InstalledModuleEntity(
 
     // Store5 sync metadata - following existing pattern
     val sync_state: String = "SYNCED", // SYNCED | PENDING | UPLOADING | ERROR
-    val created_at: Long = System.currentTimeMillis(),
-    val updated_at: Long = System.currentTimeMillis(),
+    val created_at: Long = currentTimeMillis(),
+    val updated_at: Long = currentTimeMillis(),
     val last_synced_at: Long? = null,
 )
 
@@ -111,7 +112,7 @@ data class AvailableModuleEntity(
     
     // Store5 sync metadata - following existing pattern
     val sync_state: String = "SYNCED",
-    val created_at: Long = System.currentTimeMillis(),
-    val updated_at: Long = System.currentTimeMillis(),
+    val created_at: Long = currentTimeMillis(),
+    val updated_at: Long = currentTimeMillis(),
     val last_synced_at: Long? = null,
 )

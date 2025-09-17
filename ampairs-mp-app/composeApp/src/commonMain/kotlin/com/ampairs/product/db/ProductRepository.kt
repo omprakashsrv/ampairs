@@ -2,18 +2,19 @@ package com.ampairs.repository
 
 import androidx.paging.PagingSource
 import com.ampairs.aws.s3.S3Client
+import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.flower_core.Resource
 import com.ampairs.common.flower_core.dbBoundResource
 import com.ampairs.common.flower_core.networkResource
+import com.ampairs.common.model.Response
+import com.ampairs.common.model.onError
+import com.ampairs.common.model.onSuccess
 import com.ampairs.domain.Unit
 import com.ampairs.domain.asUnitConversionModel
 import com.ampairs.domain.asUnitDatabaseModel
 import com.ampairs.domain.asUnitDomainModel
 import com.ampairs.domain.asUnitModel
 import com.ampairs.inventory.db.dao.InventoryDao
-import com.ampairs.common.model.Response
-import com.ampairs.common.model.onError
-import com.ampairs.common.model.onSuccess
 import com.ampairs.product.api.ProductApi
 import com.ampairs.product.api.model.AllProductGroupApiModel
 import com.ampairs.product.api.model.ProductApiModel
@@ -67,7 +68,6 @@ import com.ampairs.product.domain.asSubCategoryDomainModel
 import com.ampairs.product.domain.asTaxCodeModel
 import com.ampairs.product.domain.toImageDatabaseModel
 import com.ampairs.product.ui.group.GroupType
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.flow
@@ -161,7 +161,7 @@ class ProductRepository(
             },
             onNetworkRequestFailed = { message: String, code: Int ->
 
-            }).flowOn(Dispatchers.IO)
+            }).flowOn(DispatcherProvider.io)
     }
 
     suspend fun saveAllGroups(it: AllProductGroupApiModel) {
@@ -229,7 +229,7 @@ class ProductRepository(
             },
             onNetworkRequestFailed = { message: String, code: Int ->
 
-            }).flowOn(Dispatchers.IO)
+            }).flowOn(DispatcherProvider.io)
     }
 
     suspend fun getProduct(id: String): Product? {
@@ -332,7 +332,7 @@ class ProductRepository(
             },
             processNetworkResponse = {
 
-            }).flowOn(Dispatchers.IO)
+            }).flowOn(DispatcherProvider.io)
     }
 
     suspend fun updateUnits(units: List<UnitApiModel>): Response<List<UnitApiModel>> {

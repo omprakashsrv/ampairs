@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.id_generator.IdUtils
 import com.ampairs.product.db.TaxRepository
 import com.ampairs.product.domain.Constants
@@ -77,7 +78,7 @@ class ProductEditViewModel(
                 Constants.ID_LENGTH
             )
         }
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             productRepository.updateProduct(productToUpdate)
             viewModelScope.launch(Dispatchers.Main) {
                 loading = false

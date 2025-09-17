@@ -9,6 +9,7 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
 import androidx.paging.map
+import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.flower_core.Resource
 import com.ampairs.common.model.UiState
 import com.ampairs.product.domain.asDomainModel
@@ -28,7 +29,7 @@ class ProductListViewModel(private val productRepository: ProductRepository) : V
     }
 
     private fun syncProducts() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             productRepository.getProductResource().collect { response ->
                 viewModelScope.launch(Dispatchers.Main) {
                     when (response.status) {

@@ -1,12 +1,16 @@
 package com.ampairs.workspace.store
 
+import com.ampairs.common.time.currentTimeMillis
 import com.ampairs.workspace.api.UserInvitationApi
-import com.ampairs.workspace.db.dao.UserInvitationDao
-import com.ampairs.workspace.domain.UserInvitation
 import com.ampairs.workspace.api.model.UserInvitationResponse
+import com.ampairs.workspace.db.dao.UserInvitationDao
 import com.ampairs.workspace.db.entity.UserInvitationEntity
+import com.ampairs.workspace.domain.UserInvitation
 import kotlinx.coroutines.flow.map
-import org.mobilenativefoundation.store.store5.*
+import org.mobilenativefoundation.store.store5.Fetcher
+import org.mobilenativefoundation.store.store5.SourceOfTruth
+import org.mobilenativefoundation.store.store5.Store
+import org.mobilenativefoundation.store.store5.StoreBuilder
 
 // Store5 key for user invitations
 data class UserInvitationKey(
@@ -52,7 +56,7 @@ class UserInvitationStoreFactory(
             },
             writer = { key, invitations ->
                 // Convert Domain models to entities with sync metadata
-                val currentTime = System.currentTimeMillis()
+                val currentTime = currentTimeMillis()
                 val entities = invitations.map { invitation ->
                     invitation.toEntityModel(key.userId).copy(
                         sync_state = "SYNCED",

@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.invoice.db.InvoiceRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -13,7 +14,7 @@ class InvoiceViewViewModel(val invoiceId: String, val invoiceRepository: Invoice
     ViewModel() {
     fun saveInvoice() {
         savingInvoice = true
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             invoiceRepository.saveInvoice(invoice)
             invoice = invoiceRepository.getInvoice(invoiceId)
             viewModelScope.launch(Dispatchers.Main) {

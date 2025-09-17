@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.id_generator.IdUtils
 import com.ampairs.customer.db.CustomerRepository
 import com.ampairs.customer.domain.Constants
@@ -26,7 +27,7 @@ class CustomerViewModel(val id: String?, private val customerRepository: Custome
     }
 
     private fun loadCustomer(customerId: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             val customerEntity = customerRepository.getCustomer(customerId)
             customer = CustomerState(customerEntity?.asDomainModel() ?: Customer())
         }
@@ -45,7 +46,7 @@ class CustomerViewModel(val id: String?, private val customerRepository: Custome
                 Constants.ID_LENGTH
             )
         }
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             customerRepository.updateCustomer(customerToUpdate)
             viewModelScope.launch(Dispatchers.Main) {
                 loading = false

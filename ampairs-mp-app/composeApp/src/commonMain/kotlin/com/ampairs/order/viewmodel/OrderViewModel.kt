@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.db.UserRepository
+import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.customer.db.CustomerRepository
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.asDomainModel
@@ -19,7 +20,6 @@ import com.ampairs.order.domain.asDatabaseModel
 import com.ampairs.product.domain.Product
 import com.ampairs.product.ui.product.ProductViewModel
 import com.ampairs.repository.ProductRepository
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 
@@ -51,7 +51,7 @@ class OrderViewModel(
 
     fun saveOrder(onOrderSaved: (String) -> Unit) {
         savingOrder = true
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             order.updateTaxes()
             order.updateDiscount()
             if (order.createdBy.isEmpty()) {
@@ -66,7 +66,7 @@ class OrderViewModel(
     }
 
     fun updateTaxInfos() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             orderItems.forEach { orderItem ->
                 orderItem.product?.taxInfos =
                     orderItem.product?.taxCode?.let { productRepository.getTaxCode(it)?.taxInfos }
@@ -95,7 +95,7 @@ class OrderViewModel(
     var order = Order()
 
     init {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             if (!id.isNullOrEmpty()) {
                 order = orderRepository.getOrder(id)
                 fromCustomer = order.fromCustomer

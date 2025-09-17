@@ -3,6 +3,7 @@ package com.ampairs.product.ui.group
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.flower_core.Resource
 import com.ampairs.common.model.UiState
 import com.ampairs.product.domain.Group
@@ -23,7 +24,7 @@ class ProductGroupViewModel(
     }
 
     private fun syncGroups() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             productRepository.getGroupResource(groupType).collect { response ->
                 viewModelScope.launch(Dispatchers.Main) {
                     when (response.status) {

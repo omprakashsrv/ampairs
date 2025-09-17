@@ -5,6 +5,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.id_generator.IdUtils
 import com.ampairs.customer.domain.Constants
 import com.ampairs.inventory.db.InventoryRepository
@@ -27,7 +28,7 @@ class InventoryViewModel(val id: String?, private val inventoryRepository: Inven
     }
 
     private fun loadInventory(inventoryId: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             val inventoryEntity = inventoryRepository.getInventory(inventoryId)
             inventory = InventoryState(inventoryEntity?.asDomainModel() ?: Inventory())
         }
@@ -46,7 +47,7 @@ class InventoryViewModel(val id: String?, private val inventoryRepository: Inven
                 Constants.ID_LENGTH
             )
         }
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             inventoryRepository.updateInventory(inventoryToUpdate.asDatabaseModel())
             viewModelScope.launch(Dispatchers.Main) {
                 loading = false

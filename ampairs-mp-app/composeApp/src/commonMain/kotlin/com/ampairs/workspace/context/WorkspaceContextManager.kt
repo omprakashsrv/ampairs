@@ -3,6 +3,8 @@ package com.ampairs.workspace.context
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.ampairs.common.concurrency.Volatile
+import com.ampairs.common.concurrency.synchronized
 
 /**
  * Global workspace context manager for state-based workspace management

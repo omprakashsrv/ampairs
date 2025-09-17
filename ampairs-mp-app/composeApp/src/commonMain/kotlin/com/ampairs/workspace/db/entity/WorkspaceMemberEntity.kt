@@ -3,6 +3,7 @@ package com.ampairs.workspace.db.entity
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.ampairs.common.time.currentTimeMillis
 
 @Entity(
     tableName = "workspaceMemberEntity",
@@ -34,7 +35,7 @@ data class WorkspaceMemberEntity(
     // Sync metadata for offline-first functionality (following WorkspaceEntity pattern)
     val sync_state: String = "SYNCED", // SYNCED, PENDING_UPLOAD, PENDING_DOWNLOAD, CONFLICTED, FAILED
     val last_synced_at: Long = 0L, // Timestamp of last successful sync
-    val local_updated_at: Long = System.currentTimeMillis(), // When locally modified
+    val local_updated_at: Long = currentTimeMillis(), // When locally modified
     val server_updated_at: Long = 0L, // Server's updatedAt timestamp
     val pending_changes: String = "", // JSON of pending field changes
     val conflict_data: String = "", // JSON of conflicted fields

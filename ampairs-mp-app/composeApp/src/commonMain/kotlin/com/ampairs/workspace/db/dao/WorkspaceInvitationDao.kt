@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
+import com.ampairs.common.time.currentTimeMillis
 import com.ampairs.workspace.db.entity.WorkspaceInvitationEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -51,10 +52,10 @@ interface WorkspaceInvitationDao {
     fun getInvitationsByStatusAndRole(userId: String, workspaceId: String, status: String, role: String): Flow<List<WorkspaceInvitationEntity>>
 
     @Query("UPDATE workspaceInvitationEntity SET status = :status, local_updated_at = :updatedAt, sync_state = 'PENDING_UPLOAD' WHERE id = :id AND user_id = :userId")
-    suspend fun updateInvitationStatus(id: String, userId: String, status: String, updatedAt: Long = System.currentTimeMillis())
+    suspend fun updateInvitationStatus(id: String, userId: String, status: String, updatedAt: Long = currentTimeMillis())
 
     @Query("UPDATE workspaceInvitationEntity SET resend_count = resend_count + 1, local_updated_at = :updatedAt, sync_state = 'PENDING_UPLOAD' WHERE id = :id AND user_id = :userId")
-    suspend fun incrementResendCount(id: String, userId: String, updatedAt: Long = System.currentTimeMillis())
+    suspend fun incrementResendCount(id: String, userId: String, updatedAt: Long = currentTimeMillis())
 
     @Query("DELETE FROM workspaceInvitationEntity WHERE id = :id AND user_id = :userId")
     suspend fun deleteInvitation(id: String, userId: String)

@@ -8,6 +8,7 @@ import com.ampairs.auth.api.model.Token
 import com.ampairs.auth.domain.asRefreshTokens
 import com.ampairs.common.UnauthenticatedHandler
 import com.ampairs.common.model.Response
+import com.ampairs.common.security.SecurityException
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.HttpClientEngine

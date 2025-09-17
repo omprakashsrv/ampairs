@@ -1,6 +1,7 @@
 package com.ampairs.product.db
 
 import androidx.paging.PagingSource
+import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.flower_core.Resource
 import com.ampairs.common.flower_core.dbBoundResource
 import com.ampairs.common.flower_core.networkResource
@@ -15,7 +16,6 @@ import com.ampairs.product.domain.asDatabaseModel
 import com.ampairs.product.domain.asTaxCodeApiModel
 import com.ampairs.product.domain.asTaxInfoApiModel
 import com.ampairs.product.domain.asTaxInfoDomainModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -51,7 +51,7 @@ class TaxRepository(
             },
             processNetworkResponse = {
                 taxDao.updateTaxCodes(it.asDatabaseModel())
-            }).flowOn(Dispatchers.IO)
+            }).flowOn(DispatcherProvider.io)
     }
 
     fun getTaxInfoResource(): Flow<Resource<List<TaxInfo>>> {
@@ -72,7 +72,7 @@ class TaxRepository(
             },
             onNetworkRequestFailed = { message: String, code: Int ->
 
-            }).flowOn(Dispatchers.IO)
+            }).flowOn(DispatcherProvider.io)
     }
 
     fun getTaxCodePaging(searchText: String): PagingSource<Int, TaxCodeEntity> {

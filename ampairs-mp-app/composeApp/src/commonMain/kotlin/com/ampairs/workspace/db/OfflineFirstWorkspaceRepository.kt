@@ -1,21 +1,21 @@
 package com.ampairs.workspace.db
 
+import com.ampairs.auth.api.TokenRepository
+import com.ampairs.common.model.PageResult
+import com.ampairs.common.time.currentTimeMillis
 import com.ampairs.workspace.api.WorkspaceApi
 import com.ampairs.workspace.api.model.CreateWorkspaceRequest
 import com.ampairs.workspace.api.model.UpdateWorkspaceRequest
 import com.ampairs.workspace.db.dao.WorkspaceDao
 import com.ampairs.workspace.domain.Workspace
-import com.ampairs.common.model.PageResult
 import com.ampairs.workspace.domain.asDatabaseModel
 import com.ampairs.workspace.domain.asDomainModel
-import com.ampairs.auth.api.TokenRepository
-import com.ampairs.workspace.store.WorkspaceStore
 import com.ampairs.workspace.store.WorkspaceKey
-import org.mobilenativefoundation.store.store5.StoreReadRequest
-import org.mobilenativefoundation.store.store5.StoreReadResponse
+import com.ampairs.workspace.store.WorkspaceStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.first
+import org.mobilenativefoundation.store.store5.StoreReadRequest
+import org.mobilenativefoundation.store.store5.StoreReadResponse
 
 /**
  * Offline-first workspace repository using Store5 pattern
@@ -61,7 +61,7 @@ class OfflineFirstWorkspaceRepository(
 
             // Update in local database with current user association
             val currentUserId = getCurrentUserId() ?: "unknown_user"
-            val currentTime = System.currentTimeMillis()
+            val currentTime = currentTimeMillis()
             
             val workspaceEntity = workspace.asDatabaseModel().copy(
                 user_id = currentUserId,
@@ -157,7 +157,7 @@ class OfflineFirstWorkspaceRepository(
 
             // Save to local database with current user association
             val currentUserId = getCurrentUserId() ?: "unknown_user"
-            val currentTime = System.currentTimeMillis()
+            val currentTime = currentTimeMillis()
             
             val workspaceEntity = workspace.asDatabaseModel().copy(
                 user_id = currentUserId,

@@ -5,6 +5,8 @@ import androidx.compose.runtime.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import com.ampairs.common.concurrency.Volatile
+import com.ampairs.common.concurrency.synchronized
 
 /**
  * Theme manager for handling app-wide theme state

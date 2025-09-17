@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
+import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.flower_core.Resource
 import com.ampairs.common.model.UiState
 import com.ampairs.customer.viewmodel.PAGE_SIZE
@@ -25,7 +26,7 @@ class InvoicesViewModel(val invoiceRepository: InvoiceRepository) : ViewModel() 
     }
 
     private fun syncTaxInfos() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             invoiceRepository.getInvoiceResource().collect { response ->
                 viewModelScope.launch(Dispatchers.Main) {
                     when (response.status) {

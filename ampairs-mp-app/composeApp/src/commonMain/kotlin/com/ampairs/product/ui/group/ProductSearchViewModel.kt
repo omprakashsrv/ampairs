@@ -9,6 +9,7 @@ import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.cachedIn
 import com.ampairs.aws.s3.S3Client
+import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.flower_core.Resource
 import com.ampairs.common.model.UiState
 import com.ampairs.inventory.db.InventoryRepository
@@ -75,7 +76,7 @@ class ProductSearchViewModel(
     }
 
     private fun syncProducts() {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             productRepository.getProductResource().collect { response ->
                 viewModelScope.launch(Dispatchers.Main) {
                     when (response.status) {

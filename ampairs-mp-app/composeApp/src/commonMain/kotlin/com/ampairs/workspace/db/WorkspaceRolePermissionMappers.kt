@@ -1,12 +1,11 @@
 package com.ampairs.workspace.db
 
-import com.ampairs.workspace.api.model.WorkspaceRole
-import com.ampairs.workspace.api.model.WorkspacePermissionResponse
+import com.ampairs.common.time.currentTimeMillis
 import com.ampairs.workspace.api.model.WorkspacePermission
-import com.ampairs.workspace.db.entity.WorkspaceRoleEntity
+import com.ampairs.workspace.api.model.WorkspacePermissionResponse
+import com.ampairs.workspace.api.model.WorkspaceRole
 import com.ampairs.workspace.db.entity.WorkspacePermissionEntity
-import kotlinx.serialization.encodeToString
-import kotlinx.serialization.decodeFromString
+import com.ampairs.workspace.db.entity.WorkspaceRoleEntity
 import kotlinx.serialization.json.Json
 
 /**
@@ -32,9 +31,9 @@ fun WorkspaceRole.toEntity(userId: String, workspaceId: String): WorkspaceRoleEn
         created_at = "",
         updated_at = "",
         sync_state = "SYNCED",
-        last_synced_at = System.currentTimeMillis(),
-        local_updated_at = System.currentTimeMillis(),
-        server_updated_at = System.currentTimeMillis()
+        last_synced_at = currentTimeMillis(),
+        local_updated_at = currentTimeMillis(),
+        server_updated_at = currentTimeMillis()
     )
 }
 
@@ -70,9 +69,9 @@ fun List<WorkspacePermissionResponse>.toPermissionEntities(
             actions = Json.encodeToString(mapOf(permission.permissionName to true)), // Store individual permission
             description = permission.description,
             sync_state = "SYNCED",
-            last_synced_at = System.currentTimeMillis(),
-            local_updated_at = System.currentTimeMillis(),
-            server_updated_at = System.currentTimeMillis()
+            last_synced_at = currentTimeMillis(),
+            local_updated_at = currentTimeMillis(),
+            server_updated_at = currentTimeMillis()
         )
     }
 }
@@ -140,7 +139,7 @@ fun List<WorkspaceRoleEntity>.toApiModels(): List<WorkspaceRole> {
 fun WorkspaceRoleEntity.markAsPendingUpload(pendingChanges: Map<String, Any> = emptyMap()): WorkspaceRoleEntity {
     return this.copy(
         sync_state = "PENDING_UPLOAD",
-        local_updated_at = System.currentTimeMillis(),
+        local_updated_at = currentTimeMillis(),
         pending_changes = if (pendingChanges.isNotEmpty()) Json.encodeToString(pendingChanges) else this.pending_changes,
         retry_count = 0
     )
@@ -149,7 +148,7 @@ fun WorkspaceRoleEntity.markAsPendingUpload(pendingChanges: Map<String, Any> = e
 fun WorkspacePermissionEntity.markAsPendingUpload(pendingChanges: Map<String, Any> = emptyMap()): WorkspacePermissionEntity {
     return this.copy(
         sync_state = "PENDING_UPLOAD",
-        local_updated_at = System.currentTimeMillis(),
+        local_updated_at = currentTimeMillis(),
         pending_changes = if (pendingChanges.isNotEmpty()) Json.encodeToString(pendingChanges) else this.pending_changes,
         retry_count = 0
     )
@@ -158,7 +157,7 @@ fun WorkspacePermissionEntity.markAsPendingUpload(pendingChanges: Map<String, An
 fun WorkspaceRoleEntity.markAsSynced(): WorkspaceRoleEntity {
     return this.copy(
         sync_state = "SYNCED",
-        last_synced_at = System.currentTimeMillis(),
+        last_synced_at = currentTimeMillis(),
         pending_changes = "",
         conflict_data = "",
         retry_count = 0
@@ -168,7 +167,7 @@ fun WorkspaceRoleEntity.markAsSynced(): WorkspaceRoleEntity {
 fun WorkspacePermissionEntity.markAsSynced(): WorkspacePermissionEntity {
     return this.copy(
         sync_state = "SYNCED",
-        last_synced_at = System.currentTimeMillis(),
+        last_synced_at = currentTimeMillis(),
         pending_changes = "",
         conflict_data = "",
         retry_count = 0
