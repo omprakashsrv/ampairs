@@ -13,8 +13,14 @@ import androidx.compose.foundation.progressSemantics
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
@@ -23,6 +29,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import com.ampairs.auth.viewmodel.LoginViewModel
 import com.ampairs.ui.components.Phone
 import com.ampairs.ui.theme.AmpairsTheme
@@ -36,9 +43,31 @@ fun PhoneScreen(
     viewModel: LoginViewModel = koinInject<LoginViewModel>(),
     onAuthSuccess: (String) -> Unit,
 ) {
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) }) { paddingValues ->
+        // Handle error messages
+        if (viewModel.displayMessage.isNotEmpty()) {
+            coroutineScope.launch {
+                val result = snackbarHostState.showSnackbar(
+                    message = viewModel.displayMessage,
+                    duration = SnackbarDuration.Short
+                )
+                when (result) {
+                    SnackbarResult.Dismissed -> {
+                        viewModel.displayMessage = ""
+                    }
+                    SnackbarResult.ActionPerformed -> {
+                        viewModel.displayMessage = ""
+                    }
+                }
+            }
+        }
+
+        Box(
+            modifier = Modifier.fillMaxSize().padding(paddingValues)
+        ) {
         // Phone input section - Center aligned
         Box(
             modifier = Modifier.fillMaxSize(),
@@ -107,6 +136,7 @@ fun PhoneScreen(
                     Text(stringResource(Res.string.login))
                 }
             }
+        }
         }
     }
 }

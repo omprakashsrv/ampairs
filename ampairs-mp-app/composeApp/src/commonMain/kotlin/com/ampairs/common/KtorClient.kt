@@ -4,6 +4,7 @@ import com.ampairs.auth.api.TokenRepository
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.HttpCallValidator
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
@@ -15,6 +16,11 @@ import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.json.Json
+
+/**
+ * Custom exception for network-related errors
+ */
+class NetworkException(message: String, cause: Throwable? = null) : Exception(message, cause)
 
 fun httpClient(engine: HttpClientEngine, tokenRepository: TokenRepository) = HttpClient(engine) {
     
@@ -43,7 +49,31 @@ fun httpClient(engine: HttpClientEngine, tokenRepository: TokenRepository) = Htt
         requestTimeoutMillis = timeout
         socketTimeoutMillis = timeout
     }
-    
+
+    // Global exception handling for network connectivity issues
+    install(HttpCallValidator) {
+        handleResponseExceptionWithRequest { exception, _ ->
+            when (exception::class.simpleName) {
+                "ConnectException" -> {
+                    println("❌ Connection failed: ${exception.message}")
+                    throw NetworkException("Unable to connect to server. Please check your network connection.", exception)
+                }
+                "UnknownHostException" -> {
+                    println("❌ Host not found: ${exception.message}")
+                    throw NetworkException("Server not found. Please check your network connection.", exception)
+                }
+                "SocketTimeoutException" -> {
+                    println("❌ Request timed out: ${exception.message}")
+                    throw NetworkException("Request timed out. Please try again.", exception)
+                }
+                else -> {
+                    println("❌ Network error: ${exception.message}")
+                    throw exception
+                }
+            }
+        }
+    }
+
     // Disable expectSuccess so we can manually handle 401s
     expectSuccess = false
     

@@ -31,12 +31,13 @@ import kotlinx.serialization.json.Json
  * POST request with automatic token refresh handling
  */
 suspend inline fun <reified T> post(client: HttpClient, url: String, body: Any?): T {
-    val tokenRepository = getTokenRepository(client)
-    var response = client.post(url) {
-        if (body != null) {
-            setBody(body)
+    return try {
+        val tokenRepository = getTokenRepository(client)
+        var response = client.post(url) {
+            if (body != null) {
+                setBody(body)
+            }
         }
-    }
     
     // Handle 401 and attempt token refresh
     if (response.status == HttpStatusCode.Unauthorized) {
@@ -59,9 +60,16 @@ suspend inline fun <reified T> post(client: HttpClient, url: String, body: Any?)
         } else {
             println("❌ Token refresh failed")
         }
+        }
+
+        handleResponse<T>(response)
+    } catch (e: NetworkException) {
+        println("❌ Network request failed: ${e.message}")
+        createNetworkErrorResponse<T>(e)
+    } catch (e: Exception) {
+        println("❌ Unexpected error: ${e.message}")
+        createNetworkErrorResponse<T>(e)
     }
-    
-    return handleResponse<T>(response)
 }
 
 /**
@@ -336,7 +344,7 @@ suspend fun refreshTokens(tokenRepository: com.ampairs.auth.api.TokenRepository)
         
         refreshClient.close()
         false
-        
+
     } catch (e: Exception) {
         println("💥 Token refresh failed with exception: ${e.message}")
         e.printStackTrace()
@@ -344,4 +352,24 @@ suspend fun refreshTokens(tokenRepository: com.ampairs.auth.api.TokenRepository)
         tokenRepository.clearTokens()
         false
     }
+}
+
+/**
+ * Create a standardized error response for network failures
+ */
+inline fun <reified T> createNetworkErrorResponse(exception: Exception): T {
+    val errorResponse = Response(
+        error = Error(
+            code = "NETWORK_ERROR",
+            message = when {
+                exception is NetworkException -> exception.message ?: "Network connection failed"
+                exception::class.simpleName == "ConnectException" -> "Unable to connect to server. Please check your network connection."
+                exception::class.simpleName == "UnknownHostException" -> "Server not found. Please check your network connection."
+                exception::class.simpleName == "SocketTimeoutException" -> "Request timed out. Please try again."
+                else -> "Network error: ${exception.message ?: "Unknown error"}"
+            }
+        ),
+        data = null
+    )
+    return errorResponse as T
 }

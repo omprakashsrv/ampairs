@@ -219,3 +219,11 @@ dependencies {
     add("kspIosArm64", libs.room.compiler)
     add("kspIosSimulatorArm64", libs.room.compiler)
 }
+
+// Fix KSP and Compose resource generation dependency issues
+tasks.withType<com.google.devtools.ksp.gradle.KspAATask>().configureEach {
+    dependsOn(tasks.matching { it.name.startsWith("generateComposeResClass") })
+    dependsOn(tasks.matching { it.name.startsWith("generateResourceAccessorsFor") })
+    dependsOn(tasks.matching { it.name.startsWith("generateActualResourceCollectorsFor") })
+    dependsOn(tasks.matching { it.name.startsWith("generateExpectResourceCollectorsFor") })
+}
