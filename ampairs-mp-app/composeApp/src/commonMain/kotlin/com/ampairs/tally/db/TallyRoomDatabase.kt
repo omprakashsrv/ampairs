@@ -1,7 +1,9 @@
 package com.ampairs.tally.db
 
+import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.RoomDatabaseConstructor
 import com.ampairs.tally.db.dao.GodownDao
 import com.ampairs.tally.db.dao.StockCategoryDao
 import com.ampairs.tally.db.dao.StockGroupDao
@@ -30,6 +32,7 @@ import com.ampairs.tally.db.entity.TallyUnitEntity
     version = 1,
     exportSchema = true
 )
+@ConstructedBy(TallyRoomDatabaseConstructor::class)
 abstract class TallyRoomDatabase : RoomDatabase() {
     abstract fun syncAdapterDao(): SyncAdapterDao
     abstract fun tallyUnitDao(): TallyUnitDao
@@ -39,3 +42,6 @@ abstract class TallyRoomDatabase : RoomDatabase() {
     abstract fun godownDao(): GodownDao
     abstract fun tallyInventoryDao(): TallyInventoryDao
 }
+
+@Suppress("NO_ACTUAL_FOR_EXPECT")
+expect object TallyRoomDatabaseConstructor : RoomDatabaseConstructor<TallyRoomDatabase>
