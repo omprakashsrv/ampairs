@@ -6,6 +6,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.ampairs.auth.db.entity.UserSessionEntity
+import com.ampairs.common.time.currentTimeMillis
 
 @Dao
 interface UserSessionDao {
@@ -35,7 +36,7 @@ interface UserSessionDao {
     suspend fun updateWorkspaceId(userId: String, workspaceId: String)
     
     @Query("UPDATE userSessionEntity SET last_login = :lastLogin, login_count = login_count + 1 WHERE user_id = :userId")
-    suspend fun updateLoginInfo(userId: String, lastLogin: Long = System.currentTimeMillis())
+    suspend fun updateLoginInfo(userId: String, lastLogin: Long = currentTimeMillis())
     
     @Query("DELETE FROM userSessionEntity WHERE user_id = :userId")
     suspend fun deleteByUserId(userId: String)

@@ -22,6 +22,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ampairs.auth.domain.UserInfo
 import com.ampairs.auth.viewmodel.UserSelectionViewModel
+import com.ampairs.common.time.currentTimeMillis
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -256,7 +257,7 @@ private fun UserCard(
 }
 
 private fun formatLastLogin(timestamp: Long): String {
-    val now = System.currentTimeMillis()
+    val now = currentTimeMillis()
     val diff = now - timestamp
     
     return when {
