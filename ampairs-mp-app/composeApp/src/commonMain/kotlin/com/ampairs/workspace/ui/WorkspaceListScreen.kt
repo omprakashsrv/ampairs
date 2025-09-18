@@ -31,6 +31,7 @@ import androidx.compose.runtime.collectAsState
 import com.ampairs.workspace.domain.Workspace
 import com.ampairs.workspace.domain.UserInvitation
 import com.ampairs.workspace.viewmodel.WorkspaceListViewModel
+import com.ampairs.workspace.integration.WorkspaceContextIntegration
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -310,6 +311,10 @@ fun WorkspaceListScreen(
                                 onClick = {
                                     coroutineScope.launch {
                                         viewModel.selectWorkSpace(workspace.id)
+
+                                        // Set workspace context for both business logic and database
+                                        WorkspaceContextIntegration.setWorkspaceFromDomain(workspace)
+
                                         onWorkspaceSelected(workspace.id)
                                     }
                                 },

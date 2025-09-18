@@ -4,6 +4,7 @@ import com.ampairs.workspace.context.WorkspaceContext
 import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.workspace.domain.Workspace
 import com.ampairs.workspace.domain.WorkspaceMember
+import com.ampairs.workspace.WorkspaceDatabaseManager
 
 /**
  * Integration utilities for converting domain models to workspace context
@@ -14,6 +15,7 @@ object WorkspaceContextIntegration {
     /**
      * Convert domain Workspace to WorkspaceContext for state management
      * This is called when user selects a workspace from the workspace list
+     * Also sets the database context for workspace-aware databases
      */
     fun setWorkspaceFromDomain(workspace: Workspace) {
         val workspaceContext = WorkspaceContext(
@@ -35,7 +37,14 @@ object WorkspaceContextIntegration {
             )
         )
 
+        // Set both business context and database context
         WorkspaceContextManager.getInstance().setWorkspaceContext(workspaceContext)
+
+        // Set database context for workspace-aware databases
+        val databaseManager = WorkspaceDatabaseManager()
+        databaseManager.setCurrentWorkspace(workspace.slug)
+
+        println("WorkspaceContextIntegration: Set workspace context for '${workspace.name}' with slug '${workspace.slug}'")
     }
 
     /**
@@ -59,6 +68,12 @@ object WorkspaceContextIntegration {
      */
     fun clearWorkspaceContext() {
         WorkspaceContextManager.getInstance().clearWorkspaceContext()
+
+        // Also clear database context
+        val databaseManager = WorkspaceDatabaseManager()
+        databaseManager.clearWorkspace()
+
+        println("WorkspaceContextIntegration: Cleared all workspace contexts")
     }
 
     /**

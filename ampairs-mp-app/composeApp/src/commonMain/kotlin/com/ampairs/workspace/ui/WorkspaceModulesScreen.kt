@@ -23,6 +23,7 @@ import com.ampairs.workspace.viewmodel.WorkspaceModulesViewModel
 import com.ampairs.workspace.navigation.DynamicModuleNavigation
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
+import androidx.navigation.NavController
 
 /**
  * Workspace modules screen showing active modules
@@ -31,6 +32,7 @@ import org.koin.core.parameter.parametersOf
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkspaceModulesScreen(
+    navController: NavController,
     onModuleSelected: (moduleCode: String) -> Unit = {},
     onNavigationServiceReady: ((com.ampairs.workspace.navigation.DynamicModuleNavigationService?) -> Unit)? = null,
     workspaceId: String = "",
@@ -39,13 +41,16 @@ fun WorkspaceModulesScreen(
     viewModel: WorkspaceModulesViewModel = koinInject { parametersOf(workspaceId.takeIf { it.isNotEmpty() }) }
 ) {
     var showModuleStore by remember { mutableStateOf(showStoreByDefault) }
+    var showUpdateDialog by remember { mutableStateOf(false) }
+    var missingModuleName by remember { mutableStateOf("") }
 
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
     val activeModules by viewModel.activeModules.collectAsState()
 
-    // Load data on first composition - force refresh to get fresh data from backend
+    // Initialize module registry and load data on first composition
     LaunchedEffect(Unit) {
+        // Initialize module registry (manual registration for now)
         viewModel.loadInstalledModules(refresh = true) // Force API call via Store5
     }
 
@@ -117,7 +122,13 @@ fun WorkspaceModulesScreen(
                         InstalledModuleCard(
                             module = module,
                             onSelect = { moduleCode ->
-                                onModuleSelected(moduleCode)
+                                // Try to navigate using module registry first
+                                val navigationSuccess = tryNavigateToModule(navController, moduleCode)
+                                if (!navigationSuccess) {
+                                    // Show update dialog for missing module implementation
+                                    missingModuleName = module.name
+                                    showUpdateDialog = true
+                                }
                             }
                         )
                     }
@@ -141,6 +152,19 @@ fun WorkspaceModulesScreen(
             onNavigate = { moduleCode ->
                 onModuleSelected(moduleCode)
                 showModuleStore = false
+            }
+        )
+    }
+
+    // Update App Dialog for missing module implementations
+    if (showUpdateDialog) {
+        UpdateAppDialog(
+            moduleName = missingModuleName,
+            onDismiss = { showUpdateDialog = false },
+            onUpdate = {
+                // This would typically open app store or trigger update mechanism
+                // For now, just dismiss the dialog
+                showUpdateDialog = false
             }
         )
     }
@@ -546,6 +570,42 @@ private fun AvailableModuleCard(
     }
 }
 
+@Composable
+private fun UpdateAppDialog(
+    moduleName: String,
+    onDismiss: () -> Unit,
+    onUpdate: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Update Required") },
+        text = {
+            Column {
+                Text(
+                    text = "The $moduleName module requires a newer version of the app to function properly.",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Please update the app to access this module.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = onUpdate) {
+                Text("Update App")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Later")
+            }
+        }
+    )
+}
+
 
 /**
  * Extract module code from dynamic route
@@ -554,6 +614,34 @@ private fun AvailableModuleCard(
 private fun extractModuleCodeFromRoute(route: String): String? {
     val regex = "/workspace/modules/([^/]+)".toRegex()
     return regex.find(route)?.groupValues?.get(1)
+}
+
+/**
+ * Try to navigate to a module using the ModuleRegistry
+ * Returns true if navigation was successful, false otherwise
+ */
+private fun tryNavigateToModule(navController: NavController, moduleCode: String): Boolean {
+    return try {
+        // Create a mapping for common module codes to routes
+        val route = when (moduleCode) {
+            "customer-management" -> Route.Customer
+            "product-management" -> Route.Product
+            "order-management" -> Route.Order
+            "invoice-management" -> Route.Invoice
+            "inventory-management" -> Route.Inventory
+            else -> null
+        }
+
+        if (route != null) {
+            navController.navigate(route)
+            true
+        } else {
+            false
+        }
+    } catch (e: Exception) {
+        println("Navigation failed for module $moduleCode: ${e.message}")
+        false
+    }
 }
 
 /**
@@ -569,7 +657,7 @@ private fun parseHexColor(hexColor: String): Color {
             blue = (colorInt and 0xFF) / 255f,
             alpha = 1f
         )
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         Color.Gray // Fallback color
     }
 }

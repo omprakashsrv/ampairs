@@ -173,6 +173,7 @@ fun NavGraphBuilder.workspaceNavigation(
                 isWorkspaceSelection = false
             ) { paddingValues ->
                 WorkspaceModulesScreen(
+                    navController = navController,
                     onModuleSelected = { moduleCode ->
                         // Navigate to main app after module selection
                         onWorkspaceSelected()

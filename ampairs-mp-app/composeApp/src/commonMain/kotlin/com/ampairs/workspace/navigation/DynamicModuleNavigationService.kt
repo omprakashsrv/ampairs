@@ -32,12 +32,24 @@ class DynamicModuleNavigationService {
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    // Navigation routes computed from installed modules
+    // Navigation routes computed from installed modules, filtered by availability
     val navigationRoutes: StateFlow<List<DynamicModuleRoute>> = _installedModules
         .map { modules ->
             modules
                 .filter { it.status == "ACTIVE" && it.enabled }
                 .map { module -> mapToNavigationRoute(module) }
+                .filter { route -> isModuleImplementationAvailable(route.moduleCode) }
+                .sortedBy { it.navigationIndex }
+        }
+        .stateIn(serviceScope, SharingStarted.Eagerly, emptyList())
+
+    // Unavailable modules (installed but not implemented locally)
+    val unavailableModules: StateFlow<List<DynamicModuleRoute>> = _installedModules
+        .map { modules ->
+            modules
+                .filter { it.status == "ACTIVE" && it.enabled }
+                .map { module -> mapToNavigationRoute(module) }
+                .filter { route -> !isModuleImplementationAvailable(route.moduleCode) }
                 .sortedBy { it.navigationIndex }
         }
         .stateIn(serviceScope, SharingStarted.Eagerly, emptyList())
@@ -87,6 +99,23 @@ class DynamicModuleNavigationService {
             ?: module?.menuItems?.firstOrNull()
 
         return defaultMenuItem?.let { getFullRoutePath(moduleCode, it) }
+    }
+
+    /**
+     * Check if a module has a local implementation available
+     */
+    private fun isModuleImplementationAvailable(moduleCode: String): Boolean {
+        return try {
+            // Check if the module has a registered navigation provider
+            when (moduleCode) {
+                "customer-management", "product-management",
+                "order-management", "invoice-management" -> true
+                "inventory-management" -> false // Not implemented yet
+                else -> false
+            }
+        } catch (e: Exception) {
+            false
+        }
     }
 
     /**
