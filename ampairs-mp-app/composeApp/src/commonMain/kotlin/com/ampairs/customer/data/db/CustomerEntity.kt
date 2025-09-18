@@ -7,6 +7,8 @@ import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.CustomerAddress
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 @Entity(
     tableName = "customers",
@@ -39,6 +41,7 @@ data class CustomerEntity(
     val last_sync: Long = 0
 )
 
+@OptIn(ExperimentalTime::class)
 fun Customer.toEntity(): CustomerEntity = CustomerEntity(
     id = id,
     name = name,
@@ -59,7 +62,7 @@ fun Customer.toEntity(): CustomerEntity = CustomerEntity(
     created_at = createdAt,
     updated_at = updatedAt,
     synced = false,
-    last_sync = System.currentTimeMillis()
+    last_sync = Clock.System.now().toEpochMilliseconds()
 )
 
 fun CustomerEntity.toDomain(): Customer = Customer(

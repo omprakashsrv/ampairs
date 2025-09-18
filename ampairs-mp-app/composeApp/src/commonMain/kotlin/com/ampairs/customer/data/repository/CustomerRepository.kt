@@ -9,6 +9,8 @@ import com.ampairs.customer.domain.CustomerListItem
 import com.ampairs.customer.domain.toListItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 class CustomerRepository(
     private val customerDao: CustomerDao,
@@ -133,7 +135,8 @@ class CustomerRepository(
         return 0L // Placeholder
     }
 
+    @OptIn(ExperimentalTime::class)
     private fun generateLocalId(): String {
-        return "local_${System.currentTimeMillis()}_${(1000..9999).random()}"
+        return "local_${Clock.System.now().toEpochMilliseconds()}_${(1000..9999).random()}"
     }
 }

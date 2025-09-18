@@ -7,7 +7,7 @@ import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.CustomerStore
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.util.*
+import com.benasher44.uuid.uuid4
 
 data class CustomerFormState(
     val name: String = "",
@@ -140,7 +140,7 @@ class CustomerFormViewModel(
                 val result = if (customerId == null) {
                     // Create new customer
                     val newCustomer = currentFormState.toCustomer(
-                        id = UUID.randomUUID().toString(),
+                        id = uuid4().toString(),
                         workspaceId = workspaceId
                     )
                     customerStore.createCustomer(workspaceId, newCustomer)
