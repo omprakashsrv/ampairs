@@ -1,12 +1,12 @@
 import com.ampairs.auth.authModule
 import com.ampairs.common.theme.themeModule
 import com.ampairs.workspace.workspaceModule
-import com.ampairs.customer.customerModule
+import com.ampairs.customer.di.customerModule
 import com.ampairs.home.homeModule
-import com.ampairs.inventory.inventoryModule
-import com.ampairs.invoice.invoiceModule
+// import com.ampairs.inventory.inventoryModule
+// import com.ampairs.invoice.invoiceModule
 import com.ampairs.menu.menuModule
-import com.ampairs.order.orderModule
+// import com.ampairs.order.orderModule
 import com.ampairs.product.productModule
 import org.koin.core.KoinApplication
 import org.koin.core.module.Module
@@ -23,20 +23,22 @@ fun initKoin(koinApplication: KoinApplication): KoinApplication {
             workspacePlatformModule,
             customerPlatformModule,
             productPlatformModule,
-            orderPlatformModule,
-            invoicePlatformModule,
-            inventoryPlatformModule,
-            tallyPlatformModule,
+            // Temporarily disabled platform modules pending updates
+            // orderPlatformModule,
+            // invoicePlatformModule,
+            // inventoryPlatformModule,
+            // tallyPlatformModule,
             // Common feature modules
             menuModule(),
             authModule(),
             workspaceModule(),
-            customerModule(),
+            customerModule,
             homeModule(),
             productModule(),
-            inventoryModule(),
-            orderModule(),
-            invoiceModule(),
+            // Temporarily disabled modules pending customer integration updates
+            // inventoryModule(),
+            // orderModule(),
+            // invoiceModule(),
         )
     )
     return koinApplication
@@ -48,8 +50,9 @@ expect val authPlatformModule: Module
 expect val workspacePlatformModule: Module
 expect val customerPlatformModule: Module
 expect val productPlatformModule: Module
-expect val orderPlatformModule: Module
-expect val invoicePlatformModule: Module
-expect val inventoryPlatformModule: Module
-expect val tallyPlatformModule: Module
+// Temporarily commented out pending customer integration updates
+// expect val orderPlatformModule: Module
+// expect val invoicePlatformModule: Module
+// expect val inventoryPlatformModule: Module
+// expect val tallyPlatformModule: Module
 

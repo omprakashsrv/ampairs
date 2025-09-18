@@ -10,9 +10,10 @@ import com.ampairs.auth.authNavigation
 import com.ampairs.common.UnauthenticatedHandler
 import com.ampairs.customer.customerNavigation
 import com.ampairs.home.homeNavigation
-import com.ampairs.inventory.inventoryNavigation
-import com.ampairs.invoice.invoiceNavigation
-import com.ampairs.order.orderNavigation
+// Temporarily commented out pending customer integration updates
+// import com.ampairs.inventory.inventoryNavigation
+// import com.ampairs.invoice.invoiceNavigation
+// import com.ampairs.order.orderNavigation
 import com.ampairs.product.productNavigation
 import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.workspace.workspaceNavigation
@@ -81,14 +82,9 @@ fun AppNavigation(
 //            )
         }
         productNavigation(navController)
-        inventoryNavigation(navController) {
-
-        }
-        orderNavigation(navController) {
-
-        }
-        invoiceNavigation(navController) {
-
-        }
+        // Temporarily commented out pending customer integration updates
+        // inventoryNavigation(navController) { }
+        // orderNavigation(navController) { }
+        // invoiceNavigation(navController) { }
     }
 }

@@ -12,7 +12,7 @@ import androidx.paging.map
 import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.flower_core.Resource
 import com.ampairs.common.model.UiState
-import com.ampairs.customer.viewmodel.PAGE_SIZE
+import com.ampairs.product.domain.Constants.Companion.PAGE_SIZE
 import com.ampairs.product.db.TaxRepository
 import com.ampairs.product.domain.asDomainModel
 import kotlinx.coroutines.Dispatchers

@@ -17,7 +17,7 @@ import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 import com.ampairs.menu.AppNavigator
-import com.ampairs.tally.TallyApp
+// import com.ampairs.tally.TallyApp
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.DynamicModulesMenu
 import com.seiko.imageloader.LocalImageLoader
@@ -56,7 +56,7 @@ private fun ApplicationScope.TallyWindow(
     CompositionLocalProvider(
         LocalImageLoader provides remember { generateImageLoader() },
     ) {
-        TallyApp()
+        // TallyApp()
     }
 }
 

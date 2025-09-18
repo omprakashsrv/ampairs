@@ -240,3 +240,99 @@ The app includes a comprehensive theme switching system implemented in January 2
 - **Feature Parity**: Consistent across web, mobile, and API clients
 
 *Refer to main `/ampairs/CLAUDE.md` for backend guidelines.*
+
+## **🔗 Dynamic Module Navigation System (January 2025)**
+
+### **📋 Overview**
+The app implements a sophisticated dynamic module navigation system that integrates backend-installed modules with local navigation implementations, providing seamless module access with proper fallback handling.
+
+### **🏗️ Architecture Components**
+
+#### **Module Registry System**
+- **File**: `com/ampairs/workspace/navigation/ModuleRegistry.kt`
+- **Purpose**: Central registry mapping module codes to local navigation routes
+- **Interface**: `IModuleNavigationProvider` for extensible module registration
+- **Features**: Type-safe navigation, dynamic discovery, fallback handling
+
+#### **Module Navigation Providers**
+- **File**: `com/ampairs/workspace/navigation/ModuleProviders.kt`
+- **Implementations**:
+  - `CustomerModuleProvider`: "customer-management" → `Route.Customer`
+  - `ProductModuleProvider`: "product-management" → `Route.Product`
+  - `OrderModuleProvider`: "order-management" → `Route.Order`
+  - `InvoiceModuleProvider`: "invoice-management" → `Route.Invoice`
+
+#### **Enhanced WorkspaceModulesScreen**
+- **File**: `com/ampairs/workspace/ui/WorkspaceModulesScreen.kt`
+- **Features**:
+  - Direct module navigation via registry lookup
+  - "Update App" dialog for missing implementations
+  - Backward compatibility with existing callback system
+
+#### **DynamicModuleNavigationService Integration**
+- **File**: `com/ampairs/workspace/navigation/DynamicModuleNavigationService.kt`
+- **Enhancements**:
+  - Filters installed modules by local availability
+  - Separate tracking of available vs unavailable modules
+  - Integration with module implementation detection
+
+### **🚀 Navigation Flow**
+```
+User clicks module card
+    ↓
+tryNavigateToModule() checks registry
+    ↓
+If available: Navigate to Route.{Module}
+    ↓
+If unavailable: Show "Update App" dialog
+    ↓
+Fallback: Use original onModuleSelected callback
+```
+
+### **🗄️ Workspace Context & Database Isolation**
+
+#### **Unified Context Management**
+- **Issue Fixed**: Database paths using "workspace_default" instead of actual slug
+- **Root Cause**: Two separate context systems (business vs database) not synchronized
+- **Solution**: Enhanced `WorkspaceContextIntegration.setWorkspaceFromDomain()`
+
+#### **Context Integration**
+- **Business Context**: `WorkspaceContextManager` for app state
+- **Database Context**: `WorkspaceContext` for database paths
+- **Unified Setup**: Both contexts set simultaneously on workspace selection
+- **Result**: Proper isolation with `workspace_{actual-slug}/module.db` paths
+
+### **📱 Module Code Mappings**
+```kotlin
+// Local implementations available
+"customer-management" → Route.Customer
+"product-management" → Route.Product
+"order-management" → Route.Order
+"invoice-management" → Route.Invoice
+
+// Shows "Update App" dialog
+"inventory-management" → Not locally implemented
+```
+
+### **🛠️ Usage Patterns**
+
+#### **Adding New Module Support**
+1. Create navigation provider in `ModuleProviders.kt`
+2. Register in `ModuleRegistry.initialize()`
+3. Update availability check in `DynamicModuleNavigationService`
+4. Module automatically appears in navigation
+
+#### **Integration Guidelines**
+- **Module Discovery**: Automatic backend-driven module availability
+- **Local Implementation**: Registry-based route resolution
+- **Fallback Strategy**: Graceful degradation for missing modules
+- **Type Safety**: Compile-time route validation
+
+### **✅ Production Status**
+- **Module Integration**: ✅ Complete and tested
+- **Workspace Context**: ✅ Unified and isolated
+- **Navigation Flow**: ✅ Type-safe with fallbacks
+- **Database Isolation**: ✅ Proper workspace segregation
+- **Backward Compatibility**: ✅ No breaking changes
+
+This system provides a robust foundation for dynamic module loading while maintaining type safety and graceful degradation for missing implementations.

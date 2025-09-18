@@ -32,18 +32,18 @@ val productModule: Module = module {
     single {
         ProductRepository(
             get(), get(), get(), get(), get(), get(), get(),
-            get(), get(), get(), get(), get()
+            get(), get(), get(), get()
         )
     }
 
     // Direct ViewModel injection
     factory { ProductViewModel() }
     factory { TaxInfosViewModel(get()) }
-    factory { ProductSearchViewModel(get(), get(), get(), get()) }
+    factory { ProductSearchViewModel(get(), get(), get()) }
     factory { ProductListViewModel(get()) }
     factory { ProductGroupViewModel(get()) }
     factory { ProductGroupEditViewModel(get()) }
-    factory { ProductCategoryViewModel(get(), get(), get(), get(), get()) }
+    factory { ProductCategoryViewModel(get(), get(), get(), get()) }
     factory { (taxId: String) -> TaxInfoViewModel(taxId, get()) }
 }
 

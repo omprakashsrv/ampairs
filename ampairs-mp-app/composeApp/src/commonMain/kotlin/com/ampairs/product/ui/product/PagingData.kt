@@ -3,7 +3,6 @@ package com.ampairs.product.ui.product
 import androidx.paging.PagingData
 import androidx.paging.map
 import com.ampairs.aws.s3.S3Client
-import com.ampairs.inventory.db.InventoryRepository
 import com.ampairs.product.db.entity.ProductEntity
 import com.ampairs.product.domain.Product
 import com.ampairs.product.domain.asDomainModel
@@ -12,7 +11,6 @@ import com.ampairs.repository.ProductRepository
 fun PagingData<ProductEntity>.toPagingProduct(
     cartProducts: MutableList<Product>,
     productRepository: ProductRepository,
-    inventoryRepository: InventoryRepository,
     s3Client: S3Client,
     onProductQtyChanged: (() -> Unit)?
 ): PagingData<Product> {
@@ -24,8 +22,7 @@ fun PagingData<ProductEntity>.toPagingProduct(
             cartProducts[cartProductIndex] = product
             onProductQtyChanged?.invoke()
         }
-        product.inventory =
-            inventoryRepository.getProductInventory(product.id)
+        // product.inventory = inventoryRepository.getProductInventory(product.id)
         product.images = productRepository.getProductImages(listOf(product.id)).map { it.image }
         if (!product.images.isNullOrEmpty()) {
             product.images!!.map { image ->

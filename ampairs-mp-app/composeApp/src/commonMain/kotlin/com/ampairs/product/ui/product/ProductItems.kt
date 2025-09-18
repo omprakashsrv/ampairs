@@ -78,14 +78,14 @@ fun ProductItems(
                     text = product?.name ?: "",
                     style = MaterialTheme.typography.labelSmall
                 )
-                product?.inventory?.stock?.let { stock ->
-                    Text(
-                        color = Color(9, 121, 105),
-                        modifier = Modifier.padding(vertical = 4.dp, horizontal = 2.dp),
-                        text = "Stock : $stock",
-                        style = MaterialTheme.typography.labelSmall
-                    )
-                }
+                // product?.inventory?.stock?.let { stock ->
+                //     Text(
+                //         color = Color(9, 121, 105),
+                //         modifier = Modifier.padding(vertical = 4.dp, horizontal = 2.dp),
+                //         text = "Stock : $stock",
+                //         style = MaterialTheme.typography.labelSmall
+                //     )
+                // }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),

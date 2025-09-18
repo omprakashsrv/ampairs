@@ -31,9 +31,10 @@ actual val awsModule: Module = module {
 
 actual val authPlatformModule: Module = com.ampairs.auth.authPlatformModule
 actual val workspacePlatformModule: Module = com.ampairs.workspace.workspacePlatformModule
-actual val customerPlatformModule: Module = com.ampairs.customer.customerPlatformModule
+actual val customerPlatformModule: Module = com.ampairs.customer.di.customerPlatformModule
 actual val productPlatformModule: Module = com.ampairs.product.productPlatformModule
-actual val orderPlatformModule: Module = com.ampairs.order.orderPlatformModule
-actual val invoicePlatformModule: Module = com.ampairs.invoice.invoicePlatformModule
-actual val inventoryPlatformModule: Module = com.ampairs.inventory.inventoryPlatformModule
-actual val tallyPlatformModule: Module = com.ampairs.tally.tallyPlatformModule
+// Temporarily commented out pending customer integration updates
+// actual val orderPlatformModule: Module = com.ampairs.order.orderPlatformModule
+// actual val invoicePlatformModule: Module = com.ampairs.invoice.invoicePlatformModule
+// actual val inventoryPlatformModule: Module = com.ampairs.inventory.inventoryPlatformModule
+// actual val tallyPlatformModule: Module = com.ampairs.tally.tallyPlatformModule

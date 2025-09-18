@@ -6,10 +6,11 @@ import com.ampairs.common.database.DatabasePathProvider
 import com.ampairs.common.database.DesktopDatabasePathProvider
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
 import com.ampairs.common.config.desktopAppConfigModule
-import com.ampairs.tally.TallyApi
-import com.ampairs.tally.TallyApiImpl
-import com.ampairs.tally.TallyRepository
-import com.ampairs.tally.ui.TallyViewModel
+// Temporarily disabled tally imports
+// import com.ampairs.tally.TallyApi
+// import com.ampairs.tally.TallyApiImpl
+// import com.ampairs.tally.TallyRepository
+// import com.ampairs.tally.ui.TallyViewModel
 import com.seiko.imageloader.ImageLoader
 import com.seiko.imageloader.cache.CachePolicy
 import com.seiko.imageloader.component.setupDefaultComponents
@@ -28,9 +29,10 @@ actual val platformModule: Module = module {
     }
     single { AwsS3Client() } bind (S3Client::class)
     single<DeviceService> { DesktopDeviceService() }
-    single { TallyApiImpl(get()) } bind (TallyApi::class)
-    single { TallyRepository(get()) }
-    single { TallyViewModel(get(), get(), get(), get(), get()) }
+    // Temporarily disabled tally dependencies
+    // single { TallyApiImpl(get()) } bind (TallyApi::class)
+    // single { TallyRepository(get()) }
+    // single { TallyViewModel(get(), get(), get(), get(), get()) }
 
     // Database path provider and factory for workspace-aware databases
     single<DatabasePathProvider> { DesktopDatabasePathProvider() }
@@ -93,9 +95,10 @@ actual val awsModule: Module = module {
 
 actual val authPlatformModule: Module = com.ampairs.auth.authPlatformModule
 actual val workspacePlatformModule: Module = com.ampairs.workspace.workspacePlatformModule
-actual val customerPlatformModule: Module = com.ampairs.customer.customerPlatformModule
+actual val customerPlatformModule: Module = com.ampairs.customer.di.customerPlatformModule
 actual val productPlatformModule: Module = com.ampairs.product.productPlatformModule
-actual val orderPlatformModule: Module = com.ampairs.order.orderPlatformModule
-actual val invoicePlatformModule: Module = com.ampairs.invoice.invoicePlatformModule
-actual val inventoryPlatformModule: Module = com.ampairs.inventory.inventoryPlatformModule
-actual val tallyPlatformModule: Module = com.ampairs.tally.tallyPlatformModule
+// Temporarily commented out pending customer integration updates
+// actual val orderPlatformModule: Module = com.ampairs.order.orderPlatformModule
+// actual val invoicePlatformModule: Module = com.ampairs.invoice.invoicePlatformModule
+// actual val inventoryPlatformModule: Module = com.ampairs.inventory.inventoryPlatformModule
+// actual val tallyPlatformModule: Module = com.ampairs.tally.tallyPlatformModule

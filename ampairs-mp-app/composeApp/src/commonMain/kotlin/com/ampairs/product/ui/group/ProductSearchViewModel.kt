@@ -12,7 +12,6 @@ import com.ampairs.aws.s3.S3Client
 import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.flower_core.Resource
 import com.ampairs.common.model.UiState
-import com.ampairs.inventory.db.InventoryRepository
 import com.ampairs.product.domain.Product
 import com.ampairs.product.ui.product.PAGE_SIZE
 import com.ampairs.product.ui.product.toPagingProduct
@@ -24,7 +23,6 @@ import kotlinx.coroutines.launch
 class ProductSearchViewModel(
     val cartProducts: MutableList<Product>,
     val productRepository: ProductRepository,
-    val inventoryRepository: InventoryRepository,
     val s3Client: S3Client,
 ) :
     ViewModel() {
@@ -48,7 +46,6 @@ class ProductSearchViewModel(
         pagingData.toPagingProduct(
             cartProducts,
             productRepository,
-            inventoryRepository,
             s3Client,
             onProductQtyChanged
         )

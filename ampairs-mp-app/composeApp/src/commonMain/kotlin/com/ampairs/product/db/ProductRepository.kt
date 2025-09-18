@@ -14,7 +14,6 @@ import com.ampairs.domain.asUnitConversionModel
 import com.ampairs.domain.asUnitDatabaseModel
 import com.ampairs.domain.asUnitDomainModel
 import com.ampairs.domain.asUnitModel
-import com.ampairs.inventory.db.dao.InventoryDao
 import com.ampairs.product.api.ProductApi
 import com.ampairs.product.api.model.AllProductGroupApiModel
 import com.ampairs.product.api.model.ProductApiModel
@@ -57,7 +56,7 @@ import com.ampairs.product.domain.asGroupDatabaseModel
 import com.ampairs.product.domain.asGroupDomainModel
 import com.ampairs.product.domain.asImageDomainModel
 import com.ampairs.product.domain.asImagesDatabaseEntity
-import com.ampairs.product.domain.asInventoryDatabaseModel
+// import com.ampairs.product.domain.asInventoryDatabaseModel
 import com.ampairs.product.domain.asProductApiModel
 import com.ampairs.product.domain.asProductDomainModel
 import com.ampairs.product.domain.asProductImageDomainModel
@@ -83,7 +82,6 @@ class ProductRepository(
     val brandDao: BrandDao,
     val unitDao: UnitDao,
     val unitConversionDao: UnitConversionDao,
-    val inventoryDao: InventoryDao,
     val taxDao: TaxCodeDao,
     val productApi: ProductApi,
     val s3Client: S3Client,
@@ -224,7 +222,7 @@ class ProductRepository(
                     )
                     taxDao.updateTaxCodes(products.asTaxCodeModel().toList())
                     productDao.updateProducts(products.asDatabaseModel())
-                    inventoryDao.updateInventoryList(products.asInventoryDatabaseModel())
+                    // inventoryDao.updateInventoryList(products.asInventoryDatabaseModel())
                 }
             },
             onNetworkRequestFailed = { message: String, code: Int ->
@@ -322,9 +320,9 @@ class ProductRepository(
                     apiModels?.asDatabaseModel()?.let {
                         productDao.updateProducts(it)
                     }
-                    apiModels?.asInventoryDatabaseModel()?.let {
-                        inventoryDao.updateInventoryList(it)
-                    }
+                    // apiModels?.asInventoryDatabaseModel()?.let {
+                    //     inventoryDao.updateInventoryList(it)
+                    // }
                     fetchSize = apiModels?.size ?: 0
                     sharedFlow.emit(products)
                 }

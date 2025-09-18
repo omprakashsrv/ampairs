@@ -12,7 +12,6 @@ import com.ampairs.aws.s3.S3Client
 import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.flower_core.Resource
 import com.ampairs.common.model.UiState
-import com.ampairs.inventory.db.InventoryRepository
 import com.ampairs.product.domain.Group
 import com.ampairs.product.domain.Product
 import com.ampairs.repository.ProductRepository
@@ -25,7 +24,6 @@ val PAGE_SIZE = 40
 
 class ProductCategoryViewModel(
     private val productRepository: ProductRepository,
-    private val inventoryRepository: InventoryRepository,
     private val groupId: String?,
     val cartProducts: MutableList<Product>,
     val s3Client: S3Client,
@@ -115,7 +113,6 @@ class ProductCategoryViewModel(
         pagingData.toPagingProduct(
             cartProducts,
             productRepository,
-            inventoryRepository,
             s3Client,
             onProductQtyChanged
         )
