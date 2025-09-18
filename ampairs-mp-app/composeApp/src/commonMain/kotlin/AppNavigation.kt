@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navOptions
 import com.ampairs.auth.authNavigation
@@ -42,9 +43,13 @@ fun AppNavigation(
             val currentRoute = backStackEntry.destination.route
             println("AppNavigation: Current route: $currentRoute")
 
-            // Clear navigationService when not in workspace modules
-            if (currentRoute != null && !currentRoute.contains("workspace/modules")) {
-                println("AppNavigation: Clearing navigationService - not in workspace modules")
+            // Clear navigationService when not in workspace modules or customer modules
+            val isInWorkspaceModules = currentRoute?.contains("workspace/modules") == true
+            val isInCustomerModule = currentRoute?.contains("Route.Customer") == true ||
+                                   currentRoute?.contains("com.ampairs.customer") == true
+
+            if (currentRoute != null && !isInWorkspaceModules && !isInCustomerModule) {
+                println("AppNavigation: Clearing navigationService - not in workspace/customer modules")
                 onNavigationServiceReady?.invoke(null)
             }
         }
@@ -76,11 +81,19 @@ fun AppNavigation(
         homeNavigation(navController) {
             navController.navigate(it.navPath)
         }
-        customerNavigation(navController) { from, to ->
-//            navController.navigate(
-//                CustomerRoute.Redirect(fromCustomer = from, toCustomer = to)
-//            )
+        // Customer module navigation
+        composable<Route.Customer> {
+            com.ampairs.customer.ui.CustomerScreen(
+                onCustomerClick = { customerId ->
+                    navController.navigate(com.ampairs.customer.ui.CustomerDetailsRoute(customerId))
+                },
+                onCreateCustomer = {
+                    navController.navigate(com.ampairs.customer.ui.CustomerCreateRoute())
+                }
+            )
         }
+
+        customerNavigation(navController)
         productNavigation(navController)
         // Temporarily commented out pending customer integration updates
         // inventoryNavigation(navController) { }

@@ -40,6 +40,7 @@ import com.ampairs.workspace.viewmodel.WorkspaceMembersViewModel
 import com.ampairs.workspace.viewmodel.MemberDetailsViewModel
 import com.ampairs.workspace.viewmodel.WorkspaceInvitationsViewModel
 import com.ampairs.workspace.viewmodel.WorkspaceModulesViewModel
+import com.ampairs.workspace.context.WorkspaceContextManager
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.qualifier.named
@@ -95,6 +96,9 @@ fun workspaceModule() = module {
 
     // Workspace Database Manager for switching contexts
     single { WorkspaceDatabaseManager() }
+
+    // Workspace Context Manager (singleton)
+    single { WorkspaceContextManager.getInstance() }
 
     // ViewModels with parameter support
     factory { WorkspaceListViewModel(get<OfflineFirstWorkspaceRepository>(), get(), get(), get(), get()) }
