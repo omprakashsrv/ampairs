@@ -1,4 +1,5 @@
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -8,6 +9,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navOptions
 import com.ampairs.auth.authNavigation
+import com.ampairs.common.ui.AppScreenWithHeader
 import com.ampairs.common.UnauthenticatedHandler
 import com.ampairs.customer.customerNavigation
 import com.ampairs.home.homeNavigation
@@ -83,14 +85,20 @@ fun AppNavigation(
         }
         // Customer module navigation
         composable<Route.Customer> {
-            com.ampairs.customer.ui.CustomerScreen(
-                onCustomerClick = { customerId ->
-                    navController.navigate(com.ampairs.customer.ui.CustomerDetailsRoute(customerId))
-                },
-                onCreateCustomer = {
-                    navController.navigate(com.ampairs.customer.ui.CustomerCreateRoute())
-                }
-            )
+            AppScreenWithHeader(
+                navController = navController,
+                isWorkspaceSelection = false
+            ) { paddingValues ->
+                com.ampairs.customer.ui.CustomerScreen(
+                    onCustomerClick = { customerId ->
+                        navController.navigate(com.ampairs.customer.ui.CustomerDetailsRoute(customerId))
+                    },
+                    onCreateCustomer = {
+                        navController.navigate(com.ampairs.customer.ui.CustomerCreateRoute())
+                    },
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
         }
 
         customerNavigation(navController)
