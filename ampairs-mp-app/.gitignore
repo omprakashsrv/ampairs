@@ -2,6 +2,8 @@
 .gradle
 /local.properties
 /.idea
+/.kotlin
+/.claude
 .DS_Store
 build/
 /captures
