@@ -11,7 +11,7 @@ import androidx.navigation.navOptions
 import com.ampairs.auth.authNavigation
 import com.ampairs.common.ui.AppScreenWithHeader
 import com.ampairs.common.UnauthenticatedHandler
-import com.ampairs.customer.customerNavigation
+import com.ampairs.customer.ui.customerNavigation
 import com.ampairs.home.homeNavigation
 // Temporarily commented out pending customer integration updates
 // import com.ampairs.inventory.inventoryNavigation

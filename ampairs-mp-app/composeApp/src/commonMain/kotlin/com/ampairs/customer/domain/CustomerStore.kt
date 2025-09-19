@@ -1,24 +1,29 @@
 package com.ampairs.customer.domain
 
 import com.ampairs.customer.data.repository.CustomerRepository
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import org.mobilenativefoundation.store.core5.ExperimentalStoreApi
 import org.mobilenativefoundation.store.store5.Fetcher
 import org.mobilenativefoundation.store.store5.SourceOfTruth
 import org.mobilenativefoundation.store.store5.Store
 import org.mobilenativefoundation.store.store5.StoreBuilder
 
-data class CustomerKey(val workspaceId: String, val customerId: String? = null)
+data class CustomerKey(val workspaceId: String, val customerId: String)
 data class CustomerListKey(val workspaceId: String, val searchQuery: String = "")
 
+@OptIn(ExperimentalStoreApi::class)
 class CustomerStore(private val repository: CustomerRepository) {
 
     val customerListStore: Store<CustomerListKey, List<CustomerListItem>> = StoreBuilder
         .from(
             fetcher = Fetcher.of { key: CustomerListKey ->
-                // Force sync from server
                 repository.syncCustomers(key.workspaceId)
-                emptyList<CustomerListItem>() // Store5 will use SourceOfTruth for actual data
+                if (key.searchQuery.isBlank()) {
+                    repository.observeCustomers(key.workspaceId).first()
+                } else {
+                    repository.searchCustomers(key.workspaceId, key.searchQuery).first()
+                }
             },
             sourceOfTruth = SourceOfTruth.of(
                 reader = { key: CustomerListKey ->
@@ -37,16 +42,13 @@ class CustomerStore(private val repository: CustomerRepository) {
     val customerStore: Store<CustomerKey, Customer> = StoreBuilder
         .from(
             fetcher = Fetcher.of { key: CustomerKey ->
-                key.customerId?.let { customerId ->
-                    repository.getCustomer(key.workspaceId, customerId)
-                } ?: throw Exception("Customer ID is required")
+                repository.getCustomer(key.workspaceId, key.customerId)
+                    ?: throw Exception("Customer not found: ${key.customerId}")
             },
             sourceOfTruth = SourceOfTruth.of(
                 reader = { key: CustomerKey ->
-                    key.customerId?.let { customerId ->
-                        repository.observeCustomer(key.workspaceId, customerId)
-                            .map { it ?: throw Exception("Customer not found") }
-                    } ?: kotlinx.coroutines.flow.flowOf()
+                    repository.observeCustomer(key.workspaceId, key.customerId)
+                        .map { it ?: throw Exception("Customer not found: ${key.customerId}") }
                 },
                 writer = { _: CustomerKey, _: Customer ->
                     // Writing is handled through repository methods
@@ -54,36 +56,42 @@ class CustomerStore(private val repository: CustomerRepository) {
             )
         ).build()
 
-    // Convenience methods for common operations
-    fun observeCustomers(workspaceId: String): Flow<List<CustomerListItem>> {
-        return repository.observeCustomers(workspaceId)
-    }
-
-    fun searchCustomers(workspaceId: String, query: String): Flow<List<CustomerListItem>> {
-        return repository.searchCustomers(workspaceId, query)
-    }
-
-    fun observeCustomer(workspaceId: String, customerId: String): Flow<Customer?> {
-        return repository.observeCustomer(workspaceId, customerId)
-    }
-
     suspend fun createCustomer(workspaceId: String, customer: Customer): Result<Customer> {
-        return repository.createCustomer(workspaceId, customer)
+        val result = repository.createCustomer(workspaceId, customer)
+        if (result.isSuccess) {
+            // Invalidate store to refresh data
+            customerListStore.clear()
+        }
+        return result
     }
 
     suspend fun updateCustomer(workspaceId: String, customer: Customer): Result<Customer> {
-        return repository.updateCustomer(workspaceId, customer)
+        val result = repository.updateCustomer(workspaceId, customer)
+        if (result.isSuccess) {
+            // Invalidate stores to refresh data
+            customerListStore.clear()
+            customerStore.clear()
+        }
+        return result
     }
 
     suspend fun deleteCustomer(workspaceId: String, customerId: String): Result<Unit> {
-        return repository.deleteCustomer(workspaceId, customerId)
+        val result = repository.deleteCustomer(workspaceId, customerId)
+        if (result.isSuccess) {
+            // Invalidate stores to refresh data
+            customerListStore.clear()
+            customerStore.clear()
+        }
+        return result
     }
 
     suspend fun syncCustomers(workspaceId: String): Result<Int> {
-        return repository.syncCustomers(workspaceId)
+        val result = repository.syncCustomers(workspaceId)
+        if (result.isSuccess) {
+            // Invalidate store to refresh data
+            customerListStore.clear()
+        }
+        return result
     }
 
-    suspend fun getCustomerCount(workspaceId: String): Int {
-        return repository.getCustomerCount(workspaceId)
-    }
 }

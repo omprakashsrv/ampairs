@@ -4,10 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.customer.domain.Customer
+import com.ampairs.customer.domain.CustomerKey
 import com.ampairs.customer.domain.CustomerStore
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import com.benasher44.uuid.uuid4
+import org.mobilenativefoundation.store.store5.StoreReadRequest
+import org.mobilenativefoundation.store.store5.StoreReadResponse
 
 data class CustomerFormState(
     val name: String = "",
@@ -81,23 +84,42 @@ class CustomerFormViewModel(
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             try {
-                customerStore.observeCustomer(workspaceId, customerId)
-                    .collect { customer ->
-                        if (customer != null) {
-                            originalCustomer = customer
-                            _uiState.update {
-                                it.copy(
-                                    formState = customer.toFormState(),
-                                    isLoading = false,
-                                    error = null
-                                )
+                val key = CustomerKey(workspaceId, customerId)
+                customerStore.customerStore
+                    .stream(StoreReadRequest.cached(key, refresh = false))
+                    .collect { response ->
+                        when (response) {
+                            is StoreReadResponse.Data -> {
+                                originalCustomer = response.value
+                                _uiState.update {
+                                    it.copy(
+                                        formState = response.value.toFormState(),
+                                        isLoading = false,
+                                        error = null
+                                    )
+                                }
                             }
-                        } else {
-                            _uiState.update {
-                                it.copy(
-                                    isLoading = false,
-                                    error = "Customer not found"
-                                )
+                            is StoreReadResponse.Loading -> {
+                                _uiState.update { it.copy(isLoading = true) }
+                            }
+                            is StoreReadResponse.Error.Exception -> {
+                                _uiState.update {
+                                    it.copy(
+                                        isLoading = false,
+                                        error = response.error.message ?: "Failed to load customer"
+                                    )
+                                }
+                            }
+                            is StoreReadResponse.Error.Message -> {
+                                _uiState.update {
+                                    it.copy(
+                                        isLoading = false,
+                                        error = response.message
+                                    )
+                                }
+                            }
+                            else -> {
+                                // Handle other response types if needed
                             }
                         }
                     }

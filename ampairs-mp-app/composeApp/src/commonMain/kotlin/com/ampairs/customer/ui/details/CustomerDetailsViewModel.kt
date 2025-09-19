@@ -4,9 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.customer.domain.Customer
+import com.ampairs.customer.domain.CustomerKey
 import com.ampairs.customer.domain.CustomerStore
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import org.mobilenativefoundation.store.store5.StoreReadRequest
+import org.mobilenativefoundation.store.store5.StoreReadResponse
 
 data class CustomerDetailsUiState(
     val customer: Customer? = null,
@@ -30,7 +33,9 @@ class CustomerDetailsViewModel(
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             try {
-                customerStore.observeCustomer(workspaceId, customerId)
+                val key = CustomerKey(workspaceId, customerId)
+                customerStore.customerStore
+                    .stream(StoreReadRequest.cached(key, refresh = false))
                     .catch { throwable ->
                         _uiState.update {
                             it.copy(
@@ -39,13 +44,39 @@ class CustomerDetailsViewModel(
                             )
                         }
                     }
-                    .collect { customer ->
-                        _uiState.update {
-                            it.copy(
-                                customer = customer,
-                                isLoading = false,
-                                error = null
-                            )
+                    .collect { response ->
+                        when (response) {
+                            is StoreReadResponse.Data -> {
+                                _uiState.update {
+                                    it.copy(
+                                        customer = response.value,
+                                        isLoading = false,
+                                        error = null
+                                    )
+                                }
+                            }
+                            is StoreReadResponse.Loading -> {
+                                _uiState.update { it.copy(isLoading = true) }
+                            }
+                            is StoreReadResponse.Error.Exception -> {
+                                _uiState.update {
+                                    it.copy(
+                                        isLoading = false,
+                                        error = response.error.message ?: "Unknown error"
+                                    )
+                                }
+                            }
+                            is StoreReadResponse.Error.Message -> {
+                                _uiState.update {
+                                    it.copy(
+                                        isLoading = false,
+                                        error = response.message
+                                    )
+                                }
+                            }
+                            else -> {
+                                // Handle other response types if needed
+                            }
                         }
                     }
             } catch (e: Exception) {
