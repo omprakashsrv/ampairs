@@ -28,10 +28,21 @@ data class Product(
     var baseUnitId: String? = null,
     var baseUnit: Unit? = null,
     var taxInfos: List<TaxInfo>? = null,
-    var images: List<Image>? = null,
+    var images: List<ProductImage>? = null,
+    var description: String = "",
+    var stockQuantity: Double? = null,
+    var lowStockAlert: Double? = null,
+    var categoryName: String? = null,
+    var brandName: String? = null,
     // var inventory: Inventory? = null
 ) {
     var quantity: Double by mutableStateOf(0.0)
+
+    val primaryImageUrl: String?
+        get() = images?.firstOrNull()?.image?.url
+
+    val isLowStock: Boolean
+        get() = stockQuantity != null && lowStockAlert != null && stockQuantity!! <= lowStockAlert!!
 }
 
 fun ProductEntity.asDomainModel(): Product {

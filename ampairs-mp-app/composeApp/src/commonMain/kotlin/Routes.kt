@@ -113,23 +113,33 @@ sealed interface ProductRoute {
         val type: String = "GROUP",
         val edit: Boolean = false
     ) : ProductRoute
-    
+
     @Serializable
     data class Product(
         val groupId: String = ""
     ) : ProductRoute
-    
+
     @Serializable
     data class ProductEdit(
         val productId: String = ""
     ) : ProductRoute
-    
+
     @Serializable
     data object Products : ProductRoute
-    
+
+    @Serializable
+    data class ProductDetails(
+        val productId: String = ""
+    ) : ProductRoute
+
+    @Serializable
+    data class ProductForm(
+        val productId: String? = null
+    ) : ProductRoute
+
     @Serializable
     data object TaxInfo : ProductRoute
-    
+
     @Serializable
     data object TaxCode : ProductRoute
 }

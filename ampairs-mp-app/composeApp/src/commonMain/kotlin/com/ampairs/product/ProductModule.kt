@@ -1,50 +1,42 @@
 package com.ampairs.product
 
-import com.ampairs.product.api.ProductApi
-import com.ampairs.product.api.ProductApiImpl
+import com.ampairs.product.data.api.ProductApi
+import com.ampairs.product.db.dao.ProductDao
 import com.ampairs.product.db.ProductRoomDatabase
-import com.ampairs.product.db.TaxDaoAdapter
-import com.ampairs.product.db.TaxRepository
-import com.ampairs.product.ui.group.ProductGroupEditViewModel
-import com.ampairs.product.ui.group.ProductGroupViewModel
-import com.ampairs.product.ui.group.ProductSearchViewModel
-import com.ampairs.product.ui.product.ProductCategoryViewModel
-import com.ampairs.product.ui.product.ProductListViewModel
-import com.ampairs.product.ui.product.ProductViewModel
-import com.ampairs.product.ui.tax.tax_info.TaxInfoViewModel
-import com.ampairs.product.ui.tax.tax_info.TaxInfosViewModel
-import com.ampairs.repository.ProductRepository
+import com.ampairs.product.data.repository.ProductRepository
+import com.ampairs.product.domain.ProductStore
+import com.ampairs.product.ui.create.ProductFormViewModel
+import com.ampairs.product.ui.details.ProductDetailsViewModel
+import com.ampairs.product.ui.list.ProductsListViewModel
 import org.koin.core.module.Module
-import org.koin.dsl.bind
 import org.koin.dsl.module
 
 
 val productModule: Module = module {
-    single { ProductApiImpl(get(), get()) } bind (ProductApi::class)
-    // Database is provided by platform-specific modules
-    single { get<ProductRoomDatabase>().productDao() }
-    single { get<ProductRoomDatabase>().groupDao() }
-    single { get<ProductRoomDatabase>().taxCodeDao() }
-    single { get<ProductRoomDatabase>().taxInfoDao() }
-    single { get<ProductRoomDatabase>().unitDao() }
-    single<TaxDaoAdapter> { TaxDaoAdapter(get(), get()) }
-    single<TaxRepository> { TaxRepository(get(), get()) }
-    single {
-        ProductRepository(
-            get(), get(), get(), get(), get(), get(), get(),
-            get(), get(), get(), get()
-        )
+    // Store5 based components
+    single<ProductDao> { get<ProductRoomDatabase>().productDao() }
+
+    // Placeholder API implementation - to be replaced with actual implementation
+    single<ProductApi> {
+        object : ProductApi {
+            override suspend fun getProducts(workspaceId: String) = Result.failure<List<com.ampairs.product.api.model.ProductApiModel>>(Exception("Not implemented"))
+            override suspend fun getProduct(workspaceId: String, productId: String) = Result.failure<com.ampairs.product.api.model.ProductApiModel>(Exception("Not implemented"))
+            override suspend fun createProduct(workspaceId: String, product: com.ampairs.product.api.model.ProductApiModel) = Result.failure<com.ampairs.product.api.model.ProductApiModel>(Exception("Not implemented"))
+            override suspend fun updateProduct(workspaceId: String, productId: String, product: com.ampairs.product.api.model.ProductApiModel) = Result.failure<com.ampairs.product.api.model.ProductApiModel>(Exception("Not implemented"))
+            override suspend fun deleteProduct(workspaceId: String, productId: String) = Result.failure<Unit>(Exception("Not implemented"))
+            override suspend fun searchProducts(workspaceId: String, query: String) = Result.failure<List<com.ampairs.product.api.model.ProductApiModel>>(Exception("Not implemented"))
+        }
     }
 
-    // Direct ViewModel injection
-    factory { ProductViewModel() }
-    factory { TaxInfosViewModel(get()) }
-    factory { ProductSearchViewModel(get(), get(), get()) }
-    factory { ProductListViewModel(get()) }
-    factory { ProductGroupViewModel(get()) }
-    factory { ProductGroupEditViewModel(get()) }
-    factory { ProductCategoryViewModel(get(), get(), get(), get()) }
-    factory { (taxId: String) -> TaxInfoViewModel(taxId, get()) }
+    single<ProductRepository> { ProductRepository(get(), get()) }
+
+    // Product Store for offline-first pattern
+    single<ProductStore> { ProductStore(get()) }
+
+    // ViewModels for Store5 pattern
+    factory { ProductsListViewModel(get(), get()) }
+    factory { (productId: String?) -> ProductFormViewModel(productId, get(), get()) }
+    factory { (productId: String) -> ProductDetailsViewModel(productId, get(), get()) }
 }
 
 fun productModule() = productModule

@@ -336,3 +336,105 @@ Fallback: Use original onModuleSelected callback
 - **Backward Compatibility**: ✅ No breaking changes
 
 This system provides a robust foundation for dynamic module loading while maintaining type safety and graceful degradation for missing implementations.
+
+## **🧠 KMP Platform Compatibility Guidelines**
+
+### **❌ Common Platform-Specific Mistakes to Avoid**
+
+**CRITICAL**: Always use KMP-compatible APIs in `commonMain`. Platform-specific code should only exist in platform source sets (`androidMain`, `iosMain`, `desktopMain`) using expect/actual pattern.
+
+#### **1. Time/Date APIs**
+- ❌ `System.currentTimeMillis()` (JVM-specific)
+- ✅ `Clock.System.now().toEpochMilliseconds()` (KMP-compatible)
+- ❌ `Date()`, `Calendar`, `LocalDateTime` (Java-specific)
+- ✅ `kotlinx.datetime.*` (KMP datetime library)
+
+#### **2. String Formatting**
+- ❌ `String.format()` (JVM-specific)
+- ✅ String interpolation: `"Value: $value"` or manual formatting
+- ❌ `DecimalFormat`, `NumberFormat` (Java-specific)
+- ✅ Platform-specific expect/actual for complex formatting
+
+#### **3. Threading/Concurrency**
+- ❌ `Thread`, `synchronized` blocks (JVM-specific)
+- ✅ `kotlinx.coroutines.*`, `@Volatile` annotation
+- ❌ `System.getProperty()`, `Runtime.getRuntime()`
+- ✅ Platform-specific expect/actual implementations
+
+#### **4. File System APIs**
+- ❌ `java.io.File`, `java.nio.*` (JVM-specific)
+- ✅ Platform-specific expect/actual for file operations
+- ❌ Hard-coded file paths like `/tmp/`, `C:\`
+- ✅ Platform-specific directory resolution
+
+#### **5. Collections & Utilities**
+- ❌ `java.util.*` specific implementations
+- ✅ Kotlin standard library collections
+- ❌ `UUID.randomUUID()` (JVM-specific)
+- ✅ KMP UUID libraries or expect/actual implementations
+
+#### **6. Logging & Debugging**
+- ❌ `System.out.println()`, `e.printStackTrace()` (JVM-specific)
+- ✅ Platform-specific logging or expect/actual pattern
+- ❌ `Log.d()` (Android-specific)
+- ✅ Logging libraries with KMP support
+
+### **✅ KMP-First Development Approach**
+
+#### **Development Checklist**
+1. **Always check if API is available in `commonMain`**
+2. **Use kotlinx libraries for cross-platform functionality**
+   - `kotlinx.datetime` for time/date operations
+   - `kotlinx.coroutines` for concurrency and async operations
+   - `kotlinx.serialization` for JSON and data serialization
+   - `kotlinx.collections.immutable` for immutable collections
+3. **Prefer expect/actual pattern for platform-specific needs**
+4. **Test compilation on multiple targets early and often**
+5. **Use KMP-compatible dependencies in version catalog**
+
+#### **Quick Validation Pattern**
+```kotlin
+// ❌ Wrong - Platform-specific import in commonMain
+import java.util.Date
+import android.util.Log
+import java.io.File
+
+// ✅ Correct - KMP-compatible imports
+import kotlinx.datetime.Clock
+import kotlin.time.ExperimentalTime
+import kotlinx.coroutines.flow.Flow
+```
+
+#### **Compilation Test Strategy**
+- If importing `java.*` or `android.*` in `commonMain` → ❌ Wrong
+- If using platform-specific APIs without expect/actual → ❌ Wrong
+- If compile fails on iOS/Desktop targets → ❌ Platform-specific code leak
+- Always run: `./gradlew compileDebugKotlinAndroid compileKotlinIosSimulatorArm64 compileKotlinDesktop`
+
+#### **Store5 & Room Integration**
+- ✅ Use `Fetcher.ofFlow` for reactive data sources
+- ✅ Use `Clock.System.now()` for timestamps in entities
+- ✅ Use `kotlinx.coroutines.flow.Flow` for reactive streams
+- ❌ Avoid `Fetcher.ofSuspending` with platform-specific suspend functions
+
+### **🔍 Error Prevention Patterns**
+
+#### **Before Writing Code**
+1. **Check target compatibility**: Will this API work on iOS/Desktop?
+2. **Prefer Kotlin stdlib**: Use Kotlin's built-in functions over platform-specific ones
+3. **Use version catalog**: Ensure dependencies support KMP
+4. **Think expect/actual**: If platform-specific, design the common interface first
+
+#### **During Development**
+1. **Compile frequently**: Test all targets during development, not just at the end
+2. **Use KMP libraries**: Prefer libraries specifically designed for KMP
+3. **Avoid shortcuts**: Don't use JVM-specific APIs for "quick" implementations
+
+#### **Code Review Checklist**
+- No platform-specific imports in `commonMain`
+- All time/date operations use `kotlinx.datetime`
+- All async operations use `kotlinx.coroutines`
+- File operations use expect/actual pattern
+- String operations avoid Java-specific formatting
+
+**Remember**: The goal is to write "KMP-first" code that naturally works across all platforms, rather than "JVM-first" code that needs platform-specific workarounds.
