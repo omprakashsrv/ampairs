@@ -11,6 +11,7 @@ import com.ampairs.workspace.db.entity.InstalledModuleWithMenuItems
 import com.ampairs.workspace.store.WorkspaceModuleStoreFactory
 import com.ampairs.workspace.store.InstalledModuleKey
 import com.ampairs.workspace.store.AvailableModuleKey
+import com.ampairs.common.time.currentTimeMillis
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
@@ -283,6 +284,7 @@ class WorkspaceModuleRepository(
         category: String,
         primaryColor: String
     ): com.ampairs.workspace.db.entity.InstalledModuleEntity {
+        val currentTime = currentTimeMillis()
         return com.ampairs.workspace.db.entity.InstalledModuleEntity(
             id = "${workspaceId}_${moduleCode}",
             workspaceId = workspaceId,
@@ -292,20 +294,20 @@ class WorkspaceModuleRepository(
             version = "1.0.0",
             status = "ACTIVE",
             enabled = true,
-            installedAt = System.currentTimeMillis(),
+            installedAt = currentTime.toString(),
             icon = moduleCode.lowercase().replace("-", "_"),
             primaryColor = primaryColor,
             healthScore = 100.0,
             needsAttention = false,
             description = "Default $name module for offline access",
+            navigationIndex = 0,
             routeBasePath = "/workspace/modules/$moduleCode",
             routeDisplayName = name,
             routeIconName = moduleCode.lowercase().replace("-", "_"),
-            navigationIndex = 0,
-            syncState = "SYNCED",
-            lastSyncedAt = System.currentTimeMillis(),
-            createdAt = System.currentTimeMillis(),
-            updatedAt = System.currentTimeMillis()
+            sync_state = "SYNCED",
+            created_at = currentTime,
+            updated_at = currentTime,
+            last_synced_at = currentTime
         )
     }
 }
