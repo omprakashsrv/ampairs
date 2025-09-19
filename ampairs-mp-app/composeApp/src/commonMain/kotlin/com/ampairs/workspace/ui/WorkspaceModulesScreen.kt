@@ -628,7 +628,7 @@ private fun tryNavigateToModule(navController: NavController, moduleCode: String
         // Create a mapping for common module codes to routes
         val route = when (moduleCode) {
             "customer-management" -> Route.Customer
-            "product-management" -> Route.Product
+            "product-catalog" -> Route.Product
             "order-management" -> Route.Order
             "invoice-management" -> Route.Invoice
             "inventory-management" -> Route.Inventory

@@ -12,7 +12,6 @@ import com.ampairs.auth.authNavigation
 import com.ampairs.common.ui.AppScreenWithHeader
 import com.ampairs.common.UnauthenticatedHandler
 import com.ampairs.customer.ui.customerNavigation
-import com.ampairs.home.homeNavigation
 // Temporarily commented out pending customer integration updates
 // import com.ampairs.inventory.inventoryNavigation
 // import com.ampairs.invoice.invoiceNavigation
@@ -79,9 +78,6 @@ fun AppNavigation(
         }
         workspaceNavigation(navController, onNavigationServiceReady) {
             navController.navigate(Route.Home)
-        }
-        homeNavigation(navController) {
-            navController.navigate(it.navPath)
         }
         // Customer module navigation
         composable<Route.Customer> {

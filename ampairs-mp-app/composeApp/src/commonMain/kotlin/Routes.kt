@@ -27,13 +27,6 @@ sealed interface Route {
     data object Invoice : Route
 }
 
-// Home routes
-@Serializable
-sealed interface HomeRoute {
-    @Serializable
-    data object Root : HomeRoute
-}
-
 // Auth routes
 @Serializable
 sealed interface AuthRoute {
