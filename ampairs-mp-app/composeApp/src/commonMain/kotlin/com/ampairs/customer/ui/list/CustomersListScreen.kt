@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -35,6 +36,19 @@ fun CustomersListScreen(
         TopAppBar(
             title = { Text("Customers") },
             actions = {
+                IconButton(
+                    onClick = viewModel::syncCustomers,
+                    enabled = !uiState.isRefreshing
+                ) {
+                    if (uiState.isRefreshing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                    }
+                }
                 IconButton(onClick = onCreateCustomer) {
                     Icon(Icons.Default.Add, contentDescription = "Add Customer")
                 }
@@ -81,8 +95,7 @@ fun CustomersListScreen(
                 CustomersList(
                     customers = uiState.customers,
                     onCustomerClick = onCustomerClick,
-                    isRefreshing = uiState.isLoading,
-                    onRefresh = viewModel::syncCustomers,
+                    isRefreshing = uiState.isRefreshing,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -113,7 +126,6 @@ private fun CustomersList(
     customers: List<CustomerListItem>,
     onCustomerClick: (String) -> Unit,
     isRefreshing: Boolean,
-    onRefresh: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
@@ -127,8 +139,22 @@ private fun CustomersList(
                     modifier = Modifier.fillMaxWidth(),
                     contentAlignment = Alignment.Center
                 ) {
-                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth(0.5f))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp
+                        )
+                        Text(
+                            text = "Refreshing...",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
+                Spacer(modifier = Modifier.height(8.dp))
             }
         }
 
@@ -140,6 +166,7 @@ private fun CustomersList(
         }
     }
 }
+
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

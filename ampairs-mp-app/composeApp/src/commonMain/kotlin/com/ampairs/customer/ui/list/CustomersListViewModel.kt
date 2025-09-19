@@ -16,6 +16,7 @@ data class CustomersListUiState(
     val customers: List<CustomerListItem> = emptyList(),
     val searchQuery: String = "",
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val error: String? = null
 )
 
@@ -105,24 +106,22 @@ class CustomersListViewModel(
         val workspaceId = workspaceContextManager.getCurrentWorkspaceId() ?: return
 
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
+            _uiState.update { it.copy(isRefreshing = true, error = null) }
 
             try {
                 val result = customerStore.syncCustomers(workspaceId)
-                if (result.isSuccess) {
-                    _uiState.update { it.copy(isLoading = false, error = null) }
-                } else {
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = result.exceptionOrNull()?.message ?: "Sync failed"
-                        )
-                    }
+                _uiState.update {
+                    it.copy(
+                        isRefreshing = false,
+                        error = if (result.isFailure) {
+                            result.exceptionOrNull()?.message ?: "Sync failed"
+                        } else null
+                    )
                 }
             } catch (e: Exception) {
                 _uiState.update {
                     it.copy(
-                        isLoading = false,
+                        isRefreshing = false,
                         error = e.message ?: "Sync failed"
                     )
                 }
