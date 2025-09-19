@@ -88,13 +88,39 @@ class WorkspaceModulesViewModel(
             try {
                 _isLoading.value = true
                 _errorMessage.value = null
+
                 // Repository automatically updates StateFlow via Store5
-                moduleRepository.getInstalledModules(wsId, refresh)
+                val modules = moduleRepository.getInstalledModules(wsId, refresh)
+
+                // If we have no modules and not refreshing (offline), seed default modules
+                if (modules.isEmpty() && !refresh) {
+                    seedDefaultModules(wsId)
+                }
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Failed to load installed modules"
+
+                // If we're offline and failed to load, try to seed default modules
+                if (!refresh) {
+                    try {
+                        seedDefaultModules(wsId)
+                    } catch (seedError: Exception) {
+                        // Ignore seeding errors
+                    }
+                }
             } finally {
                 _isLoading.value = false
             }
+        }
+    }
+
+    /**
+     * Seed default modules for offline experience
+     */
+    private suspend fun seedDefaultModules(workspaceId: String) {
+        try {
+            moduleRepository.seedDefaultModules(workspaceId)
+        } catch (e: Exception) {
+            // Ignore seeding errors to not interfere with normal operation
         }
     }
 

@@ -50,8 +50,11 @@ fun WorkspaceModulesScreen(
 
     // Initialize module registry and load data on first composition
     LaunchedEffect(Unit) {
-        // Initialize module registry (manual registration for now)
-        viewModel.loadInstalledModules(refresh = true) // Force API call via Store5
+        // Try cached data first, then refresh if needed
+        viewModel.loadInstalledModules(refresh = false) // Use cache first for offline support
+
+        // After initial load, try to refresh in background
+        viewModel.loadInstalledModules(refresh = true) // Force API call via Store5 for updates
     }
 
     // Pass navigationService to callback for desktop menu bar integration

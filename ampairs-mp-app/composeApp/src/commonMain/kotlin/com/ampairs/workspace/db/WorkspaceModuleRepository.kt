@@ -90,7 +90,7 @@ class WorkspaceModuleRepository(
                         is StoreReadResponse.Initial -> emptyList()
                     }
                 }
-                .first { it.isNotEmpty() || !refresh } // Get first non-empty or accept empty if not refreshing
+                .first() // Get first response regardless of content for offline support
         } catch (e: Exception) {
             // Fallback to cached data with menu items
             moduleDao.getInstalledModulesWithMenuItems(workspaceId).map { it.toApiModel() }
@@ -130,7 +130,7 @@ class WorkspaceModuleRepository(
                         is StoreReadResponse.Initial -> emptyList()
                     }
                 }
-                .first { it.isNotEmpty() || !refresh }
+                .first() // Get first response regardless of content for offline support
         } catch (e: Exception) {
             // Fallback to cached data
             val entities = when {
@@ -241,6 +241,72 @@ class WorkspaceModuleRepository(
         moduleDao.deleteAllAvailableModules()
         installedModuleStore.clear()
         availableModuleStore.clear()
+    }
+
+    /**
+     * Seed default modules for offline experience
+     */
+    suspend fun seedDefaultModules(workspaceId: String): List<InstalledModule> {
+        try {
+            // Check if modules already exist
+            val existing = moduleDao.getInstalledModules(workspaceId)
+            if (existing.isNotEmpty()) {
+                return existing.map { it.toApiModel() }
+            }
+
+            // Create default module entities
+            val defaultModules = listOf(
+                createDefaultModuleEntity(workspaceId, "customer-management", "Customer Management", "Business", "#2196F3"),
+                createDefaultModuleEntity(workspaceId, "product-management", "Product Management", "Business", "#4CAF50"),
+                createDefaultModuleEntity(workspaceId, "order-management", "Order Management", "Business", "#9C27B0"),
+                createDefaultModuleEntity(workspaceId, "invoice-management", "Invoice Management", "Finance", "#FF9800")
+            )
+
+            // Insert into database
+            moduleDao.insertInstalledModules(defaultModules)
+
+            // Clear store cache to force refresh from database
+            installedModuleStore.clear()
+
+            // Return API models
+            return defaultModules.map { it.toApiModel() }
+        } catch (e: Exception) {
+            // Return empty list on error
+            return emptyList()
+        }
+    }
+
+    private fun createDefaultModuleEntity(
+        workspaceId: String,
+        moduleCode: String,
+        name: String,
+        category: String,
+        primaryColor: String
+    ): com.ampairs.workspace.db.entity.InstalledModuleEntity {
+        return com.ampairs.workspace.db.entity.InstalledModuleEntity(
+            id = "${workspaceId}_${moduleCode}",
+            workspaceId = workspaceId,
+            moduleCode = moduleCode,
+            name = name,
+            category = category,
+            version = "1.0.0",
+            status = "ACTIVE",
+            enabled = true,
+            installedAt = System.currentTimeMillis(),
+            icon = moduleCode.lowercase().replace("-", "_"),
+            primaryColor = primaryColor,
+            healthScore = 100.0,
+            needsAttention = false,
+            description = "Default $name module for offline access",
+            routeBasePath = "/workspace/modules/$moduleCode",
+            routeDisplayName = name,
+            routeIconName = moduleCode.lowercase().replace("-", "_"),
+            navigationIndex = 0,
+            syncState = "SYNCED",
+            lastSyncedAt = System.currentTimeMillis(),
+            createdAt = System.currentTimeMillis(),
+            updatedAt = System.currentTimeMillis()
+        )
     }
 }
 
