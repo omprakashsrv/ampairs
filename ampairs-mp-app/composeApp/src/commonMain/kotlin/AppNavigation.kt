@@ -101,6 +101,24 @@ fun AppNavigation(
             }
         }
 
+        // Product module navigation
+        composable<Route.Product> {
+            AppScreenWithHeader(
+                navController = navController,
+                isWorkspaceSelection = false
+            ) { paddingValues ->
+                com.ampairs.product.ProductScreen(
+                    onProductClick = { productId ->
+                        navController.navigate(ProductRoute.ProductDetails(productId))
+                    },
+                    onCreateProduct = {
+                        navController.navigate(ProductRoute.ProductForm())
+                    },
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
+        }
+
         customerNavigation(navController)
         productNavigation(navController)
         // Temporarily commented out pending customer integration updates

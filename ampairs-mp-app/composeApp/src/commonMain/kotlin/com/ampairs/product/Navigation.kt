@@ -2,6 +2,8 @@ package com.ampairs.product
 
 import ProductRoute
 import Route
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
@@ -95,4 +97,17 @@ fun NavGraphBuilder.productNavigation(
         //     TaxCodePaneScreen()
         // }
     }
+}
+
+@Composable
+fun ProductScreen(
+    onProductClick: (String) -> Unit,
+    onCreateProduct: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    ProductsListScreen(
+        onProductClick = onProductClick,
+        onCreateProduct = onCreateProduct,
+        modifier = modifier
+    )
 }

@@ -8,11 +8,14 @@ import com.ampairs.home.homeModule
 import com.ampairs.menu.menuModule
 // import com.ampairs.order.orderModule
 import com.ampairs.product.productModule
+import com.ampairs.workspace.navigation.initializeModuleProviders
 import org.koin.core.KoinApplication
 import org.koin.core.module.Module
 
 
 fun initKoin(koinApplication: KoinApplication): KoinApplication {
+    // Initialize module providers for dynamic navigation
+    initializeModuleProviders()
     koinApplication.modules(
         listOf(
             themeModule,
