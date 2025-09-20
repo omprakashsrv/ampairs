@@ -81,6 +81,32 @@ data class AuthInitRequest(
 - **Entity Relationships**: Use `@EntityGraph` for efficient data loading
 - **Error Handling**: Standardized error responses with proper HTTP codes
 
+### **Spring Data JPA Best Practices**
+
+#### **@EntityGraph Pattern (Preferred over JOIN FETCH)**
+**Entity Level**: Define named entity graphs
+```kotlin
+@NamedEntityGraph(
+    name = "EntityName.withRelations",
+    attributeNodes = [NamedAttributeNode("relationshipProperty")]
+)
+class EntityName
+```
+
+**Repository Level**: Use @EntityGraph with EXISTS subquery
+```kotlin
+@EntityGraph("EntityName.withRelations")
+@Query("SELECT e FROM Entity e WHERE ... AND EXISTS (SELECT r FROM e.relations r WHERE ...)")
+fun findWithRelations(): EntityName?
+```
+
+**Benefits**: Prevents N+1 queries, cleaner separation of concerns, reusable across methods
+
+#### **Repository Method Patterns**
+- **Prefer**: Spring Data JPA derived query methods (`findByActiveTrueOrderByName()`)
+- **When needed**: Custom `@Query` for complex business logic only
+- **Avoid**: `JOIN FETCH` in JPQL when `@EntityGraph` achieves same result
+
 ### **Multi-Tenant Architecture Patterns**
 
 #### **@TenantId Best Practices**
