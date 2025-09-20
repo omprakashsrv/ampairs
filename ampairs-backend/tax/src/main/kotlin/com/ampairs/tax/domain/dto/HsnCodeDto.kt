@@ -103,7 +103,7 @@ data class HsnCodeResponseDto(
                 attributes = hsnCode.attributes,
                 effectiveFrom = hsnCode.effectiveFrom,
                 effectiveTo = hsnCode.effectiveTo,
-                isActive = hsnCode.isActive,
+                isActive = hsnCode.active,
                 createdAt = hsnCode.createdAt,
                 updatedAt = hsnCode.updatedAt,
                 hasValidTaxRates = hsnCode.hasValidTaxRates(),

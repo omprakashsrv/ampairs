@@ -103,7 +103,7 @@ data class TaxConfigurationRequestDto(
             thresholdLimits = this@TaxConfigurationRequestDto.thresholdLimits
             description = this@TaxConfigurationRequestDto.description
             notificationReference = this@TaxConfigurationRequestDto.notificationReference
-            isActive = this@TaxConfigurationRequestDto.isActive
+            active = this@TaxConfigurationRequestDto.isActive
         }
     }
 }
@@ -168,7 +168,7 @@ data class TaxConfigurationResponseDto(
                 cessAmountPerUnit = taxConfiguration.cessAmountPerUnit,
                 effectiveFrom = taxConfiguration.effectiveFrom,
                 effectiveTo = taxConfiguration.effectiveTo,
-                isActive = taxConfiguration.isActive,
+                isActive = taxConfiguration.active,
                 isReverseChargeApplicable = taxConfiguration.isReverseChargeApplicable,
                 isCompositionSchemeApplicable = taxConfiguration.isCompositionSchemeApplicable,
                 compositionRate = taxConfiguration.compositionRate,

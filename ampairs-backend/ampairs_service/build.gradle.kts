@@ -40,6 +40,7 @@ dependencies {
     implementation(project(mapOf("path" to ":product")))
     implementation(project(mapOf("path" to ":order")))
     implementation(project(mapOf("path" to ":invoice")))
+    implementation(project(mapOf("path" to ":tax")))
 
     // Spring Boot starters
     implementation("org.springframework.boot:spring-boot-starter-web")

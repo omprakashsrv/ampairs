@@ -39,7 +39,7 @@ class TaxConfigurationService(
         hsnCode: String,
         effectiveDate: LocalDate = LocalDate.now()
     ): List<TaxConfiguration> {
-        val hsnCodeEntity = hsnCodeRepository.findByHsnCodeAndActive(hsnCode)
+        val hsnCodeEntity = hsnCodeRepository.findByHsnCodeAndActiveTrue(hsnCode)
             ?: throw IllegalArgumentException("HSN code $hsnCode not found")
 
         return taxConfigurationRepository.findAllEffectiveConfigurationsByHsnCode(
@@ -52,7 +52,7 @@ class TaxConfigurationService(
         businessType: BusinessType,
         effectiveDate: LocalDate = LocalDate.now()
     ): List<TaxConfiguration> {
-        val businessTypeEntity = businessTypeRepository.findByBusinessTypeAndActive(businessType)
+        val businessTypeEntity = businessTypeRepository.findByBusinessTypeAndActiveTrue(businessType)
             ?: throw IllegalArgumentException("Business type $businessType not found")
 
         return taxConfigurationRepository.findAllEffectiveConfigurationsByBusinessType(
@@ -108,7 +108,7 @@ class TaxConfigurationService(
     }
 
     fun findByNotificationReference(notificationReference: String): List<TaxConfiguration> {
-        return taxConfigurationRepository.findByNotificationReference(notificationReference)
+        return taxConfigurationRepository.findByNotificationReferenceOrderByEffectiveFromDesc(notificationReference)
     }
 
     fun searchConfigurations(searchTerm: String?, pageable: Pageable): Page<TaxConfiguration> {
@@ -132,11 +132,11 @@ class TaxConfigurationService(
     }
 
     fun countActiveConfigurations(): Long {
-        return taxConfigurationRepository.countActiveConfigurations()
+        return taxConfigurationRepository.countByActiveTrue()
     }
 
     fun findRecentlyAdded(fromDate: LocalDateTime): List<TaxConfiguration> {
-        return taxConfigurationRepository.findRecentlyAddedConfigurations(fromDate)
+        return taxConfigurationRepository.findByActiveTrueAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(fromDate)
     }
 
     fun findRecentlyUpdated(fromDate: LocalDateTime): List<TaxConfiguration> {
@@ -144,7 +144,7 @@ class TaxConfigurationService(
     }
 
     fun findByLastUpdatedBy(userId: String): List<TaxConfiguration> {
-        return taxConfigurationRepository.findByLastUpdatedBy(userId)
+        return taxConfigurationRepository.findByLastUpdatedByAndActiveTrueOrderByUpdatedAtDesc(userId)
     }
 
     @Transactional

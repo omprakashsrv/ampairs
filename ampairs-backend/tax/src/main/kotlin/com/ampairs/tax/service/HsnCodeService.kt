@@ -15,7 +15,7 @@ class HsnCodeService(
 ) {
 
     fun findByHsnCode(hsnCode: String): HsnCode? {
-        return hsnCodeRepository.findByHsnCodeAndActive(hsnCode)
+        return hsnCodeRepository.findByHsnCodeAndActiveTrue(hsnCode)
     }
 
     fun findByHsnCodeAndValidForDate(hsnCode: String, date: LocalDateTime = LocalDateTime.now()): HsnCode? {
@@ -23,15 +23,15 @@ class HsnCodeService(
     }
 
     fun findByChapter(chapter: String): List<HsnCode> {
-        return hsnCodeRepository.findByChapterAndActive(chapter)
+        return hsnCodeRepository.findByHsnChapterAndActiveTrueOrderByHsnCode(chapter)
     }
 
     fun findByHeading(heading: String): List<HsnCode> {
-        return hsnCodeRepository.findByHeadingAndActive(heading)
+        return hsnCodeRepository.findByHsnHeadingAndActiveTrueOrderByHsnCode(heading)
     }
 
     fun findByParentHsnId(parentId: Long): List<HsnCode> {
-        return hsnCodeRepository.findByParentHsnIdAndActive(parentId)
+        return hsnCodeRepository.findByParentHsnIdAndActiveTrueOrderByHsnCode(parentId)
     }
 
     fun findWithActiveTaxRates(hsnCode: String, date: LocalDateTime = LocalDateTime.now()): HsnCode? {
@@ -43,7 +43,7 @@ class HsnCodeService(
     }
 
     fun findByLevel(level: Int): List<HsnCode> {
-        return hsnCodeRepository.findByLevelAndActive(level)
+        return hsnCodeRepository.findByActiveTrueAndLevelOrderByHsnCode(level)
     }
 
     fun findDistinctChapters(): List<String> {
@@ -55,7 +55,7 @@ class HsnCodeService(
     }
 
     fun findHsnCodesWithExemption(): List<HsnCode> {
-        return hsnCodeRepository.findActiveHsnCodesWithExemption()
+        return hsnCodeRepository.findByActiveTrueAndExemptionAvailableTrueOrderByHsnCode()
     }
 
     fun findHsnCodeHierarchy(hsnId: Long): List<HsnCode> {
@@ -67,11 +67,11 @@ class HsnCodeService(
     }
 
     fun countActiveHsnCodes(): Long {
-        return hsnCodeRepository.countActiveHsnCodes()
+        return hsnCodeRepository.countByActiveTrue()
     }
 
     fun findRecentlyAdded(fromDate: LocalDateTime): List<HsnCode> {
-        return hsnCodeRepository.findRecentlyAddedHsnCodes(fromDate)
+        return hsnCodeRepository.findByActiveTrueAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(fromDate)
     }
 
     @Transactional
@@ -105,7 +105,7 @@ class HsnCodeService(
         }
 
         // Check for duplicate HSN code
-        val existing = hsnCodeRepository.findByHsnCodeAndActive(hsnCode.hsnCode)
+        val existing = hsnCodeRepository.findByHsnCodeAndActiveTrue(hsnCode.hsnCode)
         if (existing != null && existing.id != hsnCode.id) {
             throw IllegalArgumentException("HSN code ${hsnCode.hsnCode} already exists")
         }

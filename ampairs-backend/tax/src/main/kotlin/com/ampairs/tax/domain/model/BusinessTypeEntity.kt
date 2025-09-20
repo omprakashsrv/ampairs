@@ -12,7 +12,7 @@ import org.hibernate.type.SqlTypes
     name = "business_types",
     indexes = [
         Index(name = "idx_business_type_code", columnList = "business_type", unique = true),
-        Index(name = "idx_business_type_active", columnList = "is_active")
+        Index(name = "idx_business_type_active", columnList = "active")
     ]
 )
 class BusinessTypeEntity : OwnableBaseDomain() {

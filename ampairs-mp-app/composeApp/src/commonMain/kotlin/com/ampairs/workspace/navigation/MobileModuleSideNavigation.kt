@@ -203,7 +203,7 @@ private fun MobileModuleNavigationItem(
 
             // Menu items (when expanded)
             if (expanded && moduleRoute.menuItems.size > 1) {
-                Divider(color = MaterialTheme.colorScheme.outlineVariant)
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
 
                 Column(modifier = Modifier.padding(start = 68.dp, end = 16.dp, bottom = 8.dp)) {
                     moduleRoute.menuItems.forEach { menuItem ->

@@ -488,7 +488,7 @@ private fun InvitationCard(
                     DeliveryStatusIndicator(
                         label = "Sent",
                         isCompleted = invitation.emailSent,
-                        icon = Icons.Default.Send
+                        icon = Icons.AutoMirrored.Default.Send
                     )
 
                     DeliveryStatusIndicator(
@@ -603,7 +603,7 @@ private fun EmptyInvitationsState(onInviteClick: () -> Unit) {
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
-            Icons.Default.Send,
+            Icons.AutoMirrored.Default.Send,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.outline
@@ -633,7 +633,7 @@ private fun EmptyInvitationsState(onInviteClick: () -> Unit) {
                 .fillMaxWidth(0.6f)
                 .height(48.dp)
         ) {
-            Icon(Icons.Default.Send, contentDescription = null)
+            Icon(Icons.AutoMirrored.Default.Send, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "Send Your First Invitation",

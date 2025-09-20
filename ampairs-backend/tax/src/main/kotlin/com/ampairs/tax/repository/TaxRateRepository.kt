@@ -183,19 +183,14 @@ interface TaxRateRepository : JpaRepository<TaxRate, Long> {
         @Param("toDate") toDate: LocalDate
     ): List<TaxRate>
 
-    @Query("""
-        SELECT tr FROM TaxRate tr
-        WHERE tr.notificationNumber = :notificationNumber
-        ORDER BY tr.effectiveFrom DESC
-    """)
-    fun findByNotificationNumber(@Param("notificationNumber") notificationNumber: String): List<TaxRate>
+    fun findByNotificationNumberOrderByEffectiveFromDesc(notificationNumber: String): List<TaxRate>
 
     @Query("""
         SELECT tr1 FROM TaxRate tr1
         WHERE tr1.hsnCodeId = :hsnCodeId
         AND tr1.businessType = :businessType
         AND tr1.taxComponentType = :componentType
-        AND tr1.isActive = true
+        AND tr1.active = true
         AND tr1.effectiveFrom <= :effectiveDate
         AND (tr1.effectiveTo IS NULL OR tr1.effectiveTo >= :effectiveDate)
         AND tr1.effectiveFrom = (
@@ -204,7 +199,7 @@ interface TaxRateRepository : JpaRepository<TaxRate, Long> {
             WHERE tr2.hsnCodeId = tr1.hsnCodeId
             AND tr2.businessType = tr1.businessType
             AND tr2.taxComponentType = tr1.taxComponentType
-            AND tr2.isActive = true
+            AND tr2.active = true
             AND tr2.effectiveFrom <= :effectiveDate
             AND (tr2.effectiveTo IS NULL OR tr2.effectiveTo >= :effectiveDate)
         )
@@ -216,16 +211,9 @@ interface TaxRateRepository : JpaRepository<TaxRate, Long> {
         @Param("effectiveDate") effectiveDate: LocalDate = LocalDate.now()
     ): TaxRate?
 
-    @Query("SELECT COUNT(tr) FROM TaxRate tr WHERE tr.active = true")
-    fun countActiveTaxRates(): Long
+    fun countByActiveTrue(): Long
 
-    @Query("""
-        SELECT tr FROM TaxRate tr
-        WHERE tr.active = true
-        AND tr.createdAt >= :fromDate
-        ORDER BY tr.createdAt DESC
-    """)
-    fun findRecentlyAddedTaxRates(@Param("fromDate") fromDate: LocalDateTime): List<TaxRate>
+    fun findByActiveTrueAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(fromDate: LocalDateTime): List<TaxRate>
 
     @Query("""
         SELECT tr FROM TaxRate tr

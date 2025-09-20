@@ -1,7 +1,7 @@
 package com.ampairs.tax.controller
 
 import com.ampairs.tax.domain.dto.*
-import com.ampairs.tax.service.TaxCalculationService
+import com.ampairs.tax.service.GstTaxCalculationService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*
 @Validated
 @Tag(name = "Tax Calculation", description = "GST and tax calculation APIs for Indian retail businesses")
 class TaxCalculationController(
-    private val taxCalculationService: TaxCalculationService
+    private val gstTaxCalculationService: GstTaxCalculationService
 ) {
 
     @PostMapping("/calculate")
@@ -37,7 +37,7 @@ class TaxCalculationController(
         @Valid @RequestBody request: TaxCalculationRequestDto
     ): ResponseEntity<TaxCalculationResponseDto> {
 
-        val result = taxCalculationService.calculateTax(
+        val result = gstTaxCalculationService.calculateTax(
             hsnCode = request.hsnCode,
             baseAmount = request.baseAmount,
             quantity = request.quantity,
@@ -69,7 +69,7 @@ class TaxCalculationController(
 
         val serviceRequests = request.items.map { it.toServiceRequest() }
 
-        val result = taxCalculationService.calculateBulkTax(
+        val result = gstTaxCalculationService.calculateBulkTax(
             items = serviceRequests,
             businessType = request.businessType,
             sourceStateCode = request.sourceStateCode,
@@ -118,7 +118,7 @@ class TaxCalculationController(
             throw IllegalArgumentException("Invalid business type: $businessType")
         }
 
-        val result = taxCalculationService.calculateTax(
+        val result = gstTaxCalculationService.calculateTax(
             hsnCode = hsnCode,
             baseAmount = baseAmount,
             quantity = quantity,
@@ -161,7 +161,7 @@ class TaxCalculationController(
 
         // This would need to be implemented in the service
         // For now, we'll calculate tax for a nominal amount to get the rates
-        val result = taxCalculationService.calculateTax(
+        val result = gstTaxCalculationService.calculateTax(
             hsnCode = hsnCode,
             baseAmount = java.math.BigDecimal(100), // Nominal amount for rate calculation
             quantity = 1,

@@ -9,6 +9,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
+import androidx.compose.material3.MenuAnchorType
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -229,7 +230,7 @@ private fun StateDropdown(
             label = { Text(label) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-            modifier = Modifier.menuAnchor(),
+            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable),
             isError = isError
         )
 
@@ -271,14 +272,14 @@ private fun BusinessTypeDropdown(
             label = { Text("Business Type") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-            modifier = Modifier.menuAnchor()
+            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable)
         )
 
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            BusinessType.values().forEach { businessType ->
+            BusinessType.entries.forEach { businessType ->
                 DropdownMenuItem(
                     text = { Text(businessType.name.replace("_", " ").lowercase().replaceFirstChar { it.uppercase() }) },
                     onClick = {
@@ -312,14 +313,14 @@ private fun TransactionTypeDropdown(
             label = { Text("Transaction Type") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
             colors = ExposedDropdownMenuDefaults.outlinedTextFieldColors(),
-            modifier = Modifier.menuAnchor()
+            modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable)
         )
 
         ExposedDropdownMenu(
             expanded = expanded,
             onDismissRequest = { expanded = false }
         ) {
-            TransactionType.values().forEach { transactionType ->
+            TransactionType.entries.forEach { transactionType ->
                 DropdownMenuItem(
                     text = { Text(transactionType.name) },
                     onClick = {
@@ -375,31 +376,31 @@ private fun TaxSummarySection(
             fontWeight = FontWeight.Medium
         )
 
-        TaxSummaryRow(label = "Base Amount", value = "₹${String.format("%.2f", result.baseAmount)}")
+        TaxSummaryRow(label = "Base Amount", value = "₹${result.baseAmount}")
         TaxSummaryRow(label = "Quantity", value = result.quantity.toString())
 
         if (result.isIntraState) {
-            TaxSummaryRow(label = "CGST", value = "₹${String.format("%.2f", result.cgstAmount)}")
-            TaxSummaryRow(label = "SGST", value = "₹${String.format("%.2f", result.sgstAmount)}")
+            TaxSummaryRow(label = "CGST", value = "₹${result.cgstAmount}")
+            TaxSummaryRow(label = "SGST", value = "₹${result.sgstAmount}")
         } else {
-            TaxSummaryRow(label = "IGST", value = "₹${String.format("%.2f", result.igstAmount)}")
+            TaxSummaryRow(label = "IGST", value = "₹${result.igstAmount}")
         }
 
         if (result.cessAmount > 0) {
-            TaxSummaryRow(label = "CESS", value = "₹${String.format("%.2f", result.cessAmount)}")
+            TaxSummaryRow(label = "CESS", value = "₹${result.cessAmount}")
         }
 
         HorizontalDivider()
 
         TaxSummaryRow(
             label = "Total Tax",
-            value = "₹${String.format("%.2f", result.totalTaxAmount)}",
+            value = "₹${result.totalTaxAmount}",
             isTotal = true
         )
 
         TaxSummaryRow(
             label = "Total Amount",
-            value = "₹${String.format("%.2f", result.totalAmount)}",
+            value = "₹${result.totalAmount}",
             isTotal = true
         )
     }
@@ -466,13 +467,13 @@ private fun TaxBreakdownSection(
                             fontWeight = FontWeight.Medium
                         )
                         Text(
-                            text = "₹${String.format("%.2f", item.taxAmount)}",
+                            text = "₹${item.taxAmount}",
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold
                         )
                     }
                     Text(
-                        text = "${item.ratePercentage}% on ₹${String.format("%.2f", item.taxableAmount)}",
+                        text = "${item.ratePercentage}% on ₹${item.taxableAmount}",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

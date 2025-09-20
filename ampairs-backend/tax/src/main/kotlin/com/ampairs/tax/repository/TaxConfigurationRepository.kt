@@ -178,12 +178,7 @@ interface TaxConfigurationRepository : JpaRepository<TaxConfiguration, Long> {
         @Param("toDate") toDate: LocalDate
     ): List<TaxConfiguration>
 
-    @Query("""
-        SELECT tc FROM TaxConfiguration tc
-        WHERE tc.notificationReference = :notificationReference
-        ORDER BY tc.effectiveFrom DESC
-    """)
-    fun findByNotificationReference(@Param("notificationReference") notificationReference: String): List<TaxConfiguration>
+    fun findByNotificationReferenceOrderByEffectiveFromDesc(notificationReference: String): List<TaxConfiguration>
 
     @Query("""
         SELECT tc FROM TaxConfiguration tc
@@ -216,16 +211,9 @@ interface TaxConfigurationRepository : JpaRepository<TaxConfiguration, Long> {
         pageable: Pageable
     ): Page<TaxConfiguration>
 
-    @Query("SELECT COUNT(tc) FROM TaxConfiguration tc WHERE tc.active = true")
-    fun countActiveConfigurations(): Long
+    fun countByActiveTrue(): Long
 
-    @Query("""
-        SELECT tc FROM TaxConfiguration tc
-        WHERE tc.active = true
-        AND tc.createdAt >= :fromDate
-        ORDER BY tc.createdAt DESC
-    """)
-    fun findRecentlyAddedConfigurations(@Param("fromDate") fromDate: LocalDateTime): List<TaxConfiguration>
+    fun findByActiveTrueAndCreatedAtGreaterThanEqualOrderByCreatedAtDesc(fromDate: LocalDateTime): List<TaxConfiguration>
 
     @Query("""
         SELECT tc FROM TaxConfiguration tc
@@ -236,11 +224,5 @@ interface TaxConfigurationRepository : JpaRepository<TaxConfiguration, Long> {
     """)
     fun findRecentlyUpdatedConfigurations(@Param("fromDate") fromDate: LocalDateTime): List<TaxConfiguration>
 
-    @Query("""
-        SELECT tc FROM TaxConfiguration tc
-        WHERE tc.lastUpdatedBy = :userId
-        AND tc.active = true
-        ORDER BY tc.updatedAt DESC
-    """)
-    fun findByLastUpdatedBy(@Param("userId") userId: String): List<TaxConfiguration>
+    fun findByLastUpdatedByAndActiveTrueOrderByUpdatedAtDesc(lastUpdatedBy: String): List<TaxConfiguration>
 }

@@ -20,8 +20,8 @@ import java.time.LocalDateTime
         Index(name = "idx_tax_config_hsn", columnList = "hsn_code_id"),
         Index(name = "idx_tax_config_zone", columnList = "geographical_zone"),
         Index(name = "idx_tax_config_effective", columnList = "effective_from, effective_to"),
-        Index(name = "idx_tax_config_active", columnList = "is_active"),
-        Index(name = "idx_tax_config_lookup", columnList = "business_type_id, hsn_code_id, effective_from, is_active")
+        Index(name = "idx_tax_config_active", columnList = "active"),
+        Index(name = "idx_tax_config_lookup", columnList = "business_type_id, hsn_code_id, effective_from, active")
     ],
     uniqueConstraints = [
         UniqueConstraint(

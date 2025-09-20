@@ -7,7 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -119,13 +119,13 @@ fun ProfileMenu(
                 }
             )
             
-            Divider(
+            HorizontalDivider(
                 color = MaterialTheme.colorScheme.outlineVariant,
                 thickness = 0.5.dp
             )
             
             ProfileMenuItem(
-                icon = Icons.Default.Logout,
+                icon = Icons.AutoMirrored.Default.Logout,
                 text = "Logout",
                 textColor = MaterialTheme.colorScheme.error,
                 onClick = {

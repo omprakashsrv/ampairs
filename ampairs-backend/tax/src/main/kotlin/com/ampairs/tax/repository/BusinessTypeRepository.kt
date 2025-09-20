@@ -10,11 +10,9 @@ import org.springframework.stereotype.Repository
 @Repository
 interface BusinessTypeRepository : JpaRepository<BusinessTypeEntity, Long> {
 
-    @Query("SELECT bt FROM BusinessTypeEntity bt WHERE bt.businessType = :businessType AND bt.active = true")
-    fun findByBusinessTypeAndActive(@Param("businessType") businessType: BusinessType): BusinessTypeEntity?
+    fun findByBusinessTypeAndActiveTrue(businessType: BusinessType): BusinessTypeEntity?
 
-    @Query("SELECT bt FROM BusinessTypeEntity bt WHERE bt.active = true ORDER BY bt.displayName")
-    fun findAllActive(): List<BusinessTypeEntity>
+    fun findByActiveTrueOrderByDisplayName(): List<BusinessTypeEntity>
 
     @Query("""
         SELECT bt FROM BusinessTypeEntity bt
@@ -27,22 +25,9 @@ interface BusinessTypeRepository : JpaRepository<BusinessTypeEntity, Long> {
     """)
     fun searchActiveBusinessTypes(@Param("searchTerm") searchTerm: String?): List<BusinessTypeEntity>
 
-    @Query("""
-        SELECT bt FROM BusinessTypeEntity bt
-        WHERE bt.compositionSchemeRate IS NOT NULL
-        AND bt.active = true
-        ORDER BY bt.displayName
-    """)
-    fun findCompositionSchemeApplicableTypes(): List<BusinessTypeEntity>
+    fun findByCompositionSchemeRateIsNotNullAndActiveTrueOrderByDisplayName(): List<BusinessTypeEntity>
 
-    @Query("""
-        SELECT bt FROM BusinessTypeEntity bt
-        WHERE bt.turnoverThreshold IS NOT NULL
-        AND bt.active = true
-        ORDER BY bt.turnoverThreshold
-    """)
-    fun findTypesWithTurnoverThreshold(): List<BusinessTypeEntity>
+    fun findByTurnoverThresholdIsNotNullAndActiveTrueOrderByTurnoverThreshold(): List<BusinessTypeEntity>
 
-    @Query("SELECT COUNT(bt) FROM BusinessTypeEntity bt WHERE bt.active = true")
-    fun countActiveBusinessTypes(): Long
+    fun countByActiveTrue(): Long
 }
