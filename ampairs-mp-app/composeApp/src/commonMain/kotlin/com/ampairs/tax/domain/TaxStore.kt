@@ -16,6 +16,9 @@ data class HsnCodeKey(val id: String)
 data class TaxRateKey(val hsnCode: String, val businessType: BusinessType)
 
 @Serializable
+data class TaxRateByIdKey(val id: String)
+
+@Serializable
 data class TaxCalculationKey(val request: TaxCalculationRequest)
 
 class TaxStore(
@@ -66,6 +69,22 @@ class TaxStore(
         )
         .build()
 
+    // Tax Rate by ID Store
+    val taxRateByIdStore: Store<TaxRateByIdKey, TaxRate> = StoreBuilder
+        .from<TaxRateByIdKey, TaxRate>(
+            fetcher = Fetcher.ofFlow { key ->
+                flow {
+                    val taxRate = taxRepository.getTaxRateById(key.id)
+                    if (taxRate != null) {
+                        emit(taxRate)
+                    } else {
+                        throw Exception("Tax rate not found with ID: ${key.id}")
+                    }
+                }
+            }
+        )
+        .build()
+
     // All Tax Rates Store
     val allTaxRatesStore: Store<Unit, List<TaxRate>> = StoreBuilder
         .from<Unit, List<TaxRate>>(
@@ -106,6 +125,12 @@ class TaxStore(
     }
 
     suspend fun createTaxRate(taxRate: TaxRate): Result<TaxRate> {
+        return taxRepository.createTaxRate(taxRate)
+    }
+
+    suspend fun updateTaxRate(taxRate: TaxRate): Result<TaxRate> {
+        // For now, use createTaxRate which handles both create and update
+        // In the future, add a specific updateTaxRate method to the repository
         return taxRepository.createTaxRate(taxRate)
     }
 

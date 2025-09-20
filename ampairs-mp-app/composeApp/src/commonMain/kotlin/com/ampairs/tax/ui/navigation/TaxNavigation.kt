@@ -12,6 +12,11 @@ import androidx.navigation.toRoute
 import com.ampairs.common.ui.AppScreenWithHeader
 import com.ampairs.tax.ui.calculator.TaxCalculatorScreen
 import com.ampairs.tax.ui.hsn.HsnCodesListScreen
+import com.ampairs.tax.ui.hsn.HsnCodeFormScreen
+import com.ampairs.tax.ui.hsn.HsnCodeDetailsScreen
+import com.ampairs.tax.ui.rates.TaxRatesListScreen
+import com.ampairs.tax.ui.rates.TaxRateFormScreen
+import com.ampairs.tax.ui.rates.TaxRateDetailsScreen
 import kotlinx.serialization.Serializable
 import Route
 
@@ -90,9 +95,14 @@ fun NavGraphBuilder.taxNavigation(
                 navController = navController,
                 isWorkspaceSelection = false
             ) { paddingValues ->
-                // Placeholder for HSN Code Details Screen
-                Text("HSN Code Details: ${route.hsnCodeId}")
-                // TODO: Implement HsnCodeDetailsScreen
+                HsnCodeDetailsScreen(
+                    hsnCodeId = route.hsnCodeId,
+                    onNavigateBack = { navController.popBackStack() },
+                    onEditHsnCode = { hsnCodeId ->
+                        navController.navigate(HsnCodeFormRoute(hsnCodeId))
+                    },
+                    modifier = Modifier.padding(paddingValues)
+                )
             }
         }
 
@@ -103,9 +113,12 @@ fun NavGraphBuilder.taxNavigation(
                 navController = navController,
                 isWorkspaceSelection = false
             ) { paddingValues ->
-                // Placeholder for HSN Code Form Screen
-                Text("HSN Code Form: ${route.hsnCodeId ?: "New"}")
-                // TODO: Implement HsnCodeFormScreen
+                HsnCodeFormScreen(
+                    hsnCodeId = route.hsnCodeId,
+                    onNavigateBack = { navController.popBackStack() },
+                    onSaveSuccess = { navController.popBackStack() },
+                    modifier = Modifier.padding(paddingValues)
+                )
             }
         }
 
@@ -127,9 +140,33 @@ fun NavGraphBuilder.taxNavigation(
                 navController = navController,
                 isWorkspaceSelection = false
             ) { paddingValues ->
-                // Placeholder for Tax Rates List Screen
-                Text("Tax Rates List")
-                // TODO: Implement TaxRatesListScreen
+                TaxRatesListScreen(
+                    onTaxRateClick = { taxRateId ->
+                        navController.navigate(TaxRateDetailsRoute(taxRateId))
+                    },
+                    onCreateTaxRate = {
+                        navController.navigate(TaxRateFormRoute())
+                    },
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
+        }
+
+        // Tax Rate Details Screen
+        composable<TaxRateDetailsRoute> { backStackEntry ->
+            val route = backStackEntry.toRoute<TaxRateDetailsRoute>()
+            AppScreenWithHeader(
+                navController = navController,
+                isWorkspaceSelection = false
+            ) { paddingValues ->
+                TaxRateDetailsScreen(
+                    taxRateId = route.taxRateId,
+                    onNavigateBack = { navController.popBackStack() },
+                    onEditTaxRate = { taxRateId ->
+                        navController.navigate(TaxRateFormRoute(taxRateId))
+                    },
+                    modifier = Modifier.padding(paddingValues)
+                )
             }
         }
 
@@ -140,9 +177,12 @@ fun NavGraphBuilder.taxNavigation(
                 navController = navController,
                 isWorkspaceSelection = false
             ) { paddingValues ->
-                // Placeholder for Tax Rate Form Screen
-                Text("Tax Rate Form: ${route.taxRateId ?: "New"}")
-                // TODO: Implement TaxRateFormScreen
+                TaxRateFormScreen(
+                    taxRateId = route.taxRateId,
+                    onNavigateBack = { navController.popBackStack() },
+                    onSaveSuccess = { navController.popBackStack() },
+                    modifier = Modifier.padding(paddingValues)
+                )
             }
         }
     }
