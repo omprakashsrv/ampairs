@@ -25,6 +25,9 @@ sealed interface Route {
     
     @Serializable
     data object Invoice : Route
+
+    @Serializable
+    data object Tax : Route
 }
 
 // Auth routes

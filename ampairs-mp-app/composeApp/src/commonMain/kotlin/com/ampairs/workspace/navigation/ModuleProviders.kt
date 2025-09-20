@@ -15,6 +15,8 @@ fun initializeModuleProviders() {
     ModuleRegistry.register(ProductModuleProvider)
     ModuleRegistry.register(OrderModuleProvider)
     ModuleRegistry.register(InvoiceModuleProvider)
+    ModuleRegistry.register(TaxModuleProvider)
+    ModuleRegistry.register(TaxCodeModuleProvider)
 }
 
 /**
@@ -86,6 +88,45 @@ object InvoiceModuleProvider : IModuleNavigationProvider {
         return when (feature) {
             "invoices", "list" -> InvoiceRoute.Invoices
             "create", "add" -> InvoiceRoute.Root()
+            else -> null
+        }
+    }
+}
+
+/**
+ * Tax module navigation provider
+ * Maps "tax-management" and "tax-code-management" module codes to tax navigation routes
+ */
+object TaxModuleProvider : IModuleNavigationProvider {
+    override val moduleCode: String = "tax-management"
+    override val displayName: String = "Tax Management"
+    override val defaultRoute: Any = Route.Tax
+
+    override fun getFeatureRoute(feature: String): Any? {
+        return when (feature) {
+            "hsn-codes", "hsn" -> com.ampairs.tax.ui.navigation.HsnCodesListRoute
+            "tax-calculator", "calculator" -> com.ampairs.tax.ui.navigation.TaxCalculatorRoute
+            "tax-rates", "rates" -> com.ampairs.tax.ui.navigation.TaxRatesRoute
+            else -> null
+        }
+    }
+}
+
+/**
+ * Tax Code module navigation provider
+ * Maps "tax-code-management" module code to tax navigation routes
+ * This is a separate provider for the backend's "tax-code-management" module
+ */
+object TaxCodeModuleProvider : IModuleNavigationProvider {
+    override val moduleCode: String = "tax-code-management"
+    override val displayName: String = "Tax Code Management"
+    override val defaultRoute: Any = Route.Tax
+
+    override fun getFeatureRoute(feature: String): Any? {
+        return when (feature) {
+            "hsn-codes", "hsn" -> com.ampairs.tax.ui.navigation.HsnCodesListRoute
+            "tax-calculator", "calculator" -> com.ampairs.tax.ui.navigation.TaxCalculatorRoute
+            "tax-rates", "rates" -> com.ampairs.tax.ui.navigation.TaxRatesRoute
             else -> null
         }
     }

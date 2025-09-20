@@ -632,6 +632,7 @@ private fun tryNavigateToModule(navController: NavController, moduleCode: String
             "order-management" -> Route.Order
             "invoice-management" -> Route.Invoice
             "inventory-management" -> Route.Inventory
+            "tax-code-management" -> Route.Tax
             else -> null
         }
 

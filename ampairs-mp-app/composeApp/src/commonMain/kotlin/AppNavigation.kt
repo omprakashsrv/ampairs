@@ -17,6 +17,7 @@ import com.ampairs.customer.ui.customerNavigation
 // import com.ampairs.invoice.invoiceNavigation
 // import com.ampairs.order.orderNavigation
 import com.ampairs.product.productNavigation
+import com.ampairs.tax.ui.navigation.taxNavigation
 import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.workspace.workspaceNavigation
 import kotlinx.coroutines.flow.collectLatest
@@ -115,8 +116,30 @@ fun AppNavigation(
             }
         }
 
+        // Tax module navigation
+        composable<Route.Tax> {
+            AppScreenWithHeader(
+                navController = navController,
+                isWorkspaceSelection = false
+            ) { paddingValues ->
+                com.ampairs.tax.ui.navigation.TaxScreen(
+                    onNavigateToHsnCodes = {
+                        navController.navigate(com.ampairs.tax.ui.navigation.HsnCodesListRoute)
+                    },
+                    onNavigateToTaxCalculator = {
+                        navController.navigate(com.ampairs.tax.ui.navigation.TaxCalculatorRoute)
+                    },
+                    onNavigateToTaxRates = {
+                        navController.navigate(com.ampairs.tax.ui.navigation.TaxRatesRoute)
+                    },
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
+        }
+
         customerNavigation(navController)
         productNavigation(navController)
+        taxNavigation(navController)
         // Temporarily commented out pending customer integration updates
         // inventoryNavigation(navController) { }
         // orderNavigation(navController) { }
