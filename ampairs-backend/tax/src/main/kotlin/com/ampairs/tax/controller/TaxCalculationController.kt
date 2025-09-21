@@ -112,11 +112,7 @@ class TaxCalculationController(
         @RequestParam(required = false) destinationStateCode: String?
     ): ResponseEntity<TaxCalculationResponseDto> {
 
-        val businessTypeEnum = try {
-            com.ampairs.tax.domain.enums.BusinessType.valueOf(businessType.uppercase())
-        } catch (e: IllegalArgumentException) {
-            throw IllegalArgumentException("Invalid business type: $businessType")
-        }
+        val businessTypeEnum = com.ampairs.tax.domain.enums.BusinessType.valueOf(businessType.uppercase())
 
         val result = gstTaxCalculationService.calculateTax(
             hsnCode = hsnCode,
@@ -153,11 +149,7 @@ class TaxCalculationController(
         @RequestParam(required = false) stateCode: String?
     ): ResponseEntity<CurrentTaxRatesResponseDto> {
 
-        val businessTypeEnum = try {
-            com.ampairs.tax.domain.enums.BusinessType.valueOf(businessType.uppercase())
-        } catch (e: IllegalArgumentException) {
-            throw IllegalArgumentException("Invalid business type: $businessType")
-        }
+        val businessTypeEnum = com.ampairs.tax.domain.enums.BusinessType.valueOf(businessType.uppercase())
 
         // This would need to be implemented in the service
         // For now, we'll calculate tax for a nominal amount to get the rates

@@ -337,14 +337,10 @@ class TaxConfigurationController(
         @Valid @RequestBody request: TaxConfigurationRequestDto
     ): ResponseEntity<TaxConfigurationResponseDto> {
 
-        try {
-            val taxConfiguration = taxConfigurationService.createTaxConfiguration(request.toEntity())
-            val response = TaxConfigurationResponseDto.from(taxConfiguration)
+        val taxConfiguration = taxConfigurationService.createTaxConfiguration(request.toEntity())
+        val response = TaxConfigurationResponseDto.from(taxConfiguration)
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(response)
-        } catch (e: IllegalArgumentException) {
-            return ResponseEntity.badRequest().build()
-        }
+        return ResponseEntity.status(HttpStatus.CREATED).body(response)
     }
 
     @PutMapping("/{id}")
@@ -370,13 +366,9 @@ class TaxConfigurationController(
             return ResponseEntity.badRequest().build()
         }
 
-        try {
-            // This would need proper implementation to find and update existing config
-            // For now, return not found
-            return ResponseEntity.notFound().build()
-        } catch (e: IllegalArgumentException) {
-            return ResponseEntity.badRequest().build()
-        }
+        // This would need proper implementation to find and update existing config
+        // For now, return not found
+        return ResponseEntity.notFound().build()
     }
 
     @PutMapping("/{id}/expire")
@@ -398,15 +390,11 @@ class TaxConfigurationController(
         @RequestParam effectiveTo: String
     ): ResponseEntity<TaxConfigurationResponseDto> {
 
-        try {
-            val expiryDate = LocalDate.parse(effectiveTo)
-            taxConfigurationService.expireTaxConfiguration(id, expiryDate)
+        val expiryDate = LocalDate.parse(effectiveTo)
+        taxConfigurationService.expireTaxConfiguration(id, expiryDate)
 
-            // Would need to return the updated configuration
-            return ResponseEntity.notFound().build()
-        } catch (e: IllegalArgumentException) {
-            return ResponseEntity.badRequest().build()
-        }
+        // Would need to return the updated configuration
+        return ResponseEntity.notFound().build()
     }
 
     @DeleteMapping("/{id}")
@@ -425,12 +413,8 @@ class TaxConfigurationController(
         @PathVariable id: Long
     ): ResponseEntity<Void> {
 
-        try {
-            taxConfigurationService.deactivateTaxConfiguration(id)
-            return ResponseEntity.noContent().build()
-        } catch (e: IllegalArgumentException) {
-            return ResponseEntity.notFound().build()
-        }
+        taxConfigurationService.deactivateTaxConfiguration(id)
+        return ResponseEntity.noContent().build()
     }
 
     @GetMapping("/expiring")

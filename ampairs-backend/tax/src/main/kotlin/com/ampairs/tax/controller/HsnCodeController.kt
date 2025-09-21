@@ -102,10 +102,10 @@ class HsnCodeController(
         return ResponseEntity.ok(response)
     }
 
-    @GetMapping("/{hsnCode}")
+    @GetMapping("/{uid}")
     @Operation(
-        summary = "Get HSN code by code",
-        description = "Retrieve detailed information about a specific HSN code"
+        summary = "Get HSN code by UID",
+        description = "Retrieve detailed information about a specific HSN code by its UID"
     )
     @ApiResponses(
         value = [
@@ -114,11 +114,11 @@ class HsnCodeController(
         ]
     )
     fun getHsnCode(
-        @Parameter(description = "HSN code", required = true)
-        @PathVariable hsnCode: String
+        @Parameter(description = "HSN code UID", required = true)
+        @PathVariable uid: String
     ): ResponseEntity<HsnCodeResponseDto> {
 
-        val hsn = hsnCodeService.findByHsnCode(hsnCode)
+        val hsn = hsnCodeService.findByUid(uid)
             ?: return ResponseEntity.notFound().build()
 
         return ResponseEntity.ok(HsnCodeResponseDto.from(hsn))
@@ -242,81 +242,50 @@ class HsnCodeController(
 
     @PostMapping
     @Operation(
-        summary = "Create new HSN code",
-        description = "Create a new HSN code entry in the system"
-    )
-    @ApiResponses(
-        value = [
-            ApiResponse(responseCode = "201", description = "HSN code created successfully"),
-            ApiResponse(responseCode = "400", description = "Invalid HSN code data"),
-            ApiResponse(responseCode = "409", description = "HSN code already exists")
-        ]
-    )
-    fun createHsnCode(
-        @Valid @RequestBody request: HsnCodeRequestDto
-    ): ResponseEntity<HsnCodeResponseDto> {
-
-        try {
-            val hsnCode = hsnCodeService.createHsnCode(request.toEntity())
-            val response = HsnCodeResponseDto.from(hsnCode)
-
-            return ResponseEntity.status(HttpStatus.CREATED).body(response)
-        } catch (e: IllegalArgumentException) {
-            return ResponseEntity.badRequest().build()
-        }
-    }
-
-    @PutMapping("/{id}")
-    @Operation(
-        summary = "Update HSN code",
-        description = "Update an existing HSN code"
+        summary = "Create or update HSN code",
+        description = "Create a new HSN code or update an existing one (UPSERT operation)"
     )
     @ApiResponses(
         value = [
             ApiResponse(responseCode = "200", description = "HSN code updated successfully"),
-            ApiResponse(responseCode = "400", description = "Invalid HSN code data"),
-            ApiResponse(responseCode = "404", description = "HSN code not found")
+            ApiResponse(responseCode = "201", description = "HSN code created successfully"),
+            ApiResponse(responseCode = "400", description = "Invalid HSN code data")
         ]
     )
-    fun updateHsnCode(
-        @Parameter(description = "HSN code ID", required = true)
-        @PathVariable id: Long,
-
-        @Valid @RequestBody request: HsnCodeUpdateDto
+    fun createOrUpdateHsnCode(
+        @Valid @RequestBody request: HsnCodeRequestDto
     ): ResponseEntity<HsnCodeResponseDto> {
+        // Check if HSN code already exists by UID (if provided) or HSN code
+        val existingHsn = request.uid?.let { uid ->
+            hsnCodeService.findByUid(uid)
+        } ?: hsnCodeService.findByHsnCode(request.hsnCode)
 
-        if (id != request.id) {
-            return ResponseEntity.badRequest().build()
+        val result = if (existingHsn != null) {
+            // Update existing HSN code
+            val updateDto = HsnCodeUpdateDto(
+                uid = existingHsn.uid,
+                hsnDescription = request.hsnDescription,
+                unitOfMeasurement = request.unitOfMeasurement,
+                exemptionAvailable = request.exemptionAvailable,
+                businessCategoryRules = request.businessCategoryRules,
+                attributes = request.attributes,
+                effectiveFrom = request.effectiveFrom,
+                effectiveTo = request.effectiveTo,
+                isActive = request.isActive
+            )
+            val updated = hsnCodeService.updateHsnCodeByUid(existingHsn.uid, updateDto)
+            ResponseEntity.ok(HsnCodeResponseDto.from(updated))
+        } else {
+            // Create new HSN code
+            val created = hsnCodeService.createHsnCode(request.toEntity())
+            ResponseEntity.status(HttpStatus.CREATED).body(HsnCodeResponseDto.from(created))
         }
 
-        try {
-            val existingHsn = hsnCodeService.findByHsnCode("")
-            // This would need to be updated to find by ID instead
-            // For now, we'll create a new entity with the update data
-            val hsnCode = request.let { req ->
-                com.ampairs.tax.domain.model.HsnCode().apply {
-                    this.id = req.id
-                    hsnDescription = req.hsnDescription
-                    unitOfMeasurement = req.unitOfMeasurement
-                    exemptionAvailable = req.exemptionAvailable
-                    businessCategoryRules = req.businessCategoryRules
-                    attributes = req.attributes
-                    effectiveFrom = req.effectiveFrom
-                    effectiveTo = req.effectiveTo
-                    active = req.isActive
-                }
-            }
-
-            val updatedHsn = hsnCodeService.updateHsnCode(hsnCode)
-            val response = HsnCodeResponseDto.from(updatedHsn)
-
-            return ResponseEntity.ok(response)
-        } catch (e: IllegalArgumentException) {
-            return ResponseEntity.badRequest().build()
-        }
+        return result
     }
 
-    @DeleteMapping("/{id}")
+
+    @DeleteMapping("/{uid}")
     @Operation(
         summary = "Deactivate HSN code",
         description = "Deactivate an HSN code (soft delete)"
@@ -328,16 +297,11 @@ class HsnCodeController(
         ]
     )
     fun deactivateHsnCode(
-        @Parameter(description = "HSN code ID", required = true)
-        @PathVariable id: Long
+        @Parameter(description = "HSN code UID", required = true)
+        @PathVariable uid: String
     ): ResponseEntity<Void> {
-
-        try {
-            hsnCodeService.deactivateHsnCode(id)
-            return ResponseEntity.noContent().build()
-        } catch (e: IllegalArgumentException) {
-            return ResponseEntity.notFound().build()
-        }
+        hsnCodeService.deactivateHsnCodeByUid(uid)
+        return ResponseEntity.noContent().build()
     }
 
     @GetMapping("/validate/{hsnCode}")
@@ -356,28 +320,16 @@ class HsnCodeController(
         @PathVariable hsnCode: String
     ): ResponseEntity<HsnCodeValidationResponseDto> {
 
-        return try {
-            val hsn = hsnCodeService.validateHsnCodeExists(hsnCode)
-            val response = HsnCodeValidationResponseDto(
-                hsnCode = hsnCode,
-                isValid = true,
-                isActive = hsn.active,
-                description = hsn.hsnDescription,
-                hasValidTaxRates = hsn.hasValidTaxRates(),
-                message = "HSN code is valid"
-            )
-            ResponseEntity.ok(response)
-        } catch (e: IllegalArgumentException) {
-            val response = HsnCodeValidationResponseDto(
-                hsnCode = hsnCode,
-                isValid = false,
-                isActive = false,
-                description = null,
-                hasValidTaxRates = false,
-                message = e.message ?: "HSN code not found"
-            )
-            ResponseEntity.ok(response)
-        }
+        val hsn = hsnCodeService.validateHsnCodeExists(hsnCode)
+        val response = HsnCodeValidationResponseDto(
+            hsnCode = hsnCode,
+            isValid = true,
+            isActive = hsn.active,
+            description = hsn.hsnDescription,
+            hasValidTaxRates = hsn.hasValidTaxRates(),
+            message = "HSN code is valid"
+        )
+        return ResponseEntity.ok(response)
     }
 }
 

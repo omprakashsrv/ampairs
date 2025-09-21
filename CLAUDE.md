@@ -107,6 +107,12 @@ fun findWithRelations(): EntityName?
 - **When needed**: Custom `@Query` for complex business logic only
 - **Avoid**: `JOIN FETCH` in JPQL when `@EntityGraph` achieves same result
 
+#### **Controller Exception Handling**
+- **Never**: Use try-catch blocks in controllers for business logic exceptions
+- **Let exceptions bubble up**: Global exception handler converts exceptions to HTTP responses
+- **Focus**: Controllers should handle HTTP concerns only, not exception mapping
+- **Consistency**: Centralized error handling ensures uniform response format
+
 ### **Multi-Tenant Architecture Patterns**
 
 #### **@TenantId Best Practices**

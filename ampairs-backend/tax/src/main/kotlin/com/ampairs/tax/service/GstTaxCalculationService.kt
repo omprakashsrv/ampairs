@@ -10,7 +10,6 @@ import com.ampairs.tax.domain.model.TaxConfiguration
 import com.ampairs.tax.repository.BusinessTypeRepository
 import com.ampairs.tax.repository.HsnCodeRepository
 import com.ampairs.tax.repository.TaxConfigurationRepository
-import com.ampairs.tax.repository.TaxRateRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -23,7 +22,6 @@ import java.time.LocalDateTime
 class GstTaxCalculationService(
     private val taxConfigurationRepository: TaxConfigurationRepository,
     private val hsnCodeRepository: HsnCodeRepository,
-    private val taxRateRepository: TaxRateRepository,
     private val businessTypeRepository: BusinessTypeRepository
 ) {
 

@@ -1,5 +1,6 @@
 package com.ampairs.tax.service
 
+import com.ampairs.tax.domain.dto.HsnCodeUpdateDto
 import com.ampairs.tax.domain.model.HsnCode
 import com.ampairs.tax.repository.HsnCodeRepository
 import org.springframework.data.domain.Page
@@ -16,6 +17,10 @@ class HsnCodeService(
 
     fun findByHsnCode(hsnCode: String): HsnCode? {
         return hsnCodeRepository.findByHsnCodeAndActiveTrue(hsnCode)
+    }
+
+    fun findByUid(uid: String): HsnCode? {
+        return hsnCodeRepository.findByUidAndActiveTrue(uid)
     }
 
     fun findByHsnCodeAndValidForDate(hsnCode: String, date: LocalDateTime = LocalDateTime.now()): HsnCode? {
@@ -90,6 +95,35 @@ class HsnCodeService(
     fun deactivateHsnCode(hsnId: Long) {
         val hsnCode = hsnCodeRepository.findById(hsnId)
             .orElseThrow { IllegalArgumentException("HSN code not found with id: $hsnId") }
+
+        hsnCode.active = false
+        hsnCodeRepository.save(hsnCode)
+    }
+
+    @Transactional
+    fun updateHsnCodeByUid(uid: String, updateDto: HsnCodeUpdateDto): HsnCode {
+        val existingHsn = findByUid(uid)
+            ?: throw NoSuchElementException("HSN code not found with UID: $uid")
+
+        // Update only allowed fields
+        existingHsn.apply {
+            hsnDescription = updateDto.hsnDescription
+            unitOfMeasurement = updateDto.unitOfMeasurement
+            exemptionAvailable = updateDto.exemptionAvailable
+            businessCategoryRules = updateDto.businessCategoryRules
+            attributes = updateDto.attributes
+            effectiveFrom = updateDto.effectiveFrom
+            effectiveTo = updateDto.effectiveTo
+            active = updateDto.isActive
+        }
+
+        return hsnCodeRepository.save(existingHsn)
+    }
+
+    @Transactional
+    fun deactivateHsnCodeByUid(uid: String) {
+        val hsnCode = findByUid(uid)
+            ?: throw IllegalArgumentException("HSN code not found with UID: $uid")
 
         hsnCode.active = false
         hsnCodeRepository.save(hsnCode)

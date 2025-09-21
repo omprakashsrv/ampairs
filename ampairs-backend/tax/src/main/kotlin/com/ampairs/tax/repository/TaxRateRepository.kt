@@ -16,6 +16,8 @@ import java.time.LocalDateTime
 @Repository
 interface TaxRateRepository : JpaRepository<TaxRate, Long> {
 
+    fun findByUidAndActiveTrue(uid: String): TaxRate?
+
     @Query("""
         SELECT tr FROM TaxRate tr
         WHERE tr.hsnCodeId = :hsnCodeId

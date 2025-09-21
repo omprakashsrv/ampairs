@@ -6,6 +6,8 @@ import jakarta.validation.constraints.*
 import java.time.LocalDateTime
 
 data class HsnCodeRequestDto(
+    val uid: String? = null, // Optional UID for UPSERT operations
+
     @field:NotBlank(message = "HSN code is required")
     @field:Pattern(regexp = "\\d{4,8}", message = "HSN code should be 4-8 digits")
     val hsnCode: String,
@@ -115,8 +117,8 @@ data class HsnCodeResponseDto(
 }
 
 data class HsnCodeUpdateDto(
-    @field:NotNull(message = "ID is required")
-    val id: Long,
+    @field:NotBlank(message = "UID is required")
+    val uid: String,
 
     @field:NotBlank(message = "HSN description is required")
     @field:Size(max = 1000, message = "Description is too long")

@@ -15,6 +15,8 @@ interface HsnCodeRepository : JpaRepository<HsnCode, Long> {
 
     fun findByHsnCodeAndActiveTrue(hsnCode: String): HsnCode?
 
+    fun findByUidAndActiveTrue(uid: String): HsnCode?
+
     @Query("""
         SELECT h FROM HsnCode h
         WHERE h.hsnCode = :hsnCode
