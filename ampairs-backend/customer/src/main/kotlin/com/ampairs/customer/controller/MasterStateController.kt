@@ -34,14 +34,6 @@ class MasterStateController(
         return ApiResponse.success(states)
     }
 
-    /**
-     * Get featured/popular states
-     */
-    @GetMapping("/featured")
-    fun getFeaturedStates(): ApiResponse<List<MasterState>> {
-        val states = masterStateService.getFeaturedStates()
-        return ApiResponse.success(states)
-    }
 
     /**
      * Search states by keyword
@@ -149,19 +141,6 @@ class MasterStateController(
         return ApiResponse.success(stats)
     }
 
-    /**
-     * Update featured status for states (admin endpoint)
-     */
-    @PutMapping("/featured")
-    fun updateFeaturedStates(@RequestBody request: UpdateFeaturedRequest): ApiResponse<String> {
-        masterStateService.updateFeaturedStates(
-            request.stateCodes.map { it.uppercase() },
-            request.featured
-        )
-
-        val message = if (request.featured) "States marked as featured" else "States unmarked as featured"
-        return ApiResponse.success(message)
-    }
 }
 
 /**
@@ -170,12 +149,4 @@ class MasterStateController(
 data class BulkImportRequest(
     val stateCodes: List<String>,
     val workspaceId: String
-)
-
-/**
- * Request DTO for updating featured status
- */
-data class UpdateFeaturedRequest(
-    val stateCodes: List<String>,
-    val featured: Boolean
 )

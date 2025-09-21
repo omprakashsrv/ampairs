@@ -12,6 +12,8 @@ import com.ampairs.auth.authNavigation
 import com.ampairs.common.ui.AppScreenWithHeader
 import com.ampairs.common.UnauthenticatedHandler
 import com.ampairs.customer.ui.customerNavigation
+import com.ampairs.customer.ui.StateListRoute
+import com.ampairs.customer.ui.CustomerCreateRoute
 // Temporarily commented out pending customer integration updates
 // import com.ampairs.inventory.inventoryNavigation
 // import com.ampairs.invoice.invoiceNavigation
@@ -24,10 +26,20 @@ import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun AppNavigation(
-    onNavigationServiceReady: ((com.ampairs.workspace.navigation.DynamicModuleNavigationService?) -> Unit)? = null
+    onNavigationServiceReady: ((com.ampairs.workspace.navigation.DynamicModuleNavigationService?) -> Unit)? = null,
+    onNavigationReady: (((String) -> Unit) -> Unit)? = null
 ) {
     val navController = rememberNavController()
     val workspaceManager = WorkspaceContextManager.getInstance()
+
+    // Set up navigation callback for desktop menu integration
+    LaunchedEffect(navController) {
+        val navigationCallback: (String) -> Unit = { route ->
+            println("AppNavigation: Received navigation request for: $route")
+            navigateToMenuItem(navController, route)
+        }
+        onNavigationReady?.invoke(navigationCallback)
+    }
 
     LaunchedEffect(Unit) {
         UnauthenticatedHandler.onUnauthenticated.collectLatest {
@@ -144,5 +156,72 @@ fun AppNavigation(
         // inventoryNavigation(navController) { }
         // orderNavigation(navController) { }
         // invoiceNavigation(navController) { }
+    }
+}
+
+/**
+ * Navigate to a menu item based on its route path or module code
+ * Maps menu item paths to type-safe navigation routes
+ */
+private fun navigateToMenuItem(navController: androidx.navigation.NavHostController, route: String) {
+    when {
+        // Handle legacy module codes first (backward compatibility)
+        route == "customer" -> navController.navigate(Route.Customer)
+        route == "product" -> navController.navigate(Route.Product)
+        route == "order" -> navController.navigate(Route.Order)
+        route == "invoice" -> navController.navigate(Route.Invoice)
+        route == "inventory" -> navController.navigate(Route.Inventory)
+        route == "tax" -> navController.navigate(Route.Tax)
+
+        // Handle specific menu item paths
+        route.startsWith("/customers") -> {
+            when (route) {
+                "/customers" -> navController.navigate(Route.Customer)
+                "/customers/create" -> navController.navigate(CustomerCreateRoute())
+                "/customers/import" -> navController.navigate(CustomerRoute.Root)
+                "/customers/states" -> navController.navigate(StateListRoute)
+                else -> navController.navigate(Route.Customer)
+            }
+        }
+
+        route.startsWith("/products") -> {
+            when (route) {
+                "/products" -> navController.navigate(Route.Product)
+                "/products/create" -> navController.navigate(ProductRoute.ProductForm())
+                "/products/groups" -> navController.navigate(ProductRoute.Group())
+                "/products/import" -> navController.navigate(Route.Product) // Route to main product page
+                else -> navController.navigate(Route.Product)
+            }
+        }
+
+        route.startsWith("/orders") -> {
+            when (route) {
+                "/orders" -> navController.navigate(Route.Order)
+                "/orders/create" -> navController.navigate(OrderRoute.Root())
+                "/orders/import" -> navController.navigate(Route.Order)
+                else -> navController.navigate(Route.Order)
+            }
+        }
+
+        route.startsWith("/invoices") -> {
+            when (route) {
+                "/invoices" -> navController.navigate(Route.Invoice)
+                "/invoices/create" -> navController.navigate(InvoiceRoute.Root())
+                "/invoices/import" -> navController.navigate(Route.Invoice)
+                else -> navController.navigate(Route.Invoice)
+            }
+        }
+
+        route.startsWith("/inventory") -> {
+            navController.navigate(Route.Inventory)
+        }
+
+        route.startsWith("/tax") -> {
+            navController.navigate(Route.Tax)
+        }
+
+        else -> {
+            println("AppNavigation: Unknown route: $route")
+        }
     }
 }

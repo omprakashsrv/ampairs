@@ -1,11 +1,8 @@
 package com.ampairs.customer.repository
 
 import com.ampairs.customer.domain.model.MasterState
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
-import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
@@ -33,61 +30,23 @@ interface MasterStateRepository : JpaRepository<MasterState, String>, JpaSpecifi
     fun findByActiveTrueAndCountryCode(countryCode: String): List<MasterState>
 
     /**
-     * Find active states ordered by display order
+     * Find active states ordered by name
      */
-    fun findByActiveTrueOrderByDisplayOrderAsc(): List<MasterState>
-
-    /**
-     * Find featured states (commonly used)
-     */
-    fun findByActiveTrueAndFeaturedTrueOrderByDisplayOrderAsc(): List<MasterState>
-
-    /**
-     * Find states by country with pagination
-     */
-    fun findByActiveTrueAndCountryCodeOrderByDisplayOrderAsc(
-        countryCode: String,
-        pageable: Pageable
-    ): Page<MasterState>
-
-    /**
-     * Search states by name
-     */
-    fun findByActiveTrueAndNameContainingIgnoreCaseOrderByDisplayOrderAsc(
-        nameKeyword: String
-    ): List<MasterState>
-
-    /**
-     * Find states by region
-     */
-    fun findByActiveTrueAndRegionOrderByDisplayOrderAsc(region: String): List<MasterState>
-
-    /**
-     * Find Indian states (for GST compliance)
-     */
-    fun findByActiveTrueAndCountryCodeOrderByGstCodeAsc(countryCode: String = "IN"): List<MasterState>
-
-    /**
-     * Find states by GST code (Indian states only)
-     */
-    fun findByActiveTrueAndGstCodeOrderByDisplayOrderAsc(gstCode: String): List<MasterState>
-
-    /**
-     * Find states by multiple state codes
-     */
-    fun findByStateCodeIn(stateCodes: List<String>): List<MasterState>
+    fun findByActiveTrueOrderByNameAsc(): List<MasterState>
 
     /**
      * Search states by name or country
      */
-    @Query("""
+    @Query(
+        """
         SELECT m FROM MasterState m
         WHERE m.active = true
         AND (LOWER(m.name) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
              OR LOWER(m.countryName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))
              OR LOWER(m.shortName) LIKE LOWER(CONCAT('%', :searchTerm, '%')))
-        ORDER BY m.displayOrder ASC
-    """)
+        ORDER BY m.name ASC
+    """
+    )
     fun searchActiveStates(@Param("searchTerm") searchTerm: String): List<MasterState>
 
     /**
@@ -113,35 +72,5 @@ interface MasterStateRepository : JpaRepository<MasterState, String>, JpaSpecifi
     @Query("SELECT m FROM MasterState m WHERE m.active = true AND m.postalCodePattern IS NOT NULL")
     fun findStatesWithPostalCodePatterns(): List<MasterState>
 
-    /**
-     * Find popular states (those used in many workspaces)
-     */
-    @Query("""
-        SELECT m, COUNT(s) as usage_count
-        FROM MasterState m
-        LEFT JOIN m.workspaceStates s
-        WHERE m.active = true
-        GROUP BY m
-        HAVING COUNT(s) >= :minUsage
-        ORDER BY COUNT(s) DESC, m.displayOrder ASC
-    """)
-    fun findPopularStates(@Param("minUsage") minUsage: Long, pageable: Pageable): Page<MasterState>
 
-    /**
-     * Find states not used in any workspace (simplified query)
-     */
-    @Query("""
-        SELECT m FROM MasterState m
-        WHERE m.active = true
-        AND m.stateCode NOT IN (SELECT s.masterStateCode FROM state s WHERE s.masterStateCode IS NOT NULL)
-        ORDER BY m.displayOrder ASC
-    """)
-    fun findUnusedStates(): List<MasterState>
-
-    /**
-     * Batch update featured status
-     */
-    @Modifying
-    @Query("UPDATE MasterState m SET m.featured = :featured WHERE m.stateCode IN :stateCodes")
-    fun updateFeaturedStatus(@Param("stateCodes") stateCodes: List<String>, @Param("featured") featured: Boolean)
 }

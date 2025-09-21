@@ -5,10 +5,12 @@ import com.ampairs.customer.config.Constants
 import jakarta.persistence.*
 
 @Entity(name = "state")
-@Table(indexes = arrayOf(
-    Index(name = "state_name_idx", columnList = "name,owner_id", unique = true),
-    Index(name = "state_master_idx", columnList = "master_state_id")
-))
+@Table(
+    indexes = arrayOf(
+        Index(name = "state_name_idx", columnList = "name,owner_id", unique = true),
+        Index(name = "state_master_idx", columnList = "master_state_id")
+    )
+)
 class State : OwnableBaseDomain() {
 
     @Column(name = "name", nullable = false, length = 100)
@@ -36,6 +38,12 @@ class State : OwnableBaseDomain() {
     @Column(name = "master_state_code", length = 10)
     var masterStateCode: String? = null
 
+    /**
+     * Display order for sorting states in workspace
+     */
+    @Column(name = "display_order", nullable = false)
+    var displayOrder: Int = 0
+
     override fun obtainSeqIdPrefix(): String {
         return Constants.STATE_PREFIX
     }
@@ -57,8 +65,8 @@ class State : OwnableBaseDomain() {
      */
     fun isSyncedWithMaster(): Boolean {
         return masterState != null &&
-               name == masterState?.name &&
-               shortName == masterState?.shortName &&
-               country == masterState?.countryName
+                name == masterState?.name &&
+                shortName == masterState?.shortName &&
+                country == masterState?.countryName
     }
 }

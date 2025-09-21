@@ -5,8 +5,6 @@ import com.ampairs.customer.domain.model.State
 import com.ampairs.customer.repository.MasterStateRepository
 import com.ampairs.customer.repository.StateRepository
 import org.slf4j.LoggerFactory
-import org.springframework.data.domain.Page
-import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -27,7 +25,7 @@ class MasterStateService(
      */
     @Transactional(readOnly = true)
     fun getAllActiveStates(): List<MasterState> {
-        return masterStateRepository.findByActiveTrueOrderByDisplayOrderAsc()
+        return masterStateRepository.findByActiveTrueOrderByNameAsc()
     }
 
     /**
@@ -38,13 +36,6 @@ class MasterStateService(
         return masterStateRepository.findByActiveTrueAndCountryCode(countryCode)
     }
 
-    /**
-     * Get featured/popular states
-     */
-    @Transactional(readOnly = true)
-    fun getFeaturedStates(): List<MasterState> {
-        return masterStateRepository.findByActiveTrueAndFeaturedTrueOrderByDisplayOrderAsc()
-    }
 
     /**
      * Search states by keyword
@@ -132,7 +123,7 @@ class MasterStateService(
             .mapNotNull { it.masterStateCode }
             .toSet()
 
-        return masterStateRepository.findByActiveTrueOrderByDisplayOrderAsc()
+        return masterStateRepository.findByActiveTrueOrderByNameAsc()
             .filter { !importedStateCodes.contains(it.stateCode) }
     }
 
@@ -184,26 +175,15 @@ class MasterStateService(
         val totalStates = masterStateRepository.count()
         val activeStates = masterStateRepository.findByActiveTrue().size
         val countries = masterStateRepository.findDistinctCountries().size
-        val featuredStates = masterStateRepository.findByActiveTrueAndFeaturedTrueOrderByDisplayOrderAsc().size
         val indianStates = masterStateRepository.countByActiveTrueAndCountryCode("IN")
 
         return mapOf(
             "total_states" to totalStates,
             "active_states" to activeStates,
             "countries" to countries,
-            "featured_states" to featuredStates,
             "indian_states" to indianStates,
             "gst_enabled_states" to masterStateRepository.findStatesWithGstCodes().size
         )
-    }
-
-    /**
-     * Update featured status for states
-     */
-    @Transactional
-    fun updateFeaturedStates(stateCodes: List<String>, featured: Boolean) {
-        masterStateRepository.updateFeaturedStatus(stateCodes, featured)
-        logger.info("Updated featured status for {} states to {}", stateCodes.size, featured)
     }
 
     /**
@@ -228,8 +208,6 @@ class MasterStateService(
                 areaSqKm = masterState.areaSqKm
                 gstCode = masterState.gstCode
                 postalCodePattern = masterState.postalCodePattern
-                featured = masterState.featured
-                displayOrder = masterState.displayOrder
                 active = masterState.active
                 metadata = masterState.metadata
             }

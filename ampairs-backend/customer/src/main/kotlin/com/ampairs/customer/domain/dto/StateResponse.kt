@@ -5,7 +5,6 @@ import com.ampairs.customer.domain.model.State
 data class StateResponse(
     var id: String,
     var name: String,
-    var gstCode: Int,
 )
 
 fun List<State>.asStatesResponse(): List<StateResponse> {
@@ -13,7 +12,6 @@ fun List<State>.asStatesResponse(): List<StateResponse> {
         StateResponse(
             id = it.uid,
             name = it.name,
-            gstCode = it.gstCode,
         )
     }
 }

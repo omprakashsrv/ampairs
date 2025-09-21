@@ -2,7 +2,6 @@ package com.ampairs.customer.domain.model
 
 import com.ampairs.core.domain.model.BaseDomain
 import com.ampairs.customer.config.Constants
-import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.persistence.*
 
 /**
@@ -16,8 +15,7 @@ import jakarta.persistence.*
         Index(name = "idx_master_state_code", columnList = "state_code", unique = true),
         Index(name = "idx_master_state_country", columnList = "country_code"),
         Index(name = "idx_master_state_name", columnList = "name"),
-        Index(name = "idx_master_state_active", columnList = "active"),
-        Index(name = "idx_master_state_featured", columnList = "featured")
+        Index(name = "idx_master_state_active", columnList = "active")
     ]
 )
 class MasterState : BaseDomain() {
@@ -100,17 +98,7 @@ class MasterState : BaseDomain() {
     @Column(name = "postal_code_pattern", length = 50)
     var postalCodePattern: String? = null
 
-    /**
-     * Whether this state is commonly used/featured
-     */
-    @Column(name = "featured", nullable = false)
-    var featured: Boolean = false
 
-    /**
-     * Display order for sorting states
-     */
-    @Column(name = "display_order", nullable = false)
-    var displayOrder: Int = 0
 
     /**
      * Whether this state is active and available for selection
@@ -124,14 +112,7 @@ class MasterState : BaseDomain() {
     @Column(name = "metadata", columnDefinition = "TEXT")
     var metadata: String? = null
 
-    // JPA Relationships
-
-    /**
-     * Workspace states using this master state
-     */
-    @OneToMany(mappedBy = "masterState", cascade = [CascadeType.ALL], fetch = FetchType.LAZY)
-    @JsonIgnore
-    var workspaceStates: MutableSet<State> = mutableSetOf()
+    // Note: No bidirectional relationship to workspace states for performance
 
     override fun obtainSeqIdPrefix(): String {
         return Constants.MASTER_STATE_PREFIX
