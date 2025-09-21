@@ -8,7 +8,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -24,8 +23,7 @@ import org.koin.compose.koinInject
 @Composable
 fun StateListScreen(
     onStateClick: (String) -> Unit,
-    onCreateState: () -> Unit,
-    onEditState: (String) -> Unit,
+    onImportStates: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: StateListViewModel = koinInject()
 ) {
@@ -56,12 +54,12 @@ fun StateListScreen(
                     )
 
                     FloatingActionButton(
-                        onClick = onCreateState,
+                        onClick = onImportStates,
                         modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
                             Icons.Default.Add,
-                            contentDescription = "Add State"
+                            contentDescription = "Import States"
                         )
                     }
                 }
@@ -127,8 +125,8 @@ fun StateListScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         if (searchQuery.isBlank()) {
-                            Button(onClick = onCreateState) {
-                                Text("Add First State")
+                            Button(onClick = onImportStates) {
+                                Text("Import States")
                             }
                         }
                     }
@@ -150,7 +148,6 @@ fun StateListScreen(
                         StateListItem(
                             state = state,
                             onStateClick = { onStateClick(state.id) },
-                            onEditClick = { onEditState(state.id) },
                             onDeleteClick = { viewModel.deleteState(state.id) }
                         )
                     }
@@ -178,7 +175,6 @@ fun StateListScreen(
 private fun StateListItem(
     state: State,
     onStateClick: () -> Unit,
-    onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -209,14 +205,6 @@ private fun StateListItem(
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                IconButton(onClick = onEditClick) {
-                    Icon(
-                        Icons.Default.Edit,
-                        contentDescription = "Edit State",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
-
                 IconButton(onClick = { showDeleteDialog = true }) {
                     Icon(
                         Icons.Default.Delete,

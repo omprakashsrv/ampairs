@@ -12,7 +12,6 @@ import com.ampairs.customer.ui.create.CustomerFormScreen
 import com.ampairs.customer.ui.details.CustomerDetailsScreen
 import com.ampairs.customer.ui.list.CustomersListScreen
 import com.ampairs.customer.ui.state.StateListScreen
-import com.ampairs.customer.ui.state.StateFormScreen
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -27,8 +26,6 @@ data class CustomerCreateRoute(val customerId: String? = null)
 @Serializable
 object StateListRoute
 
-@Serializable
-data class StateCreateRoute(val stateId: String? = null)
 
 fun NavGraphBuilder.customerNavigation(navController: NavController) {
     composable<CustomerListRoute> {
@@ -86,30 +83,12 @@ fun NavGraphBuilder.customerNavigation(navController: NavController) {
         ) { paddingValues ->
             StateListScreen(
                 onStateClick = { /* Handle state click if needed */ },
-                onCreateState = {
-                    navController.navigate(StateCreateRoute())
-                },
-                onEditState = { stateId ->
-                    navController.navigate(StateCreateRoute(stateId))
-                },
+                onImportStates = { /* Handle state import */ },
                 modifier = Modifier.padding(paddingValues)
             )
         }
     }
 
-    composable<StateCreateRoute> { backStackEntry ->
-        val route = backStackEntry.toRoute<StateCreateRoute>()
-        AppScreenWithHeader(
-            navController = navController,
-            isWorkspaceSelection = false
-        ) { paddingValues ->
-            StateFormScreen(
-                stateId = route.stateId,
-                onSaveSuccess = { navController.popBackStack() },
-                modifier = Modifier.padding(paddingValues)
-            )
-        }
-    }
 }
 
 @Composable

@@ -74,22 +74,22 @@ class CustomerApiImpl(
         return response.data ?: emptyList()
     }
 
-    override suspend fun createState(state: State): State {
-        val response: Response<State> = post(
+    override suspend fun importState(stateCode: String): String {
+        val response: Response<String> = post(
             client,
-            "$CUSTOMER_ENDPOINT/customer/v1/states",
-            state
+            "$CUSTOMER_ENDPOINT/customer/v1/master-states/$stateCode/import",
+            null
         )
-        return response.data ?: throw Exception("Failed to create state")
+        return response.data ?: throw Exception("Failed to import state")
     }
 
-    override suspend fun updateState(state: State): State {
-        val response: Response<State> = post(
+    override suspend fun bulkImportStates(request: BulkImportRequest): BulkImportResponse {
+        val response: Response<BulkImportResponse> = post(
             client,
-            "$CUSTOMER_ENDPOINT/customer/v1/states",
-            state
+            "$CUSTOMER_ENDPOINT/customer/v1/master-states/bulk-import",
+            request
         )
-        return response.data ?: throw Exception("Failed to update state")
+        return response.data ?: throw Exception("Failed to bulk import states")
     }
 
     override suspend fun deleteState(stateId: String) {

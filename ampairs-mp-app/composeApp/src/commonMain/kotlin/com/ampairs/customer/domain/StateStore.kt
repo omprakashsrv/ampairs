@@ -11,6 +11,7 @@ import org.mobilenativefoundation.store.store5.Fetcher
 import org.mobilenativefoundation.store.store5.SourceOfTruth
 import org.mobilenativefoundation.store.store5.Store
 import org.mobilenativefoundation.store.store5.StoreBuilder
+import org.mobilenativefoundation.store.store5.StoreReadRequest
 
 class StateStore(
     private val customerApi: CustomerApi,
@@ -46,21 +47,24 @@ class StateStore(
         return stateDao.getStateById(stateId)?.toDomain()
     }
 
-    suspend fun createState(state: State): Result<State> {
+    suspend fun importState(stateCode: String): Result<String> {
         return try {
-            val createdState = customerApi.createState(state)
-            stateDao.insertState(createdState.toEntity())
-            Result.success(createdState)
+            val result = customerApi.importState(stateCode)
+            // Refresh states after import
+            refreshStates()
+            Result.success(result)
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
 
-    suspend fun updateState(state: State): Result<State> {
+    suspend fun bulkImportStates(stateCodes: List<String>): Result<com.ampairs.customer.data.api.BulkImportResponse> {
         return try {
-            val updatedState = customerApi.updateState(state)
-            stateDao.updateState(updatedState.toEntity())
-            Result.success(updatedState)
+            val request = com.ampairs.customer.data.api.BulkImportRequest(stateCodes)
+            val result = customerApi.bulkImportStates(request)
+            // Refresh states after import
+            refreshStates()
+            Result.success(result)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -73,6 +77,16 @@ class StateStore(
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    private suspend fun refreshStates() {
+        try {
+            val key = StateKey()
+            stateStore.stream(StoreReadRequest.fresh(key))
+        } catch (e: Exception) {
+            // Log error but don't fail the import operation
+            println("Failed to refresh states: ${e.message}")
         }
     }
 }

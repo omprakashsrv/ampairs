@@ -2,6 +2,25 @@ package com.ampairs.customer.data.api
 
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.State
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class BulkImportRequest(
+    val stateCodes: List<String>
+)
+
+@Serializable
+data class BulkImportResponse(
+    val imported_count: Int,
+    val imported_states: List<ImportedStateInfo>
+)
+
+@Serializable
+data class ImportedStateInfo(
+    val uid: String,
+    val name: String,
+    val master_state_code: String
+)
 
 interface CustomerApi {
     suspend fun getCustomers(lastSync: Long = 0): List<Customer>
@@ -10,8 +29,8 @@ interface CustomerApi {
     suspend fun deleteCustomer(customerId: String)
     suspend fun getCustomer(customerId: String): Customer?
     suspend fun getStates(lastSync: Long = 0): List<State>
-    suspend fun createState(state: State): State
-    suspend fun updateState(state: State): State
+    suspend fun importState(stateCode: String): String
+    suspend fun bulkImportStates(request: BulkImportRequest): BulkImportResponse
     suspend fun deleteState(stateId: String)
     suspend fun getState(stateId: String): State?
 }
