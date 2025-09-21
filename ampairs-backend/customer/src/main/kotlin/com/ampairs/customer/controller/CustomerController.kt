@@ -21,7 +21,7 @@ class CustomerController @Autowired constructor(
     @PostMapping("")
     fun updateUser(@RequestBody @Valid customerUpdateRequest: CustomerUpdateRequest): ApiResponse<CustomerResponse> {
         val customer = customerUpdateRequest.toCustomer()
-        val result = customerService.updateCustomer(customer).asCustomerResponse()
+        val result = customerService.upsertCustomer(customer).asCustomerResponse()
         return ApiResponse.success(result)
     }
 

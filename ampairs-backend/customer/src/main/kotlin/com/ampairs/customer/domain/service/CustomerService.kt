@@ -169,4 +169,22 @@ class CustomerService @Autowired constructor(
     fun validateGstNumber(gstNumber: String): Boolean {
         return gstNumber.matches(Regex("^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$"))
     }
+
+    @Transactional
+    fun upsertCustomer(customer: Customer): Customer {
+        return if (customer.uid.isNotEmpty()) {
+            // Check if customer exists with this UID
+            val existingCustomer = customerRepository.findByUid(customer.uid)
+            if (existingCustomer != null) {
+                // Customer exists, update it
+                updateCustomer(customer)
+            } else {
+                // Customer doesn't exist, create new one
+                createCustomer(customer)
+            }
+        } else {
+            // No UID provided, create new customer
+            createCustomer(customer)
+        }
+    }
 }
