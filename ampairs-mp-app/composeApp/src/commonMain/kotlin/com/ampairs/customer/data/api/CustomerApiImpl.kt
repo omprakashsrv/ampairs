@@ -7,6 +7,7 @@ import com.ampairs.common.post
 import com.ampairs.common.delete
 import com.ampairs.common.model.Response
 import com.ampairs.customer.domain.Customer
+import com.ampairs.customer.domain.State
 import io.ktor.client.engine.HttpClientEngine
 
 const val CUSTOMER_ENDPOINT = "http://localhost:8080"
@@ -62,5 +63,14 @@ class CustomerApiImpl(
         } catch (_: Exception) {
             null
         }
+    }
+
+    override suspend fun getStates(lastSync: Long): List<State> {
+        val response: Response<List<State>> = get(
+            client,
+            "$CUSTOMER_ENDPOINT/customer/v1/states",
+            mapOf("last_updated" to lastSync)
+        )
+        return response.data ?: emptyList()
     }
 }

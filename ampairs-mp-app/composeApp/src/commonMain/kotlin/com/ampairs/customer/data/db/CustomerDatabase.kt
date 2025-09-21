@@ -6,13 +6,14 @@ import androidx.room.RoomDatabase
 import androidx.room.RoomDatabaseConstructor
 
 @Database(
-    entities = [CustomerEntity::class],
-    version = 1,
+    entities = [CustomerEntity::class, StateEntity::class],
+    version = 2,
     exportSchema = true
 )
 @ConstructedBy(CustomerDatabaseConstructor::class)
 abstract class CustomerDatabase : RoomDatabase() {
     abstract fun customerDao(): CustomerDao
+    abstract fun stateDao(): StateDao
 }
 
 @Suppress("NO_ACTUAL_FOR_EXPECT")

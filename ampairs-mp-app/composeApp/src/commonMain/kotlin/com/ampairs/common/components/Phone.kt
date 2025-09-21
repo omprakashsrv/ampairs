@@ -75,11 +75,11 @@ fun Phone(
                     try {
                         val result = PhoneNumberValidator().validate(phoneNumber)
                         valid = result is ValidationResult.Valid
-                        onValueChange(phoneNumber) // Pass filtered phone number
                     } catch (_: Exception) {
                         valid = false
                     }
                 }
+                onValueChange(phoneNumber) // Pass filtered phone number
                 onValidChange(valid)
             },
             readOnly = readOnly,

@@ -38,6 +38,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
+import com.ampairs.ui.components.Phone
+import com.ampairs.customer.ui.components.StateAutocomplete
+import com.ampairs.customer.domain.State
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -95,6 +98,8 @@ fun CustomerFormScreen(
                     onSave = { viewModel.saveCustomer { onSaveSuccess() } },
                     canSave = uiState.canSave && !uiState.isSaving,
                     isSaving = uiState.isSaving,
+                    states = uiState.states,
+                    onStateSelected = viewModel::onStateSelected,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -110,6 +115,8 @@ private fun CustomerForm(
     onSave: () -> Unit,
     canSave: Boolean,
     isSaving: Boolean,
+    states: List<State>,
+    onStateSelected: (State) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
@@ -167,43 +174,24 @@ private fun CustomerForm(
                 singleLine = true
             )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedTextField(
-                    value = formState.countryCode.toString(),
-                    onValueChange = {
-                        it.toIntOrNull()?.let { code ->
-                            onFormChange(formState.copy(countryCode = code))
-                        }
+            Column {
+                Phone(
+                    countryCode = formState.countryCode,
+                    phone = formState.phone,
+                    onValueChange = { phone ->
+                        onFormChange(formState.copy(phone = phone))
                     },
-                    label = { Text("Code") },
-                    modifier = Modifier.weight(0.3f),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number,
-                        imeAction = ImeAction.Next
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                    ),
-                    singleLine = true
+                    onValidChange = { /* Validation handled in ViewModel */ }
                 )
 
-                OutlinedTextField(
-                    value = formState.phone,
-                    onValueChange = { onFormChange(formState.copy(phone = it)) },
-                    label = { Text("Phone") },
-                    modifier = Modifier.weight(0.7f),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Phone,
-                        imeAction = ImeAction.Next
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                    ),
-                    singleLine = true
-                )
+                formState.phoneError?.let { error ->
+                    Text(
+                        text = error,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                    )
+                }
             }
 
             OutlinedTextField(
@@ -215,7 +203,9 @@ private fun CustomerForm(
                 keyboardActions = KeyboardActions(
                     onNext = { focusManager.moveFocus(FocusDirection.Next) }
                 ),
-                singleLine = true
+                singleLine = true,
+                isError = formState.gstinError != null,
+                supportingText = formState.gstinError?.let { { Text(it) } }
             )
         }
 
@@ -281,16 +271,14 @@ private fun CustomerForm(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedTextField(
+                StateAutocomplete(
                     value = formState.state,
                     onValueChange = { onFormChange(formState.copy(state = it)) },
-                    label = { Text("State") },
+                    onStateSelected = onStateSelected,
+                    states = states,
                     modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    keyboardActions = KeyboardActions(
-                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                    ),
-                    singleLine = true
+                    label = "State",
+                    imeAction = ImeAction.Next
                 )
 
                 OutlinedTextField(
