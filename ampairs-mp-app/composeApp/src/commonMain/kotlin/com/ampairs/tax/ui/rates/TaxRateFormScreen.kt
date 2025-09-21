@@ -2,14 +2,17 @@ package com.ampairs.tax.ui.rates
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.ampairs.tax.domain.BusinessType
@@ -22,7 +25,6 @@ import kotlin.time.Clock
 @Composable
 fun TaxRateFormScreen(
     taxRateId: String? = null,
-    onNavigateBack: () -> Unit,
     onSaveSuccess: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: TaxRateFormViewModel = koinInject { parametersOf(taxRateId) }
@@ -36,11 +38,6 @@ fun TaxRateFormScreen(
     Column(modifier = modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text(if (isEditing) "Edit Tax Rate" else "New Tax Rate") },
-            navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
-                }
-            },
             actions = {
                 TextButton(
                     onClick = {
@@ -68,6 +65,8 @@ fun TaxRateFormScreen(
                 CircularProgressIndicator()
             }
         } else {
+            val focusManager = LocalFocusManager.current
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -101,7 +100,14 @@ fun TaxRateFormScreen(
                         Text("Valid formats: 4, 6, or 8 digits (e.g., 1234, 123456, 12345678)")
                     },
                     isError = uiState.hsnCode.isNotBlank() && !uiState.isValidHsnCode,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -149,8 +155,15 @@ fun TaxRateFormScreen(
                         Text("Enter percentage between 0 and 100")
                     },
                     isError = uiState.ratePercentageText.isNotBlank() && !uiState.isValidRate,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
                     suffix = { Text("%") },
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -163,8 +176,15 @@ fun TaxRateFormScreen(
                     supportingText = {
                         Text("Optional: Additional cess percentage")
                     },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
                     suffix = { Text("%") },
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -177,8 +197,15 @@ fun TaxRateFormScreen(
                     supportingText = {
                         Text("Optional: Fixed amount per unit instead of percentage")
                     },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
                     prefix = { Text("₹") },
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -225,6 +252,11 @@ fun TaxRateFormScreen(
                     supportingText = {
                         Text("Specify the geographical applicability")
                     },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -294,6 +326,33 @@ fun TaxRateFormScreen(
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
+                        }
+                    }
+                }
+
+                // Save Button Section
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            viewModel.saveTaxRate {
+                                onSaveSuccess()
+                            }
+                        },
+                        enabled = uiState.canSave,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (uiState.isSaving) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Saving...")
+                        } else {
+                            Text("Save Tax Rate")
                         }
                     }
                 }

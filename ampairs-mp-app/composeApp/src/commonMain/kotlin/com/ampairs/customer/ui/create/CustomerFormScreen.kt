@@ -1,18 +1,41 @@
 package com.ampairs.customer.ui.create
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.ampairs.customer.domain.Customer
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 
@@ -20,7 +43,6 @@ import org.koin.core.parameter.parametersOf
 @Composable
 fun CustomerFormScreen(
     customerId: String? = null,
-    onNavigateBack: () -> Unit,
     onSaveSuccess: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: CustomerFormViewModel = koinInject { parametersOf(customerId) }
@@ -36,11 +58,6 @@ fun CustomerFormScreen(
     Column(modifier = modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text(if (customerId == null) "New Customer" else "Edit Customer") },
-            navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
-                }
-            },
             actions = {
                 TextButton(
                     onClick = {
@@ -75,6 +92,9 @@ fun CustomerFormScreen(
                     formState = uiState.formState,
                     onFormChange = viewModel::updateForm,
                     error = uiState.error,
+                    onSave = { viewModel.saveCustomer { onSaveSuccess() } },
+                    canSave = uiState.canSave && !uiState.isSaving,
+                    isSaving = uiState.isSaving,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -87,8 +107,13 @@ private fun CustomerForm(
     formState: CustomerFormState,
     onFormChange: (CustomerFormState) -> Unit,
     error: String?,
+    onSave: () -> Unit,
+    canSave: Boolean,
+    isSaving: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val focusManager = LocalFocusManager.current
+
     Column(
         modifier = modifier
             .verticalScroll(rememberScrollState())
@@ -116,8 +141,13 @@ private fun CustomerForm(
                 onValueChange = { onFormChange(formState.copy(name = it)) },
                 label = { Text("Name *") },
                 modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                ),
                 isError = formState.nameError != null,
-                supportingText = formState.nameError?.let { { Text(it) } }
+                supportingText = formState.nameError?.let { { Text(it) } },
+                singleLine = true
             )
 
             OutlinedTextField(
@@ -125,9 +155,16 @@ private fun CustomerForm(
                 onValueChange = { onFormChange(formState.copy(email = it)) },
                 label = { Text("Email") },
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                ),
                 isError = formState.emailError != null,
-                supportingText = formState.emailError?.let { { Text(it) } }
+                supportingText = formState.emailError?.let { { Text(it) } },
+                singleLine = true
             )
 
             Row(
@@ -143,7 +180,14 @@ private fun CustomerForm(
                     },
                     label = { Text("Code") },
                     modifier = Modifier.weight(0.3f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true
                 )
 
                 OutlinedTextField(
@@ -151,7 +195,14 @@ private fun CustomerForm(
                     onValueChange = { onFormChange(formState.copy(phone = it)) },
                     label = { Text("Phone") },
                     modifier = Modifier.weight(0.7f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Phone,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true
                 )
             }
 
@@ -159,7 +210,12 @@ private fun CustomerForm(
                 value = formState.gstin,
                 onValueChange = { onFormChange(formState.copy(gstin = it)) },
                 label = { Text("GSTIN") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                ),
+                singleLine = true
             )
         }
 
@@ -170,14 +226,23 @@ private fun CustomerForm(
                 onValueChange = { onFormChange(formState.copy(address = it)) },
                 label = { Text("Address") },
                 modifier = Modifier.fillMaxWidth(),
-                maxLines = 3
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                )
             )
 
             OutlinedTextField(
                 value = formState.street,
                 onValueChange = { onFormChange(formState.copy(street = it)) },
                 label = { Text("Street") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                ),
+                singleLine = true
             )
 
             Row(
@@ -188,7 +253,12 @@ private fun CustomerForm(
                     value = formState.city,
                     onValueChange = { onFormChange(formState.copy(city = it)) },
                     label = { Text("City") },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true
                 )
 
                 OutlinedTextField(
@@ -196,7 +266,14 @@ private fun CustomerForm(
                     onValueChange = { onFormChange(formState.copy(pincode = it)) },
                     label = { Text("PIN Code") },
                     modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true
                 )
             }
 
@@ -208,15 +285,48 @@ private fun CustomerForm(
                     value = formState.state,
                     onValueChange = { onFormChange(formState.copy(state = it)) },
                     label = { Text("State") },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true
                 )
 
                 OutlinedTextField(
                     value = formState.country,
                     onValueChange = { onFormChange(formState.copy(country = it)) },
                     label = { Text("Country") },
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true
                 )
+            }
+        }
+
+        // Save Button Section
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Button(
+                onClick = onSave,
+                enabled = canSave,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (isSaving) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Saving...")
+                } else {
+                    Text("Save Customer")
+                }
             }
         }
     }

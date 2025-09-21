@@ -65,7 +65,6 @@ fun NavGraphBuilder.customerNavigation(navController: NavController) {
         ) { paddingValues ->
             CustomerFormScreen(
                 customerId = route.customerId,
-                onNavigateBack = { navController.popBackStack() },
                 onSaveSuccess = { navController.popBackStack() },
                 modifier = Modifier.padding(paddingValues)
             )

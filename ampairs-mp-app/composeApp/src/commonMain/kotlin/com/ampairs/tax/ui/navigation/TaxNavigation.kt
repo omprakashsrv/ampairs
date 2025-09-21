@@ -115,7 +115,6 @@ fun NavGraphBuilder.taxNavigation(
             ) { paddingValues ->
                 HsnCodeFormScreen(
                     hsnCodeId = route.hsnCodeId,
-                    onNavigateBack = { navController.popBackStack() },
                     onSaveSuccess = { navController.popBackStack() },
                     modifier = Modifier.padding(paddingValues)
                 )
@@ -179,7 +178,6 @@ fun NavGraphBuilder.taxNavigation(
             ) { paddingValues ->
                 TaxRateFormScreen(
                     taxRateId = route.taxRateId,
-                    onNavigateBack = { navController.popBackStack() },
                     onSaveSuccess = { navController.popBackStack() },
                     modifier = Modifier.padding(paddingValues)
                 )

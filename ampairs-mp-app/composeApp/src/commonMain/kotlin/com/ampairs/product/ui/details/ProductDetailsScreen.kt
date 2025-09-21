@@ -47,11 +47,6 @@ fun ProductDetailsScreen(
     Column(modifier = modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text(uiState.product?.name ?: "Product Details") },
-            navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
-                }
-            },
             actions = {
                 if (uiState.product != null) {
                     IconButton(onClick = { onEditProduct(productId) }) {

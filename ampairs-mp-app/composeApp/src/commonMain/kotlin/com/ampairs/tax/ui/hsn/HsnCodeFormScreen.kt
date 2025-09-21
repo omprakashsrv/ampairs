@@ -2,13 +2,15 @@ package com.ampairs.tax.ui.hsn
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.ampairs.tax.domain.HsnCategory
@@ -19,7 +21,6 @@ import org.koin.core.parameter.parametersOf
 @Composable
 fun HsnCodeFormScreen(
     hsnCodeId: String? = null,
-    onNavigateBack: () -> Unit,
     onSaveSuccess: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HsnCodeFormViewModel = koinInject { parametersOf(hsnCodeId) }
@@ -39,11 +40,6 @@ fun HsnCodeFormScreen(
     Column(modifier = modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text(if (isEditing) "Edit HSN Code" else "New HSN Code") },
-            navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
-                }
-            },
             actions = {
                 TextButton(
                     onClick = {
@@ -71,6 +67,8 @@ fun HsnCodeFormScreen(
                 CircularProgressIndicator()
             }
         } else {
+            val focusManager = LocalFocusManager.current
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -104,7 +102,14 @@ fun HsnCodeFormScreen(
                         Text("Valid formats: 4, 6, or 8 digits (e.g., 1234, 123456, 12345678)")
                     },
                     isError = uiState.hsnCode.isNotBlank() && !uiState.isValidHsnCode,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -114,7 +119,11 @@ fun HsnCodeFormScreen(
                     onValueChange = { viewModel.updateDescription(it) },
                     label = { Text("Description") },
                     placeholder = { Text("Enter product description") },
-                    maxLines = 3,
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -124,6 +133,11 @@ fun HsnCodeFormScreen(
                     onValueChange = { viewModel.updateChapter(it) },
                     label = { Text("Chapter") },
                     placeholder = { Text("Enter chapter number") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -133,6 +147,11 @@ fun HsnCodeFormScreen(
                     onValueChange = { viewModel.updateHeading(it) },
                     label = { Text("Heading") },
                     placeholder = { Text("Enter heading") },
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth()
                 )
 
@@ -207,6 +226,31 @@ fun HsnCodeFormScreen(
                                 style = MaterialTheme.typography.headlineSmall,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
+                        }
+                    }
+                }
+
+                // Save Button Section
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            viewModel.saveHsnCode(onSaveSuccess)
+                        },
+                        enabled = uiState.canSave,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (uiState.isSaving) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Saving...")
+                        } else {
+                            Text("Save HSN Code")
                         }
                     }
                 }

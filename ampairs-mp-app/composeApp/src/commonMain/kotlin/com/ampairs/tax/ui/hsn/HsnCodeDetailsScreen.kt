@@ -40,11 +40,6 @@ fun HsnCodeDetailsScreen(
     ) {
         TopAppBar(
             title = { Text("HSN Code Details") },
-            navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
-                }
-            },
             actions = {
                 uiState.hsnCode?.let { hsnCode ->
                     IconButton(onClick = { onEditHsnCode(hsnCode.id) }) {

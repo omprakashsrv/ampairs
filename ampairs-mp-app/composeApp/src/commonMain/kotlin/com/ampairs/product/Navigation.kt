@@ -2,6 +2,7 @@ package com.ampairs.product
 
 import ProductRoute
 import Route
+import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
@@ -9,52 +10,68 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
+import com.ampairs.common.ui.AppScreenWithHeader
 import com.ampairs.product.ui.create.ProductFormScreen
 import com.ampairs.product.ui.details.ProductDetailsScreen
 import com.ampairs.product.ui.list.ProductsListScreen
 
 fun NavGraphBuilder.productNavigation(
-    navigator: NavController
+    navController: NavController
 ) {
     navigation<Route.Product>(startDestination = ProductRoute.Products) {
         // Main Product List Screen
         composable<ProductRoute.Products> {
-            ProductsListScreen(
-                onProductClick = { productId ->
-                    navigator.navigate(ProductRoute.ProductDetails(productId = productId))
-                },
-                onCreateProduct = {
-                    navigator.navigate(ProductRoute.ProductForm())
-                }
-            )
+            AppScreenWithHeader(
+                navController = navController,
+                isWorkspaceSelection = false
+            ) { paddingValues ->
+                ProductsListScreen(
+                    onProductClick = { productId ->
+                        navController.navigate(ProductRoute.ProductDetails(productId = productId))
+                    },
+                    onCreateProduct = {
+                        navController.navigate(ProductRoute.ProductForm())
+                    },
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
         }
 
         // Product Details Screen
         composable<ProductRoute.ProductDetails> { backStackEntry ->
             val productDetailsRoute = backStackEntry.toRoute<ProductRoute.ProductDetails>()
-            ProductDetailsScreen(
-                productId = productDetailsRoute.productId,
-                onNavigateBack = {
-                    navigator.popBackStack()
-                },
-                onEditProduct = { productId ->
-                    navigator.navigate(ProductRoute.ProductForm(productId = productId))
-                }
-            )
+            AppScreenWithHeader(
+                navController = navController,
+                isWorkspaceSelection = false
+            ) { paddingValues ->
+                ProductDetailsScreen(
+                    productId = productDetailsRoute.productId,
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    },
+                    onEditProduct = { productId ->
+                        navController.navigate(ProductRoute.ProductForm(productId = productId))
+                    },
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
         }
 
         // Product Form Screen (Create/Edit)
         composable<ProductRoute.ProductForm> { backStackEntry ->
             val productFormRoute = backStackEntry.toRoute<ProductRoute.ProductForm>()
-            ProductFormScreen(
-                productId = productFormRoute.productId,
-                onNavigateBack = {
-                    navigator.popBackStack()
-                },
-                onSaveSuccess = {
-                    navigator.popBackStack()
-                }
-            )
+            AppScreenWithHeader(
+                navController = navController,
+                isWorkspaceSelection = false
+            ) { paddingValues ->
+                ProductFormScreen(
+                    productId = productFormRoute.productId,
+                    onSaveSuccess = {
+                        navController.popBackStack()
+                    },
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
         }
 
         // Legacy routes - commented out as these UI components don't exist yet

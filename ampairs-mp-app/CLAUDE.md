@@ -438,3 +438,20 @@ import kotlinx.coroutines.flow.Flow
 - String operations avoid Java-specific formatting
 
 **Remember**: The goal is to write "KMP-first" code that naturally works across all platforms, rather than "JVM-first" code that needs platform-specific workarounds.
+
+## **📝 Form UI Standards (January 2025)**
+
+### **Keyboard Navigation Requirements**
+- **Focus Management**: Use `LocalFocusManager.current` with proper `KeyboardActions`
+- **Field Navigation**: `ImeAction.Next` for fields, `ImeAction.Done` for last field
+- **Single Line**: Use `singleLine = true` to ensure Enter moves to next field
+- **Save Access**: Include keyboard-accessible save button at bottom of form
+
+### **TopAppBar Guidelines**
+- Remove redundant `navigationIcon` when global navigation exists
+- Remove `onNavigateBack` parameters from form screens
+- Use `AppScreenWithHeader` pattern consistently across all navigation files
+
+### **Forms Updated**
+- All customer, product, and tax form screens follow these patterns
+- Details screens also cleaned of redundant back buttons

@@ -5,11 +5,11 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.*
@@ -17,7 +17,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.ampairs.product.domain.Product
@@ -29,7 +32,6 @@ import org.koin.core.parameter.parametersOf
 @Composable
 fun ProductFormScreen(
     productId: String? = null,
-    onNavigateBack: () -> Unit,
     onSaveSuccess: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ProductFormViewModel = koinInject { parametersOf(productId) }
@@ -45,11 +47,6 @@ fun ProductFormScreen(
     Column(modifier = modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text(if (productId == null) "New Product" else "Edit Product") },
-            navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
-                }
-            },
             actions = {
                 TextButton(
                     onClick = {
@@ -86,6 +83,9 @@ fun ProductFormScreen(
                     error = uiState.error,
                     onAddImage = viewModel::addImage,
                     onRemoveImage = viewModel::removeImage,
+                    onSave = { viewModel.saveProduct { onSaveSuccess() } },
+                    canSave = uiState.canSave && !uiState.isSaving,
+                    isSaving = uiState.isSaving,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -100,8 +100,13 @@ private fun ProductForm(
     error: String?,
     onAddImage: () -> Unit,
     onRemoveImage: (Int) -> Unit,
+    onSave: () -> Unit,
+    canSave: Boolean,
+    isSaving: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val focusManager = LocalFocusManager.current
+
     Column(
         modifier = modifier
             .verticalScroll(rememberScrollState())
@@ -129,8 +134,13 @@ private fun ProductForm(
                 onValueChange = { onFormChange(formState.copy(name = it)) },
                 label = { Text("Product Name *") },
                 modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                ),
                 isError = formState.nameError != null,
-                supportingText = formState.nameError?.let { { Text(it) } }
+                supportingText = formState.nameError?.let { { Text(it) } },
+                singleLine = true
             )
 
             OutlinedTextField(
@@ -138,8 +148,13 @@ private fun ProductForm(
                 onValueChange = { onFormChange(formState.copy(code = it)) },
                 label = { Text("Product Code *") },
                 modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                ),
                 isError = formState.codeError != null,
-                supportingText = formState.codeError?.let { { Text(it) } }
+                supportingText = formState.codeError?.let { { Text(it) } },
+                singleLine = true
             )
 
             OutlinedTextField(
@@ -147,15 +162,23 @@ private fun ProductForm(
                 onValueChange = { onFormChange(formState.copy(description = it)) },
                 label = { Text("Description") },
                 modifier = Modifier.fillMaxWidth(),
-                maxLines = 3,
-                minLines = 2
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                ),
+                singleLine = true
             )
 
             OutlinedTextField(
                 value = formState.taxCode,
                 onValueChange = { onFormChange(formState.copy(taxCode = it)) },
                 label = { Text("Tax Code") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                ),
+                singleLine = true
             )
 
             Row(
@@ -217,7 +240,14 @@ private fun ProductForm(
                     },
                     label = { Text("MRP") },
                     modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true
                 )
 
                 OutlinedTextField(
@@ -229,7 +259,14 @@ private fun ProductForm(
                     },
                     label = { Text("Dealer Price") },
                     modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal)
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true
                 )
             }
 
@@ -242,9 +279,16 @@ private fun ProductForm(
                 },
                 label = { Text("Selling Price") },
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Decimal,
+                    imeAction = ImeAction.Next
+                ),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                ),
                 isError = formState.priceError != null,
-                supportingText = formState.priceError?.let { { Text(it) } }
+                supportingText = formState.priceError?.let { { Text(it) } },
+                singleLine = true
             )
         }
 
@@ -262,8 +306,15 @@ private fun ProductForm(
                     },
                     label = { Text("Current Stock") },
                     modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    placeholder = { Text("Optional") }
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    placeholder = { Text("Optional") },
+                    singleLine = true
                 )
 
                 OutlinedTextField(
@@ -274,8 +325,15 @@ private fun ProductForm(
                     },
                     label = { Text("Low Stock Alert") },
                     modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    placeholder = { Text("Optional") }
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    placeholder = { Text("Optional") },
+                    singleLine = true
                 )
             }
 
@@ -294,28 +352,48 @@ private fun ProductForm(
                 value = formState.categoryId,
                 onValueChange = { onFormChange(formState.copy(categoryId = it)) },
                 label = { Text("Category ID") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                ),
+                singleLine = true
             )
 
             OutlinedTextField(
                 value = formState.brandId,
                 onValueChange = { onFormChange(formState.copy(brandId = it)) },
                 label = { Text("Brand ID") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                ),
+                singleLine = true
             )
 
             OutlinedTextField(
                 value = formState.groupId,
                 onValueChange = { onFormChange(formState.copy(groupId = it)) },
                 label = { Text("Group ID") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                ),
+                singleLine = true
             )
 
             OutlinedTextField(
                 value = formState.subCategoryId,
                 onValueChange = { onFormChange(formState.copy(subCategoryId = it)) },
                 label = { Text("Sub Category ID") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                ),
+                singleLine = true
             )
         }
 
@@ -334,8 +412,36 @@ private fun ProductForm(
                 value = formState.baseUnitId,
                 onValueChange = { onFormChange(formState.copy(baseUnitId = it)) },
                 label = { Text("Base Unit ID") },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                ),
+                singleLine = true
             )
+        }
+
+        // Save Button Section
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Button(
+                onClick = onSave,
+                enabled = canSave,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                if (isSaving) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Saving...")
+                } else {
+                    Text("Save Product")
+                }
+            }
         }
     }
 }

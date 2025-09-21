@@ -36,11 +36,6 @@ fun CustomerDetailsScreen(
     Column(modifier = modifier.fillMaxSize()) {
         TopAppBar(
             title = { Text(uiState.customer?.name ?: "Customer Details") },
-            navigationIcon = {
-                IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
-                }
-            },
             actions = {
                 if (uiState.customer != null) {
                     IconButton(onClick = { onEditCustomer(customerId) }) {
