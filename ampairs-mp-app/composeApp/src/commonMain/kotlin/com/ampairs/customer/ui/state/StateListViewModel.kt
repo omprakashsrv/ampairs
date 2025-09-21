@@ -199,4 +199,50 @@ class StateListViewModel(
             }
         }
     }
+
+    fun importState(stateCode: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+
+            val result = stateStore.importState(stateCode)
+            if (result.isSuccess) {
+                _uiState.update { it.copy(isLoading = false, error = null) }
+                // Refresh the list after successful import
+                loadStates()
+            } else {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = result.exceptionOrNull()?.message ?: "Failed to import state"
+                    )
+                }
+            }
+        }
+    }
+
+    fun bulkImportStates(stateCodes: List<String>) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+
+            val result = stateStore.bulkImportStates(stateCodes)
+            if (result.isSuccess) {
+                val response = result.getOrNull()
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = null
+                    )
+                }
+                // Refresh the list after successful import
+                loadStates()
+            } else {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = result.exceptionOrNull()?.message ?: "Failed to import states"
+                    )
+                }
+            }
+        }
+    }
 }

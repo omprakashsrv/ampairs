@@ -31,6 +31,8 @@ fun StateListScreen(
     val searchQuery by viewModel.searchQuery.collectAsState()
     val focusManager = LocalFocusManager.current
 
+    var showImportDialog by remember { mutableStateOf(false) }
+
     Column(modifier = modifier.fillMaxSize()) {
         // Header with search and add button
         Card(
@@ -54,7 +56,7 @@ fun StateListScreen(
                     )
 
                     FloatingActionButton(
-                        onClick = onImportStates,
+                        onClick = { showImportDialog = true },
                         modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
@@ -125,7 +127,7 @@ fun StateListScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         if (searchQuery.isBlank()) {
-                            Button(onClick = onImportStates) {
+                            Button(onClick = { showImportDialog = true }) {
                                 Text("Import States")
                             }
                         }
@@ -167,6 +169,21 @@ fun StateListScreen(
                 }
             }
         }
+    }
+
+    // Import States Dialog
+    if (showImportDialog) {
+        StateImportDialog(
+            onDismiss = { showImportDialog = false },
+            onImportState = { stateCode ->
+                viewModel.importState(stateCode)
+                showImportDialog = false
+            },
+            onBulkImport = { stateCodes ->
+                viewModel.bulkImportStates(stateCodes)
+                showImportDialog = false
+            }
+        )
     }
 }
 
@@ -239,4 +256,102 @@ private fun StateListItem(
             }
         )
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun StateImportDialog(
+    onDismiss: () -> Unit,
+    onImportState: (String) -> Unit,
+    onBulkImport: (List<String>) -> Unit
+) {
+    var selectedStates by remember { mutableStateOf(setOf<String>()) }
+
+    // Common Indian state codes for import
+    val availableStates = listOf(
+        "AP" to "Andhra Pradesh",
+        "AR" to "Arunachal Pradesh",
+        "AS" to "Assam",
+        "BR" to "Bihar",
+        "CG" to "Chhattisgarh",
+        "GA" to "Goa",
+        "GJ" to "Gujarat",
+        "HR" to "Haryana",
+        "HP" to "Himachal Pradesh",
+        "JK" to "Jammu and Kashmir",
+        "JH" to "Jharkhand",
+        "KA" to "Karnataka",
+        "KL" to "Kerala",
+        "MP" to "Madhya Pradesh",
+        "MH" to "Maharashtra",
+        "MN" to "Manipur",
+        "ML" to "Meghalaya",
+        "MZ" to "Mizoram",
+        "NL" to "Nagaland",
+        "OR" to "Odisha",
+        "PB" to "Punjab",
+        "RJ" to "Rajasthan",
+        "SK" to "Sikkim",
+        "TN" to "Tamil Nadu",
+        "TG" to "Telangana",
+        "TR" to "Tripura",
+        "UP" to "Uttar Pradesh",
+        "UT" to "Uttarakhand",
+        "WB" to "West Bengal"
+    )
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Import States") },
+        text = {
+            LazyColumn(
+                modifier = Modifier.heightIn(max = 400.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(availableStates) { (code, name) ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = selectedStates.contains(code),
+                            onCheckedChange = { isChecked ->
+                                selectedStates = if (isChecked) {
+                                    selectedStates + code
+                                } else {
+                                    selectedStates - code
+                                }
+                            }
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "$name ($code)",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                TextButton(
+                    onClick = {
+                        if (selectedStates.isNotEmpty()) {
+                            onBulkImport(selectedStates.toList())
+                        }
+                    },
+                    enabled = selectedStates.isNotEmpty()
+                ) {
+                    Text("Import Selected (${selectedStates.size})")
+                }
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
 }
