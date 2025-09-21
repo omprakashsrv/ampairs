@@ -42,8 +42,6 @@ fun List<OrderItemRequest>.toOrderItems(): List<OrderItem> {
         orderItem.productId = it.productId
         orderItem.taxCode = it.taxCode
         orderItem.taxInfos = it.taxInfos
-        orderItem.active = it.active
-        orderItem.softDeleted = it.softDeleted
         orderItem.discount = it.discount
         orderItem
     }
@@ -67,8 +65,6 @@ fun List<OrderItem>.toInvoiceItems(): List<InvoiceItem> {
         orderItem.productId = it.productId
         orderItem.taxCode = it.taxCode
         orderItem.taxInfos = it.taxInfos.toInvoiceTaxInfos()
-        orderItem.active = it.active
-        orderItem.softDeleted = it.softDeleted
         orderItem.discount = it.discount?.toInvoiceDiscount()
         orderItem
     }

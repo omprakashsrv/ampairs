@@ -113,6 +113,13 @@ fun findWithRelations(): EntityName?
 - **Focus**: Controllers should handle HTTP concerns only, not exception mapping
 - **Consistency**: Centralized error handling ensures uniform response format
 
+#### **API Response Standardization**
+- **Always**: Use `ApiResponse<T>` wrapper for all controller return types
+- **Import**: `com.ampairs.core.domain.dto.ApiResponse`
+- **Success**: `return ApiResponse.success(data)`
+- **Consistent format**: All endpoints return `{"success": true, "data": T, "timestamp": "..."}`
+- **Global error handling**: Exception handler returns `ApiResponse` with error details
+
 ### **Multi-Tenant Architecture Patterns**
 
 #### **@TenantId Best Practices**

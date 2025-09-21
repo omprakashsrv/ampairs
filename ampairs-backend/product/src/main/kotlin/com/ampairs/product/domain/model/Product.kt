@@ -109,12 +109,6 @@ class Product : OwnableBaseDomain() {
 
     @OneToMany()
     @JoinColumn(
-        name = "code", referencedColumnName = "tax_code", insertable = false, updatable = false, nullable = false
-    )
-    var taxCodes: MutableList<TaxCode>? = null
-
-    @OneToMany()
-    @JoinColumn(
         name = "product_id", referencedColumnName = "uid", insertable = false, updatable = false, nullable = false
     )
     var images: MutableList<ProductImage> = mutableListOf()

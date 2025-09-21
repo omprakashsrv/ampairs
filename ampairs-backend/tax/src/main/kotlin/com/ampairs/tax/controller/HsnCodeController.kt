@@ -324,7 +324,6 @@ class HsnCodeController(
         val response = HsnCodeValidationResponseDto(
             hsnCode = hsnCode,
             isValid = true,
-            isActive = hsn.active,
             description = hsn.hsnDescription,
             hasValidTaxRates = hsn.hasValidTaxRates(),
             message = "HSN code is valid"
@@ -336,7 +335,6 @@ class HsnCodeController(
 data class HsnCodeValidationResponseDto(
     val hsnCode: String,
     val isValid: Boolean,
-    val isActive: Boolean,
     val description: String?,
     val hasValidTaxRates: Boolean,
     val message: String

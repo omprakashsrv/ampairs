@@ -39,7 +39,7 @@ class TaxRateService(
         val filteredRates = allRates.filter { rate ->
             var matches = true
 
-            if (isActive && !rate.active) matches = false
+            if (isActive) matches = false
             if (!rate.isValidForDate(effectiveDate.atStartOfDay())) matches = false
             if (businessType != null && rate.businessType != businessType) matches = false
             if (componentType != null && rate.taxComponentType != componentType) matches = false
@@ -163,19 +163,17 @@ class TaxRateService(
             isCompositionSchemeApplicable = taxRate.isCompositionSchemeApplicable
             description = taxRate.description
             sourceReference = taxRate.sourceReference
-            active = taxRate.active
         }
 
         return taxRateRepository.save(existingRate)
     }
 
-    fun deactivateTaxRate(id: Long) {
-        val taxRate = taxRateRepository.findById(id).orElse(null)
-            ?: throw IllegalArgumentException("Tax rate not found with ID: $id")
-
-        taxRate.active = false
-        taxRateRepository.save(taxRate)
-    }
+//    fun deactivateTaxRate(id: Long) {
+//        val taxRate = taxRateRepository.findById(id).orElse(null)
+//            ?: throw IllegalArgumentException("Tax rate not found with ID: $id")
+//
+//        taxRateRepository.save(taxRate)
+//    }
 
     fun updateTaxRateByUid(uid: String, updateDto: com.ampairs.tax.domain.dto.TaxRateUpdateDto): TaxRate {
         val existingRate = findByUid(uid)
@@ -197,7 +195,6 @@ class TaxRateService(
             isCompositionSchemeApplicable = updateDto.isCompositionSchemeApplicable
             description = updateDto.description
             sourceReference = updateDto.sourceReference
-            active = updateDto.isActive
         }
 
         return taxRateRepository.save(existingRate)
@@ -207,13 +204,12 @@ class TaxRateService(
         val taxRate = findByUid(uid)
             ?: throw IllegalArgumentException("Tax rate not found with UID: $uid")
 
-        taxRate.active = false
         taxRateRepository.save(taxRate)
     }
 
     @Transactional(readOnly = true)
     fun getTaxRateStatistics(): TaxRateStatistics {
-        val activeRates = taxRateRepository.findAll().filter { it.active }
+        val activeRates = taxRateRepository.findAll()
 
         val ratesByComponentType = activeRates.groupBy { it.taxComponentType }
             .mapValues { it.value.size }

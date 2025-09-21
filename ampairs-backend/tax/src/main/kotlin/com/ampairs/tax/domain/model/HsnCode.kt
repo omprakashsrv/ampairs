@@ -55,6 +55,9 @@ class HsnCode : OwnableBaseDomain() {
     @Column(name = "exemption_available", nullable = false)
     var exemptionAvailable: Boolean = false
 
+    @Column(name = "active", nullable = false)
+    var active: Boolean = true
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "business_category_rules", columnDefinition = "JSON")
     var businessCategoryRules: Map<String, Any> = emptyMap()
@@ -76,11 +79,11 @@ class HsnCode : OwnableBaseDomain() {
         return Constants.HSN_CODE_PREFIX
     }
 
-    fun isValidForDate(date: LocalDateTime = LocalDateTime.now()): Boolean {
-        return active &&
-                (effectiveFrom == null || date.isAfter(effectiveFrom) || date.isEqual(effectiveFrom)) &&
-                (effectiveTo == null || date.isBefore(effectiveTo))
-    }
+//    fun isValidForDate(date: LocalDateTime = LocalDateTime.now()): Boolean {
+//        return active &&
+//                (effectiveFrom == null || date.isAfter(effectiveFrom) || date.isEqual(effectiveFrom)) &&
+//                (effectiveTo == null || date.isBefore(effectiveTo))
+//    }
 
     fun getFullPath(): String {
         val path = mutableListOf<String>()

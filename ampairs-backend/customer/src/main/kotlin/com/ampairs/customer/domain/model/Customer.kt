@@ -110,7 +110,7 @@ class Customer : OwnableBaseDomain() {
      */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "attributes", columnDefinition = "JSON")
-    var attributes: Map<String, Any> = emptyMap()
+    var attributes: Map<String, Any>? = null
 
     override fun obtainSeqIdPrefix(): String {
         return Constants.CUSTOMER_PREFIX

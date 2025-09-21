@@ -164,7 +164,6 @@ class TaxConfigurationService(
         val taxConfiguration = taxConfigurationRepository.findById(configId)
             .orElseThrow { IllegalArgumentException("Tax configuration not found with id: $configId") }
 
-        taxConfiguration.active = false
         taxConfigurationRepository.save(taxConfiguration)
     }
 

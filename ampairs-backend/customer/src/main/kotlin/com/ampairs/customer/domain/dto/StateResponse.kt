@@ -6,7 +6,6 @@ data class StateResponse(
     var id: String,
     var name: String,
     var gstCode: Int,
-    var active: Boolean,
 )
 
 fun List<State>.asStatesResponse(): List<StateResponse> {
@@ -15,7 +14,6 @@ fun List<State>.asStatesResponse(): List<StateResponse> {
             id = it.uid,
             name = it.name,
             gstCode = it.gstCode,
-            active = it.active
         )
     }
 }

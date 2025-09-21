@@ -2,7 +2,6 @@ package com.ampairs.tax.domain.model
 
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.tax.config.Constants
-import com.ampairs.tax.domain.enums.BusinessType
 import com.ampairs.tax.domain.enums.GeographicalZone
 import com.ampairs.tax.domain.enums.TransactionType
 import jakarta.persistence.*
@@ -34,6 +33,9 @@ class TaxConfiguration : OwnableBaseDomain() {
 
     @Column(name = "business_type_id", nullable = false)
     var businessTypeId: Long = 0
+
+    @Column(name = "active", nullable = false)
+    var active: Boolean = true
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "business_type_id", referencedColumnName = "id", insertable = false, updatable = false)
@@ -113,8 +115,7 @@ class TaxConfiguration : OwnableBaseDomain() {
 
     fun isValidForDate(date: LocalDateTime = LocalDateTime.now()): Boolean {
         val checkDate = date.toLocalDate()
-        return active &&
-                (checkDate.isAfter(effectiveFrom) || checkDate.isEqual(effectiveFrom)) &&
+        return (checkDate.isAfter(effectiveFrom) || checkDate.isEqual(effectiveFrom)) &&
                 (effectiveTo == null || checkDate.isBefore(effectiveTo))
     }
 
@@ -167,12 +168,17 @@ class TaxConfiguration : OwnableBaseDomain() {
                 val threshold = criteria["threshold"]
 
                 when (condition) {
-                    "GREATER_THAN" -> (value as? Number)?.toDouble()?.let { it > (threshold as Number).toDouble() } ?: false
-                    "LESS_THAN" -> (value as? Number)?.toDouble()?.let { it < (threshold as Number).toDouble() } ?: false
+                    "GREATER_THAN" -> (value as? Number)?.toDouble()?.let { it > (threshold as Number).toDouble() }
+                        ?: false
+
+                    "LESS_THAN" -> (value as? Number)?.toDouble()?.let { it < (threshold as Number).toDouble() }
+                        ?: false
+
                     "EQUALS" -> value == threshold
                     else -> false
                 }
             }
+
             else -> false
         }
     }
@@ -182,9 +188,9 @@ class TaxConfiguration : OwnableBaseDomain() {
         if (other !is TaxConfiguration) return false
 
         return businessTypeId == other.businessTypeId &&
-               hsnCodeId == other.hsnCodeId &&
-               geographicalZone == other.geographicalZone &&
-               effectiveFrom == other.effectiveFrom
+                hsnCodeId == other.hsnCodeId &&
+                geographicalZone == other.geographicalZone &&
+                effectiveFrom == other.effectiveFrom
     }
 
     override fun hashCode(): Int {

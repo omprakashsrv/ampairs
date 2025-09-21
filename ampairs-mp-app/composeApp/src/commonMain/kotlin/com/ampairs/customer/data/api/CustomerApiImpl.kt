@@ -4,7 +4,6 @@ import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.post
-import com.ampairs.common.put
 import com.ampairs.common.delete
 import com.ampairs.common.model.Response
 import com.ampairs.customer.domain.Customer
@@ -19,48 +18,48 @@ class CustomerApiImpl(
 
     private val client = httpClient(engine, tokenRepository)
 
-    override suspend fun getCustomers(workspaceId: String, lastSync: Long): List<Customer> {
+    override suspend fun getCustomers(lastSync: Long): List<Customer> {
         val response: Response<List<Customer>> = get(
             client,
-            "$CUSTOMER_ENDPOINT/workspace/$workspaceId/customer/v1",
+            "$CUSTOMER_ENDPOINT/customer/v1",
             mapOf("last_sync" to lastSync)
         )
         return response.data ?: emptyList()
     }
 
-    override suspend fun createCustomer(workspaceId: String, customer: Customer): Customer {
+    override suspend fun createCustomer(customer: Customer): Customer {
         val response: Response<Customer> = post(
             client,
-            "$CUSTOMER_ENDPOINT/workspace/$workspaceId/customer/v1",
-            customer.copy(workspaceId = workspaceId)
+            "$CUSTOMER_ENDPOINT/customer/v1",
+            customer
         )
         return response.data ?: throw Exception("Failed to create customer")
     }
 
-    override suspend fun updateCustomer(workspaceId: String, customer: Customer): Customer {
-        val response: Response<Customer> = put(
+    override suspend fun updateCustomer(customer: Customer): Customer {
+        val response: Response<Customer> = post(
             client,
-            "$CUSTOMER_ENDPOINT/workspace/$workspaceId/customer/v1/${customer.id}",
-            customer.copy(workspaceId = workspaceId)
+            "$CUSTOMER_ENDPOINT/customer/v1",
+            customer
         )
         return response.data ?: throw Exception("Failed to update customer")
     }
 
-    override suspend fun deleteCustomer(workspaceId: String, customerId: String) {
+    override suspend fun deleteCustomer(customerId: String) {
         delete<Response<Unit>>(
             client,
-            "$CUSTOMER_ENDPOINT/workspace/$workspaceId/customer/v1/$customerId"
+            "$CUSTOMER_ENDPOINT/customer/v1/$customerId"
         )
     }
 
-    override suspend fun getCustomer(workspaceId: String, customerId: String): Customer? {
+    override suspend fun getCustomer(customerId: String): Customer? {
         return try {
             val response: Response<Customer> = get(
                 client,
-                "$CUSTOMER_ENDPOINT/workspace/$workspaceId/customer/v1/$customerId"
+                "$CUSTOMER_ENDPOINT/customer/v1/$customerId"
             )
             response.data
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             null
         }
     }

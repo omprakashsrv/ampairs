@@ -5,7 +5,6 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.CustomerAddress
-import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
@@ -14,7 +13,6 @@ import kotlin.time.ExperimentalTime
     tableName = "customers",
     indices = [
         Index(value = ["id"], unique = true),
-        Index(value = ["workspace_id"]),
         Index(value = ["name"])
     ]
 )
@@ -34,7 +32,6 @@ data class CustomerEntity(
     val billing_address_json: String?,
     val shipping_address_json: String?,
     val active: Boolean,
-    val workspace_id: String,
     val created_at: String?,
     val updated_at: String?,
     val synced: Boolean = false,
@@ -43,7 +40,7 @@ data class CustomerEntity(
 
 @OptIn(ExperimentalTime::class)
 fun Customer.toEntity(): CustomerEntity = CustomerEntity(
-    id = id,
+    id = uid,
     name = name,
     email = email,
     phone = phone,
@@ -58,7 +55,6 @@ fun Customer.toEntity(): CustomerEntity = CustomerEntity(
     billing_address_json = billingAddress?.let { Json.encodeToString(it) },
     shipping_address_json = shippingAddress?.let { Json.encodeToString(it) },
     active = active,
-    workspace_id = workspaceId,
     created_at = createdAt,
     updated_at = updatedAt,
     synced = false,
@@ -66,7 +62,7 @@ fun Customer.toEntity(): CustomerEntity = CustomerEntity(
 )
 
 fun CustomerEntity.toDomain(): Customer = Customer(
-    id = id,
+    uid = id,
     name = name,
     email = email,
     phone = phone,
@@ -79,13 +75,20 @@ fun CustomerEntity.toDomain(): Customer = Customer(
     pincode = pincode,
     country = country,
     billingAddress = billing_address_json?.let {
-        try { Json.decodeFromString<CustomerAddress>(it) } catch (e: Exception) { null }
+        try {
+            Json.decodeFromString<CustomerAddress>(it)
+        } catch (e: Exception) {
+            null
+        }
     },
     shippingAddress = shipping_address_json?.let {
-        try { Json.decodeFromString<CustomerAddress>(it) } catch (e: Exception) { null }
+        try {
+            Json.decodeFromString<CustomerAddress>(it)
+        } catch (e: Exception) {
+            null
+        }
     },
     active = active,
-    workspaceId = workspace_id,
     createdAt = created_at,
     updatedAt = updated_at
 )

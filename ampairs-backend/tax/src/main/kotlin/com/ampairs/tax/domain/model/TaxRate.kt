@@ -70,6 +70,9 @@ class TaxRate : OwnableBaseDomain() {
     @Column(name = "effective_to")
     var effectiveTo: LocalDate? = null
 
+    @Column(name = "active", nullable = false)
+    var active: Boolean = true
+
     @Column(name = "version_number", nullable = false)
     var versionNumber: Int = 1
 
@@ -105,8 +108,7 @@ class TaxRate : OwnableBaseDomain() {
 
     fun isValidForDate(date: LocalDateTime = LocalDateTime.now()): Boolean {
         val checkDate = date.toLocalDate()
-        return active &&
-                (checkDate.isAfter(effectiveFrom) || checkDate.isEqual(effectiveFrom)) &&
+        return (checkDate.isAfter(effectiveFrom) || checkDate.isEqual(effectiveFrom)) &&
                 (effectiveTo == null || checkDate.isBefore(effectiveTo))
     }
 
@@ -130,7 +132,7 @@ class TaxRate : OwnableBaseDomain() {
 
     fun isApplicableForBusinessType(businessType: BusinessType): Boolean {
         return this.businessType == businessType ||
-               this.businessType == BusinessType.B2B && businessType == BusinessType.B2C
+                this.businessType == BusinessType.B2B && businessType == BusinessType.B2C
     }
 
     fun isApplicableForZone(stateCode: String?): Boolean {
@@ -142,7 +144,7 @@ class TaxRate : OwnableBaseDomain() {
 
     fun hasExemptionFor(exemptionType: String): Boolean {
         return exemptionRules.containsKey(exemptionType) &&
-               exemptionRules[exemptionType] as? Boolean == true
+                exemptionRules[exemptionType] as? Boolean == true
     }
 
     override fun equals(other: Any?): Boolean {
@@ -150,10 +152,10 @@ class TaxRate : OwnableBaseDomain() {
         if (other !is TaxRate) return false
 
         return hsnCodeId == other.hsnCodeId &&
-               taxComponentType == other.taxComponentType &&
-               businessType == other.businessType &&
-               geographicalZone == other.geographicalZone &&
-               effectiveFrom == other.effectiveFrom
+                taxComponentType == other.taxComponentType &&
+                businessType == other.businessType &&
+                geographicalZone == other.geographicalZone &&
+                effectiveFrom == other.effectiveFrom
     }
 
     override fun hashCode(): Int {

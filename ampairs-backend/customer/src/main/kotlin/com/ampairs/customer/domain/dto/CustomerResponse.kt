@@ -19,13 +19,12 @@ data class CustomerResponse(
     var street: String = "",
     var street2: String = "",
     var city: String = "",
+    var status: String = "",
     var country: String = "",
     var billingAddress: Address = Address(),
     var shippingAddress: Address = Address(),
     val latitude: Double?,
     val longitude: Double?,
-    val active: Boolean,
-    val softDeleted: Boolean,
     var billingSameAsRegistered: Boolean,
     var shippingSameAsBilling: Boolean,
     var lastUpdated: Long?,
@@ -58,8 +57,7 @@ fun Customer.asCustomerResponse(): CustomerResponse {
         lastUpdated = this.lastUpdated,
         createdAt = this.createdAt,
         updatedAt = this.updatedAt,
-        active = this.active,
-        softDeleted = this.softDeleted,
+        status = this.status,
         street = this.street,
         street2 = this.street2,
         city = this.city,
@@ -67,7 +65,7 @@ fun Customer.asCustomerResponse(): CustomerResponse {
         billingAddress = this.billingAddress,
         shippingAddress = this.shippingAddress,
         shippingSameAsBilling = this.shippingSameAsBilling,
-        billingSameAsRegistered = this.billingSameAsRegistered
+        billingSameAsRegistered = this.billingSameAsRegistered,
     )
 }
 

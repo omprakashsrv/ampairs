@@ -243,7 +243,6 @@ class TaxRateController(
                 isCompositionSchemeApplicable = request.isCompositionSchemeApplicable,
                 description = request.description,
                 sourceReference = request.sourceReference,
-                isActive = request.isActive
             )
             val updated = taxRateService.updateTaxRateByUid(existingTaxRate.uid, updateDto)
             ResponseEntity.ok(ApiResponse.success(data = TaxRateResponseDto.from(updated)))

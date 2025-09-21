@@ -103,7 +103,6 @@ data class TaxConfigurationRequestDto(
             thresholdLimits = this@TaxConfigurationRequestDto.thresholdLimits
             description = this@TaxConfigurationRequestDto.description
             notificationReference = this@TaxConfigurationRequestDto.notificationReference
-            active = this@TaxConfigurationRequestDto.isActive
         }
     }
 }
@@ -127,7 +126,6 @@ data class TaxConfigurationResponseDto(
     val cessAmountPerUnit: BigDecimal?,
     val effectiveFrom: LocalDate,
     val effectiveTo: LocalDate?,
-    val isActive: Boolean,
     val isReverseChargeApplicable: Boolean,
     val isCompositionSchemeApplicable: Boolean,
     val compositionRate: BigDecimal?,
@@ -168,7 +166,6 @@ data class TaxConfigurationResponseDto(
                 cessAmountPerUnit = taxConfiguration.cessAmountPerUnit,
                 effectiveFrom = taxConfiguration.effectiveFrom,
                 effectiveTo = taxConfiguration.effectiveTo,
-                isActive = taxConfiguration.active,
                 isReverseChargeApplicable = taxConfiguration.isReverseChargeApplicable,
                 isCompositionSchemeApplicable = taxConfiguration.isCompositionSchemeApplicable,
                 compositionRate = taxConfiguration.compositionRate,

@@ -35,7 +35,7 @@ data class CustomerFormState(
 
     fun toCustomer(id: String = "", workspaceId: String = ""): Customer {
         return Customer(
-            id = id,
+            uid = id,
             name = name.trim(),
             email = email.trim().takeIf { it.isNotBlank() },
             phone = phone.trim().takeIf { it.isNotBlank() },
@@ -78,13 +78,11 @@ class CustomerFormViewModel(
     fun loadCustomer() {
         if (customerId == null) return
 
-        val workspaceId = workspaceContextManager.getCurrentWorkspaceId() ?: return
-
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             try {
-                val key = CustomerKey(workspaceId, customerId)
+                val key = CustomerKey(customerId)
                 customerStore.customerStore
                     .stream(StoreReadRequest.cached(key, refresh = false))
                     .collect { response ->
@@ -99,9 +97,11 @@ class CustomerFormViewModel(
                                     )
                                 }
                             }
+
                             is StoreReadResponse.Loading -> {
                                 _uiState.update { it.copy(isLoading = true) }
                             }
+
                             is StoreReadResponse.Error.Exception -> {
                                 _uiState.update {
                                     it.copy(
@@ -110,6 +110,7 @@ class CustomerFormViewModel(
                                     )
                                 }
                             }
+
                             is StoreReadResponse.Error.Message -> {
                                 _uiState.update {
                                     it.copy(
@@ -118,6 +119,7 @@ class CustomerFormViewModel(
                                     )
                                 }
                             }
+
                             else -> {
                                 // Handle other response types if needed
                             }
@@ -165,7 +167,7 @@ class CustomerFormViewModel(
                         id = uuid4().toString(),
                         workspaceId = workspaceId
                     )
-                    customerStore.createCustomer(workspaceId, newCustomer)
+                    customerStore.createCustomer(newCustomer)
                 } else {
                     // Update existing customer
                     val updatedCustomer = originalCustomer?.copy(
@@ -183,7 +185,7 @@ class CustomerFormViewModel(
                         workspaceId = workspaceId
                     ) ?: return@launch
 
-                    customerStore.updateCustomer(workspaceId, updatedCustomer)
+                    customerStore.updateCustomer(updatedCustomer)
                 }
 
                 if (result.isSuccess) {

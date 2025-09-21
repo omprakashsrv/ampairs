@@ -72,7 +72,7 @@ class CustomerController @Autowired constructor(
             attributes = request.attributes ?: emptyMap()
             status = "ACTIVE"
         }
-        
+
         val createdCustomer = customerService.createCustomer(customer)
         return ApiResponse.success(createdCustomer.asCustomerResponse())
     }
@@ -90,17 +90,21 @@ class CustomerController @Autowired constructor(
         @RequestParam("sort", defaultValue = "name") sort: String,
         @RequestParam("direction", defaultValue = "ASC") direction: String
     ): ApiResponse<Map<String, Any>> {
-        val customerType = customerTypeStr?.let { 
-            try { CustomerType.valueOf(it.uppercase()) } catch (e: Exception) { null }
+        val customerType = customerTypeStr?.let {
+            try {
+                CustomerType.valueOf(it.uppercase())
+            } catch (e: Exception) {
+                null
+            }
         }
-        
+
         val sortDirection = if (direction.uppercase() == "DESC") Sort.Direction.DESC else Sort.Direction.ASC
         val pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort))
-        
+
         val customerPage = customerService.searchCustomers(
             search, customerType, city, state, hasCredit, hasOutstanding, pageable
         )
-        
+
         val response = mapOf(
             "customers" to customerPage.content.map { it.asCustomerResponse() },
             "pagination" to mapOf(
@@ -112,7 +116,7 @@ class CustomerController @Autowired constructor(
                 "has_previous" to customerPage.hasPrevious()
             )
         )
-        
+
         return ApiResponse.success(response)
     }
 
@@ -120,7 +124,7 @@ class CustomerController @Autowired constructor(
     fun getCustomer(@PathVariable customerId: String): ApiResponse<CustomerResponse> {
         val customer = customerService.getCustomers(null).find { it.uid == customerId }
             ?: return ApiResponse.error("Customer not found", "CUSTOMER_NOT_FOUND")
-        
+
         return ApiResponse.success(customer.asCustomerResponse())
     }
 
@@ -138,12 +142,13 @@ class CustomerController @Autowired constructor(
             city = request.city
             state = request.state ?: ""
             pincode = request.pincode ?: ""
-            active = request.active
+            status = request.status ?: "ACTIVE"
+            attributes = request.attributes ?: emptyMap()
         }
-        
+
         val updatedCustomer = customerService.updateCustomer(customerId, updates)
             ?: return ApiResponse.error("Customer not found", "CUSTOMER_NOT_FOUND")
-        
+
         return ApiResponse.success(updatedCustomer.asCustomerResponse())
     }
 
@@ -151,7 +156,7 @@ class CustomerController @Autowired constructor(
     fun getCustomerByNumber(@PathVariable customerNumber: String): ApiResponse<CustomerResponse> {
         val customer = customerService.getCustomerByNumber(customerNumber)
             ?: return ApiResponse.error("Customer not found with number: $customerNumber", "CUSTOMER_NOT_FOUND")
-        
+
         return ApiResponse.success(customer.asCustomerResponse())
     }
 
@@ -159,21 +164,21 @@ class CustomerController @Autowired constructor(
     fun getCustomerByGst(@PathVariable gstNumber: String): ApiResponse<CustomerResponse> {
         val customer = customerService.getCustomerByGstNumber(gstNumber)
             ?: return ApiResponse.error("Customer not found with GST: $gstNumber", "CUSTOMER_NOT_FOUND")
-        
+
         return ApiResponse.success(customer.asCustomerResponse())
     }
 
     @PostMapping("/validate-gst")
     fun validateGstNumber(@RequestBody request: Map<String, String>): ApiResponse<Map<String, Any>> {
         val gstNumber = request["gst_number"] ?: return ApiResponse.error("GST number is required", "VALIDATION_ERROR")
-        
+
         val isValid = customerService.validateGstNumber(gstNumber)
         val response = mapOf(
             "gst_number" to gstNumber,
             "is_valid" to isValid,
             "message" to if (isValid) "Valid GST number" else "Invalid GST number format"
         )
-        
+
         return ApiResponse.success(response)
     }
 
@@ -182,13 +187,13 @@ class CustomerController @Autowired constructor(
         @PathVariable customerId: String,
         @RequestBody request: Map<String, Any>
     ): ApiResponse<CustomerResponse> {
-        val amount = (request["amount"] as? Number)?.toDouble() 
+        val amount = (request["amount"] as? Number)?.toDouble()
             ?: return ApiResponse.error("Amount is required", "VALIDATION_ERROR")
         val isPayment = request["is_payment"] as? Boolean ?: false
-        
+
         val updatedCustomer = customerService.updateOutstanding(customerId, amount, isPayment)
             ?: return ApiResponse.error("Customer not found", "CUSTOMER_NOT_FOUND")
-        
+
         return ApiResponse.success(updatedCustomer.asCustomerResponse())
     }
 }

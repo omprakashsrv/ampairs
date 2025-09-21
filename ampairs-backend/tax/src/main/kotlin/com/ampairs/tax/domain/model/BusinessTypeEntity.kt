@@ -1,7 +1,6 @@
 package com.ampairs.tax.domain.model
 
 import com.ampairs.core.domain.model.OwnableBaseDomain
-import com.ampairs.tax.config.Constants
 import com.ampairs.tax.domain.enums.BusinessType
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
@@ -20,6 +19,9 @@ class BusinessTypeEntity : OwnableBaseDomain() {
     @Enumerated(EnumType.STRING)
     @Column(name = "business_type", nullable = false, unique = true, length = 30)
     var businessType: BusinessType = BusinessType.B2B
+
+    @Column(name = "active", nullable = false)
+    var active: Boolean = true
 
     @Column(name = "display_name", nullable = false, length = 100)
     var displayName: String = ""

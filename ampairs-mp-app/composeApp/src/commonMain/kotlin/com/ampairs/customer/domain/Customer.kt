@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class Customer(
-    val id: String = "",
+    val uid: String = "",
     val name: String = "",
     val email: String? = null,
     val phone: String? = null,
@@ -49,7 +49,7 @@ data class CustomerListItem(
 )
 
 fun Customer.toListItem(): CustomerListItem = CustomerListItem(
-    id = id,
+    id = uid,
     name = name,
     phone = phone,
     email = email,

@@ -17,29 +17,29 @@ class CustomerRepository(
     private val customerApi: CustomerApi
 ) {
 
-    fun observeCustomers(workspaceId: String): Flow<List<CustomerListItem>> {
-        return customerDao.getAllCustomers(workspaceId)
+    fun observeCustomers(): Flow<List<CustomerListItem>> {
+        return customerDao.getAllCustomers()
             .map { entities -> entities.map { it.toDomain().toListItem() } }
     }
 
-    fun observeCustomer(workspaceId: String, customerId: String): Flow<Customer?> {
-        return customerDao.observeCustomerById(workspaceId, customerId)
+    fun observeCustomer(customerId: String): Flow<Customer?> {
+        return customerDao.observeCustomerById(customerId)
             .map { it?.toDomain() }
     }
 
-    fun searchCustomers(workspaceId: String, query: String): Flow<List<CustomerListItem>> {
-        return customerDao.searchCustomers(workspaceId, query)
+    fun searchCustomers(query: String): Flow<List<CustomerListItem>> {
+        return customerDao.searchCustomers(query)
             .map { entities -> entities.map { it.toDomain().toListItem() } }
     }
 
-    suspend fun getCustomer(workspaceId: String, customerId: String): Customer? {
-        return customerDao.getCustomerById(workspaceId, customerId)?.toDomain()
+    suspend fun getCustomer(customerId: String): Customer? {
+        return customerDao.getCustomerById(customerId)?.toDomain()
     }
 
-    suspend fun createCustomer(workspaceId: String, customer: Customer): Result<Customer> {
+    suspend fun createCustomer(customer: Customer): Result<Customer> {
         return try {
             // Create on server first
-            val serverCustomer = customerApi.createCustomer(workspaceId, customer)
+            val serverCustomer = customerApi.createCustomer(customer)
 
             // Save to local database
             customerDao.insertCustomer(serverCustomer.toEntity())
@@ -48,18 +48,17 @@ class CustomerRepository(
         } catch (e: Exception) {
             // Save locally if server fails (offline mode)
             val localCustomer = customer.copy(
-                id = generateLocalId(),
-                workspaceId = workspaceId
+                uid = generateLocalId(),
             )
             customerDao.insertCustomer(localCustomer.toEntity())
             Result.success(localCustomer)
         }
     }
 
-    suspend fun updateCustomer(workspaceId: String, customer: Customer): Result<Customer> {
+    suspend fun updateCustomer(customer: Customer): Result<Customer> {
         return try {
             // Update on server first
-            val serverCustomer = customerApi.updateCustomer(workspaceId, customer)
+            val serverCustomer = customerApi.updateCustomer(customer)
 
             // Update local database
             customerDao.updateCustomer(serverCustomer.toEntity())
@@ -72,18 +71,18 @@ class CustomerRepository(
         }
     }
 
-    suspend fun deleteCustomer(workspaceId: String, customerId: String): Result<Unit> {
+    suspend fun deleteCustomer(customerId: String): Result<Unit> {
         return try {
             // Delete on server first
-            customerApi.deleteCustomer(workspaceId, customerId)
+            customerApi.deleteCustomer(customerId)
 
             // Delete from local database
-            customerDao.deleteCustomer(workspaceId, customerId)
+            customerDao.deleteCustomer(customerId)
 
             Result.success(Unit)
         } catch (e: Exception) {
             // Mark as deleted locally if server fails
-            val customer = customerDao.getCustomerById(workspaceId, customerId)
+            val customer = customerDao.getCustomerById(customerId)
             if (customer != null) {
                 customerDao.updateCustomer(customer.copy(active = false))
             }
@@ -91,32 +90,28 @@ class CustomerRepository(
         }
     }
 
-    suspend fun syncCustomers(workspaceId: String): Result<Int> {
+    suspend fun syncCustomers(): Result<Int> {
         return try {
-            val lastSync = getLastSyncTime(workspaceId)
-            val serverCustomers = customerApi.getCustomers(workspaceId, lastSync)
+            val lastSync = getLastSyncTime()
+            val serverCustomers = customerApi.getCustomers(lastSync)
 
             // Insert/update customers from server
             val entities = serverCustomers.map { it.toEntity() }
             customerDao.insertCustomers(entities)
 
             // Sync unsynced local customers to server
-            val unsyncedCustomers = customerDao.getUnsyncedCustomers(workspaceId)
+            val unsyncedCustomers = customerDao.getUnsyncedCustomers()
             for (entity in unsyncedCustomers) {
-                try {
-                    val customer = entity.toDomain()
-                    if (entity.id.startsWith("local_")) {
-                        // Create new customer on server
-                        val serverCustomer = customerApi.createCustomer(workspaceId, customer)
-                        customerDao.deleteCustomer(workspaceId, entity.id) // Remove local temp
-                        customerDao.insertCustomer(serverCustomer.toEntity())
-                    } else {
-                        // Update existing customer on server
-                        customerApi.updateCustomer(workspaceId, customer)
-                        customerDao.markAsSynced(workspaceId, entity.id)
-                    }
-                } catch (e: Exception) {
-                    // Skip failed syncs, will retry later
+                val customer = entity.toDomain()
+                if (entity.id.startsWith("local_")) {
+                    // Create new customer on server
+                    val serverCustomer = customerApi.createCustomer(customer)
+                    customerDao.deleteCustomer(entity.id) // Remove local temp
+                    customerDao.insertCustomer(serverCustomer.toEntity())
+                } else {
+                    // Update existing customer on server
+                    customerApi.updateCustomer(customer)
+                    customerDao.markAsSynced(entity.id)
                 }
             }
 
@@ -126,11 +121,11 @@ class CustomerRepository(
         }
     }
 
-    suspend fun getCustomerCount(workspaceId: String): Int {
-        return customerDao.getCustomerCount(workspaceId)
+    suspend fun getCustomerCount(): Int {
+        return customerDao.getCustomerCount()
     }
 
-    private suspend fun getLastSyncTime(workspaceId: String): Long {
+    private suspend fun getLastSyncTime(): Long {
         // Implementation to get last sync time from preferences or metadata
         return 0L // Placeholder
     }

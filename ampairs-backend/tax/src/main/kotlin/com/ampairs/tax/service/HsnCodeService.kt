@@ -91,14 +91,13 @@ class HsnCodeService(
         return hsnCodeRepository.save(hsnCode)
     }
 
-    @Transactional
-    fun deactivateHsnCode(hsnId: Long) {
-        val hsnCode = hsnCodeRepository.findById(hsnId)
-            .orElseThrow { IllegalArgumentException("HSN code not found with id: $hsnId") }
-
-        hsnCode.active = false
-        hsnCodeRepository.save(hsnCode)
-    }
+//    @Transactional
+//    fun deactivateHsnCode(hsnId: Long) {
+//        val hsnCode = hsnCodeRepository.findById(hsnId)
+//            .orElseThrow { IllegalArgumentException("HSN code not found with id: $hsnId") }
+//
+//        hsnCodeRepository.save(hsnCode)
+//    }
 
     @Transactional
     fun updateHsnCodeByUid(uid: String, updateDto: HsnCodeUpdateDto): HsnCode {
@@ -114,7 +113,6 @@ class HsnCodeService(
             attributes = updateDto.attributes
             effectiveFrom = updateDto.effectiveFrom
             effectiveTo = updateDto.effectiveTo
-            active = updateDto.isActive
         }
 
         return hsnCodeRepository.save(existingHsn)
@@ -125,7 +123,6 @@ class HsnCodeService(
         val hsnCode = findByUid(uid)
             ?: throw IllegalArgumentException("HSN code not found with UID: $uid")
 
-        hsnCode.active = false
         hsnCodeRepository.save(hsnCode)
     }
 

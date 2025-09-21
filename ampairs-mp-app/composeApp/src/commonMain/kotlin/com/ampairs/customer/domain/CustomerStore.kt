@@ -9,8 +9,8 @@ import org.mobilenativefoundation.store.store5.SourceOfTruth
 import org.mobilenativefoundation.store.store5.Store
 import org.mobilenativefoundation.store.store5.StoreBuilder
 
-data class CustomerKey(val workspaceId: String, val customerId: String)
-data class CustomerListKey(val workspaceId: String, val searchQuery: String = "")
+data class CustomerKey(val customerId: String)
+data class CustomerListKey(val searchQuery: String = "")
 
 @OptIn(ExperimentalStoreApi::class)
 class CustomerStore(private val repository: CustomerRepository) {
@@ -18,19 +18,19 @@ class CustomerStore(private val repository: CustomerRepository) {
     val customerListStore: Store<CustomerListKey, List<CustomerListItem>> = StoreBuilder
         .from(
             fetcher = Fetcher.of { key: CustomerListKey ->
-                repository.syncCustomers(key.workspaceId)
+                repository.syncCustomers()
                 if (key.searchQuery.isBlank()) {
-                    repository.observeCustomers(key.workspaceId).first()
+                    repository.observeCustomers().first()
                 } else {
-                    repository.searchCustomers(key.workspaceId, key.searchQuery).first()
+                    repository.searchCustomers(key.searchQuery).first()
                 }
             },
             sourceOfTruth = SourceOfTruth.of(
                 reader = { key: CustomerListKey ->
                     if (key.searchQuery.isBlank()) {
-                        repository.observeCustomers(key.workspaceId)
+                        repository.observeCustomers()
                     } else {
-                        repository.searchCustomers(key.workspaceId, key.searchQuery)
+                        repository.searchCustomers(key.searchQuery)
                     }
                 },
                 writer = { _: CustomerListKey, _: List<CustomerListItem> ->
@@ -42,12 +42,12 @@ class CustomerStore(private val repository: CustomerRepository) {
     val customerStore: Store<CustomerKey, Customer> = StoreBuilder
         .from(
             fetcher = Fetcher.of { key: CustomerKey ->
-                repository.getCustomer(key.workspaceId, key.customerId)
+                repository.getCustomer(key.customerId)
                     ?: throw Exception("Customer not found: ${key.customerId}")
             },
             sourceOfTruth = SourceOfTruth.of(
                 reader = { key: CustomerKey ->
-                    repository.observeCustomer(key.workspaceId, key.customerId)
+                    repository.observeCustomer(key.customerId)
                         .map { it ?: throw Exception("Customer not found: ${key.customerId}") }
                 },
                 writer = { _: CustomerKey, _: Customer ->
@@ -56,8 +56,8 @@ class CustomerStore(private val repository: CustomerRepository) {
             )
         ).build()
 
-    suspend fun createCustomer(workspaceId: String, customer: Customer): Result<Customer> {
-        val result = repository.createCustomer(workspaceId, customer)
+    suspend fun createCustomer(customer: Customer): Result<Customer> {
+        val result = repository.createCustomer(customer)
         if (result.isSuccess) {
             // Invalidate store to refresh data
             customerListStore.clear()
@@ -65,8 +65,8 @@ class CustomerStore(private val repository: CustomerRepository) {
         return result
     }
 
-    suspend fun updateCustomer(workspaceId: String, customer: Customer): Result<Customer> {
-        val result = repository.updateCustomer(workspaceId, customer)
+    suspend fun updateCustomer(customer: Customer): Result<Customer> {
+        val result = repository.updateCustomer(customer)
         if (result.isSuccess) {
             // Invalidate stores to refresh data
             customerListStore.clear()
@@ -75,8 +75,8 @@ class CustomerStore(private val repository: CustomerRepository) {
         return result
     }
 
-    suspend fun deleteCustomer(workspaceId: String, customerId: String): Result<Unit> {
-        val result = repository.deleteCustomer(workspaceId, customerId)
+    suspend fun deleteCustomer(customerId: String): Result<Unit> {
+        val result = repository.deleteCustomer(customerId)
         if (result.isSuccess) {
             // Invalidate stores to refresh data
             customerListStore.clear()
@@ -85,8 +85,8 @@ class CustomerStore(private val repository: CustomerRepository) {
         return result
     }
 
-    suspend fun syncCustomers(workspaceId: String): Result<Int> {
-        val result = repository.syncCustomers(workspaceId)
+    suspend fun syncCustomers(): Result<Int> {
+        val result = repository.syncCustomers()
         if (result.isSuccess) {
             // Invalidate store to refresh data
             customerListStore.clear()

@@ -35,13 +35,12 @@ class CustomersListViewModel(
     }
 
     fun loadCustomers() {
-        val workspaceId = workspaceContextManager.getCurrentWorkspaceId() ?: return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             try {
-                val key = CustomerListKey(workspaceId, _uiState.value.searchQuery)
+                val key = CustomerListKey(_uiState.value.searchQuery)
                 customerStore.customerListStore
                     .stream(StoreReadRequest.cached(key, refresh = false))
                     .catch { throwable ->
@@ -63,9 +62,11 @@ class CustomersListViewModel(
                                     )
                                 }
                             }
+
                             is StoreReadResponse.Loading -> {
                                 _uiState.update { it.copy(isLoading = true) }
                             }
+
                             is StoreReadResponse.Error.Exception -> {
                                 _uiState.update {
                                     it.copy(
@@ -74,6 +75,7 @@ class CustomersListViewModel(
                                     )
                                 }
                             }
+
                             is StoreReadResponse.Error.Message -> {
                                 _uiState.update {
                                     it.copy(
@@ -82,6 +84,7 @@ class CustomersListViewModel(
                                     )
                                 }
                             }
+
                             else -> {
                                 // Handle other response types if needed
                             }
@@ -103,13 +106,12 @@ class CustomersListViewModel(
     }
 
     fun syncCustomers() {
-        val workspaceId = workspaceContextManager.getCurrentWorkspaceId() ?: return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true, error = null) }
 
             try {
-                val result = customerStore.syncCustomers(workspaceId)
+                val result = customerStore.syncCustomers()
                 _uiState.update {
                     it.copy(
                         isRefreshing = false,
@@ -143,10 +145,9 @@ class CustomersListViewModel(
     }
 
     private suspend fun performSearch(query: String) {
-        val workspaceId = workspaceContextManager.getCurrentWorkspaceId() ?: return
 
         try {
-            val key = CustomerListKey(workspaceId, query)
+            val key = CustomerListKey(query)
             customerStore.customerListStore
                 .stream(StoreReadRequest.cached(key, refresh = false))
                 .catch { throwable ->
@@ -164,16 +165,19 @@ class CustomersListViewModel(
                                 )
                             }
                         }
+
                         is StoreReadResponse.Error.Exception -> {
                             _uiState.update {
                                 it.copy(error = response.error.message ?: "Search failed")
                             }
                         }
+
                         is StoreReadResponse.Error.Message -> {
                             _uiState.update {
                                 it.copy(error = response.message)
                             }
                         }
+
                         else -> {
                             // Handle other response types if needed
                         }

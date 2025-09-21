@@ -8,7 +8,7 @@ import jakarta.validation.constraints.*
 data class CustomerUpdateRequest(
     @field:SafeString(maxLength = 50, message = "ID contains invalid characters")
     @field:Size(max = 50, message = "ID cannot exceed 50 characters")
-    var id: String?,
+    var uid: String?,
 
     @field:SafeString(maxLength = 50, message = "Reference ID contains invalid characters")
     @field:Size(max = 50, message = "Reference ID cannot exceed 50 characters")
@@ -23,7 +23,7 @@ data class CustomerUpdateRequest(
     @field:ValidGstin
     var gstin: String?,
 
-    @field:ValidCountryCode
+//    @field:ValidCountryCode
     val countryCode: Int,
 
     @field:ValidPhone
@@ -38,6 +38,10 @@ data class CustomerUpdateRequest(
 
     @field:ValidPincode
     var pincode: String?,
+
+    var status: String?,
+
+    var attributes: Map<String, Any>?,
 
     @field:SafeString(maxLength = 500, message = "Address contains invalid characters")
     var address: String?,
@@ -81,7 +85,7 @@ data class CustomerUpdateRequest(
 
 fun CustomerUpdateRequest.toCustomer(): Customer {
     val customer = Customer()
-    customer.uid = this.id ?: ""
+    customer.uid = this.uid ?: ""
     customer.refId = this.refId ?: ""
     customer.name = this.name
     customer.countryCode = this.countryCode
@@ -97,8 +101,8 @@ fun CustomerUpdateRequest.toCustomer(): Customer {
     customer.city = this.city
     customer.billingAddress = this.billingAddress ?: Address()
     customer.shippingAddress = this.shippingAddress ?: Address()
-    customer.active = this.active
-    customer.softDeleted = this.softDeleted
+    customer.status = this.status ?: "ACTIVE"
+    customer.attributes = this.attributes
     customer.billingSameAsRegistered = this.billingSameAsRegistered
     customer.shippingSameAsBilling = this.shippingSameAsBilling
     return customer

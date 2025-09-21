@@ -11,10 +11,6 @@ import com.ampairs.product.domain.dto.product.ProductRequest
 import com.ampairs.product.domain.dto.product.ProductResponse
 import com.ampairs.product.domain.dto.product.asDatabaseModel
 import com.ampairs.product.domain.dto.product.asResponse
-import com.ampairs.product.domain.dto.tax.TaxCodeRequest
-import com.ampairs.product.domain.dto.tax.TaxCodeResponse
-import com.ampairs.product.domain.dto.tax.asDatabaseModel
-import com.ampairs.product.domain.dto.tax.asResponse
 import com.ampairs.product.domain.dto.unit.UnitRequest
 import com.ampairs.product.domain.dto.unit.UnitResponse
 import com.ampairs.product.domain.dto.unit.asDatabaseModel
@@ -128,12 +124,6 @@ class ProductController(val productService: ProductService, val fileService: Fil
         val productSubCategories =
             productService.updateProductSubCategories(categories.asDatabaseModel())
         return ApiResponse.success(productSubCategories.asResponse())
-    }
-
-    @PostMapping("/tax_codes")
-    fun updateTaxCodes(@RequestBody codes: List<TaxCodeRequest>): ApiResponse<List<TaxCodeResponse>> {
-        val taxCodes = productService.updateTaxCodes(codes.asDatabaseModel())
-        return ApiResponse.success(taxCodes.asResponse())
     }
 
     @PostMapping("/upload_image")

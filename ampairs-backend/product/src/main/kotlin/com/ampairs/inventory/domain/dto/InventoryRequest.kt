@@ -95,7 +95,6 @@ fun InventoryRequest.asDatabaseModel(): Inventory {
     inventory.productId = this.productId ?: ""
     inventory.unitId = this.baseUnitId
     inventory.description = this.description ?: ""
-    inventory.active = this.active ?: true
     inventory.mrp = this.mrp ?: 0.0
     inventory.dp = this.dp ?: 0.0
     inventory.stock = this.stock ?: 0.0

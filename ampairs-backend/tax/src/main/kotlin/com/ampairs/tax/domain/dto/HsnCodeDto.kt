@@ -59,7 +59,6 @@ data class HsnCodeRequestDto(
             attributes = this@HsnCodeRequestDto.attributes
             effectiveFrom = this@HsnCodeRequestDto.effectiveFrom
             effectiveTo = this@HsnCodeRequestDto.effectiveTo
-            active = this@HsnCodeRequestDto.isActive
         }
     }
 }
@@ -80,7 +79,6 @@ data class HsnCodeResponseDto(
     val attributes: Map<String, Any>,
     val effectiveFrom: LocalDateTime?,
     val effectiveTo: LocalDateTime?,
-    val isActive: Boolean,
     val createdAt: LocalDateTime?,
     val updatedAt: LocalDateTime?,
     val hasValidTaxRates: Boolean,
@@ -105,7 +103,6 @@ data class HsnCodeResponseDto(
                 attributes = hsnCode.attributes,
                 effectiveFrom = hsnCode.effectiveFrom,
                 effectiveTo = hsnCode.effectiveTo,
-                isActive = hsnCode.active,
                 createdAt = hsnCode.createdAt,
                 updatedAt = hsnCode.updatedAt,
                 hasValidTaxRates = hsnCode.hasValidTaxRates(),

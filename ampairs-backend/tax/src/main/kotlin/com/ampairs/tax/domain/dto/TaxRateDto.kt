@@ -92,7 +92,6 @@ data class TaxRateRequestDto(
             isCompositionSchemeApplicable = this@TaxRateRequestDto.isCompositionSchemeApplicable
             description = this@TaxRateRequestDto.description
             sourceReference = this@TaxRateRequestDto.sourceReference
-            active = this@TaxRateRequestDto.isActive
         }
     }
 }
@@ -122,7 +121,6 @@ data class TaxRateResponseDto(
     val isCompositionSchemeApplicable: Boolean,
     val description: String?,
     val sourceReference: String?,
-    val isActive: Boolean,
     val createdAt: LocalDateTime?,
     val updatedAt: LocalDateTime?,
     val lastUpdatedBy: String?,
@@ -161,7 +159,6 @@ data class TaxRateResponseDto(
                 isCompositionSchemeApplicable = taxRate.isCompositionSchemeApplicable,
                 description = taxRate.description,
                 sourceReference = taxRate.sourceReference,
-                isActive = taxRate.active,
                 createdAt = taxRate.createdAt,
                 updatedAt = taxRate.updatedAt,
                 lastUpdatedBy = taxRate.ownerId,
@@ -218,7 +215,6 @@ data class TaxRateUpdateDto(
     @field:Size(max = 255, message = "Source reference is too long")
     val sourceReference: String? = null,
 
-    val isActive: Boolean = true
 ) {
     fun toEntity(): TaxRate {
         return TaxRate().apply {
@@ -237,7 +233,6 @@ data class TaxRateUpdateDto(
             isCompositionSchemeApplicable = this@TaxRateUpdateDto.isCompositionSchemeApplicable
             description = this@TaxRateUpdateDto.description
             sourceReference = this@TaxRateUpdateDto.sourceReference
-            active = this@TaxRateUpdateDto.isActive
         }
     }
 
@@ -259,7 +254,6 @@ data class TaxRateUpdateDto(
                 isCompositionSchemeApplicable = taxRate.isCompositionSchemeApplicable,
                 description = taxRate.description,
                 sourceReference = taxRate.sourceReference,
-                isActive = taxRate.active
             )
         }
     }

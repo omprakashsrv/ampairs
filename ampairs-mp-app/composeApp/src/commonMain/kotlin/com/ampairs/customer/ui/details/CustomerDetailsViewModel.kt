@@ -27,13 +27,12 @@ class CustomerDetailsViewModel(
     val uiState: StateFlow<CustomerDetailsUiState> = _uiState.asStateFlow()
 
     fun loadCustomer() {
-        val workspaceId = workspaceContextManager.getCurrentWorkspaceId() ?: return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             try {
-                val key = CustomerKey(workspaceId, customerId)
+                val key = CustomerKey(customerId)
                 customerStore.customerStore
                     .stream(StoreReadRequest.cached(key, refresh = false))
                     .catch { throwable ->
@@ -55,9 +54,11 @@ class CustomerDetailsViewModel(
                                     )
                                 }
                             }
+
                             is StoreReadResponse.Loading -> {
                                 _uiState.update { it.copy(isLoading = true) }
                             }
+
                             is StoreReadResponse.Error.Exception -> {
                                 _uiState.update {
                                     it.copy(
@@ -66,6 +67,7 @@ class CustomerDetailsViewModel(
                                     )
                                 }
                             }
+
                             is StoreReadResponse.Error.Message -> {
                                 _uiState.update {
                                     it.copy(
@@ -74,6 +76,7 @@ class CustomerDetailsViewModel(
                                     )
                                 }
                             }
+
                             else -> {
                                 // Handle other response types if needed
                             }
@@ -91,13 +94,12 @@ class CustomerDetailsViewModel(
     }
 
     fun deleteCustomer(onSuccess: () -> Unit) {
-        val workspaceId = workspaceContextManager.getCurrentWorkspaceId() ?: return
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             try {
-                val result = customerStore.deleteCustomer(workspaceId, customerId)
+                val result = customerStore.deleteCustomer(customerId)
                 if (result.isSuccess) {
                     onSuccess()
                 } else {

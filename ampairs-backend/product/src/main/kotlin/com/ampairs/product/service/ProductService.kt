@@ -1,7 +1,6 @@
 package com.ampairs.product.service
 
 import com.ampairs.product.domain.model.Product
-import com.ampairs.product.domain.model.TaxCode
 import com.ampairs.product.domain.model.Unit
 import com.ampairs.product.domain.model.group.ProductBrand
 import com.ampairs.product.domain.model.group.ProductCategory
@@ -25,7 +24,6 @@ class ProductService(
     val productCategoryRepository: ProductCategoryRepository,
     val productSubCategoryRepository: ProductSubCategoryRepository,
     val productRepository: ProductRepository,
-    private val taxCodeRepository: TaxCodeRepository,
 ) {
 
     fun getProducts(lastUpdated: Long?): List<Product> {
@@ -33,18 +31,6 @@ class ProductService(
             lastUpdated ?: 0,
             PageRequest.of(0, 1000, Sort.by("lastUpdated").ascending())
         )
-    }
-
-
-    @Transactional
-    fun updateTaxCodes(taxCodes: List<TaxCode>): List<TaxCode> {
-        taxCodes.forEach {
-            val taxCode = taxCodeRepository.findByCode(it.code)
-            it.id = taxCode?.id ?: 0
-            it.uid = taxCode?.uid ?: ""
-            taxCodeRepository.save(it)
-        }
-        return taxCodes
     }
 
     @Transactional

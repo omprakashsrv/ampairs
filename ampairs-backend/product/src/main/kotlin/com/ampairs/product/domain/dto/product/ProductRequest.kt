@@ -53,7 +53,6 @@ fun List<ProductRequest>.asDatabaseModel(): List<Product> {
         product.brandId = it.brandId
         product.baseUnitId = it.baseUnitId
         product.attributes = it.attributes ?: emptyMap()
-        product.active = it.active
         product.mrp = it.mrp
         product.dp = it.dp
         product.sellingPrice = it.sellingPrice
