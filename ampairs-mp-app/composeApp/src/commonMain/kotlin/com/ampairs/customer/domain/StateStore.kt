@@ -45,4 +45,34 @@ class StateStore(
     suspend fun getStateById(stateId: String): State? {
         return stateDao.getStateById(stateId)?.toDomain()
     }
+
+    suspend fun createState(state: State): Result<State> {
+        return try {
+            val createdState = customerApi.createState(state)
+            stateDao.insertState(createdState.toEntity())
+            Result.success(createdState)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun updateState(state: State): Result<State> {
+        return try {
+            val updatedState = customerApi.updateState(state)
+            stateDao.updateState(updatedState.toEntity())
+            Result.success(updatedState)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun deleteState(stateId: String): Result<Unit> {
+        return try {
+            customerApi.deleteState(stateId)
+            stateDao.deleteStateById(stateId)
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

@@ -1,14 +1,13 @@
-import com.ampairs.auth.authModule
-import com.ampairs.common.theme.themeModule
-import com.ampairs.workspace.workspaceModule
-import com.ampairs.customer.di.customerModule
 // import com.ampairs.inventory.inventoryModule
 // import com.ampairs.invoice.invoiceModule
-import com.ampairs.menu.menuModule
 // import com.ampairs.order.orderModule
+import com.ampairs.auth.authModule
+import com.ampairs.common.theme.themeModule
+import com.ampairs.customer.di.customerModule
 import com.ampairs.product.productModule
 import com.ampairs.tax.taxModule
 import com.ampairs.workspace.navigation.initializeModuleProviders
+import com.ampairs.workspace.workspaceModule
 import org.koin.core.KoinApplication
 import org.koin.core.module.Module
 
@@ -33,7 +32,6 @@ fun initKoin(koinApplication: KoinApplication): KoinApplication {
             // inventoryPlatformModule,
             // tallyPlatformModule,
             // Common feature modules
-            menuModule(),
             authModule(),
             workspaceModule(),
             customerModule,

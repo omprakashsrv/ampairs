@@ -9,6 +9,8 @@ import com.ampairs.customer.domain.StateStore
 import com.ampairs.customer.ui.create.CustomerFormViewModel
 import com.ampairs.customer.ui.details.CustomerDetailsViewModel
 import com.ampairs.customer.ui.list.CustomersListViewModel
+import com.ampairs.customer.ui.state.StateListViewModel
+import com.ampairs.customer.ui.state.StateFormViewModel
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
@@ -35,6 +37,8 @@ val customerModule = module {
     factory { CustomersListViewModel(get(), get()) }
     factory { (customerId: String?) -> CustomerDetailsViewModel(customerId ?: "", get(), get()) }
     factory { (customerId: String?) -> CustomerFormViewModel(customerId, get(), get(), get()) }
+    factory { StateListViewModel(get()) }
+    factory { (stateId: String?) -> StateFormViewModel(stateId, get()) }
 }
 
 expect val customerPlatformModule: org.koin.core.module.Module

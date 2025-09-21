@@ -90,7 +90,7 @@ fun StateAutocomplete(
                     DropdownMenuItem(
                         text = {
                             Text(
-                                text = "${state.name} (${state.gstCode})",
+                                text = "${state.name}",
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         },
@@ -110,10 +110,10 @@ fun StateAutocomplete(
 @Composable
 fun StateAutocompletePreview() {
     val sampleStates = listOf(
-        State(id = "1", name = "Andhra Pradesh", gstCode = 28),
-        State(id = "2", name = "Karnataka", gstCode = 29),
-        State(id = "3", name = "Kerala", gstCode = 32),
-        State(id = "4", name = "Tamil Nadu", gstCode = 33)
+        State(id = "1", name = "Andhra Pradesh"),
+        State(id = "2", name = "Karnataka"),
+        State(id = "3", name = "Kerala"),
+        State(id = "4", name = "Tamil Nadu")
     )
 
     var selectedState by remember { mutableStateOf("") }

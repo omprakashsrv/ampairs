@@ -24,6 +24,7 @@ import com.ampairs.workspace.navigation.DynamicModuleNavigation
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 import androidx.navigation.NavController
+import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 
 /**
  * Workspace modules screen showing active modules
@@ -34,7 +35,7 @@ import androidx.navigation.NavController
 fun WorkspaceModulesScreen(
     navController: NavController,
     onModuleSelected: (moduleCode: String) -> Unit = {},
-    onNavigationServiceReady: ((com.ampairs.workspace.navigation.DynamicModuleNavigationService?) -> Unit)? = null,
+    onNavigationServiceReady: ((DynamicModuleNavigationService?) -> Unit)? = null,
     workspaceId: String = "",
     showStoreByDefault: Boolean = false, // New parameter to control if module store should be shown by default
     paddingValues: PaddingValues = PaddingValues(0.dp),
@@ -50,16 +51,12 @@ fun WorkspaceModulesScreen(
 
     // Initialize module registry and load data on first composition
     LaunchedEffect(Unit) {
-        // Try cached data first, then refresh if needed
-        viewModel.loadInstalledModules(refresh = false) // Use cache first for offline support
-
-        // After initial load, try to refresh in background
-        viewModel.loadInstalledModules(refresh = true) // Force API call via Store5 for updates
+      // After initial load, try to refresh in background
+//        viewModel.loadInstalledModules(refresh = true) // Force API call via Store5 for updates
     }
 
     // Pass navigationService to callback for desktop menu bar integration
     LaunchedEffect(viewModel.navigationService) {
-        println("WorkspaceModulesScreen: Calling onNavigationServiceReady with navigationService: ${if (viewModel.navigationService != null) "NOT NULL" else "NULL"}")
         onNavigationServiceReady?.invoke(viewModel.navigationService)
     }
 
@@ -628,7 +625,7 @@ private fun tryNavigateToModule(navController: NavController, moduleCode: String
         // Create a mapping for common module codes to routes
         val route = when (moduleCode) {
             "customer-management" -> Route.Customer
-            "product-catalog" -> Route.Product
+            "product-management" -> Route.Product
             "order-management" -> Route.Order
             "invoice-management" -> Route.Invoice
             "inventory-management" -> Route.Inventory

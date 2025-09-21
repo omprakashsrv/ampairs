@@ -7,11 +7,11 @@ import com.ampairs.workspace.api.model.ModuleInstallationResponse
 import com.ampairs.workspace.api.model.ModuleUninstallationResponse
 import com.ampairs.workspace.db.dao.WorkspaceModuleDao
 import com.ampairs.workspace.db.entity.AvailableModuleEntity
+import com.ampairs.workspace.db.entity.InstalledModuleEntity
 import com.ampairs.workspace.db.entity.InstalledModuleWithMenuItems
 import com.ampairs.workspace.store.WorkspaceModuleStoreFactory
 import com.ampairs.workspace.store.InstalledModuleKey
 import com.ampairs.workspace.store.AvailableModuleKey
-import com.ampairs.common.time.currentTimeMillis
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
@@ -40,9 +40,13 @@ class WorkspaceModuleRepository(
         workspaceId: String,
         refresh: Boolean = false
     ): Flow<List<InstalledModule>> {
-        val key = if (refresh) InstalledModuleKey.refresh(workspaceId) else InstalledModuleKey.all(
-            workspaceId
-        )
+        // Use different keys for cache vs fresh requests to ensure Store5 triggers API calls
+        val key = if (refresh) {
+            InstalledModuleKey.refresh(workspaceId) // Key with refresh=true
+        } else {
+            InstalledModuleKey.all(workspaceId) // Key with refresh=false (default)
+        }
+
         val request = if (refresh) {
             StoreReadRequest.fresh(key) // Force API call
         } else {
@@ -62,40 +66,11 @@ class WorkspaceModuleRepository(
     }
 
     /**
-     * Get installed modules (suspending)
-     * Matches web: async getInstalledModules(): Promise<InstalledModule[]>
+     * Clear installed modules cache to force fresh API call
      */
-    suspend fun getInstalledModules(
-        workspaceId: String,
-        refresh: Boolean = false
-    ): List<InstalledModule> {
-        return try {
-            val key =
-                if (refresh) InstalledModuleKey.refresh(workspaceId) else InstalledModuleKey.all(
-                    workspaceId
-                )
-            val request = if (refresh) {
-                StoreReadRequest.fresh(key) // Force API call
-            } else {
-                StoreReadRequest.cached(key, refresh = false) // Use cache first
-            }
-
-            // Get first valid response from Store5
-            installedModuleStore.stream(request)
-                .map { response ->
-                    when (response) {
-                        is StoreReadResponse.Data -> response.value
-                        is StoreReadResponse.Loading -> response.dataOrNull() ?: emptyList()
-                        is StoreReadResponse.Error -> response.dataOrNull() ?: emptyList()
-                        is StoreReadResponse.NoNewData -> response.dataOrNull() ?: emptyList()
-                        is StoreReadResponse.Initial -> emptyList()
-                    }
-                }
-                .first() // Get first response regardless of content for offline support
-        } catch (e: Exception) {
-            // Fallback to cached data with menu items
-            moduleDao.getInstalledModulesWithMenuItems(workspaceId).map { it.toApiModel() }
-        }
+    @OptIn(ExperimentalStoreApi::class)
+    suspend fun clearInstalledModulesCache() {
+        installedModuleStore.clear()
     }
 
     /**
@@ -107,40 +82,30 @@ class WorkspaceModuleRepository(
         featured: Boolean = false,
         refresh: Boolean = false
     ): List<AvailableModule> {
-        return try {
-            val key = when {
-                featured -> AvailableModuleKey.featured()
-                category != null -> AvailableModuleKey.category(category)
-                else -> AvailableModuleKey.all()
-            }
-
-            val request = if (refresh) {
-                StoreReadRequest.fresh(key)
-            } else {
-                StoreReadRequest.cached(key, refresh = false)
-            }
-
-            // Get first valid response from Store5
-            availableModuleStore.stream(request)
-                .map { response ->
-                    when (response) {
-                        is StoreReadResponse.Data -> response.value
-                        is StoreReadResponse.Loading -> response.dataOrNull() ?: emptyList()
-                        is StoreReadResponse.Error -> response.dataOrNull() ?: emptyList()
-                        is StoreReadResponse.NoNewData -> response.dataOrNull() ?: emptyList()
-                        is StoreReadResponse.Initial -> emptyList()
-                    }
-                }
-                .first() // Get first response regardless of content for offline support
-        } catch (e: Exception) {
-            // Fallback to cached data
-            val entities = when {
-                featured -> moduleDao.getFeaturedModules()
-                category != null -> moduleDao.getAvailableModulesByCategory(category)
-                else -> moduleDao.getAvailableModules()
-            }
-            entities.map { it.toApiModel() }
+        val key = when {
+            featured -> AvailableModuleKey.featured()
+            category != null -> AvailableModuleKey.category(category)
+            else -> AvailableModuleKey.all()
         }
+
+        val request = if (refresh) {
+            StoreReadRequest.fresh(key)
+        } else {
+            StoreReadRequest.cached(key, refresh = false)
+        }
+
+        // Get first valid response from Store5
+        return availableModuleStore.stream(request)
+            .map { response ->
+                when (response) {
+                    is StoreReadResponse.Data -> response.value
+                    is StoreReadResponse.Loading -> response.dataOrNull() ?: emptyList()
+                    is StoreReadResponse.Error -> response.dataOrNull() ?: emptyList()
+                    is StoreReadResponse.NoNewData -> response.dataOrNull() ?: emptyList()
+                    is StoreReadResponse.Initial -> emptyList()
+                }
+            }
+            .first() // Get first response regardless of content for offline support
     }
 
     /**
@@ -244,76 +209,10 @@ class WorkspaceModuleRepository(
         availableModuleStore.clear()
     }
 
-    /**
-     * Seed default modules for offline experience
-     */
-    suspend fun seedDefaultModules(workspaceId: String): List<InstalledModule> {
-        try {
-            // Check if modules already exist
-            val existing = moduleDao.getInstalledModules(workspaceId)
-            if (existing.isNotEmpty()) {
-                return existing.map { it.toApiModel() }
-            }
-
-            // Create default module entities
-            val defaultModules = listOf(
-                createDefaultModuleEntity(workspaceId, "customer-management", "Customer Management", "Business", "#2196F3"),
-                createDefaultModuleEntity(workspaceId, "product-management", "Product Management", "Business", "#4CAF50"),
-                createDefaultModuleEntity(workspaceId, "order-management", "Order Management", "Business", "#9C27B0"),
-                createDefaultModuleEntity(workspaceId, "invoice-management", "Invoice Management", "Finance", "#FF9800")
-            )
-
-            // Insert into database
-            moduleDao.insertInstalledModules(defaultModules)
-
-            // Clear store cache to force refresh from database
-            installedModuleStore.clear()
-
-            // Return API models
-            return defaultModules.map { it.toApiModel() }
-        } catch (e: Exception) {
-            // Return empty list on error
-            return emptyList()
-        }
-    }
-
-    private fun createDefaultModuleEntity(
-        workspaceId: String,
-        moduleCode: String,
-        name: String,
-        category: String,
-        primaryColor: String
-    ): com.ampairs.workspace.db.entity.InstalledModuleEntity {
-        val currentTime = currentTimeMillis()
-        return com.ampairs.workspace.db.entity.InstalledModuleEntity(
-            id = "${workspaceId}_${moduleCode}",
-            workspaceId = workspaceId,
-            moduleCode = moduleCode,
-            name = name,
-            category = category,
-            version = "1.0.0",
-            status = "ACTIVE",
-            enabled = true,
-            installedAt = currentTime.toString(),
-            icon = moduleCode.lowercase().replace("-", "_"),
-            primaryColor = primaryColor,
-            healthScore = 100.0,
-            needsAttention = false,
-            description = "Default $name module for offline access",
-            navigationIndex = 0,
-            routeBasePath = "/workspace/modules/$moduleCode",
-            routeDisplayName = name,
-            routeIconName = moduleCode.lowercase().replace("-", "_"),
-            sync_state = "SYNCED",
-            created_at = currentTime,
-            updated_at = currentTime,
-            last_synced_at = currentTime
-        )
-    }
 }
 
 // Extension functions for entity-API model conversion
-private fun com.ampairs.workspace.db.entity.InstalledModuleEntity.toApiModel(): InstalledModule {
+private fun InstalledModuleEntity.toApiModel(): InstalledModule {
     return InstalledModule(
         id = id,
         workspaceId = workspaceId,

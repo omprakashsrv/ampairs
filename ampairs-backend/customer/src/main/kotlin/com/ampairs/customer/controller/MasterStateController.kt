@@ -80,9 +80,8 @@ class MasterStateController(
     @PostMapping("/{stateCode}/import")
     fun importStateToWorkspace(
         @PathVariable stateCode: String,
-        @RequestParam("workspace_id") workspaceId: String
     ): ApiResponse<String> {
-        val importedState = masterStateService.importStateToWorkspace(stateCode.uppercase(), workspaceId)
+        val importedState = masterStateService.importStateToWorkspace(stateCode.uppercase())
             ?: return ApiResponse.error("Failed to import state or state not found", "IMPORT_FAILED")
 
         return ApiResponse.success("State imported successfully with ID: ${importedState.uid}")
@@ -97,7 +96,6 @@ class MasterStateController(
     ): ApiResponse<Map<String, Any>> {
         val importedStates = masterStateService.importStatesToWorkspace(
             request.stateCodes.map { it.uppercase() },
-            request.workspaceId
         )
 
         val response = mapOf(
@@ -148,5 +146,4 @@ class MasterStateController(
  */
 data class BulkImportRequest(
     val stateCodes: List<String>,
-    val workspaceId: String
 )

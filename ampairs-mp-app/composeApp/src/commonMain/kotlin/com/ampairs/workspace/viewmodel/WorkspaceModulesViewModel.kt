@@ -30,18 +30,13 @@ class WorkspaceModulesViewModel(
     // Installed modules - matches web: installedModules = signal<InstalledModule[]>([])
     val installedModules: StateFlow<List<InstalledModule>> = workspaceId?.let { wsId ->
         moduleRepository
-            .getInstalledModulesFlow(wsId)
+            .getInstalledModulesFlow(wsId, true)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
     } ?: MutableStateFlow<List<InstalledModule>>(emptyList()).asStateFlow()
 
     // Active modules - matches web: get activeModules()
     val activeModules: StateFlow<List<InstalledModule>> = installedModules
         .map { modules -> modules.filter { it.status == "ACTIVE" && it.enabled } }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
-
-    // Inactive modules - matches web: get inactiveModules()
-    val inactiveModules: StateFlow<List<InstalledModule>> = installedModules
-        .map { modules -> modules.filter { it.status != "ACTIVE" || !it.enabled } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     // Available modules for store - matches web: availableModules
@@ -89,24 +84,10 @@ class WorkspaceModulesViewModel(
                 _isLoading.value = true
                 _errorMessage.value = null
 
-                // Repository automatically updates StateFlow via Store5
-                val modules = moduleRepository.getInstalledModules(wsId, refresh)
-
-                // If we have no modules and not refreshing (offline), seed default modules
-                if (modules.isEmpty() && !refresh) {
-                    seedDefaultModules(wsId)
-                }
+                // Trigger Store5 to fetch data - this automatically updates the installedModules StateFlow
+                moduleRepository.getInstalledModulesFlow(wsId, refresh).first()
             } catch (e: Exception) {
                 _errorMessage.value = e.message ?: "Failed to load installed modules"
-
-                // If we're offline and failed to load, try to seed default modules
-                if (!refresh) {
-                    try {
-                        seedDefaultModules(wsId)
-                    } catch (seedError: Exception) {
-                        // Ignore seeding errors
-                    }
-                }
             } finally {
                 _isLoading.value = false
             }
@@ -114,20 +95,13 @@ class WorkspaceModulesViewModel(
     }
 
     /**
-     * Seed default modules for offline experience
-     */
-    private suspend fun seedDefaultModules(workspaceId: String) {
-        try {
-            moduleRepository.seedDefaultModules(workspaceId)
-        } catch (e: Exception) {
-            // Ignore seeding errors to not interfere with normal operation
-        }
-    }
-
-    /**
      * Load available modules - matches web: async getAvailableModules()
      */
-    fun loadAvailableModules(category: String? = null, featured: Boolean = false, refresh: Boolean = false) {
+    fun loadAvailableModules(
+        category: String? = null,
+        featured: Boolean = false,
+        refresh: Boolean = false
+    ) {
         viewModelScope.launch {
             try {
                 _isLoading.value = true
@@ -148,7 +122,7 @@ class WorkspaceModulesViewModel(
             }
         }
     }
-    
+
     /**
      * Mock data for testing - remove when backend is ready
      */
@@ -255,7 +229,7 @@ class WorkspaceModulesViewModel(
             onResult(null)
             return
         }
-        
+
         viewModelScope.launch {
             try {
                 _errorMessage.value = null
@@ -286,12 +260,12 @@ class WorkspaceModulesViewModel(
             onResult(null)
             return
         }
-        
+
         viewModelScope.launch {
             try {
                 _isLoading.value = true
                 _errorMessage.value = null
-                
+
                 val result = moduleRepository.uninstallModule(wsId, moduleId)
                 if (result.isSuccess) {
                     onResult(result.getOrThrow())

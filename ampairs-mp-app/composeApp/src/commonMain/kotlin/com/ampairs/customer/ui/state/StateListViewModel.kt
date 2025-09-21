@@ -1,0 +1,202 @@
+package com.ampairs.customer.ui.state
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.ampairs.customer.domain.State
+import com.ampairs.customer.domain.StateKey
+import com.ampairs.customer.domain.StateStore
+import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
+import org.mobilenativefoundation.store.store5.StoreReadRequest
+import org.mobilenativefoundation.store.store5.StoreReadResponse
+import kotlinx.coroutines.FlowPreview
+
+data class StateListUiState(
+    val states: List<State> = emptyList(),
+    val isLoading: Boolean = false,
+    val error: String? = null,
+    val searchQuery: String = ""
+)
+
+class StateListViewModel(
+    private val stateStore: StateStore
+) : ViewModel() {
+
+    private val _uiState = MutableStateFlow(StateListUiState())
+    val uiState: StateFlow<StateListUiState> = _uiState.asStateFlow()
+
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
+
+    init {
+        loadStates()
+        observeSearchQuery()
+    }
+
+    fun updateSearchQuery(query: String) {
+        _searchQuery.value = query
+        _uiState.update { it.copy(searchQuery = query) }
+    }
+
+    fun loadStates() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+
+            try {
+                // First, try to get states from local DB
+                stateStore.searchStatesFlow("")
+                    .collect { localStates ->
+                        if (localStates.isEmpty()) {
+                            // If local DB is empty, fetch from backend API
+                            val key = StateKey()
+                            stateStore.stateStore
+                                .stream(StoreReadRequest.cached(key, refresh = true))
+                                .collect { response ->
+                                    when (response) {
+                                        is StoreReadResponse.Data -> {
+                                            _uiState.update {
+                                                it.copy(
+                                                    states = response.value,
+                                                    isLoading = false,
+                                                    error = null
+                                                )
+                                            }
+                                        }
+                                        is StoreReadResponse.Loading -> {
+                                            _uiState.update { it.copy(isLoading = true) }
+                                        }
+                                        is StoreReadResponse.Error.Exception -> {
+                                            _uiState.update {
+                                                it.copy(
+                                                    isLoading = false,
+                                                    error = response.error.message ?: "Failed to load states"
+                                                )
+                                            }
+                                        }
+                                        is StoreReadResponse.Error.Message -> {
+                                            _uiState.update {
+                                                it.copy(
+                                                    isLoading = false,
+                                                    error = response.message
+                                                )
+                                            }
+                                        }
+                                        else -> {
+                                            // Handle other response types if needed
+                                        }
+                                    }
+                                }
+                        } else {
+                            // Use local states if available
+                            _uiState.update {
+                                it.copy(
+                                    states = localStates,
+                                    isLoading = false,
+                                    error = null
+                                )
+                            }
+                        }
+                    }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = e.message ?: "Failed to load states"
+                    )
+                }
+            }
+        }
+    }
+
+    fun deleteState(stateId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(error = null) }
+
+            val result = stateStore.deleteState(stateId)
+            if (result.isFailure) {
+                _uiState.update {
+                    it.copy(error = result.exceptionOrNull()?.message ?: "Failed to delete state")
+                }
+            } else {
+                // Refresh the list after successful deletion
+                loadStates()
+            }
+        }
+    }
+
+    @OptIn(FlowPreview::class)
+    private fun observeSearchQuery() {
+        searchQuery
+            .debounce(300) // Debounce search queries
+            .distinctUntilChanged()
+            .onEach { query ->
+                searchStates(query)
+            }
+            .launchIn(viewModelScope)
+    }
+
+    private fun searchStates(query: String) {
+        viewModelScope.launch {
+            stateStore.searchStatesFlow(query)
+                .collect { filteredStates ->
+                    _uiState.update {
+                        it.copy(states = filteredStates)
+                    }
+                }
+        }
+    }
+
+    fun refreshStates() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+
+            try {
+                val key = StateKey()
+                stateStore.stateStore
+                    .stream(StoreReadRequest.cached(key, refresh = true))
+                    .collect { response ->
+                        when (response) {
+                            is StoreReadResponse.Data -> {
+                                _uiState.update {
+                                    it.copy(
+                                        states = response.value,
+                                        isLoading = false,
+                                        error = null
+                                    )
+                                }
+                            }
+                            is StoreReadResponse.Loading -> {
+                                _uiState.update { it.copy(isLoading = true) }
+                            }
+                            is StoreReadResponse.Error.Exception -> {
+                                _uiState.update {
+                                    it.copy(
+                                        isLoading = false,
+                                        error = response.error.message ?: "Failed to refresh states"
+                                    )
+                                }
+                            }
+                            is StoreReadResponse.Error.Message -> {
+                                _uiState.update {
+                                    it.copy(
+                                        isLoading = false,
+                                        error = response.message
+                                    )
+                                }
+                            }
+                            else -> {
+                                // Handle other response types if needed
+                            }
+                        }
+                    }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = e.message ?: "Failed to refresh states"
+                    )
+                }
+            }
+        }
+    }
+}

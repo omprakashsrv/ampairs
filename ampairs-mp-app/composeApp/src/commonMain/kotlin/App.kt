@@ -8,7 +8,8 @@ import org.koin.compose.koinInject
 @Composable
 fun App(
     onLoggedIn: (Boolean) -> Unit,
-    onNavigationServiceReady: ((com.ampairs.workspace.navigation.DynamicModuleNavigationService?) -> Unit)? = null
+    onNavigationServiceReady: ((com.ampairs.workspace.navigation.DynamicModuleNavigationService?) -> Unit)? = null,
+    onNavigationReady: (((String) -> Unit) -> Unit)? = null
 ) {
     val themeManager: ThemeManager = koinInject()
     val isDarkTheme = themeManager.isDarkTheme()
@@ -16,7 +17,7 @@ fun App(
     PlatformAmpairsTheme(
         darkTheme = isDarkTheme
     ) {
-        AppNavigation(onNavigationServiceReady)
+        AppNavigation(onNavigationServiceReady, onNavigationReady)
     }
 }
 

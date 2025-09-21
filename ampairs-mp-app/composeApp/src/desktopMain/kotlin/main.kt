@@ -16,7 +16,6 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
-import com.ampairs.menu.AppNavigator
 // import com.ampairs.tally.TallyApp
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.DynamicModulesMenu
@@ -49,7 +48,8 @@ fun main() = application {
 @Composable
 private fun ApplicationScope.TallyWindow(
     state: AppWindowState,
-) = Window(onCloseRequest = state::close, title = state.title,
+) = Window(
+    onCloseRequest = state::close, title = state.title,
     onKeyEvent = {
         false
     }) {
@@ -62,23 +62,19 @@ private fun ApplicationScope.TallyWindow(
 
 @Composable
 private fun ApplicationScope.MainWindow(state: AppWindowState) =
-    Window(onCloseRequest = ::exitApplication,
+    Window(
+        onCloseRequest = ::exitApplication,
         state = WindowState(placement = WindowPlacement.Maximized),
-        title = "Ampairs",
-        onKeyEvent = {
-            if (it.key == Key.Escape) {
-                val appNavigator = get<AppNavigator>(AppNavigator::class.java)
-                appNavigator.goBack()
-                return@Window true
-            }
-            return@Window false
-        }) {
+        title = "Ampairs"
+    ) {
 
         var loggedIn by remember { mutableStateOf(false) }
-        val appNavigator = koinInject<AppNavigator>()
 
         // Get navigationService from the app content to ensure consistency
         var navigationService by remember { mutableStateOf<DynamicModuleNavigationService?>(null) }
+
+        // Navigation callback that will be set up by the app
+        var navigationCallback by remember { mutableStateOf<((String) -> Unit)?>(null) }
 
 
         CompositionLocalProvider(
@@ -95,6 +91,10 @@ private fun ApplicationScope.MainWindow(state: AppWindowState) =
                     if (it == null) {
                         println("MainWindow: NavigationService cleared - menus will be hidden")
                     }
+                },
+                onNavigationReady = { callback ->
+                    println("MainWindow: Navigation callback ready")
+                    navigationCallback = callback
                 }
             )
         }
@@ -106,7 +106,8 @@ private fun ApplicationScope.MainWindow(state: AppWindowState) =
                 DynamicModulesMenu(
                     navigationService = navService,
                     onNavigate = { route ->
-                        appNavigator.navigate(route)
+                        println("MenuBar: onNavigate to $route")
+                        navigationCallback?.invoke(route)
                     }
                 )
             } ?: println("MenuBar: navigationService is null, not rendering DynamicModulesMenu")

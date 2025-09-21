@@ -31,7 +31,7 @@ data class InstalledModuleKey(
     val refresh: Boolean = false
 ) {
     companion object {
-        fun all(workspaceId: String) = InstalledModuleKey(workspaceId = workspaceId)
+        fun all(workspaceId: String) = InstalledModuleKey(workspaceId = workspaceId, refresh = false)
         fun refresh(workspaceId: String) = InstalledModuleKey(workspaceId = workspaceId, refresh = true)
     }
 }
@@ -54,7 +54,7 @@ class WorkspaceModuleStoreFactory(
 
     fun createInstalledModuleStore(): InstalledModuleStore {
         return StoreBuilder
-            .from<InstalledModuleKey, List<InstalledModule>, List<InstalledModule>>(
+            .from(
                 fetcher = createInstalledModuleFetcher(),
                 sourceOfTruth = createInstalledModuleSourceOfTruth()
             )
@@ -63,7 +63,7 @@ class WorkspaceModuleStoreFactory(
 
     fun createAvailableModuleStore(): AvailableModuleStore {
         return StoreBuilder
-            .from<AvailableModuleKey, List<AvailableModule>, List<AvailableModule>>(
+            .from(
                 fetcher = createAvailableModuleFetcher(),
                 sourceOfTruth = createAvailableModuleSourceOfTruth()
             )

@@ -17,7 +17,6 @@ import kotlin.time.ExperimentalTime
 data class StateEntity(
     @PrimaryKey val id: String,
     val name: String,
-    val gstCode: Int,
     val syncStatus: String = "SYNCED", // PENDING, SYNCING, SYNCED, FAILED
     val createdAt: Long,
     val updatedAt: Long
@@ -29,7 +28,6 @@ fun State.toEntity(): StateEntity {
     return StateEntity(
         id = id,
         name = name,
-        gstCode = gstCode,
         syncStatus = "SYNCED",
         createdAt = now,
         updatedAt = now
@@ -40,7 +38,6 @@ fun StateEntity.toDomain(): State {
     return State(
         id = id,
         name = name,
-        gstCode = gstCode
     )
 }
 

@@ -1,9 +1,11 @@
 package com.ampairs.customer.data.db
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -29,4 +31,13 @@ interface StateDao {
 
     @Query("SELECT COUNT(*) FROM states")
     suspend fun getStatesCount(): Int
+
+    @Update
+    suspend fun updateState(state: StateEntity)
+
+    @Delete
+    suspend fun deleteState(state: StateEntity)
+
+    @Query("DELETE FROM states WHERE id = :id")
+    suspend fun deleteStateById(id: String)
 }

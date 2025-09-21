@@ -73,4 +73,41 @@ class CustomerApiImpl(
         )
         return response.data ?: emptyList()
     }
+
+    override suspend fun createState(state: State): State {
+        val response: Response<State> = post(
+            client,
+            "$CUSTOMER_ENDPOINT/customer/v1/states",
+            state
+        )
+        return response.data ?: throw Exception("Failed to create state")
+    }
+
+    override suspend fun updateState(state: State): State {
+        val response: Response<State> = post(
+            client,
+            "$CUSTOMER_ENDPOINT/customer/v1/states",
+            state
+        )
+        return response.data ?: throw Exception("Failed to update state")
+    }
+
+    override suspend fun deleteState(stateId: String) {
+        delete<Response<Unit>>(
+            client,
+            "$CUSTOMER_ENDPOINT/customer/v1/states/$stateId"
+        )
+    }
+
+    override suspend fun getState(stateId: String): State? {
+        return try {
+            val response: Response<State> = get(
+                client,
+                "$CUSTOMER_ENDPOINT/customer/v1/states/$stateId"
+            )
+            response.data
+        } catch (_: Exception) {
+            null
+        }
+    }
 }

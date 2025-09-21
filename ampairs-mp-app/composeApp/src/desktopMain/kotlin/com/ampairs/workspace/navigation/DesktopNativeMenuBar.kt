@@ -196,20 +196,46 @@ fun MenuBarScope.DynamicModulesMenu(
                         Item(
                             text = if (menuItem.isDefault) "${menuItem.label} (Default)" else menuItem.label,
                             onClick = {
-                                onNavigate("/workspace/modules/${moduleRoute.moduleCode}${menuItem.routePath}")
+                                // Navigate to specific menu item using its routePath
+                                onNavigate(menuItem.routePath)
+                                println("DesktopMenuBar: Navigating to ${menuItem.routePath} for menu item ${menuItem.label}")
                             }
                         )
                     }
                 } else {
-                    // If no menu items, add a default item to navigate to the module
+                    // If no menu items, add a default item to navigate to the module's base path
                     Item(
                         "Open ${moduleRoute.displayName}",
                         onClick = {
-                            onNavigate("/workspace/modules/${moduleRoute.moduleCode}")
+                            // Use the module's basePath or fallback to legacy navigation
+                            val routePath = moduleRoute.basePath.ifEmpty {
+                                getModuleNavigationPath(moduleRoute.moduleCode)
+                            }
+                            onNavigate(routePath)
+                            println("DesktopMenuBar: Navigating to $routePath for module ${moduleRoute.moduleCode}")
                         }
                     )
                 }
             }
         }
+    }
+}
+
+/**
+ * Get navigation path for a module code
+ * Maps module codes to simple navigation paths that the main app can handle
+ * @param moduleCode The module code (e.g., "customer-management")
+ * @return Navigation path string
+ */
+private fun getModuleNavigationPath(moduleCode: String): String {
+    return when (moduleCode) {
+        "customer-management" -> "customer"
+        "product-management" -> "product"
+        "order-management" -> "order"
+        "invoice-management" -> "invoice"
+        "inventory-management" -> "inventory"
+        "tax-code-management" -> "tax"
+        "tax-management" -> "tax"
+        else -> "unknown"
     }
 }

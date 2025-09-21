@@ -112,7 +112,8 @@ class MasterModuleSeederService(
             menuItems = listOf(
                 createMenuItem("customer-list", "All Customers", "/customers", "people", 1, true),
                 createMenuItem("customer-create", "Create Customer", "/customers/create", "person_add", 2),
-                createMenuItem("customer-import", "Import Customers", "/customers/import", "upload", 3)
+//                createMenuItem("customer-import", "Import Customers", "/customers/import", "upload", 3),
+                createMenuItem("customer-states", "Manage States", "/customers/states", "location_on", 4)
             )
         )
         navigationIndex = 20
@@ -124,7 +125,7 @@ class MasterModuleSeederService(
     }
     
     private fun createProductModule() = MasterModule().apply {
-        moduleCode = "product-catalog"
+        moduleCode = "product-management"
         name = "Product Catalog"
         description = "Complete product management system with inventory tracking, pricing, tax codes, and category organization for comprehensive catalog management"
         tagline = "Organize and manage your entire product inventory"

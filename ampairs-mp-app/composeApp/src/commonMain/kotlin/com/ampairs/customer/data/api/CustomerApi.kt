@@ -10,4 +10,8 @@ interface CustomerApi {
     suspend fun deleteCustomer(customerId: String)
     suspend fun getCustomer(customerId: String): Customer?
     suspend fun getStates(lastSync: Long = 0): List<State>
+    suspend fun createState(state: State): State
+    suspend fun updateState(state: State): State
+    suspend fun deleteState(stateId: String)
+    suspend fun getState(stateId: String): State?
 }

@@ -11,6 +11,8 @@ import com.ampairs.common.ui.AppScreenWithHeader
 import com.ampairs.customer.ui.create.CustomerFormScreen
 import com.ampairs.customer.ui.details.CustomerDetailsScreen
 import com.ampairs.customer.ui.list.CustomersListScreen
+import com.ampairs.customer.ui.state.StateListScreen
+import com.ampairs.customer.ui.state.StateFormScreen
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -21,6 +23,12 @@ data class CustomerDetailsRoute(val customerId: String)
 
 @Serializable
 data class CustomerCreateRoute(val customerId: String? = null)
+
+@Serializable
+object StateListRoute
+
+@Serializable
+data class StateCreateRoute(val stateId: String? = null)
 
 fun NavGraphBuilder.customerNavigation(navController: NavController) {
     composable<CustomerListRoute> {
@@ -65,6 +73,38 @@ fun NavGraphBuilder.customerNavigation(navController: NavController) {
         ) { paddingValues ->
             CustomerFormScreen(
                 customerId = route.customerId,
+                onSaveSuccess = { navController.popBackStack() },
+                modifier = Modifier.padding(paddingValues)
+            )
+        }
+    }
+
+    composable<StateListRoute> {
+        AppScreenWithHeader(
+            navController = navController,
+            isWorkspaceSelection = false
+        ) { paddingValues ->
+            StateListScreen(
+                onStateClick = { /* Handle state click if needed */ },
+                onCreateState = {
+                    navController.navigate(StateCreateRoute())
+                },
+                onEditState = { stateId ->
+                    navController.navigate(StateCreateRoute(stateId))
+                },
+                modifier = Modifier.padding(paddingValues)
+            )
+        }
+    }
+
+    composable<StateCreateRoute> { backStackEntry ->
+        val route = backStackEntry.toRoute<StateCreateRoute>()
+        AppScreenWithHeader(
+            navController = navController,
+            isWorkspaceSelection = false
+        ) { paddingValues ->
+            StateFormScreen(
+                stateId = route.stateId,
                 onSaveSuccess = { navController.popBackStack() },
                 modifier = Modifier.padding(paddingValues)
             )

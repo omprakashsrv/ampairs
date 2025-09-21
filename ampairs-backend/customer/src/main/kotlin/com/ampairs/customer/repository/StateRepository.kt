@@ -18,14 +18,19 @@ interface StateRepository : CrudRepository<State, String> {
     fun findByOwnerId(ownerId: String): List<State>
 
     /**
-     * Find state by master state code and workspace
+     * Find first state by master state code
      */
-    fun findByMasterStateCodeAndOwnerId(masterStateCode: String, ownerId: String): State?
+    fun findFirstByMasterStateCode(masterStateCode: String): State?
 
     /**
      * Find all states by master state code
      */
     fun findByMasterStateCode(masterStateCode: String): List<State>
+
+    /**
+     * Find first state by master state code and owner
+     */
+    fun findFirstByMasterStateCodeAndOwnerId(masterStateCode: String, ownerId: String): State?
 
     /**
      * Find active states for a workspace

@@ -74,25 +74,24 @@ class MasterStateService(
      * Import master state to workspace
      */
     @Transactional
-    fun importStateToWorkspace(stateCode: String, workspaceId: String): State? {
+    fun importStateToWorkspace(stateCode: String): State? {
         val masterState = masterStateRepository.findByStateCode(stateCode)
             ?: return null
 
         // Check if already imported
-        val existingState = stateRepository.findByMasterStateCodeAndOwnerId(stateCode, workspaceId)
+        val existingState = stateRepository.findFirstByMasterStateCode(stateCode)
         if (existingState != null) {
-            logger.info("State {} already imported to workspace {}", stateCode, workspaceId)
+            logger.info("State {} already imported to workspace", stateCode)
             return existingState
         }
 
         // Create new workspace state
         val workspaceState = State().apply {
             importFromMasterState(masterState)
-            ownerId = workspaceId
         }
 
         val savedState = stateRepository.save(workspaceState)
-        logger.info("Imported state {} to workspace {}", stateCode, workspaceId)
+        logger.info("Imported state {} to workspace", stateCode)
 
         return savedState
     }
@@ -101,16 +100,16 @@ class MasterStateService(
      * Bulk import multiple states to workspace
      */
     @Transactional
-    fun importStatesToWorkspace(stateCodes: List<String>, workspaceId: String): List<State> {
+    fun importStatesToWorkspace(stateCodes: List<String>): List<State> {
         val importedStates = mutableListOf<State>()
 
         stateCodes.forEach { stateCode ->
-            importStateToWorkspace(stateCode, workspaceId)?.let { state ->
+            importStateToWorkspace(stateCode)?.let { state ->
                 importedStates.add(state)
             }
         }
 
-        logger.info("Bulk imported {} states to workspace {}", importedStates.size, workspaceId)
+        logger.info("Bulk imported {} states to workspace", importedStates.size)
         return importedStates
     }
 
@@ -232,8 +231,10 @@ class MasterStateService(
         // Optionally handle workspace states that reference this master state
         // For now, we'll just log the impact
         val affectedWorkspaceStates = stateRepository.findByMasterStateCode(stateCode)
-        logger.warn("Deactivated master state {} affects {} workspace states",
-                   stateCode, affectedWorkspaceStates.size)
+        logger.warn(
+            "Deactivated master state {} affects {} workspace states",
+            stateCode, affectedWorkspaceStates.size
+        )
 
         return true
     }
