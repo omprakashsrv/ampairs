@@ -34,116 +34,120 @@ class ProductController(val productService: ProductService, val fileService: Fil
     fun getProducts(
         @RequestParam("last_updated") lastUpdated: Long?,
         @RequestParam("group_id") groupId: String?,
-    ): List<ProductResponse> {
+    ): ApiResponse<List<ProductResponse>> {
         if (!groupId.isNullOrEmpty()) {
             val products = productService.getProducts(groupId)
-            return products.asResponse()
+            return ApiResponse.success(products.asResponse())
         }
         val products = productService.getProducts(lastUpdated)
-        return products.asResponse()
+        return ApiResponse.success(products.asResponse())
     }
 
     @GetMapping("/product_category")
-    fun getProductsWithCategory(@RequestParam("group_id") groupId: String): ProductsCategoryResponse {
+    fun getProductsWithCategory(@RequestParam("group_id") groupId: String): ApiResponse<ProductsCategoryResponse> {
         val products = productService.getProducts(groupId)
         val categoryIds = products.map { it.categoryId ?: "" }.toSet()
         val productCategories = productService.getCategories(categoryIds)
-        return ProductsCategoryResponse(products = products.asResponse(), categories = productCategories.asResponse())
+        val result = ProductsCategoryResponse(products = products.asResponse(), categories = productCategories.asResponse())
+        return ApiResponse.success(result)
     }
 
     @PostMapping("/products")
-    fun updateProducts(@RequestBody products: List<ProductRequest>): List<ProductResponse> {
-        return productService.updateProducts(products.asDatabaseModel()).asResponse()
+    fun updateProducts(@RequestBody products: List<ProductRequest>): ApiResponse<List<ProductResponse>> {
+        val result = productService.updateProducts(products.asDatabaseModel()).asResponse()
+        return ApiResponse.success(result)
     }
 
     @PostMapping("/units")
-    fun updateUnits(@RequestBody units: List<UnitRequest>): List<UnitResponse> {
+    fun updateUnits(@RequestBody units: List<UnitRequest>): ApiResponse<List<UnitResponse>> {
         val units = productService.updateUnits(units.asDatabaseModel())
-        return units.asResponse()
+        return ApiResponse.success(units.asResponse())
     }
 
     @GetMapping("/units")
-    fun updateTaxCodes(): List<UnitResponse> {
+    fun getUnits(): ApiResponse<List<UnitResponse>> {
         val units = productService.getUnits()
-        return units.asResponse()
+        return ApiResponse.success(units.asResponse())
     }
 
 
     @GetMapping("/groups")
-    fun getGroups(): List<ProductGroupResponse> {
+    fun getGroups(): ApiResponse<List<ProductGroupResponse>> {
         val groups = productService.getGroups()
-        return groups.asResponse()
+        return ApiResponse.success(groups.asResponse())
     }
 
     @GetMapping("/all_groups_category")
-    fun getGroupsCategory(): AllGroupsResponse {
+    fun getGroupsCategory(): ApiResponse<AllGroupsResponse> {
         val groups = productService.getGroups()
         val categories = productService.getCategories()
         val brands = productService.getBrands()
         val subCategories = productService.getSubCategories()
-        return AllGroupsResponse(
+        val result = AllGroupsResponse(
             groups = groups.asResponse(),
             categories = categories.asResponse(),
             brands = brands.asResponse(),
             subCategories = subCategories.asResponse()
         )
+        return ApiResponse.success(result)
     }
 
     @GetMapping("/brands")
-    fun getBrands(): List<ProductBrandResponse> {
+    fun getBrands(): ApiResponse<List<ProductBrandResponse>> {
         val brands = productService.getBrands()
-        return brands.asResponse()
+        return ApiResponse.success(brands.asResponse())
     }
 
     @GetMapping("/sub_categories")
-    fun getSubCategories(): List<ProductSubCategoryResponse> {
+    fun getSubCategories(): ApiResponse<List<ProductSubCategoryResponse>> {
         val categories = productService.getSubCategories()
-        return categories.asResponse()
+        return ApiResponse.success(categories.asResponse())
     }
 
     @PostMapping("/groups")
-    fun updateGroups(@RequestBody groups: List<ProductGroupRequest>): List<ProductGroupResponse> {
+    fun updateGroups(@RequestBody groups: List<ProductGroupRequest>): ApiResponse<List<ProductGroupResponse>> {
         val productGroups = productService.updateProductGroups(groups.asDatabaseModel())
-        return productGroups.asResponse()
+        return ApiResponse.success(productGroups.asResponse())
     }
 
     @PostMapping("/brands")
-    fun updateBrands(@RequestBody groups: List<ProductBrandRequest>): List<ProductBrandResponse> {
+    fun updateBrands(@RequestBody groups: List<ProductBrandRequest>): ApiResponse<List<ProductBrandResponse>> {
         val productGroups = productService.updateProductBrands(groups.asDatabaseModel())
-        return productGroups.asResponse()
+        return ApiResponse.success(productGroups.asResponse())
     }
 
     @PostMapping("/categories")
-    fun updateCategories(@RequestBody categories: List<ProductCategoryRequest>): List<ProductCategoryResponse> {
+    fun updateCategories(@RequestBody categories: List<ProductCategoryRequest>): ApiResponse<List<ProductCategoryResponse>> {
         val productCategories =
             productService.updateProductCategories(categories.asDatabaseModel())
-        return productCategories.asResponse()
+        return ApiResponse.success(productCategories.asResponse())
     }
 
     @PostMapping("/sub_categories")
-    fun updateSubCategories(@RequestBody categories: List<ProductSubCategoryRequest>): List<ProductSubCategoryResponse> {
+    fun updateSubCategories(@RequestBody categories: List<ProductSubCategoryRequest>): ApiResponse<List<ProductSubCategoryResponse>> {
         val productSubCategories =
             productService.updateProductSubCategories(categories.asDatabaseModel())
-        return productSubCategories.asResponse()
+        return ApiResponse.success(productSubCategories.asResponse())
     }
 
     @PostMapping("/tax_codes")
-    fun updateTaxCodes(@RequestBody codes: List<TaxCodeRequest>): List<TaxCodeResponse> {
+    fun updateTaxCodes(@RequestBody codes: List<TaxCodeRequest>): ApiResponse<List<TaxCodeResponse>> {
         val taxCodes = productService.updateTaxCodes(codes.asDatabaseModel())
-        return taxCodes.asResponse()
+        return ApiResponse.success(taxCodes.asResponse())
     }
 
     @PostMapping("/upload_image")
     fun uploadImage(
         @RequestParam("file") file: MultipartFile,
         @RequestParam("path") path: String,
-    ): FileResponse {
-        return fileService.saveFile(
+    ): ApiResponse<FileResponse> {
+        val result = fileService.saveFile(
             bytes = file.inputStream.readAllBytes(),
             name = file.originalFilename ?: "unnamed_file",
             contentType = file.contentType ?: "application/octet-stream",
             folder = "products/${TenantContextHolder.getCurrentTenant()}$path"
         ).toFileResponse()
+        return ApiResponse.success(result)
     }
 
     /**

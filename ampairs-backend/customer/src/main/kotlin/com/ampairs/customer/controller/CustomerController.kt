@@ -19,27 +19,31 @@ class CustomerController @Autowired constructor(
 ) {
 
     @PostMapping("")
-    fun updateUser(@RequestBody @Valid customerUpdateRequest: CustomerUpdateRequest): CustomerResponse {
+    fun updateUser(@RequestBody @Valid customerUpdateRequest: CustomerUpdateRequest): ApiResponse<CustomerResponse> {
         val customer = customerUpdateRequest.toCustomer()
-        return customerService.updateCustomer(customer).asCustomerResponse()
+        val result = customerService.updateCustomer(customer).asCustomerResponse()
+        return ApiResponse.success(result)
     }
 
     @PostMapping("/customers")
-    fun updateCustomers(@RequestBody @Valid customerUpdateRequest: List<CustomerUpdateRequest>): List<CustomerResponse> {
+    fun updateCustomers(@RequestBody @Valid customerUpdateRequest: List<CustomerUpdateRequest>): ApiResponse<List<CustomerResponse>> {
         val customers = customerUpdateRequest.toCustomers()
-        return customerService.updateCustomers(customers).asCustomersResponse()
+        val result = customerService.updateCustomers(customers).asCustomersResponse()
+        return ApiResponse.success(result)
     }
 
     @GetMapping("")
-    fun getCustomers(@RequestParam("last_updated") lastUpdated: Long?): List<CustomerResponse> {
+    fun getCustomers(@RequestParam("last_updated") lastUpdated: Long?): ApiResponse<List<CustomerResponse>> {
         val customers = customerService.getCustomers(lastUpdated)
-        return customers.asCustomersResponse()
+        val result = customers.asCustomersResponse()
+        return ApiResponse.success(result)
     }
 
     @GetMapping("/states")
-    fun getStates(@RequestParam("last_updated") lastUpdated: Long?): List<StateResponse> {
+    fun getStates(@RequestParam("last_updated") lastUpdated: Long?): ApiResponse<List<StateResponse>> {
         val states = customerService.getStates()
-        return states.asStatesResponse()
+        val result = states.asStatesResponse()
+        return ApiResponse.success(result)
     }
 
     /**
