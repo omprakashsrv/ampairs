@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
@@ -107,15 +108,10 @@ interface MasterStateRepository : JpaRepository<MasterState, String>, JpaSpecifi
     fun findStatesWithGstCodes(): List<MasterState>
 
     /**
-     * Find states by postal code pattern
+     * Find states with postal code patterns (pattern matching moved to service layer)
      */
-    @Query("""
-        SELECT m FROM MasterState m
-        WHERE m.active = true
-        AND m.postalCodePattern IS NOT NULL
-        AND :postalCode REGEXP m.postalCodePattern
-    """)
-    fun findByPostalCodePattern(@Param("postalCode") postalCode: String): List<MasterState>
+    @Query("SELECT m FROM MasterState m WHERE m.active = true AND m.postalCodePattern IS NOT NULL")
+    fun findStatesWithPostalCodePatterns(): List<MasterState>
 
     /**
      * Find popular states (those used in many workspaces)
@@ -132,12 +128,12 @@ interface MasterStateRepository : JpaRepository<MasterState, String>, JpaSpecifi
     fun findPopularStates(@Param("minUsage") minUsage: Long, pageable: Pageable): Page<MasterState>
 
     /**
-     * Find states not used in any workspace
+     * Find states not used in any workspace (simplified query)
      */
     @Query("""
         SELECT m FROM MasterState m
         WHERE m.active = true
-        AND NOT EXISTS (SELECT 1 FROM State s WHERE s.masterState = m)
+        AND m.stateCode NOT IN (SELECT s.masterStateCode FROM state s WHERE s.masterStateCode IS NOT NULL)
         ORDER BY m.displayOrder ASC
     """)
     fun findUnusedStates(): List<MasterState>
@@ -145,6 +141,7 @@ interface MasterStateRepository : JpaRepository<MasterState, String>, JpaSpecifi
     /**
      * Batch update featured status
      */
+    @Modifying
     @Query("UPDATE MasterState m SET m.featured = :featured WHERE m.stateCode IN :stateCodes")
     fun updateFeaturedStatus(@Param("stateCodes") stateCodes: List<String>, @Param("featured") featured: Boolean)
 }

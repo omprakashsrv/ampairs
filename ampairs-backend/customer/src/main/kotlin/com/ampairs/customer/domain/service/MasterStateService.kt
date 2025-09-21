@@ -166,11 +166,14 @@ class MasterStateService(
     }
 
     /**
-     * Find states by postal code
+     * Find states by postal code (pattern matching in service layer)
      */
     @Transactional(readOnly = true)
     fun findStatesByPostalCode(postalCode: String): List<MasterState> {
-        return masterStateRepository.findByPostalCodePattern(postalCode)
+        val statesWithPatterns = masterStateRepository.findStatesWithPostalCodePatterns()
+        return statesWithPatterns.filter { state ->
+            state.isValidPostalCode(postalCode)
+        }
     }
 
     /**
