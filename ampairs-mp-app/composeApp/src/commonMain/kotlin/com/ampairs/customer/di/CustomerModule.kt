@@ -35,7 +35,7 @@ val customerModule = module {
     // ViewModels
     factory { CustomersListViewModel(get(), get()) }
     factory { (customerId: String?) -> CustomerDetailsViewModel(customerId ?: "", get(), get()) }
-    factory { (customerId: String?) -> CustomerFormViewModel(customerId, get(), get(), get()) }
+    factory { (customerId: String?) -> CustomerFormViewModel(customerId, get(), get()) }
     factory { StateListViewModel(get()) }
 }
 

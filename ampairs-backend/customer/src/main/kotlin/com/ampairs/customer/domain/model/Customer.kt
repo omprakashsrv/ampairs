@@ -11,7 +11,6 @@ import org.hibernate.type.SqlTypes
 import org.springframework.data.geo.Point
 
 @Entity(name = "customer")
-@Table(indexes = [Index(name = "customer_ref_idx", columnList = "ref_id", unique = true)])
 class Customer : OwnableBaseDomain() {
 
     @Column(name = "country_code", nullable = false)
@@ -80,12 +79,6 @@ class Customer : OwnableBaseDomain() {
 
     @Column(name = "state", length = 20, nullable = false)
     var state: String = ""
-
-    @Column(name = "billingSameAsRegistered", nullable = false)
-    var billingSameAsRegistered: Boolean = true
-
-    @Column(name = "shippingSameAsBilling", nullable = false)
-    var shippingSameAsBilling: Boolean = true
 
     @Column(name = "country", length = 20, nullable = false)
     var country: String = "India"

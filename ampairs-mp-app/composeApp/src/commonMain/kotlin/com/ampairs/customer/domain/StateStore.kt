@@ -5,6 +5,7 @@ import com.ampairs.customer.data.db.StateDao
 import com.ampairs.customer.data.db.toDomain
 import com.ampairs.customer.data.db.toDomainList
 import com.ampairs.customer.data.db.toEntity
+import com.ampairs.customer.domain.MasterState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.mobilenativefoundation.store.store5.Fetcher
@@ -75,6 +76,15 @@ class StateStore(
             customerApi.deleteState(stateId)
             stateDao.deleteStateById(stateId)
             Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getAvailableStatesForImport(workspaceId: String): Result<List<MasterState>> {
+        return try {
+            val masterStates = customerApi.getAvailableStatesForImport(workspaceId)
+            Result.success(masterStates)
         } catch (e: Exception) {
             Result.failure(e)
         }

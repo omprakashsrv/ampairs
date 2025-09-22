@@ -18,6 +18,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +41,7 @@ import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 import com.ampairs.ui.components.Phone
 import com.ampairs.customer.ui.components.StateAutocomplete
+import com.ampairs.customer.ui.components.StringAutocomplete
 import com.ampairs.customer.domain.State
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -100,6 +102,8 @@ fun CustomerFormScreen(
                     isSaving = uiState.isSaving,
                     states = uiState.states,
                     onStateSelected = viewModel::onStateSelected,
+                    cities = uiState.cities,
+                    pincodes = uiState.pincodes,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -117,6 +121,8 @@ private fun CustomerForm(
     isSaving: Boolean,
     states: List<State>,
     onStateSelected: (State) -> Unit,
+    cities: List<String>,
+    pincodes: List<String>,
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
@@ -174,22 +180,55 @@ private fun CustomerForm(
                 singleLine = true
             )
 
-            Column {
-                Phone(
-                    countryCode = formState.countryCode,
-                    phone = formState.phone,
-                    onValueChange = { phone ->
-                        onFormChange(formState.copy(phone = phone))
-                    },
-                    onValidChange = { /* Validation handled in ViewModel */ }
-                )
+            // Phone and Landline Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Phone(
+                        countryCode = formState.countryCode,
+                        phone = formState.phone,
+                        onValueChange = { phone ->
+                            onFormChange(formState.copy(phone = phone))
+                        },
+                        onValidChange = { /* Validation handled in ViewModel */ }
+                    )
 
-                formState.phoneError?.let { error ->
-                    Text(
-                        text = error,
-                        color = MaterialTheme.colorScheme.error,
-                        style = MaterialTheme.typography.bodySmall,
-                        modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                    formState.phoneError?.let { error ->
+                        Text(
+                            text = error,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                        )
+                    }
+                }
+
+                Column(modifier = Modifier.weight(1f)) {
+                    OutlinedTextField(
+                        value = formState.landline,
+                        onValueChange = { onFormChange(formState.copy(landline = it)) },
+                        label = { Text("Landline") },
+                        modifier = Modifier.fillMaxWidth(),
+                        keyboardOptions = KeyboardOptions(
+                            keyboardType = KeyboardType.Phone,
+                            imeAction = ImeAction.Next
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                        ),
+                        singleLine = true,
+                        isError = formState.landlineError != null,
+                        supportingText = formState.landlineError?.let { error ->
+                            {
+                                Text(
+                                    text = error,
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
                     )
                 }
             }
@@ -239,31 +278,22 @@ private fun CustomerForm(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                OutlinedTextField(
+                StringAutocomplete(
                     value = formState.city,
                     onValueChange = { onFormChange(formState.copy(city = it)) },
-                    label = { Text("City") },
+                    suggestions = cities,
+                    label = "City",
                     modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    keyboardActions = KeyboardActions(
-                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                    ),
-                    singleLine = true
+                    imeAction = ImeAction.Next
                 )
 
-                OutlinedTextField(
+                StringAutocomplete(
                     value = formState.pincode,
                     onValueChange = { onFormChange(formState.copy(pincode = it)) },
-                    label = { Text("PIN Code") },
+                    suggestions = pincodes,
+                    label = "PIN Code",
                     modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Number,
-                        imeAction = ImeAction.Next
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                    ),
-                    singleLine = true
+                    imeAction = ImeAction.Next
                 )
             }
 
@@ -292,6 +322,170 @@ private fun CustomerForm(
                     ),
                     singleLine = true
                 )
+            }
+        }
+
+        // Billing Address Section
+        FormSection(title = "Billing Address") {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = formState.useBillingAsMainAddress,
+                    onCheckedChange = { onFormChange(formState.copy(useBillingAsMainAddress = it)) }
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Same as main address",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
+            if (!formState.useBillingAsMainAddress) {
+                OutlinedTextField(
+                    value = formState.billingStreet,
+                    onValueChange = { onFormChange(formState.copy(billingStreet = it)) },
+                    label = { Text("Billing Street") },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    StringAutocomplete(
+                        value = formState.billingCity,
+                        onValueChange = { onFormChange(formState.copy(billingCity = it)) },
+                        suggestions = cities,
+                        label = "Billing City",
+                        modifier = Modifier.weight(1f),
+                        imeAction = ImeAction.Next
+                    )
+                    StringAutocomplete(
+                        value = formState.billingPincode,
+                        onValueChange = { onFormChange(formState.copy(billingPincode = it)) },
+                        suggestions = pincodes,
+                        label = "Billing PIN",
+                        modifier = Modifier.weight(1f),
+                        imeAction = ImeAction.Next
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    StateAutocomplete(
+                        value = formState.billingState,
+                        onValueChange = { onFormChange(formState.copy(billingState = it)) },
+                        onStateSelected = { state ->
+                            onFormChange(formState.copy(billingState = state.name))
+                        },
+                        states = states,
+                        modifier = Modifier.weight(1f),
+                        label = "Billing State",
+                        imeAction = ImeAction.Next
+                    )
+                    OutlinedTextField(
+                        value = formState.billingCountry,
+                        onValueChange = { onFormChange(formState.copy(billingCountry = it)) },
+                        label = { Text("Billing Country") },
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                        keyboardActions = KeyboardActions(
+                            onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                        ),
+                        singleLine = true
+                    )
+                }
+            }
+        }
+
+        // Shipping Address Section
+        FormSection(title = "Shipping Address") {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = formState.useShippingAsMainAddress,
+                    onCheckedChange = { onFormChange(formState.copy(useShippingAsMainAddress = it)) }
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Same as main address",
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+
+            if (!formState.useShippingAsMainAddress) {
+                OutlinedTextField(
+                    value = formState.shippingStreet,
+                    onValueChange = { onFormChange(formState.copy(shippingStreet = it)) },
+                    label = { Text("Shipping Street") },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    StringAutocomplete(
+                        value = formState.shippingCity,
+                        onValueChange = { onFormChange(formState.copy(shippingCity = it)) },
+                        suggestions = cities,
+                        label = "Shipping City",
+                        modifier = Modifier.weight(1f),
+                        imeAction = ImeAction.Next
+                    )
+                    StringAutocomplete(
+                        value = formState.shippingPincode,
+                        onValueChange = { onFormChange(formState.copy(shippingPincode = it)) },
+                        suggestions = pincodes,
+                        label = "Shipping PIN",
+                        modifier = Modifier.weight(1f),
+                        imeAction = ImeAction.Next
+                    )
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    StateAutocomplete(
+                        value = formState.shippingState,
+                        onValueChange = { onFormChange(formState.copy(shippingState = it)) },
+                        onStateSelected = { state ->
+                            onFormChange(formState.copy(shippingState = state.name))
+                        },
+                        states = states,
+                        modifier = Modifier.weight(1f),
+                        label = "Shipping State",
+                        imeAction = ImeAction.Done
+                    )
+                    OutlinedTextField(
+                        value = formState.shippingCountry,
+                        onValueChange = { onFormChange(formState.copy(shippingCountry = it)) },
+                        label = { Text("Shipping Country") },
+                        modifier = Modifier.weight(1f),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(
+                            onDone = { focusManager.clearFocus() }
+                        ),
+                        singleLine = true
+                    )
+                }
             }
         }
 

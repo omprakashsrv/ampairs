@@ -17,6 +17,8 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import com.ampairs.customer.domain.State
+import com.ampairs.customer.domain.MasterState
+import com.ampairs.workspace.context.WorkspaceContextManager
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -174,6 +176,7 @@ fun StateListScreen(
     // Import States Dialog
     if (showImportDialog) {
         StateImportDialog(
+            uiState = uiState,
             onDismiss = { showImportDialog = false },
             onImportState = { stateCode ->
                 viewModel.importState(stateCode)
@@ -182,6 +185,9 @@ fun StateListScreen(
             onBulkImport = { stateCodes ->
                 viewModel.bulkImportStates(stateCodes)
                 showImportDialog = false
+            },
+            onLoadAvailableStates = { workspaceId ->
+                viewModel.loadAvailableStatesForImport(workspaceId)
             }
         )
     }
@@ -261,73 +267,81 @@ private fun StateListItem(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun StateImportDialog(
+    uiState: StateListUiState,
     onDismiss: () -> Unit,
     onImportState: (String) -> Unit,
-    onBulkImport: (List<String>) -> Unit
+    onBulkImport: (List<String>) -> Unit,
+    onLoadAvailableStates: (String) -> Unit
 ) {
     var selectedStates by remember { mutableStateOf(setOf<String>()) }
+    val workspaceContextManager = remember { WorkspaceContextManager.getInstance() }
+    val currentWorkspace by workspaceContextManager.currentWorkspace.collectAsState()
 
-    // Common Indian state codes for import
-    val availableStates = listOf(
-        "AP" to "Andhra Pradesh",
-        "AR" to "Arunachal Pradesh",
-        "AS" to "Assam",
-        "BR" to "Bihar",
-        "CG" to "Chhattisgarh",
-        "GA" to "Goa",
-        "GJ" to "Gujarat",
-        "HR" to "Haryana",
-        "HP" to "Himachal Pradesh",
-        "JK" to "Jammu and Kashmir",
-        "JH" to "Jharkhand",
-        "KA" to "Karnataka",
-        "KL" to "Kerala",
-        "MP" to "Madhya Pradesh",
-        "MH" to "Maharashtra",
-        "MN" to "Manipur",
-        "ML" to "Meghalaya",
-        "MZ" to "Mizoram",
-        "NL" to "Nagaland",
-        "OR" to "Odisha",
-        "PB" to "Punjab",
-        "RJ" to "Rajasthan",
-        "SK" to "Sikkim",
-        "TN" to "Tamil Nadu",
-        "TG" to "Telangana",
-        "TR" to "Tripura",
-        "UP" to "Uttar Pradesh",
-        "UT" to "Uttarakhand",
-        "WB" to "West Bengal"
-    )
+    // Load available states when dialog opens
+    LaunchedEffect(currentWorkspace) {
+        currentWorkspace?.id?.let { workspaceId ->
+            onLoadAvailableStates(workspaceId)
+        }
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Import States") },
         text = {
-            LazyColumn(
-                modifier = Modifier.heightIn(max = 400.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                items(availableStates) { (code, name) ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
+            when {
+                uiState.isLoadingImportStates -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Checkbox(
-                            checked = selectedStates.contains(code),
-                            onCheckedChange = { isChecked ->
-                                selectedStates = if (isChecked) {
-                                    selectedStates + code
-                                } else {
-                                    selectedStates - code
-                                }
-                            }
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        CircularProgressIndicator()
+                    }
+                }
+
+                uiState.availableStatesForImport.isEmpty() && !uiState.isLoadingImportStates -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(200.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Text(
-                            text = "$name ($code)",
-                            style = MaterialTheme.typography.bodyMedium
+                            text = "No states available for import",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
+                    }
+                }
+
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.heightIn(max = 400.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(uiState.availableStatesForImport) { masterState ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Checkbox(
+                                    checked = selectedStates.contains(masterState.stateCode),
+                                    onCheckedChange = { isChecked ->
+                                        selectedStates = if (isChecked) {
+                                            selectedStates + masterState.stateCode
+                                        } else {
+                                            selectedStates - masterState.stateCode
+                                        }
+                                    }
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = masterState.getDisplayName(),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -342,7 +356,7 @@ private fun StateImportDialog(
                             onBulkImport(selectedStates.toList())
                         }
                     },
-                    enabled = selectedStates.isNotEmpty()
+                    enabled = selectedStates.isNotEmpty() && !uiState.isLoadingImportStates
                 ) {
                     Text("Import Selected (${selectedStates.size})")
                 }

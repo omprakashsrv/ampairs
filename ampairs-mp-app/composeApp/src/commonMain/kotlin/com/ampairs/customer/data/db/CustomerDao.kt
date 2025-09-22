@@ -54,4 +54,24 @@ interface CustomerDao {
 
     @Query("DELETE FROM customers")
     suspend fun clearWorkspaceCustomers()
+
+    @Query(
+        """
+        SELECT DISTINCT city FROM customers
+        WHERE active = 1 AND city IS NOT NULL AND city != ''
+        ORDER BY created_at DESC
+        LIMIT 1000
+    """
+    )
+    suspend fun getUniqueCities(): List<String>
+
+    @Query(
+        """
+        SELECT DISTINCT pincode FROM customers
+        WHERE active = 1 AND pincode IS NOT NULL AND pincode != ''
+        ORDER BY created_at DESC
+        LIMIT 1000
+    """
+    )
+    suspend fun getUniquePincodes(): List<String>
 }

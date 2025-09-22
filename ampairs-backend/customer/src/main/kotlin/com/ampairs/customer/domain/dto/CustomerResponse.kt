@@ -25,8 +25,6 @@ data class CustomerResponse(
     var shippingAddress: Address = Address(),
     val latitude: Double?,
     val longitude: Double?,
-    var billingSameAsRegistered: Boolean,
-    var shippingSameAsBilling: Boolean,
     var lastUpdated: Long?,
     var createdAt: LocalDateTime?,
     var updatedAt: LocalDateTime?,
@@ -64,8 +62,6 @@ fun Customer.asCustomerResponse(): CustomerResponse {
         country = this.country,
         billingAddress = this.billingAddress,
         shippingAddress = this.shippingAddress,
-        shippingSameAsBilling = this.shippingSameAsBilling,
-        billingSameAsRegistered = this.billingSameAsRegistered,
     )
 }
 

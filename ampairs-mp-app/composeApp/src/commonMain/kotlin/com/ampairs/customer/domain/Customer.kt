@@ -9,6 +9,7 @@ data class Customer(
     val name: String = "",
     val email: String? = null,
     val phone: String? = null,
+    val landline: String? = null,
     @SerialName("country_code")
     val countryCode: Int = 91,
     val gstin: String? = null,
@@ -23,8 +24,6 @@ data class Customer(
     @SerialName("shipping_address")
     val shippingAddress: CustomerAddress? = null,
     val active: Boolean = true,
-    @SerialName("workspace_id")
-    val workspaceId: String = "",
     @SerialName("created_at")
     val createdAt: String? = null,
     @SerialName("updated_at")

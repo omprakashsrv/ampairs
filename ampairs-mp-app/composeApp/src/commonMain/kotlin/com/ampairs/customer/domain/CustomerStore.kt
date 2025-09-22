@@ -94,4 +94,12 @@ class CustomerStore(private val repository: CustomerRepository) {
         return result
     }
 
+    suspend fun getUniqueCities(): List<String> {
+        return repository.getUniqueCities()
+    }
+
+    suspend fun getUniquePincodes(): List<String> {
+        return repository.getUniquePincodes()
+    }
+
 }

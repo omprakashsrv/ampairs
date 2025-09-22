@@ -125,6 +125,14 @@ class CustomerRepository(
         return customerDao.getCustomerCount()
     }
 
+    suspend fun getUniqueCities(): List<String> {
+        return customerDao.getUniqueCities()
+    }
+
+    suspend fun getUniquePincodes(): List<String> {
+        return customerDao.getUniquePincodes()
+    }
+
     private suspend fun getLastSyncTime(): Long {
         // Implementation to get last sync time from preferences or metadata
         return 0L // Placeholder

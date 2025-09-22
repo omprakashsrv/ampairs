@@ -2,28 +2,37 @@ package com.ampairs.customer.ui.create
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.workspace.context.WorkspaceContextManager
+import com.ampairs.common.validation.ValidationResult
+import com.ampairs.common.validation.gstin.GstinValidationError
+import com.ampairs.common.validation.gstin.GstinValidator
+import com.ampairs.common.validation.phone.PhoneNumberValidationError
+import com.ampairs.common.validation.phone.PhoneNumberValidator
 import com.ampairs.customer.domain.Customer
+import com.ampairs.customer.domain.CustomerAddress
 import com.ampairs.customer.domain.CustomerKey
 import com.ampairs.customer.domain.CustomerStore
 import com.ampairs.customer.domain.State
 import com.ampairs.customer.domain.StateKey
 import com.ampairs.customer.domain.StateStore
-import kotlinx.coroutines.flow.*
-import kotlinx.coroutines.launch
 import com.benasher44.uuid.uuid4
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import org.mobilenativefoundation.store.store5.StoreReadRequest
 import org.mobilenativefoundation.store.store5.StoreReadResponse
-import com.ampairs.common.validation.phone.PhoneNumberValidator
-import com.ampairs.common.validation.phone.PhoneNumberValidationError
-import com.ampairs.common.validation.gstin.GstinValidator
-import com.ampairs.common.validation.gstin.GstinValidationError
-import com.ampairs.common.validation.ValidationResult
 
 data class CustomerFormState(
+    val uid: String = "",
     val name: String = "",
     val email: String = "",
     val phone: String = "",
+    val landline: String = "",
     val countryCode: Int = 91,
     val gstin: String = "",
     val address: String = "",
@@ -32,9 +41,25 @@ data class CustomerFormState(
     val state: String = "",
     val pincode: String = "",
     val country: String = "India",
+    // Billing Address
+    val useBillingAsMainAddress: Boolean = true,
+    val billingStreet: String = "",
+    val billingCity: String = "",
+    val billingState: String = "",
+    val billingPincode: String = "",
+    val billingCountry: String = "India",
+    // Shipping Address
+    val useShippingAsMainAddress: Boolean = true,
+    val shippingStreet: String = "",
+    val shippingCity: String = "",
+    val shippingState: String = "",
+    val shippingPincode: String = "",
+    val shippingCountry: String = "India",
+    // Validation errors
     val nameError: String? = null,
     val emailError: String? = null,
     val phoneError: String? = null,
+    val landlineError: String? = null,
     val gstinError: String? = null
 ) {
     fun isValid(): Boolean {
@@ -42,15 +67,17 @@ data class CustomerFormState(
                 nameError == null &&
                 emailError == null &&
                 phoneError == null &&
+                landlineError == null &&
                 gstinError == null
     }
 
-    fun toCustomer(id: String = "", workspaceId: String = ""): Customer {
+    fun toCustomer(): Customer {
         return Customer(
-            uid = id,
+            uid = uid,
             name = name.trim(),
             email = email.trim().takeIf { it.isNotBlank() },
             phone = phone.trim().takeIf { it.isNotBlank() },
+            landline = landline.trim().takeIf { it.isNotBlank() },
             countryCode = countryCode,
             gstin = gstin.trim().takeIf { it.isNotBlank() },
             address = address.trim().takeIf { it.isNotBlank() },
@@ -59,7 +86,40 @@ data class CustomerFormState(
             state = state.trim().takeIf { it.isNotBlank() },
             pincode = pincode.trim().takeIf { it.isNotBlank() },
             country = country.trim(),
-            workspaceId = workspaceId
+            billingAddress = if (useBillingAsMainAddress) {
+                CustomerAddress(
+                    street = street.trim(),
+                    city = city.trim(),
+                    state = state.trim(),
+                    pincode = pincode.trim(),
+                    country = country.trim()
+                ).takeIf { street.isNotBlank() || city.isNotBlank() }
+            } else {
+                CustomerAddress(
+                    street = billingStreet.trim(),
+                    city = billingCity.trim(),
+                    state = billingState.trim(),
+                    pincode = billingPincode.trim(),
+                    country = billingCountry.trim()
+                ).takeIf { billingStreet.isNotBlank() || billingCity.isNotBlank() }
+            },
+            shippingAddress = if (useShippingAsMainAddress) {
+                CustomerAddress(
+                    street = street.trim(),
+                    city = city.trim(),
+                    state = state.trim(),
+                    pincode = pincode.trim(),
+                    country = country.trim()
+                ).takeIf { street.isNotBlank() || city.isNotBlank() }
+            } else {
+                CustomerAddress(
+                    street = shippingStreet.trim(),
+                    city = shippingCity.trim(),
+                    state = shippingState.trim(),
+                    pincode = shippingPincode.trim(),
+                    country = shippingCountry.trim()
+                ).takeIf { shippingStreet.isNotBlank() || shippingCity.isNotBlank() }
+            },
         )
     }
 }
@@ -71,14 +131,16 @@ data class CustomerFormUiState(
     val error: String? = null,
     val canSave: Boolean = false,
     val states: List<State> = emptyList(),
-    val isLoadingStates: Boolean = false
+    val isLoadingStates: Boolean = false,
+    val cities: List<String> = emptyList(),
+    val pincodes: List<String> = emptyList(),
+    val isLoadingCitiesAndPincodes: Boolean = false
 )
 
 class CustomerFormViewModel(
     private val customerId: String?,
     private val customerStore: CustomerStore,
     private val stateStore: StateStore,
-    private val workspaceContextManager: WorkspaceContextManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CustomerFormUiState())
@@ -89,6 +151,7 @@ class CustomerFormViewModel(
     init {
         observeFormValidation()
         loadStates()
+        loadCitiesAndPincodes()
     }
 
     fun loadCustomer() {
@@ -163,7 +226,6 @@ class CustomerFormViewModel(
     }
 
     fun saveCustomer(onSuccess: () -> Unit) {
-        val workspaceId = workspaceContextManager.getCurrentWorkspaceId() ?: return
         val currentFormState = _uiState.value.formState
 
         if (!currentFormState.isValid()) {
@@ -177,30 +239,14 @@ class CustomerFormViewModel(
             _uiState.update { it.copy(isSaving = true, error = null) }
 
             try {
-                val result = if (customerId == null) {
+                val result = if (currentFormState.uid.isBlank()) {
                     // Create new customer
-                    val newCustomer = currentFormState.toCustomer(
-                        id = uuid4().toString(),
-                        workspaceId = workspaceId
-                    )
+                    val updatedFormState = currentFormState.copy(uid = uuid4().toString())
+                    val newCustomer = updatedFormState.toCustomer()
                     customerStore.createCustomer(newCustomer)
                 } else {
                     // Update existing customer
-                    val updatedCustomer = originalCustomer?.copy(
-                        name = currentFormState.name.trim(),
-                        email = currentFormState.email.trim().takeIf { it.isNotBlank() },
-                        phone = currentFormState.phone.trim().takeIf { it.isNotBlank() },
-                        countryCode = currentFormState.countryCode,
-                        gstin = currentFormState.gstin.trim().takeIf { it.isNotBlank() },
-                        address = currentFormState.address.trim().takeIf { it.isNotBlank() },
-                        street = currentFormState.street.trim().takeIf { it.isNotBlank() },
-                        city = currentFormState.city.trim().takeIf { it.isNotBlank() },
-                        state = currentFormState.state.trim().takeIf { it.isNotBlank() },
-                        pincode = currentFormState.pincode.trim().takeIf { it.isNotBlank() },
-                        country = currentFormState.country.trim(),
-                        workspaceId = workspaceId
-                    ) ?: return@launch
-
+                    val updatedCustomer = currentFormState.toCustomer()
                     customerStore.updateCustomer(updatedCustomer)
                 }
 
@@ -293,6 +339,32 @@ class CustomerFormViewModel(
         }
     }
 
+    private fun loadCitiesAndPincodes() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingCitiesAndPincodes = true) }
+
+            try {
+                val cities = customerStore.getUniqueCities()
+                val pincodes = customerStore.getUniquePincodes()
+
+                _uiState.update {
+                    it.copy(
+                        cities = cities,
+                        pincodes = pincodes,
+                        isLoadingCitiesAndPincodes = false
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoadingCitiesAndPincodes = false,
+                        error = e.message ?: "Failed to load cities and pincodes"
+                    )
+                }
+            }
+        }
+    }
+
     fun onStateSelected(state: State) {
         val currentFormState = _uiState.value.formState
         _uiState.update {
@@ -333,6 +405,13 @@ class CustomerFormViewModel(
             }
         } else null
 
+        val landlineError = if (formState.landline.isNotBlank()) {
+            when {
+                !isValidLandline(formState.landline) -> "Please enter a valid landline number"
+                else -> null
+            }
+        } else null
+
         val gstinError = if (formState.gstin.isNotBlank()) {
             when (val result = GstinValidator().validate(formState.gstin)) {
                 is ValidationResult.Invalid -> (result.errors.firstOrNull() as? GstinValidationError)?.message
@@ -344,6 +423,7 @@ class CustomerFormViewModel(
             nameError = nameError,
             emailError = emailError,
             phoneError = phoneError,
+            landlineError = landlineError,
             gstinError = gstinError
         )
     }
@@ -351,13 +431,33 @@ class CustomerFormViewModel(
     private fun isValidEmail(email: String): Boolean {
         return email.contains("@") && email.contains(".")
     }
+
+    private fun isValidLandline(landline: String): Boolean {
+        // Indian landline format: STD Code (2-5 digits) + Local number (6-8 digits)
+        // Examples: 080-12345678, 0120-1234567, 022-12345678
+        val cleanedLandline = landline.replace(Regex("[\\s-()]"), "")
+
+        // Check for basic landline pattern (6-13 digits total)
+        if (!cleanedLandline.matches(Regex("^0?\\d{6,12}$"))) {
+            return false
+        }
+
+        // Must start with 0 (STD code prefix) if more than 8 digits
+        if (cleanedLandline.length > 8 && !cleanedLandline.startsWith("0")) {
+            return false
+        }
+
+        return true
+    }
 }
 
 private fun Customer.toFormState(): CustomerFormState {
     return CustomerFormState(
+        uid = uid,
         name = name,
         email = email ?: "",
         phone = phone ?: "",
+        landline = landline ?: "",
         countryCode = countryCode,
         gstin = gstin ?: "",
         address = address ?: "",
@@ -366,6 +466,25 @@ private fun Customer.toFormState(): CustomerFormState {
         state = state ?: "",
         pincode = pincode ?: "",
         country = country,
+        // Billing Address
+        useBillingAsMainAddress = billingAddress == null ||
+            (billingAddress?.street == street && billingAddress?.city == city &&
+             billingAddress?.state == state && billingAddress?.pincode == pincode),
+        billingStreet = billingAddress?.street ?: "",
+        billingCity = billingAddress?.city ?: "",
+        billingState = billingAddress?.state ?: "",
+        billingPincode = billingAddress?.pincode ?: "",
+        billingCountry = billingAddress?.country ?: "India",
+        // Shipping Address
+        useShippingAsMainAddress = shippingAddress == null ||
+            (shippingAddress?.street == street && shippingAddress?.city == city &&
+             shippingAddress?.state == state && shippingAddress?.pincode == pincode),
+        shippingStreet = shippingAddress?.street ?: "",
+        shippingCity = shippingAddress?.city ?: "",
+        shippingState = shippingAddress?.state ?: "",
+        shippingPincode = shippingAddress?.pincode ?: "",
+        shippingCountry = shippingAddress?.country ?: "India",
+        // Validation errors
         nameError = null,
         emailError = null,
         phoneError = null,

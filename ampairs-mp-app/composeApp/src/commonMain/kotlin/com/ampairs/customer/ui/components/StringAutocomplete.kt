@@ -1,12 +1,7 @@
 package com.ampairs.customer.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.*
@@ -18,20 +13,15 @@ import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.PopupProperties
-import com.ampairs.customer.domain.State
-import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.flow.debounce
 
-@OptIn(ExperimentalMaterial3Api::class, FlowPreview::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StateAutocomplete(
+fun StringAutocomplete(
     value: String,
     onValueChange: (String) -> Unit,
-    onStateSelected: (State) -> Unit,
-    states: List<State>,
+    suggestions: List<String>,
     modifier: Modifier = Modifier,
-    label: String = "State",
+    label: String = "Field",
     isError: Boolean = false,
     supportingText: @Composable (() -> Unit)? = null,
     imeAction: ImeAction = ImeAction.Next
@@ -41,25 +31,25 @@ fun StateAutocomplete(
     var selectedIndex by remember { mutableStateOf(-1) }
     val focusManager = LocalFocusManager.current
 
-    // Filter states based on input
-    val filteredStates = remember(value, states) {
+    // Filter suggestions based on input
+    val filteredSuggestions = remember(value, suggestions) {
         if (value.isBlank()) {
-            states.take(10) // Show top 10 states when empty
+            suggestions.take(10) // Show top 10 suggestions when empty
         } else {
-            states.filter {
-                it.name.contains(value, ignoreCase = true)
+            suggestions.filter {
+                it.contains(value, ignoreCase = true)
             }.take(10)
         }
     }
 
-    // Reset selected index when filtered states change
-    LaunchedEffect(filteredStates) {
+    // Reset selected index when filtered suggestions change
+    LaunchedEffect(filteredSuggestions) {
         selectedIndex = -1
     }
 
     Column(modifier = modifier) {
         ExposedDropdownMenuBox(
-            expanded = expanded && filteredStates.isNotEmpty() && hasFocus,
+            expanded = expanded && filteredSuggestions.isNotEmpty() && hasFocus,
             onExpandedChange = { newExpanded ->
                 expanded = newExpanded
                 if (!newExpanded) {
@@ -86,10 +76,10 @@ fun StateAutocomplete(
                         }
                     }
                     .onKeyEvent { keyEvent ->
-                        if (keyEvent.type == KeyEventType.KeyDown && expanded && filteredStates.isNotEmpty()) {
+                        if (keyEvent.type == KeyEventType.KeyDown && expanded && filteredSuggestions.isNotEmpty()) {
                             when (keyEvent.key) {
                                 Key.DirectionDown -> {
-                                    selectedIndex = (selectedIndex + 1).coerceAtMost(filteredStates.size - 1)
+                                    selectedIndex = (selectedIndex + 1).coerceAtMost(filteredSuggestions.size - 1)
                                     true
                                 }
                                 Key.DirectionUp -> {
@@ -97,10 +87,9 @@ fun StateAutocomplete(
                                     true
                                 }
                                 Key.Enter -> {
-                                    if (selectedIndex >= 0 && selectedIndex < filteredStates.size) {
-                                        val selectedState = filteredStates[selectedIndex]
-                                        onValueChange(selectedState.name)
-                                        onStateSelected(selectedState)
+                                    if (selectedIndex >= 0 && selectedIndex < filteredSuggestions.size) {
+                                        val selectedSuggestion = filteredSuggestions[selectedIndex]
+                                        onValueChange(selectedSuggestion)
                                         expanded = false
                                         selectedIndex = -1
                                         focusManager.moveFocus(FocusDirection.Next)
@@ -121,7 +110,7 @@ fun StateAutocomplete(
                 keyboardOptions = KeyboardOptions(imeAction = imeAction),
                 keyboardActions = KeyboardActions(
                     onNext = {
-                        if (expanded && filteredStates.isNotEmpty()) {
+                        if (expanded && filteredSuggestions.isNotEmpty()) {
                             expanded = false
                         }
                         focusManager.moveFocus(FocusDirection.Next)
@@ -137,23 +126,22 @@ fun StateAutocomplete(
             )
 
             ExposedDropdownMenu(
-                expanded = expanded && filteredStates.isNotEmpty() && hasFocus,
+                expanded = expanded && filteredSuggestions.isNotEmpty() && hasFocus,
                 onDismissRequest = {
                     expanded = false
                     selectedIndex = -1
                 }
             ) {
-                filteredStates.forEachIndexed { index, state ->
+                filteredSuggestions.forEachIndexed { index, suggestion ->
                     DropdownMenuItem(
                         text = {
                             Text(
-                                text = state.name,
+                                text = suggestion,
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         },
                         onClick = {
-                            onValueChange(state.name)
-                            onStateSelected(state)
+                            onValueChange(suggestion)
                             expanded = false
                             selectedIndex = -1
                             focusManager.moveFocus(FocusDirection.Next)
@@ -171,24 +159,4 @@ fun StateAutocomplete(
             }
         }
     }
-}
-
-@Composable
-fun StateAutocompletePreview() {
-    val sampleStates = listOf(
-        State(id = "1", name = "Andhra Pradesh"),
-        State(id = "2", name = "Karnataka"),
-        State(id = "3", name = "Kerala"),
-        State(id = "4", name = "Tamil Nadu")
-    )
-
-    var selectedState by remember { mutableStateOf("") }
-
-    StateAutocomplete(
-        value = selectedState,
-        onValueChange = { selectedState = it },
-        onStateSelected = { state -> selectedState = state.name },
-        states = sampleStates,
-        modifier = Modifier.fillMaxWidth().padding(16.dp)
-    )
 }

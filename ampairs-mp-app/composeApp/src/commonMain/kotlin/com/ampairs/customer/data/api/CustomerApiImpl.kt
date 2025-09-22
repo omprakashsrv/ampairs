@@ -8,6 +8,7 @@ import com.ampairs.common.delete
 import com.ampairs.common.model.Response
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.State
+import com.ampairs.customer.domain.MasterState
 import io.ktor.client.engine.HttpClientEngine
 
 const val CUSTOMER_ENDPOINT = "http://localhost:8080"
@@ -40,7 +41,7 @@ class CustomerApiImpl(
     override suspend fun updateCustomer(customer: Customer): Customer {
         val response: Response<Customer> = post(
             client,
-            "$CUSTOMER_ENDPOINT/customer/v1",
+            "$CUSTOMER_ENDPOINT/customer/v1/${customer.uid}",
             customer
         )
         return response.data ?: throw Exception("Failed to update customer")
@@ -90,6 +91,15 @@ class CustomerApiImpl(
             request
         )
         return response.data ?: throw Exception("Failed to bulk import states")
+    }
+
+    override suspend fun getAvailableStatesForImport(workspaceId: String): List<MasterState> {
+        val response: Response<List<MasterState>> = get(
+            client,
+            "$CUSTOMER_ENDPOINT/customer/v1/master-states/available-for-import",
+            mapOf("workspace_id" to workspaceId)
+        )
+        return response.data ?: emptyList()
     }
 
     override suspend fun deleteState(stateId: String) {

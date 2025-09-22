@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.customer.domain.State
 import com.ampairs.customer.domain.StateKey
 import com.ampairs.customer.domain.StateStore
+import com.ampairs.customer.domain.MasterState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.mobilenativefoundation.store.store5.StoreReadRequest
@@ -15,7 +16,9 @@ data class StateListUiState(
     val states: List<State> = emptyList(),
     val isLoading: Boolean = false,
     val error: String? = null,
-    val searchQuery: String = ""
+    val searchQuery: String = "",
+    val availableStatesForImport: List<MasterState> = emptyList(),
+    val isLoadingImportStates: Boolean = false
 )
 
 class StateListViewModel(
@@ -240,6 +243,31 @@ class StateListViewModel(
                     it.copy(
                         isLoading = false,
                         error = result.exceptionOrNull()?.message ?: "Failed to import states"
+                    )
+                }
+            }
+        }
+    }
+
+    fun loadAvailableStatesForImport(workspaceId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingImportStates = true, error = null) }
+
+            val result = stateStore.getAvailableStatesForImport(workspaceId)
+            if (result.isSuccess) {
+                val masterStates = result.getOrNull() ?: emptyList()
+                _uiState.update {
+                    it.copy(
+                        availableStatesForImport = masterStates,
+                        isLoadingImportStates = false,
+                        error = null
+                    )
+                }
+            } else {
+                _uiState.update {
+                    it.copy(
+                        isLoadingImportStates = false,
+                        error = result.exceptionOrNull()?.message ?: "Failed to load available states"
                     )
                 }
             }

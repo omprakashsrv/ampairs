@@ -79,8 +79,6 @@ data class CustomerUpdateRequest(
 
     val active: Boolean,
     val softDeleted: Boolean,
-    var billingSameAsRegistered: Boolean,
-    var shippingSameAsBilling: Boolean,
 )
 
 fun CustomerUpdateRequest.toCustomer(): Customer {
@@ -103,8 +101,6 @@ fun CustomerUpdateRequest.toCustomer(): Customer {
     customer.shippingAddress = this.shippingAddress ?: Address()
     customer.status = this.status ?: "ACTIVE"
     customer.attributes = this.attributes
-    customer.billingSameAsRegistered = this.billingSameAsRegistered
-    customer.shippingSameAsBilling = this.shippingSameAsBilling
     return customer
 }
 
