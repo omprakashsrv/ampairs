@@ -52,7 +52,7 @@ fun WorkspaceModulesScreen(
     // Initialize module registry and load data on first composition
     LaunchedEffect(Unit) {
       // After initial load, try to refresh in background
-//        viewModel.loadInstalledModules(refresh = true) // Force API call via Store5 for updates
+        viewModel.loadInstalledModules() // Load modules using Store5
     }
 
     // Pass navigationService to callback for desktop menu bar integration
@@ -291,7 +291,7 @@ private fun ModuleStoreDialog(
 
     // Load initial data when dialog opens
     LaunchedEffect(Unit) {
-        viewModel.loadInstalledModules(refresh = true)
+        viewModel.loadInstalledModules()
         viewModel.loadAvailableModules(refresh = true) // Load all available modules
     }
 

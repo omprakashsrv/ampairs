@@ -32,6 +32,9 @@ class WorkspaceModuleRepository(
     private val installedModuleStore = storeFactory.createInstalledModuleStore()
     private val availableModuleStore = storeFactory.createAvailableModuleStore()
 
+    // Expose store for direct access like StateStore
+    val moduleStore get() = installedModuleStore
+
     /**
      * Get installed modules as Flow for reactive UI updates
      * Matches web: this.installedModules = signal<InstalledModule[]>([])
