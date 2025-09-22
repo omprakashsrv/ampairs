@@ -32,83 +32,13 @@ class StateListViewModel(
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
 
     init {
-        loadStates()
+        refreshStates()
         observeSearchQuery()
     }
 
     fun updateSearchQuery(query: String) {
         _searchQuery.value = query
         _uiState.update { it.copy(searchQuery = query) }
-    }
-
-    fun loadStates() {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
-
-            try {
-                // First, try to get states from local DB
-                stateStore.searchStatesFlow("")
-                    .collect { localStates ->
-                        if (localStates.isEmpty()) {
-                            // If local DB is empty, fetch from backend API
-                            val key = StateKey()
-                            stateStore.stateStore
-                                .stream(StoreReadRequest.cached(key, refresh = true))
-                                .collect { response ->
-                                    when (response) {
-                                        is StoreReadResponse.Data -> {
-                                            _uiState.update {
-                                                it.copy(
-                                                    states = response.value,
-                                                    isLoading = false,
-                                                    error = null
-                                                )
-                                            }
-                                        }
-                                        is StoreReadResponse.Loading -> {
-                                            _uiState.update { it.copy(isLoading = true) }
-                                        }
-                                        is StoreReadResponse.Error.Exception -> {
-                                            _uiState.update {
-                                                it.copy(
-                                                    isLoading = false,
-                                                    error = response.error.message ?: "Failed to load states"
-                                                )
-                                            }
-                                        }
-                                        is StoreReadResponse.Error.Message -> {
-                                            _uiState.update {
-                                                it.copy(
-                                                    isLoading = false,
-                                                    error = response.message
-                                                )
-                                            }
-                                        }
-                                        else -> {
-                                            // Handle other response types if needed
-                                        }
-                                    }
-                                }
-                        } else {
-                            // Use local states if available
-                            _uiState.update {
-                                it.copy(
-                                    states = localStates,
-                                    isLoading = false,
-                                    error = null
-                                )
-                            }
-                        }
-                    }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = e.message ?: "Failed to load states"
-                    )
-                }
-            }
-        }
     }
 
     fun deleteState(stateId: String) {
@@ -122,7 +52,7 @@ class StateListViewModel(
                 }
             } else {
                 // Refresh the list after successful deletion
-                loadStates()
+                refreshStates()
             }
         }
     }
@@ -168,9 +98,11 @@ class StateListViewModel(
                                     )
                                 }
                             }
+
                             is StoreReadResponse.Loading -> {
                                 _uiState.update { it.copy(isLoading = true) }
                             }
+
                             is StoreReadResponse.Error.Exception -> {
                                 _uiState.update {
                                     it.copy(
@@ -179,6 +111,7 @@ class StateListViewModel(
                                     )
                                 }
                             }
+
                             is StoreReadResponse.Error.Message -> {
                                 _uiState.update {
                                     it.copy(
@@ -187,6 +120,7 @@ class StateListViewModel(
                                     )
                                 }
                             }
+
                             else -> {
                                 // Handle other response types if needed
                             }
@@ -210,8 +144,8 @@ class StateListViewModel(
             val result = stateStore.importState(stateCode)
             if (result.isSuccess) {
                 _uiState.update { it.copy(isLoading = false, error = null) }
-                // Refresh the list after successful import
-                loadStates()
+                // Refresh the list from backend after successful import
+                refreshStates()
             } else {
                 _uiState.update {
                     it.copy(
@@ -236,8 +170,8 @@ class StateListViewModel(
                         error = null
                     )
                 }
-                // Refresh the list after successful import
-                loadStates()
+                // Refresh the list from backend after successful import
+                refreshStates()
             } else {
                 _uiState.update {
                     it.copy(
@@ -267,7 +201,8 @@ class StateListViewModel(
                 _uiState.update {
                     it.copy(
                         isLoadingImportStates = false,
-                        error = result.exceptionOrNull()?.message ?: "Failed to load available states"
+                        error = result.exceptionOrNull()?.message
+                            ?: "Failed to load available states"
                     )
                 }
             }

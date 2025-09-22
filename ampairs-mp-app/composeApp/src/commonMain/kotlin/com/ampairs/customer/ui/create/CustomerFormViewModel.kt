@@ -294,17 +294,21 @@ class CustomerFormViewModel(
                                                 )
                                             }
                                         }
+
                                         is StoreReadResponse.Loading -> {
                                             _uiState.update { it.copy(isLoadingStates = true) }
                                         }
+
                                         is StoreReadResponse.Error.Exception -> {
                                             _uiState.update {
                                                 it.copy(
                                                     isLoadingStates = false,
-                                                    error = response.error.message ?: "Failed to load states"
+                                                    error = response.error.message
+                                                        ?: "Failed to load states"
                                                 )
                                             }
                                         }
+
                                         is StoreReadResponse.Error.Message -> {
                                             _uiState.update {
                                                 it.copy(
@@ -313,6 +317,7 @@ class CustomerFormViewModel(
                                                 )
                                             }
                                         }
+
                                         else -> {
                                             // Handle other response types if needed
                                         }
@@ -468,8 +473,8 @@ private fun Customer.toFormState(): CustomerFormState {
         country = country,
         // Billing Address
         useBillingAsMainAddress = billingAddress == null ||
-            (billingAddress?.street == street && billingAddress?.city == city &&
-             billingAddress?.state == state && billingAddress?.pincode == pincode),
+                (billingAddress.street == street && billingAddress.city == city &&
+                        billingAddress.state == state && billingAddress.pincode == pincode),
         billingStreet = billingAddress?.street ?: "",
         billingCity = billingAddress?.city ?: "",
         billingState = billingAddress?.state ?: "",
@@ -477,8 +482,8 @@ private fun Customer.toFormState(): CustomerFormState {
         billingCountry = billingAddress?.country ?: "India",
         // Shipping Address
         useShippingAsMainAddress = shippingAddress == null ||
-            (shippingAddress?.street == street && shippingAddress?.city == city &&
-             shippingAddress?.state == state && shippingAddress?.pincode == pincode),
+                (shippingAddress.street == street && shippingAddress.city == city &&
+                        shippingAddress.state == state && shippingAddress.pincode == pincode),
         shippingStreet = shippingAddress?.street ?: "",
         shippingCity = shippingAddress?.city ?: "",
         shippingState = shippingAddress?.state ?: "",
