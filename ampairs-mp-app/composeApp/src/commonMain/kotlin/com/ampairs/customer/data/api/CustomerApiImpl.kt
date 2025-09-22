@@ -41,7 +41,7 @@ class CustomerApiImpl(
     override suspend fun updateCustomer(customer: Customer): Customer {
         val response: Response<Customer> = post(
             client,
-            "$CUSTOMER_ENDPOINT/customer/v1/${customer.uid}",
+            "$CUSTOMER_ENDPOINT/customer/v1",
             customer
         )
         return response.data ?: throw Exception("Failed to update customer")

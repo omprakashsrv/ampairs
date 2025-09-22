@@ -3,6 +3,7 @@ package com.ampairs.customer.domain.dto
 import com.ampairs.core.domain.model.Address
 import com.ampairs.core.validation.*
 import com.ampairs.customer.domain.model.Customer
+import com.ampairs.customer.domain.model.CustomerType
 import jakarta.validation.constraints.*
 
 data class CustomerUpdateRequest(
@@ -30,7 +31,7 @@ data class CustomerUpdateRequest(
     var phone: String?,
 
     @field:SafeString(maxLength = 15, message = "Landline contains invalid characters")
-    @field:Pattern(regexp = "^[0-9\\-\\+\\(\\)\\s]*$", message = "Invalid landline format")
+    @field:Pattern(regexp = "^[0-9\\-+()\\s]*$", message = "Invalid landline format")
     var landline: String?,
 
     @field:ValidEmail
@@ -38,6 +39,24 @@ data class CustomerUpdateRequest(
 
     @field:ValidPincode
     var pincode: String?,
+
+    var customerType: CustomerType?,
+
+    var businessName: String?,
+
+    var companyId: String?,
+
+    var gstNumber: String?,
+
+    var panNumber: String?,
+
+    @field:DecimalMin(value = "0.0", message = "Credit limit must be non-negative")
+    var creditLimit: Double?,
+
+    @field:Min(value = 0, message = "Credit days must be non-negative")
+    var creditDays: Int?,
+
+    var customerNumber: String?,
 
     var status: String?,
 
@@ -91,12 +110,17 @@ fun CustomerUpdateRequest.toCustomer(): Customer {
     customer.landline = this.landline ?: ""
     customer.email = this.email ?: ""
     customer.pincode = this.pincode ?: ""
-    customer.gstin = this.gstin ?: ""
+    customer.customerType = this.customerType ?: CustomerType.RETAIL
+    customer.gstNumber = this.gstNumber
+    customer.panNumber = this.panNumber
+    customer.creditLimit = this.creditLimit ?: 0.0
+    customer.creditDays = this.creditDays ?: 0
     customer.address = this.address ?: ""
     customer.state = this.state ?: ""
     customer.street = this.street
     customer.street2 = this.street2
     customer.city = this.city
+    customer.country = this.country
     customer.billingAddress = this.billingAddress ?: Address()
     customer.shippingAddress = this.shippingAddress ?: Address()
     customer.status = this.status ?: "ACTIVE"

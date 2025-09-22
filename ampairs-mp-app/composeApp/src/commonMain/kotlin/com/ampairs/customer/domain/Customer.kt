@@ -3,18 +3,37 @@ package com.ampairs.customer.domain
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
+enum class CustomerType(val displayName: String) {
+    RETAIL("Retail Customer"),
+    WHOLESALE("Wholesale Customer"),
+    DISTRIBUTOR("Distributor"),
+    CORPORATE("Corporate Customer")
+}
+
 @Serializable
 data class Customer(
     val uid: String = "",
+    @SerialName("ref_id")
+    val refId: String? = null,
     val name: String = "",
     val email: String? = null,
     val phone: String? = null,
     val landline: String? = null,
     @SerialName("country_code")
     val countryCode: Int = 91,
-    val gstin: String? = null,
+    @SerialName("customer_type")
+    val customerType: CustomerType? = null,
+    @SerialName("gst_number")
+    val gstNumber: String? = null,
+    @SerialName("pan_number")
+    val panNumber: String? = null,
+    @SerialName("credit_limit")
+    val creditLimit: Double? = null,
+    @SerialName("credit_days")
+    val creditDays: Int? = null,
     val address: String? = null,
     val street: String? = null,
+    val street2: String? = null,
     val city: String? = null,
     val state: String? = null,
     val pincode: String? = null,
@@ -23,6 +42,8 @@ data class Customer(
     val billingAddress: CustomerAddress? = null,
     @SerialName("shipping_address")
     val shippingAddress: CustomerAddress? = null,
+    val status: String? = null,
+    val attributes: Map<String, String>? = null,
     val active: Boolean = true,
     @SerialName("created_at")
     val createdAt: String? = null,

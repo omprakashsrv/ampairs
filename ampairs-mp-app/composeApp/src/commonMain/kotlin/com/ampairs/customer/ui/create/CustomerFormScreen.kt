@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -15,13 +16,22 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -30,6 +40,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusDirection
@@ -43,6 +56,7 @@ import com.ampairs.ui.components.Phone
 import com.ampairs.customer.ui.components.StateAutocomplete
 import com.ampairs.customer.ui.components.StringAutocomplete
 import com.ampairs.customer.domain.State
+import com.ampairs.customer.domain.CustomerType
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -111,6 +125,7 @@ fun CustomerFormScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CustomerForm(
     formState: CustomerFormState,
@@ -149,6 +164,18 @@ private fun CustomerForm(
 
         // Basic Information
         FormSection(title = "Basic Information") {
+//            OutlinedTextField(
+//                value = formState.refId,
+//                onValueChange = { onFormChange(formState.copy(refId = it)) },
+//                label = { Text("Reference ID") },
+//                modifier = Modifier.fillMaxWidth(),
+//                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+//                keyboardActions = KeyboardActions(
+//                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
+//                ),
+//                singleLine = true
+//            )
+
             OutlinedTextField(
                 value = formState.name,
                 onValueChange = { onFormChange(formState.copy(name = it)) },
@@ -179,6 +206,42 @@ private fun CustomerForm(
                 supportingText = formState.emailError?.let { { Text(it) } },
                 singleLine = true
             )
+
+            // Customer Type Dropdown
+            var customerTypeExpanded by remember { mutableStateOf(false) }
+            ExposedDropdownMenuBox(
+                expanded = customerTypeExpanded,
+                onExpandedChange = { customerTypeExpanded = !customerTypeExpanded },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = formState.customerType.displayName,
+                    onValueChange = { },
+                    readOnly = true,
+                    label = { Text("Customer Type") },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = customerTypeExpanded)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    singleLine = true
+                )
+                ExposedDropdownMenu(
+                    expanded = customerTypeExpanded,
+                    onDismissRequest = { customerTypeExpanded = false }
+                ) {
+                    CustomerType.entries.forEach { customerType ->
+                        DropdownMenuItem(
+                            text = { Text(customerType.displayName) },
+                            onClick = {
+                                onFormChange(formState.copy(customerType = customerType))
+                                customerTypeExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
 
             // Phone and Landline Row
             Row(
@@ -233,19 +296,77 @@ private fun CustomerForm(
                 }
             }
 
+        }
+
+        // Business Information
+        FormSection(title = "Business Information") {
             OutlinedTextField(
-                value = formState.gstin,
-                onValueChange = { onFormChange(formState.copy(gstin = it)) },
-                label = { Text("GSTIN") },
+                value = formState.gstNumber,
+                onValueChange = { onFormChange(formState.copy(gstNumber = it)) },
+                label = { Text("GST Number") },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(
                     onNext = { focusManager.moveFocus(FocusDirection.Next) }
                 ),
-                singleLine = true,
-                isError = formState.gstinError != null,
-                supportingText = formState.gstinError?.let { { Text(it) } }
+                singleLine = true
             )
+
+            OutlinedTextField(
+                value = formState.panNumber,
+                onValueChange = { onFormChange(formState.copy(panNumber = it)) },
+                label = { Text("PAN Number") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                ),
+                singleLine = true
+            )
+        }
+
+        // Credit Management
+        FormSection(title = "Credit Management") {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = if (formState.creditLimit > 0) formState.creditLimit.toString() else "",
+                    onValueChange = { value ->
+                        val creditLimit = value.toDoubleOrNull() ?: 0.0
+                        onFormChange(formState.copy(creditLimit = creditLimit))
+                    },
+                    label = { Text("Credit Limit") },
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true
+                )
+
+                OutlinedTextField(
+                    value = if (formState.creditDays > 0) formState.creditDays.toString() else "",
+                    onValueChange = { value ->
+                        val creditDays = value.toIntOrNull() ?: 0
+                        onFormChange(formState.copy(creditDays = creditDays))
+                    },
+                    label = { Text("Credit Days") },
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true
+                )
+            }
         }
 
         // Address Information
@@ -266,6 +387,18 @@ private fun CustomerForm(
                 value = formState.street,
                 onValueChange = { onFormChange(formState.copy(street = it)) },
                 label = { Text("Street") },
+                modifier = Modifier.fillMaxWidth(),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                keyboardActions = KeyboardActions(
+                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                ),
+                singleLine = true
+            )
+
+            OutlinedTextField(
+                value = formState.street2,
+                onValueChange = { onFormChange(formState.copy(street2 = it)) },
+                label = { Text("Street 2") },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
                 keyboardActions = KeyboardActions(
@@ -489,6 +622,54 @@ private fun CustomerForm(
             }
         }
 
+        // Custom Attributes
+        FormSection(title = "Custom Attributes") {
+            AttributesEditor(
+                attributes = formState.attributes,
+                onAttributesChange = { newAttributes ->
+                    onFormChange(formState.copy(attributes = newAttributes))
+                }
+            )
+        }
+
+        // Status Information
+        FormSection(title = "Status") {
+            var statusExpanded by remember { mutableStateOf(false) }
+            ExposedDropdownMenuBox(
+                expanded = statusExpanded,
+                onExpandedChange = { statusExpanded = !statusExpanded },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = formState.status,
+                    onValueChange = { },
+                    readOnly = true,
+                    label = { Text("Status") },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = statusExpanded)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    singleLine = true
+                )
+                ExposedDropdownMenu(
+                    expanded = statusExpanded,
+                    onDismissRequest = { statusExpanded = false }
+                ) {
+                    listOf("ACTIVE", "INACTIVE", "SUSPENDED").forEach { status ->
+                        DropdownMenuItem(
+                            text = { Text(status) },
+                            onClick = {
+                                onFormChange(formState.copy(status = status))
+                                statusExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+        }
+
         // Save Button Section
         Column(
             modifier = Modifier.padding(16.dp)
@@ -532,6 +713,141 @@ private fun FormSection(
                 color = MaterialTheme.colorScheme.primary
             )
             content()
+        }
+    }
+}
+
+@Composable
+private fun AttributesEditor(
+    attributes: Map<String, String>,
+    onAttributesChange: (Map<String, String>) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val focusManager = LocalFocusManager.current
+    val mutableAttributes = remember(attributes) { attributes.toMutableMap() }
+
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // Display existing attributes
+        mutableAttributes.forEach { (key, value) ->
+            AttributeItem(
+                key = key,
+                value = value,
+                onKeyChange = { newKey ->
+                    if (newKey != key) {
+                        mutableAttributes.remove(key)
+                        if (newKey.isNotBlank()) {
+                            mutableAttributes[newKey] = value
+                        }
+                        onAttributesChange(mutableAttributes.toMap())
+                    }
+                },
+                onValueChange = { newValue ->
+                    mutableAttributes[key] = newValue
+                    onAttributesChange(mutableAttributes.toMap())
+                },
+                onRemove = {
+                    mutableAttributes.remove(key)
+                    onAttributesChange(mutableAttributes.toMap())
+                },
+                focusManager = focusManager
+            )
+        }
+
+        // Add new attribute button
+        OutlinedButton(
+            onClick = {
+                val newKey = "Key${mutableAttributes.size + 1}"
+                mutableAttributes[newKey] = ""
+                onAttributesChange(mutableAttributes.toMap())
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Icon(Icons.Default.Add, contentDescription = null)
+            Spacer(modifier = Modifier.width(8.dp))
+            Text("Add Attribute")
+        }
+
+        if (mutableAttributes.isEmpty()) {
+            Text(
+                text = "No custom attributes. Tap 'Add Attribute' to create one.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(8.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun AttributeItem(
+    key: String,
+    value: String,
+    onKeyChange: (String) -> Unit,
+    onValueChange: (String) -> Unit,
+    onRemove: () -> Unit,
+    focusManager: androidx.compose.ui.focus.FocusManager,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Attribute",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                IconButton(onClick = onRemove) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Remove Attribute",
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedTextField(
+                    value = key,
+                    onValueChange = onKeyChange,
+                    label = { Text("Key") },
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true
+                )
+
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    label = { Text("Value") },
+                    modifier = Modifier.weight(1f),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true
+                )
+            }
         }
     }
 }

@@ -11,6 +11,7 @@ import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.CustomerAddress
 import com.ampairs.customer.domain.CustomerKey
 import com.ampairs.customer.domain.CustomerStore
+import com.ampairs.customer.domain.CustomerType
 import com.ampairs.customer.domain.State
 import com.ampairs.customer.domain.StateKey
 import com.ampairs.customer.domain.StateStore
@@ -29,18 +30,26 @@ import org.mobilenativefoundation.store.store5.StoreReadResponse
 
 data class CustomerFormState(
     val uid: String = "",
+    val refId: String = "",
     val name: String = "",
     val email: String = "",
     val phone: String = "",
     val landline: String = "",
     val countryCode: Int = 91,
-    val gstin: String = "",
+    val customerType: CustomerType = CustomerType.RETAIL,
+    val gstNumber: String = "",
+    val panNumber: String = "",
+    val creditLimit: Double = 0.0,
+    val creditDays: Int = 0,
     val address: String = "",
     val street: String = "",
+    val street2: String = "",
     val city: String = "",
     val state: String = "",
     val pincode: String = "",
     val country: String = "India",
+    val status: String = "ACTIVE",
+    val attributes: Map<String, String> = emptyMap(),
     // Billing Address
     val useBillingAsMainAddress: Boolean = true,
     val billingStreet: String = "",
@@ -74,18 +83,26 @@ data class CustomerFormState(
     fun toCustomer(): Customer {
         return Customer(
             uid = uid,
+            refId = refId.trim().takeIf { it.isNotBlank() },
             name = name.trim(),
             email = email.trim().takeIf { it.isNotBlank() },
             phone = phone.trim().takeIf { it.isNotBlank() },
             landline = landline.trim().takeIf { it.isNotBlank() },
             countryCode = countryCode,
-            gstin = gstin.trim().takeIf { it.isNotBlank() },
+            customerType = customerType,
+            gstNumber = gstNumber.trim().takeIf { it.isNotBlank() },
+            panNumber = panNumber.trim().takeIf { it.isNotBlank() },
+            creditLimit = if (creditLimit > 0) creditLimit else null,
+            creditDays = if (creditDays > 0) creditDays else null,
             address = address.trim().takeIf { it.isNotBlank() },
             street = street.trim().takeIf { it.isNotBlank() },
+            street2 = street2.trim().takeIf { it.isNotBlank() },
             city = city.trim().takeIf { it.isNotBlank() },
             state = state.trim().takeIf { it.isNotBlank() },
             pincode = pincode.trim().takeIf { it.isNotBlank() },
             country = country.trim(),
+            status = status.takeIf { it.isNotBlank() },
+            attributes = attributes.takeIf { it.isNotEmpty() },
             billingAddress = if (useBillingAsMainAddress) {
                 CustomerAddress(
                     street = street.trim(),
@@ -417,8 +434,8 @@ class CustomerFormViewModel(
             }
         } else null
 
-        val gstinError = if (formState.gstin.isNotBlank()) {
-            when (val result = GstinValidator().validate(formState.gstin)) {
+        val gstinError = if (formState.gstNumber.isNotBlank()) {
+            when (val result = GstinValidator().validate(formState.gstNumber)) {
                 is ValidationResult.Invalid -> (result.errors.firstOrNull() as? GstinValidationError)?.message
                 is ValidationResult.Valid -> null
             }
@@ -459,18 +476,26 @@ class CustomerFormViewModel(
 private fun Customer.toFormState(): CustomerFormState {
     return CustomerFormState(
         uid = uid,
+        refId = refId ?: "",
         name = name,
         email = email ?: "",
         phone = phone ?: "",
         landline = landline ?: "",
         countryCode = countryCode,
-        gstin = gstin ?: "",
+        customerType = customerType ?: CustomerType.RETAIL,
+        gstNumber = gstNumber ?: "",
+        panNumber = panNumber ?: "",
+        creditLimit = creditLimit ?: 0.0,
+        creditDays = creditDays ?: 0,
         address = address ?: "",
         street = street ?: "",
+        street2 = street2 ?: "",
         city = city ?: "",
         state = state ?: "",
         pincode = pincode ?: "",
         country = country,
+        status = status ?: "ACTIVE",
+        attributes = attributes ?: emptyMap(),
         // Billing Address
         useBillingAsMainAddress = billingAddress == null ||
                 (billingAddress.street == street && billingAddress.city == city &&

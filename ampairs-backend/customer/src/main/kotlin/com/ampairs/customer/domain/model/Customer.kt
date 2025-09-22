@@ -19,18 +19,9 @@ class Customer : OwnableBaseDomain() {
     @Column(name = "name", nullable = false, length = 255)
     var name: String = ""
 
-    @Column(name = "customer_number", length = 50, unique = true)
-    var customerNumber: String? = null
-
     @Column(name = "customer_type", nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     var customerType: CustomerType = CustomerType.RETAIL
-
-    @Column(name = "business_name", length = 255)
-    var businessName: String? = null
-
-    @Column(name = "company_id", nullable = false, length = 255)
-    var companyId: String = ""
 
     @Column(name = "phone", nullable = false, length = 20)
     var phone: String = ""
@@ -43,9 +34,6 @@ class Customer : OwnableBaseDomain() {
 
     @Column(name = "email", length = 255, nullable = false)
     var email: String = ""
-
-    @Column(name = "gstin", length = 100, nullable = false)
-    var gstin: String = ""
 
     @Column(name = "gst_number", length = 15)
     var gstNumber: String? = null
@@ -113,9 +101,7 @@ class Customer : OwnableBaseDomain() {
      * Validate GST number format (Indian GST format: 15 characters)
      */
     fun isValidGstNumber(): Boolean {
-        return gstNumber?.let { 
-            it.matches(Regex("^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$"))
-        } ?: true // null is valid (optional field)
+        return gstNumber?.matches(Regex("^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$")) ?: true // null is valid (optional field)
     }
 
     /**
@@ -146,12 +132,6 @@ class Customer : OwnableBaseDomain() {
         outstandingAmount = maxOf(0.0, outstandingAmount - amount)
     }
 
-    /**
-     * Generate customer number if not set
-     */
-    fun generateCustomerNumber(): String {
-        return customerNumber ?: "CUST${System.currentTimeMillis().toString().takeLast(6)}"
-    }
 }
 
 /**
