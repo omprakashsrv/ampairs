@@ -120,7 +120,7 @@ private fun CustomerDetailsContent(
             customer.phone?.let {
                 InfoRow(label = "Phone", value = it)
             }
-            customer.gstin?.let {
+            customer.gstNumber?.let {
                 InfoRow(label = "GSTIN", value = it)
             }
         }

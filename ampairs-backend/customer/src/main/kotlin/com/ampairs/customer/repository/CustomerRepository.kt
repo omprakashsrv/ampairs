@@ -14,14 +14,13 @@ import java.util.*
 interface CustomerRepository : CrudRepository<Customer, Long>, PagingAndSortingRepository<Customer, Long> {
     fun findByRefId(refId: String?): Customer?
     fun findByUid(uid: String): Customer?
-    fun findByCustomerNumber(customerNumber: String): Optional<Customer>
     fun findByGstNumber(gstNumber: String): Optional<Customer>
     fun findByPhone(phone: String): Optional<Customer>
     fun findByEmail(email: String): Optional<Customer>
     fun findByCustomerType(customerType: CustomerType): List<Customer>
     fun findByStatus(status: String): List<Customer>
 
-    @Query("SELECT c FROM customer c WHERE c.name ILIKE %:searchTerm% OR c.phone ILIKE %:searchTerm% OR c.email ILIKE %:searchTerm% OR c.businessName ILIKE %:searchTerm%")
+    @Query("SELECT c FROM customer c WHERE c.name ILIKE %:searchTerm% OR c.phone ILIKE %:searchTerm% OR c.email ILIKE %:searchTerm%")
     fun searchCustomers(searchTerm: String, pageable: Pageable): Page<Customer>
 
     @Query("SELECT c FROM customer c WHERE c.customerType = :customerType AND c.status = 'ACTIVE'")

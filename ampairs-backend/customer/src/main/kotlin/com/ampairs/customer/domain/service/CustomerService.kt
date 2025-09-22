@@ -66,24 +66,13 @@ class CustomerService @Autowired constructor(
 
     @Transactional
     fun createCustomer(customer: Customer): Customer {
-        // Generate customer number if not provided
-        if (customer.customerNumber.isNullOrBlank()) {
-            customer.customerNumber = customer.generateCustomerNumber()
-        }
-        
+
         // Validate GST number if provided
         if (!customer.isValidGstNumber()) {
             throw IllegalArgumentException("Invalid GST number format: ${customer.gstNumber}")
         }
         
-        // Check for duplicates
-        customer.customerNumber?.let { 
-            if (customerRepository.findByCustomerNumber(it).isPresent) {
-                throw IllegalArgumentException("Customer number already exists: $it")
-            }
-        }
-        
-        customer.gstNumber?.let { 
+        customer.gstNumber?.let {
             if (customerRepository.findByGstNumber(it).isPresent) {
                 throw IllegalArgumentException("GST number already exists: $it")
             }
@@ -100,7 +89,6 @@ class CustomerService @Autowired constructor(
         
         // Update fields
         existingCustomer.name = updates.name.takeIf { it.isNotBlank() } ?: existingCustomer.name
-        existingCustomer.businessName = updates.businessName ?: existingCustomer.businessName
         existingCustomer.phone = updates.phone.takeIf { it.isNotBlank() } ?: existingCustomer.phone
         existingCustomer.email = updates.email.takeIf { it.isNotBlank() } ?: existingCustomer.email
         existingCustomer.customerType = updates.customerType
@@ -138,10 +126,6 @@ class CustomerService @Autowired constructor(
                 org.springframework.data.domain.PageImpl(it, pageable, it.size.toLong()) 
             }
         }
-    }
-
-    fun getCustomerByNumber(customerNumber: String): Customer? {
-        return customerRepository.findByCustomerNumber(customerNumber).orElse(null)
     }
 
     fun getCustomerByGstNumber(gstNumber: String): Customer? {

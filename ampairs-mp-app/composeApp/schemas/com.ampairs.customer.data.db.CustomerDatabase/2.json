@@ -2,11 +2,11 @@
   "formatVersion": 1,
   "database": {
     "version": 2,
-    "identityHash": "cd03cfd96048dff27e5581a3bc3f9864",
+    "identityHash": "92de80dd57d120bf5aa79c097ce3ce9d",
     "entities": [
       {
         "tableName": "customers",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `email` TEXT, `phone` TEXT, `landline` TEXT, `country_code` INTEGER NOT NULL, `gstin` TEXT, `address` TEXT, `street` TEXT, `city` TEXT, `state` TEXT, `pincode` TEXT, `country` TEXT NOT NULL, `billing_address_json` TEXT, `shipping_address_json` TEXT, `active` INTEGER NOT NULL, `created_at` TEXT, `updated_at` TEXT, `synced` INTEGER NOT NULL, `last_sync` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `email` TEXT, `phone` TEXT, `landline` TEXT, `country_code` INTEGER NOT NULL, `gstNumber` TEXT, `address` TEXT, `street` TEXT, `city` TEXT, `state` TEXT, `pincode` TEXT, `country` TEXT NOT NULL, `billing_address_json` TEXT, `shipping_address_json` TEXT, `active` INTEGER NOT NULL, `created_at` TEXT, `updated_at` TEXT, `synced` INTEGER NOT NULL, `last_sync` INTEGER NOT NULL, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -42,8 +42,8 @@
             "notNull": true
           },
           {
-            "fieldPath": "gstin",
-            "columnName": "gstin",
+            "fieldPath": "gstNumber",
+            "columnName": "gstNumber",
             "affinity": "TEXT"
           },
           {
@@ -208,7 +208,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'cd03cfd96048dff27e5581a3bc3f9864')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '92de80dd57d120bf5aa79c097ce3ce9d')"
     ]
   }
 }

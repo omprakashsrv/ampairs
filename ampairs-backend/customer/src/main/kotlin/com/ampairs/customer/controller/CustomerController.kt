@@ -55,9 +55,7 @@ class CustomerController @Autowired constructor(
     fun createCustomer(@RequestBody request: CustomerCreateRequest): ApiResponse<CustomerResponse> {
         val customer = Customer().apply {
             name = request.name
-            customerNumber = request.customerNumber
             customerType = request.customerType ?: CustomerType.RETAIL
-            businessName = request.businessName
             phone = request.phone ?: ""
             email = request.email ?: ""
             gstNumber = request.gstNumber
@@ -134,10 +132,10 @@ class CustomerController @Autowired constructor(
         @RequestBody request: CustomerUpdateRequest
     ): ApiResponse<CustomerResponse> {
         val updates = Customer().apply {
-            name = request.name ?: ""
+            name = request.name
             phone = request.phone ?: ""
             email = request.email ?: ""
-            gstin = request.gstin ?: ""
+            gstNumber = request.gstNumber
             address = request.address ?: ""
             city = request.city
             state = request.state ?: ""
@@ -150,14 +148,6 @@ class CustomerController @Autowired constructor(
             ?: return ApiResponse.error("Customer not found", "CUSTOMER_NOT_FOUND")
 
         return ApiResponse.success(updatedCustomer.asCustomerResponse())
-    }
-
-    @GetMapping("/number/{customerNumber}")
-    fun getCustomerByNumber(@PathVariable customerNumber: String): ApiResponse<CustomerResponse> {
-        val customer = customerService.getCustomerByNumber(customerNumber)
-            ?: return ApiResponse.error("Customer not found with number: $customerNumber", "CUSTOMER_NOT_FOUND")
-
-        return ApiResponse.success(customer.asCustomerResponse())
     }
 
     @GetMapping("/gst/{gstNumber}")
@@ -203,9 +193,7 @@ class CustomerController @Autowired constructor(
  */
 data class CustomerCreateRequest(
     val name: String,
-    val customerNumber: String? = null,
     val customerType: CustomerType? = null,
-    val businessName: String? = null,
     val phone: String? = null,
     val email: String? = null,
     val gstNumber: String? = null,
