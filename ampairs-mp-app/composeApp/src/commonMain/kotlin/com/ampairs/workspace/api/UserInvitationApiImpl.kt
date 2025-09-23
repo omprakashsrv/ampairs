@@ -1,6 +1,7 @@
 package com.ampairs.workspace.api
 
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.post
@@ -20,14 +21,14 @@ class UserInvitationApiImpl(
     private val client = httpClient(engine, tokenRepository)
 
     override suspend fun getPendingInvitations(): Response<List<UserInvitationResponse>> {
-        return get(client, "$WORKSPACE_ENDPOINT/user/v1/invitation/pending")
+        return get(client, ApiUrlBuilder.userUrl("v1/invitation/pending"))
     }
 
     override suspend fun acceptInvitation(invitationId: String): Response<InvitationActionResponse> {
-        return post(client, "$WORKSPACE_ENDPOINT/user/v1/invitation/$invitationId/accept", null)
+        return post(client, ApiUrlBuilder.userUrl("v1/invitation/$invitationId/accept"), null)
     }
 
     override suspend fun rejectInvitation(invitationId: String): Response<InvitationActionResponse> {
-        return post(client, "$WORKSPACE_ENDPOINT/user/v1/invitation/$invitationId/reject", null)
+        return post(client, ApiUrlBuilder.userUrl("v1/invitation/$invitationId/reject"), null)
     }
 }

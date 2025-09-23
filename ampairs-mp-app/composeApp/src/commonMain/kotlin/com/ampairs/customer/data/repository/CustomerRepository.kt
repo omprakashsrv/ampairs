@@ -12,6 +12,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlin.time.ExperimentalTime
+import com.ampairs.customer.util.CustomerConstants.ERROR_CUSTOMER_UID_REQUIRED
+import com.ampairs.customer.util.CustomerLogger
 
 class CustomerRepository(
     private val customerDao: CustomerDao,
@@ -40,7 +42,7 @@ class CustomerRepository(
 
     suspend fun createCustomer(customer: Customer): Result<Customer> {
         // Customer should already have UID assigned by ViewModel
-        require(customer.uid.isNotBlank()) { "Customer UID must be set before calling createCustomer" }
+        require(customer.uid.isNotBlank()) { ERROR_CUSTOMER_UID_REQUIRED }
 
         // Offline-first: Save to database first with unsynced status
         val unsyncedEntity = customer.toEntity().copy(synced = false)
@@ -53,7 +55,7 @@ class CustomerRepository(
             // Validate server response has same UID to prevent duplicates
             if (serverCustomer.uid != customer.uid) {
                 // Log warning but keep local UID to avoid duplicates
-                println("⚠️ Server returned different UID: ${serverCustomer.uid} vs local: ${customer.uid}")
+                CustomerLogger.warn("Server returned different UID: ${serverCustomer.uid} vs local: ${customer.uid}")
                 val correctedServerCustomer = serverCustomer.copy(uid = customer.uid)
                 val syncedEntity = correctedServerCustomer.toEntity().copy(synced = true)
                 customerDao.insertCustomer(syncedEntity)
@@ -216,7 +218,7 @@ class CustomerRepository(
                         val existingCustomer = customerDao.getCustomerById(serverCustomer.uid)
                         if (existingCustomer != null && !existingCustomer.synced) {
                             // Skip server customer if we have unsynced local version with same UID
-                            println("⚠️ Skipping server customer ${serverCustomer.uid} - conflicts with unsynced local version")
+                            CustomerLogger.warn("Skipping server customer ${serverCustomer.uid} - conflicts with unsynced local version")
                             null
                         } else {
                             serverCustomer.toEntity().copy(synced = true)
@@ -231,7 +233,7 @@ class CustomerRepository(
                     }
 
                     totalSynced += entities.size
-                    println("📦 Synced batch ${currentPage + 1}: ${entities.size} customers (page ${currentPage + 1}/${pageResponse.totalPages})")
+                    CustomerLogger.info("Synced batch ${currentPage + 1}: ${entities.size} customers (page ${currentPage + 1}/${pageResponse.totalPages})")
                 }
 
                 currentPage++
@@ -242,10 +244,10 @@ class CustomerRepository(
                 appPreferences.setCustomerLastSyncTime(maxServerTime)
             }
 
-            println("✅ Batch sync completed: $totalSynced customers synced in $currentPage batches")
+            CustomerLogger.info("Batch sync completed: $totalSynced customers synced in $currentPage batches")
             Result.success(totalSynced)
         } catch (e: Exception) {
-            println("❌ Batch sync failed: ${e.message}")
+            CustomerLogger.error("Batch sync failed: ${e.message}")
             Result.failure(e)
         }
     }

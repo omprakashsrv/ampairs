@@ -61,6 +61,11 @@ import com.ampairs.customer.ui.components.location.LocationPickerDialog
 import com.ampairs.customer.ui.components.location.LocationData
 import com.ampairs.customer.ui.components.location.AddressData
 import com.ampairs.customer.domain.State
+import com.ampairs.customer.util.CustomerConstants.LABEL_CUSTOMER_TYPE
+import com.ampairs.customer.util.CustomerConstants.LABEL_STATUS
+import com.ampairs.customer.util.CustomerConstants.STATUS_ACTIVE
+import com.ampairs.customer.util.CustomerConstants.STATUS_INACTIVE
+import com.ampairs.customer.util.CustomerConstants.STATUS_SUSPENDED
 import com.ampairs.customer.domain.CustomerType
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -223,7 +228,7 @@ private fun CustomerForm(
                     value = formState.customerType.displayName,
                     onValueChange = { },
                     readOnly = true,
-                    label = { Text("Customer Type") },
+                    label = { Text(LABEL_CUSTOMER_TYPE) },
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(expanded = customerTypeExpanded)
                     },
@@ -679,7 +684,7 @@ private fun CustomerForm(
                     value = formState.status,
                     onValueChange = { },
                     readOnly = true,
-                    label = { Text("Status") },
+                    label = { Text(LABEL_STATUS) },
                     trailingIcon = {
                         ExposedDropdownMenuDefaults.TrailingIcon(expanded = statusExpanded)
                     },
@@ -692,7 +697,7 @@ private fun CustomerForm(
                     expanded = statusExpanded,
                     onDismissRequest = { statusExpanded = false }
                 ) {
-                    listOf("ACTIVE", "INACTIVE", "SUSPENDED").forEach { status ->
+                    listOf(STATUS_ACTIVE, STATUS_INACTIVE, STATUS_SUSPENDED).forEach { status ->
                         DropdownMenuItem(
                             text = { Text(status) },
                             onClick = {

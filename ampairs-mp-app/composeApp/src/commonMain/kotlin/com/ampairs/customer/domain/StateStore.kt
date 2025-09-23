@@ -13,6 +13,7 @@ import org.mobilenativefoundation.store.store5.SourceOfTruth
 import org.mobilenativefoundation.store.store5.Store
 import org.mobilenativefoundation.store.store5.StoreBuilder
 import org.mobilenativefoundation.store.store5.StoreReadRequest
+import com.ampairs.customer.util.CustomerLogger
 
 class StateStore(
     private val customerApi: CustomerApi,
@@ -96,7 +97,7 @@ class StateStore(
             stateStore.stream(StoreReadRequest.fresh(key))
         } catch (e: Exception) {
             // Log error but don't fail the import operation
-            println("Failed to refresh states: ${e.message}")
+            CustomerLogger.error("Failed to refresh states: ${e.message}")
         }
     }
 }

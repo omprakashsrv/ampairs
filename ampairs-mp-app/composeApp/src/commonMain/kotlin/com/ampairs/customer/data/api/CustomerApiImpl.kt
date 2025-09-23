@@ -1,6 +1,7 @@
 package com.ampairs.customer.data.api
 
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.post
@@ -11,8 +12,6 @@ import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.State
 import com.ampairs.customer.domain.MasterState
 import io.ktor.client.engine.HttpClientEngine
-
-const val CUSTOMER_ENDPOINT = "http://localhost:8080"
 
 class CustomerApiImpl(
     engine: HttpClientEngine,
@@ -40,7 +39,7 @@ class CustomerApiImpl(
 
         val response: Response<PageResponse<Customer>> = get(
             client,
-            "$CUSTOMER_ENDPOINT/customer/v1",
+            ApiUrlBuilder.customerUrl("v1"),
             params
         )
         return response.data ?: PageResponse(
@@ -59,7 +58,7 @@ class CustomerApiImpl(
     override suspend fun createCustomer(customer: Customer): Customer {
         val response: Response<Customer> = post(
             client,
-            "$CUSTOMER_ENDPOINT/customer/v1",
+            ApiUrlBuilder.customerUrl("v1"),
             customer
         )
         return response.data ?: throw Exception("Failed to create customer")
@@ -68,7 +67,7 @@ class CustomerApiImpl(
     override suspend fun updateCustomer(customer: Customer): Customer {
         val response: Response<Customer> = post(
             client,
-            "$CUSTOMER_ENDPOINT/customer/v1",
+            ApiUrlBuilder.customerUrl("v1"),
             customer
         )
         return response.data ?: throw Exception("Failed to update customer")
@@ -77,7 +76,7 @@ class CustomerApiImpl(
     override suspend fun deleteCustomer(customerId: String) {
         delete<Response<Unit>>(
             client,
-            "$CUSTOMER_ENDPOINT/customer/v1/$customerId"
+            ApiUrlBuilder.customerUrl("v1/$customerId")
         )
     }
 
@@ -85,7 +84,7 @@ class CustomerApiImpl(
         return try {
             val response: Response<Customer> = get(
                 client,
-                "$CUSTOMER_ENDPOINT/customer/v1/$customerId"
+                ApiUrlBuilder.customerUrl("v1/$customerId")
             )
             response.data
         } catch (_: Exception) {
@@ -101,7 +100,7 @@ class CustomerApiImpl(
         }
         val response: Response<List<State>> = get(
             client,
-            "$CUSTOMER_ENDPOINT/customer/v1/states",
+            ApiUrlBuilder.customerUrl("v1/states"),
             params
         )
         return response.data ?: emptyList()
@@ -110,7 +109,7 @@ class CustomerApiImpl(
     override suspend fun importState(stateCode: String): String {
         val response: Response<String> = post(
             client,
-            "$CUSTOMER_ENDPOINT/customer/v1/master-states/$stateCode/import",
+            ApiUrlBuilder.customerUrl("v1/master-states/$stateCode/import"),
             null
         )
         return response.data ?: throw Exception("Failed to import state")
@@ -119,7 +118,7 @@ class CustomerApiImpl(
     override suspend fun bulkImportStates(request: BulkImportRequest): BulkImportResponse {
         val response: Response<BulkImportResponse> = post(
             client,
-            "$CUSTOMER_ENDPOINT/customer/v1/master-states/bulk-import",
+            ApiUrlBuilder.customerUrl("v1/master-states/bulk-import"),
             request
         )
         return response.data ?: throw Exception("Failed to bulk import states")
@@ -128,7 +127,7 @@ class CustomerApiImpl(
     override suspend fun getAvailableStatesForImport(workspaceId: String): List<MasterState> {
         val response: Response<List<MasterState>> = get(
             client,
-            "$CUSTOMER_ENDPOINT/customer/v1/master-states/available-for-import",
+            ApiUrlBuilder.customerUrl("v1/master-states/available-for-import"),
             mapOf("workspace_id" to workspaceId)
         )
         return response.data ?: emptyList()
@@ -137,7 +136,7 @@ class CustomerApiImpl(
     override suspend fun deleteState(stateId: String) {
         delete<Response<Unit>>(
             client,
-            "$CUSTOMER_ENDPOINT/customer/v1/states/$stateId"
+            ApiUrlBuilder.customerUrl("v1/states/$stateId")
         )
     }
 
@@ -145,7 +144,7 @@ class CustomerApiImpl(
         return try {
             val response: Response<State> = get(
                 client,
-                "$CUSTOMER_ENDPOINT/customer/v1/states/$stateId"
+                ApiUrlBuilder.customerUrl("v1/states/$stateId")
             )
             response.data
         } catch (_: Exception) {

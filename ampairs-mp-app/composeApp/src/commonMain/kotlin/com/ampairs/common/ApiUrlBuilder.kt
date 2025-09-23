@@ -11,8 +11,7 @@ object ApiUrlBuilder {
      * Build complete API URL for authentication endpoints
      */
     fun authUrl(path: String): String {
-        val cleanPath = path.removePrefix("/")
-        return "${ConfigurationManager.apiBaseUrl}/$cleanPath"
+        return "${ConfigurationManager.apiBaseUrl}/$path"
     }
 
     /**
@@ -26,24 +25,21 @@ object ApiUrlBuilder {
      * Build complete API URL for workspace endpoints
      */
     fun workspaceUrl(path: String): String {
-        val cleanPath = path.removePrefix("/")
-        return "${ConfigurationManager.apiBaseUrl}/workspace/$cleanPath"
+        return "${ConfigurationManager.apiBaseUrl}/workspace/$path"
     }
 
     /**
      * Build complete API URL for user endpoints
      */
     fun userUrl(path: String): String {
-        val cleanPath = path.removePrefix("/")
-        return "${ConfigurationManager.apiBaseUrl}/user/$cleanPath"
+        return "${ConfigurationManager.apiBaseUrl}/user/$path"
     }
 
     /**
      * Build complete API URL for customer endpoints
      */
     fun customerUrl(path: String): String {
-        val cleanPath = path.removePrefix("/")
-        return "${ConfigurationManager.apiBaseUrl}/customer/$cleanPath"
+        return "${ConfigurationManager.apiBaseUrl}/customer/$path"
     }
 
     /**

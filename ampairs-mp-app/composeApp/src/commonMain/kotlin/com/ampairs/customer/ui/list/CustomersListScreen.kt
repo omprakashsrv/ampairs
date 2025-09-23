@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.customer.domain.CustomerListItem
 import org.koin.compose.koinInject
+import com.ampairs.customer.util.CustomerConstants.TITLE_CUSTOMERS
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,7 +36,7 @@ fun CustomersListScreen(
     Column(modifier = modifier.fillMaxSize()) {
         // Header with search and actions
         TopAppBar(
-            title = { Text("Customers") },
+            title = { Text(TITLE_CUSTOMERS) },
             actions = {
                 IconButton(
                     onClick = viewModel::syncCustomers,

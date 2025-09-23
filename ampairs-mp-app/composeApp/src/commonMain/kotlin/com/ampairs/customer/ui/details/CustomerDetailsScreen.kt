@@ -16,6 +16,8 @@ import androidx.compose.ui.unit.dp
 import com.ampairs.customer.domain.Customer
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
+import com.ampairs.customer.util.CustomerConstants.TITLE_CUSTOMER_DETAILS
+import com.ampairs.customer.util.CustomerConstants.ERROR_CUSTOMER_NOT_FOUND
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -35,7 +37,7 @@ fun CustomerDetailsScreen(
 
     Column(modifier = modifier.fillMaxSize()) {
         TopAppBar(
-            title = { Text(uiState.customer?.name ?: "Customer Details") },
+            title = { Text(uiState.customer?.name ?: TITLE_CUSTOMER_DETAILS) },
             actions = {
                 if (uiState.customer != null) {
                     IconButton(onClick = { onEditCustomer(customerId) }) {
@@ -80,7 +82,7 @@ fun CustomerDetailsScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text("Customer not found")
+                    Text(ERROR_CUSTOMER_NOT_FOUND)
                 }
             }
         }

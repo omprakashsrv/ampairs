@@ -29,7 +29,7 @@ data class AppConfig(
          * Get IP address for mobile platforms (Android/iOS)
          * This should be your development machine's IP address
          */
-        const val DEV_MOBILE_IP = "192.168.1.100" // Change this to your actual IP
+        const val DEV_MOBILE_IP = "10.50.51.6" // Change this to your actual IP
 
         /**
          * Default ports for different environments

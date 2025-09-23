@@ -17,6 +17,11 @@ import com.ampairs.customer.domain.StateKey
 import com.ampairs.customer.domain.StateStore
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.customer.util.CustomerConstants
+import com.ampairs.customer.util.CustomerConstants.DEFAULT_COUNTRY_CODE
+import com.ampairs.customer.util.CustomerConstants.STATUS_ACTIVE
+import com.ampairs.customer.util.CustomerConstants.ERROR_VALIDATION_FIX
+import com.ampairs.customer.util.CustomerConstants.ERROR_INVALID_EMAIL
+import com.ampairs.customer.util.CustomerConstants.ERROR_INVALID_LANDLINE
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -49,7 +54,7 @@ data class CustomerFormState(
     val state: String = "",
     val pincode: String = "",
     val country: String = "India",
-    val status: String = "ACTIVE",
+    val status: String = STATUS_ACTIVE,
     val attributes: Map<String, String> = emptyMap(),
     // Billing Address
     val useBillingAsMainAddress: Boolean = true,
@@ -92,7 +97,7 @@ data class CustomerFormState(
             email = email.trim().takeIf { it.isNotBlank() },
             phone = phone.trim().takeIf { it.isNotBlank() },
             landline = landline.trim().takeIf { it.isNotBlank() },
-            countryCode = if (countryCode == 0) 91 else countryCode,
+            countryCode = if (countryCode == 0) DEFAULT_COUNTRY_CODE else countryCode,
             customerType = customerType,
             gstNumber = gstNumber.trim().takeIf { it.isNotBlank() },
             panNumber = panNumber.trim().takeIf { it.isNotBlank() },
@@ -253,7 +258,7 @@ class CustomerFormViewModel(
 
         if (!currentFormState.isValid()) {
             _uiState.update {
-                it.copy(error = "Please fix the errors before saving")
+                it.copy(error = ERROR_VALIDATION_FIX)
             }
             return
         }
@@ -423,7 +428,7 @@ class CustomerFormViewModel(
         }
 
         val emailError = if (formState.email.isNotBlank() && !isValidEmail(formState.email)) {
-            "Please enter a valid email address"
+            ERROR_INVALID_EMAIL
         } else null
 
         val phoneError = if (formState.phone.isNotBlank()) {
@@ -435,7 +440,7 @@ class CustomerFormViewModel(
 
         val landlineError = if (formState.landline.isNotBlank()) {
             when {
-                !isValidLandline(formState.landline) -> "Please enter a valid landline number"
+                !isValidLandline(formState.landline) -> ERROR_INVALID_LANDLINE
                 else -> null
             }
         } else null
@@ -487,7 +492,7 @@ private fun Customer.toFormState(): CustomerFormState {
         email = email ?: "",
         phone = phone ?: "",
         landline = landline ?: "",
-        countryCode = if (countryCode == 0) 91 else countryCode,
+        countryCode = if (countryCode == 0) DEFAULT_COUNTRY_CODE else countryCode,
         customerType = customerType ?: CustomerType.RETAIL,
         gstNumber = gstNumber ?: "",
         panNumber = panNumber ?: "",
@@ -500,7 +505,7 @@ private fun Customer.toFormState(): CustomerFormState {
         state = state ?: "",
         pincode = pincode ?: "",
         country = country,
-        status = status ?: "ACTIVE",
+        status = status ?: STATUS_ACTIVE,
         attributes = attributes ?: emptyMap(),
         // Billing Address
         useBillingAsMainAddress = billingAddress == null ||
