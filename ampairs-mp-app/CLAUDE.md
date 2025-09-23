@@ -455,3 +455,189 @@ import kotlinx.coroutines.flow.Flow
 ### **Forms Updated**
 - All customer, product, and tax form screens follow these patterns
 - Details screens also cleaned of redundant back buttons
+
+## **🔄 Offline-First Data Management Architecture (September 2025)**
+
+### **📋 Overview**
+The app implements a comprehensive offline-first architecture using Store5, Room database, and sophisticated conflict resolution to handle enterprise-scale datasets (10K+ records) with seamless online/offline transitions.
+
+### **🔑 Core Principles**
+
+#### **1. Database-First Operations**
+- **Pattern**: All CRUD operations save to local Room database first with `synced = false`
+- **Benefit**: Immediate UI response and guaranteed data persistence
+- **Background Sync**: Server operations happen asynchronously after local save
+- **Fallback**: If server sync fails, data remains locally with sync retry capability
+
+#### **2. Client-Side UID Generation**
+- **System**: `UidGenerator.generateUid(prefix)` creates deterministic UIDs locally
+- **Format**: `{PREFIX}{YYYYMMDDHHMMSS}{RANDOM}` (32 chars total, e.g., `CUS20250923193834J94YKJREVXB7SA1`)
+- **Consistency**: Same UID used throughout create → sync → update lifecycle
+- **Conflict Prevention**: Server UID mismatches are corrected to maintain local UID consistency
+
+#### **3. String-Based Timestamp Sync**
+- **Method**: ISO 8601 timestamps (`yyyy-mm-ddTHH:mm:ss`) with natural string comparison
+- **Efficiency**: Avoids complex millisecond parsing and timezone issues
+- **Server Authority**: Uses server's `updatedAt` timestamps for authoritative sync tracking
+- **Incremental**: Only syncs records modified after `last_sync` timestamp
+
+#### **4. Paginated Batch Synchronization**
+- **Batch Size**: Configurable batches (default: 100 records per request)
+- **Memory Efficient**: Processes large datasets without memory overload
+- **Progress Tracking**: Real-time sync progress with console logging
+- **Safety Limits**: Maximum 10,000 records per sync with infinite loop protection
+- **Resume Capability**: Handles network interruptions gracefully
+
+### **🛠️ Implementation Patterns**
+
+#### **Repository Layer Pattern**
+```kotlin
+suspend fun createEntity(entity: Entity): Result<Entity> {
+    // 1. Client-side UID generation (if not set)
+    require(entity.uid.isNotBlank()) { "UID must be set by ViewModel" }
+
+    // 2. Database-first save with unsynced status
+    val unsyncedEntity = entity.toEntity().copy(synced = false)
+    dao.insertEntity(unsyncedEntity)
+
+    // 3. Background server sync
+    try {
+        val serverEntity = api.createEntity(entity)
+        // 4. UID conflict resolution
+        if (serverEntity.uid != entity.uid) {
+            val corrected = serverEntity.copy(uid = entity.uid)
+            dao.insertEntity(corrected.toEntity().copy(synced = true))
+            return Result.success(corrected)
+        }
+        // 5. Mark as synced
+        dao.insertEntity(serverEntity.toEntity().copy(synced = true))
+        return Result.success(serverEntity)
+    } catch (e: Exception) {
+        // 6. Graceful fallback - data already saved locally
+        return Result.success(entity)
+    }
+}
+```
+
+#### **Batch Sync Pattern**
+```kotlin
+private suspend fun syncEntitiesFromServerInBatches(batchSize: Int = 100): Result<Int> {
+    val lastSync = getLastSyncTime() // ISO 8601 string
+    var totalSynced = 0
+    var currentPage = 0
+
+    do {
+        val pageResponse = api.getEntities(lastSync, currentPage, batchSize, "updatedAt", "ASC")
+        val batchEntities = pageResponse.content
+
+        // Process batch with conflict resolution
+        val entities = batchEntities.mapNotNull { serverEntity ->
+            val existing = dao.getEntityById(serverEntity.uid)
+            if (existing != null && !existing.synced) {
+                // Skip server entity to preserve local changes
+                null
+            } else {
+                serverEntity.toEntity().copy(synced = true)
+            }
+        }
+        dao.insertEntities(entities)
+
+        totalSynced += entities.size
+        currentPage++
+    } while (pageResponse.hasNext && totalSynced < 10000)
+
+    // Update sync timestamp using server's max updatedAt
+    val maxServerTime = getMaxUpdatedAtFromServerEntities(allBatchEntities)
+    if (maxServerTime.isNotBlank()) {
+        appPreferences.setLastSyncTime(maxServerTime)
+    }
+
+    return Result.success(totalSynced)
+}
+```
+
+#### **Store5 Integration Pattern**
+```kotlin
+val entityListStore: Store<EntityListKey, List<EntityListItem>> = StoreBuilder
+    .from(
+        fetcher = Fetcher.of { key ->
+            // Only read from local database - sync handled separately
+            if (key.searchQuery.isBlank()) {
+                repository.observeEntities().first()
+            } else {
+                repository.searchEntities(key.searchQuery).first()
+            }
+        },
+        sourceOfTruth = SourceOfTruth.of(
+            reader = { key -> repository.observeEntities() },
+            writer = { _, _ -> /* Writing handled through repository */ }
+        )
+    ).build()
+```
+
+### **⚡ Conflict Resolution Strategies**
+
+#### **1. Local-First Priority**
+- **Unsynced Local Changes**: Always preserved over server data
+- **Server UID Conflicts**: Server response corrected to maintain local UID
+- **Sync Order**: Local changes pushed first, then server data pulled
+
+#### **2. Automatic Conflict Resolution**
+- **Last-Write-Wins**: Server timestamp determines final state for synced entities
+- **UID Consistency**: Client-generated UIDs maintained throughout lifecycle
+- **Data Loss Prevention**: No local unsynced data overwritten by server sync
+
+#### **3. Failure Recovery**
+- **Retry Mechanism**: Failed syncs marked for retry in next sync cycle
+- **Graceful Degradation**: App continues functioning with local data during network issues
+- **Progressive Sync**: Successful entities marked as synced, failed entities remain unsynced
+
+### **📊 Performance Characteristics**
+
+#### **Memory Management**
+- **Batch Processing**: 100-entity batches prevent memory overflow with large datasets
+- **Lazy Loading**: Store5 provides efficient lazy loading with caching
+- **Background Operations**: Heavy sync operations don't block UI thread
+
+#### **Network Efficiency**
+- **Incremental Sync**: Only downloads entities modified since last sync
+- **Pagination**: Reduces payload size and enables resumable transfers
+- **Compression**: Standard HTTP compression for large batch transfers
+
+#### **Database Optimization**
+- **Indexed Queries**: Primary key and timestamp-based queries for fast lookups
+- **Batch Inserts**: Multiple entities inserted in single transaction
+- **Sync Status Tracking**: Efficient queries for unsynced entities
+
+### **🔧 Configuration & Scaling**
+
+#### **Configurable Parameters**
+- **Batch Size**: Adjustable per entity type (default: 100)
+- **Sync Frequency**: Auto-sync on screen entry or manual trigger
+- **Safety Limits**: Maximum entities per sync (default: 10,000)
+- **Retry Logic**: Exponential backoff for failed sync attempts
+
+#### **Enterprise Scale Support**
+- **10K+ Records**: Tested with large customer datasets
+- **Concurrent Users**: Multiple device sync with conflict resolution
+- **Background Processing**: Sync continues in background on mobile platforms
+- **Progress Feedback**: Real-time sync progress with user visibility
+
+### **🚨 Critical Implementation Notes**
+
+#### **UID Generation Requirements**
+- **ALWAYS**: Generate UIDs in ViewModel layer before repository calls
+- **NEVER**: Allow repository to generate fallback UIDs
+- **PATTERN**: Use `UidGenerator.generateUid(Constants.UID_PREFIX)` consistently
+
+#### **Sync Timing Considerations**
+- **Database First**: Save locally before any network operations
+- **Sync Order**: Push local changes before pulling server updates
+- **Timestamp Authority**: Use server timestamps for sync tracking
+
+#### **Store5 Best Practices**
+- **Separate Concerns**: Keep sync logic in repository, not Store5 fetcher
+- **Cache Management**: Clear Store5 cache after successful sync operations
+- **Error Handling**: Handle Store5 errors separately from sync errors
+
+This architecture provides enterprise-grade offline capabilities while maintaining excellent user experience and data consistency across all platforms.
