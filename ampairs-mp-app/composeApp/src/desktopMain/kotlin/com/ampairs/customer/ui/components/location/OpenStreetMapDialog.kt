@@ -7,7 +7,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.awt.SwingPanel
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogWindow
 import androidx.compose.ui.window.DialogState
 import androidx.compose.ui.window.WindowPosition
 import org.openstreetmap.gui.jmapviewer.JMapViewer
@@ -37,7 +37,7 @@ fun OpenStreetMapDialog(
         mutableStateOf(initialLocation)
     }
 
-    Dialog(
+    DialogWindow(
         onCloseRequest = onDismiss,
         state = DialogState(
             position = WindowPosition.Aligned(Alignment.Center),
