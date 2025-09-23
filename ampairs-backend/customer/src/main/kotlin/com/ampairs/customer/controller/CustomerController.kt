@@ -1,6 +1,7 @@
 package com.ampairs.customer.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.customer.domain.dto.*
 import com.ampairs.customer.domain.model.Customer
 import com.ampairs.customer.domain.model.CustomerType
@@ -33,10 +34,29 @@ class CustomerController @Autowired constructor(
     }
 
     @GetMapping("")
-    fun getCustomers(@RequestParam("last_updated") lastUpdated: Long?): ApiResponse<List<CustomerResponse>> {
-        val customers = customerService.getCustomers(lastUpdated)
-        val result = customers.asCustomersResponse()
-        return ApiResponse.success(result)
+    fun getCustomers(
+        @RequestParam("last_sync", required = false) lastSync: String?,
+        @RequestParam("page", defaultValue = "0") page: Int,
+        @RequestParam("size", defaultValue = "20") size: Int,
+        @RequestParam("sort_by", defaultValue = "updatedAt") sortBy: String,
+        @RequestParam("sort_dir", defaultValue = "ASC") sortDir: String
+    ): ApiResponse<PageResponse<CustomerResponse>> {
+        // Use JPA property names for sorting (Spring Data handles JPA queries automatically)
+        val jpaPropertyName = when (sortBy) {
+            "createdAt" -> "createdAt"
+            "updatedAt" -> "updatedAt"
+            "name" -> "name"
+            "customerType" -> "customerType"
+            "phone" -> "phone"
+            "email" -> "email"
+            else -> "updatedAt" // default fallback
+        }
+
+        val sort = Sort.by(Sort.Direction.fromString(sortDir), jpaPropertyName)
+        val pageable = PageRequest.of(page, size, sort)
+
+        val customersPage = customerService.getCustomersAfterSync(lastSync, pageable)
+        return ApiResponse.success(PageResponse.from(customersPage) { it.asCustomerResponse() })
     }
 
     @GetMapping("/states")

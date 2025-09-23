@@ -49,8 +49,6 @@ interface CustomerDao {
     @Query("SELECT * FROM customers WHERE synced = 0")
     suspend fun getUnsyncedCustomers(): List<CustomerEntity>
 
-    @Query("UPDATE customers SET synced = 1 WHERE id = :customerId")
-    suspend fun markAsSynced(customerId: String)
 
     @Query("DELETE FROM customers")
     suspend fun clearWorkspaceCustomers()

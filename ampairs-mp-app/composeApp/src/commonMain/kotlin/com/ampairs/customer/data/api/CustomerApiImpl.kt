@@ -6,6 +6,7 @@ import com.ampairs.common.httpClient
 import com.ampairs.common.post
 import com.ampairs.common.delete
 import com.ampairs.common.model.Response
+import com.ampairs.common.model.PageResponse
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.State
 import com.ampairs.customer.domain.MasterState
@@ -20,13 +21,39 @@ class CustomerApiImpl(
 
     private val client = httpClient(engine, tokenRepository)
 
-    override suspend fun getCustomers(lastSync: Long): List<Customer> {
-        val response: Response<List<Customer>> = get(
+    override suspend fun getCustomers(
+        lastSync: String,
+        page: Int,
+        size: Int,
+        sortBy: String,
+        sortDir: String
+    ): PageResponse<Customer> {
+        val params = mutableMapOf(
+            "page" to page,
+            "size" to size,
+            "sort_by" to sortBy,
+            "sort_dir" to sortDir
+        )
+        if (lastSync.isNotBlank()) {
+            params["last_sync"] = lastSync
+        }
+
+        val response: Response<PageResponse<Customer>> = get(
             client,
             "$CUSTOMER_ENDPOINT/customer/v1",
-            mapOf("last_sync" to lastSync)
+            params
         )
-        return response.data ?: emptyList()
+        return response.data ?: PageResponse(
+            content = emptyList(),
+            pageNumber = page,
+            pageSize = size,
+            totalPages = 0,
+            totalElements = 0L,
+            hasNext = false,
+            hasPrevious = false,
+            first = true,
+            last = true
+        )
     }
 
     override suspend fun createCustomer(customer: Customer): Customer {
@@ -66,11 +93,16 @@ class CustomerApiImpl(
         }
     }
 
-    override suspend fun getStates(lastSync: Long): List<State> {
+    override suspend fun getStates(lastSync: String): List<State> {
+        val params = if (lastSync.isNotBlank()) {
+            mapOf("last_updated" to lastSync)
+        } else {
+            emptyMap()
+        }
         val response: Response<List<State>> = get(
             client,
             "$CUSTOMER_ENDPOINT/customer/v1/states",
-            mapOf("last_updated" to lastSync)
+            params
         )
         return response.data ?: emptyList()
     }

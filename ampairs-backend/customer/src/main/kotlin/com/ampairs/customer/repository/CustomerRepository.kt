@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.PagingAndSortingRepository
 import org.springframework.stereotype.Repository
+import java.time.LocalDateTime
 import java.util.*
 
 @Repository
@@ -37,4 +38,9 @@ interface CustomerRepository : CrudRepository<Customer, Long>, PagingAndSortingR
 
     @Query("SELECT c FROM customer c WHERE c.state = :state AND c.status = 'ACTIVE'")
     fun findActiveCustomersByState(state: String, pageable: Pageable): Page<Customer>
+
+    @Query("SELECT c FROM customer c WHERE c.updatedAt >= :lastSync ORDER BY c.updatedAt ASC")
+    fun findCustomersUpdatedAfter(lastSync: LocalDateTime, pageable: Pageable): Page<Customer>
+
+    fun findByUpdatedAtAfterOrderByUpdatedAtAsc(lastSync: LocalDateTime): List<Customer>
 }

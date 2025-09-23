@@ -26,14 +26,14 @@ val customerModule = module {
     single { get<CustomerDatabase>().stateDao() }
 
     // Repository Layer
-    singleOf(::CustomerRepository)
+    single { CustomerRepository(get(), get(), get()) }
 
     // Domain Layer
     singleOf(::CustomerStore)
     singleOf(::StateStore)
 
     // ViewModels
-    factory { CustomersListViewModel(get(), get()) }
+    factory { CustomersListViewModel(get()) }
     factory { (customerId: String?) -> CustomerDetailsViewModel(customerId ?: "", get(), get()) }
     factory { (customerId: String?) -> CustomerFormViewModel(customerId, get(), get()) }
     factory { StateListViewModel(get()) }

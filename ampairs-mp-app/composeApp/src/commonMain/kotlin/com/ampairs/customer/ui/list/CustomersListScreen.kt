@@ -29,6 +29,7 @@ fun CustomersListScreen(
 
     LaunchedEffect(Unit) {
         viewModel.loadCustomers()
+        viewModel.syncCustomers()
     }
 
     Column(modifier = modifier.fillMaxSize()) {

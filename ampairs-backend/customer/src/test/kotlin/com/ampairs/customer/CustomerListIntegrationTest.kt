@@ -2,8 +2,6 @@ package com.ampairs.customer
 
 import com.ampairs.AmpairsApplication
 
-import com.ampairs.core.domain.dto.ApiResponse
-import com.ampairs.customer.controller.CustomerController
 import com.ampairs.customer.domain.dto.CustomerResponse
 import com.ampairs.customer.domain.model.Customer
 import com.ampairs.customer.domain.model.CustomerType
@@ -216,7 +214,7 @@ class CustomerListIntegrationTest {
         creditLimit: Double = 0.0
     ): CustomerResponse {
         return CustomerResponse(
-            id = id,
+            uid = id,
             name = name,
             companyId = "COMP_001",
             countryCode = 91,
@@ -241,7 +239,7 @@ class CustomerListIntegrationTest {
 
     private fun mockCustomer(response: CustomerResponse): Customer {
         return Customer().apply {
-            uid = response.id
+            uid = response.uid
             name = response.name
             companyId = response.companyId
             countryCode = response.countryCode

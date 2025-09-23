@@ -18,7 +18,7 @@ class CustomerStore(private val repository: CustomerRepository) {
     val customerListStore: Store<CustomerListKey, List<CustomerListItem>> = StoreBuilder
         .from(
             fetcher = Fetcher.of { key: CustomerListKey ->
-                repository.syncCustomers()
+                // Only read from local database - sync is handled separately
                 if (key.searchQuery.isBlank()) {
                     repository.observeCustomers().first()
                 } else {

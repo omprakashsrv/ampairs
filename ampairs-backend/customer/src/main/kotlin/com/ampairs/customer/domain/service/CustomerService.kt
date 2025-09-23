@@ -13,7 +13,10 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.*
 
 @Service
@@ -58,6 +61,30 @@ class CustomerService @Autowired constructor(
 
     fun getStates(): List<State> {
         return stateRepository.findAll().toMutableList()
+    }
+
+    fun getCustomersAfterSync(lastSync: String?, pageable: Pageable): Page<Customer> {
+        return if (lastSync.isNullOrBlank()) {
+            // If no last_sync provided, return all customers with pagination
+            customerRepository.findAll(pageable)
+        } else {
+            try {
+                // URL decode the datetime string first (handles %3A to : conversion)
+                val decodedLastSync = URLDecoder.decode(lastSync, StandardCharsets.UTF_8)
+
+                // Parse ISO datetime string to LocalDateTime (supports both with and without 'T')
+                val lastSyncDateTime = if (decodedLastSync.contains('T')) {
+                    LocalDateTime.parse(decodedLastSync, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                } else {
+                    LocalDateTime.parse(decodedLastSync.replace(' ', 'T'), DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+                }
+
+                customerRepository.findCustomersUpdatedAfter(lastSyncDateTime, pageable)
+            } catch (e: Exception) {
+                // If parsing fails, return all customers with pagination
+                customerRepository.findAll(pageable)
+            }
+        }
     }
 
     /**

@@ -22,7 +22,6 @@ data class CustomersListUiState(
 
 class CustomersListViewModel(
     private val customerStore: CustomerStore,
-    private val workspaceContextManager: WorkspaceContextManager
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CustomersListUiState())

@@ -6,7 +6,7 @@ import com.ampairs.customer.domain.model.CustomerType
 import java.time.LocalDateTime
 
 data class CustomerResponse(
-    var id: String,
+    var uid: String,
     var name: String,
     var countryCode: Int,
     var phone: String,
@@ -45,7 +45,7 @@ fun List<Customer>.asCustomersResponse(): List<CustomerResponse> {
 
 fun Customer.asCustomerResponse(): CustomerResponse {
     return CustomerResponse(
-        id = this.uid,
+        uid = this.uid,
         name = this.name,
         countryCode = this.countryCode,
         phone = this.phone,

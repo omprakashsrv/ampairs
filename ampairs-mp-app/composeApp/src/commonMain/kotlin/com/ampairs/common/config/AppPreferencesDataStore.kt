@@ -19,6 +19,16 @@ interface AppPreferencesDataStore {
      */
     suspend fun setThemePreference(preference: ThemePreference)
 
+    /**
+     * Get the last customer sync time as ISO 8601 string (yyyy-mm-ddTHH:mm:ss)
+     */
+    fun getCustomerLastSyncTime(): Flow<String>
+
+    /**
+     * Set the last customer sync time as ISO 8601 string (yyyy-mm-ddTHH:mm:ss)
+     */
+    suspend fun setCustomerLastSyncTime(timestamp: String)
+
     // Future app settings can be added here:
     // fun getLanguagePreference(): Flow<String>
     // suspend fun setLanguagePreference(language: String)

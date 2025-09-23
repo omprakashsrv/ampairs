@@ -3,6 +3,7 @@ package com.ampairs.customer.data.api
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.State
 import com.ampairs.customer.domain.MasterState
+import com.ampairs.common.model.PageResponse
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
 
@@ -29,12 +30,18 @@ data class ImportedStateInfo(
 )
 
 interface CustomerApi {
-    suspend fun getCustomers(lastSync: Long = 0): List<Customer>
+    suspend fun getCustomers(
+        lastSync: String = "",
+        page: Int = 0,
+        size: Int = 100,
+        sortBy: String = "updatedAt",
+        sortDir: String = "ASC"
+    ): PageResponse<Customer>
     suspend fun createCustomer(customer: Customer): Customer
     suspend fun updateCustomer(customer: Customer): Customer
     suspend fun deleteCustomer(customerId: String)
     suspend fun getCustomer(customerId: String): Customer?
-    suspend fun getStates(lastSync: Long = 0): List<State>
+    suspend fun getStates(lastSync: String = ""): List<State>
     suspend fun importState(stateCode: String): String
     suspend fun bulkImportStates(request: BulkImportRequest): BulkImportResponse
     suspend fun getAvailableStatesForImport(workspaceId: String): List<MasterState>
