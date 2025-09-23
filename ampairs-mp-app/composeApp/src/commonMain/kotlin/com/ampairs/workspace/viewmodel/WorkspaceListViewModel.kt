@@ -9,12 +9,12 @@ import com.ampairs.workspace.db.OfflineFirstWorkspaceRepository
 import com.ampairs.workspace.db.UserInvitationRepository
 import com.ampairs.workspace.domain.Workspace
 import org.mobilenativefoundation.store.store5.StoreReadResponse
+import org.mobilenativefoundation.store.store5.StoreReadRequest
 import com.ampairs.workspace.ui.WorkspaceListState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 
 class WorkspaceListViewModel(
@@ -67,22 +67,15 @@ class WorkspaceListViewModel(
 
     fun loadWorkspaces(forceRefresh: Boolean = false) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(error = null)
-            
+            _state.value = _state.value.copy(error = null, isLoading = true)
+
             try {
-                val workspacesFlow = workspaceRepository.getUserWorkspaces(
+                workspaceRepository.getUserWorkspaces(
                     page = 0,
                     size = 50, // Load more workspaces for the list
                     forceRefresh = forceRefresh
-                )
-                workspacesFlow.onEach { response ->
+                ).collect { response ->
                     when (response) {
-                        is StoreReadResponse.Loading -> {
-                            // Show loading only when we don't have any cached data
-                            if (_state.value.workspaces.isEmpty()) {
-                                _state.value = _state.value.copy(isLoading = true)
-                            }
-                        }
                         is StoreReadResponse.Data -> {
                             val pageResult = response.value
                             _state.value = _state.value.copy(
@@ -91,8 +84,14 @@ class WorkspaceListViewModel(
                                 isRefreshing = false,
                                 error = null,
                                 hasNoWorkspaces = pageResult.isEmpty,
-                                isOfflineMode = false // TODO: Check if data came from cache
+                                isOfflineMode = false
                             )
+                        }
+                        is StoreReadResponse.Loading -> {
+                            // Show loading only when we don't have any cached data
+                            if (_state.value.workspaces.isEmpty()) {
+                                _state.value = _state.value.copy(isLoading = true)
+                            }
                         }
                         is StoreReadResponse.Error.Exception -> {
                             _state.value = _state.value.copy(
@@ -114,8 +113,7 @@ class WorkspaceListViewModel(
                             // Handle other response types if needed
                         }
                     }
-                }.launchIn(this)
-                
+                }
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     error = e.message ?: "Failed to load workspaces",
@@ -130,14 +128,13 @@ class WorkspaceListViewModel(
     fun refreshWorkspaces() {
         viewModelScope.launch {
             _state.value = _state.value.copy(isRefreshing = true, error = null)
-            
+
             try {
-                val workspacesFlow = workspaceRepository.getUserWorkspaces(
+                workspaceRepository.getUserWorkspaces(
                     page = 0,
                     size = 50,
                     forceRefresh = true
-                )
-                workspacesFlow.onEach { response ->
+                ).collect { response ->
                     when (response) {
                         is StoreReadResponse.Data -> {
                             val pageResult = response.value
@@ -147,7 +144,7 @@ class WorkspaceListViewModel(
                                 isRefreshing = false,
                                 error = null,
                                 hasNoWorkspaces = pageResult.isEmpty,
-                                isOfflineMode = false // TODO: Check if data came from cache
+                                isOfflineMode = false
                             )
                         }
                         is StoreReadResponse.Error.Exception -> {
@@ -170,8 +167,8 @@ class WorkspaceListViewModel(
                             // Handle other states
                         }
                     }
-                }.launchIn(this)
-                
+                }
+
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     error = e.message ?: "Failed to refresh workspaces",
@@ -194,13 +191,13 @@ class WorkspaceListViewModel(
                 } else {
                     // Use repository's search functionality
                     workspaceRepository.searchWorkspaces(query, page = 0, size = 50)
-                        .onEach { workspaces ->
+                        .collect { workspaces ->
                             _state.value = _state.value.copy(
                                 workspaces = workspaces,
                                 isLoading = false,
                                 error = null
                             )
-                        }.launchIn(this)
+                        }
                 }
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
@@ -228,11 +225,10 @@ class WorkspaceListViewModel(
     fun loadCachedWorkspaces() {
         viewModelScope.launch {
             try {
-                val workspacesFlow = workspaceRepository.getCachedWorkspaces(
+                workspaceRepository.getCachedWorkspaces(
                     page = 0,
                     size = 50
-                )
-                workspacesFlow.onEach { response ->
+                ).collect { response ->
                     when (response) {
                         is StoreReadResponse.Data -> {
                             val pageResult = response.value
@@ -265,8 +261,8 @@ class WorkspaceListViewModel(
                             // Handle other states
                         }
                     }
-                }.launchIn(this)
-                
+                }
+
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     error = "No cached data available",
@@ -286,7 +282,7 @@ class WorkspaceListViewModel(
                 if (userId != null) {
                     _state.value = _state.value.copy(isInvitationsLoading = true, invitationsError = null)
 
-                    invitationRepository.getUserInvitationsFlow(userId).onEach { response ->
+                    invitationRepository.getUserInvitationsFlow(userId).collect { response ->
                         when (response) {
                             is StoreReadResponse.Data -> {
                                 _state.value = _state.value.copy(
@@ -314,7 +310,7 @@ class WorkspaceListViewModel(
                                 // Handle other states
                             }
                         }
-                    }.launchIn(this)
+                    }
                 }
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
