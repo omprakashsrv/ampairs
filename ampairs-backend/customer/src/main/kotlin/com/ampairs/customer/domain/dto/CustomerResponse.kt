@@ -68,8 +68,9 @@ fun Customer.asCustomerResponse(): CustomerResponse {
         billingAddress = this.billingAddress,
         shippingAddress = this.shippingAddress,
         attributes = this.attributes,
-        latitude = this.location?.x,
-        longitude = this.location?.y,
+        // Spring Data Point: x=longitude, y=latitude - fix coordinate mapping
+        latitude = this.location?.y,
+        longitude = this.location?.x,
         lastUpdated = this.lastUpdated,
         createdAt = this.createdAt,
         updatedAt = this.updatedAt,
