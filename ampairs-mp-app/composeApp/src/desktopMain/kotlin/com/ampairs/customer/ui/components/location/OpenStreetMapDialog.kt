@@ -114,6 +114,7 @@ fun OpenStreetMapDialog(
                             setTileSource(OsmTileSource.Mapnik())
 
                             // Initial map position
+                            // Note: JMapViewer Coordinate constructor expects (latitude, longitude)
                             val startCoordinate = initialLocation?.let {
                                 Coordinate(it.latitude, it.longitude)
                             } ?: Coordinate(12.9716, 77.5946) // Default to Bangalore
@@ -122,6 +123,7 @@ fun OpenStreetMapDialog(
 
                             // Add initial marker if location provided
                             initialLocation?.let { location ->
+                                // MapMarkerDot constructor: (color, latitude, longitude) - standard geographic order
                                 val marker = MapMarkerDot(Color.RED, location.latitude, location.longitude)
                                 addMapMarker(marker)
                             }
@@ -135,7 +137,7 @@ fun OpenStreetMapDialog(
                                         // Clear existing markers
                                         mapMarkerList.clear()
 
-                                        // Add new marker
+                                        // Add new marker - MapMarkerDot constructor: (color, latitude, longitude)
                                         val marker = MapMarkerDot(Color.RED, coordinate.lat, coordinate.lon)
                                         addMapMarker(marker)
 
