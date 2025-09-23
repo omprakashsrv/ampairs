@@ -15,7 +15,8 @@ import com.ampairs.customer.domain.CustomerType
 import com.ampairs.customer.domain.State
 import com.ampairs.customer.domain.StateKey
 import com.ampairs.customer.domain.StateStore
-import com.benasher44.uuid.uuid4
+import com.ampairs.common.id_generator.UidGenerator
+import com.ampairs.customer.util.CustomerConstants
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -263,7 +264,7 @@ class CustomerFormViewModel(
             try {
                 val result = if (currentFormState.uid.isBlank()) {
                     // Create new customer
-                    val updatedFormState = currentFormState.copy(uid = uuid4().toString())
+                    val updatedFormState = currentFormState.copy(uid = UidGenerator.generateUid(CustomerConstants.UID_PREFIX))
                     val newCustomer = updatedFormState.toCustomer()
                     customerStore.createCustomer(newCustomer)
                 } else {
