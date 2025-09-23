@@ -44,6 +44,8 @@ data class Customer(
     val shippingAddress: CustomerAddress? = null,
     val status: String? = null,
     val attributes: Map<String, String>? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     val active: Boolean = true,
     @SerialName("created_at")
     val createdAt: String? = null,

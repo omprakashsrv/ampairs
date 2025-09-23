@@ -4,6 +4,7 @@
 import com.ampairs.auth.authModule
 import com.ampairs.common.theme.themeModule
 import com.ampairs.customer.di.customerModule
+import com.ampairs.customer.ui.components.location.locationServiceModule
 import com.ampairs.product.productModule
 import com.ampairs.tax.taxModule
 import com.ampairs.workspace.navigation.initializeModuleProviders
@@ -35,6 +36,7 @@ fun initKoin(koinApplication: KoinApplication): KoinApplication {
             authModule(),
             workspaceModule(),
             customerModule,
+            locationServiceModule,
             productModule(),
             taxModule,
             // Temporarily disabled modules pending customer integration updates

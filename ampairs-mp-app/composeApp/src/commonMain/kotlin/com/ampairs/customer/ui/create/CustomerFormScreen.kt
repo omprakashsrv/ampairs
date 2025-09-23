@@ -19,6 +19,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.MyLocation
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -55,6 +57,9 @@ import org.koin.core.parameter.parametersOf
 import com.ampairs.ui.components.Phone
 import com.ampairs.customer.ui.components.StateAutocomplete
 import com.ampairs.customer.ui.components.StringAutocomplete
+import com.ampairs.customer.ui.components.location.LocationPickerDialog
+import com.ampairs.customer.ui.components.location.LocationData
+import com.ampairs.customer.ui.components.location.AddressData
 import com.ampairs.customer.domain.State
 import com.ampairs.customer.domain.CustomerType
 
@@ -458,6 +463,36 @@ private fun CustomerForm(
             }
         }
 
+        // Location Section
+        FormSection(title = "Location") {
+            LocationSection(
+                latitude = formState.latitude,
+                longitude = formState.longitude,
+                onLocationSelected = { latitude, longitude, address ->
+                    var updatedForm = formState.copy(
+                        latitude = latitude,
+                        longitude = longitude
+                    )
+
+                    // Auto-populate address if provided and main address is empty
+                    address?.let { addr ->
+                        if (formState.address.isBlank() && formState.street.isBlank() && formState.city.isBlank()) {
+                            updatedForm = updatedForm.copy(
+                                address = addr.formattedAddress,
+                                street = addr.street ?: "",
+                                city = addr.city ?: "",
+                                state = addr.state ?: "",
+                                pincode = addr.pincode ?: "",
+                                country = addr.country ?: "India"
+                            )
+                        }
+                    }
+
+                    onFormChange(updatedForm)
+                }
+            )
+        }
+
         // Billing Address Section
         FormSection(title = "Billing Address") {
             Row(
@@ -850,4 +885,97 @@ private fun AttributeItem(
             }
         }
     }
+}
+
+@Composable
+private fun LocationSection(
+    latitude: Double?,
+    longitude: Double?,
+    onLocationSelected: (latitude: Double, longitude: Double, address: AddressData?) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var showLocationPicker by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        if (latitude != null && longitude != null) {
+            // Show current location
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                )
+            ) {
+                Column(
+                    modifier = Modifier.padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "Current Location",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Text(
+                        text = "Latitude: ${latitude.toString().take(10)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                    Text(
+                        text = "Longitude: ${longitude.toString().take(10)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (latitude != null && longitude != null) {
+                OutlinedButton(
+                    onClick = { showLocationPicker = true },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.LocationOn, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Change Location")
+                }
+            } else {
+                Button(
+                    onClick = { showLocationPicker = true },
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(Icons.Default.LocationOn, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Set Location")
+                }
+            }
+        }
+
+        if (latitude == null && longitude == null) {
+            Text(
+                text = "Setting location will auto-populate address fields if they are empty",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+
+    // Location picker dialog
+    LocationPickerDialog(
+        showDialog = showLocationPicker,
+        currentLocation = if (latitude != null && longitude != null) {
+            LocationData(latitude = latitude, longitude = longitude)
+        } else null,
+        onLocationSelected = { location, address ->
+            onLocationSelected(location.latitude, location.longitude, address)
+            showLocationPicker = false
+        },
+        onDismiss = {
+            showLocationPicker = false
+        }
+    )
 }

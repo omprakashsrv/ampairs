@@ -14,6 +14,7 @@ configurations.all {
     exclude(group = "androidx.compose.ui", module = "ui-test-android")
 }
 
+
 kotlin {
     androidTarget()
 
@@ -71,11 +72,11 @@ kotlin {
                 implementation(libs.savedstate)
                 implementation(libs.savedstate.compose)
                 implementation(projects.thirdparty.androidx.paging.compose)
-                
+
                 implementation(libs.room.runtime)
                 implementation(libs.room.paging)
                 implementation(libs.sqlite.bundled)
-                
+
                 // Store5 for offline-first caching
                 implementation(libs.store5)
 
@@ -91,6 +92,9 @@ kotlin {
                 implementation(compose.desktop.currentOs)
                 implementation(libs.ktor.client.okHttp)
                 implementation(libs.aws.s3)
+                // Library for OpenStreetMap - now using JOSM repository
+                implementation(libs.jmapviewer)
+
                 implementation(project(":tallyModule"))
             }
         }

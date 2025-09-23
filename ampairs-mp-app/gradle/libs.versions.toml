@@ -43,6 +43,7 @@ datastore = "1.1.7"
 material-kolor = "3.0.1"
 androidx-work-runtime = "2.10.4"
 store5 = "5.1.0-alpha06"
+jmapviewer = "2.24"
 
 
 [libraries]
@@ -114,6 +115,7 @@ material-kolor = { module = "com.materialkolor:material-kolor", version.ref = "m
 androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref = "androidx-work-runtime" }
 
 store5 = { module = "org.mobilenativefoundation.store:store5", version.ref = "store5" }
+jmapviewer = { module = "org.openstreetmap.jmapviewer:jmapviewer", version.ref = "jmapviewer" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

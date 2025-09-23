@@ -64,6 +64,9 @@ data class CustomerFormState(
     val shippingState: String = "",
     val shippingPincode: String = "",
     val shippingCountry: String = "India",
+    // Location
+    val latitude: Double? = null,
+    val longitude: Double? = null,
     // Validation errors
     val nameError: String? = null,
     val emailError: String? = null,
@@ -103,6 +106,8 @@ data class CustomerFormState(
             country = country.trim(),
             status = status.takeIf { it.isNotBlank() },
             attributes = attributes.takeIf { it.isNotEmpty() },
+            latitude = latitude,
+            longitude = longitude,
             billingAddress = if (useBillingAsMainAddress) {
                 CustomerAddress(
                     street = street.trim(),
@@ -180,7 +185,7 @@ class CustomerFormViewModel(
             try {
                 val key = CustomerKey(customerId)
                 customerStore.customerStore
-                    .stream(StoreReadRequest.cached(key, refresh = false))
+                    .stream(StoreReadRequest.cached(key, refresh = true))
                     .collect { response ->
                         when (response) {
                             is StoreReadResponse.Data -> {
@@ -514,6 +519,9 @@ private fun Customer.toFormState(): CustomerFormState {
         shippingState = shippingAddress?.state ?: "",
         shippingPincode = shippingAddress?.pincode ?: "",
         shippingCountry = shippingAddress?.country ?: "India",
+        // Location
+        latitude = latitude,
+        longitude = longitude,
         // Validation errors
         nameError = null,
         emailError = null,

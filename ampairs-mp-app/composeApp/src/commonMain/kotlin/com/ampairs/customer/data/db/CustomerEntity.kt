@@ -30,6 +30,8 @@ data class CustomerEntity(
     val state: String?,
     val pincode: String?,
     val country: String,
+    val latitude: Double?,
+    val longitude: Double?,
     val billing_address_json: String?,
     val shipping_address_json: String?,
     val active: Boolean,
@@ -54,6 +56,8 @@ fun Customer.toEntity(): CustomerEntity = CustomerEntity(
     state = state,
     pincode = pincode,
     country = country,
+    latitude = latitude,
+    longitude = longitude,
     billing_address_json = billingAddress?.let { Json.encodeToString(it) },
     shipping_address_json = shippingAddress?.let { Json.encodeToString(it) },
     active = active,
@@ -77,6 +81,8 @@ fun CustomerEntity.toDomain(): Customer = Customer(
     state = state,
     pincode = pincode,
     country = country,
+    latitude = latitude,
+    longitude = longitude,
     billingAddress = billing_address_json?.let {
         try {
             Json.decodeFromString<CustomerAddress>(it)
