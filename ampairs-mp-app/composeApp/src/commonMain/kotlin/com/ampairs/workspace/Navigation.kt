@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
@@ -23,10 +23,12 @@ import com.ampairs.workspace.ui.WorkspaceMembersScreen
 import com.ampairs.workspace.ui.WorkspaceModulesScreen
 
 fun NavGraphBuilder.workspaceNavigation(
-    navController: NavController,
+    navController: NavHostController,
     onNavigationServiceReady: ((com.ampairs.workspace.navigation.DynamicModuleNavigationService?) -> Unit)? = null,
     onWorkspaceSelected: () -> Unit
 ) {
+    // Create navigation service at workspace level when needed
+    var workspaceNavigationService: com.ampairs.workspace.navigation.DynamicModuleNavigationService? = null
     navigation<Route.Workspace>(startDestination = WorkspaceRoute.Root) {
         
         // Workspace list screen (with offline-first data synchronization)

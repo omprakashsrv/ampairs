@@ -8,6 +8,7 @@ import com.ampairs.workspace.api.model.ModuleInstallationResponse
 import com.ampairs.workspace.api.model.ModuleUninstallationResponse
 import com.ampairs.workspace.db.WorkspaceModuleRepository
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
+import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.store.InstalledModuleKey
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -20,9 +21,11 @@ import org.mobilenativefoundation.store.store5.StoreReadResponse
  */
 class WorkspaceModulesViewModel(
     private val moduleRepository: WorkspaceModuleRepository,
-    private val workspaceId: String? = null, // Optional workspace context
-    val navigationService: DynamicModuleNavigationService = DynamicModuleNavigationService() // Navigation service for dynamic routing
+    private val workspaceId: String? = null // Optional workspace context
 ) : ViewModel() {
+
+    // Use global navigation manager instead of local service
+    private val globalNavigationManager = GlobalNavigationManager.getInstance()
 
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
@@ -52,29 +55,8 @@ class WorkspaceModulesViewModel(
     // This ensures fresh data is fetched from the backend via Store5
 
     init {
-        // Update navigation service when installed modules change
-        viewModelScope.launch {
-            installedModules.collect { modules ->
-                navigationService.updateInstalledModules(modules)
-            }
-        }
-
-        // Sync loading state with navigation service
-        viewModelScope.launch {
-            isLoading.collect { loading ->
-                navigationService.setLoading(loading)
-            }
-        }
-
-        // Sync error state with navigation service
-        viewModelScope.launch {
-            errorMessage.collect { error ->
-                navigationService.setError(error)
-            }
-        }
-
-        // Initialize by loading from both network and local storage
-        loadInstalledModules()
+        // Sync to global navigation manager is now enabled in loadInstalledModules()
+        // Auto-loading is disabled to prevent infinite loops - only load when explicitly called
     }
 
     /**
@@ -85,6 +67,8 @@ class WorkspaceModulesViewModel(
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
+            // Set loading state in global navigation manager
+            globalNavigationManager.setModuleLoading(true)
 
             try {
                 val key = InstalledModuleKey.refresh(wsId)
@@ -96,6 +80,8 @@ class WorkspaceModulesViewModel(
                                 _installedModules.value = response.value
                                 _isLoading.value = false
                                 _errorMessage.value = null
+                                // Sync modules to global navigation manager
+                                globalNavigationManager.updateInstalledModules(response.value)
                             }
 
                             is StoreReadResponse.Loading -> {
@@ -105,11 +91,15 @@ class WorkspaceModulesViewModel(
                             is StoreReadResponse.Error.Exception -> {
                                 _isLoading.value = false
                                 _errorMessage.value = response.error.message ?: "Failed to load modules"
+                                // Set error in global navigation manager
+                                globalNavigationManager.setNavigationError(_errorMessage.value)
                             }
 
                             is StoreReadResponse.Error.Message -> {
                                 _isLoading.value = false
                                 _errorMessage.value = response.message
+                                // Set error in global navigation manager
+                                globalNavigationManager.setNavigationError(_errorMessage.value)
                             }
 
                             else -> {
@@ -120,6 +110,8 @@ class WorkspaceModulesViewModel(
             } catch (e: Exception) {
                 _isLoading.value = false
                 _errorMessage.value = e.message ?: "Failed to load modules"
+                // Set error in global navigation manager
+                globalNavigationManager.setNavigationError(_errorMessage.value)
             }
         }
     }

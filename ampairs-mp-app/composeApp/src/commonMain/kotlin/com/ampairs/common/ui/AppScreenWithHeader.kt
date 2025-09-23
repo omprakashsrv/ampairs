@@ -5,7 +5,7 @@ import Route
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.UserRepository
@@ -19,7 +19,7 @@ import org.koin.compose.koinInject
 
 @Composable
 fun AppScreenWithHeader(
-    navController: NavController,
+    navController: NavHostController,
     modifier: Modifier = Modifier,
     isWorkspaceSelection: Boolean = false,
     content: @Composable (PaddingValues) -> Unit

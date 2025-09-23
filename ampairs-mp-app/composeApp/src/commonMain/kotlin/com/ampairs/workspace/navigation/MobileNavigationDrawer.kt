@@ -7,6 +7,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.launch
 
 /**
  * Mobile navigation drawer wrapper for workspace module navigation
@@ -25,6 +26,7 @@ fun MobileNavigationDrawer(
     drawerState: DrawerState = rememberDrawerState(DrawerValue.Closed),
     content: @Composable () -> Unit
 ) {
+    val scope = rememberCoroutineScope()
     ModalNavigationDrawer(
         drawerState = drawerState,
         drawerContent = {
@@ -50,10 +52,9 @@ fun MobileNavigationDrawer(
                         navigationService = navigationService,
                         onNavigate = { route ->
                             onNavigate(route)
-                            // Close drawer after navigation
-                            if (drawerState.isOpen) {
-                                // Note: In real implementation, you'd use a coroutine scope
-                                // to close the drawer properly
+                            // Close drawer after navigation using proper coroutine scope
+                            scope.launch {
+                                drawerState.close()
                             }
                         }
                     )

@@ -148,9 +148,9 @@ private fun MobileModuleNavigationItem(
                     .fillMaxWidth()
                     .clickable {
                         if (moduleRoute.menuItems.size == 1) {
-                            // Single menu item - navigate directly
+                            // Single menu item - navigate directly using routePath like desktop
                             val menuItem = moduleRoute.menuItems.first()
-                            onNavigate("/workspace/modules/${moduleRoute.moduleCode}${menuItem.routePath}")
+                            onNavigate(menuItem.routePath)
                         } else {
                             // Multiple menu items - toggle expansion
                             expanded = !expanded
@@ -229,7 +229,8 @@ private fun MobileMenuItemRow(
         modifier = Modifier
             .fillMaxWidth()
             .clickable {
-                onNavigate("/workspace/modules/${moduleRoute.moduleCode}${menuItem.routePath}")
+                // Use routePath directly like desktop implementation
+                onNavigate(menuItem.routePath)
             }
             .padding(vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -349,3 +350,4 @@ private fun parseHexColor(hexColor: String): Color {
         Color.Gray // Fallback color
     }
 }
+

@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
@@ -46,7 +46,7 @@ data class TaxRateDetailsRoute(val taxRateId: String)
 data class TaxRateFormRoute(val taxRateId: String? = null)
 
 fun NavGraphBuilder.taxNavigation(
-    navController: NavController
+    navController: NavHostController
 ) {
     navigation<Route.Tax>(startDestination = TaxListRoute) {
         // Main Tax Module Landing Screen

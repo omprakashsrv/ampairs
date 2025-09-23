@@ -22,6 +22,7 @@ import com.ampairs.common.theme.ThemeManager
 import com.ampairs.common.theme.ThemePreference
 import com.ampairs.workspace.navigation.PlatformNavigationDetector
 import com.ampairs.workspace.navigation.NavigationPattern
+import com.ampairs.workspace.navigation.GlobalNavigationManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,7 +37,7 @@ fun AppHeader(
     onEditProfile: () -> Unit,
     onLogout: () -> Unit,
     onSwitchUser: () -> Unit,
-    onNavigationDrawerClick: () -> Unit = {},
+    onNavigationDrawerClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -50,8 +51,11 @@ fun AppHeader(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Hamburger menu for mobile platforms (when using navigation drawer)
-            if (PlatformNavigationDetector.getNavigationPattern() == NavigationPattern.SIDE_DRAWER) {
+            // Hamburger menu for mobile platforms (observing global navigation state)
+            val globalNavManager = GlobalNavigationManager.getInstance()
+            val shouldShowHamburger by globalNavManager.shouldShowHamburgerMenu.collectAsState()
+
+            if (shouldShowHamburger && onNavigationDrawerClick != null) {
                 IconButton(
                     onClick = onNavigationDrawerClick,
                     modifier = Modifier.size(40.dp)
@@ -64,8 +68,10 @@ fun AppHeader(
                     )
                 }
                 Spacer(modifier = Modifier.width(8.dp))
-            } else {
-                // Back button (conditionally shown on desktop)
+            }
+
+            // Back button (shown when hamburger menu is not available and navigation is possible)
+            if (!shouldShowHamburger || onNavigationDrawerClick == null) {
                 val canNavigateBack = navController.previousBackStackEntry != null
                 if (canNavigateBack) {
                     IconButton(

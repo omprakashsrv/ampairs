@@ -5,7 +5,7 @@ import Route
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
@@ -16,7 +16,7 @@ import com.ampairs.product.ui.details.ProductDetailsScreen
 import com.ampairs.product.ui.list.ProductsListScreen
 
 fun NavGraphBuilder.productNavigation(
-    navController: NavController
+    navController: NavHostController
 ) {
     navigation<Route.Product>(startDestination = ProductRoute.Products) {
         // Main Product List Screen

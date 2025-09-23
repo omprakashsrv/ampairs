@@ -3,6 +3,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -21,16 +25,19 @@ import com.ampairs.customer.ui.CustomerCreateRoute
 import com.ampairs.product.productNavigation
 import com.ampairs.tax.ui.navigation.taxNavigation
 import com.ampairs.workspace.context.WorkspaceContextManager
+import com.ampairs.workspace.navigation.DynamicModuleNavigationService
+import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.workspaceNavigation
 import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun AppNavigation(
-    onNavigationServiceReady: ((com.ampairs.workspace.navigation.DynamicModuleNavigationService?) -> Unit)? = null,
+    onNavigationServiceReady: ((DynamicModuleNavigationService?) -> Unit)? = null,
     onNavigationReady: (((String) -> Unit) -> Unit)? = null
 ) {
     val navController = rememberNavController()
     val workspaceManager = WorkspaceContextManager.getInstance()
+
 
     // Set up navigation callback for desktop menu integration
     LaunchedEffect(navController) {
@@ -41,10 +48,14 @@ fun AppNavigation(
         onNavigationReady?.invoke(navigationCallback)
     }
 
+    // Get global navigation manager instance
+    val globalNavigationManager = GlobalNavigationManager.getInstance()
+
     LaunchedEffect(Unit) {
         UnauthenticatedHandler.onUnauthenticated.collectLatest {
-            // Clear workspace context on logout
+            // Clear workspace context and navigation service on logout
             workspaceManager.clearWorkspaceContext()
+            globalNavigationManager.onWorkspaceCleared()
             navController.navigate(Route.Login) {
                 popUpTo(0)
             }
@@ -103,7 +114,7 @@ fun AppNavigation(
                         navController.navigate(com.ampairs.customer.ui.CustomerDetailsRoute(customerId))
                     },
                     onCreateCustomer = {
-                        navController.navigate(com.ampairs.customer.ui.CustomerCreateRoute())
+                        navController.navigate(CustomerCreateRoute())
                     },
                     modifier = Modifier.padding(paddingValues)
                 )
@@ -163,7 +174,7 @@ fun AppNavigation(
  * Navigate to a menu item based on its route path or module code
  * Maps menu item paths to type-safe navigation routes
  */
-private fun navigateToMenuItem(navController: androidx.navigation.NavHostController, route: String) {
+fun navigateToMenuItem(navController: androidx.navigation.NavHostController, route: String) {
     when {
         // Handle legacy module codes first (backward compatibility)
         route == "customer" -> navController.navigate(Route.Customer)

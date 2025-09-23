@@ -3,7 +3,7 @@ package com.ampairs.customer.ui
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
@@ -27,7 +27,7 @@ data class CustomerCreateRoute(val customerId: String? = null)
 object StateListRoute
 
 
-fun NavGraphBuilder.customerNavigation(navController: NavController) {
+fun NavGraphBuilder.customerNavigation(navController: NavHostController) {
     composable<CustomerListRoute> {
         AppScreenWithHeader(
             navController = navController,

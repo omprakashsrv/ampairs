@@ -21,10 +21,13 @@ import com.ampairs.workspace.api.model.AvailableModule
 import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.workspace.viewmodel.WorkspaceModulesViewModel
 import com.ampairs.workspace.navigation.DynamicModuleNavigation
+import com.ampairs.workspace.navigation.NavigationPattern
+import com.ampairs.workspace.navigation.PlatformNavigationDetector
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 import androidx.navigation.NavController
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
+import com.ampairs.workspace.navigation.GlobalNavigationManager
 
 /**
  * Workspace modules screen showing active modules
@@ -49,15 +52,20 @@ fun WorkspaceModulesScreen(
     val errorMessage by viewModel.errorMessage.collectAsState()
     val activeModules by viewModel.activeModules.collectAsState()
 
-    // Initialize module registry and load data on first composition
-    LaunchedEffect(Unit) {
-      // After initial load, try to refresh in background
-        viewModel.loadInstalledModules() // Load modules using Store5
+    // Initialize module registry and load data on first composition ONLY if workspaceId is provided
+    LaunchedEffect(workspaceId) {
+        if (workspaceId.isNotEmpty()) {
+            // Load modules only once per workspace
+            viewModel.loadInstalledModules() // Load modules using Store5
+        }
     }
 
-    // Pass navigationService to callback for desktop menu bar integration
-    LaunchedEffect(viewModel.navigationService) {
-        onNavigationServiceReady?.invoke(viewModel.navigationService)
+    // Use global navigation manager for desktop menu bar integration
+    val globalNavigationManager = GlobalNavigationManager.getInstance()
+    val globalNavigationService by globalNavigationManager.navigationService.collectAsState()
+
+    LaunchedEffect(globalNavigationService) {
+        onNavigationServiceReady?.invoke(globalNavigationService)
     }
 
     Column(
@@ -89,19 +97,23 @@ fun WorkspaceModulesScreen(
                 CircularProgressIndicator()
             }
         } else {
-            // Dynamic Module Navigation
-            DynamicModuleNavigation(
-                navigationService = viewModel.navigationService,
-                onNavigate = { route ->
-                    // Extract module code from route and navigate
-                    val moduleCode = extractModuleCodeFromRoute(route)
-                    if (moduleCode != null) {
-                        onModuleSelected(moduleCode)
+            // Only show DynamicModuleNavigation on desktop platforms (menu bar)
+            // On mobile platforms, navigation is handled by the slide drawer
+            if (PlatformNavigationDetector.getNavigationPattern() == NavigationPattern.MENU_BAR) {
+                globalNavigationService?.let { service ->
+                    DynamicModuleNavigation(
+                        navigationService = service,
+                    onNavigate = { route ->
+                        // Extract module code from route and navigate
+                        val moduleCode = extractModuleCodeFromRoute(route)
+                        if (moduleCode != null) {
+                            onModuleSelected(moduleCode)
+                        }
                     }
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
+            }
 
             // Active modules list (legacy view)
             if (activeModules.isEmpty()) {
@@ -111,7 +123,6 @@ fun WorkspaceModulesScreen(
                     onInstallClick = { showModuleStore = true }
                 )
             } else {
-
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -123,7 +134,8 @@ fun WorkspaceModulesScreen(
                             module = module,
                             onSelect = { moduleCode ->
                                 // Try to navigate using module registry first
-                                val navigationSuccess = tryNavigateToModule(navController, moduleCode)
+                                val navigationSuccess =
+                                    tryNavigateToModule(navController, moduleCode)
                                 if (!navigationSuccess) {
                                     // Show update dialog for missing module implementation
                                     missingModuleName = module.name

@@ -32,6 +32,7 @@ import com.ampairs.workspace.domain.Workspace
 import com.ampairs.workspace.domain.UserInvitation
 import com.ampairs.workspace.viewmodel.WorkspaceListViewModel
 import com.ampairs.workspace.integration.WorkspaceContextIntegration
+import com.ampairs.workspace.navigation.GlobalNavigationManager
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -314,6 +315,9 @@ fun WorkspaceListScreen(
 
                                         // Set workspace context for both business logic and database
                                         WorkspaceContextIntegration.setWorkspaceFromDomain(workspace)
+
+                                        // Initialize global navigation service for this workspace
+                                        GlobalNavigationManager.getInstance().onWorkspaceSelected()
 
                                         onWorkspaceSelected(workspace.id)
                                     }
