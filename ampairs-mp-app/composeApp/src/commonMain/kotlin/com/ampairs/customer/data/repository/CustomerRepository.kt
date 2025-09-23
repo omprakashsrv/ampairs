@@ -9,8 +9,6 @@ import com.ampairs.customer.domain.CustomerListItem
 import com.ampairs.customer.domain.toListItem
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 
 class CustomerRepository(
     private val customerDao: CustomerDao,
@@ -37,37 +35,42 @@ class CustomerRepository(
     }
 
     suspend fun createCustomer(customer: Customer): Result<Customer> {
-        return try {
-            // Create on server first
+        // Offline-first: Save to database first with unsynced status
+        customerDao.insertCustomer(customer.toEntity())
+
+        // Try to sync to server in background
+        try {
             val serverCustomer = customerApi.createCustomer(customer)
 
-            // Save to local database
-            customerDao.insertCustomer(serverCustomer.toEntity())
+            // Update local record with server data and mark as synced
+            val syncedEntity = serverCustomer.toEntity().copy(synced = true)
+            customerDao.updateCustomer(syncedEntity)
 
-            Result.success(serverCustomer)
+            return Result.success(serverCustomer)
         } catch (e: Exception) {
-            // Save locally if server fails (offline mode)
-            val localCustomer = customer.copy(
-                uid = generateLocalId(),
-            )
-            customerDao.insertCustomer(localCustomer.toEntity())
-            Result.success(localCustomer)
+            // If server sync fails, customer is already saved locally as unsynced
+            // It will be synced later via syncCustomers()
+            return Result.success(customer)
         }
     }
 
     suspend fun updateCustomer(customer: Customer): Result<Customer> {
-        return try {
-            // Update on server first
+        // Offline-first: Update database first with unsynced status
+        customerDao.updateCustomer(customer.toEntity())
+
+        // Try to sync to server in background
+        try {
             val serverCustomer = customerApi.updateCustomer(customer)
 
-            // Update local database
-            customerDao.updateCustomer(serverCustomer.toEntity())
+            // Update local record with server data and mark as synced
+            val syncedEntity = serverCustomer.toEntity().copy(synced = true)
+            customerDao.updateCustomer(syncedEntity)
 
-            Result.success(serverCustomer)
+            return Result.success(serverCustomer)
         } catch (e: Exception) {
-            // Update locally if server fails (offline mode)
-            customerDao.updateCustomer(customer.toEntity())
-            Result.success(customer)
+            // If server sync fails, customer is already updated locally as unsynced
+            // It will be synced later via syncCustomers()
+            return Result.success(customer)
         }
     }
 
@@ -95,27 +98,34 @@ class CustomerRepository(
             val lastSync = getLastSyncTime()
             val serverCustomers = customerApi.getCustomers(lastSync)
 
-            // Insert/update customers from server
-            val entities = serverCustomers.map { it.toEntity() }
+            // Insert/update customers from server and mark as synced
+            val entities = serverCustomers.map { it.toEntity().copy(synced = true) }
             customerDao.insertCustomers(entities)
 
             // Sync unsynced local customers to server
             val unsyncedCustomers = customerDao.getUnsyncedCustomers()
             for (entity in unsyncedCustomers) {
                 val customer = entity.toDomain()
-                if (entity.id.startsWith("local_")) {
-                    // Create new customer on server
-                    val serverCustomer = customerApi.createCustomer(customer)
-                    customerDao.deleteCustomer(entity.id) // Remove local temp
-                    customerDao.insertCustomer(serverCustomer.toEntity())
-                } else {
-                    // Update existing customer on server
-                    customerApi.updateCustomer(customer)
-                    customerDao.markAsSynced(entity.id)
+                try {
+                    if (entity.id.startsWith("local_")) {
+                        // Legacy local IDs - create new customer on server
+                        val serverCustomer = customerApi.createCustomer(customer)
+                        customerDao.deleteCustomer(entity.id) // Remove local temp
+                        customerDao.insertCustomer(serverCustomer.toEntity().copy(synced = true))
+                    } else {
+                        // Proper UIDs - update existing customer on server
+                        val serverCustomer = customerApi.updateCustomer(customer)
+                        // Update with server response and mark as synced
+                        customerDao.updateCustomer(serverCustomer.toEntity().copy(synced = true))
+                    }
+                } catch (syncError: Exception) {
+                    // Continue with other customers if one fails
+                    // Failed customer remains unsynced for next attempt
+                    continue
                 }
             }
 
-            Result.success(serverCustomers.size)
+            Result.success(serverCustomers.size + unsyncedCustomers.size)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -133,13 +143,9 @@ class CustomerRepository(
         return customerDao.getUniquePincodes()
     }
 
-    private suspend fun getLastSyncTime(): Long {
+    private fun getLastSyncTime(): Long {
         // Implementation to get last sync time from preferences or metadata
         return 0L // Placeholder
     }
 
-    @OptIn(ExperimentalTime::class)
-    private fun generateLocalId(): String {
-        return "local_${Clock.System.now().toEpochMilliseconds()}_${(1000..9999).random()}"
-    }
 }
