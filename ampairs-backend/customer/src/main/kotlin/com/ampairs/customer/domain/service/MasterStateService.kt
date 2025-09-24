@@ -1,5 +1,6 @@
 package com.ampairs.customer.domain.service
 
+import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.customer.domain.model.MasterState
 import com.ampairs.customer.domain.model.State
 import com.ampairs.customer.repository.MasterStateRepository
@@ -117,8 +118,11 @@ class MasterStateService(
      * Get states available for import (not yet imported to workspace)
      */
     @Transactional(readOnly = true)
-    fun getAvailableStatesForImport(workspaceId: String): List<MasterState> {
-        val importedStateCodes = stateRepository.findByOwnerId(workspaceId)
+    fun getAvailableStatesForImport(): List<MasterState> {
+        val currentTenant = TenantContextHolder.getCurrentTenant()
+            ?: throw IllegalStateException("No tenant context available")
+
+        val importedStateCodes = stateRepository.findByOwnerId(currentTenant)
             .mapNotNull { it.masterStateCode }
             .toSet()
 
