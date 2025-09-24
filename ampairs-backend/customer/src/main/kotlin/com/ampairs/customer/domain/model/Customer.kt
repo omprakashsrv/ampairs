@@ -19,9 +19,11 @@ class Customer : OwnableBaseDomain() {
     @Column(name = "name", nullable = false, length = 255)
     var name: String = ""
 
-    @Column(name = "customer_type", nullable = false, length = 20)
-    @Enumerated(EnumType.STRING)
-    var customerType: CustomerType = CustomerType.RETAIL
+    @Column(name = "customer_type", nullable = false, length = 100)
+    var customerType: String = ""
+
+    @Column(name = "customer_group", nullable = false, length = 100)
+    var customerGroup: String = ""
 
     @Column(name = "phone", nullable = false, length = 20)
     var phone: String = ""
@@ -134,12 +136,3 @@ class Customer : OwnableBaseDomain() {
 
 }
 
-/**
- * Customer types for retail businesses
- */
-enum class CustomerType(val displayName: String) {
-    RETAIL("Retail Customer"),
-    WHOLESALE("Wholesale Customer"),
-    DISTRIBUTOR("Distributor"),
-    CORPORATE("Corporate Customer")
-}

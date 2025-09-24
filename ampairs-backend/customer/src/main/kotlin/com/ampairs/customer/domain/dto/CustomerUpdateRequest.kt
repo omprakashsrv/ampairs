@@ -3,7 +3,6 @@ package com.ampairs.customer.domain.dto
 import com.ampairs.core.domain.model.Address
 import com.ampairs.core.validation.*
 import com.ampairs.customer.domain.model.Customer
-import com.ampairs.customer.domain.model.CustomerType
 import jakarta.validation.constraints.*
 import org.springframework.data.geo.Point
 
@@ -41,7 +40,9 @@ data class CustomerUpdateRequest(
     @field:ValidPincode
     var pincode: String?,
 
-    var customerType: CustomerType?,
+    var customerType: String?,
+
+    var customerGroup: String?,
 
     var businessName: String?,
 
@@ -111,7 +112,8 @@ fun CustomerUpdateRequest.toCustomer(): Customer {
     customer.landline = this.landline ?: ""
     customer.email = this.email ?: ""
     customer.pincode = this.pincode ?: ""
-    customer.customerType = this.customerType ?: CustomerType.RETAIL
+    customer.customerType = this.customerType ?: "RETAIL"
+    customer.customerGroup = this.customerGroup ?: "REGULAR"
     customer.gstNumber = this.gstNumber
     customer.panNumber = this.panNumber
     customer.creditLimit = this.creditLimit ?: 0.0

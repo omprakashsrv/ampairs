@@ -4,7 +4,6 @@ import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.customer.domain.dto.*
 import com.ampairs.customer.domain.model.Customer
-import com.ampairs.customer.domain.model.CustomerType
 import com.ampairs.customer.domain.service.CustomerService
 import jakarta.validation.Valid
 import org.springframework.beans.factory.annotation.Autowired
@@ -75,7 +74,7 @@ class CustomerController @Autowired constructor(
     fun createCustomer(@RequestBody request: CustomerCreateRequest): ApiResponse<CustomerResponse> {
         val customer = Customer().apply {
             name = request.name
-            customerType = request.customerType ?: CustomerType.RETAIL
+            customerType = request.customerType ?: "RETAIL"
             phone = request.phone ?: ""
             email = request.email ?: ""
             gstNumber = request.gstNumber
@@ -108,13 +107,7 @@ class CustomerController @Autowired constructor(
         @RequestParam("sort", defaultValue = "name") sort: String,
         @RequestParam("direction", defaultValue = "ASC") direction: String
     ): ApiResponse<Map<String, Any>> {
-        val customerType = customerTypeStr?.let {
-            try {
-                CustomerType.valueOf(it.uppercase())
-            } catch (e: Exception) {
-                null
-            }
-        }
+        val customerType = customerTypeStr?.uppercase()
 
         val sortDirection = if (direction.uppercase() == "DESC") Sort.Direction.DESC else Sort.Direction.ASC
         val pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort))
@@ -213,7 +206,7 @@ class CustomerController @Autowired constructor(
  */
 data class CustomerCreateRequest(
     val name: String,
-    val customerType: CustomerType? = null,
+    val customerType: String? = null,
     val phone: String? = null,
     val email: String? = null,
     val gstNumber: String? = null,

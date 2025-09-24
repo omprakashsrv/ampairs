@@ -2,7 +2,6 @@ package com.ampairs.customer.domain.dto
 
 import com.ampairs.core.domain.model.Address
 import com.ampairs.customer.domain.model.Customer
-import com.ampairs.customer.domain.model.CustomerType
 import java.time.LocalDateTime
 
 data class CustomerResponse(
@@ -12,7 +11,8 @@ data class CustomerResponse(
     var phone: String,
     var landline: String,
     var email: String?,
-    var customerType: CustomerType,
+    var customerType: String,
+    var customerGroup: String,
     var gstNumber: String?,
     var panNumber: String?,
     var creditLimit: Double,
@@ -52,6 +52,7 @@ fun Customer.asCustomerResponse(): CustomerResponse {
         landline = this.landline,
         email = this.email,
         customerType = this.customerType,
+        customerGroup = this.customerGroup,
         gstNumber = this.gstNumber,
         panNumber = this.panNumber,
         creditLimit = this.creditLimit,

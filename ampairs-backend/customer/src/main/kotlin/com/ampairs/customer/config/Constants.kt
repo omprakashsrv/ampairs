@@ -6,5 +6,7 @@ interface Constants {
         const val CUSTOMER_PREFIX = "CUS"
         const val STATE_PREFIX = "STA"
         const val MASTER_STATE_PREFIX = "MST"
+        const val MASTER_CUSTOMER_TYPE_PREFIX = "MCT"
+        const val MASTER_CUSTOMER_GROUP_PREFIX = "MCG"
     }
 }

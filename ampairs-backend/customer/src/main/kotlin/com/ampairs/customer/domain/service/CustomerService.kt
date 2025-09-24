@@ -1,7 +1,6 @@
 package com.ampairs.customer.domain.service
 
 import com.ampairs.customer.domain.model.Customer
-import com.ampairs.customer.domain.model.CustomerType
 import com.ampairs.customer.domain.model.State
 import com.ampairs.customer.repository.CustomerPagingRepository
 import com.ampairs.customer.repository.CustomerRepository
@@ -135,7 +134,7 @@ class CustomerService @Autowired constructor(
 
     fun searchCustomers(
         searchTerm: String?,
-        customerType: CustomerType?,
+        customerType: String?,
         city: String?,
         state: String?,
         hasCredit: Boolean?,
