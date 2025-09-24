@@ -94,43 +94,6 @@ class CustomerController @Autowired constructor(
         return ApiResponse.success(createdCustomer.asCustomerResponse())
     }
 
-    @GetMapping("/list")
-    fun getCustomerList(
-        @RequestParam("search", required = false) search: String?,
-        @RequestParam("customer_type", required = false) customerTypeStr: String?,
-        @RequestParam("city", required = false) city: String?,
-        @RequestParam("state", required = false) state: String?,
-        @RequestParam("has_credit", required = false) hasCredit: Boolean?,
-        @RequestParam("has_outstanding", required = false) hasOutstanding: Boolean?,
-        @RequestParam("page", defaultValue = "0") page: Int,
-        @RequestParam("size", defaultValue = "20") size: Int,
-        @RequestParam("sort", defaultValue = "name") sort: String,
-        @RequestParam("direction", defaultValue = "ASC") direction: String
-    ): ApiResponse<Map<String, Any>> {
-        val customerType = customerTypeStr?.uppercase()
-
-        val sortDirection = if (direction.uppercase() == "DESC") Sort.Direction.DESC else Sort.Direction.ASC
-        val pageable = PageRequest.of(page, size, Sort.by(sortDirection, sort))
-
-        val customerPage = customerService.searchCustomers(
-            search, customerType, city, state, hasCredit, hasOutstanding, pageable
-        )
-
-        val response = mapOf(
-            "customers" to customerPage.content.map { it.asCustomerResponse() },
-            "pagination" to mapOf(
-                "page" to page,
-                "size" to size,
-                "total_pages" to customerPage.totalPages,
-                "total_elements" to customerPage.totalElements,
-                "has_next" to customerPage.hasNext(),
-                "has_previous" to customerPage.hasPrevious()
-            )
-        )
-
-        return ApiResponse.success(response)
-    }
-
     @GetMapping("/{customerId}")
     fun getCustomer(@PathVariable customerId: String): ApiResponse<CustomerResponse> {
         val customer = customerService.getCustomers(null).find { it.uid == customerId }

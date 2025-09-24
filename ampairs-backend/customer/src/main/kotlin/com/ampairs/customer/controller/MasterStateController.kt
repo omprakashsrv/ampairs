@@ -1,7 +1,9 @@
 package com.ampairs.customer.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
-import com.ampairs.customer.domain.model.MasterState
+import com.ampairs.customer.domain.dto.MasterStateResponse
+import com.ampairs.customer.domain.dto.asMasterStateResponse
+import com.ampairs.customer.domain.dto.asMasterStateResponses
 import com.ampairs.customer.domain.service.MasterStateService
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -20,18 +22,18 @@ class MasterStateController(
      * Get all active master states
      */
     @GetMapping("")
-    fun getAllStates(): ApiResponse<List<MasterState>> {
+    fun getAllStates(): ApiResponse<List<MasterStateResponse>> {
         val states = masterStateService.getAllActiveStates()
-        return ApiResponse.success(states)
+        return ApiResponse.success(states.asMasterStateResponses())
     }
 
     /**
      * Get states by country
      */
     @GetMapping("/country/{countryCode}")
-    fun getStatesByCountry(@PathVariable countryCode: String): ApiResponse<List<MasterState>> {
+    fun getStatesByCountry(@PathVariable countryCode: String): ApiResponse<List<MasterStateResponse>> {
         val states = masterStateService.getStatesByCountry(countryCode.uppercase())
-        return ApiResponse.success(states)
+        return ApiResponse.success(states.asMasterStateResponses())
     }
 
 
@@ -39,18 +41,18 @@ class MasterStateController(
      * Search states by keyword
      */
     @GetMapping("/search")
-    fun searchStates(@RequestParam("q") searchTerm: String): ApiResponse<List<MasterState>> {
+    fun searchStates(@RequestParam("q") searchTerm: String): ApiResponse<List<MasterStateResponse>> {
         val states = masterStateService.searchStates(searchTerm)
-        return ApiResponse.success(states)
+        return ApiResponse.success(states.asMasterStateResponses())
     }
 
     /**
      * Get Indian states with GST codes
      */
     @GetMapping("/indian-gst")
-    fun getIndianStatesWithGst(): ApiResponse<List<MasterState>> {
+    fun getIndianStatesWithGst(): ApiResponse<List<MasterStateResponse>> {
         val states = masterStateService.getIndianStatesWithGst()
-        return ApiResponse.success(states)
+        return ApiResponse.success(states.asMasterStateResponses())
     }
 
     /**
@@ -67,11 +69,11 @@ class MasterStateController(
      * Get master state by code
      */
     @GetMapping("/{stateCode}")
-    fun getStateByCode(@PathVariable stateCode: String): ApiResponse<MasterState> {
+    fun getStateByCode(@PathVariable stateCode: String): ApiResponse<MasterStateResponse> {
         val state = masterStateService.findByStateCode(stateCode.uppercase())
             ?: return ApiResponse.error("Master state not found", "MASTER_STATE_NOT_FOUND")
 
-        return ApiResponse.success(state)
+        return ApiResponse.success(state.asMasterStateResponse())
     }
 
     /**
@@ -114,20 +116,19 @@ class MasterStateController(
      * Get states available for import to workspace
      */
     @GetMapping("/available-for-import")
-    fun getAvailableStatesForImport(
-        @RequestParam("workspace_id") workspaceId: String
-    ): ApiResponse<List<MasterState>> {
-        val states = masterStateService.getAvailableStatesForImport(workspaceId)
-        return ApiResponse.success(states)
+    fun getAvailableStatesForImport(): ApiResponse<List<MasterStateResponse>> {
+        // Remove hardcoded workspace_id parameter - use tenant context instead
+        val states = masterStateService.getAvailableStatesForImport()
+        return ApiResponse.success(states.asMasterStateResponses())
     }
 
     /**
      * Find states by postal code
      */
     @GetMapping("/by-postal-code")
-    fun findStatesByPostalCode(@RequestParam("postal_code") postalCode: String): ApiResponse<List<MasterState>> {
+    fun findStatesByPostalCode(@RequestParam("postal_code") postalCode: String): ApiResponse<List<MasterStateResponse>> {
         val states = masterStateService.findStatesByPostalCode(postalCode)
-        return ApiResponse.success(states)
+        return ApiResponse.success(states.asMasterStateResponses())
     }
 
     /**

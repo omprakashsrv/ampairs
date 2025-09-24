@@ -120,6 +120,46 @@ fun findWithRelations(): EntityName?
 - **Consistent format**: All endpoints return `{"success": true, "data": T, "timestamp": "..."}`
 - **Global error handling**: Exception handler returns `ApiResponse` with error details
 
+#### **DTO Pattern for Controllers**
+- **NEVER expose JPA entities directly** in API responses - creates security risks and tight coupling
+- **Always use Response DTOs** for API outputs - only expose fields clients need
+- **Always use Request DTOs** for API inputs - proper validation and input sanitization
+- **Pattern**: Entity → Response DTO via extension functions (`entity.asEntityResponse()`)
+
+**Required DTO Structure:**
+```kotlin
+// Response DTO - in domain/dto/ package
+data class EntityResponse(
+    val uid: String,
+    val name: String,
+    // ... only API-relevant fields, no internal fields
+)
+
+// Request DTOs - in domain/dto/ package
+data class EntityCreateRequest(
+    @field:NotBlank val name: String,
+    // ... validation annotations
+)
+
+// Extension functions - in same DTO file
+fun Entity.asEntityResponse(): EntityResponse = EntityResponse(/*...*/)
+fun EntityCreateRequest.toEntity(): Entity = Entity().apply {/*...*/}
+```
+
+**Controller Implementation:**
+```kotlin
+@GetMapping
+fun getEntities(): ApiResponse<List<EntityResponse>> {
+    return ApiResponse.success(service.findAll().asEntityResponses())
+}
+
+@PostMapping
+fun create(@Valid request: EntityCreateRequest): ApiResponse<EntityResponse> {
+    val created = service.create(request.toEntity())
+    return ApiResponse.success(created.asEntityResponse())
+}
+```
+
 ### **Multi-Tenant Architecture Patterns**
 
 #### **@TenantId Best Practices**
@@ -227,3 +267,4 @@ data class ApiResponse<T>(
 6. **@TenantId at controller level** - set tenant context before repository injection
 7. **Native SQL for cross-tenant** - bypass @TenantId filtering when needed
 8. **Single security approach** - use either @TenantId OR workspaceId parameters, not both
+9. **DTO pattern required** - never expose JPA entities in controllers, always use proper DTOs

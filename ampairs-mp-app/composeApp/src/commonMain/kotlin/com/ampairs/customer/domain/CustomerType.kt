@@ -15,14 +15,6 @@ data class CustomerType(
     val updatedAt: String? = null
 )
 
-@Serializable
-data class MasterCustomerType(
-    val id: String,
-    val name: String,
-    val description: String? = null,
-    val active: Boolean = true
-)
-
 data class CustomerTypeListItem(
     val id: String,
     val name: String,
@@ -31,13 +23,6 @@ data class CustomerTypeListItem(
 )
 
 fun CustomerType.toListItem(): CustomerTypeListItem = CustomerTypeListItem(
-    id = id,
-    name = name,
-    description = description,
-    active = active
-)
-
-fun MasterCustomerType.toCustomerType(): CustomerType = CustomerType(
     id = id,
     name = name,
     description = description,

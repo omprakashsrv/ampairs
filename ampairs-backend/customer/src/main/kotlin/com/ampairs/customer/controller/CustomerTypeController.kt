@@ -1,7 +1,12 @@
 package com.ampairs.customer.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
-import com.ampairs.customer.domain.model.CustomerType
+import com.ampairs.customer.domain.dto.CustomerTypeCreateRequest
+import com.ampairs.customer.domain.dto.CustomerTypeResponse
+import com.ampairs.customer.domain.dto.CustomerTypeUpdateRequest
+import com.ampairs.customer.domain.dto.asCustomerTypeResponse
+import com.ampairs.customer.domain.dto.asCustomerTypeResponses
+import com.ampairs.customer.domain.dto.toCustomerType
 import com.ampairs.customer.domain.service.CustomerTypeService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
@@ -20,38 +25,38 @@ class CustomerTypeController(
      * Get all active customer types for current workspace
      */
     @GetMapping("")
-    fun getAllCustomerTypes(): ApiResponse<List<CustomerType>> {
+    fun getAllCustomerTypes(): ApiResponse<List<CustomerTypeResponse>> {
         val customerTypes = customerTypeService.getAllActiveCustomerTypes()
-        return ApiResponse.success(customerTypes)
+        return ApiResponse.success(customerTypes.asCustomerTypeResponses())
     }
 
     /**
      * Search customer types by keyword within current workspace
      */
     @GetMapping("/search")
-    fun searchCustomerTypes(@RequestParam("q") searchTerm: String): ApiResponse<List<CustomerType>> {
+    fun searchCustomerTypes(@RequestParam("q") searchTerm: String): ApiResponse<List<CustomerTypeResponse>> {
         val customerTypes = customerTypeService.searchCustomerTypes(searchTerm)
-        return ApiResponse.success(customerTypes)
+        return ApiResponse.success(customerTypes.asCustomerTypeResponses())
     }
 
     /**
      * Get customer types that allow credit within current workspace
      */
     @GetMapping("/with-credit")
-    fun getCustomerTypesWithCredit(): ApiResponse<List<CustomerType>> {
+    fun getCustomerTypesWithCredit(): ApiResponse<List<CustomerTypeResponse>> {
         val customerTypes = customerTypeService.getCustomerTypesWithCredit()
-        return ApiResponse.success(customerTypes)
+        return ApiResponse.success(customerTypes.asCustomerTypeResponses())
     }
 
     /**
      * Get customer type by code within current workspace
      */
     @GetMapping("/{typeCode}")
-    fun getCustomerTypeByCode(@PathVariable typeCode: String): ApiResponse<CustomerType> {
+    fun getCustomerTypeByCode(@PathVariable typeCode: String): ApiResponse<CustomerTypeResponse> {
         val customerType = customerTypeService.findByTypeCode(typeCode.uppercase())
             ?: return ApiResponse.error("Customer type not found", "CUSTOMER_TYPE_NOT_FOUND")
 
-        return ApiResponse.success(customerType)
+        return ApiResponse.success(customerType.asCustomerTypeResponse())
     }
 
     /**
@@ -59,9 +64,10 @@ class CustomerTypeController(
      */
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
-    fun createCustomerType(@RequestBody @Valid customerType: CustomerType): ApiResponse<CustomerType> {
+    fun createCustomerType(@RequestBody @Valid request: CustomerTypeCreateRequest): ApiResponse<CustomerTypeResponse> {
+        val customerType = request.toCustomerType()
         val createdType = customerTypeService.createCustomerType(customerType)
-        return ApiResponse.success(createdType)
+        return ApiResponse.success(createdType.asCustomerTypeResponse())
     }
 
     /**
@@ -70,12 +76,24 @@ class CustomerTypeController(
     @PutMapping("/{typeCode}")
     fun updateCustomerType(
         @PathVariable typeCode: String,
-        @RequestBody @Valid updates: CustomerType
-    ): ApiResponse<CustomerType> {
-        val updatedType = customerTypeService.updateCustomerType(typeCode.uppercase(), updates)
+        @RequestBody @Valid request: CustomerTypeUpdateRequest
+    ): ApiResponse<CustomerTypeResponse> {
+        val existingType = customerTypeService.findByTypeCode(typeCode.uppercase())
             ?: return ApiResponse.error("Customer type not found", "CUSTOMER_TYPE_NOT_FOUND")
 
-        return ApiResponse.success(updatedType)
+        // Apply updates to existing entity
+        request.name?.let { existingType.name = it }
+        request.description?.let { existingType.description = it }
+        request.displayOrder?.let { existingType.displayOrder = it }
+        request.active?.let { existingType.active = it }
+        request.defaultCreditLimit?.let { existingType.defaultCreditLimit = it }
+        request.defaultCreditDays?.let { existingType.defaultCreditDays = it }
+        request.metadata?.let { existingType.metadata = it }
+
+        val updatedType = customerTypeService.updateCustomerType(typeCode.uppercase(), existingType)
+            ?: return ApiResponse.error("Failed to update customer type", "UPDATE_FAILED")
+
+        return ApiResponse.success(updatedType.asCustomerTypeResponse())
     }
 
     /**

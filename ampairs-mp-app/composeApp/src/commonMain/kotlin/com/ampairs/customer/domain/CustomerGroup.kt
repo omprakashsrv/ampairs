@@ -17,16 +17,6 @@ data class CustomerGroup(
     val updatedAt: String? = null
 )
 
-@Serializable
-data class MasterCustomerGroup(
-    val id: String,
-    val name: String,
-    val description: String? = null,
-    @SerialName("discount_percentage")
-    val discountPercentage: Double? = null,
-    val active: Boolean = true
-)
-
 data class CustomerGroupListItem(
     val id: String,
     val name: String,
@@ -36,14 +26,6 @@ data class CustomerGroupListItem(
 )
 
 fun CustomerGroup.toListItem(): CustomerGroupListItem = CustomerGroupListItem(
-    id = id,
-    name = name,
-    description = description,
-    discountPercentage = discountPercentage,
-    active = active
-)
-
-fun MasterCustomerGroup.toCustomerGroup(): CustomerGroup = CustomerGroup(
     id = id,
     name = name,
     description = description,
