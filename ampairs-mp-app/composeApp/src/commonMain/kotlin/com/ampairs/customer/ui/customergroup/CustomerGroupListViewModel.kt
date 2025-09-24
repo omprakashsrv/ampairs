@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.customer.data.repository.CustomerGroupRepository
 import com.ampairs.customer.domain.CustomerGroup
-import com.ampairs.customer.domain.MasterCustomerGroup
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.mobilenativefoundation.store.store5.StoreReadResponse
@@ -15,7 +14,7 @@ data class CustomerGroupListUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val searchQuery: String = "",
-    val availableCustomerGroupsForImport: List<MasterCustomerGroup> = emptyList(),
+    val availableCustomerGroupsForImport: List<CustomerGroup> = emptyList(),
     val isLoadingImportCustomerGroups: Boolean = false
 )
 
@@ -144,11 +143,11 @@ class CustomerGroupListViewModel(
         }
     }
 
-    fun importCustomerGroup(masterCustomerGroup: MasterCustomerGroup) {
+    fun importCustomerGroup(customerGroup: CustomerGroup) {
         viewModelScope.launch {
             _uiState.update { it.copy(error = null) }
 
-            val result = customerGroupRepository.importCustomerGroup(masterCustomerGroup)
+            val result = customerGroupRepository.importCustomerGroup(customerGroup)
             if (result.isFailure) {
                 _uiState.update {
                     it.copy(error = result.exceptionOrNull()?.message ?: "Failed to import customer group")
@@ -160,11 +159,11 @@ class CustomerGroupListViewModel(
         }
     }
 
-    fun bulkImportCustomerGroups(masterCustomerGroups: List<MasterCustomerGroup>) {
+    fun bulkImportCustomerGroups(customerGroups: List<CustomerGroup>) {
         viewModelScope.launch {
             _uiState.update { it.copy(error = null) }
 
-            val result = customerGroupRepository.bulkImportCustomerGroups(masterCustomerGroups)
+            val result = customerGroupRepository.bulkImportCustomerGroups(customerGroups)
             if (result.isFailure) {
                 _uiState.update {
                     it.copy(error = result.exceptionOrNull()?.message ?: "Failed to import customer groups")

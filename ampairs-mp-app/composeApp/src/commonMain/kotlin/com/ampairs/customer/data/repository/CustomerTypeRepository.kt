@@ -1,6 +1,6 @@
 package com.ampairs.customer.data.repository
 
-import com.ampairs.common.util.UidGenerator
+import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.customer.data.api.CustomerTypeApi
 import com.ampairs.customer.data.db.CustomerTypeDao
 import com.ampairs.customer.data.db.toCustomerType
@@ -8,8 +8,6 @@ import com.ampairs.customer.data.db.toEntity
 import com.ampairs.customer.domain.CustomerType
 import com.ampairs.customer.domain.CustomerTypeKey
 import com.ampairs.customer.domain.CustomerTypeStore
-import com.ampairs.customer.domain.MasterCustomerType
-import com.ampairs.customer.domain.toCustomerType
 import com.ampairs.customer.util.CustomerConstants
 import com.ampairs.customer.util.CustomerLogger
 import kotlinx.coroutines.flow.Flow
@@ -85,9 +83,9 @@ class CustomerTypeRepository(
             // 2. Try to sync with server
             try {
                 val response = customerTypeApi.createCustomerType(customerTypeWithUid)
-                if (response.success && response.data != null) {
+                if (response.data != null && response.error == null) {
                     // Server success - correct UID if needed and mark as synced
-                    val serverCustomerType = response.data
+                    val serverCustomerType = response.data!!
                     val finalCustomerType = if (serverCustomerType.id != uid) {
                         serverCustomerType.copy(id = uid) // Keep local UID consistent
                     } else {
@@ -121,9 +119,9 @@ class CustomerTypeRepository(
             // 2. Try to sync with server
             try {
                 val response = customerTypeApi.updateCustomerType(customerType.id, customerType)
-                if (response.success && response.data != null) {
-                    customerTypeDao.insertCustomerType(response.data.toEntity().copy(synced = true))
-                    Result.success(response.data)
+                if (response.data != null && response.error == null) {
+                    customerTypeDao.insertCustomerType(response.data!!.toEntity().copy(synced = true))
+                    Result.success(response.data!!)
                 } else {
                     Result.success(customerType)
                 }
@@ -160,19 +158,19 @@ class CustomerTypeRepository(
     }
 
     /**
-     * Import customer types from master list
+     * Import customer types from available list
      */
-    suspend fun importCustomerType(masterCustomerType: MasterCustomerType): Result<CustomerType> {
-        return createCustomerType(masterCustomerType.toCustomerType())
+    suspend fun importCustomerType(customerType: CustomerType): Result<CustomerType> {
+        return createCustomerType(customerType)
     }
 
     /**
      * Bulk import customer types
      */
-    suspend fun bulkImportCustomerTypes(masterCustomerTypes: List<MasterCustomerType>): Result<List<CustomerType>> {
+    suspend fun bulkImportCustomerTypes(customerTypes: List<CustomerType>): Result<List<CustomerType>> {
         return try {
-            val results = masterCustomerTypes.map { masterType ->
-                importCustomerType(masterType)
+            val results = customerTypes.map { customerType ->
+                importCustomerType(customerType)
             }
 
             val successfulImports = results.mapNotNull { result ->
@@ -196,13 +194,13 @@ class CustomerTypeRepository(
     /**
      * Get available customer types for import
      */
-    suspend fun getAvailableCustomerTypesForImport(): Result<List<MasterCustomerType>> {
+    suspend fun getAvailableCustomerTypesForImport(): Result<List<CustomerType>> {
         return try {
-            val response = customerTypeApi.getMasterCustomerTypes()
-            if (response.success && response.data != null) {
+            val response = customerTypeApi.getAvailableCustomerTypesForImport()
+            if (response.data != null && response.error == null) {
                 // Filter out already imported customer types
                 val existingTypes = customerTypeDao.getAllCustomerTypes().first().map { it.name }
-                val availableTypes = response.data.filter { it.name !in existingTypes }
+                val availableTypes = response.data!!.filter { it.name !in existingTypes }
                 Result.success(availableTypes)
             } else {
                 Result.failure(Exception(response.error?.message ?: "Failed to load available customer types"))

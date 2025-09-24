@@ -11,7 +11,6 @@ import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.CustomerAddress
 import com.ampairs.customer.domain.CustomerKey
 import com.ampairs.customer.domain.CustomerStore
-import com.ampairs.customer.domain.CustomerType
 import com.ampairs.customer.domain.State
 import com.ampairs.customer.domain.StateKey
 import com.ampairs.customer.domain.StateStore
@@ -42,7 +41,10 @@ data class CustomerFormState(
     val phone: String = "",
     val landline: String = "",
     val countryCode: Int = 91,
-    val customerType: CustomerType = CustomerType.RETAIL,
+    val customerType: String = "",
+    val customerTypeName: String = "",
+    val customerGroup: String = "",
+    val customerGroupName: String = "",
     val gstNumber: String = "",
     val panNumber: String = "",
     val creditLimit: Double = 0.0,
@@ -98,7 +100,8 @@ data class CustomerFormState(
             phone = phone.trim().takeIf { it.isNotBlank() },
             landline = landline.trim().takeIf { it.isNotBlank() },
             countryCode = if (countryCode == 0) DEFAULT_COUNTRY_CODE else countryCode,
-            customerType = customerType,
+            customerType = customerType.takeIf { it.isNotBlank() },
+            customerGroup = customerGroup.takeIf { it.isNotBlank() },
             gstNumber = gstNumber.trim().takeIf { it.isNotBlank() },
             panNumber = panNumber.trim().takeIf { it.isNotBlank() },
             creditLimit = if (creditLimit > 0) creditLimit else null,
@@ -493,7 +496,10 @@ private fun Customer.toFormState(): CustomerFormState {
         phone = phone ?: "",
         landline = landline ?: "",
         countryCode = if (countryCode == 0) DEFAULT_COUNTRY_CODE else countryCode,
-        customerType = customerType ?: CustomerType.RETAIL,
+        customerType = customerType ?: "",
+        customerTypeName = "", // Will be loaded from repository when editing
+        customerGroup = customerGroup ?: "",
+        customerGroupName = "", // Will be loaded from repository when editing
         gstNumber = gstNumber ?: "",
         panNumber = panNumber ?: "",
         creditLimit = creditLimit ?: 0.0,

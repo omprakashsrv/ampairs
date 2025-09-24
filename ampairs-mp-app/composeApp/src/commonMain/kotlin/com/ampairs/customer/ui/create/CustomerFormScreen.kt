@@ -225,7 +225,7 @@ private fun CustomerForm(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 OutlinedTextField(
-                    value = formState.customerType.displayName,
+                    value = formState.customerTypeName.ifBlank { "Select Customer Type" },
                     onValueChange = { },
                     readOnly = true,
                     label = { Text(LABEL_CUSTOMER_TYPE) },
@@ -241,11 +241,15 @@ private fun CustomerForm(
                     expanded = customerTypeExpanded,
                     onDismissRequest = { customerTypeExpanded = false }
                 ) {
-                    CustomerType.entries.forEach { customerType ->
+                    // TODO: Load customer types from repository
+                    listOf("Retail", "Wholesale", "Distributor").forEach { typeName ->
                         DropdownMenuItem(
-                            text = { Text(customerType.displayName) },
+                            text = { Text(typeName) },
                             onClick = {
-                                onFormChange(formState.copy(customerType = customerType))
+                                onFormChange(formState.copy(
+                                    customerType = typeName.lowercase(),
+                                    customerTypeName = typeName
+                                ))
                                 customerTypeExpanded = false
                             }
                         )

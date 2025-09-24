@@ -1,6 +1,6 @@
 package com.ampairs.customer.data.repository
 
-import com.ampairs.common.util.UidGenerator
+import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.customer.data.api.CustomerGroupApi
 import com.ampairs.customer.data.db.CustomerGroupDao
 import com.ampairs.customer.data.db.toCustomerGroup
@@ -8,8 +8,6 @@ import com.ampairs.customer.data.db.toEntity
 import com.ampairs.customer.domain.CustomerGroup
 import com.ampairs.customer.domain.CustomerGroupKey
 import com.ampairs.customer.domain.CustomerGroupStore
-import com.ampairs.customer.domain.MasterCustomerGroup
-import com.ampairs.customer.domain.toCustomerGroup
 import com.ampairs.customer.util.CustomerConstants
 import com.ampairs.customer.util.CustomerLogger
 import kotlinx.coroutines.flow.Flow
@@ -85,9 +83,9 @@ class CustomerGroupRepository(
             // 2. Try to sync with server
             try {
                 val response = customerGroupApi.createCustomerGroup(customerGroupWithUid)
-                if (response.success && response.data != null) {
+                if (response.data != null && response.error == null) {
                     // Server success - correct UID if needed and mark as synced
-                    val serverCustomerGroup = response.data
+                    val serverCustomerGroup = response.data!!
                     val finalCustomerGroup = if (serverCustomerGroup.id != uid) {
                         serverCustomerGroup.copy(id = uid) // Keep local UID consistent
                     } else {
@@ -121,9 +119,9 @@ class CustomerGroupRepository(
             // 2. Try to sync with server
             try {
                 val response = customerGroupApi.updateCustomerGroup(customerGroup.id, customerGroup)
-                if (response.success && response.data != null) {
-                    customerGroupDao.insertCustomerGroup(response.data.toEntity().copy(synced = true))
-                    Result.success(response.data)
+                if (response.data != null && response.error == null) {
+                    customerGroupDao.insertCustomerGroup(response.data!!.toEntity().copy(synced = true))
+                    Result.success(response.data!!)
                 } else {
                     Result.success(customerGroup)
                 }
@@ -160,19 +158,19 @@ class CustomerGroupRepository(
     }
 
     /**
-     * Import customer groups from master list
+     * Import customer groups from available list
      */
-    suspend fun importCustomerGroup(masterCustomerGroup: MasterCustomerGroup): Result<CustomerGroup> {
-        return createCustomerGroup(masterCustomerGroup.toCustomerGroup())
+    suspend fun importCustomerGroup(customerGroup: CustomerGroup): Result<CustomerGroup> {
+        return createCustomerGroup(customerGroup)
     }
 
     /**
      * Bulk import customer groups
      */
-    suspend fun bulkImportCustomerGroups(masterCustomerGroups: List<MasterCustomerGroup>): Result<List<CustomerGroup>> {
+    suspend fun bulkImportCustomerGroups(customerGroups: List<CustomerGroup>): Result<List<CustomerGroup>> {
         return try {
-            val results = masterCustomerGroups.map { masterGroup ->
-                importCustomerGroup(masterGroup)
+            val results = customerGroups.map { customerGroup ->
+                importCustomerGroup(customerGroup)
             }
 
             val successfulImports = results.mapNotNull { result ->
@@ -196,13 +194,13 @@ class CustomerGroupRepository(
     /**
      * Get available customer groups for import
      */
-    suspend fun getAvailableCustomerGroupsForImport(): Result<List<MasterCustomerGroup>> {
+    suspend fun getAvailableCustomerGroupsForImport(): Result<List<CustomerGroup>> {
         return try {
-            val response = customerGroupApi.getMasterCustomerGroups()
-            if (response.success && response.data != null) {
+            val response = customerGroupApi.getAvailableCustomerGroupsForImport()
+            if (response.data != null && response.error == null) {
                 // Filter out already imported customer groups
                 val existingGroups = customerGroupDao.getAllCustomerGroups().first().map { it.name }
-                val availableGroups = response.data.filter { it.name !in existingGroups }
+                val availableGroups = response.data!!.filter { it.name !in existingGroups }
                 Result.success(availableGroups)
             } else {
                 Result.failure(Exception(response.error?.message ?: "Failed to load available customer groups"))

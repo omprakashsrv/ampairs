@@ -18,7 +18,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.customer.domain.CustomerType
-import com.ampairs.customer.domain.MasterCustomerType
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -293,8 +292,8 @@ private fun CustomerTypeListItem(
 private fun CustomerTypeImportDialog(
     uiState: CustomerTypeListUiState,
     onDismiss: () -> Unit,
-    onImportCustomerType: (MasterCustomerType) -> Unit,
-    onBulkImport: (List<MasterCustomerType>) -> Unit,
+    onImportCustomerType: (CustomerType) -> Unit,
+    onBulkImport: (List<CustomerType>) -> Unit,
     onLoadAvailableCustomerTypes: () -> Unit
 ) {
     var selectedCustomerTypes by remember { mutableStateOf(setOf<String>()) }

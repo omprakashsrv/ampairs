@@ -1,9 +1,8 @@
 package com.ampairs.customer.data.api
 
 import com.ampairs.customer.domain.CustomerGroup
-import com.ampairs.customer.domain.MasterCustomerGroup
-import com.ampairs.core.domain.dto.ApiResponse
-import com.ampairs.core.domain.dto.PageResponse
+import com.ampairs.common.model.Response
+import com.ampairs.common.model.PageResponse
 
 interface CustomerGroupApi {
 
@@ -13,21 +12,21 @@ interface CustomerGroupApi {
         lastSyncTime: String? = null,
         sortBy: String = "updatedAt",
         sortDirection: String = "ASC"
-    ): ApiResponse<PageResponse<CustomerGroup>>
+    ): Response<PageResponse<CustomerGroup>>
 
-    suspend fun getMasterCustomerGroups(): ApiResponse<List<MasterCustomerGroup>>
+    suspend fun getAvailableCustomerGroupsForImport(): Response<List<CustomerGroup>>
 
-    suspend fun getCustomerGroupById(id: String): ApiResponse<CustomerGroup>
+    suspend fun getCustomerGroupById(id: String): Response<CustomerGroup>
 
-    suspend fun createCustomerGroup(customerGroup: CustomerGroup): ApiResponse<CustomerGroup>
+    suspend fun createCustomerGroup(customerGroup: CustomerGroup): Response<CustomerGroup>
 
-    suspend fun updateCustomerGroup(id: String, customerGroup: CustomerGroup): ApiResponse<CustomerGroup>
+    suspend fun updateCustomerGroup(id: String, customerGroup: CustomerGroup): Response<CustomerGroup>
 
-    suspend fun deleteCustomerGroup(id: String): ApiResponse<Unit>
+    suspend fun deleteCustomerGroup(id: String): Response<Unit>
 
     suspend fun searchCustomerGroups(
         query: String,
         page: Int = 0,
         size: Int = 100
-    ): ApiResponse<PageResponse<CustomerGroup>>
+    ): Response<PageResponse<CustomerGroup>>
 }

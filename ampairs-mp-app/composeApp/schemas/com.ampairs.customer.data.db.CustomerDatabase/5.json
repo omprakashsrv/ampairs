@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 5,
-    "identityHash": "e25240eff39dfe1b725502b7e96d0123",
+    "identityHash": "180d9bbe029eeecbcaab253e85359df4",
     "entities": [
       {
         "tableName": "customers",
@@ -227,7 +227,7 @@
       },
       {
         "tableName": "customer_types",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `description` TEXT, `active` INTEGER NOT NULL, `synced` INTEGER NOT NULL, `createdAt` TEXT, `updatedAt` TEXT, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `description` TEXT, `typeCode` TEXT, `displayOrder` INTEGER, `defaultCreditLimit` REAL, `defaultCreditDays` INTEGER, `metadata` TEXT, `active` INTEGER NOT NULL, `synced` INTEGER NOT NULL, `createdAt` TEXT, `updatedAt` TEXT, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -244,6 +244,31 @@
           {
             "fieldPath": "description",
             "columnName": "description",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "typeCode",
+            "columnName": "typeCode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "displayOrder",
+            "columnName": "displayOrder",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "defaultCreditLimit",
+            "columnName": "defaultCreditLimit",
+            "affinity": "REAL"
+          },
+          {
+            "fieldPath": "defaultCreditDays",
+            "columnName": "defaultCreditDays",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "metadata",
+            "columnName": "metadata",
             "affinity": "TEXT"
           },
           {
@@ -278,7 +303,7 @@
       },
       {
         "tableName": "customer_groups",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `description` TEXT, `discountPercentage` REAL, `active` INTEGER NOT NULL, `synced` INTEGER NOT NULL, `createdAt` TEXT, `updatedAt` TEXT, PRIMARY KEY(`id`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` TEXT NOT NULL, `name` TEXT NOT NULL, `description` TEXT, `groupCode` TEXT, `displayOrder` INTEGER, `defaultDiscountPercentage` REAL, `priorityLevel` INTEGER, `metadata` TEXT, `active` INTEGER NOT NULL, `synced` INTEGER NOT NULL, `createdAt` TEXT, `updatedAt` TEXT, PRIMARY KEY(`id`))",
         "fields": [
           {
             "fieldPath": "id",
@@ -298,9 +323,29 @@
             "affinity": "TEXT"
           },
           {
-            "fieldPath": "discountPercentage",
-            "columnName": "discountPercentage",
+            "fieldPath": "groupCode",
+            "columnName": "groupCode",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "displayOrder",
+            "columnName": "displayOrder",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "defaultDiscountPercentage",
+            "columnName": "defaultDiscountPercentage",
             "affinity": "REAL"
+          },
+          {
+            "fieldPath": "priorityLevel",
+            "columnName": "priorityLevel",
+            "affinity": "INTEGER"
+          },
+          {
+            "fieldPath": "metadata",
+            "columnName": "metadata",
+            "affinity": "TEXT"
           },
           {
             "fieldPath": "active",
@@ -335,7 +380,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e25240eff39dfe1b725502b7e96d0123')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '180d9bbe029eeecbcaab253e85359df4')"
     ]
   }
 }

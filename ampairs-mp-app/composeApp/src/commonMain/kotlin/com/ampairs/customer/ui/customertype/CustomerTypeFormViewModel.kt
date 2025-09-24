@@ -2,7 +2,7 @@ package com.ampairs.customer.ui.customertype
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.common.util.UidGenerator
+import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.customer.data.repository.CustomerTypeRepository
 import com.ampairs.customer.domain.CustomerType
 import com.ampairs.customer.util.CustomerConstants
@@ -13,6 +13,11 @@ data class CustomerTypeFormState(
     val id: String = "",
     val name: String = "",
     val description: String = "",
+    val typeCode: String = "",
+    val displayOrder: String = "",
+    val defaultCreditLimit: String = "",
+    val defaultCreditDays: String = "",
+    val metadata: String = "",
     val active: Boolean = true,
     val isLoading: Boolean = false,
     val error: String? = null,
@@ -42,6 +47,35 @@ class CustomerTypeFormViewModel(
         _formState.update { it.copy(description = description) }
     }
 
+    fun updateTypeCode(typeCode: String) {
+        _formState.update { it.copy(typeCode = typeCode) }
+    }
+
+    fun updateDisplayOrder(displayOrder: String) {
+        // Validate numeric input
+        if (displayOrder.isEmpty() || displayOrder.toIntOrNull() != null) {
+            _formState.update { it.copy(displayOrder = displayOrder) }
+        }
+    }
+
+    fun updateDefaultCreditLimit(defaultCreditLimit: String) {
+        // Validate numeric input
+        if (defaultCreditLimit.isEmpty() || defaultCreditLimit.toDoubleOrNull() != null) {
+            _formState.update { it.copy(defaultCreditLimit = defaultCreditLimit) }
+        }
+    }
+
+    fun updateDefaultCreditDays(defaultCreditDays: String) {
+        // Validate numeric input
+        if (defaultCreditDays.isEmpty() || defaultCreditDays.toIntOrNull() != null) {
+            _formState.update { it.copy(defaultCreditDays = defaultCreditDays) }
+        }
+    }
+
+    fun updateMetadata(metadata: String) {
+        _formState.update { it.copy(metadata = metadata) }
+    }
+
     fun updateActive(active: Boolean) {
         _formState.update { it.copy(active = active) }
     }
@@ -56,6 +90,31 @@ class CustomerTypeFormViewModel(
             return@flow
         }
 
+        // Validate numeric fields
+        val displayOrder = if (state.displayOrder.isNotBlank()) {
+            state.displayOrder.toIntOrNull()
+        } else null
+
+        val defaultCreditLimit = if (state.defaultCreditLimit.isNotBlank()) {
+            val limit = state.defaultCreditLimit.toDoubleOrNull()
+            if (limit == null || limit < 0) {
+                _formState.update { it.copy(error = "Default credit limit must be a positive number") }
+                emit(false)
+                return@flow
+            }
+            limit
+        } else null
+
+        val defaultCreditDays = if (state.defaultCreditDays.isNotBlank()) {
+            val days = state.defaultCreditDays.toIntOrNull()
+            if (days == null || days < 0) {
+                _formState.update { it.copy(error = "Default credit days must be a positive number") }
+                emit(false)
+                return@flow
+            }
+            days
+        } else null
+
         _formState.update { it.copy(isLoading = true, error = null) }
 
         try {
@@ -63,6 +122,11 @@ class CustomerTypeFormViewModel(
                 id = if (state.isEditMode) state.id else UidGenerator.generateUid(CustomerConstants.UID_PREFIX),
                 name = state.name.trim(),
                 description = state.description.trim().ifBlank { null },
+                typeCode = state.typeCode.trim().ifBlank { null },
+                displayOrder = displayOrder,
+                defaultCreditLimit = defaultCreditLimit,
+                defaultCreditDays = defaultCreditDays,
+                metadata = state.metadata.trim().ifBlank { null },
                 active = state.active
             )
 
@@ -108,6 +172,11 @@ class CustomerTypeFormViewModel(
                             id = customerType.id,
                             name = customerType.name,
                             description = customerType.description ?: "",
+                            typeCode = customerType.typeCode ?: "",
+                            displayOrder = customerType.displayOrder?.toString() ?: "",
+                            defaultCreditLimit = customerType.defaultCreditLimit?.toString() ?: "",
+                            defaultCreditDays = customerType.defaultCreditDays?.toString() ?: "",
+                            metadata = customerType.metadata ?: "",
                             active = customerType.active,
                             isLoading = false
                         )

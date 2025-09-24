@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.customer.data.repository.CustomerTypeRepository
 import com.ampairs.customer.domain.CustomerType
-import com.ampairs.customer.domain.MasterCustomerType
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import org.mobilenativefoundation.store.store5.StoreReadResponse
@@ -15,7 +14,7 @@ data class CustomerTypeListUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val searchQuery: String = "",
-    val availableCustomerTypesForImport: List<MasterCustomerType> = emptyList(),
+    val availableCustomerTypesForImport: List<CustomerType> = emptyList(),
     val isLoadingImportCustomerTypes: Boolean = false
 )
 
@@ -144,11 +143,11 @@ class CustomerTypeListViewModel(
         }
     }
 
-    fun importCustomerType(masterCustomerType: MasterCustomerType) {
+    fun importCustomerType(customerType: CustomerType) {
         viewModelScope.launch {
             _uiState.update { it.copy(error = null) }
 
-            val result = customerTypeRepository.importCustomerType(masterCustomerType)
+            val result = customerTypeRepository.importCustomerType(customerType)
             if (result.isFailure) {
                 _uiState.update {
                     it.copy(error = result.exceptionOrNull()?.message ?: "Failed to import customer type")
@@ -160,11 +159,11 @@ class CustomerTypeListViewModel(
         }
     }
 
-    fun bulkImportCustomerTypes(masterCustomerTypes: List<MasterCustomerType>) {
+    fun bulkImportCustomerTypes(customerTypes: List<CustomerType>) {
         viewModelScope.launch {
             _uiState.update { it.copy(error = null) }
 
-            val result = customerTypeRepository.bulkImportCustomerTypes(masterCustomerTypes)
+            val result = customerTypeRepository.bulkImportCustomerTypes(customerTypes)
             if (result.isFailure) {
                 _uiState.update {
                     it.copy(error = result.exceptionOrNull()?.message ?: "Failed to import customer types")

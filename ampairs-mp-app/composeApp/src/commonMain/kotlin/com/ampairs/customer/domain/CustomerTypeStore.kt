@@ -27,8 +27,8 @@ class CustomerTypeStore(
                             customerTypeApi.getCustomerTypes(key.page, key.size)
                         }
 
-                        if (response.success && response.data != null) {
-                            emit(response.data.content)
+                        if (response.data != null && response.error == null) {
+                            emit(response.data!!.content)
                         } else {
                             throw Exception(response.error?.message ?: "Failed to fetch customer types")
                         }

@@ -1,9 +1,8 @@
 package com.ampairs.customer.data.api
 
 import com.ampairs.customer.domain.CustomerType
-import com.ampairs.customer.domain.MasterCustomerType
-import com.ampairs.core.domain.dto.ApiResponse
-import com.ampairs.core.domain.dto.PageResponse
+import com.ampairs.common.model.Response
+import com.ampairs.common.model.PageResponse
 
 interface CustomerTypeApi {
 
@@ -13,21 +12,21 @@ interface CustomerTypeApi {
         lastSyncTime: String? = null,
         sortBy: String = "updatedAt",
         sortDirection: String = "ASC"
-    ): ApiResponse<PageResponse<CustomerType>>
+    ): Response<PageResponse<CustomerType>>
 
-    suspend fun getMasterCustomerTypes(): ApiResponse<List<MasterCustomerType>>
+    suspend fun getAvailableCustomerTypesForImport(): Response<List<CustomerType>>
 
-    suspend fun getCustomerTypeById(id: String): ApiResponse<CustomerType>
+    suspend fun getCustomerTypeById(id: String): Response<CustomerType>
 
-    suspend fun createCustomerType(customerType: CustomerType): ApiResponse<CustomerType>
+    suspend fun createCustomerType(customerType: CustomerType): Response<CustomerType>
 
-    suspend fun updateCustomerType(id: String, customerType: CustomerType): ApiResponse<CustomerType>
+    suspend fun updateCustomerType(id: String, customerType: CustomerType): Response<CustomerType>
 
-    suspend fun deleteCustomerType(id: String): ApiResponse<Unit>
+    suspend fun deleteCustomerType(id: String): Response<Unit>
 
     suspend fun searchCustomerTypes(
         query: String,
         page: Int = 0,
         size: Int = 100
-    ): ApiResponse<PageResponse<CustomerType>>
+    ): Response<PageResponse<CustomerType>>
 }

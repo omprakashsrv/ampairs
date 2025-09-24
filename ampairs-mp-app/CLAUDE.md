@@ -641,3 +641,68 @@ val entityListStore: Store<EntityListKey, List<EntityListItem>> = StoreBuilder
 - **Error Handling**: Handle Store5 errors separately from sync errors
 
 This architecture provides enterprise-grade offline capabilities while maintaining excellent user experience and data consistency across all platforms.
+
+## **🔧 Backend DTO Alignment & API Integration Patterns (January 2025)**
+
+### **📋 DTO Migration Best Practices**
+
+When aligning mobile DTOs with backend changes, follow this systematic approach:
+
+#### **Migration Order**
+`Backend Analysis → Domain Models → Entities → Repositories → ViewModels → UI Components`
+
+**Critical**: Fix import issues before logic issues, compile frequently.
+
+#### **Reference Files for Patterns**
+- **Field Additions**: See `CustomerGroup.kt` and `CustomerType.kt` for @SerialName patterns
+- **Entity Updates**: See `CustomerGroupEntity.kt` for Room entity field additions
+- **API Integration**: See `CustomerGroupApiImpl.kt` for correct URL building and response handling
+
+### **🎯 Project-Specific Conventions**
+
+#### **Import Paths (Check These First)**
+- `com.ampairs.common.id_generator.UidGenerator` (not `.util.UidGenerator`)
+- `com.ampairs.common.model.Response` (not `.core.domain.dto.ApiResponse`)
+
+#### **API Patterns**
+- **URL Building**: Use `ApiUrlBuilder.customerUrl("v1/groups")` pattern
+- **Response Handling**: Check `response.data != null && response.error == null`
+- **Logger Usage**: `CustomerLogger.w("TagName", "message", exception)` signature
+
+#### **Form Architecture**
+- **Dynamic Data**: Use separate ID + display name fields in form states
+- **Reference**: See `CustomerFormViewModel.kt` for string-based customer type handling
+- **UI Dropdowns**: Load dynamic data from repositories, not hardcoded enums
+
+### **🧹 "Master" Data Pattern**
+
+When user says "there is no MasterCustomerX":
+1. Remove classes entirely from domain models
+2. Update API interfaces to remove getMaster* methods
+3. Update repositories to use base types instead of Master types
+4. Clean up ViewModels and UI references
+
+**Reference Files**: `CustomerTypeRepository.kt`, `CustomerGroupRepository.kt`
+
+### **⚠️ Common Pitfalls**
+
+#### **Response Handling**
+- `Response<T>.data` is nullable - always null check first
+- No `.success` property exists
+
+#### **Logger Methods**
+- Use `w`, `e`, `i`, `d` method names (not `warn`, `error`)
+- Three-parameter signature: `(tag, message, exception)`
+
+#### **Form State Management**
+- Store backend IDs as strings, not object references
+- Separate display names from backend values
+- Reference: `CustomerFormState` in `CustomerFormViewModel.kt`
+
+### **🔄 Testing Strategy**
+
+- **Layer-by-Layer**: Don't batch multiple layer changes
+- **User Feedback**: When users correct patterns, apply exactly as specified
+- **Compilation**: Test after each major structural change
+
+**Reference Implementation**: Customer module DTO alignment (January 2025) - demonstrates complete migration from enum-based to dynamic string-based customer types.

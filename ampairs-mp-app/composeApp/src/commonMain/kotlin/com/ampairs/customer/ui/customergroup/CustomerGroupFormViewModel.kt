@@ -2,7 +2,7 @@ package com.ampairs.customer.ui.customergroup
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.common.util.UidGenerator
+import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.customer.data.repository.CustomerGroupRepository
 import com.ampairs.customer.domain.CustomerGroup
 import com.ampairs.customer.util.CustomerConstants
@@ -13,7 +13,11 @@ data class CustomerGroupFormState(
     val id: String = "",
     val name: String = "",
     val description: String = "",
-    val discountPercentage: String = "",
+    val groupCode: String = "",
+    val displayOrder: String = "",
+    val defaultDiscountPercentage: String = "",
+    val priorityLevel: String = "",
+    val metadata: String = "",
     val active: Boolean = true,
     val isLoading: Boolean = false,
     val error: String? = null,
@@ -43,11 +47,33 @@ class CustomerGroupFormViewModel(
         _formState.update { it.copy(description = description) }
     }
 
-    fun updateDiscountPercentage(discountPercentage: String) {
+    fun updateGroupCode(groupCode: String) {
+        _formState.update { it.copy(groupCode = groupCode) }
+    }
+
+    fun updateDisplayOrder(displayOrder: String) {
         // Validate numeric input
-        if (discountPercentage.isEmpty() || discountPercentage.toDoubleOrNull() != null) {
-            _formState.update { it.copy(discountPercentage = discountPercentage) }
+        if (displayOrder.isEmpty() || displayOrder.toIntOrNull() != null) {
+            _formState.update { it.copy(displayOrder = displayOrder) }
         }
+    }
+
+    fun updateDefaultDiscountPercentage(defaultDiscountPercentage: String) {
+        // Validate numeric input
+        if (defaultDiscountPercentage.isEmpty() || defaultDiscountPercentage.toDoubleOrNull() != null) {
+            _formState.update { it.copy(defaultDiscountPercentage = defaultDiscountPercentage) }
+        }
+    }
+
+    fun updatePriorityLevel(priorityLevel: String) {
+        // Validate numeric input
+        if (priorityLevel.isEmpty() || priorityLevel.toIntOrNull() != null) {
+            _formState.update { it.copy(priorityLevel = priorityLevel) }
+        }
+    }
+
+    fun updateMetadata(metadata: String) {
+        _formState.update { it.copy(metadata = metadata) }
     }
 
     fun updateActive(active: Boolean) {
@@ -64,15 +90,23 @@ class CustomerGroupFormViewModel(
             return@flow
         }
 
-        // Validate discount percentage
-        val discountPercentage = if (state.discountPercentage.isNotBlank()) {
-            val percentage = state.discountPercentage.toDoubleOrNull()
+        // Validate numeric fields
+        val displayOrder = if (state.displayOrder.isNotBlank()) {
+            state.displayOrder.toIntOrNull()
+        } else null
+
+        val defaultDiscountPercentage = if (state.defaultDiscountPercentage.isNotBlank()) {
+            val percentage = state.defaultDiscountPercentage.toDoubleOrNull()
             if (percentage == null || percentage < 0 || percentage > 100) {
-                _formState.update { it.copy(error = "Discount percentage must be between 0 and 100") }
+                _formState.update { it.copy(error = "Default discount percentage must be between 0 and 100") }
                 emit(false)
                 return@flow
             }
             percentage
+        } else null
+
+        val priorityLevel = if (state.priorityLevel.isNotBlank()) {
+            state.priorityLevel.toIntOrNull()
         } else null
 
         _formState.update { it.copy(isLoading = true, error = null) }
@@ -82,7 +116,11 @@ class CustomerGroupFormViewModel(
                 id = if (state.isEditMode) state.id else UidGenerator.generateUid(CustomerConstants.UID_PREFIX),
                 name = state.name.trim(),
                 description = state.description.trim().ifBlank { null },
-                discountPercentage = discountPercentage,
+                groupCode = state.groupCode.trim().ifBlank { null },
+                displayOrder = displayOrder,
+                defaultDiscountPercentage = defaultDiscountPercentage,
+                priorityLevel = priorityLevel,
+                metadata = state.metadata.trim().ifBlank { null },
                 active = state.active
             )
 
@@ -128,7 +166,11 @@ class CustomerGroupFormViewModel(
                             id = customerGroup.id,
                             name = customerGroup.name,
                             description = customerGroup.description ?: "",
-                            discountPercentage = customerGroup.discountPercentage?.toString() ?: "",
+                            groupCode = customerGroup.groupCode ?: "",
+                            displayOrder = customerGroup.displayOrder?.toString() ?: "",
+                            defaultDiscountPercentage = customerGroup.defaultDiscountPercentage?.toString() ?: "",
+                            priorityLevel = customerGroup.priorityLevel?.toString() ?: "",
+                            metadata = customerGroup.metadata ?: "",
                             active = customerGroup.active,
                             isLoading = false
                         )

@@ -2,15 +2,13 @@ package com.ampairs.customer.data.api
 
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.ApiUrlBuilder
+import com.ampairs.common.delete
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
+import com.ampairs.common.model.PageResponse
+import com.ampairs.common.model.Response
 import com.ampairs.common.post
-import com.ampairs.common.put
-import com.ampairs.common.delete
 import com.ampairs.customer.domain.CustomerGroup
-import com.ampairs.customer.domain.MasterCustomerGroup
-import com.ampairs.core.domain.dto.ApiResponse
-import com.ampairs.core.domain.dto.PageResponse
 import io.ktor.client.engine.HttpClientEngine
 
 class CustomerGroupApiImpl(
@@ -26,7 +24,7 @@ class CustomerGroupApiImpl(
         lastSyncTime: String?,
         sortBy: String,
         sortDirection: String
-    ): ApiResponse<PageResponse<CustomerGroup>> {
+    ): Response<PageResponse<CustomerGroup>> {
         val params = mutableMapOf(
             "page" to page.toString(),
             "size" to size.toString(),
@@ -36,46 +34,71 @@ class CustomerGroupApiImpl(
 
         lastSyncTime?.let { params["lastSyncTime"] = it }
 
-        val url = ApiUrlBuilder.buildUrl("customer-management/v1/master/groups", params)
-        return client.get<ApiResponse<PageResponse<CustomerGroup>>>(url)
+        val response: Response<PageResponse<CustomerGroup>> = get(
+            client,
+            ApiUrlBuilder.customerUrl("v1/groups"),
+            params
+        )
+        return response
     }
 
-    override suspend fun getMasterCustomerGroups(): ApiResponse<List<MasterCustomerGroup>> {
-        val url = ApiUrlBuilder.buildUrl("customer-management/v1/master/groups/available")
-        return client.get<ApiResponse<List<MasterCustomerGroup>>>(url)
+    override suspend fun getAvailableCustomerGroupsForImport(): Response<List<CustomerGroup>> {
+        val response: Response<List<CustomerGroup>> = get(
+            client,
+            ApiUrlBuilder.customerUrl("v1/groups/available")
+        )
+        return response
     }
 
-    override suspend fun getCustomerGroupById(id: String): ApiResponse<CustomerGroup> {
-        val url = ApiUrlBuilder.buildUrl("customer-management/v1/master/groups/$id")
-        return client.get<ApiResponse<CustomerGroup>>(url)
+    override suspend fun getCustomerGroupById(id: String): Response<CustomerGroup> {
+        val response: Response<CustomerGroup> = get(
+            client,
+            ApiUrlBuilder.customerUrl("v1/groups/$id")
+        )
+        return response
     }
 
-    override suspend fun createCustomerGroup(customerGroup: CustomerGroup): ApiResponse<CustomerGroup> {
-        val url = ApiUrlBuilder.buildUrl("customer-management/v1/master/groups")
-        return client.post<CustomerGroup, ApiResponse<CustomerGroup>>(url, customerGroup)
+    override suspend fun createCustomerGroup(customerGroup: CustomerGroup): Response<CustomerGroup> {
+        val response: Response<CustomerGroup> = post(
+            client,
+            ApiUrlBuilder.customerUrl("v1/groups"),
+            customerGroup
+        )
+        return response
     }
 
-    override suspend fun updateCustomerGroup(id: String, customerGroup: CustomerGroup): ApiResponse<CustomerGroup> {
-        val url = ApiUrlBuilder.buildUrl("customer-management/v1/master/groups/$id")
-        return client.put<CustomerGroup, ApiResponse<CustomerGroup>>(url, customerGroup)
+    override suspend fun updateCustomerGroup(id: String, customerGroup: CustomerGroup): Response<CustomerGroup> {
+        val response: Response<CustomerGroup> = post(
+            client,
+            ApiUrlBuilder.customerUrl("v1/groups/$id"),
+            customerGroup
+        )
+        return response
     }
 
-    override suspend fun deleteCustomerGroup(id: String): ApiResponse<Unit> {
-        val url = ApiUrlBuilder.buildUrl("customer-management/v1/master/groups/$id")
-        return client.delete<ApiResponse<Unit>>(url)
+    override suspend fun deleteCustomerGroup(id: String): Response<Unit> {
+        val response: Response<Unit> = delete(
+            client,
+            ApiUrlBuilder.customerUrl("v1/groups/$id")
+        )
+        return response
     }
 
     override suspend fun searchCustomerGroups(
         query: String,
         page: Int,
         size: Int
-    ): ApiResponse<PageResponse<CustomerGroup>> {
+    ): Response<PageResponse<CustomerGroup>> {
         val params = mapOf(
             "query" to query,
             "page" to page.toString(),
             "size" to size.toString()
         )
-        val url = ApiUrlBuilder.buildUrl("customer-management/v1/master/groups/search", params)
-        return client.get<ApiResponse<PageResponse<CustomerGroup>>>(url)
+        val response: Response<PageResponse<CustomerGroup>> = get(
+            client,
+            ApiUrlBuilder.customerUrl("v1/groups/search"),
+            params
+        )
+        return response
     }
 }
