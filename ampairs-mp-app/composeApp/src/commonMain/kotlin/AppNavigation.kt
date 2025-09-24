@@ -191,6 +191,8 @@ fun navigateToMenuItem(navController: androidx.navigation.NavHostController, rou
                 "/customers/create" -> navController.navigate(CustomerCreateRoute())
                 "/customers/import" -> navController.navigate(CustomerRoute.Root)
                 "/customers/states" -> navController.navigate(StateListRoute)
+                "/customers/types" -> navController.navigate(com.ampairs.customer.ui.CustomerTypeListRoute)
+                "/customers/groups" -> navController.navigate(com.ampairs.customer.ui.CustomerGroupListRoute)
                 else -> navController.navigate(Route.Customer)
             }
         }

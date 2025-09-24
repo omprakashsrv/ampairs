@@ -80,14 +80,13 @@ class CustomerGroupFormViewModel(
         _formState.update { it.copy(active = active) }
     }
 
-    fun saveCustomerGroup(): Flow<Boolean> = flow {
+    fun saveCustomerGroup(onSuccess: () -> Unit) {
         val state = _formState.value
 
         // Validate input
         if (state.name.isBlank()) {
             _formState.update { it.copy(error = "Customer group name is required") }
-            emit(false)
-            return@flow
+            return
         }
 
         // Validate numeric fields
@@ -99,8 +98,7 @@ class CustomerGroupFormViewModel(
             val percentage = state.defaultDiscountPercentage.toDoubleOrNull()
             if (percentage == null || percentage < 0 || percentage > 100) {
                 _formState.update { it.copy(error = "Default discount percentage must be between 0 and 100") }
-                emit(false)
-                return@flow
+                return
             }
             percentage
         } else null
@@ -111,45 +109,45 @@ class CustomerGroupFormViewModel(
 
         _formState.update { it.copy(isLoading = true, error = null) }
 
-        try {
-            val customerGroup = CustomerGroup(
-                id = if (state.isEditMode) state.id else UidGenerator.generateUid(CustomerConstants.UID_PREFIX),
-                name = state.name.trim(),
-                description = state.description.trim().ifBlank { null },
-                groupCode = state.groupCode.trim().ifBlank { null },
-                displayOrder = displayOrder,
-                defaultDiscountPercentage = defaultDiscountPercentage,
-                priorityLevel = priorityLevel,
-                metadata = state.metadata.trim().ifBlank { null },
-                active = state.active
-            )
+        viewModelScope.launch {
+            try {
+                val customerGroup = CustomerGroup(
+                    id = if (state.isEditMode) state.id else UidGenerator.generateUid(CustomerConstants.UID_PREFIX),
+                    name = state.name.trim(),
+                    description = state.description.trim().ifBlank { null },
+                    groupCode = state.groupCode.trim().ifBlank { null },
+                    displayOrder = displayOrder,
+                    defaultDiscountPercentage = defaultDiscountPercentage,
+                    priorityLevel = priorityLevel,
+                    metadata = state.metadata.trim().ifBlank { null },
+                    active = state.active
+                )
 
-            val result = if (state.isEditMode) {
-                customerGroupRepository.updateCustomerGroup(customerGroup)
-            } else {
-                customerGroupRepository.createCustomerGroup(customerGroup)
-            }
+                val result = if (state.isEditMode) {
+                    customerGroupRepository.updateCustomerGroup(customerGroup)
+                } else {
+                    customerGroupRepository.createCustomerGroup(customerGroup)
+                }
 
-            if (result.isSuccess) {
-                _formState.update { it.copy(isLoading = false) }
-                emit(true)
-            } else {
+                if (result.isSuccess) {
+                    _formState.update { it.copy(isLoading = false) }
+                    onSuccess()
+                } else {
+                    _formState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = result.exceptionOrNull()?.message ?: "Failed to save customer group"
+                        )
+                    }
+                }
+            } catch (e: Exception) {
                 _formState.update {
                     it.copy(
                         isLoading = false,
-                        error = result.exceptionOrNull()?.message ?: "Failed to save customer group"
+                        error = e.message ?: "An error occurred while saving"
                     )
                 }
-                emit(false)
             }
-        } catch (e: Exception) {
-            _formState.update {
-                it.copy(
-                    isLoading = false,
-                    error = e.message ?: "An error occurred while saving"
-                )
-            }
-            emit(false)
         }
     }
 

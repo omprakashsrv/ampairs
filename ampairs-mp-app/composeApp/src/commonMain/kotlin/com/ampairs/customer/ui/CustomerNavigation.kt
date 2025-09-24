@@ -9,6 +9,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.ampairs.common.ui.AppScreenWithHeader
 import com.ampairs.customer.ui.create.CustomerFormScreen
+import com.ampairs.customer.ui.customergroup.CustomerGroupFormScreen
+import com.ampairs.customer.ui.customergroup.CustomerGroupListScreen
+import com.ampairs.customer.ui.customertype.CustomerTypeFormScreen
+import com.ampairs.customer.ui.customertype.CustomerTypeListScreen
 import com.ampairs.customer.ui.details.CustomerDetailsScreen
 import com.ampairs.customer.ui.list.CustomersListScreen
 import com.ampairs.customer.ui.state.StateListScreen
@@ -25,6 +29,18 @@ data class CustomerCreateRoute(val customerId: String? = null)
 
 @Serializable
 object StateListRoute
+
+@Serializable
+object CustomerTypeListRoute
+
+@Serializable
+data class CustomerTypeCreateRoute(val customerTypeId: String? = null)
+
+@Serializable
+object CustomerGroupListRoute
+
+@Serializable
+data class CustomerGroupCreateRoute(val customerGroupId: String? = null)
 
 
 fun NavGraphBuilder.customerNavigation(navController: NavHostController) {
@@ -84,6 +100,68 @@ fun NavGraphBuilder.customerNavigation(navController: NavHostController) {
             StateListScreen(
                 onStateClick = { /* Handle state click if needed */ },
                 onImportStates = { /* Handle state import */ },
+                modifier = Modifier.padding(paddingValues)
+            )
+        }
+    }
+
+    composable<CustomerTypeListRoute> {
+        AppScreenWithHeader(
+            navController = navController,
+            isWorkspaceSelection = false
+        ) { paddingValues ->
+            CustomerTypeListScreen(
+                onCustomerTypeClick = { customerTypeId ->
+                    navController.navigate(CustomerTypeCreateRoute(customerTypeId))
+                },
+                onAddCustomerType = {
+                    navController.navigate(CustomerTypeCreateRoute())
+                },
+                modifier = Modifier.padding(paddingValues)
+            )
+        }
+    }
+
+    composable<CustomerTypeCreateRoute> { backStackEntry ->
+        val route = backStackEntry.toRoute<CustomerTypeCreateRoute>()
+        AppScreenWithHeader(
+            navController = navController,
+            isWorkspaceSelection = false
+        ) { paddingValues ->
+            CustomerTypeFormScreen(
+                customerTypeId = route.customerTypeId,
+                onSaveSuccess = { navController.popBackStack() },
+                modifier = Modifier.padding(paddingValues)
+            )
+        }
+    }
+
+    composable<CustomerGroupListRoute> {
+        AppScreenWithHeader(
+            navController = navController,
+            isWorkspaceSelection = false
+        ) { paddingValues ->
+            CustomerGroupListScreen(
+                onCustomerGroupClick = { customerGroupId ->
+                    navController.navigate(CustomerGroupCreateRoute(customerGroupId))
+                },
+                onAddCustomerGroup = {
+                    navController.navigate(CustomerGroupCreateRoute())
+                },
+                modifier = Modifier.padding(paddingValues)
+            )
+        }
+    }
+
+    composable<CustomerGroupCreateRoute> { backStackEntry ->
+        val route = backStackEntry.toRoute<CustomerGroupCreateRoute>()
+        AppScreenWithHeader(
+            navController = navController,
+            isWorkspaceSelection = false
+        ) { paddingValues ->
+            CustomerGroupFormScreen(
+                customerGroupId = route.customerGroupId,
+                onSaveSuccess = { navController.popBackStack() },
                 modifier = Modifier.padding(paddingValues)
             )
         }

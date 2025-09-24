@@ -22,6 +22,7 @@ fun initializeModuleProviders() {
 /**
  * Customer module navigation provider
  * Maps "customer-management" module code to customer navigation routes
+ * Includes menu item navigation for types and groups
  */
 object CustomerModuleProvider : IModuleNavigationProvider {
     override val moduleCode: String = "customer-management"

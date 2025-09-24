@@ -80,14 +80,13 @@ class CustomerTypeFormViewModel(
         _formState.update { it.copy(active = active) }
     }
 
-    fun saveCustomerType(): Flow<Boolean> = flow {
+    fun saveCustomerType(onSuccess: () -> Unit) {
         val state = _formState.value
 
         // Validate input
         if (state.name.isBlank()) {
             _formState.update { it.copy(error = "Customer type name is required") }
-            emit(false)
-            return@flow
+            return
         }
 
         // Validate numeric fields
@@ -99,8 +98,7 @@ class CustomerTypeFormViewModel(
             val limit = state.defaultCreditLimit.toDoubleOrNull()
             if (limit == null || limit < 0) {
                 _formState.update { it.copy(error = "Default credit limit must be a positive number") }
-                emit(false)
-                return@flow
+                return
             }
             limit
         } else null
@@ -109,53 +107,52 @@ class CustomerTypeFormViewModel(
             val days = state.defaultCreditDays.toIntOrNull()
             if (days == null || days < 0) {
                 _formState.update { it.copy(error = "Default credit days must be a positive number") }
-                emit(false)
-                return@flow
+                return
             }
             days
         } else null
 
         _formState.update { it.copy(isLoading = true, error = null) }
 
-        try {
-            val customerType = CustomerType(
-                id = if (state.isEditMode) state.id else UidGenerator.generateUid(CustomerConstants.UID_PREFIX),
-                name = state.name.trim(),
-                description = state.description.trim().ifBlank { null },
-                typeCode = state.typeCode.trim().ifBlank { null },
-                displayOrder = displayOrder,
-                defaultCreditLimit = defaultCreditLimit,
-                defaultCreditDays = defaultCreditDays,
-                metadata = state.metadata.trim().ifBlank { null },
-                active = state.active
-            )
+        viewModelScope.launch {
+            try {
+                val customerType = CustomerType(
+                    id = if (state.isEditMode) state.id else UidGenerator.generateUid(CustomerConstants.UID_PREFIX),
+                    name = state.name.trim(),
+                    description = state.description.trim().ifBlank { null },
+                    typeCode = state.typeCode.trim().ifBlank { null },
+                    displayOrder = displayOrder,
+                    defaultCreditLimit = defaultCreditLimit,
+                    defaultCreditDays = defaultCreditDays,
+                    metadata = state.metadata.trim().ifBlank { null },
+                    active = state.active
+                )
 
-            val result = if (state.isEditMode) {
-                customerTypeRepository.updateCustomerType(customerType)
-            } else {
-                customerTypeRepository.createCustomerType(customerType)
-            }
+                val result = if (state.isEditMode) {
+                    customerTypeRepository.updateCustomerType(customerType)
+                } else {
+                    customerTypeRepository.createCustomerType(customerType)
+                }
 
-            if (result.isSuccess) {
-                _formState.update { it.copy(isLoading = false) }
-                emit(true)
-            } else {
+                if (result.isSuccess) {
+                    _formState.update { it.copy(isLoading = false) }
+                    onSuccess()
+                } else {
+                    _formState.update {
+                        it.copy(
+                            isLoading = false,
+                            error = result.exceptionOrNull()?.message ?: "Failed to save customer type"
+                        )
+                    }
+                }
+            } catch (e: Exception) {
                 _formState.update {
                     it.copy(
                         isLoading = false,
-                        error = result.exceptionOrNull()?.message ?: "Failed to save customer type"
+                        error = e.message ?: "An error occurred while saving"
                     )
                 }
-                emit(false)
             }
-        } catch (e: Exception) {
-            _formState.update {
-                it.copy(
-                    isLoading = false,
-                    error = e.message ?: "An error occurred while saving"
-                )
-            }
-            emit(false)
         }
     }
 

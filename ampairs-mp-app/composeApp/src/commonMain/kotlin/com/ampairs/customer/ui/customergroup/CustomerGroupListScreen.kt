@@ -1,4 +1,4 @@
-package com.ampairs.customer.ui.customertype
+package com.ampairs.customer.ui.customergroup
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,35 +15,35 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.ampairs.customer.domain.CustomerType
+import com.ampairs.customer.domain.CustomerGroup
 import org.koin.compose.koinInject
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun CustomerTypeListScreen(
-    onCustomerTypeClick: (String) -> Unit,
-    onAddCustomerType: () -> Unit,
+fun CustomerGroupListScreen(
+    onCustomerGroupClick: (String) -> Unit,
+    onAddCustomerGroup: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: CustomerTypeListViewModel = koinInject()
+    viewModel: CustomerGroupListViewModel = koinInject()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showSearchBar by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        // Load customer types on first composition
+        // Load customer groups on first composition
         viewModel.updateSearchQuery("")
     }
 
     Column(modifier = modifier.fillMaxSize()) {
         // Top App Bar
         TopAppBar(
-            title = { Text("Customer Types") },
+            title = { Text("Customer Groups") },
             actions = {
                 IconButton(onClick = { showSearchBar = !showSearchBar }) {
                     Icon(Icons.Default.Search, contentDescription = "Search")
                 }
-                IconButton(onClick = onAddCustomerType) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Customer Type")
+                IconButton(onClick = onAddCustomerGroup) {
+                    Icon(Icons.Default.Add, contentDescription = "Add Customer Group")
                 }
             }
         )
@@ -53,8 +53,8 @@ fun CustomerTypeListScreen(
             OutlinedTextField(
                 value = uiState.searchQuery,
                 onValueChange = viewModel::updateSearchQuery,
-                label = { Text("Search customer types") },
-                placeholder = { Text("Enter name or type code...") },
+                label = { Text("Search customer groups") },
+                placeholder = { Text("Enter name or group code...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -98,7 +98,7 @@ fun CustomerTypeListScreen(
                                 )
                                 Text(
                                     text = if (uiState.error?.contains("CUSTOMER_NOT_FOUND") == true)
-                                        "No customer types found. Create your first one below."
+                                        "No customer groups found. Create your first one below."
                                     else
                                         uiState.error ?: "Unknown error",
                                     style = MaterialTheme.typography.bodyMedium,
@@ -108,31 +108,32 @@ fun CustomerTypeListScreen(
                             }
                         }
 
-                        // Show create button if it's a "not found" error (essentially empty state)
+                        // Show create buttons if it's a "not found" error (essentially empty state)
                         if (uiState.error?.contains("CUSTOMER_NOT_FOUND") == true && uiState.searchQuery.isBlank()) {
                             Spacer(modifier = Modifier.height(24.dp))
 
                             // Primary Add Button
                             Button(
-                                onClick = onAddCustomerType,
+                                onClick = onAddCustomerGroup,
                                 modifier = Modifier.fillMaxWidth(0.8f)
                             ) {
                                 Icon(Icons.Default.Add, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Create Customer Type")
+                                Text("Create Customer Group")
                             }
+
                         }
                     }
                 }
 
-                uiState.customerTypes.isEmpty() -> {
+                uiState.customerGroups.isEmpty() -> {
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
                         Text(
-                            text = if (uiState.searchQuery.isNotBlank()) "No customer types found" else "No customer types yet",
+                            text = if (uiState.searchQuery.isNotBlank()) "No customer groups found" else "No customer groups yet",
                             style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -142,15 +143,13 @@ fun CustomerTypeListScreen(
 
                             // Primary Add Button
                             Button(
-                                onClick = onAddCustomerType,
+                                onClick = onAddCustomerGroup,
                                 modifier = Modifier.fillMaxWidth(0.8f)
                             ) {
                                 Icon(Icons.Default.Add, contentDescription = null)
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("Create Customer Type")
+                                Text("Create Customer Group")
                             }
-
-                            Spacer(modifier = Modifier.height(12.dp))
 
                         }
                     }
@@ -161,11 +160,11 @@ fun CustomerTypeListScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        items(uiState.customerTypes) { customerType ->
-                            CustomerTypeCard(
-                                customerType = customerType,
-                                onClick = { onCustomerTypeClick(customerType.id) },
-                                onDelete = { viewModel.deleteCustomerType(customerType.id) }
+                        items(uiState.customerGroups) { customerGroup ->
+                            CustomerGroupCard(
+                                customerGroup = customerGroup,
+                                onClick = { onCustomerGroupClick(customerGroup.id) },
+                                onDelete = { viewModel.deleteCustomerGroup(customerGroup.id) }
                             )
                         }
 
@@ -178,7 +177,7 @@ fun CustomerTypeListScreen(
             }
         }
 
-        // FAB for adding customer types
+        // FAB for adding customer groups
         Box(
             modifier = Modifier.fillMaxWidth(),
             contentAlignment = Alignment.BottomEnd
@@ -191,9 +190,9 @@ fun CustomerTypeListScreen(
 
                 // Add FAB
                 FloatingActionButton(
-                    onClick = onAddCustomerType
+                    onClick = onAddCustomerGroup
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add Customer Type")
+                    Icon(Icons.Default.Add, contentDescription = "Add Customer Group")
                 }
             }
         }
@@ -202,8 +201,8 @@ fun CustomerTypeListScreen(
 }
 
 @Composable
-private fun CustomerTypeCard(
-    customerType: CustomerType,
+private fun CustomerGroupCard(
+    customerGroup: CustomerGroup,
     onClick: () -> Unit,
     onDelete: () -> Unit,
     modifier: Modifier = Modifier
@@ -222,12 +221,12 @@ private fun CustomerTypeCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = customerType.name,
+                        text = customerGroup.name,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold
                     )
 
-                    customerType.typeCode?.let { code ->
+                    customerGroup.groupCode?.let { code ->
                         Text(
                             text = "Code: $code",
                             style = MaterialTheme.typography.bodySmall,
@@ -236,7 +235,7 @@ private fun CustomerTypeCard(
                         )
                     }
 
-                    customerType.description?.let { desc ->
+                    customerGroup.description?.let { desc ->
                         Text(
                             text = desc,
                             style = MaterialTheme.typography.bodyMedium,
@@ -283,27 +282,27 @@ private fun CustomerTypeCard(
                     .padding(top = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                // Credit terms
-                if (customerType.defaultCreditLimit != null || customerType.defaultCreditDays != null) {
+                // Discount and Priority info
+                if (customerGroup.defaultDiscountPercentage != null || customerGroup.priorityLevel != null) {
                     Column {
                         Text(
-                            text = "Default Credit",
+                            text = "Group Benefits",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
-                        val creditInfo = buildString {
-                            customerType.defaultCreditLimit?.let { limit ->
-                                append("₹$limit")
+                        val benefitInfo = buildString {
+                            customerGroup.defaultDiscountPercentage?.let { discount ->
+                                append("${discount}% discount")
                             }
-                            if (customerType.defaultCreditLimit != null && customerType.defaultCreditDays != null) {
-                                append(" / ")
+                            if (customerGroup.defaultDiscountPercentage != null && customerGroup.priorityLevel != null) {
+                                append(" • ")
                             }
-                            customerType.defaultCreditDays?.let { days ->
-                                append("${days}d")
+                            customerGroup.priorityLevel?.let { priority ->
+                                append("Priority $priority")
                             }
                         }
                         Text(
-                            text = creditInfo,
+                            text = benefitInfo,
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
@@ -314,16 +313,16 @@ private fun CustomerTypeCard(
                     onClick = { },
                     label = {
                         Text(
-                            text = if (customerType.active) "Active" else "Inactive",
+                            text = if (customerGroup.active) "Active" else "Inactive",
                             style = MaterialTheme.typography.labelSmall
                         )
                     },
                     colors = AssistChipDefaults.assistChipColors(
-                        containerColor = if (customerType.active)
+                        containerColor = if (customerGroup.active)
                             MaterialTheme.colorScheme.primaryContainer
                         else
                             MaterialTheme.colorScheme.errorContainer,
-                        labelColor = if (customerType.active)
+                        labelColor = if (customerGroup.active)
                             MaterialTheme.colorScheme.onPrimaryContainer
                         else
                             MaterialTheme.colorScheme.onErrorContainer
