@@ -12,10 +12,10 @@ import jakarta.persistence.*
 @Table(
     name = "customer_groups",
     indexes = [
-        Index(name = "idx_customer_group_code_workspace", columnList = "group_code,workspace_id", unique = true),
+        Index(name = "idx_customer_group_code_workspace", columnList = "group_code,owner_id", unique = true),
         Index(name = "idx_customer_group_name", columnList = "name"),
         Index(name = "idx_customer_group_active", columnList = "active"),
-        Index(name = "idx_customer_group_workspace", columnList = "workspace_id")
+        Index(name = "idx_customer_group_workspace", columnList = "owner_id")
     ]
 )
 class CustomerGroup : OwnableBaseDomain() {
