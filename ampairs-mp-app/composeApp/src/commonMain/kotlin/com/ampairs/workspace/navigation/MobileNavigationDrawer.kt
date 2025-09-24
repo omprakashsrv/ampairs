@@ -37,15 +37,15 @@ fun MobileNavigationDrawer(
                         .padding(16.dp)
                 ) {
                     // Header
-                    Text(
-                        text = "Navigation",
-                        style = MaterialTheme.typography.titleLarge,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
+//                    Text(
+//                        text = "Navigation",
+//                        style = MaterialTheme.typography.titleLarge,
+//                        modifier = Modifier.padding(bottom = 16.dp)
+//                    )
+//
+//                    HorizontalDivider()
 
-                    HorizontalDivider()
-
-                    Spacer(modifier = Modifier.height(16.dp))
+//                    Spacer(modifier = Modifier.height(16.dp))
 
                     // Module navigation using existing MobileModuleSideNavigation
                     MobileModuleSideNavigation(

@@ -77,6 +77,16 @@ class DynamicModuleNavigationService {
     }
 
     /**
+     * Reset the service state when switching workspaces or logging out
+     * This clears the installed modules to prevent stale navigation data
+     */
+    fun reset() {
+        _installedModules.value = emptyList()
+        _isLoading.value = false
+        _error.value = null
+    }
+
+    /**
      * Get navigation route by module code
      */
     fun getModuleRoute(moduleCode: String): DynamicModuleRoute? {

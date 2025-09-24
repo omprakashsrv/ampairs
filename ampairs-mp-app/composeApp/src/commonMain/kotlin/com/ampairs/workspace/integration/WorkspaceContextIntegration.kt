@@ -5,6 +5,7 @@ import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.workspace.domain.Workspace
 import com.ampairs.workspace.domain.WorkspaceMember
 import com.ampairs.workspace.WorkspaceDatabaseManager
+import com.ampairs.workspace.navigation.GlobalNavigationManager
 
 /**
  * Integration utilities for converting domain models to workspace context
@@ -68,6 +69,9 @@ object WorkspaceContextIntegration {
      */
     fun clearWorkspaceContext() {
         WorkspaceContextManager.getInstance().clearWorkspaceContext()
+
+        // Clear navigation service and installed modules
+        GlobalNavigationManager.getInstance().onWorkspaceCleared()
 
         // Also clear database context
         val databaseManager = WorkspaceDatabaseManager()

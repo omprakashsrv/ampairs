@@ -1,14 +1,10 @@
 package com.ampairs.workspace.navigation
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -18,7 +14,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.ampairs.workspace.api.model.ModuleMenuItem
 
 /**
  * Mobile-style side navigation for module navigation
@@ -40,26 +35,6 @@ fun MobileModuleSideNavigation(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        // Header
-        item {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(bottom = 16.dp)
-            ) {
-                Text(
-                    text = "Installed Modules",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.weight(1f)
-                )
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp
-                    )
-                }
-            }
-        }
 
         // Error state
         error?.let { errorMessage ->
@@ -80,184 +55,108 @@ fun MobileModuleSideNavigation(
             }
         }
 
-        // Loading state
-        if (isLoading && navigationRoutes.isEmpty()) {
-            item {
-                repeat(3) {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                        )
-                    ) {
-                        // Skeleton loading
+        // Show content based on actual data state, not loading state
+        if (navigationRoutes.isEmpty()) {
+            if (isLoading) {
+                // Loading state
+                item {
+                    repeat(3) {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
+                            )
+                        ) {
+                            // Skeleton loading
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            } else {
+                // Empty state (only when not loading)
+                item {
+                    EmptyModulesCard()
                 }
             }
-        }
-
-        // Module list
-        if (navigationRoutes.isEmpty() && !isLoading) {
-            item {
-                EmptyModulesCard()
-            }
         } else {
-            items(navigationRoutes) { moduleRoute ->
-                MobileModuleNavigationItem(
-                    moduleRoute = moduleRoute,
-                    onNavigate = onNavigate
-                )
+            // Create grouped navigation with module names as groups
+            navigationRoutes.forEach { moduleRoute ->
+                // Module group header
+                item {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(20.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(parseHexColor(moduleRoute.primaryColor)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = moduleRoute.displayName.first().uppercase(),
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 10.sp
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = moduleRoute.displayName,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                // Module menu items
+                items(moduleRoute.menuItems) { menuItem ->
+                    NavigationDrawerItem(
+                        icon = {
+                            Spacer(modifier = Modifier.width(32.dp)) // Indent for group hierarchy
+                        },
+                        label = {
+                            Text(
+                                text = menuItem.label,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        },
+                        selected = false, // TODO: Add selection state management
+                        onClick = {
+                            onNavigate(menuItem.routePath)
+                        },
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 1.dp)
+                    )
+                }
+
+                // Add spacing between module groups
+                if (moduleRoute != navigationRoutes.last()) {
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+                }
             }
         }
 
         // Statistics
-        if (navigationRoutes.isNotEmpty()) {
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
-                ModuleStatistics(
-                    moduleCount = navigationRoutes.size,
-                    totalMenuItems = navigationRoutes.sumOf { it.menuItems.size }
-                )
-            }
-        }
+//        if (navigationRoutes.isNotEmpty()) {
+//            item {
+//                Spacer(modifier = Modifier.height(16.dp))
+//                ModuleStatistics(
+//                    moduleCount = navigationRoutes.size,
+//                    totalMenuItems = navigationRoutes.sumOf { it.menuItems.size }
+//                )
+//            }
+//        }
     }
 }
 
-@Composable
-private fun MobileModuleNavigationItem(
-    moduleRoute: DynamicModuleRoute,
-    onNavigate: (String) -> Unit
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = if (expanded)
-                MaterialTheme.colorScheme.surfaceContainer
-            else MaterialTheme.colorScheme.surface
-        )
-    ) {
-        Column {
-            // Module header
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable {
-                        if (moduleRoute.menuItems.size == 1) {
-                            // Single menu item - navigate directly using routePath like desktop
-                            val menuItem = moduleRoute.menuItems.first()
-                            onNavigate(menuItem.routePath)
-                        } else {
-                            // Multiple menu items - toggle expansion
-                            expanded = !expanded
-                        }
-                    }
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Module icon with color
-                Box(
-                    modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(parseHexColor(moduleRoute.primaryColor)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = moduleRoute.displayName.first().uppercase(),
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(12.dp))
-
-                // Module info
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = moduleRoute.displayName,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Medium
-                    )
-                    Text(
-                        text = "${moduleRoute.menuItems.size} menu items",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                // Expand/collapse icon (only if multiple menu items)
-                if (moduleRoute.menuItems.size > 1) {
-                    Icon(
-                        imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                        contentDescription = if (expanded) "Collapse" else "Expand",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-            }
-
-            // Menu items (when expanded)
-            if (expanded && moduleRoute.menuItems.size > 1) {
-                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-
-                Column(modifier = Modifier.padding(start = 68.dp, end = 16.dp, bottom = 8.dp)) {
-                    moduleRoute.menuItems.forEach { menuItem ->
-                        MobileMenuItemRow(
-                            menuItem = menuItem,
-                            moduleRoute = moduleRoute,
-                            onNavigate = onNavigate
-                        )
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun MobileMenuItemRow(
-    menuItem: ModuleMenuItem,
-    moduleRoute: DynamicModuleRoute,
-    onNavigate: (String) -> Unit
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable {
-                // Use routePath directly like desktop implementation
-                onNavigate(menuItem.routePath)
-            }
-            .padding(vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            text = menuItem.label,
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1f)
-        )
-
-        if (menuItem.isDefault) {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.primary
-                ),
-                modifier = Modifier.height(18.dp)
-            ) {
-                Text(
-                    text = "Default",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                )
-            }
-        }
-    }
-}
 
 @Composable
 private fun EmptyModulesCard() {
@@ -346,7 +245,7 @@ private fun parseHexColor(hexColor: String): Color {
             blue = (colorInt and 0xFF) / 255f,
             alpha = 1f
         )
-    } catch (e: Exception) {
+    } catch (_: Exception) {
         Color.Gray // Fallback color
     }
 }

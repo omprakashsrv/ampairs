@@ -40,12 +40,12 @@ class GlobalNavigationManager private constructor() {
     val isLoadingModules: StateFlow<Boolean> = _isLoadingModules.asStateFlow()
 
     // Combined state to determine when navigation should be available
+    // Don't depend on loading state to prevent drawer disappearing during module loads
     val isNavigationAvailable: StateFlow<Boolean> = combine(
         workspaceManager.isWorkspaceSelected,
-        navigationService,
-        isLoadingModules
-    ) { workspaceSelected, service, loading ->
-        workspaceSelected && service != null && !loading
+        navigationService
+    ) { workspaceSelected, service ->
+        workspaceSelected && service != null
     }.stateIn(scope, SharingStarted.Eagerly, false)
 
     // State to determine when hamburger menu should be visible
@@ -71,10 +71,16 @@ class GlobalNavigationManager private constructor() {
     }
 
     /**
-     * Called when workspace is selected - creates navigation service
+     * Called when workspace is selected - creates navigation service and resets state
      */
     fun onWorkspaceSelected() {
-        if (_navigationService.value == null) {
+        // Reset existing service or create new one
+        val currentService = _navigationService.value
+        if (currentService != null) {
+            // Reset state when switching workspaces
+            currentService.reset()
+        } else {
+            // Create new service for first workspace selection
             _navigationService.value = DynamicModuleNavigationService()
         }
     }
@@ -83,6 +89,8 @@ class GlobalNavigationManager private constructor() {
      * Called when workspace is cleared - destroys navigation service
      */
     fun onWorkspaceCleared() {
+        // Reset the service before clearing
+        _navigationService.value?.reset()
         _navigationService.value = null
         _isLoadingModules.value = false
     }

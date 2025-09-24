@@ -14,6 +14,7 @@ import com.ampairs.common.navigation.BackNavigationHandler
 import com.ampairs.common.state.AppHeaderStateManager
 import com.ampairs.workspace.db.WorkspaceRepository
 import com.ampairs.workspace.domain.WorkspaceList
+import com.ampairs.workspace.integration.WorkspaceContextIntegration
 import kotlinx.coroutines.flow.firstOrNull
 import org.koin.compose.koinInject
 
@@ -115,6 +116,8 @@ fun AppScreenWithHeader(
         isWorkspaceLoading = headerState.isWorkspaceLoading,
         onWorkspaceClick = {
             if (!isWorkspaceSelection) {
+                // Clear workspace context and modules before switching
+                WorkspaceContextIntegration.clearWorkspaceContext()
                 navController.navigate(Route.Workspace) {
                     // Clear back stack up to workspace selection screen
                     // This removes any deep navigation within the current workspace
@@ -129,6 +132,8 @@ fun AppScreenWithHeader(
             navController.navigate(AuthRoute.UserUpdate)
         },
         onLogout = {
+            // Clear workspace context and modules before logout
+            WorkspaceContextIntegration.clearWorkspaceContext()
             // Clear user data and navigate to login
             headerStateManager.reset()
             navController.navigate(Route.Login) {
@@ -141,6 +146,8 @@ fun AppScreenWithHeader(
                 // Clear the current user so they stay on user selection screen
                 tokenRepository.clearCurrentUser()
             }
+            // Clear workspace context and modules before switching users
+            WorkspaceContextIntegration.clearWorkspaceContext()
             // Clear header state before navigation to prevent scope issues
             headerStateManager.reset()
             navController.navigate(AuthRoute.UserSelection) {

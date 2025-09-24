@@ -25,6 +25,7 @@ import com.ampairs.customer.ui.CustomerCreateRoute
 import com.ampairs.product.productNavigation
 import com.ampairs.tax.ui.navigation.taxNavigation
 import com.ampairs.workspace.context.WorkspaceContextManager
+import com.ampairs.workspace.integration.WorkspaceContextIntegration
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.workspaceNavigation
@@ -53,9 +54,8 @@ fun AppNavigation(
 
     LaunchedEffect(Unit) {
         UnauthenticatedHandler.onUnauthenticated.collectLatest {
-            // Clear workspace context and navigation service on logout
-            workspaceManager.clearWorkspaceContext()
-            globalNavigationManager.onWorkspaceCleared()
+            // Clear workspace context and navigation service on logout using integration
+            WorkspaceContextIntegration.clearWorkspaceContext()
             navController.navigate(Route.Login) {
                 popUpTo(0)
             }
