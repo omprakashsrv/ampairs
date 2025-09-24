@@ -1,28 +1,29 @@
 package com.ampairs.customer.domain.model
 
-import com.ampairs.core.domain.model.BaseDomain
+import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.customer.config.Constants
 import jakarta.persistence.*
 
 /**
- * Master registry of customer types available in the Ampairs system.
- * This serves as the central catalog from which workspaces can import customer types.
+ * Workspace-specific customer types for business categorization.
+ * Each workspace can define their own customer types with custom attributes.
  */
 @Entity
 @Table(
-    name = "master_customer_types",
+    name = "customer_types",
     indexes = [
-        Index(name = "idx_master_customer_type_code", columnList = "type_code", unique = true),
-        Index(name = "idx_master_customer_type_name", columnList = "name"),
-        Index(name = "idx_master_customer_type_active", columnList = "active")
+        Index(name = "idx_customer_type_code_workspace", columnList = "type_code,workspace_id", unique = true),
+        Index(name = "idx_customer_type_name", columnList = "name"),
+        Index(name = "idx_customer_type_active", columnList = "active"),
+        Index(name = "idx_customer_type_workspace", columnList = "workspace_id")
     ]
 )
-class MasterCustomerType : BaseDomain() {
+class CustomerType : OwnableBaseDomain() {
 
     /**
-     * Unique identifier code for the customer type (e.g., "RETAIL", "WHOLESALE")
+     * Unique identifier code for the customer type within workspace (e.g., "RETAIL", "WHOLESALE")
      */
-    @Column(name = "type_code", nullable = false, unique = true, length = 20)
+    @Column(name = "type_code", nullable = false, length = 20)
     var typeCode: String = ""
 
     /**
@@ -68,7 +69,7 @@ class MasterCustomerType : BaseDomain() {
     var metadata: String? = null
 
     override fun obtainSeqIdPrefix(): String {
-        return Constants.MASTER_CUSTOMER_TYPE_PREFIX
+        return Constants.CUSTOMER_TYPE_PREFIX
     }
 
     /**

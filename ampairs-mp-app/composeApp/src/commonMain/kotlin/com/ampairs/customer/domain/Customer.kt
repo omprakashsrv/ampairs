@@ -3,12 +3,8 @@ package com.ampairs.customer.domain
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
-enum class CustomerType(val displayName: String) {
-    RETAIL("Retail Customer"),
-    WHOLESALE("Wholesale Customer"),
-    DISTRIBUTOR("Distributor"),
-    CORPORATE("Corporate Customer")
-}
+// Note: CustomerType enum removed - now using dynamic CustomerType entity
+// Customer types are now managed as master data through CustomerTypeRepository
 
 @Serializable
 data class Customer(
@@ -22,7 +18,9 @@ data class Customer(
     @SerialName("country_code")
     val countryCode: Int = 91,
     @SerialName("customer_type")
-    val customerType: CustomerType? = null,
+    val customerType: String? = null,
+    @SerialName("customer_group")
+    val customerGroup: String? = null,
     @SerialName("gst_number")
     val gstNumber: String? = null,
     @SerialName("pan_number")

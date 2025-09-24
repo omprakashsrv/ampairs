@@ -1,28 +1,29 @@
 package com.ampairs.customer.domain.model
 
-import com.ampairs.core.domain.model.BaseDomain
+import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.customer.config.Constants
 import jakarta.persistence.*
 
 /**
- * Master registry of customer groups available in the Ampairs system.
- * This serves as the central catalog from which workspaces can import customer groups.
+ * Workspace-specific customer groups for business segmentation.
+ * Each workspace can define their own customer groups with custom attributes.
  */
 @Entity
 @Table(
-    name = "master_customer_groups",
+    name = "customer_groups",
     indexes = [
-        Index(name = "idx_master_customer_group_code", columnList = "group_code", unique = true),
-        Index(name = "idx_master_customer_group_name", columnList = "name"),
-        Index(name = "idx_master_customer_group_active", columnList = "active")
+        Index(name = "idx_customer_group_code_workspace", columnList = "group_code,workspace_id", unique = true),
+        Index(name = "idx_customer_group_name", columnList = "name"),
+        Index(name = "idx_customer_group_active", columnList = "active"),
+        Index(name = "idx_customer_group_workspace", columnList = "workspace_id")
     ]
 )
-class MasterCustomerGroup : BaseDomain() {
+class CustomerGroup : OwnableBaseDomain() {
 
     /**
-     * Unique identifier code for the customer group (e.g., "VIP", "REGULAR", "BULK_BUYER")
+     * Unique identifier code for the customer group within workspace (e.g., "VIP", "REGULAR", "BULK_BUYER")
      */
-    @Column(name = "group_code", nullable = false, unique = true, length = 20)
+    @Column(name = "group_code", nullable = false, length = 20)
     var groupCode: String = ""
 
     /**
@@ -68,7 +69,7 @@ class MasterCustomerGroup : BaseDomain() {
     var metadata: String? = null
 
     override fun obtainSeqIdPrefix(): String {
-        return Constants.MASTER_CUSTOMER_GROUP_PREFIX
+        return Constants.CUSTOMER_GROUP_PREFIX
     }
 
     /**
