@@ -67,6 +67,13 @@ class CustomerGroupStore(
     }
 
     /**
+     * Get customer group by ID for form editing
+     */
+    suspend fun getCustomerGroupById(id: String): CustomerGroup? {
+        return customerGroupDao.getCustomerGroupById(id)?.toCustomerGroup()
+    }
+
+    /**
      * Get customer group by name for form validation
      */
     suspend fun getCustomerGroupByName(name: String): CustomerGroup? {

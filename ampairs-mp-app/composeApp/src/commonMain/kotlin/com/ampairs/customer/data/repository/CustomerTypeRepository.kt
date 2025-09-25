@@ -185,6 +185,13 @@ class CustomerTypeRepository(
     }
 
     /**
+     * Get customer type by ID
+     */
+    suspend fun getCustomerTypeById(id: String): CustomerType? {
+        return customerTypeStore.getCustomerTypeById(id)
+    }
+
+    /**
      * Get customer type by name
      */
     suspend fun getCustomerTypeByName(name: String): CustomerType? {

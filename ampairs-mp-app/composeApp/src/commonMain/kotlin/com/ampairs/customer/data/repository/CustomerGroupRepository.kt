@@ -185,6 +185,13 @@ class CustomerGroupRepository(
     }
 
     /**
+     * Get customer group by ID
+     */
+    suspend fun getCustomerGroupById(id: String): CustomerGroup? {
+        return customerGroupStore.getCustomerGroupById(id)
+    }
+
+    /**
      * Get customer group by name
      */
     suspend fun getCustomerGroupByName(name: String): CustomerGroup? {

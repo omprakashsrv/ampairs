@@ -162,7 +162,7 @@ class CustomerTypeFormViewModel(
 
             // Load from local database first
             try {
-                val customerType = customerTypeRepository.getCustomerTypeByName(customerTypeId) // This should be by ID, but we need to adjust the repository
+                val customerType = customerTypeRepository.getCustomerTypeById(customerTypeId)
                 if (customerType != null) {
                     _formState.update {
                         it.copy(

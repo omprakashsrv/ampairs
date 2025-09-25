@@ -67,6 +67,13 @@ class CustomerTypeStore(
     }
 
     /**
+     * Get customer type by ID for form editing
+     */
+    suspend fun getCustomerTypeById(id: String): CustomerType? {
+        return customerTypeDao.getCustomerTypeById(id)?.toCustomerType()
+    }
+
+    /**
      * Get customer type by name for form validation
      */
     suspend fun getCustomerTypeByName(name: String): CustomerType? {

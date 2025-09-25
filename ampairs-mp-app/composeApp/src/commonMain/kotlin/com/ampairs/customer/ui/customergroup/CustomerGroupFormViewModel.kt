@@ -157,7 +157,7 @@ class CustomerGroupFormViewModel(
 
             // Load from local database first
             try {
-                val customerGroup = customerGroupRepository.getCustomerGroupByName(customerGroupId) // This should be by ID, but we need to adjust the repository
+                val customerGroup = customerGroupRepository.getCustomerGroupById(customerGroupId)
                 if (customerGroup != null) {
                     _formState.update {
                         it.copy(
