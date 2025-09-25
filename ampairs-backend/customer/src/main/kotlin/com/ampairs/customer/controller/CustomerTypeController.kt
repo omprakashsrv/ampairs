@@ -1,6 +1,7 @@
 package com.ampairs.customer.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.customer.domain.dto.CustomerTypeCreateRequest
 import com.ampairs.customer.domain.dto.CustomerTypeResponse
 import com.ampairs.customer.domain.dto.CustomerTypeUpdateRequest
@@ -9,6 +10,8 @@ import com.ampairs.customer.domain.dto.asCustomerTypeResponses
 import com.ampairs.customer.domain.dto.toCustomerType
 import com.ampairs.customer.domain.service.CustomerTypeService
 import jakarta.validation.Valid
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 
@@ -16,18 +19,37 @@ import org.springframework.web.bind.annotation.*
  * Controller for managing workspace customer types
  */
 @RestController
-@RequestMapping("/customer/v1/customer-types")
+@RequestMapping("/customer/v1/types")
 class CustomerTypeController(
     private val customerTypeService: CustomerTypeService
 ) {
 
     /**
-     * Get all active customer types for current workspace
+     * Get all active customer types for current workspace with pagination
      */
     @GetMapping("")
-    fun getAllCustomerTypes(): ApiResponse<List<CustomerTypeResponse>> {
-        val customerTypes = customerTypeService.getAllActiveCustomerTypes()
-        return ApiResponse.success(customerTypes.asCustomerTypeResponses())
+    fun getAllCustomerTypes(
+        @RequestParam("page", defaultValue = "0") page: Int,
+        @RequestParam("size", defaultValue = "20") size: Int,
+        @RequestParam("sort_by", defaultValue = "displayOrder") sortBy: String,
+        @RequestParam("sort_dir", defaultValue = "ASC") sortDir: String
+    ): ApiResponse<PageResponse<CustomerTypeResponse>> {
+        // Use JPA property names for sorting
+        val jpaPropertyName = when (sortBy) {
+            "createdAt" -> "createdAt"
+            "updatedAt" -> "updatedAt"
+            "name" -> "name"
+            "typeCode" -> "typeCode"
+            "displayOrder" -> "displayOrder"
+            "active" -> "active"
+            else -> "displayOrder" // default fallback
+        }
+
+        val sort = Sort.by(Sort.Direction.fromString(sortDir), jpaPropertyName)
+        val pageable = PageRequest.of(page, size, sort)
+
+        val customerTypesPage = customerTypeService.getAllActiveCustomerTypes(pageable)
+        return ApiResponse.success(PageResponse.from(customerTypesPage) { it.asCustomerTypeResponse() })
     }
 
     /**

@@ -1,6 +1,8 @@
 package com.ampairs.customer.repository
 
 import com.ampairs.customer.domain.model.CustomerType
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.stereotype.Repository
@@ -23,6 +25,12 @@ interface CustomerTypeRepository : JpaRepository<CustomerType, String>, JpaSpeci
      * Note: @TenantId automatically filters by current workspace
      */
     fun findByActiveTrue(): List<CustomerType>
+
+    /**
+     * Find all active customer types with pagination
+     * Note: @TenantId automatically filters by current workspace
+     */
+    fun findByActiveTrue(pageable: Pageable): Page<CustomerType>
 
     /**
      * Check if customer type code exists

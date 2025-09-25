@@ -1,6 +1,7 @@
 package com.ampairs.customer.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.customer.domain.dto.CustomerGroupCreateRequest
 import com.ampairs.customer.domain.dto.CustomerGroupResponse
 import com.ampairs.customer.domain.dto.CustomerGroupUpdateRequest
@@ -9,6 +10,8 @@ import com.ampairs.customer.domain.dto.asCustomerGroupResponses
 import com.ampairs.customer.domain.dto.toCustomerGroup
 import com.ampairs.customer.domain.service.CustomerGroupService
 import jakarta.validation.Valid
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 
@@ -16,18 +19,38 @@ import org.springframework.web.bind.annotation.*
  * Controller for managing workspace customer groups
  */
 @RestController
-@RequestMapping("/customer/v1/customer-groups")
+@RequestMapping("/customer/v1/groups")
 class CustomerGroupController(
     private val customerGroupService: CustomerGroupService
 ) {
 
     /**
-     * Get all active customer groups for current workspace
+     * Get all active customer groups for current workspace with pagination
      */
     @GetMapping("")
-    fun getAllCustomerGroups(): ApiResponse<List<CustomerGroupResponse>> {
-        val customerGroups = customerGroupService.getAllActiveCustomerGroups()
-        return ApiResponse.success(customerGroups.asCustomerGroupResponses())
+    fun getAllCustomerGroups(
+        @RequestParam("page", defaultValue = "0") page: Int,
+        @RequestParam("size", defaultValue = "20") size: Int,
+        @RequestParam("sort_by", defaultValue = "displayOrder") sortBy: String,
+        @RequestParam("sort_dir", defaultValue = "ASC") sortDir: String
+    ): ApiResponse<PageResponse<CustomerGroupResponse>> {
+        // Use JPA property names for sorting
+        val jpaPropertyName = when (sortBy) {
+            "createdAt" -> "createdAt"
+            "updatedAt" -> "updatedAt"
+            "name" -> "name"
+            "groupCode" -> "groupCode"
+            "displayOrder" -> "displayOrder"
+            "priorityLevel" -> "priorityLevel"
+            "active" -> "active"
+            else -> "displayOrder" // default fallback
+        }
+
+        val sort = Sort.by(Sort.Direction.fromString(sortDir), jpaPropertyName)
+        val pageable = PageRequest.of(page, size, sort)
+
+        val customerGroupsPage = customerGroupService.getAllActiveCustomerGroups(pageable)
+        return ApiResponse.success(PageResponse.from(customerGroupsPage) { it.asCustomerGroupResponse() })
     }
 
     /**

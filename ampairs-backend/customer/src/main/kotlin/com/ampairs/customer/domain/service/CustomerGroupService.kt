@@ -4,6 +4,8 @@ import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.customer.domain.model.CustomerGroup
 import com.ampairs.customer.repository.CustomerGroupRepository
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -27,6 +29,15 @@ class CustomerGroupService(
     fun getAllActiveCustomerGroups(): List<CustomerGroup> {
         return customerGroupRepository.findAll().filter { it.active }
             .sortedWith(compareBy<CustomerGroup> { it.displayOrder }.thenBy { it.name })
+    }
+
+    /**
+     * Get all active customer groups for current workspace with pagination
+     * Note: @TenantId automatically filters by current workspace
+     */
+    @Transactional(readOnly = true)
+    fun getAllActiveCustomerGroups(pageable: Pageable): Page<CustomerGroup> {
+        return customerGroupRepository.findByActiveTrue(pageable)
     }
 
     /**

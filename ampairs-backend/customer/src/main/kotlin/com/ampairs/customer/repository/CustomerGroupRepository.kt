@@ -1,6 +1,8 @@
 package com.ampairs.customer.repository
 
 import com.ampairs.customer.domain.model.CustomerGroup
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor
 import org.springframework.stereotype.Repository
@@ -23,6 +25,12 @@ interface CustomerGroupRepository : JpaRepository<CustomerGroup, String>, JpaSpe
      * Note: @TenantId automatically filters by current workspace
      */
     fun findByActiveTrue(): List<CustomerGroup>
+
+    /**
+     * Find all active customer groups with pagination
+     * Note: @TenantId automatically filters by current workspace
+     */
+    fun findByActiveTrue(pageable: Pageable): Page<CustomerGroup>
 
     /**
      * Check if customer group code exists

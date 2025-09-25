@@ -113,7 +113,9 @@ class MasterModuleSeederService(
                 createMenuItem("customer-list", "All Customers", "/customers", "people", 1, true),
                 createMenuItem("customer-create", "Create Customer", "/customers/create", "person_add", 2),
 //                createMenuItem("customer-import", "Import Customers", "/customers/import", "upload", 3),
-                createMenuItem("customer-states", "Manage States", "/customers/states", "location_on", 4)
+                createMenuItem("customer-states", "Manage States", "/customers/states", "location_on", 4),
+                createMenuItem("customer-types", "Customer Types", "/customers/types", "category", 5),
+                createMenuItem("customer-groups", "Customer Groups", "/customers/groups", "group", 6),
             )
         )
         navigationIndex = 20

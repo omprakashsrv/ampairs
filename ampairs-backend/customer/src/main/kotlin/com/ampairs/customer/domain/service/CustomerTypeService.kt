@@ -4,6 +4,8 @@ import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.customer.domain.model.CustomerType
 import com.ampairs.customer.repository.CustomerTypeRepository
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -27,6 +29,15 @@ class CustomerTypeService(
     fun getAllActiveCustomerTypes(): List<CustomerType> {
         return customerTypeRepository.findAll().filter { it.active }
             .sortedWith(compareBy<CustomerType> { it.displayOrder }.thenBy { it.name })
+    }
+
+    /**
+     * Get all active customer types for current workspace with pagination
+     * Note: @TenantId automatically filters by current workspace
+     */
+    @Transactional(readOnly = true)
+    fun getAllActiveCustomerTypes(pageable: Pageable): Page<CustomerType> {
+        return customerTypeRepository.findByActiveTrue(pageable)
     }
 
     /**
