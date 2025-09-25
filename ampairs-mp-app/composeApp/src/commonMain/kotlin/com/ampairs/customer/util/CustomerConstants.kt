@@ -28,6 +28,7 @@ object CustomerConstants {
      * UI Labels
      */
     const val LABEL_CUSTOMER_TYPE = "Customer Type"
+    const val LABEL_CUSTOMER_GROUP = "Customer Group"
     const val LABEL_STATUS = "Status"
     const val TITLE_CUSTOMERS = "Customers"
     const val TITLE_CUSTOMER_DETAILS = "Customer Details"

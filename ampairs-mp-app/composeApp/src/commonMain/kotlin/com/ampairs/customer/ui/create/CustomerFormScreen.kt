@@ -62,6 +62,7 @@ import com.ampairs.customer.ui.components.location.LocationData
 import com.ampairs.customer.ui.components.location.AddressData
 import com.ampairs.customer.domain.State
 import com.ampairs.customer.util.CustomerConstants.LABEL_CUSTOMER_TYPE
+import com.ampairs.customer.util.CustomerConstants.LABEL_CUSTOMER_GROUP
 import com.ampairs.customer.util.CustomerConstants.LABEL_STATUS
 import com.ampairs.customer.util.CustomerConstants.STATUS_ACTIVE
 import com.ampairs.customer.util.CustomerConstants.STATUS_INACTIVE
@@ -128,6 +129,10 @@ fun CustomerFormScreen(
                     onStateSelected = viewModel::onStateSelected,
                     cities = uiState.cities,
                     pincodes = uiState.pincodes,
+                    customerTypes = uiState.customerTypes,
+                    onCustomerTypeSelected = viewModel::onCustomerTypeSelected,
+                    customerGroups = uiState.customerGroups,
+                    onCustomerGroupSelected = viewModel::onCustomerGroupSelected,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -148,6 +153,10 @@ private fun CustomerForm(
     onStateSelected: (State) -> Unit,
     cities: List<String>,
     pincodes: List<String>,
+    customerTypes: List<com.ampairs.customer.domain.CustomerType>,
+    onCustomerTypeSelected: (com.ampairs.customer.domain.CustomerType) -> Unit,
+    customerGroups: List<com.ampairs.customer.domain.CustomerGroup>,
+    onCustomerGroupSelected: (com.ampairs.customer.domain.CustomerGroup) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
@@ -241,17 +250,61 @@ private fun CustomerForm(
                     expanded = customerTypeExpanded,
                     onDismissRequest = { customerTypeExpanded = false }
                 ) {
-                    // TODO: Load customer types from repository
-                    listOf("Retail", "Wholesale", "Distributor").forEach { typeName ->
+                    customerTypes.forEach { customerType ->
                         DropdownMenuItem(
-                            text = { Text(typeName) },
+                            text = { Text(customerType.name) },
                             onClick = {
-                                onFormChange(formState.copy(
-                                    customerType = typeName.lowercase(),
-                                    customerTypeName = typeName
-                                ))
+                                onCustomerTypeSelected(customerType)
                                 customerTypeExpanded = false
                             }
+                        )
+                    }
+                    if (customerTypes.isEmpty()) {
+                        DropdownMenuItem(
+                            text = { Text("No customer types available") },
+                            onClick = { }
+                        )
+                    }
+                }
+            }
+
+            // Customer Group Dropdown
+            var customerGroupExpanded by remember { mutableStateOf(false) }
+            ExposedDropdownMenuBox(
+                expanded = customerGroupExpanded,
+                onExpandedChange = { customerGroupExpanded = !customerGroupExpanded },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                OutlinedTextField(
+                    value = formState.customerGroupName.ifBlank { "Select Customer Group" },
+                    onValueChange = { },
+                    readOnly = true,
+                    label = { Text(LABEL_CUSTOMER_GROUP) },
+                    trailingIcon = {
+                        ExposedDropdownMenuDefaults.TrailingIcon(expanded = customerGroupExpanded)
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .menuAnchor(),
+                    singleLine = true
+                )
+                ExposedDropdownMenu(
+                    expanded = customerGroupExpanded,
+                    onDismissRequest = { customerGroupExpanded = false }
+                ) {
+                    customerGroups.forEach { customerGroup ->
+                        DropdownMenuItem(
+                            text = { Text(customerGroup.name) },
+                            onClick = {
+                                onCustomerGroupSelected(customerGroup)
+                                customerGroupExpanded = false
+                            }
+                        )
+                    }
+                    if (customerGroups.isEmpty()) {
+                        DropdownMenuItem(
+                            text = { Text("No customer groups available") },
+                            onClick = { }
                         )
                     }
                 }

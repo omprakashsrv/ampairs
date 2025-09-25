@@ -14,6 +14,12 @@ import com.ampairs.customer.domain.CustomerStore
 import com.ampairs.customer.domain.State
 import com.ampairs.customer.domain.StateKey
 import com.ampairs.customer.domain.StateStore
+import com.ampairs.customer.domain.CustomerType
+import com.ampairs.customer.domain.CustomerTypeStore
+import com.ampairs.customer.domain.CustomerTypeKey
+import com.ampairs.customer.domain.CustomerGroup
+import com.ampairs.customer.domain.CustomerGroupStore
+import com.ampairs.customer.domain.CustomerGroupKey
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.customer.util.CustomerConstants
 import com.ampairs.customer.util.CustomerConstants.DEFAULT_COUNTRY_CODE
@@ -165,13 +171,19 @@ data class CustomerFormUiState(
     val isLoadingStates: Boolean = false,
     val cities: List<String> = emptyList(),
     val pincodes: List<String> = emptyList(),
-    val isLoadingCitiesAndPincodes: Boolean = false
+    val isLoadingCitiesAndPincodes: Boolean = false,
+    val customerTypes: List<CustomerType> = emptyList(),
+    val isLoadingCustomerTypes: Boolean = false,
+    val customerGroups: List<CustomerGroup> = emptyList(),
+    val isLoadingCustomerGroups: Boolean = false
 )
 
 class CustomerFormViewModel(
     private val customerId: String?,
     private val customerStore: CustomerStore,
     private val stateStore: StateStore,
+    private val customerTypeStore: CustomerTypeStore,
+    private val customerGroupStore: CustomerGroupStore
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CustomerFormUiState())
@@ -183,6 +195,8 @@ class CustomerFormViewModel(
         observeFormValidation()
         loadStates()
         loadCitiesAndPincodes()
+        loadCustomerTypes()
+        loadCustomerGroups()
     }
 
     fun loadCustomer() {
@@ -398,6 +412,118 @@ class CustomerFormViewModel(
                     )
                 }
             }
+        }
+    }
+
+    private fun loadCustomerTypes() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingCustomerTypes = true) }
+
+            try {
+                val key = CustomerTypeKey(searchQuery = "")
+                customerTypeStore.customerTypeStore
+                    .stream(StoreReadRequest.cached(key, refresh = true))
+                    .collect { response ->
+                        when (response) {
+                            is StoreReadResponse.Data -> {
+                                _uiState.update {
+                                    it.copy(
+                                        customerTypes = response.value,
+                                        isLoadingCustomerTypes = false,
+                                        error = null
+                                    )
+                                }
+                            }
+                            is StoreReadResponse.Error.Exception -> {
+                                _uiState.update {
+                                    it.copy(
+                                        isLoadingCustomerTypes = false,
+                                        error = response.error.message ?: "Failed to load customer types"
+                                    )
+                                }
+                            }
+                            else -> {
+                                // Loading state is already handled
+                            }
+                        }
+                    }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoadingCustomerTypes = false,
+                        error = e.message ?: "Failed to load customer types"
+                    )
+                }
+            }
+        }
+    }
+
+    private fun loadCustomerGroups() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingCustomerGroups = true) }
+
+            try {
+                val key = CustomerGroupKey(searchQuery = "")
+                customerGroupStore.customerGroupStore
+                    .stream(StoreReadRequest.cached(key, refresh = true))
+                    .collect { response ->
+                        when (response) {
+                            is StoreReadResponse.Data -> {
+                                _uiState.update {
+                                    it.copy(
+                                        customerGroups = response.value,
+                                        isLoadingCustomerGroups = false,
+                                        error = null
+                                    )
+                                }
+                            }
+                            is StoreReadResponse.Error.Exception -> {
+                                _uiState.update {
+                                    it.copy(
+                                        isLoadingCustomerGroups = false,
+                                        error = response.error.message ?: "Failed to load customer groups"
+                                    )
+                                }
+                            }
+                            else -> {
+                                // Loading state is already handled
+                            }
+                        }
+                    }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoadingCustomerGroups = false,
+                        error = e.message ?: "Failed to load customer groups"
+                    )
+                }
+            }
+        }
+    }
+
+    fun onCustomerTypeSelected(customerType: CustomerType) {
+        val currentFormState = _uiState.value.formState
+        _uiState.update {
+            it.copy(
+                formState = currentFormState.copy(
+                    customerType = customerType.id,
+                    customerTypeName = customerType.name
+                ),
+                error = null
+            )
+        }
+    }
+
+    fun onCustomerGroupSelected(customerGroup: CustomerGroup) {
+        val currentFormState = _uiState.value.formState
+        _uiState.update {
+            it.copy(
+                formState = currentFormState.copy(
+                    customerGroup = customerGroup.id,
+                    customerGroupName = customerGroup.name
+                ),
+                error = null
+            )
         }
     }
 
