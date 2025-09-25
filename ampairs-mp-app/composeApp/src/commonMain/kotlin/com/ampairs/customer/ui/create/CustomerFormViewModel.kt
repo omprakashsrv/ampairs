@@ -9,7 +9,6 @@ import com.ampairs.common.validation.phone.PhoneNumberValidationError
 import com.ampairs.common.validation.phone.PhoneNumberValidator
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.CustomerAddress
-import com.ampairs.customer.domain.CustomerKey
 import com.ampairs.customer.domain.CustomerStore
 import com.ampairs.customer.domain.State
 import com.ampairs.customer.domain.StateKey
@@ -206,46 +205,23 @@ class CustomerFormViewModel(
             _uiState.update { it.copy(isLoading = true, error = null) }
 
             try {
-                val key = CustomerKey(customerId)
-                customerStore.customerStore
-                    .stream(StoreReadRequest.cached(key, refresh = true))
-                    .collect { response ->
-                        when (response) {
-                            is StoreReadResponse.Data -> {
-                                originalCustomer = response.value
-                                _uiState.update {
-                                    it.copy(
-                                        formState = response.value.toFormState(),
-                                        isLoading = false,
-                                        error = null
-                                    )
-                                }
+                customerStore.observeCustomer(customerId)
+                    .collect { customer ->
+                        if (customer != null) {
+                            originalCustomer = customer
+                            _uiState.update {
+                                it.copy(
+                                    formState = customer.toFormState(),
+                                    isLoading = false,
+                                    error = null
+                                )
                             }
-
-                            is StoreReadResponse.Loading -> {
-                                _uiState.update { it.copy(isLoading = true) }
-                            }
-
-                            is StoreReadResponse.Error.Exception -> {
-                                _uiState.update {
-                                    it.copy(
-                                        isLoading = false,
-                                        error = response.error.message ?: "Failed to load customer"
-                                    )
-                                }
-                            }
-
-                            is StoreReadResponse.Error.Message -> {
-                                _uiState.update {
-                                    it.copy(
-                                        isLoading = false,
-                                        error = response.message
-                                    )
-                                }
-                            }
-
-                            else -> {
-                                // Handle other response types if needed
+                        } else {
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    error = "Customer not found"
+                                )
                             }
                         }
                     }

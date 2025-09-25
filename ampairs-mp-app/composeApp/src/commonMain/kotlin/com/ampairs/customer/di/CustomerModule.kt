@@ -22,7 +22,6 @@ import com.ampairs.customer.ui.customertype.CustomerTypeListViewModel
 import com.ampairs.customer.ui.details.CustomerDetailsViewModel
 import com.ampairs.customer.ui.list.CustomersListViewModel
 import com.ampairs.customer.ui.state.StateListViewModel
-import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.bind
 import org.koin.dsl.module
@@ -54,7 +53,7 @@ val customerModule = module {
 
     // ViewModels
     factory { CustomersListViewModel(get()) }
-    factory { (customerId: String?) -> CustomerDetailsViewModel(customerId ?: "", get(), get()) }
+    factory { (customerId: String?) -> CustomerDetailsViewModel(customerId ?: "", get()) }
     factory { (customerId: String?) -> CustomerFormViewModel(customerId, get(), get(), get(), get()) }
     factory { StateListViewModel(get()) }
 
