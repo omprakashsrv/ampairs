@@ -12,6 +12,7 @@ import kotlinx.coroutines.FlowPreview
 data class CustomerGroupListUiState(
     val customerGroups: List<CustomerGroup> = emptyList(),
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val error: String? = null,
     val searchQuery: String = "",
     val availableCustomerGroupsForImport: List<CustomerGroup> = emptyList(),
@@ -171,6 +172,71 @@ class CustomerGroupListViewModel(
             } else {
                 refreshCustomerGroups()
                 loadAvailableCustomerGroupsForImport() // Refresh available list
+            }
+        }
+    }
+
+    /**
+     * Load customer groups from local database (reactive)
+     */
+    fun loadCustomerGroups() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+
+            try {
+                customerGroupRepository.getAllCustomerGroupsFlow()
+                    .catch { throwable ->
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                error = throwable.message ?: "Unknown error"
+                            )
+                        }
+                    }
+                    .collect { groups ->
+                        _uiState.update {
+                            it.copy(
+                                customerGroups = groups,
+                                isLoading = false,
+                                error = null
+                            )
+                        }
+                    }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = e.message ?: "Failed to load customer groups"
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Sync customer groups with server in background
+     */
+    fun syncCustomerGroups() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true, error = null) }
+
+            try {
+                val result = customerGroupRepository.syncCustomerGroups()
+                _uiState.update {
+                    it.copy(
+                        isRefreshing = false,
+                        error = if (result.isFailure) {
+                            result.exceptionOrNull()?.message ?: "Sync failed"
+                        } else null
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isRefreshing = false,
+                        error = e.message ?: "Sync failed"
+                    )
+                }
             }
         }
     }

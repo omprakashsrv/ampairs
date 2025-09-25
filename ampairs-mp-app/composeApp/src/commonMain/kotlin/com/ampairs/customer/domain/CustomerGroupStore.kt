@@ -4,6 +4,7 @@ import com.ampairs.customer.data.api.CustomerGroupApi
 import com.ampairs.customer.data.db.CustomerGroupDao
 import com.ampairs.customer.data.db.toCustomerGroup
 import com.ampairs.customer.data.db.toEntity
+import com.ampairs.customer.data.repository.CustomerGroupRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.mobilenativefoundation.store.store5.Fetcher
@@ -14,7 +15,8 @@ import com.ampairs.customer.util.CustomerLogger
 
 class CustomerGroupStore(
     private val customerGroupApi: CustomerGroupApi,
-    private val customerGroupDao: CustomerGroupDao
+    private val customerGroupDao: CustomerGroupDao,
+    private val repository: CustomerGroupRepository
 ) {
     val customerGroupStore: Store<CustomerGroupKey, List<CustomerGroup>> = StoreBuilder
         .from(
@@ -78,5 +80,12 @@ class CustomerGroupStore(
      */
     suspend fun getCustomerGroupByName(name: String): CustomerGroup? {
         return customerGroupDao.getCustomerGroupByName(name)?.toCustomerGroup()
+    }
+
+    /**
+     * Sync customer groups with server - delegates to repository
+     */
+    suspend fun syncCustomerGroups(): Result<Int> {
+        return repository.syncCustomerGroups()
     }
 }

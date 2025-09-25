@@ -30,8 +30,9 @@ fun CustomerTypeListScreen(
     var showSearchBar by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        // Load customer types on first composition
-        viewModel.updateSearchQuery("")
+        // Offline-first pattern: load from DB reactively, sync with server in background
+        viewModel.loadCustomerTypes()
+        viewModel.syncCustomerTypes()
     }
 
     Column(modifier = modifier.fillMaxSize()) {

@@ -30,8 +30,9 @@ fun CustomerGroupListScreen(
     var showSearchBar by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
-        // Load customer groups on first composition
-        viewModel.updateSearchQuery("")
+        // Offline-first pattern: load from DB reactively, sync with server in background
+        viewModel.loadCustomerGroups()
+        viewModel.syncCustomerGroups()
     }
 
     Column(modifier = modifier.fillMaxSize()) {

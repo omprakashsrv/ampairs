@@ -12,6 +12,7 @@ import kotlinx.coroutines.FlowPreview
 data class CustomerTypeListUiState(
     val customerTypes: List<CustomerType> = emptyList(),
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val error: String? = null,
     val searchQuery: String = "",
     val availableCustomerTypesForImport: List<CustomerType> = emptyList(),
@@ -171,6 +172,71 @@ class CustomerTypeListViewModel(
             } else {
                 refreshCustomerTypes()
                 loadAvailableCustomerTypesForImport() // Refresh available list
+            }
+        }
+    }
+
+    /**
+     * Load customer types from local database (reactive)
+     */
+    fun loadCustomerTypes() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, error = null) }
+
+            try {
+                customerTypeRepository.getAllCustomerTypesFlow()
+                    .catch { throwable ->
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                error = throwable.message ?: "Unknown error"
+                            )
+                        }
+                    }
+                    .collect { types ->
+                        _uiState.update {
+                            it.copy(
+                                customerTypes = types,
+                                isLoading = false,
+                                error = null
+                            )
+                        }
+                    }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        error = e.message ?: "Failed to load customer types"
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Sync customer types with server in background
+     */
+    fun syncCustomerTypes() {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true, error = null) }
+
+            try {
+                val result = customerTypeRepository.syncCustomerTypes()
+                _uiState.update {
+                    it.copy(
+                        isRefreshing = false,
+                        error = if (result.isFailure) {
+                            result.exceptionOrNull()?.message ?: "Sync failed"
+                        } else null
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update {
+                    it.copy(
+                        isRefreshing = false,
+                        error = e.message ?: "Sync failed"
+                    )
+                }
             }
         }
     }

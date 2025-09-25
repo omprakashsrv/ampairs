@@ -4,6 +4,7 @@ import com.ampairs.customer.data.api.CustomerTypeApi
 import com.ampairs.customer.data.db.CustomerTypeDao
 import com.ampairs.customer.data.db.toCustomerType
 import com.ampairs.customer.data.db.toEntity
+import com.ampairs.customer.data.repository.CustomerTypeRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.mobilenativefoundation.store.store5.Fetcher
@@ -14,7 +15,8 @@ import com.ampairs.customer.util.CustomerLogger
 
 class CustomerTypeStore(
     private val customerTypeApi: CustomerTypeApi,
-    private val customerTypeDao: CustomerTypeDao
+    private val customerTypeDao: CustomerTypeDao,
+    private val repository: CustomerTypeRepository
 ) {
     val customerTypeStore: Store<CustomerTypeKey, List<CustomerType>> = StoreBuilder
         .from(
@@ -78,5 +80,12 @@ class CustomerTypeStore(
      */
     suspend fun getCustomerTypeByName(name: String): CustomerType? {
         return customerTypeDao.getCustomerTypeByName(name)?.toCustomerType()
+    }
+
+    /**
+     * Sync customer types with server - delegates to repository
+     */
+    suspend fun syncCustomerTypes(): Result<Int> {
+        return repository.syncCustomerTypes()
     }
 }

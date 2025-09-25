@@ -217,4 +217,90 @@ class CustomerTypeRepository(
             Result.failure(e)
         }
     }
+
+    /**
+     * Sync customer types with server using offline-first pattern
+     */
+    suspend fun syncCustomerTypes(): Result<Int> {
+        return try {
+            // FIRST: Sync unsynced local customer types to server (prevents data loss)
+            val unsyncedTypes = customerTypeDao.getUnsyncedCustomerTypes()
+            var syncedCount = 0
+
+            for (entity in unsyncedTypes) {
+                val customerType = entity.toCustomerType()
+                try {
+                    if (!entity.active) {
+                        // Handle deleted customer types
+                        customerTypeApi.deleteCustomerType(customerType.id)
+                        customerTypeDao.deleteCustomerType(customerType.id)
+                        syncedCount++
+                    } else {
+                        // Handle created/updated customer types
+                        val response = if (entity.synced) {
+                            customerTypeApi.updateCustomerType(customerType.id, customerType)
+                        } else {
+                            customerTypeApi.createCustomerType(customerType)
+                        }
+
+                        if (response.data != null && response.error == null) {
+                            customerTypeDao.insertCustomerType(response.data!!.toEntity().copy(synced = true))
+                            syncedCount++
+                        }
+                    }
+                } catch (e: Exception) {
+                    CustomerLogger.w("CustomerTypeRepository", "Failed to sync customer type ${customerType.id}", e)
+                }
+            }
+
+            // SECOND: Sync from server in batches (incremental sync)
+            val serverSyncResult = syncCustomerTypesFromServerInBatches()
+            val serverSyncCount = serverSyncResult.getOrElse { 0 }
+
+            CustomerLogger.i("CustomerTypeRepository", "Sync completed: $syncedCount local → server, $serverSyncCount server → local")
+            Result.success(syncedCount + serverSyncCount)
+        } catch (e: Exception) {
+            CustomerLogger.e("CustomerTypeRepository", "Sync failed", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Sync customer types from server in batches using timestamp-based incremental sync
+     */
+    private suspend fun syncCustomerTypesFromServerInBatches(batchSize: Int = 100): Result<Int> {
+        return try {
+            var totalSynced = 0
+            var currentPage = 0
+
+            do {
+                // Fetch one page of customer types
+                val pageResponse = customerTypeApi.getCustomerTypes(currentPage, batchSize)
+                val batchTypes = pageResponse.data?.content ?: emptyList()
+
+                // Process batch with conflict resolution
+                val typesToInsert = batchTypes.mapNotNull { serverType ->
+                    val existing = customerTypeDao.getCustomerTypeById(serverType.id)
+                    if (existing != null && !existing.synced) {
+                        // Skip server entity to preserve local changes
+                        null
+                    } else {
+                        serverType.toEntity().copy(synced = true)
+                    }
+                }
+
+                if (typesToInsert.isNotEmpty()) {
+                    customerTypeDao.insertCustomerTypes(typesToInsert)
+                    totalSynced += typesToInsert.size
+                }
+
+                currentPage++
+            } while (batchTypes.size == batchSize && totalSynced < 10000) // Safety limit
+
+            Result.success(totalSynced)
+        } catch (e: Exception) {
+            CustomerLogger.e("CustomerTypeRepository", "Failed to sync from server", e)
+            Result.failure(e)
+        }
+    }
 }

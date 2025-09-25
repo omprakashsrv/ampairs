@@ -217,4 +217,90 @@ class CustomerGroupRepository(
             Result.failure(e)
         }
     }
+
+    /**
+     * Sync customer groups with server using offline-first pattern
+     */
+    suspend fun syncCustomerGroups(): Result<Int> {
+        return try {
+            // FIRST: Sync unsynced local customer groups to server (prevents data loss)
+            val unsyncedGroups = customerGroupDao.getUnsyncedCustomerGroups()
+            var syncedCount = 0
+
+            for (entity in unsyncedGroups) {
+                val customerGroup = entity.toCustomerGroup()
+                try {
+                    if (!entity.active) {
+                        // Handle deleted customer groups
+                        customerGroupApi.deleteCustomerGroup(customerGroup.id)
+                        customerGroupDao.deleteCustomerGroup(customerGroup.id)
+                        syncedCount++
+                    } else {
+                        // Handle created/updated customer groups
+                        val response = if (entity.synced) {
+                            customerGroupApi.updateCustomerGroup(customerGroup.id, customerGroup)
+                        } else {
+                            customerGroupApi.createCustomerGroup(customerGroup)
+                        }
+
+                        if (response.data != null && response.error == null) {
+                            customerGroupDao.insertCustomerGroup(response.data!!.toEntity().copy(synced = true))
+                            syncedCount++
+                        }
+                    }
+                } catch (e: Exception) {
+                    CustomerLogger.w("CustomerGroupRepository", "Failed to sync customer group ${customerGroup.id}", e)
+                }
+            }
+
+            // SECOND: Sync from server in batches (incremental sync)
+            val serverSyncResult = syncCustomerGroupsFromServerInBatches()
+            val serverSyncCount = serverSyncResult.getOrElse { 0 }
+
+            CustomerLogger.i("CustomerGroupRepository", "Sync completed: $syncedCount local → server, $serverSyncCount server → local")
+            Result.success(syncedCount + serverSyncCount)
+        } catch (e: Exception) {
+            CustomerLogger.e("CustomerGroupRepository", "Sync failed", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Sync customer groups from server in batches using timestamp-based incremental sync
+     */
+    private suspend fun syncCustomerGroupsFromServerInBatches(batchSize: Int = 100): Result<Int> {
+        return try {
+            var totalSynced = 0
+            var currentPage = 0
+
+            do {
+                // Fetch one page of customer groups
+                val pageResponse = customerGroupApi.getCustomerGroups(currentPage, batchSize)
+                val batchGroups = pageResponse.data?.content ?: emptyList()
+
+                // Process batch with conflict resolution
+                val groupsToInsert = batchGroups.mapNotNull { serverGroup ->
+                    val existing = customerGroupDao.getCustomerGroupById(serverGroup.id)
+                    if (existing != null && !existing.synced) {
+                        // Skip server entity to preserve local changes
+                        null
+                    } else {
+                        serverGroup.toEntity().copy(synced = true)
+                    }
+                }
+
+                if (groupsToInsert.isNotEmpty()) {
+                    customerGroupDao.insertCustomerGroups(groupsToInsert)
+                    totalSynced += groupsToInsert.size
+                }
+
+                currentPage++
+            } while (batchGroups.size == batchSize && totalSynced < 10000) // Safety limit
+
+            Result.success(totalSynced)
+        } catch (e: Exception) {
+            CustomerLogger.e("CustomerGroupRepository", "Failed to sync from server", e)
+            Result.failure(e)
+        }
+    }
 }
