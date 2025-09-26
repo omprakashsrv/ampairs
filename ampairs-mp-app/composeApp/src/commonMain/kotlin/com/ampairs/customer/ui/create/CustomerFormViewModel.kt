@@ -482,7 +482,7 @@ class CustomerFormViewModel(
         _uiState.update {
             it.copy(
                 formState = currentFormState.copy(
-                    customerType = customerType.id,
+                    customerType = customerType.name,
                     customerTypeName = customerType.name
                 ),
                 error = null
@@ -495,7 +495,7 @@ class CustomerFormViewModel(
         _uiState.update {
             it.copy(
                 formState = currentFormState.copy(
-                    customerGroup = customerGroup.id,
+                    customerGroup = customerGroup.name,
                     customerGroupName = customerGroup.name
                 ),
                 error = null
@@ -599,9 +599,9 @@ private fun Customer.toFormState(): CustomerFormState {
         landline = landline ?: "",
         countryCode = if (countryCode == 0) DEFAULT_COUNTRY_CODE else countryCode,
         customerType = customerType ?: "",
-        customerTypeName = "", // Will be loaded from repository when editing
+        customerTypeName = customerType ?: "", // Use the name directly since we store names now
         customerGroup = customerGroup ?: "",
-        customerGroupName = "", // Will be loaded from repository when editing
+        customerGroupName = customerGroup ?: "", // Use the name directly since we store names now
         gstNumber = gstNumber ?: "",
         panNumber = panNumber ?: "",
         creditLimit = creditLimit ?: 0.0,

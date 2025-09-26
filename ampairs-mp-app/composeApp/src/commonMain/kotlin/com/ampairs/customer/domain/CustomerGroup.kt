@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CustomerGroup(
-    val id: String = "",
+    val uid: String = "",
     val name: String = "",
     val description: String? = null,
     @SerialName("group_code")
@@ -36,7 +36,7 @@ data class CustomerGroupListItem(
 )
 
 fun CustomerGroup.toListItem(): CustomerGroupListItem = CustomerGroupListItem(
-    id = id,
+    id = uid,
     name = name,
     description = description,
     groupCode = groupCode,

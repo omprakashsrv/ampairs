@@ -22,7 +22,7 @@ data class CustomerTypeEntity(
 )
 
 fun CustomerTypeEntity.toCustomerType(): CustomerType = CustomerType(
-    id = id,
+    uid = id,
     name = name,
     description = description,
     typeCode = typeCode,
@@ -36,7 +36,7 @@ fun CustomerTypeEntity.toCustomerType(): CustomerType = CustomerType(
 )
 
 fun CustomerType.toEntity(): CustomerTypeEntity = CustomerTypeEntity(
-    id = id,
+    id = uid,
     name = name,
     description = description,
     typeCode = typeCode,

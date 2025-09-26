@@ -4,7 +4,6 @@ import com.ampairs.customer.data.api.CustomerTypeApi
 import com.ampairs.customer.data.db.CustomerTypeDao
 import com.ampairs.customer.data.db.toCustomerType
 import com.ampairs.customer.data.db.toEntity
-import com.ampairs.customer.data.repository.CustomerTypeRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.mobilenativefoundation.store.store5.Fetcher
@@ -15,8 +14,7 @@ import com.ampairs.customer.util.CustomerLogger
 
 class CustomerTypeStore(
     private val customerTypeApi: CustomerTypeApi,
-    private val customerTypeDao: CustomerTypeDao,
-    private val repository: CustomerTypeRepository
+    private val customerTypeDao: CustomerTypeDao
 ) {
     val customerTypeStore: Store<CustomerTypeKey, List<CustomerType>> = StoreBuilder
         .from(
@@ -83,9 +81,88 @@ class CustomerTypeStore(
     }
 
     /**
-     * Sync customer types with server - delegates to repository
+     * Sync customer types with server - implemented directly
      */
     suspend fun syncCustomerTypes(): Result<Int> {
-        return repository.syncCustomerTypes()
+        return try {
+            // FIRST: Sync unsynced local customer types to server (prevents data loss)
+            val unsyncedTypes = customerTypeDao.getUnsyncedCustomerTypes()
+            var syncedCount = 0
+
+            for (entity in unsyncedTypes) {
+                val customerType = entity.toCustomerType()
+                try {
+                    if (!entity.active) {
+                        // Handle deleted customer types
+                        customerTypeApi.deleteCustomerType(customerType.uid)
+                        customerTypeDao.deleteCustomerType(customerType.uid)
+                        syncedCount++
+                    } else {
+                        // Handle created/updated customer types
+                        val response = if (entity.synced) {
+                            customerTypeApi.updateCustomerType(customerType.uid, customerType)
+                        } else {
+                            customerTypeApi.createCustomerType(customerType)
+                        }
+
+                        if (response.data != null && response.error == null) {
+                            customerTypeDao.insertCustomerType(response.data!!.toEntity().copy(synced = true))
+                            syncedCount++
+                        }
+                    }
+                } catch (e: Exception) {
+                    CustomerLogger.w("CustomerTypeStore", "Failed to sync customer type ${customerType.uid}", e)
+                }
+            }
+
+            // SECOND: Sync from server in batches (incremental sync)
+            val serverSyncResult = syncCustomerTypesFromServerInBatches()
+            val serverSyncCount = serverSyncResult.getOrElse { 0 }
+
+            CustomerLogger.i("CustomerTypeStore", "Sync completed: $syncedCount local → server, $serverSyncCount server → local")
+            Result.success(syncedCount + serverSyncCount)
+        } catch (e: Exception) {
+            CustomerLogger.e("CustomerTypeStore", "Sync failed", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Sync customer types from server in batches using timestamp-based incremental sync
+     */
+    private suspend fun syncCustomerTypesFromServerInBatches(batchSize: Int = 100): Result<Int> {
+        return try {
+            var totalSynced = 0
+            var currentPage = 0
+
+            do {
+                // Fetch one page of customer types
+                val pageResponse = customerTypeApi.getCustomerTypes(currentPage, batchSize)
+                val batchTypes = pageResponse.data?.content ?: emptyList()
+
+                // Process batch with conflict resolution
+                val typesToInsert = batchTypes.mapNotNull { serverType ->
+                    val existing = customerTypeDao.getCustomerTypeById(serverType.uid)
+                    if (existing != null && !existing.synced) {
+                        // Skip server entity to preserve local changes
+                        null
+                    } else {
+                        serverType.toEntity().copy(synced = true)
+                    }
+                }
+
+                if (typesToInsert.isNotEmpty()) {
+                    customerTypeDao.insertCustomerTypes(typesToInsert)
+                    totalSynced += typesToInsert.size
+                }
+
+                currentPage++
+            } while (batchTypes.size == batchSize && totalSynced < 10000) // Safety limit
+
+            Result.success(totalSynced)
+        } catch (e: Exception) {
+            CustomerLogger.e("CustomerTypeStore", "Failed to sync from server", e)
+            Result.failure(e)
+        }
     }
 }

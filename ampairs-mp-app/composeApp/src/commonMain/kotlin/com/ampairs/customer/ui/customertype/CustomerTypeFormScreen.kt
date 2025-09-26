@@ -30,10 +30,7 @@ fun CustomerTypeFormScreen(
     val isEditing = customerTypeId != null
 
     LaunchedEffect(Unit) {
-        if (isEditing && customerTypeId != null) {
-            // Load existing customer type for editing
-            // This will be handled by the ViewModel's init block
-        }
+       
     }
 
     Column(modifier = modifier.fillMaxSize()) {

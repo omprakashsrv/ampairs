@@ -5,7 +5,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class CustomerType(
-    val id: String = "",
+    val uid: String = "",
     val name: String = "",
     val description: String? = null,
     @SerialName("type_code")
@@ -36,7 +36,7 @@ data class CustomerTypeListItem(
 )
 
 fun CustomerType.toListItem(): CustomerTypeListItem = CustomerTypeListItem(
-    id = id,
+    id = uid,
     name = name,
     description = description,
     typeCode = typeCode,

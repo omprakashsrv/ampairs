@@ -4,7 +4,6 @@ import com.ampairs.customer.data.api.CustomerGroupApi
 import com.ampairs.customer.data.db.CustomerGroupDao
 import com.ampairs.customer.data.db.toCustomerGroup
 import com.ampairs.customer.data.db.toEntity
-import com.ampairs.customer.data.repository.CustomerGroupRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.mobilenativefoundation.store.store5.Fetcher
@@ -15,8 +14,7 @@ import com.ampairs.customer.util.CustomerLogger
 
 class CustomerGroupStore(
     private val customerGroupApi: CustomerGroupApi,
-    private val customerGroupDao: CustomerGroupDao,
-    private val repository: CustomerGroupRepository
+    private val customerGroupDao: CustomerGroupDao
 ) {
     val customerGroupStore: Store<CustomerGroupKey, List<CustomerGroup>> = StoreBuilder
         .from(
@@ -83,9 +81,88 @@ class CustomerGroupStore(
     }
 
     /**
-     * Sync customer groups with server - delegates to repository
+     * Sync customer groups with server - implemented directly
      */
     suspend fun syncCustomerGroups(): Result<Int> {
-        return repository.syncCustomerGroups()
+        return try {
+            // FIRST: Sync unsynced local customer groups to server (prevents data loss)
+            val unsyncedGroups = customerGroupDao.getUnsyncedCustomerGroups()
+            var syncedCount = 0
+
+            for (entity in unsyncedGroups) {
+                val customerGroup = entity.toCustomerGroup()
+                try {
+                    if (!entity.active) {
+                        // Handle deleted customer groups
+                        customerGroupApi.deleteCustomerGroup(customerGroup.uid)
+                        customerGroupDao.deleteCustomerGroup(customerGroup.uid)
+                        syncedCount++
+                    } else {
+                        // Handle created/updated customer groups
+                        val response = if (entity.synced) {
+                            customerGroupApi.updateCustomerGroup(customerGroup.uid, customerGroup)
+                        } else {
+                            customerGroupApi.createCustomerGroup(customerGroup)
+                        }
+
+                        if (response.data != null && response.error == null) {
+                            customerGroupDao.insertCustomerGroup(response.data!!.toEntity().copy(synced = true))
+                            syncedCount++
+                        }
+                    }
+                } catch (e: Exception) {
+                    CustomerLogger.w("CustomerGroupStore", "Failed to sync customer group ${customerGroup.uid}", e)
+                }
+            }
+
+            // SECOND: Sync from server in batches (incremental sync)
+            val serverSyncResult = syncCustomerGroupsFromServerInBatches()
+            val serverSyncCount = serverSyncResult.getOrElse { 0 }
+
+            CustomerLogger.i("CustomerGroupStore", "Sync completed: $syncedCount local → server, $serverSyncCount server → local")
+            Result.success(syncedCount + serverSyncCount)
+        } catch (e: Exception) {
+            CustomerLogger.e("CustomerGroupStore", "Sync failed", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Sync customer groups from server in batches using timestamp-based incremental sync
+     */
+    private suspend fun syncCustomerGroupsFromServerInBatches(batchSize: Int = 100): Result<Int> {
+        return try {
+            var totalSynced = 0
+            var currentPage = 0
+
+            do {
+                // Fetch one page of customer groups
+                val pageResponse = customerGroupApi.getCustomerGroups(currentPage, batchSize)
+                val batchGroups = pageResponse.data?.content ?: emptyList()
+
+                // Process batch with conflict resolution
+                val groupsToInsert = batchGroups.mapNotNull { serverGroup ->
+                    val existing = customerGroupDao.getCustomerGroupById(serverGroup.uid)
+                    if (existing != null && !existing.synced) {
+                        // Skip server entity to preserve local changes
+                        null
+                    } else {
+                        serverGroup.toEntity().copy(synced = true)
+                    }
+                }
+
+                if (groupsToInsert.isNotEmpty()) {
+                    customerGroupDao.insertCustomerGroups(groupsToInsert)
+                    totalSynced += groupsToInsert.size
+                }
+
+                currentPage++
+            } while (batchGroups.size == batchSize && totalSynced < 10000) // Safety limit
+
+            Result.success(totalSynced)
+        } catch (e: Exception) {
+            CustomerLogger.e("CustomerGroupStore", "Failed to sync from server", e)
+            Result.failure(e)
+        }
     }
 }

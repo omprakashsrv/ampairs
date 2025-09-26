@@ -22,7 +22,7 @@ data class CustomerGroupEntity(
 )
 
 fun CustomerGroupEntity.toCustomerGroup(): CustomerGroup = CustomerGroup(
-    id = id,
+    uid = id,
     name = name,
     description = description,
     groupCode = groupCode,
@@ -36,7 +36,7 @@ fun CustomerGroupEntity.toCustomerGroup(): CustomerGroup = CustomerGroup(
 )
 
 fun CustomerGroup.toEntity(): CustomerGroupEntity = CustomerGroupEntity(
-    id = id,
+    id = uid,
     name = name,
     description = description,
     groupCode = groupCode,

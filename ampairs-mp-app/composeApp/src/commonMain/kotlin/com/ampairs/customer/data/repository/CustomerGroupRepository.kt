@@ -68,13 +68,13 @@ class CustomerGroupRepository(
     suspend fun createCustomerGroup(customerGroup: CustomerGroup): Result<CustomerGroup> {
         return try {
             // Generate UID if not provided
-            val uid = if (customerGroup.id.isBlank()) {
+            val uid = if (customerGroup.uid.isBlank()) {
                 UidGenerator.generateUid(CustomerConstants.UID_PREFIX)
             } else {
-                customerGroup.id
+                customerGroup.uid
             }
 
-            val customerGroupWithUid = customerGroup.copy(id = uid)
+            val customerGroupWithUid = customerGroup.copy(uid = uid)
 
             // 1. Save locally first with unsynced status
             val unsyncedEntity = customerGroupWithUid.toEntity().copy(synced = false)
@@ -86,8 +86,8 @@ class CustomerGroupRepository(
                 if (response.data != null && response.error == null) {
                     // Server success - correct UID if needed and mark as synced
                     val serverCustomerGroup = response.data!!
-                    val finalCustomerGroup = if (serverCustomerGroup.id != uid) {
-                        serverCustomerGroup.copy(id = uid) // Keep local UID consistent
+                    val finalCustomerGroup = if (serverCustomerGroup.uid != uid) {
+                        serverCustomerGroup.copy(uid = uid) // Keep local UID consistent
                     } else {
                         serverCustomerGroup
                     }
@@ -118,7 +118,7 @@ class CustomerGroupRepository(
 
             // 2. Try to sync with server
             try {
-                val response = customerGroupApi.updateCustomerGroup(customerGroup.id, customerGroup)
+                val response = customerGroupApi.updateCustomerGroup(customerGroup.uid, customerGroup)
                 if (response.data != null && response.error == null) {
                     customerGroupDao.insertCustomerGroup(response.data!!.toEntity().copy(synced = true))
                     Result.success(response.data!!)
@@ -232,13 +232,13 @@ class CustomerGroupRepository(
                 try {
                     if (!entity.active) {
                         // Handle deleted customer groups
-                        customerGroupApi.deleteCustomerGroup(customerGroup.id)
-                        customerGroupDao.deleteCustomerGroup(customerGroup.id)
+                        customerGroupApi.deleteCustomerGroup(customerGroup.uid)
+                        customerGroupDao.deleteCustomerGroup(customerGroup.uid)
                         syncedCount++
                     } else {
                         // Handle created/updated customer groups
                         val response = if (entity.synced) {
-                            customerGroupApi.updateCustomerGroup(customerGroup.id, customerGroup)
+                            customerGroupApi.updateCustomerGroup(customerGroup.uid, customerGroup)
                         } else {
                             customerGroupApi.createCustomerGroup(customerGroup)
                         }
@@ -249,7 +249,7 @@ class CustomerGroupRepository(
                         }
                     }
                 } catch (e: Exception) {
-                    CustomerLogger.w("CustomerGroupRepository", "Failed to sync customer group ${customerGroup.id}", e)
+                    CustomerLogger.w("CustomerGroupRepository", "Failed to sync customer group ${customerGroup.uid}", e)
                 }
             }
 
@@ -280,7 +280,7 @@ class CustomerGroupRepository(
 
                 // Process batch with conflict resolution
                 val groupsToInsert = batchGroups.mapNotNull { serverGroup ->
-                    val existing = customerGroupDao.getCustomerGroupById(serverGroup.id)
+                    val existing = customerGroupDao.getCustomerGroupById(serverGroup.uid)
                     if (existing != null && !existing.synced) {
                         // Skip server entity to preserve local changes
                         null

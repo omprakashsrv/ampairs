@@ -18,9 +18,9 @@ data class Customer(
     @SerialName("country_code")
     val countryCode: Int = 91,
     @SerialName("customer_type")
-    val customerType: String? = null,
+    val customerType: String? = null, // Stores customer type name, not UID
     @SerialName("customer_group")
-    val customerGroup: String? = null,
+    val customerGroup: String? = null, // Stores customer group name, not UID
     @SerialName("gst_number")
     val gstNumber: String? = null,
     @SerialName("pan_number")

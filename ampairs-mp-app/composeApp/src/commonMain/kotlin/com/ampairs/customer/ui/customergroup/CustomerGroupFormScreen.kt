@@ -30,10 +30,7 @@ fun CustomerGroupFormScreen(
     val isEditing = customerGroupId != null
 
     LaunchedEffect(Unit) {
-        if (isEditing && customerGroupId != null) {
-            // Load existing customer group for editing
-            // This will be handled by the ViewModel's init block
-        }
+
     }
 
     Column(modifier = modifier.fillMaxSize()) {

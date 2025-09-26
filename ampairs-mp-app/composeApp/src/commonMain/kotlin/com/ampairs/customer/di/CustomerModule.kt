@@ -47,8 +47,8 @@ val customerModule = module {
 
     // Domain Layer
     singleOf(::CustomerStore)
-    single { CustomerTypeStore(get(), get(), get<CustomerTypeRepository>()) }
-    single { CustomerGroupStore(get(), get(), get<CustomerGroupRepository>()) }
+    singleOf(::CustomerTypeStore)
+    singleOf(::CustomerGroupStore)
     singleOf(::StateStore)
 
     // ViewModels

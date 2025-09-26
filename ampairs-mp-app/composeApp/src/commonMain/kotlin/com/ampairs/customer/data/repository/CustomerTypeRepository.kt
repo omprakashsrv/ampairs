@@ -68,13 +68,13 @@ class CustomerTypeRepository(
     suspend fun createCustomerType(customerType: CustomerType): Result<CustomerType> {
         return try {
             // Generate UID if not provided
-            val uid = if (customerType.id.isBlank()) {
+            val uid = if (customerType.uid.isBlank()) {
                 UidGenerator.generateUid(CustomerConstants.UID_PREFIX)
             } else {
-                customerType.id
+                customerType.uid
             }
 
-            val customerTypeWithUid = customerType.copy(id = uid)
+            val customerTypeWithUid = customerType.copy(uid = uid)
 
             // 1. Save locally first with unsynced status
             val unsyncedEntity = customerTypeWithUid.toEntity().copy(synced = false)
@@ -86,8 +86,8 @@ class CustomerTypeRepository(
                 if (response.data != null && response.error == null) {
                     // Server success - correct UID if needed and mark as synced
                     val serverCustomerType = response.data!!
-                    val finalCustomerType = if (serverCustomerType.id != uid) {
-                        serverCustomerType.copy(id = uid) // Keep local UID consistent
+                    val finalCustomerType = if (serverCustomerType.uid != uid) {
+                        serverCustomerType.copy(uid = uid) // Keep local UID consistent
                     } else {
                         serverCustomerType
                     }
@@ -118,7 +118,7 @@ class CustomerTypeRepository(
 
             // 2. Try to sync with server
             try {
-                val response = customerTypeApi.updateCustomerType(customerType.id, customerType)
+                val response = customerTypeApi.updateCustomerType(customerType.uid, customerType)
                 if (response.data != null && response.error == null) {
                     customerTypeDao.insertCustomerType(response.data!!.toEntity().copy(synced = true))
                     Result.success(response.data!!)
@@ -232,13 +232,13 @@ class CustomerTypeRepository(
                 try {
                     if (!entity.active) {
                         // Handle deleted customer types
-                        customerTypeApi.deleteCustomerType(customerType.id)
-                        customerTypeDao.deleteCustomerType(customerType.id)
+                        customerTypeApi.deleteCustomerType(customerType.uid)
+                        customerTypeDao.deleteCustomerType(customerType.uid)
                         syncedCount++
                     } else {
                         // Handle created/updated customer types
                         val response = if (entity.synced) {
-                            customerTypeApi.updateCustomerType(customerType.id, customerType)
+                            customerTypeApi.updateCustomerType(customerType.uid, customerType)
                         } else {
                             customerTypeApi.createCustomerType(customerType)
                         }
@@ -249,7 +249,7 @@ class CustomerTypeRepository(
                         }
                     }
                 } catch (e: Exception) {
-                    CustomerLogger.w("CustomerTypeRepository", "Failed to sync customer type ${customerType.id}", e)
+                    CustomerLogger.w("CustomerTypeRepository", "Failed to sync customer type ${customerType.uid}", e)
                 }
             }
 
@@ -280,7 +280,7 @@ class CustomerTypeRepository(
 
                 // Process batch with conflict resolution
                 val typesToInsert = batchTypes.mapNotNull { serverType ->
-                    val existing = customerTypeDao.getCustomerTypeById(serverType.id)
+                    val existing = customerTypeDao.getCustomerTypeById(serverType.uid)
                     if (existing != null && !existing.synced) {
                         // Skip server entity to preserve local changes
                         null

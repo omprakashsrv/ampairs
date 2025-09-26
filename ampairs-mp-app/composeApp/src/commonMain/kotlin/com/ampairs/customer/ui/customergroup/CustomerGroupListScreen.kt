@@ -164,8 +164,8 @@ fun CustomerGroupListScreen(
                         items(uiState.customerGroups) { customerGroup ->
                             CustomerGroupCard(
                                 customerGroup = customerGroup,
-                                onClick = { onCustomerGroupClick(customerGroup.id) },
-                                onDelete = { viewModel.deleteCustomerGroup(customerGroup.id) }
+                                onClick = { onCustomerGroupClick(customerGroup.uid) },
+                                onDelete = { viewModel.deleteCustomerGroup(customerGroup.uid) }
                             )
                         }
 

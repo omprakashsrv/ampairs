@@ -112,7 +112,7 @@ class CustomerGroupFormViewModel(
         viewModelScope.launch {
             try {
                 val customerGroup = CustomerGroup(
-                    id = if (state.isEditMode) state.id else UidGenerator.generateUid(CustomerConstants.UID_PREFIX),
+                    uid = if (state.isEditMode) state.id else UidGenerator.generateUid(CustomerConstants.UID_PREFIX),
                     name = state.name.trim(),
                     description = state.description.trim().ifBlank { null },
                     groupCode = state.groupCode.trim().ifBlank { null },
@@ -161,7 +161,7 @@ class CustomerGroupFormViewModel(
                 if (customerGroup != null) {
                     _formState.update {
                         it.copy(
-                            id = customerGroup.id,
+                            id = customerGroup.uid,
                             name = customerGroup.name,
                             description = customerGroup.description ?: "",
                             groupCode = customerGroup.groupCode ?: "",

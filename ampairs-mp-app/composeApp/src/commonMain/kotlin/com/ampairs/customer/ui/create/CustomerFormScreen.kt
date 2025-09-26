@@ -52,6 +52,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.ampairs.customer.domain.CustomerGroup
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 import com.ampairs.ui.components.Phone
@@ -153,10 +154,10 @@ private fun CustomerForm(
     onStateSelected: (State) -> Unit,
     cities: List<String>,
     pincodes: List<String>,
-    customerTypes: List<com.ampairs.customer.domain.CustomerType>,
-    onCustomerTypeSelected: (com.ampairs.customer.domain.CustomerType) -> Unit,
-    customerGroups: List<com.ampairs.customer.domain.CustomerGroup>,
-    onCustomerGroupSelected: (com.ampairs.customer.domain.CustomerGroup) -> Unit,
+    customerTypes: List<CustomerType>,
+    onCustomerTypeSelected: (CustomerType) -> Unit,
+    customerGroups: List<CustomerGroup>,
+    onCustomerGroupSelected: (CustomerGroup) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current

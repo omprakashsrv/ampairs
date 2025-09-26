@@ -165,8 +165,8 @@ fun CustomerTypeListScreen(
                         items(uiState.customerTypes) { customerType ->
                             CustomerTypeCard(
                                 customerType = customerType,
-                                onClick = { onCustomerTypeClick(customerType.id) },
-                                onDelete = { viewModel.deleteCustomerType(customerType.id) }
+                                onClick = { onCustomerTypeClick(customerType.uid) },
+                                onDelete = { viewModel.deleteCustomerType(customerType.uid) }
                             )
                         }
 
