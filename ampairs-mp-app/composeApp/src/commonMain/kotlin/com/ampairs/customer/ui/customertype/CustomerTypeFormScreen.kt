@@ -30,7 +30,7 @@ fun CustomerTypeFormScreen(
     val isEditing = customerTypeId != null
 
     LaunchedEffect(Unit) {
-       
+
     }
 
     Column(modifier = modifier.fillMaxSize()) {
@@ -272,29 +272,25 @@ fun CustomerTypeFormScreen(
             }
 
             // Bottom Save Button
-            Card(
-                modifier = Modifier.fillMaxWidth()
+            Button(
+                onClick = {
+                    viewModel.saveCustomerType(onSaveSuccess)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                enabled = !formState.isLoading && formState.name.isNotBlank()
             ) {
-                Button(
-                    onClick = {
-                        viewModel.saveCustomerType(onSaveSuccess)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    enabled = !formState.isLoading && formState.name.isNotBlank()
-                ) {
-                    if (formState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Saving...")
-                    } else {
-                        Text("Save Customer Type")
-                    }
+                if (formState.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Saving...")
+                } else {
+                    Text("Save Customer Type")
                 }
             }
 

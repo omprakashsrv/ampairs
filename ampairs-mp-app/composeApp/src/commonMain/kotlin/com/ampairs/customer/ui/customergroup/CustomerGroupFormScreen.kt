@@ -275,29 +275,25 @@ fun CustomerGroupFormScreen(
             }
 
             // Bottom Save Button
-            Card(
-                modifier = Modifier.fillMaxWidth()
+            Button(
+                onClick = {
+                    viewModel.saveCustomerGroup(onSaveSuccess)
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                enabled = !formState.isLoading && formState.name.isNotBlank()
             ) {
-                Button(
-                    onClick = {
-                        viewModel.saveCustomerGroup(onSaveSuccess)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    enabled = !formState.isLoading && formState.name.isNotBlank()
-                ) {
-                    if (formState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp,
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Saving...")
-                    } else {
-                        Text("Save Customer Group")
-                    }
+                if (formState.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp,
+                        color = MaterialTheme.colorScheme.onPrimary
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Saving...")
+                } else {
+                    Text("Save Customer Group")
                 }
             }
 
