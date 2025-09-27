@@ -116,14 +116,45 @@ private fun CustomerDetailsContent(
         // Basic Information
         InfoSection(title = "Basic Information") {
             InfoRow(label = "Name", value = customer.name)
+            customer.refId?.let {
+                InfoRow(label = "Reference ID", value = it)
+            }
             customer.email?.let {
                 InfoRow(label = "Email", value = it)
             }
             customer.phone?.let {
-                InfoRow(label = "Phone", value = it)
+                InfoRow(label = "Phone", value = "+${customer.countryCode} $it")
             }
-            customer.gstNumber?.let {
-                InfoRow(label = "GSTIN", value = it)
+            customer.landline?.let {
+                InfoRow(label = "Landline", value = it)
+            }
+            customer.customerType?.let {
+                InfoRow(label = "Type", value = it)
+            }
+            customer.customerGroup?.let {
+                InfoRow(label = "Group", value = it)
+            }
+            InfoRow(label = "Status", value = if (customer.active) "Active" else "Inactive")
+            customer.status?.let {
+                InfoRow(label = "Status", value = it)
+            }
+        }
+
+        // Financial Information
+        if (customer.gstNumber != null || customer.panNumber != null || customer.creditLimit != null || customer.creditDays != null) {
+            InfoSection(title = "Financial Information") {
+                customer.gstNumber?.let {
+                    InfoRow(label = "GSTIN", value = it)
+                }
+                customer.panNumber?.let {
+                    InfoRow(label = "PAN Number", value = it)
+                }
+                customer.creditLimit?.let {
+                    InfoRow(label = "Credit Limit", value = "₹${it}")
+                }
+                customer.creditDays?.let {
+                    InfoRow(label = "Credit Days", value = "$it days")
+                }
             }
         }
 
@@ -135,6 +166,9 @@ private fun CustomerDetailsContent(
                 }
                 customer.street?.let {
                     InfoRow(label = "Street", value = it)
+                }
+                customer.street2?.let {
+                    InfoRow(label = "Street 2", value = it)
                 }
                 customer.city?.let {
                     InfoRow(label = "City", value = it)
@@ -168,6 +202,38 @@ private fun CustomerDetailsContent(
                 InfoRow(label = "State", value = shippingAddress.state)
                 InfoRow(label = "PIN Code", value = shippingAddress.pincode)
                 InfoRow(label = "Country", value = shippingAddress.country)
+            }
+        }
+
+        // Location Information
+        if (customer.latitude != null || customer.longitude != null) {
+            InfoSection(title = "Location") {
+                customer.latitude?.let { lat ->
+                    customer.longitude?.let { lng ->
+                        InfoRow(label = "Coordinates", value = "$lat, $lng")
+                    }
+                }
+            }
+        }
+
+        // Custom Attributes
+        customer.attributes?.takeIf { it.isNotEmpty() }?.let { attrs ->
+            InfoSection(title = "Additional Information") {
+                attrs.forEach { (key, value) ->
+                    InfoRow(label = key, value = value)
+                }
+            }
+        }
+
+        // System Information
+        if (customer.createdAt != null || customer.updatedAt != null) {
+            InfoSection(title = "System Information") {
+                customer.createdAt?.let {
+                    InfoRow(label = "Created", value = it)
+                }
+                customer.updatedAt?.let {
+                    InfoRow(label = "Last Updated", value = it)
+                }
             }
         }
     }
