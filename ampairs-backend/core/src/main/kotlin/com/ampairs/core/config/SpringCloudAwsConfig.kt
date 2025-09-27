@@ -75,8 +75,64 @@ data class AmpairsAwsProperties(
     )
 }
 
+/**
+ * Object Storage configuration properties supporting both S3 and MinIO
+ */
+@ConfigurationProperties(prefix = "ampairs.storage")
+data class StorageProperties(
+    val provider: StorageProvider = StorageProvider.S3,
+    val defaultBucket: String = "ampairs-files",
+    val maxFileSize: String = "10MB",
+    val allowedContentTypes: List<String> = listOf(
+        "image/jpeg", "image/png", "image/gif", "image/webp", "image/bmp", "image/tiff"
+    ),
+    val image: ImageConfig = ImageConfig(),
+) {
+    data class ImageConfig(
+        val maxWidth: Int = 2048,
+        val maxHeight: Int = 2048,
+        val quality: Int = 85,
+        val cacheMaxAge: Long = 86400, // 24 hours
+        val thumbnails: ThumbnailConfig = ThumbnailConfig(),
+    )
+
+    data class ThumbnailConfig(
+        val enabled: Boolean = true,
+        val cacheEnabled: Boolean = true,
+        val cacheMaxAge: Long = 604800, // 7 days
+        val supportedSizes: List<Int> = listOf(150, 300, 500),
+        val defaultSize: Int = 300,
+        val format: String = "jpg",
+        val autoGenerate: Boolean = false, // Generate on upload vs on-demand
+    )
+
+    enum class StorageProvider {
+        S3, MINIO
+    }
+}
+
+/**
+ * MinIO configuration properties
+ */
+@ConfigurationProperties(prefix = "ampairs.minio")
+data class MinioProperties(
+    val enabled: Boolean = false,
+    val endpoint: String = "http://localhost:9000",
+    val accessKey: String = "minioadmin",
+    val secretKey: String = "minioadmin",
+    val defaultBucket: String = "ampairs-files",
+    val autoCreateBucket: Boolean = true,
+    val connectionTimeout: java.time.Duration = java.time.Duration.ofSeconds(10),
+    val readTimeout: java.time.Duration = java.time.Duration.ofSeconds(30),
+)
+
 @Configuration
-@EnableConfigurationProperties(SpringCloudAwsProperties::class, AmpairsAwsProperties::class)
+@EnableConfigurationProperties(
+    SpringCloudAwsProperties::class,
+    AmpairsAwsProperties::class,
+    StorageProperties::class,
+    MinioProperties::class
+)
 class SpringCloudAwsConfig {
     // Spring Cloud AWS will auto-configure S3Template, SnsTemplate, etc.
 }

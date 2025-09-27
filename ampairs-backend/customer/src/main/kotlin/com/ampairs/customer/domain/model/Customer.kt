@@ -95,6 +95,15 @@ class Customer : OwnableBaseDomain() {
     @Column(name = "attributes", columnDefinition = "JSON")
     var attributes: Map<String, Any>? = null
 
+    /**
+     * Customer images relationship
+     * Lazy loading to avoid N+1 queries. Use @EntityGraph when needed.
+     */
+    @OneToMany(cascade = [CascadeType.ALL], fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_uid", referencedColumnName = "uid")
+    @OrderBy("displayOrder ASC, createdAt ASC")
+    var images: MutableSet<CustomerImage> = mutableSetOf()
+
     override fun obtainSeqIdPrefix(): String {
         return Constants.CUSTOMER_PREFIX
     }
@@ -132,6 +141,43 @@ class Customer : OwnableBaseDomain() {
      */
     fun reduceOutstanding(amount: Double) {
         outstandingAmount = maxOf(0.0, outstandingAmount - amount)
+    }
+
+    /**
+     * Get the primary image for this customer
+     */
+    fun getPrimaryImage(): CustomerImage? {
+        return images.find { it.isPrimary && it.active }
+    }
+
+    /**
+     * Get all active images for this customer
+     */
+    fun getActiveImages(): List<CustomerImage> {
+        return images.filter { it.active }.sortedWith(
+            compareBy<CustomerImage> { it.displayOrder }.thenBy { it.createdAt }
+        )
+    }
+
+    /**
+     * Check if customer has any images
+     */
+    fun hasImages(): Boolean {
+        return images.any { it.active }
+    }
+
+    /**
+     * Get total count of active images
+     */
+    fun getImageCount(): Int {
+        return images.count { it.active }
+    }
+
+    /**
+     * Get primary image URL or null if no primary image
+     */
+    fun getPrimaryImageUrl(): String? {
+        return getPrimaryImage()?.storageUrl
     }
 
 }

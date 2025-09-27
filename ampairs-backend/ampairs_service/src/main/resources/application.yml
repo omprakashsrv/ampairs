@@ -157,8 +157,31 @@ spring:
         auto: ${AWS_STACK_AUTO:false}
         name: ${AWS_STACK_NAME:}
 
-# Application-specific AWS properties
+# Application-specific AWS and Object Storage properties
 ampairs:
+  # Object Storage Configuration
+  storage:
+    # Storage provider: S3 or MINIO
+    provider: ${STORAGE_PROVIDER:S3}
+    default-bucket: ${STORAGE_BUCKET:ampairs-files}
+    max-file-size: ${STORAGE_MAX_FILE_SIZE:10MB}
+    allowed-content-types: ${STORAGE_ALLOWED_CONTENT_TYPES:image/jpeg,image/png,image/gif,image/webp,image/bmp,image/tiff}
+    # Image-specific settings
+    image:
+      max-width: ${STORAGE_IMAGE_MAX_WIDTH:2048}
+      max-height: ${STORAGE_IMAGE_MAX_HEIGHT:2048}
+      quality: ${STORAGE_IMAGE_QUALITY:85}
+      # Cache settings for image downloads
+      cache-max-age: ${STORAGE_IMAGE_CACHE_MAX_AGE:86400} # 24 hours
+      # Thumbnail settings
+      thumbnails:
+        enabled: ${STORAGE_THUMBNAILS_ENABLED:true}
+        cache-enabled: ${STORAGE_THUMBNAILS_CACHE_ENABLED:true}
+        cache-max-age: ${STORAGE_THUMBNAILS_CACHE_MAX_AGE:604800} # 7 days
+        supported-sizes: ${STORAGE_THUMBNAILS_SIZES:150,300,500}
+        default-size: ${STORAGE_THUMBNAILS_DEFAULT_SIZE:300}
+        format: ${STORAGE_THUMBNAILS_FORMAT:jpg}
+        auto-generate: ${STORAGE_THUMBNAILS_AUTO_GENERATE:false} # Generate on upload vs on-demand
   aws:
     s3:
       default-bucket: ${AWS_S3_BUCKET:ampairs-files}
@@ -169,6 +192,17 @@ ampairs:
       enabled: ${AWS_SNS_ENABLED:false}
       default-sender-id: ${AWS_SNS_SENDER_ID:AMPAIR}
       sms-type: ${AWS_SNS_SMS_TYPE:Transactional}
+  # MinIO Configuration
+  minio:
+    enabled: ${MINIO_ENABLED:false}
+    endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
+    access-key: ${MINIO_ACCESS_KEY:minioadmin}
+    secret-key: ${MINIO_SECRET_KEY:minioadmin}
+    default-bucket: ${MINIO_BUCKET:ampairs-files}
+    auto-create-bucket: ${MINIO_AUTO_CREATE_BUCKET:true}
+    # MinIO-specific settings
+    connection-timeout: ${MINIO_CONNECTION_TIMEOUT:PT10S}
+    read-timeout: ${MINIO_READ_TIMEOUT:PT30S}
 # bucket4j configuration removed - using custom comprehensive rate limiting service instead
 
 application:

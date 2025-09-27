@@ -58,6 +58,9 @@ dependencies {
     implementation("io.awspring.cloud:spring-cloud-aws-starter-s3")
     implementation("io.awspring.cloud:spring-cloud-aws-starter-sns")
 
+    // MinIO Java SDK for object storage
+    implementation("io.minio:minio:8.5.17")
+
     // Database
     runtimeOnly("com.mysql:mysql-connector-j")
 

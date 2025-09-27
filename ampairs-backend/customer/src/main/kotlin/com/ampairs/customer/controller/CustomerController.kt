@@ -5,6 +5,10 @@ import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.customer.domain.dto.*
 import com.ampairs.customer.domain.model.Customer
 import com.ampairs.customer.domain.service.CustomerService
+import com.ampairs.customer.domain.service.CustomerImageService
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
@@ -14,8 +18,10 @@ import org.springframework.web.bind.annotation.*
 
 @RestController
 @RequestMapping("/customer/v1")
+@Tag(name = "Customer Management", description = "Customer CRUD and management operations")
 class CustomerController @Autowired constructor(
     private val customerService: CustomerService,
+    private val customerImageService: CustomerImageService,
 ) {
 
     @PostMapping("")
@@ -161,6 +167,66 @@ class CustomerController @Autowired constructor(
             ?: return ApiResponse.error("Customer not found", "CUSTOMER_NOT_FOUND")
 
         return ApiResponse.success(updatedCustomer.asCustomerResponse())
+    }
+
+    /**
+     * Customer Image Management Endpoints
+     * Convenience endpoints that delegate to CustomerImageController
+     */
+
+    @GetMapping("/{customerId}/images")
+    @Operation(
+        summary = "Get customer images",
+        description = "Retrieve all images for a specific customer"
+    )
+    fun getCustomerImages(
+        @Parameter(description = "Customer UID")
+        @PathVariable customerId: String
+    ): ApiResponse<CustomerImageListResponse> {
+        val images = customerImageService.getCustomerImages(customerId)
+        return ApiResponse.success(images)
+    }
+
+    @GetMapping("/{customerId}/images/primary")
+    @Operation(
+        summary = "Get customer primary image",
+        description = "Retrieve the primary image for a customer"
+    )
+    fun getCustomerPrimaryImage(
+        @Parameter(description = "Customer UID")
+        @PathVariable customerId: String
+    ): ApiResponse<CustomerImageResponse?> {
+        val images = customerImageService.getCustomerImages(customerId)
+        val primaryImage = images.primaryImage
+        return ApiResponse.success(primaryImage)
+    }
+
+    @GetMapping("/{customerId}/images/stats")
+    @Operation(
+        summary = "Get customer image statistics",
+        description = "Retrieve statistics about customer images"
+    )
+    fun getCustomerImageStats(
+        @Parameter(description = "Customer UID")
+        @PathVariable customerId: String
+    ): ApiResponse<CustomerImageStatsResponse> {
+        val stats = customerImageService.getCustomerImageStats(customerId)
+        return ApiResponse.success(stats)
+    }
+
+    @GetMapping("/{customerId}/images/{imageUid}")
+    @Operation(
+        summary = "Get specific customer image",
+        description = "Retrieve metadata for a specific customer image"
+    )
+    fun getCustomerImage(
+        @Parameter(description = "Customer UID")
+        @PathVariable customerId: String,
+        @Parameter(description = "Image UID")
+        @PathVariable imageUid: String
+    ): ApiResponse<CustomerImageResponse> {
+        val image = customerImageService.getCustomerImage(customerId, imageUid)
+        return ApiResponse.success(image)
     }
 }
 

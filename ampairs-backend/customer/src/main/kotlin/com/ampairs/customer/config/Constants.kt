@@ -8,5 +8,6 @@ interface Constants {
         const val MASTER_STATE_PREFIX = "MST"
         const val CUSTOMER_TYPE_PREFIX = "CT"
         const val CUSTOMER_GROUP_PREFIX = "CG"
+        const val CUSTOMER_IMAGE_PREFIX = "CIMG"
     }
 }
