@@ -83,7 +83,10 @@ fun DesktopLocationPickerDialog(
                         val selectedState = dialogState as LocationDialogState.LocationSelected
                         LocationSelectedContent(
                             location = selectedState.location,
-                            onConfirm = {
+                            onLocationOnly = {
+                                onLocationSelected(selectedState.location, null)
+                            },
+                            onGetAddress = {
                                 dialogState = LocationDialogState.LoadingAddress
                                 scope.launch {
                                     val geocodeResult = locationService.reverseGeocode(
@@ -114,7 +117,10 @@ fun DesktopLocationPickerDialog(
                         AddressResolvedContent(
                             location = resolvedState.location,
                             address = resolvedState.address,
-                            onConfirm = {
+                            onLocationOnly = {
+                                onLocationSelected(resolvedState.location, null)
+                            },
+                            onLocationAndAddress = {
                                 onLocationSelected(resolvedState.location, resolvedState.address)
                             },
                             onSelectDifferent = {
@@ -223,7 +229,8 @@ private fun LoadingContent(message: String) {
 @Composable
 private fun LocationSelectedContent(
     location: LocationData,
-    onConfirm: () -> Unit,
+    onLocationOnly: () -> Unit,
+    onGetAddress: () -> Unit,
     onSelectDifferent: () -> Unit
 ) {
     Column(
@@ -259,22 +266,34 @@ private fun LocationSelectedContent(
             }
         }
 
-        Row(
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            OutlinedButton(
-                onClick = onSelectDifferent,
-                modifier = Modifier.weight(1f)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("Change", style = MaterialTheme.typography.labelMedium)
+                OutlinedButton(
+                    onClick = onLocationOnly,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Use Location Only", style = MaterialTheme.typography.labelMedium)
+                }
+
+                Button(
+                    onClick = onGetAddress,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Get Address", style = MaterialTheme.typography.labelMedium)
+                }
             }
 
-            Button(
-                onClick = onConfirm,
-                modifier = Modifier.weight(1f)
+            OutlinedButton(
+                onClick = onSelectDifferent,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Get Address", style = MaterialTheme.typography.labelMedium)
+                Text("Select Different Location", style = MaterialTheme.typography.labelMedium)
             }
         }
     }
@@ -284,7 +303,8 @@ private fun LocationSelectedContent(
 private fun AddressResolvedContent(
     location: LocationData,
     address: AddressData,
-    onConfirm: () -> Unit,
+    onLocationOnly: () -> Unit,
+    onLocationAndAddress: () -> Unit,
     onSelectDifferent: () -> Unit
 ) {
     Column(
@@ -331,22 +351,34 @@ private fun AddressResolvedContent(
             }
         }
 
-        Row(
+        Column(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            OutlinedButton(
-                onClick = onSelectDifferent,
-                modifier = Modifier.weight(1f)
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text("Different", style = MaterialTheme.typography.labelMedium)
+                OutlinedButton(
+                    onClick = onLocationOnly,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Location Only", style = MaterialTheme.typography.labelMedium)
+                }
+
+                Button(
+                    onClick = onLocationAndAddress,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text("Location & Address", style = MaterialTheme.typography.labelMedium)
+                }
             }
 
-            Button(
-                onClick = onConfirm,
-                modifier = Modifier.weight(1f)
+            OutlinedButton(
+                onClick = onSelectDifferent,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text("Use Address", style = MaterialTheme.typography.labelMedium)
+                Text("Select Different Location", style = MaterialTheme.typography.labelMedium)
             }
         }
     }

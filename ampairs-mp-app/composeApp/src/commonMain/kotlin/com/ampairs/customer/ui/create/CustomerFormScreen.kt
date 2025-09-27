@@ -1020,7 +1020,7 @@ private fun LocationSection(
 
         if (latitude == null && longitude == null) {
             Text(
-                text = "Setting location will auto-populate address fields if they are empty",
+                text = "You can set location coordinates only, or choose to also auto-populate address fields",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
