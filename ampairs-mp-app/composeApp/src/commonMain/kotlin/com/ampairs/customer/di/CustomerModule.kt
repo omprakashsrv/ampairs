@@ -7,11 +7,11 @@ import com.ampairs.customer.data.api.CustomerGroupApiImpl
 import com.ampairs.customer.data.api.CustomerTypeApi
 import com.ampairs.customer.data.api.CustomerTypeApiImpl
 import com.ampairs.customer.data.db.CustomerDatabase
-import com.ampairs.customer.data.repository.CustomerRepository
 import com.ampairs.customer.data.repository.CustomerGroupRepository
+import com.ampairs.customer.data.repository.CustomerRepository
 import com.ampairs.customer.data.repository.CustomerTypeRepository
-import com.ampairs.customer.domain.CustomerStore
 import com.ampairs.customer.domain.CustomerGroupStore
+import com.ampairs.customer.domain.CustomerStore
 import com.ampairs.customer.domain.CustomerTypeStore
 import com.ampairs.customer.domain.StateStore
 import com.ampairs.customer.ui.create.CustomerFormViewModel
@@ -40,9 +40,6 @@ val customerModule = module {
     single { get<CustomerDatabase>().customerGroupDao() }
     single { get<CustomerDatabase>().stateDao() }
 
-    // Services
-    single<com.ampairs.common.preferences.AppPreferences> { com.ampairs.common.preferences.InMemoryAppPreferences() }
-
     // Repository Layer
     single { CustomerRepository(get(), get(), get()) }
     single { CustomerTypeRepository(get(), get(), get()) }
@@ -57,7 +54,15 @@ val customerModule = module {
     // ViewModels
     factory { CustomersListViewModel(get()) }
     factory { (customerId: String?) -> CustomerDetailsViewModel(customerId ?: "", get()) }
-    factory { (customerId: String?) -> CustomerFormViewModel(customerId, get(), get(), get(), get()) }
+    factory { (customerId: String?) ->
+        CustomerFormViewModel(
+            customerId,
+            get(),
+            get(),
+            get(),
+            get()
+        )
+    }
     factory { StateListViewModel(get()) }
 
     // CustomerType ViewModels
