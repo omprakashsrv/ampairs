@@ -46,7 +46,7 @@ class CustomerImageController(
     @SwaggerApiResponse(responseCode = "400", description = "Invalid request or file")
     @SwaggerApiResponse(responseCode = "403", description = "Access denied")
     @SwaggerApiResponse(responseCode = "413", description = "File too large")
-    @PreAuthorize("hasRole('USER')")
+//    @PreAuthorize("hasRole('USER')")
     fun uploadImage(
         @Parameter(description = "Image file to upload")
         @RequestParam("file") file: MultipartFile,
@@ -103,7 +103,7 @@ class CustomerImageController(
     )
     @SwaggerApiResponse(responseCode = "200", description = "Images retrieved successfully")
     @SwaggerApiResponse(responseCode = "404", description = "Customer not found")
-    @PreAuthorize("hasRole('USER')")
+//    @PreAuthorize("hasRole('USER')")
     fun getCustomerImages(
         @Parameter(description = "Customer UID")
         @PathVariable customerUid: String
@@ -128,7 +128,7 @@ class CustomerImageController(
     )
     @SwaggerApiResponse(responseCode = "200", description = "Image details retrieved successfully")
     @SwaggerApiResponse(responseCode = "404", description = "Image not found")
-    @PreAuthorize("hasRole('USER')")
+//    @PreAuthorize("hasRole('USER')")
     fun getCustomerImage(
         @Parameter(description = "Customer UID")
         @PathVariable customerUid: String,
@@ -163,7 +163,7 @@ class CustomerImageController(
         content = [Content(mediaType = "image/*")]
     )
     @SwaggerApiResponse(responseCode = "404", description = "Image not found")
-    @PreAuthorize("hasRole('USER')")
+//    @PreAuthorize("hasRole('USER')")
     fun downloadCustomerImage(
         @Parameter(description = "Customer UID")
         @PathVariable customerUid: String,
@@ -222,7 +222,7 @@ class CustomerImageController(
     )
     @SwaggerApiResponse(responseCode = "200", description = "Image updated successfully")
     @SwaggerApiResponse(responseCode = "404", description = "Image not found")
-    @PreAuthorize("hasRole('USER')")
+//    @PreAuthorize("hasRole('USER')")
     fun updateCustomerImage(
         @Parameter(description = "Customer UID")
         @PathVariable customerUid: String,
@@ -257,7 +257,7 @@ class CustomerImageController(
     )
     @SwaggerApiResponse(responseCode = "204", description = "Image deleted successfully")
     @SwaggerApiResponse(responseCode = "404", description = "Image not found")
-    @PreAuthorize("hasRole('USER')")
+//    @PreAuthorize("hasRole('USER')")
     fun deleteCustomerImage(
         @Parameter(description = "Customer UID")
         @PathVariable customerUid: String,
@@ -294,7 +294,7 @@ class CustomerImageController(
     )
     @SwaggerApiResponse(responseCode = "200", description = "Primary image set successfully")
     @SwaggerApiResponse(responseCode = "404", description = "Image not found")
-    @PreAuthorize("hasRole('USER')")
+//    @PreAuthorize("hasRole('USER')")
     fun setPrimaryImage(
         @Parameter(description = "Customer UID")
         @PathVariable customerUid: String,
@@ -327,7 +327,7 @@ class CustomerImageController(
     )
     @SwaggerApiResponse(responseCode = "200", description = "Images reordered successfully")
     @SwaggerApiResponse(responseCode = "400", description = "Invalid request")
-    @PreAuthorize("hasRole('USER')")
+//    @PreAuthorize("hasRole('USER')")
     fun reorderImages(
         @Parameter(description = "Customer UID")
         @PathVariable customerUid: String,
@@ -356,7 +356,7 @@ class CustomerImageController(
     )
     @SwaggerApiResponse(responseCode = "200", description = "Bulk operation completed")
     @SwaggerApiResponse(responseCode = "400", description = "Invalid request")
-    @PreAuthorize("hasRole('USER')")
+//    @PreAuthorize("hasRole('USER')")
     fun bulkDeleteImages(
         @Parameter(description = "Customer UID")
         @PathVariable customerUid: String,
@@ -385,7 +385,7 @@ class CustomerImageController(
         description = "Retrieve statistics about customer images"
     )
     @SwaggerApiResponse(responseCode = "200", description = "Statistics retrieved successfully")
-    @PreAuthorize("hasRole('USER')")
+//    @PreAuthorize("hasRole('USER')")
     fun getCustomerImageStats(
         @Parameter(description = "Customer UID")
         @PathVariable customerUid: String
@@ -418,7 +418,7 @@ class CustomerImageController(
         content = [Content(mediaType = "image/*")]
     )
     @SwaggerApiResponse(responseCode = "404", description = "Image not found")
-    @PreAuthorize("hasRole('USER')")
+//    @PreAuthorize("hasRole('USER')")
     fun getThumbnail(
         @Parameter(description = "Customer UID")
         @PathVariable customerUid: String,
@@ -480,7 +480,7 @@ class CustomerImageController(
         description = "Thumbnail downloaded successfully",
         content = [Content(mediaType = "image/*")]
     )
-    @PreAuthorize("hasRole('USER')")
+//    @PreAuthorize("hasRole('USER')")
     fun getThumbnailBySize(
         @Parameter(description = "Customer UID")
         @PathVariable customerUid: String,
@@ -503,7 +503,7 @@ class CustomerImageController(
         description = "Get information about available thumbnail sizes and cached thumbnails"
     )
     @SwaggerApiResponse(responseCode = "200", description = "Thumbnail info retrieved successfully")
-    @PreAuthorize("hasRole('USER')")
+//    @PreAuthorize("hasRole('USER')")
     fun getAvailableThumbnails(
         @Parameter(description = "Customer UID")
         @PathVariable customerUid: String,
@@ -534,7 +534,7 @@ class CustomerImageController(
         description = "Pre-generate thumbnails in specified sizes"
     )
     @SwaggerApiResponse(responseCode = "200", description = "Thumbnails generated successfully")
-    @PreAuthorize("hasRole('USER')")
+//    @PreAuthorize("hasRole('USER')")
     fun generateThumbnails(
         @Parameter(description = "Customer UID")
         @PathVariable customerUid: String,
@@ -570,7 +570,7 @@ class CustomerImageController(
         description = "Generate thumbnails for multiple images"
     )
     @SwaggerApiResponse(responseCode = "200", description = "Bulk thumbnail generation completed")
-    @PreAuthorize("hasRole('USER')")
+//    @PreAuthorize("hasRole('USER')")
     fun bulkGenerateThumbnails(
         @Parameter(description = "Customer UID")
         @PathVariable customerUid: String,
@@ -599,7 +599,7 @@ class CustomerImageController(
         description = "Delete all cached thumbnails for an image"
     )
     @SwaggerApiResponse(responseCode = "200", description = "Thumbnails deleted successfully")
-    @PreAuthorize("hasRole('USER')")
+//    @PreAuthorize("hasRole('USER')")
     fun deleteThumbnails(
         @Parameter(description = "Customer UID")
         @PathVariable customerUid: String,

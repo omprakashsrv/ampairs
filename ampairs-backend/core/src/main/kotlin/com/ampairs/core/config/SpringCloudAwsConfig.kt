@@ -80,13 +80,14 @@ data class AmpairsAwsProperties(
  */
 @ConfigurationProperties(prefix = "ampairs.storage")
 data class StorageProperties(
-    val provider: StorageProvider = StorageProvider.S3,
+    val provider: StorageProvider = StorageProvider.LOCAL,
     val defaultBucket: String = "ampairs-files",
     val maxFileSize: String = "10MB",
     val allowedContentTypes: List<String> = listOf(
         "image/jpeg", "image/png", "image/gif", "image/webp", "image/bmp", "image/tiff"
     ),
     val image: ImageConfig = ImageConfig(),
+    val local: LocalConfig = LocalConfig(),
 ) {
     data class ImageConfig(
         val maxWidth: Int = 2048,
@@ -106,8 +107,15 @@ data class StorageProperties(
         val autoGenerate: Boolean = false, // Generate on upload vs on-demand
     )
 
+    data class LocalConfig(
+        val enabled: Boolean = true,
+        val basePath: String = "./storage",
+        val createDirectories: Boolean = true,
+        val urlBase: String = "http://localhost:8080/files",
+    )
+
     enum class StorageProvider {
-        S3, MINIO
+        LOCAL, S3, MINIO
     }
 }
 
