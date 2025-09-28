@@ -12,6 +12,12 @@ object CustomerConstants {
     const val UID_PREFIX = "CUS"
 
     /**
+     * UID prefix for Customer Image entities
+     * Used in UID generation to create identifiers like: IMG20250123143045A1B2C3D4E5F6G7H
+     */
+    const val CUSTOMER_IMAGE_UID_PREFIX = "IMG"
+
+    /**
      * Customer Status Values
      */
     const val STATUS_ACTIVE = "ACTIVE"
@@ -41,4 +47,5 @@ object CustomerConstants {
     const val ERROR_INVALID_LANDLINE = "Please enter a valid landline number"
     const val ERROR_CUSTOMER_NOT_FOUND = "Customer not found"
     const val ERROR_CUSTOMER_UID_REQUIRED = "Customer UID must be set before calling createCustomer"
+    const val ERROR_CUSTOMER_IMAGE_UID_REQUIRED = "Customer image UID must be set before calling createImage"
 }

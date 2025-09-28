@@ -7,13 +7,13 @@ import androidx.activity.compose.setContent
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.remember
 import com.ampairs.common.ImageCacheKeyer
-import com.seiko.imageloader.ImageLoader
-import com.seiko.imageloader.LocalImageLoader
-import com.seiko.imageloader.cache.CachePolicy
-import com.seiko.imageloader.cache.memory.maxSizePercent
-import com.seiko.imageloader.component.setupDefaultComponents
-import com.seiko.imageloader.intercept.imageMemoryCacheConfig
-import com.seiko.imageloader.option.androidContext
+import coil3.ImageLoader
+import coil3.compose.LocalPlatformContext
+import coil3.compose.setSingletonImageLoaderFactory
+import coil3.disk.DiskCache
+import coil3.memory.MemoryCache
+import coil3.request.crossfade
+import coil3.util.DebugLogger
 import okio.Path.Companion.toOkioPath
 
 class MainActivity : ComponentActivity() {
@@ -21,38 +21,32 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         actionBar?.hide()
         setContent {
-            CompositionLocalProvider(
-                LocalImageLoader provides remember { generateImageLoader() },
-            ) {
-                MainView()
+            setSingletonImageLoaderFactory { context ->
+                generateImageLoader()
             }
+            MainView()
         }
     }
 
     private fun generateImageLoader(): ImageLoader {
-        return ImageLoader {
-            options {
-                memoryCachePolicy = CachePolicy.ENABLED
-                diskCachePolicy = CachePolicy.ENABLED
+        return ImageLoader.Builder(this@MainActivity)
+            .memoryCache {
+                MemoryCache.Builder()
+                    .maxSizePercent(this@MainActivity, 0.25)
+                    .build()
             }
-            options {
-                androidContext(this@MainActivity)
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(this@MainActivity.cacheDir.resolve("image_cache").toOkioPath())
+                    .maxSizeBytes(50L * 1024 * 1024) // 50MB
+                    .build()
             }
-            components {
+            .components {
                 add(ImageCacheKeyer())
-                setupDefaultComponents()
             }
-            interceptor {
-                imageMemoryCacheConfig {
-                    // Set the max size to 25% of the app's available memory.
-                    maxSizePercent(this@MainActivity, 0.25)
-                }
-                diskCacheConfig {
-                    directory(this@MainActivity.cacheDir.resolve("image_cache").toOkioPath())
-                    maxSizeBytes(50L * 1024 * 1024) // 50MB
-                }
-            }
-        }
+            .crossfade(true)
+            .logger(DebugLogger())
+            .build()
     }
 }
 

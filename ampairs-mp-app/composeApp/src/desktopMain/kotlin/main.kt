@@ -19,7 +19,9 @@ import androidx.compose.ui.window.application
 // import com.ampairs.tally.TallyApp
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.DynamicModulesMenu
-import com.seiko.imageloader.LocalImageLoader
+import coil3.compose.LocalPlatformContext
+import coil3.compose.setSingletonImageLoaderFactory
+import coil3.PlatformContext
 import org.koin.compose.koinInject
 
 import org.koin.core.context.GlobalContext
@@ -53,11 +55,7 @@ private fun ApplicationScope.TallyWindow(
     onKeyEvent = {
         false
     }) {
-    CompositionLocalProvider(
-        LocalImageLoader provides remember { generateImageLoader() },
-    ) {
-        // TallyApp()
-    }
+    // TallyApp()
 }
 
 @Composable
@@ -77,27 +75,23 @@ private fun ApplicationScope.MainWindow(state: AppWindowState) =
         var navigationCallback by remember { mutableStateOf<((String) -> Unit)?>(null) }
 
 
-        CompositionLocalProvider(
-            LocalImageLoader provides remember { generateImageLoader() },
-        ) {
-            MainView(
-                onLoggedIn = {
-                    println("MainWindow: onLoggedIn callback - changing from $loggedIn to $it")
-                    loggedIn = it
-                },
-                onNavigationServiceReady = {
-                    println("MainWindow: Callback received navigationService: ${if (it != null) "NOT NULL" else "NULL"}")
-                    navigationService = it
-                    if (it == null) {
-                        println("MainWindow: NavigationService cleared - menus will be hidden")
-                    }
-                },
-                onNavigationReady = { callback ->
-                    println("MainWindow: Navigation callback ready")
-                    navigationCallback = callback
+        MainView(
+            onLoggedIn = {
+                println("MainWindow: onLoggedIn callback - changing from $loggedIn to $it")
+                loggedIn = it
+            },
+            onNavigationServiceReady = {
+                println("MainWindow: Callback received navigationService: ${if (it != null) "NOT NULL" else "NULL"}")
+                navigationService = it
+                if (it == null) {
+                    println("MainWindow: NavigationService cleared - menus will be hidden")
                 }
-            )
-        }
+            },
+            onNavigationReady = { callback ->
+                println("MainWindow: Navigation callback ready")
+                navigationCallback = callback
+            }
+        )
 
         MenuBar {
             // Dynamic Workspace Module Menus - only show if navigationService is available

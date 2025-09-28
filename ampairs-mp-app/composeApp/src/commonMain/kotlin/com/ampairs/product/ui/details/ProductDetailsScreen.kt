@@ -22,8 +22,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.Image
-import com.seiko.imageloader.rememberImagePainter
+import coil3.compose.AsyncImage
 import com.ampairs.product.domain.Product
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
@@ -241,9 +240,8 @@ private fun ProductImageItem(
         contentAlignment = Alignment.Center
     ) {
         if (!imageUrl.isNullOrBlank()) {
-            val painter = rememberImagePainter(imageUrl)
-            Image(
-                painter = painter,
+            AsyncImage(
+                model = imageUrl,
                 contentDescription = "Product image",
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop

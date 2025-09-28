@@ -19,8 +19,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.Image
-import com.seiko.imageloader.rememberImagePainter
+import coil3.compose.AsyncImage
 import com.ampairs.product.domain.ProductListItem
 import org.koin.compose.koinInject
 
@@ -200,9 +199,8 @@ private fun ProductCard(
                 contentAlignment = Alignment.Center
             ) {
                 if (!product.imageUrl.isNullOrBlank()) {
-                    val painter = rememberImagePainter(product.imageUrl)
-                    Image(
-                        painter = painter,
+                    AsyncImage(
+                        model = product.imageUrl,
                         contentDescription = "Product image",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop

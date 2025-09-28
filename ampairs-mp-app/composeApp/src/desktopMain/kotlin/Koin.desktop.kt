@@ -11,10 +11,12 @@ import com.ampairs.common.config.desktopAppConfigModule
 // import com.ampairs.tally.TallyApiImpl
 // import com.ampairs.tally.TallyRepository
 // import com.ampairs.tally.ui.TallyViewModel
-import com.seiko.imageloader.ImageLoader
-import com.seiko.imageloader.cache.CachePolicy
-import com.seiko.imageloader.component.setupDefaultComponents
-import com.seiko.imageloader.intercept.bitmapMemoryCacheConfig
+import coil3.ImageLoader
+import coil3.PlatformContext
+import coil3.disk.DiskCache
+import coil3.memory.MemoryCache
+import coil3.request.crossfade
+import coil3.util.DebugLogger
 import io.ktor.client.engine.okhttp.OkHttp
 import kotlinx.coroutines.Dispatchers
 import okio.Path.Companion.toOkioPath
@@ -43,25 +45,24 @@ actual val platformModule: Module = module {
 }
 
 fun generateImageLoader(): ImageLoader {
-    return ImageLoader {
-        options {
-            memoryCachePolicy = CachePolicy.ENABLED
-            diskCachePolicy = CachePolicy.ENABLED
+    return ImageLoader.Builder(PlatformContext.INSTANCE)
+        .memoryCache {
+            MemoryCache.Builder()
+                .maxSizeBytes(32 * 1024 * 1024) // 32MB
+                .build()
         }
-        components {
+        .diskCache {
+            DiskCache.Builder()
+                .directory(getCacheDir().toOkioPath().resolve("image_cache"))
+                .maxSizeBytes(512L * 1024 * 1024) // 512MB
+                .build()
+        }
+        .components {
             add(ImageCacheKeyer())
-            setupDefaultComponents()
         }
-        interceptor {
-            bitmapMemoryCacheConfig {
-                maxSize(32 * 1024 * 1024) // 32MB
-            }
-            diskCacheConfig {
-                directory(getCacheDir().toOkioPath().resolve("image_cache"))
-                maxSizeBytes(512L * 1024 * 1024) // 512MB
-            }
-        }
-    }
+        .crossfade(true)
+        .logger(DebugLogger())
+        .build()
 }
 
 // about currentOperatingSystem, see app
