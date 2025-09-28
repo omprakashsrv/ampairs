@@ -4,16 +4,23 @@ import com.ampairs.customer.data.api.CustomerApi
 import com.ampairs.customer.data.api.CustomerApiImpl
 import com.ampairs.customer.data.api.CustomerGroupApi
 import com.ampairs.customer.data.api.CustomerGroupApiImpl
+import com.ampairs.customer.data.api.CustomerImageApi
+import com.ampairs.customer.data.api.CustomerImageApiImpl
 import com.ampairs.customer.data.api.CustomerTypeApi
 import com.ampairs.customer.data.api.CustomerTypeApiImpl
 import com.ampairs.customer.data.db.CustomerDatabase
 import com.ampairs.customer.data.repository.CustomerGroupRepository
+import com.ampairs.customer.data.repository.CustomerImageRepository
 import com.ampairs.customer.data.repository.CustomerRepository
 import com.ampairs.customer.data.repository.CustomerTypeRepository
+import com.ampairs.customer.data.repository.PlatformFileManager
+import com.ampairs.customer.data.repository.ImageFilePicker
+import com.ampairs.customer.data.repository.FileKitImagePicker
 import com.ampairs.customer.domain.CustomerGroupStore
 import com.ampairs.customer.domain.CustomerStore
 import com.ampairs.customer.domain.CustomerTypeStore
 import com.ampairs.customer.domain.StateStore
+import com.ampairs.customer.ui.components.images.CustomerImageViewModel
 import com.ampairs.customer.ui.create.CustomerFormViewModel
 import com.ampairs.customer.ui.customergroup.CustomerGroupFormViewModel
 import com.ampairs.customer.ui.customergroup.CustomerGroupListViewModel
@@ -33,17 +40,23 @@ val customerModule = module {
     singleOf(::CustomerApiImpl) bind CustomerApi::class
     singleOf(::CustomerTypeApiImpl) bind CustomerTypeApi::class
     singleOf(::CustomerGroupApiImpl) bind CustomerGroupApi::class
+    singleOf(::CustomerImageApiImpl) bind CustomerImageApi::class
 
     // Database Layer
     single { get<CustomerDatabase>().customerDao() }
     single { get<CustomerDatabase>().customerTypeDao() }
     single { get<CustomerDatabase>().customerGroupDao() }
+    single { get<CustomerDatabase>().customerImageDao() }
     single { get<CustomerDatabase>().stateDao() }
+
+    // File Picker
+    singleOf(::FileKitImagePicker) bind ImageFilePicker::class
 
     // Repository Layer
     single { CustomerRepository(get(), get(), get()) }
     single { CustomerTypeRepository(get(), get(), get()) }
     single { CustomerGroupRepository(get(), get(), get()) }
+    single { CustomerImageRepository(get(), get(), get(), get(), get()) }
 
     // Domain Layer
     singleOf(::CustomerStore)
@@ -72,6 +85,9 @@ val customerModule = module {
     // CustomerGroup ViewModels
     factory { CustomerGroupListViewModel(get()) }
     factory { (customerGroupId: String?) -> CustomerGroupFormViewModel(get(), customerGroupId) }
+
+    // CustomerImage ViewModels
+    factory { (customerId: String) -> CustomerImageViewModel(customerId, get(), get()) }
 }
 
 expect val customerPlatformModule: org.koin.core.module.Module

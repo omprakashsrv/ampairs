@@ -44,6 +44,7 @@ material-kolor = "3.0.1"
 androidx-work-runtime = "2.10.4"
 store5 = "5.1.0-alpha06"
 jmapviewer = "2.24"
+filekit = "0.8.8"
 
 
 [libraries]
@@ -116,6 +117,9 @@ androidx-work-runtime = { module = "androidx.work:work-runtime-ktx", version.ref
 
 store5 = { module = "org.mobilenativefoundation.store:store5", version.ref = "store5" }
 jmapviewer = { module = "org.openstreetmap.jmapviewer:jmapviewer", version.ref = "jmapviewer" }
+
+filekit-core = { module = "io.github.vinceglb:filekit-core", version.ref = "filekit" }
+filekit-compose = { module = "io.github.vinceglb:filekit-compose", version.ref = "filekit" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

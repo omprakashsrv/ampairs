@@ -62,6 +62,15 @@ kotlin {
                 implementation(libs.paging.common)
                 implementation(libs.image.loader)
 
+                // Coil for efficient image loading and caching
+                implementation(libs.coil.core)
+                implementation(libs.coil.compose)
+                implementation(libs.coil.network)
+
+                // FileKit for platform-specific file picking
+                implementation(libs.filekit.core)
+                implementation(libs.filekit.compose)
+
                 implementation(libs.file.picker)
                 implementation(libs.uuid)
                 implementation(libs.material3.adaptive)

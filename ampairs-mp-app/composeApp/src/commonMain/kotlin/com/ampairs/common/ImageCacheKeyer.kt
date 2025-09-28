@@ -1,38 +1,32 @@
 package com.ampairs.common
 
-import com.seiko.imageloader.component.keyer.Keyer
-import com.seiko.imageloader.option.Options
-import com.seiko.imageloader.option.Scale
+import coil3.key.Keyer
+import coil3.request.Options
 import io.ktor.http.Url
 
+/**
+ * Coil-compatible image cache keyer for URL-based images.
+ * Generates cache keys based on host, path, and image options.
+ */
+class ImageCacheKeyer : Keyer<Url> {
 
-val DEFAULT_MAX_IMAGE_SIZE = 4096
+    override fun key(data: Url, options: Options): String {
+        // Create cache key based on URL components
+        val baseKey = "${data.host}${data.encodedPath}"
 
-class ImageCacheKeyer : Keyer {
+        // Add query parameters that affect image rendering
+        val queryParams = data.parameters.entries()
+            .filter { (key, _) ->
+                key in listOf("size", "width", "height", "quality", "format")
+            }
+            .joinToString("&") { (key, values) ->
+                "$key=${values.firstOrNull()}"
+            }
 
-    private fun suffix(options: Options): String {
-        return buildString {
-            if (options.allowInexactSize) {
-                append("-allowInexactSize")
-            }
-            if (!options.premultipliedAlpha) {
-                append("-premultipliedAlpha")
-            }
-            if (options.scale != Scale.FILL) {
-                append("-scale=fit")
-            }
-            if (!options.playAnimate) {
-                append("-noPlay")
-            }
-            if (options.maxImageSize != DEFAULT_MAX_IMAGE_SIZE) {
-                append("-maxSize${options.maxImageSize}")
-            }
+        return if (queryParams.isNotEmpty()) {
+            "$baseKey?$queryParams"
+        } else {
+            baseKey
         }
-    }
-
-    override fun key(data: Any, options: Options): String? {
-        if (data !is Url) return null
-        val keySuffix = suffix(options)
-        return data.host + data.encodedPath + keySuffix
     }
 }

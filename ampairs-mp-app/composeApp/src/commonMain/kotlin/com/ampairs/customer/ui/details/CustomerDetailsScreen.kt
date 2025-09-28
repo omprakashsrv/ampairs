@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.customer.domain.Customer
+import com.ampairs.customer.ui.components.images.CustomerImageManagementScreen
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
 import com.ampairs.customer.util.CustomerConstants.TITLE_CUSTOMER_DETAILS
@@ -113,6 +114,12 @@ private fun CustomerDetailsContent(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // Customer Images Section
+        CustomerImageManagementScreen(
+            customerId = customer.uid,
+            modifier = Modifier.fillMaxWidth()
+        )
+
         // Basic Information
         InfoSection(title = "Basic Information") {
             InfoRow(label = "Name", value = customer.name)

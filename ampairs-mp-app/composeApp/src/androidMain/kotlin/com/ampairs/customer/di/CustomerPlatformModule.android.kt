@@ -3,8 +3,11 @@ package com.ampairs.customer.di
 import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
 import com.ampairs.common.database.createAndroidDatabase
 import com.ampairs.customer.data.db.CustomerDatabase
+import com.ampairs.customer.data.repository.AndroidFileManager
+import com.ampairs.customer.data.repository.PlatformFileManager
 import kotlinx.coroutines.Dispatchers
 import org.koin.android.ext.koin.androidContext
+import org.koin.dsl.bind
 import org.koin.dsl.module
 
 actual val customerPlatformModule = module {
@@ -18,4 +21,5 @@ actual val customerPlatformModule = module {
         )
     }
 
+    single { AndroidFileManager(androidContext()) } bind PlatformFileManager::class
 }

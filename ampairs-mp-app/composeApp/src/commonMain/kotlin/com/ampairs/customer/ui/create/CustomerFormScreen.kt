@@ -58,6 +58,7 @@ import org.koin.core.parameter.parametersOf
 import com.ampairs.ui.components.Phone
 import com.ampairs.customer.ui.components.StateAutocomplete
 import com.ampairs.customer.ui.components.StringAutocomplete
+import com.ampairs.customer.ui.components.images.CustomerImageManagementScreen
 import com.ampairs.customer.ui.components.location.LocationPickerDialog
 import com.ampairs.customer.ui.components.location.LocationData
 import com.ampairs.customer.ui.components.location.AddressData
@@ -182,6 +183,14 @@ private fun CustomerForm(
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
             }
+        }
+
+        // Customer Images Section (only for existing customers)
+        if (customerId != null) {
+            CustomerImageManagementScreen(
+                customerId = customerId,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
 
         // Basic Information
