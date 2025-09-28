@@ -587,6 +587,7 @@ class CustomerFormViewModel(
 
         return true
     }
+
 }
 
 private fun Customer.toFormState(): CustomerFormState {

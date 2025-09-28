@@ -40,6 +40,9 @@ val customerModule = module {
     single { get<CustomerDatabase>().customerGroupDao() }
     single { get<CustomerDatabase>().stateDao() }
 
+    // Services
+    single<com.ampairs.common.preferences.AppPreferences> { com.ampairs.common.preferences.InMemoryAppPreferences() }
+
     // Repository Layer
     single { CustomerRepository(get(), get(), get()) }
     single { CustomerTypeRepository(get(), get(), get()) }

@@ -17,4 +17,5 @@ actual val customerPlatformModule = module {
             moduleName = "customer"
         )
     }
+
 }

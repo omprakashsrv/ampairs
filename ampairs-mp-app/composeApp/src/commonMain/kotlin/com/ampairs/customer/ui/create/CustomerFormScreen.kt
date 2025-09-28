@@ -120,6 +120,7 @@ fun CustomerFormScreen(
 
             else -> {
                 CustomerForm(
+                    customerId = customerId,
                     formState = uiState.formState,
                     onFormChange = viewModel::updateForm,
                     error = uiState.error,
@@ -144,6 +145,7 @@ fun CustomerFormScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun CustomerForm(
+    customerId: String?,
     formState: CustomerFormState,
     onFormChange: (CustomerFormState) -> Unit,
     error: String?,
@@ -767,6 +769,7 @@ private fun CustomerForm(
                 }
             }
         }
+
 
         // Save Button Section
         Column(
