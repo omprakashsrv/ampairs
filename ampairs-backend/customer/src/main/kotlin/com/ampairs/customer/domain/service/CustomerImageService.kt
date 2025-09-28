@@ -48,6 +48,7 @@ class CustomerImageService(
             val customerImage = createCustomerImageEntity(file, request, workspaceSlug)
 
             // Upload to object storage
+            logger.debug("Uploading image with storage path: {}", customerImage.storagePath)
             val uploadResult = uploadToStorage(file, customerImage)
 
             // Update entity with storage metadata
@@ -520,7 +521,7 @@ class CustomerImageService(
         request: CustomerImageUploadRequest,
         workspaceSlug: String
     ): CustomerImage {
-        val fileExtension = getFileExtension(file.originalFilename ?: "image")
+        val fileExtension = getFileExtension(file.originalFilename ?: "image", file.contentType)
 
         return CustomerImage().apply {
             customerUid = request.customerUid
@@ -573,12 +574,21 @@ class CustomerImageService(
         newPrimaryImage.setAsPrimary()
     }
 
-    private fun getFileExtension(filename: String): String {
+    private fun getFileExtension(filename: String, contentType: String? = null): String {
         val lastDotIndex = filename.lastIndexOf('.')
         return if (lastDotIndex > 0 && lastDotIndex < filename.length - 1) {
             filename.substring(lastDotIndex + 1).lowercase()
         } else {
-            "unknown"
+            // Try to determine extension from content type
+            when (contentType?.lowercase()) {
+                "image/jpeg", "image/jpg" -> "jpg"
+                "image/png" -> "png"
+                "image/gif" -> "gif"
+                "image/webp" -> "webp"
+                "image/bmp" -> "bmp"
+                "image/tiff" -> "tiff"
+                else -> "jpg" // Default to jpg for images without extension
+            }
         }
     }
 
