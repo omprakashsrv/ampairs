@@ -173,14 +173,23 @@ class CustomerImageApiImpl(
                 allParts
             }
 
-            val response: Response<CustomerImageUploadResponse> = postMultiPart(
+            val response: Response<CustomerImage> = postMultiPart(
                 client,
                 ApiUrlBuilder.customerUrl("v1/images/upload"),
                 parts
             )
 
             CustomerLogger.d("CustomerImageApi", "Multipart upload completed for: $fileName")
-            response.data ?: throw Exception("Upload response is null")
+            val customerImage = response.data ?: throw Exception("Upload response is null")
+
+            // Convert CustomerImage to CustomerImageUploadResponse format
+            CustomerImageUploadResponse(
+                uid = customerImage.uid,
+                uploadUrl = "", // Not needed for direct upload
+                imageUrl = customerImage.imageUrl ?: "",
+                thumbnailUrl = customerImage.thumbnailUrl ?: "",
+                expiresAt = null
+            )
         } catch (e: Exception) {
             CustomerLogger.e("CustomerImageApi", "Error uploading customer image via multipart", e)
             throw e
