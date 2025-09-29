@@ -1,9 +1,14 @@
 package com.ampairs.customer.data.repository
 
 import com.ampairs.customer.util.CustomerLogger
-import io.github.vinceglb.filekit.core.FileKit
-import io.github.vinceglb.filekit.core.PickerType
-import io.github.vinceglb.filekit.core.PickerMode
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.PlatformFile
+import io.github.vinceglb.filekit.dialogs.FileKitMode
+import io.github.vinceglb.filekit.dialogs.FileKitType
+import io.github.vinceglb.filekit.dialogs.openFilePicker
+import io.github.vinceglb.filekit.name
+import io.github.vinceglb.filekit.readBytes
+import io.github.vinceglb.filekit.size
 
 /**
  * FileKit-based implementation of ImageFilePicker.
@@ -20,9 +25,8 @@ class FileKitImagePicker : ImageFilePicker {
         return try {
             CustomerLogger.d("ImageFilePicker", "Starting single image picker")
 
-            val file = FileKit.pickFile(
-                type = PickerType.Image,
-                mode = PickerMode.Single
+            val file = FileKit.openFilePicker(
+                type = FileKitType.Image
             )
 
             if (file == null) {
@@ -43,9 +47,9 @@ class FileKitImagePicker : ImageFilePicker {
         return try {
             CustomerLogger.d("ImageFilePicker", "Starting multiple image picker (max: $maxCount)")
 
-            val files = FileKit.pickFile(
-                type = PickerType.Image,
-                mode = PickerMode.Multiple()
+            val files = FileKit.openFilePicker(
+                type = FileKitType.Image,
+                mode = FileKitMode.Multiple()
             )
 
             if (files == null) {
@@ -53,10 +57,7 @@ class FileKitImagePicker : ImageFilePicker {
                 return emptyList()
             }
 
-            // For multiple mode, files should be a List<PlatformFile>
-            val fileList = (files as? List<io.github.vinceglb.filekit.core.PlatformFile>) ?: listOf(files as io.github.vinceglb.filekit.core.PlatformFile)
-
-            val results = fileList.take(maxCount).mapNotNull { file ->
+            val results = files.take(maxCount).mapNotNull { file ->
                 processPickedFile(file)
             }
 
@@ -68,10 +69,10 @@ class FileKitImagePicker : ImageFilePicker {
         }
     }
 
-    private suspend fun processPickedFile(file: io.github.vinceglb.filekit.core.PlatformFile): ImageFilePickerResult? {
+    private suspend fun processPickedFile(file: PlatformFile): ImageFilePickerResult? {
         return try {
             val fileName = file.name
-            val fileSize = file.getSize() ?: 0L
+            val fileSize = file.size()
 
             // Validate file extension
             val extension = fileName.substringAfterLast(".", "").lowercase()

@@ -68,8 +68,8 @@ kotlin {
                 implementation(libs.coil.network)
 
                 // FileKit for platform-specific file picking
-                implementation(libs.filekit.core)
-                implementation(libs.filekit.compose)
+                implementation(libs.filekit.dialogs)
+                implementation(libs.filekit.dialogs.compose)
 
                 implementation(libs.file.picker)
                 implementation(libs.uuid)
