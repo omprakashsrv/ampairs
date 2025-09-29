@@ -25,8 +25,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
+import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.customer.domain.CustomerImageListItem
 import com.ampairs.customer.domain.CustomerImageStatus
+import com.ampairs.customer.util.CustomerLogger
 
 @Composable
 fun CustomerImageGrid(
@@ -153,20 +155,39 @@ private fun CustomerImageCard(
         )
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Image Content
-            if (!image.thumbnailUrl.isNullOrBlank()) {
+            // Image Content - Let Coil handle everything (URLs, caching, fallbacks)
+            val imageModel = when {
+                // Prefer local file if available (for uploaded images)
+                !image.localPath.isNullOrBlank() -> {
+                    val filePath = "file://${image.localPath}"
+                    CustomerLogger.d("CustomerImageGrid", "Using local file: $filePath")
+                    filePath
+                }
+                // Use server thumbnail URL - Coil will download, cache, and handle offline automatically
+                !image.thumbnailUrl.isNullOrBlank() -> {
+                    val completeUrl = ApiUrlBuilder.buildCompleteUrl(image.thumbnailUrl!!)
+                    CustomerLogger.d("CustomerImageGrid", "Loading thumbnail URL: ${image.thumbnailUrl} -> $completeUrl")
+                    completeUrl
+                }
+                // No image available
+                else -> {
+                    CustomerLogger.d("CustomerImageGrid", "No image available for ${image.uid}")
+                    null
+                }
+            }
+
+            if (imageModel != null) {
                 AsyncImage(
-                    model = image.thumbnailUrl,
+                    model = imageModel,
                     contentDescription = "Customer image",
                     modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
-                )
-            } else if (!image.localPath.isNullOrBlank()) {
-                AsyncImage(
-                    model = image.localPath,
-                    contentDescription = "Customer image",
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Crop
+                    contentScale = ContentScale.Crop,
+                    onError = { error ->
+                        CustomerLogger.w("CustomerImageGrid", "Failed to load image: $imageModel", error.result.throwable)
+                    },
+                    onSuccess = { success ->
+                        CustomerLogger.d("CustomerImageGrid", "Successfully loaded image: $imageModel")
+                    }
                 )
             } else {
                 // Placeholder

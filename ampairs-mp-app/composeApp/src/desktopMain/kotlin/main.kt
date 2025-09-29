@@ -35,6 +35,9 @@ fun main() = application {
     }
     val applicationState = remember { ApplicationState() }
     applicationState.windows
+    setSingletonImageLoaderFactory { context ->
+        generateImageLoader()
+    }
     for (window in applicationState.windows) {
         key(window) {
             if (window.title == "Main") {

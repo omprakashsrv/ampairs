@@ -1,11 +1,3 @@
-import com.ampairs.aws.s3.AwsS3Client
-import com.ampairs.aws.s3.S3Client
-import com.ampairs.common.DeviceService
-import com.ampairs.common.ImageCacheKeyer
-import com.ampairs.common.database.DatabasePathProvider
-import com.ampairs.common.database.DesktopDatabasePathProvider
-import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
-import com.ampairs.common.config.desktopAppConfigModule
 // Temporarily disabled tally imports
 // import com.ampairs.tally.TallyApi
 // import com.ampairs.tally.TallyApiImpl
@@ -15,19 +7,40 @@ import coil3.ImageLoader
 import coil3.PlatformContext
 import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
+import coil3.network.ktor3.KtorNetworkFetcherFactory
 import coil3.request.crossfade
 import coil3.util.DebugLogger
-import io.ktor.client.engine.okhttp.OkHttp
+import com.ampairs.auth.api.TokenRepository
+import com.ampairs.aws.s3.AwsS3Client
+import com.ampairs.aws.s3.S3Client
+import com.ampairs.common.DeviceService
+import com.ampairs.common.ImageCacheKeyer
+import com.ampairs.common.config.desktopAppConfigModule
+import com.ampairs.common.database.DatabasePathProvider
+import com.ampairs.common.database.DesktopDatabasePathProvider
+import com.ampairs.common.database.WorkspaceAwareDatabaseFactory
+import com.ampairs.common.httpClient
+import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.engine.cio.endpoint
 import kotlinx.coroutines.Dispatchers
 import okio.Path.Companion.toOkioPath
+import org.koin.core.context.GlobalContext
 import org.koin.core.module.Module
 import org.koin.dsl.bind
 import org.koin.dsl.module
 import java.io.File
 
 actual val platformModule: Module = module {
-    single {
-        OkHttp.create()
+    // JVM/Android CIO engine
+    single<HttpClientEngine> {
+        CIO.create {
+            requestTimeout = 15_000
+            endpoint {
+                connectTimeout = 10_000
+                socketTimeout = 15_000
+            }
+        }
     }
     single { AwsS3Client() } bind (S3Client::class)
     single<DeviceService> { DesktopDeviceService() }
@@ -45,6 +58,9 @@ actual val platformModule: Module = module {
 }
 
 fun generateImageLoader(): ImageLoader {
+    val engine = GlobalContext.get().get<HttpClientEngine>()
+    val tokenRepository = GlobalContext.get().get<TokenRepository>()
+    val client = httpClient(engine, tokenRepository)
     return ImageLoader.Builder(PlatformContext.INSTANCE)
         .memoryCache {
             MemoryCache.Builder()
@@ -58,6 +74,7 @@ fun generateImageLoader(): ImageLoader {
                 .build()
         }
         .components {
+            add(KtorNetworkFetcherFactory(client))
             add(ImageCacheKeyer())
         }
         .crossfade(true)

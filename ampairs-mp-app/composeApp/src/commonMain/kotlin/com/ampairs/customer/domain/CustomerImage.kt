@@ -10,7 +10,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class CustomerImage(
     val uid: String = "",
-    @SerialName("customer_id")
+    @SerialName("customer_uid")
     val customerId: String = "",
     @SerialName("file_name")
     val fileName: String = "",

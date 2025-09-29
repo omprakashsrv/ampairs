@@ -81,4 +81,17 @@ object ApiUrlBuilder {
         val cleanPath = path.removePrefix("/")
         return "${ConfigurationManager.current.wsBaseUrl}/$cleanPath"
     }
+
+    /**
+     * Build complete URL from relative or absolute path.
+     * If path already starts with http/https, returns as-is.
+     * Otherwise, prepends the API base URL directly (without double /api/v1/).
+     */
+    fun buildCompleteUrl(path: String): String {
+        return if (path.startsWith("http")) {
+            path
+        } else {
+            "${ConfigurationManager.apiBaseUrl}${if (!path.startsWith("/")) "/" else ""}${path}"
+        }
+    }
 }

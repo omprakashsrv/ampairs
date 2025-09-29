@@ -18,8 +18,10 @@ import com.ampairs.customer.domain.CustomerImageBulkRequest
 import com.ampairs.customer.domain.ThumbnailResponse
 import com.ampairs.customer.util.CustomerLogger
 import io.ktor.client.engine.HttpClientEngine
+import io.ktor.client.request.get
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
+import io.ktor.client.call.body
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
 import io.ktor.http.contentType
@@ -374,22 +376,42 @@ class CustomerImageApiImpl(
 
     override suspend fun downloadImage(imageUrl: String): ByteArray {
         return try {
-            // TODO: Implement proper image download
-            CustomerLogger.i("CustomerImageApi", "Download image $imageUrl - not implemented yet")
-            byteArrayOf() // Return empty byte array for now
+            // Build complete URL if relative path provided
+            val fullUrl = ApiUrlBuilder.buildCompleteUrl(imageUrl)
+
+            CustomerLogger.d("CustomerImageApi", "Downloading image from URL: $fullUrl")
+            val response = client.get(fullUrl)
+            if (response.status.value in 200..299) {
+                val imageData = response.body<ByteArray>()
+                CustomerLogger.d("CustomerImageApi", "Successfully downloaded image, size: ${imageData.size} bytes")
+                imageData
+            } else {
+                CustomerLogger.w("CustomerImageApi", "Failed to download image, status: ${response.status}")
+                throw Exception("Failed to download image: HTTP ${response.status.value}")
+            }
         } catch (e: Exception) {
-            CustomerLogger.e("CustomerImageApi", "Error downloading image", e)
+            CustomerLogger.e("CustomerImageApi", "Error downloading image from $imageUrl", e)
             throw e
         }
     }
 
     override suspend fun downloadThumbnail(thumbnailUrl: String): ByteArray {
         return try {
-            // TODO: Implement proper thumbnail download
-            CustomerLogger.i("CustomerImageApi", "Download thumbnail $thumbnailUrl - not implemented yet")
-            byteArrayOf() // Return empty byte array for now
+            // Build complete URL if relative path provided
+            val fullUrl = ApiUrlBuilder.buildCompleteUrl(thumbnailUrl)
+
+            CustomerLogger.d("CustomerImageApi", "Downloading thumbnail from URL: $fullUrl")
+            val response = client.get(fullUrl)
+            if (response.status.value in 200..299) {
+                val thumbnailData = response.body<ByteArray>()
+                CustomerLogger.d("CustomerImageApi", "Successfully downloaded thumbnail, size: ${thumbnailData.size} bytes")
+                thumbnailData
+            } else {
+                CustomerLogger.w("CustomerImageApi", "Failed to download thumbnail, status: ${response.status}")
+                throw Exception("Failed to download thumbnail: HTTP ${response.status.value}")
+            }
         } catch (e: Exception) {
-            CustomerLogger.e("CustomerImageApi", "Error downloading thumbnail", e)
+            CustomerLogger.e("CustomerImageApi", "Error downloading thumbnail from $thumbnailUrl", e)
             throw e
         }
     }

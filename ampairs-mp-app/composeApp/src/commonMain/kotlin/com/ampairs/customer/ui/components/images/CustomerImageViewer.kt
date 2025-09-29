@@ -20,8 +20,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil3.compose.AsyncImage
+import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.customer.domain.CustomerImage
 import com.ampairs.customer.domain.CustomerImageStatus
+import com.ampairs.customer.util.CustomerLogger
 
 @Composable
 fun CustomerImageViewer(
@@ -183,20 +185,51 @@ private fun ImageContent(
     image: CustomerImage,
     modifier: Modifier = Modifier
 ) {
-    val imageUrl = image.imageUrl ?: image.localPath
+    // Use the same URL building logic as CustomerImageGrid for consistency
+    val imageModel = when {
+        // Prefer local file if available (for uploaded images)
+        !image.localPath.isNullOrBlank() -> {
+            val filePath = "file://${image.localPath}"
+            CustomerLogger.d("CustomerImageViewer", "Using local file: $filePath")
+            filePath
+        }
+        // Use server image URL - Coil will download, cache, and handle offline automatically
+        !image.imageUrl.isNullOrBlank() -> {
+            val completeUrl = ApiUrlBuilder.buildCompleteUrl(image.imageUrl!!)
+            CustomerLogger.d("CustomerImageViewer", "Loading image URL: ${image.imageUrl} -> $completeUrl")
+            completeUrl
+        }
+        // Fallback to thumbnail URL if main image URL is not available
+        !image.thumbnailUrl.isNullOrBlank() -> {
+            val completeUrl = ApiUrlBuilder.buildCompleteUrl(image.thumbnailUrl!!)
+            CustomerLogger.d("CustomerImageViewer", "Loading thumbnail URL: ${image.thumbnailUrl} -> $completeUrl")
+            completeUrl
+        }
+        // No image available
+        else -> {
+            CustomerLogger.d("CustomerImageViewer", "No image available for ${image.uid}")
+            null
+        }
+    }
 
-    if (!imageUrl.isNullOrBlank()) {
+    if (imageModel != null) {
         Card(
             modifier = modifier,
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
             AsyncImage(
-                model = imageUrl,
+                model = imageModel,
                 contentDescription = "Customer image: ${image.fileName}",
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 400.dp),
-                contentScale = ContentScale.Fit
+                contentScale = ContentScale.Fit,
+                onError = { error ->
+                    CustomerLogger.w("CustomerImageViewer", "Failed to load image: $imageModel", error.result.throwable)
+                },
+                onSuccess = { success ->
+                    CustomerLogger.d("CustomerImageViewer", "Successfully loaded image: $imageModel")
+                }
             )
         }
     } else {
