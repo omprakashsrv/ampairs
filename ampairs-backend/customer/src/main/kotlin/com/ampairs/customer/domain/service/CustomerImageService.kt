@@ -559,9 +559,7 @@ class CustomerImageService(
     private fun extractAndSaveImageDimensions(file: MultipartFile, customerImage: CustomerImage) {
         try {
             val bufferedImage: BufferedImage = ImageIO.read(ByteArrayInputStream(file.bytes))
-            if (bufferedImage != null) {
-                customerImage.updateDimensions(bufferedImage.width, bufferedImage.height)
-            }
+            customerImage.updateDimensions(bufferedImage.width, bufferedImage.height)
         } catch (e: Exception) {
             logger.warn("Failed to extract image dimensions: {}", e.message)
         }
