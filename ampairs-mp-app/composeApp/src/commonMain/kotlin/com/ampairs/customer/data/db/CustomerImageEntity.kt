@@ -159,5 +159,6 @@ fun CustomerImageEntity.toListItem(): CustomerImageListItem = CustomerImageListI
     thumbnailUrl = thumbnailUrl,
     uploadStatus = uploadStatus,
     localPath = localPath,
-    sortOrder = sortOrder
+    sortOrder = sortOrder,
+    synced = synced
 )

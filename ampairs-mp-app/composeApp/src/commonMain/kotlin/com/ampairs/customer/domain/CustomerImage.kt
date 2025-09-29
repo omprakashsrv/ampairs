@@ -50,7 +50,8 @@ data class CustomerImageListItem(
     val thumbnailUrl: String?,
     val uploadStatus: String,
     val localPath: String?,
-    val sortOrder: Int
+    val sortOrder: Int,
+    val synced: Boolean
 )
 
 /**
@@ -137,7 +138,8 @@ fun CustomerImage.toListItem(): CustomerImageListItem = CustomerImageListItem(
     thumbnailUrl = thumbnailUrl,
     uploadStatus = uploadStatus,
     localPath = localPath,
-    sortOrder = sortOrder
+    sortOrder = sortOrder,
+    synced = true
 )
 
 fun CustomerImageUploadRequest.toCustomerImage(uid: String): CustomerImage = CustomerImage(

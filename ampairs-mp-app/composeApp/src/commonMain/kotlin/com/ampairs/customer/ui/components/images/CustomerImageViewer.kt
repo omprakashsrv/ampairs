@@ -185,7 +185,7 @@ private fun ImageContent(
     image: CustomerImage,
     modifier: Modifier = Modifier
 ) {
-    // Use the same URL building logic as CustomerImageGrid for consistency
+    // Use the same URL building logic as CustomerImageGrid for consistency - respect sync status
     val imageModel = when {
         // Prefer local file if available (for uploaded images)
         !image.localPath.isNullOrBlank() -> {
@@ -193,6 +193,9 @@ private fun ImageContent(
             CustomerLogger.d("CustomerImageViewer", "Using local file: $filePath")
             filePath
         }
+        // For unsynced images, only load from local files - don't try server URLs
+        // Note: CustomerImageViewer uses CustomerImage (full object), so we need to check if it has synced status
+        // Since CustomerImage doesn't have synced field, we'll assume if it has server URLs it's synced
         // Use server image URL - Coil will download, cache, and handle offline automatically
         !image.imageUrl.isNullOrBlank() -> {
             val completeUrl = ApiUrlBuilder.buildCompleteUrl(image.imageUrl!!)

@@ -155,7 +155,7 @@ private fun CustomerImageCard(
         )
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
-            // Image Content - Let Coil handle everything (URLs, caching, fallbacks)
+            // Image Content - Respect sync status for loading strategy
             val imageModel = when {
                 // Prefer local file if available (for uploaded images)
                 !image.localPath.isNullOrBlank() -> {
@@ -163,10 +163,15 @@ private fun CustomerImageCard(
                     CustomerLogger.d("CustomerImageGrid", "Using local file: $filePath")
                     filePath
                 }
-                // Use server thumbnail URL - Coil will download, cache, and handle offline automatically
+                // For unsynced images, only load from local files - don't try server URLs
+                !image.synced -> {
+                    CustomerLogger.d("CustomerImageGrid", "Unsynced image ${image.uid} - no local file available, skipping server load")
+                    null
+                }
+                // For synced images, use server thumbnail URL - Coil will download, cache, and handle offline automatically
                 !image.thumbnailUrl.isNullOrBlank() -> {
                     val completeUrl = ApiUrlBuilder.buildCompleteUrl(image.thumbnailUrl!!)
-                    CustomerLogger.d("CustomerImageGrid", "Loading thumbnail URL: ${image.thumbnailUrl} -> $completeUrl")
+                    CustomerLogger.d("CustomerImageGrid", "Loading synced image thumbnail URL: ${image.thumbnailUrl} -> $completeUrl")
                     completeUrl
                 }
                 // No image available
@@ -180,14 +185,23 @@ private fun CustomerImageCard(
                 AsyncImage(
                     model = imageModel,
                     contentDescription = "Customer image",
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.surface), // Add background to check if space is available
                     contentScale = ContentScale.Crop,
                     onError = { error ->
-                        CustomerLogger.w("CustomerImageGrid", "Failed to load image: $imageModel", error.result.throwable)
+                        CustomerLogger.e("CustomerImageGrid", "Failed to load image: $imageModel", error.result.throwable)
+                        CustomerLogger.e("CustomerImageGrid", "Error details: ${error.result.throwable?.message}")
                     },
                     onSuccess = { success ->
                         CustomerLogger.d("CustomerImageGrid", "Successfully loaded image: $imageModel")
-                    }
+                        CustomerLogger.d("CustomerImageGrid", "Image loaded successfully from: ${success.result.dataSource}")
+                    },
+                    onLoading = {
+                        CustomerLogger.d("CustomerImageGrid", "Loading image: $imageModel")
+                    },
+                    placeholder = null, // Remove any default placeholder
+                    error = null // Remove any default error drawable
                 )
             } else {
                 // Placeholder
