@@ -14,12 +14,16 @@ import coil3.disk.DiskCache
 import coil3.memory.MemoryCache
 import coil3.request.crossfade
 import coil3.util.DebugLogger
+import io.github.vinceglb.filekit.core.FileKit
 import okio.Path.Companion.toOkioPath
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         actionBar?.hide()
+
+        // Initialize FileKit for Android platform
+        FileKit.init(this)
         setContent {
             setSingletonImageLoaderFactory { context ->
                 generateImageLoader()
