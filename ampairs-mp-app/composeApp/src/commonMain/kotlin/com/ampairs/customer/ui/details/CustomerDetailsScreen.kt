@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.ui.components.images.CustomerImageManagementScreen
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import com.ampairs.customer.util.CustomerConstants.TITLE_CUSTOMER_DETAILS
 import com.ampairs.customer.util.CustomerConstants.ERROR_CUSTOMER_NOT_FOUND
@@ -29,7 +29,7 @@ fun CustomerDetailsScreen(
     onNavigateBack: () -> Unit,
     onEditCustomer: (String) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: CustomerDetailsViewModel = koinInject { parametersOf(customerId) }
+    viewModel: CustomerDetailsViewModel = koinViewModel { parametersOf(customerId) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }

@@ -23,7 +23,7 @@ import com.ampairs.workspace.viewmodel.WorkspaceModulesViewModel
 import com.ampairs.workspace.navigation.DynamicModuleNavigation
 import com.ampairs.workspace.navigation.NavigationPattern
 import com.ampairs.workspace.navigation.PlatformNavigationDetector
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import androidx.navigation.NavController
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
@@ -42,7 +42,7 @@ fun WorkspaceModulesScreen(
     workspaceId: String = "",
     showStoreByDefault: Boolean = false, // New parameter to control if module store should be shown by default
     paddingValues: PaddingValues = PaddingValues(0.dp),
-    viewModel: WorkspaceModulesViewModel = koinInject { parametersOf(workspaceId.takeIf { it.isNotEmpty() }) }
+    viewModel: WorkspaceModulesViewModel = koinViewModel { parametersOf(workspaceId.takeIf { it.isNotEmpty() }) }
 ) {
     var showModuleStore by remember { mutableStateOf(showStoreByDefault) }
     var showUpdateDialog by remember { mutableStateOf(false) }
@@ -289,7 +289,7 @@ private fun ModuleStoreDialog(
     onInstall: (String) -> Unit,
     onUninstall: (String) -> Unit,
     onNavigate: (String) -> Unit,
-    viewModel: WorkspaceModulesViewModel = koinInject { parametersOf(workspaceId.takeIf { it.isNotEmpty() }) }
+    viewModel: WorkspaceModulesViewModel = koinViewModel { parametersOf(workspaceId.takeIf { it.isNotEmpty() }) }
 ) {
     var selectedStoreTab by remember { mutableStateOf(0) }
     var installingModules by remember { mutableStateOf(setOf<String>()) }

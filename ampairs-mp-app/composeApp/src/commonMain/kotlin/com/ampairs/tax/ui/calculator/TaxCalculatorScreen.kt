@@ -21,13 +21,13 @@ import com.ampairs.tax.domain.IndianStates
 import com.ampairs.tax.domain.TaxBreakdownItem
 import com.ampairs.tax.domain.TaxCalculationResult
 import com.ampairs.tax.domain.TransactionType
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaxCalculatorScreen(
     modifier: Modifier = Modifier,
-    viewModel: TaxCalculatorViewModel = koinInject()
+    viewModel: TaxCalculatorViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 

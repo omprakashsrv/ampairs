@@ -11,6 +11,8 @@ import com.ampairs.product.ui.details.ProductDetailsViewModel
 import com.ampairs.product.ui.list.ProductsListViewModel
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.singleOf
+import org.koin.core.module.dsl.viewModel
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
@@ -28,9 +30,9 @@ val productModule: Module = module {
     single<ProductStore> { ProductStore(get()) }
 
     // ViewModels for Store5 pattern
-    factory { ProductsListViewModel(get(), get()) }
-    factory { (productId: String?) -> ProductFormViewModel(productId, get(), get()) }
-    factory { (productId: String) -> ProductDetailsViewModel(productId, get(), get()) }
+    viewModel { ProductsListViewModel(get(), get()) }
+    viewModel { (productId: String?) -> ProductFormViewModel(productId, get(), get()) }
+    viewModel { (productId: String) -> ProductDetailsViewModel(productId, get(), get()) }
 }
 
 fun productModule() = productModule

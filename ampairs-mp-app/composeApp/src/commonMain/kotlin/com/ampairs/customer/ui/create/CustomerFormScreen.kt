@@ -58,7 +58,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.ampairs.customer.domain.CustomerGroup
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import com.ampairs.ui.components.Phone
 import com.ampairs.customer.ui.components.StateAutocomplete
@@ -82,7 +82,7 @@ fun CustomerFormScreen(
     customerId: String? = null,
     onSaveSuccess: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: CustomerFormViewModel = koinInject { parametersOf(customerId) }
+    viewModel: CustomerFormViewModel = koinViewModel { parametersOf(customerId) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
 

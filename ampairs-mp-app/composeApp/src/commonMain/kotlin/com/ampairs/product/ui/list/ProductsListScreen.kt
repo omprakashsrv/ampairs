@@ -21,7 +21,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.ampairs.product.domain.ProductListItem
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,7 +29,7 @@ fun ProductsListScreen(
     onProductClick: (String) -> Unit,
     onCreateProduct: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: ProductsListViewModel = koinInject()
+    viewModel: ProductsListViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 

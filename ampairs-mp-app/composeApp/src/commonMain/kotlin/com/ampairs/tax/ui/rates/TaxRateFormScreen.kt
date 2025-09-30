@@ -17,7 +17,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.ampairs.tax.domain.BusinessType
 import com.ampairs.tax.domain.TaxType
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import kotlin.time.Clock
 
@@ -27,7 +27,7 @@ fun TaxRateFormScreen(
     taxRateId: String? = null,
     onSaveSuccess: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: TaxRateFormViewModel = koinInject { parametersOf(taxRateId) }
+    viewModel: TaxRateFormViewModel = koinViewModel { parametersOf(taxRateId) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showTaxTypeDropdown by remember { mutableStateOf(false) }

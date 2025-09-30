@@ -33,7 +33,7 @@ import com.ampairs.workspace.domain.UserInvitation
 import com.ampairs.workspace.viewmodel.WorkspaceListViewModel
 import com.ampairs.workspace.integration.WorkspaceContextIntegration
 import com.ampairs.workspace.navigation.GlobalNavigationManager
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,7 +42,7 @@ fun WorkspaceListScreen(
     onWorkspaceSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
     onWorkspaceEdit: (String) -> Unit = {},
-    viewModel: WorkspaceListViewModel = koinInject(),
+    viewModel: WorkspaceListViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     val coroutineScope = rememberCoroutineScope()

@@ -14,6 +14,7 @@ import com.ampairs.auth.viewmodel.LoginViewModel
 import com.ampairs.auth.viewmodel.UserSelectionViewModel
 import com.ampairs.auth.viewmodel.UserUpdateViewModel
 import org.koin.core.module.Module
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
@@ -29,10 +30,10 @@ val authModule: Module = module {
     single { UserRepository(get(), get(), get(), get(), get(), get()) }
 
     // Direct ViewModel injection
-    factory { LoginViewModel(get(), get(), get()) }
-    factory { DeviceManagementViewModel(get()) }
-    factory { UserUpdateViewModel(get()) }
-    factory { UserSelectionViewModel(get(), get(), get()) }
+    viewModelOf(::LoginViewModel)
+    viewModelOf(::DeviceManagementViewModel)
+    viewModelOf(::UserUpdateViewModel)
+    viewModelOf(::UserSelectionViewModel)
 
     scope<LoginScope> {
         scoped { LoginViewModel(get(), get(), get()) }

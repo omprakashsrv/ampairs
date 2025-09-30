@@ -14,7 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.workspace.domain.WorkspaceMember
 import com.ampairs.workspace.viewmodel.WorkspaceMembersViewModel
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 /**
@@ -28,7 +28,7 @@ fun WorkspaceMembersScreen(
     onMemberClick: (String) -> Unit,
     onInviteClick: () -> Unit,
 ) {
-    val viewModel: WorkspaceMembersViewModel = koinInject { parametersOf(workspaceId) }
+    val viewModel: WorkspaceMembersViewModel = koinViewModel { parametersOf(workspaceId) }
     val state by viewModel.state.collectAsState()
 
     var showFilters by remember { mutableStateOf(false) }

@@ -22,7 +22,7 @@ import com.ampairs.workspace.api.model.WorkspaceRole
 import com.ampairs.workspace.viewmodel.WorkspaceInvitationsViewModel
 import com.ampairs.common.validation.ValidationResult
 import com.ampairs.common.validation.phone.PhoneNumberValidator
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 /**
@@ -35,7 +35,7 @@ fun WorkspaceInvitationCreateScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val viewModel: WorkspaceInvitationsViewModel = koinInject { parametersOf(workspaceId) }
+    val viewModel: WorkspaceInvitationsViewModel = koinViewModel { parametersOf(workspaceId) }
     val state by viewModel.state.collectAsState()
 
     // Form state - Phone only for now

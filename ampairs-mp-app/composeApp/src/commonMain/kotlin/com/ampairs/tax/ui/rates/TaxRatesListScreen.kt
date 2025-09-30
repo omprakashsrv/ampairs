@@ -15,7 +15,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ampairs.tax.domain.BusinessType
 import com.ampairs.tax.domain.TaxRateListItem
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import kotlin.time.Clock
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -24,7 +24,7 @@ fun TaxRatesListScreen(
     onTaxRateClick: (String) -> Unit,
     onCreateTaxRate: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: TaxRatesListViewModel = koinInject()
+    viewModel: TaxRatesListViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showSearchBar by remember { mutableStateOf(false) }

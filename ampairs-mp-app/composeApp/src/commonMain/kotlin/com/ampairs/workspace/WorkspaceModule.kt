@@ -43,6 +43,8 @@ import com.ampairs.workspace.viewmodel.WorkspaceModulesViewModel
 import com.ampairs.workspace.context.WorkspaceContextManager
 import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
+import org.koin.core.module.dsl.viewModel
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
@@ -101,14 +103,14 @@ fun workspaceModule() = module {
     single { WorkspaceContextManager.getInstance() }
 
     // ViewModels with parameter support
-    factory { WorkspaceListViewModel(get<OfflineFirstWorkspaceRepository>(), get(), get(), get(), get()) }
-    factoryOf(::WorkspaceCreateViewModel)
+    viewModel { WorkspaceListViewModel(get<OfflineFirstWorkspaceRepository>(), get(), get(), get(), get()) }
+    viewModelOf(::WorkspaceCreateViewModel)
 
     // Member and invitation ViewModels with workspaceId parameter
-    factory { (workspaceId: String) -> WorkspaceMembersViewModel(workspaceId, get(named("workspaceMemberStore")), get(), get()) }
-    factory { (workspaceId: String, memberId: String) -> MemberDetailsViewModel(workspaceId, memberId, get(named("workspaceMemberStore")), get(), get(), get(named("workspaceRolesStore")), get(named("workspacePermissionsStore")), get()) }
-    factory { (workspaceId: String) -> WorkspaceInvitationsViewModel(workspaceId, get<OfflineFirstWorkspaceInvitationRepository>(), get<OfflineFirstRolesPermissionsRepository>()) }
+    viewModel { (workspaceId: String) -> WorkspaceMembersViewModel(workspaceId, get(named("workspaceMemberStore")), get(), get()) }
+    viewModel { (workspaceId: String, memberId: String) -> MemberDetailsViewModel(workspaceId, memberId, get(named("workspaceMemberStore")), get(), get(), get(named("workspaceRolesStore")), get(named("workspacePermissionsStore")), get()) }
+    viewModel { (workspaceId: String) -> WorkspaceInvitationsViewModel(workspaceId, get<OfflineFirstWorkspaceInvitationRepository>(), get<OfflineFirstRolesPermissionsRepository>()) }
 
     // Module management ViewModels
-    factory { (workspaceId: String?) -> WorkspaceModulesViewModel(get(), workspaceId) } // ViewModel matching web
+    viewModel { (workspaceId: String?) -> WorkspaceModulesViewModel(get(), workspaceId) } // ViewModel matching web
 }

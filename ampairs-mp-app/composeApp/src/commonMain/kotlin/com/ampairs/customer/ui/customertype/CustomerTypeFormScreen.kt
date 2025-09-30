@@ -13,7 +13,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -22,7 +22,7 @@ fun CustomerTypeFormScreen(
     customerTypeId: String? = null,
     onSaveSuccess: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: CustomerTypeFormViewModel = koinInject { parametersOf(customerTypeId) }
+    viewModel: CustomerTypeFormViewModel = koinViewModel { parametersOf(customerTypeId) }
 ) {
     val formState by viewModel.formState.collectAsState()
     val focusManager = LocalFocusManager.current

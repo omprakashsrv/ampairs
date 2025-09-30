@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 import com.ampairs.auth.domain.UserInfo
 import com.ampairs.auth.viewmodel.UserSelectionViewModel
 import com.ampairs.common.time.currentTimeMillis
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,7 +31,7 @@ fun UserSelectionScreen(
     onUserSelected: (String) -> Unit,
     onAddNewUser: () -> Unit,
     onNoUsers: () -> Unit = {},
-    viewModel: UserSelectionViewModel = koinInject(),
+    viewModel: UserSelectionViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     var hasInitialized by remember { mutableStateOf(false) }

@@ -56,6 +56,7 @@ kotlin {
                 implementation(libs.kotlinx.dateTime)
                 implementation(libs.koin.core)
                 implementation(libs.koin.compose)
+                implementation(libs.koin.compose.viewmodel)
 
                 implementation(libs.bundles.ktor.common)
 

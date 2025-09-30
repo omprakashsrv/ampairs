@@ -51,12 +51,12 @@ import ampairsapp.composeapp.generated.resources.device_sessions
 import ampairsapp.composeapp.generated.resources.loading_device_sessions
 import ampairsapp.composeapp.generated.resources.logout_all_devices
 import kotlinx.coroutines.flow.filterNotNull
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DeviceManagementScreen(
-    viewModel: DeviceManagementViewModel = koinInject(),
+    viewModel: DeviceManagementViewModel = koinViewModel(),
     onNavigateBack: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()

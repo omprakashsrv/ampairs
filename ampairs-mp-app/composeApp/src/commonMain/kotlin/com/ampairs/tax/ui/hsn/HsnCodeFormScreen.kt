@@ -14,7 +14,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.ampairs.tax.domain.HsnCategory
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -23,7 +23,7 @@ fun HsnCodeFormScreen(
     hsnCodeId: String? = null,
     onSaveSuccess: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: HsnCodeFormViewModel = koinInject { parametersOf(hsnCodeId) }
+    viewModel: HsnCodeFormViewModel = koinViewModel { parametersOf(hsnCodeId) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showCategoryDropdown by remember { mutableStateOf(false) }

@@ -24,7 +24,7 @@ import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.ampairs.product.domain.Product
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -34,7 +34,7 @@ fun ProductDetailsScreen(
     onNavigateBack: () -> Unit,
     onEditProduct: (String) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: ProductDetailsViewModel = koinInject { parametersOf(productId) }
+    viewModel: ProductDetailsViewModel = koinViewModel { parametersOf(productId) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }

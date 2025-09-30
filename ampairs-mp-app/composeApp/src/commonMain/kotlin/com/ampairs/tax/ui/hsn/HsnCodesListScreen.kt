@@ -18,7 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.tax.domain.HsnCategory
 import com.ampairs.tax.domain.HsnListItem
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,7 +26,7 @@ fun HsnCodesListScreen(
     onHsnCodeClick: (String) -> Unit,
     onCreateHsnCode: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: HsnCodesListViewModel = koinInject()
+    viewModel: HsnCodesListViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 

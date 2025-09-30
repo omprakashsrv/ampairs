@@ -13,6 +13,8 @@ import com.ampairs.tax.ui.rates.TaxRatesListViewModel
 import com.ampairs.tax.ui.rates.TaxRateFormViewModel
 import com.ampairs.tax.ui.rates.TaxRateDetailsViewModel
 import org.koin.core.module.dsl.singleOf
+import org.koin.core.module.dsl.viewModel
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
@@ -33,11 +35,11 @@ val taxModule = module {
     singleOf(::TaxCalculationEngine)
 
     // ViewModels
-    factory { HsnCodesListViewModel(get()) }
-    factory { (hsnCodeId: String?) -> HsnCodeFormViewModel(hsnCodeId, get()) }
-    factory { (hsnCodeId: String) -> HsnCodeDetailsViewModel(hsnCodeId, get()) }
-    factory { TaxRatesListViewModel(get()) }
-    factory { (taxRateId: String?) -> TaxRateFormViewModel(taxRateId, get()) }
-    factory { (taxRateId: String) -> TaxRateDetailsViewModel(taxRateId, get()) }
-    factory { TaxCalculatorViewModel(get()) }
+    viewModelOf(::HsnCodesListViewModel)
+    viewModel { (hsnCodeId: String?) -> HsnCodeFormViewModel(hsnCodeId, get()) }
+    viewModel { (hsnCodeId: String) -> HsnCodeDetailsViewModel(hsnCodeId, get()) }
+    viewModelOf(::TaxRatesListViewModel)
+    viewModel { (taxRateId: String?) -> TaxRateFormViewModel(taxRateId, get()) }
+    viewModel { (taxRateId: String) -> TaxRateDetailsViewModel(taxRateId, get()) }
+    viewModelOf(::TaxCalculatorViewModel)
 }

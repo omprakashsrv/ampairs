@@ -15,7 +15,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.ampairs.tax.domain.HsnCategory
 import com.ampairs.tax.domain.HsnCode
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import kotlin.time.Clock
 
@@ -26,7 +26,7 @@ fun HsnCodeDetailsScreen(
     onNavigateBack: () -> Unit,
     onEditHsnCode: (String) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: HsnCodeDetailsViewModel = koinInject { parametersOf(hsnCodeId) }
+    viewModel: HsnCodeDetailsViewModel = koinViewModel { parametersOf(hsnCodeId) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }

@@ -15,7 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.customer.domain.CustomerListItem
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import com.ampairs.customer.util.CustomerConstants.TITLE_CUSTOMERS
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -24,12 +24,12 @@ fun CustomersListScreen(
     onCustomerClick: (String) -> Unit,
     onCreateCustomer: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: CustomersListViewModel = koinInject()
+    viewModel: CustomersListViewModel = koinViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     LaunchedEffect(Unit) {
-        viewModel.loadCustomers()
+        // Only trigger sync - observeSearchQuery() in init already loads from DB
         viewModel.syncCustomers()
     }
 

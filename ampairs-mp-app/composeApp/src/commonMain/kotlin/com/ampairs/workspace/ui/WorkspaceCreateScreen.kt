@@ -14,7 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.collectAsState
 import com.ampairs.workspace.viewmodel.WorkspaceCreateViewModel
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -23,7 +23,7 @@ fun WorkspaceCreateScreen(
     onWorkspaceCreated: (String) -> Unit,
     workspaceId: String? = null,
     modifier: Modifier = Modifier,
-    viewModel: WorkspaceCreateViewModel = koinInject(),
+    viewModel: WorkspaceCreateViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     val scrollState = rememberScrollState()

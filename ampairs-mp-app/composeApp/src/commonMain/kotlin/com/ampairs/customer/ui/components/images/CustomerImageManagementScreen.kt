@@ -13,14 +13,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 @Composable
 fun CustomerImageManagementScreen(
     customerId: String,
     modifier: Modifier = Modifier,
-    viewModel: CustomerImageViewModel = koinInject { parametersOf(customerId) }
+    viewModel: CustomerImageViewModel = koinViewModel { parametersOf(customerId) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
 

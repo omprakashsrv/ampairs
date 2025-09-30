@@ -16,7 +16,7 @@ import androidx.compose.ui.unit.dp
 import com.ampairs.tax.domain.BusinessType
 import com.ampairs.tax.domain.TaxRate
 import com.ampairs.tax.domain.TaxType
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import kotlin.time.Clock
 
@@ -27,7 +27,7 @@ fun TaxRateDetailsScreen(
     onNavigateBack: () -> Unit,
     onEditTaxRate: (String) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: TaxRateDetailsViewModel = koinInject { parametersOf(taxRateId) }
+    viewModel: TaxRateDetailsViewModel = koinViewModel { parametersOf(taxRateId) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var showDeleteDialog by remember { mutableStateOf(false) }

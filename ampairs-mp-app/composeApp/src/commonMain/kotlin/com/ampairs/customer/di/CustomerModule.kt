@@ -30,6 +30,8 @@ import com.ampairs.customer.ui.details.CustomerDetailsViewModel
 import com.ampairs.customer.ui.list.CustomersListViewModel
 import com.ampairs.customer.ui.state.StateListViewModel
 import org.koin.core.module.dsl.singleOf
+import org.koin.core.module.dsl.viewModel
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.bind
 import org.koin.dsl.module
 
@@ -65,9 +67,9 @@ val customerModule = module {
     singleOf(::StateStore)
 
     // ViewModels
-    factory { CustomersListViewModel(get()) }
-    factory { (customerId: String?) -> CustomerDetailsViewModel(customerId ?: "", get()) }
-    factory { (customerId: String?) ->
+    viewModelOf(::CustomersListViewModel)
+    viewModel { (customerId: String?) -> CustomerDetailsViewModel(customerId ?: "", get()) }
+    viewModel { (customerId: String?) ->
         CustomerFormViewModel(
             customerId,
             get(),
@@ -76,18 +78,18 @@ val customerModule = module {
             get()
         )
     }
-    factory { StateListViewModel(get()) }
+    viewModelOf(::StateListViewModel)
 
     // CustomerType ViewModels
-    factory { CustomerTypeListViewModel(get()) }
-    factory { (customerTypeId: String?) -> CustomerTypeFormViewModel(get(), customerTypeId) }
+    viewModelOf(::CustomerTypeListViewModel)
+    viewModel { (customerTypeId: String?) -> CustomerTypeFormViewModel(get(), customerTypeId) }
 
     // CustomerGroup ViewModels
-    factory { CustomerGroupListViewModel(get()) }
-    factory { (customerGroupId: String?) -> CustomerGroupFormViewModel(get(), customerGroupId) }
+    viewModelOf(::CustomerGroupListViewModel)
+    viewModel { (customerGroupId: String?) -> CustomerGroupFormViewModel(get(), customerGroupId) }
 
     // CustomerImage ViewModels
-    factory { (customerId: String) -> CustomerImageViewModel(customerId, get(), get()) }
+    viewModel { (customerId: String) -> CustomerImageViewModel(customerId, get(), get()) }
 }
 
 expect val customerPlatformModule: org.koin.core.module.Module
