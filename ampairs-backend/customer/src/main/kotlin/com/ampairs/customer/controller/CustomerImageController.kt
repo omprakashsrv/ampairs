@@ -54,6 +54,9 @@ class CustomerImageController(
         @Parameter(description = "Customer UID")
         @RequestParam("customerUid") customerUid: String,
 
+        @Parameter(description = "Image UID (optional, generated if not provided)")
+        @RequestParam("uid", required = false) uid: String?,
+
         @Parameter(description = "Alt text for accessibility")
         @RequestParam("altText", required = false) altText: String?,
 
@@ -67,7 +70,7 @@ class CustomerImageController(
         @RequestParam("displayOrder", required = false) displayOrder: Int?,
 
         request: HttpServletRequest
-    ): ResponseEntity<ApiResponse<CustomerImageUploadResponse>> {
+    ): ResponseEntity<ApiResponse<CustomerImageResponse>> {
 
         val workspaceSlug = getWorkspaceSlugFromHeaders(request)
             ?: return ResponseEntity.badRequest()
@@ -76,6 +79,7 @@ class CustomerImageController(
         return try {
             val uploadRequest = CustomerImageUploadRequest(
                 customerUid = customerUid,
+                uid = uid,
                 altText = altText,
                 description = description,
                 isPrimary = isPrimary,
@@ -87,7 +91,7 @@ class CustomerImageController(
             logger.info("Image uploaded successfully: customer={}, image={}", customerUid, result.image.uid)
 
             ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success(result))
+                .body(ApiResponse.success(result.image))
 
         } catch (e: Exception) {
             logger.error("Failed to upload image: customer={}, error={}", customerUid, e.message, e)

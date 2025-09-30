@@ -198,13 +198,13 @@ private fun ImageContent(
         // Since CustomerImage doesn't have synced field, we'll assume if it has server URLs it's synced
         // Use server image URL - Coil will download, cache, and handle offline automatically
         !image.imageUrl.isNullOrBlank() -> {
-            val completeUrl = ApiUrlBuilder.buildCompleteUrl(image.imageUrl!!)
+            val completeUrl = ApiUrlBuilder.buildCompleteUrl(image.imageUrl)
             CustomerLogger.d("CustomerImageViewer", "Loading image URL: ${image.imageUrl} -> $completeUrl")
             completeUrl
         }
         // Fallback to thumbnail URL if main image URL is not available
         !image.thumbnailUrl.isNullOrBlank() -> {
-            val completeUrl = ApiUrlBuilder.buildCompleteUrl(image.thumbnailUrl!!)
+            val completeUrl = ApiUrlBuilder.buildCompleteUrl(image.thumbnailUrl)
             CustomerLogger.d("CustomerImageViewer", "Loading thumbnail URL: ${image.thumbnailUrl} -> $completeUrl")
             completeUrl
         }

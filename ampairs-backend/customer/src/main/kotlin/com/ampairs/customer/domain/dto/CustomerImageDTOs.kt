@@ -12,6 +12,9 @@ data class CustomerImageUploadRequest(
     @field:Size(min = 1, max = 36, message = "Customer UID must be between 1 and 36 characters")
     val customerUid: String,
 
+    @field:Size(min = 1, max = 36, message = "Image UID must be between 1 and 36 characters")
+    val uid: String? = null,
+
     @field:Size(max = 255, message = "Alt text cannot exceed 255 characters")
     val altText: String? = null,
 

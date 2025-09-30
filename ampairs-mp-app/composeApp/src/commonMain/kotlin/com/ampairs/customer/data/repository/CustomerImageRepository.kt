@@ -103,23 +103,23 @@ class CustomerImageRepository(
             localPath = null // Will be set after local file save
         )
 
-        // 1. Save to local database first (offline-first)
-        val entity = customerImage.toEntity(workspaceId, synced = false, localCreatedAt = now, localUpdatedAt = now)
-        dao.insertCustomerImage(entity)
-
-        // 2. Save image file locally for offline access
-        try {
-            val localPath = fileManager.saveImageToCache(uid, imageData, fileName)
-            dao.updateLocalPath(uid, workspaceId, localPath, now)
-
-            // Update local object with file path
-            val updatedImage = customerImage.copy(localPath = localPath)
-            dao.insertCustomerImage(updatedImage.toEntity(workspaceId, synced = false, localCreatedAt = now, localUpdatedAt = now))
+        // 1. Save image file locally first for offline access
+        val localPath = try {
+            fileManager.saveImageToCache(uid, imageData, fileName)
         } catch (e: Exception) {
             CustomerLogger.e("CustomerImageRepository", "Failed to save image locally", e)
+            null
         }
 
-        // 3. Handle primary image logic locally
+        // 2. Create initial entity with all data (single DB write)
+        val initialImage = customerImage.copy(
+            localPath = localPath ?: "",
+            uploadStatus = CustomerImageStatus.UPLOADING
+        )
+        val initialEntity = initialImage.toEntity(workspaceId, synced = false, localCreatedAt = now, localUpdatedAt = now)
+        dao.insertCustomerImage(initialEntity)
+
+        // 3. Handle primary image logic if needed
         if (isPrimary) {
             dao.clearPrimaryImages(customerId, workspaceId, now)
             dao.setPrimaryImage(uid, workspaceId, now)
@@ -127,12 +127,11 @@ class CustomerImageRepository(
 
         // 4. Background server upload using multipart form data
         try {
-            dao.updateUploadStatus(uid, workspaceId, CustomerImageStatus.UPLOADING, now)
-
             // Wrap upload operation in timeout (60 seconds)
             val serverImage = withTimeout(60_000L) {
                 // Direct multipart upload to backend
                 val uploadResponse = api.uploadCustomerImageMultipart(
+                    uid = customerImage.uid,
                     customerId = customerId,
                     fileName = fileName,
                     contentType = contentType,
@@ -142,29 +141,27 @@ class CustomerImageRepository(
                     displayOrder = uploadRequest.sortOrder
                 )
 
-                // Create final server image object
-                val result = customerImage.copy(
+                // Create final synced entity with server URLs (single DB write)
+                val syncedImage = initialImage.copy(
                     imageUrl = uploadResponse.imageUrl,
                     thumbnailUrl = uploadResponse.thumbnailUrl,
                     uploadStatus = CustomerImageStatus.COMPLETED
                 )
-
-                // Update local database with server URLs and mark as synced
-                val syncedEntity = result.toEntity(workspaceId, synced = true, localCreatedAt = now, localUpdatedAt = now)
+                val syncedEntity = syncedImage.toEntity(workspaceId, synced = true, localCreatedAt = now, localUpdatedAt = now)
                 dao.insertCustomerImage(syncedEntity)
 
                 CustomerLogger.i("CustomerImageRepository", "Multipart upload successful for: $fileName")
-                result
+                syncedImage
             }
             return Result.success(serverImage)
         } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
             CustomerLogger.w("CustomerImageRepository", "Upload timeout for: $fileName after 60 seconds")
             dao.updateUploadStatus(uid, workspaceId, CustomerImageStatus.FAILED, now)
-            return Result.success(customerImage.copy(uploadStatus = CustomerImageStatus.FAILED))
+            return Result.success(initialImage.copy(uploadStatus = CustomerImageStatus.FAILED))
         } catch (e: Exception) {
             CustomerLogger.e("CustomerImageRepository", "Background multipart upload failed", e)
             dao.updateUploadStatus(uid, workspaceId, CustomerImageStatus.FAILED, now)
-            return Result.success(customerImage.copy(uploadStatus = CustomerImageStatus.FAILED))
+            return Result.success(initialImage.copy(uploadStatus = CustomerImageStatus.FAILED))
         }
     }
 
@@ -275,15 +272,20 @@ class CustomerImageRepository(
             // 1. Sync unsynced local images to server first
             val unsyncedImages = dao.getUnsyncedCustomerImages(workspaceId).filter { it.customerId == customerId }
             var syncedCount = 0
+            val now = Clock.System.now().toString()
+
+            // Batch collect entities to update after all operations
+            val entitiesToUpdate = mutableListOf<CustomerImageEntity>()
 
             for (entity in unsyncedImages) {
                 try {
-                    val image = entity.toCustomerImage()
                     if (entity.uploadStatus == CustomerImageStatus.PENDING || entity.uploadStatus == CustomerImageStatus.FAILED) {
                         // Handle pending and failed uploads - retry upload using multipart
                         if (entity.localPath != null && fileManager.fileExists(entity.localPath)) {
                             try {
-                                dao.updateUploadStatus(entity.uid, workspaceId, CustomerImageStatus.UPLOADING, Clock.System.now().toString())
+                                // Update to UPLOADING status (temporary, will be replaced on success)
+                                val uploadingEntity = entity.copy(uploadStatus = CustomerImageStatus.UPLOADING, localUpdatedAt = now)
+                                entitiesToUpdate.add(uploadingEntity)
 
                                 // Wrap upload operation in timeout (60 seconds)
                                 withTimeout(60_000L) {
@@ -293,6 +295,7 @@ class CustomerImageRepository(
 
                                     // Perform multipart upload using the existing API
                                     val uploadResponse = api.uploadCustomerImageMultipart(
+                                        uid = entity.uid,
                                         customerId = entity.customerId,
                                         fileName = entity.fileName,
                                         contentType = entity.contentType,
@@ -302,34 +305,43 @@ class CustomerImageRepository(
                                         displayOrder = entity.sortOrder
                                     )
 
-                                    // Update with server response
-                                    val serverImage = entity.toCustomerImage().copy(
+                                    // Create synced entity with server URLs
+                                    val syncedImage = entity.toCustomerImage().copy(
                                         imageUrl = uploadResponse.imageUrl,
                                         thumbnailUrl = uploadResponse.thumbnailUrl,
                                         uploadStatus = CustomerImageStatus.COMPLETED
                                     )
+                                    val syncedEntity = syncedImage.toEntity(workspaceId, synced = true, localCreatedAt = entity.localCreatedAt, localUpdatedAt = now)
 
-                                    // Mark as synced and update local database
-                                    val syncedEntity = serverImage.toEntity(workspaceId, synced = true, localUpdatedAt = Clock.System.now().toString())
-                                    dao.insertCustomerImage(syncedEntity)
+                                    // Replace UPLOADING entity with COMPLETED entity
+                                    entitiesToUpdate.removeAll { it.uid == entity.uid }
+                                    entitiesToUpdate.add(syncedEntity)
                                     syncedCount++
 
                                     CustomerLogger.i("CustomerImageSync", "Successfully retried upload for: ${entity.uid}")
                                 }
-                            } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
-                                CustomerLogger.w("CustomerImageSync", "Upload timeout for image ${entity.uid} after 60 seconds")
-                                dao.updateUploadStatus(entity.uid, workspaceId, CustomerImageStatus.FAILED, Clock.System.now().toString())
                             } catch (e: Exception) {
-                                CustomerLogger.e("CustomerImageSync", "Failed to retry upload for image ${entity.uid}", e)
-                                dao.updateUploadStatus(entity.uid, workspaceId, CustomerImageStatus.FAILED, Clock.System.now().toString())
+                                val errorMsg = if (e is kotlinx.coroutines.TimeoutCancellationException) {
+                                    "Upload timeout for image ${entity.uid} after 60 seconds"
+                                } else {
+                                    "Failed to retry upload for image ${entity.uid}: ${e.message}"
+                                }
+                                CustomerLogger.w("CustomerImageSync", errorMsg)
+
+                                // Replace with FAILED entity
+                                val failedEntity = entity.copy(uploadStatus = CustomerImageStatus.FAILED, localUpdatedAt = now)
+                                entitiesToUpdate.removeAll { it.uid == entity.uid }
+                                entitiesToUpdate.add(failedEntity)
                             }
                         } else {
                             // Local file not found, mark as failed
-                            CustomerLogger.w("CustomerImageSync", "Local file not found for upload retry: ${entity.uid} (status: ${entity.uploadStatus})")
-                            dao.updateUploadStatus(entity.uid, workspaceId, CustomerImageStatus.FAILED, Clock.System.now().toString())
+                            CustomerLogger.w("CustomerImageSync", "Local file not found for upload retry: ${entity.uid}")
+                            val failedEntity = entity.copy(uploadStatus = CustomerImageStatus.FAILED, localUpdatedAt = now)
+                            entitiesToUpdate.add(failedEntity)
                         }
                     } else {
                         // Handle metadata updates
+                        val image = entity.toCustomerImage()
                         val updateRequest = CustomerImageUpdateRequest(
                             description = image.description,
                             isPrimary = image.isPrimary,
@@ -338,8 +350,8 @@ class CustomerImageRepository(
                             metadata = image.metadata
                         )
                         val serverImage = api.updateCustomerImage(image.customerId, image.uid, updateRequest)
-                        val syncedEntity = serverImage.toEntity(workspaceId, synced = true)
-                        dao.insertCustomerImage(syncedEntity)
+                        val syncedEntity = serverImage.toEntity(workspaceId, synced = true, localCreatedAt = entity.localCreatedAt, localUpdatedAt = now)
+                        entitiesToUpdate.add(syncedEntity)
                         syncedCount++
                     }
                 } catch (e: Exception) {
@@ -347,18 +359,45 @@ class CustomerImageRepository(
                 }
             }
 
-            // 2. Fetch server images and update local database
+            // 2. Fetch server images and prepare batch update
             val lastSyncTime = appPreferences.getCustomerLastSyncTime().first()
             val serverImages = api.getCustomerImages(customerId, lastSyncTime)
 
+            // Fetch all existing entities at once to reduce DB calls
+            val existingEntitiesMap = dao.getCustomerImages(customerId, workspaceId).associateBy { it.uid }
+
             for (serverImage in serverImages) {
-                val existing = dao.getCustomerImage(serverImage.uid, workspaceId)
-                if (existing == null || existing.synced) {
-                    // Only update if local image doesn't exist or is synced (to preserve unsynced local changes)
-                    val entity = serverImage.toEntity(workspaceId, synced = true)
-                    dao.insertCustomerImage(entity)
+                val existing = existingEntitiesMap[serverImage.uid]
+                if (existing == null) {
+                    // New image from server - insert with COMPLETED status
+                    val entity = serverImage.copy(
+                        uploadStatus = CustomerImageStatus.COMPLETED,
+                        localPath = null
+                    ).toEntity(workspaceId, synced = true, localCreatedAt = now, localUpdatedAt = now)
+                    entitiesToUpdate.add(entity)
+                    syncedCount++
+                } else if (existing.synced) {
+                    // Existing synced image - preserve local fields (localPath, uploadStatus)
+                    val mergedImage = serverImage.copy(
+                        uploadStatus = existing.uploadStatus,
+                        localPath = existing.localPath
+                    )
+                    val entity = mergedImage.toEntity(
+                        workspaceId = workspaceId,
+                        synced = true,
+                        localCreatedAt = existing.localCreatedAt,
+                        localUpdatedAt = now
+                    )
+                    entitiesToUpdate.add(entity)
                     syncedCount++
                 }
+                // Skip unsynced local images to preserve local changes
+            }
+
+            // 3. Batch insert all entities at once
+            if (entitiesToUpdate.isNotEmpty()) {
+                dao.insertCustomerImages(entitiesToUpdate)
+                CustomerLogger.d("CustomerImageSync", "Batch updated ${entitiesToUpdate.size} entities")
             }
 
             // 3. Update last sync time

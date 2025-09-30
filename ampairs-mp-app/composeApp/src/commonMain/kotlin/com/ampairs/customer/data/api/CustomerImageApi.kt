@@ -45,6 +45,7 @@ interface CustomerImageApi {
      * Upload customer image using multipart form data.
      */
     suspend fun uploadCustomerImageMultipart(
+        uid: String,
         customerId: String,
         fileName: String,
         contentType: String,

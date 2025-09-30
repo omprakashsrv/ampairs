@@ -524,6 +524,8 @@ class CustomerImageService(
         val fileExtension = getFileExtension(file.originalFilename ?: "image", file.contentType)
 
         return CustomerImage().apply {
+            // Use provided uid or generate a new one
+            request.uid?.let { uid = it }
             customerUid = request.customerUid
             this.workspaceSlug = workspaceSlug
             originalFilename = file.originalFilename ?: "image.$fileExtension"

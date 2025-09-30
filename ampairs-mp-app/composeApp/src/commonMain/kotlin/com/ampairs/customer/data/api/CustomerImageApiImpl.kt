@@ -111,6 +111,7 @@ class CustomerImageApiImpl(
     }
 
     override suspend fun uploadCustomerImageMultipart(
+        uid: String,
         customerId: String,
         fileName: String,
         contentType: String,
@@ -120,7 +121,7 @@ class CustomerImageApiImpl(
         displayOrder: Int?
     ): CustomerImageUploadResponse {
         return try {
-            CustomerLogger.d("CustomerImageApi", "Starting multipart upload for customer: $customerId, file: $fileName")
+            CustomerLogger.d("CustomerImageApi", "Starting multipart upload for customer: $customerId, file: $fileName, uid: $uid")
 
             val parts = listOf(
                 // Add the file data using FileItem for ByteArray
@@ -133,6 +134,13 @@ class CustomerImageApiImpl(
                     }
                 ),
                 // Add form parameters matching backend expectations
+                PartData.FormItem(
+                    value = uid,
+                    dispose = { },
+                    partHeaders = Headers.build {
+                        append(HttpHeaders.ContentDisposition, "form-data; name=\"uid\"")
+                    }
+                ),
                 PartData.FormItem(
                     value = customerId,
                     dispose = { },
