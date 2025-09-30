@@ -85,10 +85,6 @@ fun CustomerImageManagementScreen(
         CustomerImageViewer(
             image = uiState.selectedImage,
             onDismiss = viewModel::hideImageViewer,
-            onEdit = { image ->
-                // Could open edit dialog here
-                viewModel.hideImageViewer()
-            },
             onDelete = { image ->
                 viewModel.deleteImage(image.uid)
                 viewModel.hideImageViewer()

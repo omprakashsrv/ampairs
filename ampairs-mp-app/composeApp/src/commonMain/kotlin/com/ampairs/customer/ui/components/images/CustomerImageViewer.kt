@@ -6,7 +6,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
@@ -29,7 +28,6 @@ import com.ampairs.customer.util.CustomerLogger
 fun CustomerImageViewer(
     image: CustomerImage?,
     onDismiss: () -> Unit,
-    onEdit: (CustomerImage) -> Unit,
     onDelete: (CustomerImage) -> Unit,
     onSetPrimary: (CustomerImage) -> Unit,
     modifier: Modifier = Modifier
@@ -57,7 +55,6 @@ fun CustomerImageViewer(
                     ImageViewerHeader(
                         image = image,
                         onClose = onDismiss,
-                        onEdit = { onEdit(image) },
                         onDelete = { onDelete(image) },
                         onSetPrimary = { onSetPrimary(image) }
                     )
@@ -89,7 +86,6 @@ fun CustomerImageViewer(
 private fun ImageViewerHeader(
     image: CustomerImage,
     onClose: () -> Unit,
-    onEdit: () -> Unit,
     onDelete: () -> Unit,
     onSetPrimary: () -> Unit,
     modifier: Modifier = Modifier
@@ -121,20 +117,15 @@ private fun ImageViewerHeader(
             }
         },
         actions = {
-            // Set/Unset Primary
-            IconButton(onClick = onSetPrimary) {
+            // Set Primary
+            IconButton(
+                onClick = onSetPrimary,
+                enabled = !image.isPrimary
+            ) {
                 Icon(
-                    if (image.isPrimary) Icons.Default.StarBorder else Icons.Default.Star,
-                    contentDescription = if (image.isPrimary) "Remove primary" else "Set as primary",
+                    if (image.isPrimary) Icons.Default.Star else Icons.Default.StarBorder,
+                    contentDescription = if (image.isPrimary) "Primary image" else "Set as primary",
                     tint = if (image.isPrimary) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-
-            // Edit
-            IconButton(onClick = onEdit) {
-                Icon(
-                    Icons.Default.Edit,
-                    contentDescription = "Edit image"
                 )
             }
 

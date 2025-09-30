@@ -268,6 +268,10 @@ class CustomerImageViewModel(
                 result.fold(
                     onSuccess = { updatedImage ->
                         CustomerLogger.i("CustomerImageViewModel", "Primary image updated: ${updatedImage.uid}")
+                        // Update selectedImage in viewer to reflect the change immediately
+                        _uiState.update {
+                            it.copy(selectedImage = updatedImage)
+                        }
                         // Images will be automatically updated via the Flow
                     },
                     onFailure = { error ->

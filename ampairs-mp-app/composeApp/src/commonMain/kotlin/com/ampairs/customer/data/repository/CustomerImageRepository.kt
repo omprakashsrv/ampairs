@@ -238,7 +238,14 @@ class CustomerImageRepository(
 
         val now = Clock.System.now().toString()
 
-        // 1. Update local database first
+        // If already primary, do nothing (no unset option)
+        if (existing.isPrimary) {
+            CustomerLogger.i("CustomerImageRepository", "Image is already primary: $imageId")
+            return Result.success(existing.toCustomerImage())
+        }
+
+        // Set as primary
+        // 1. Update local database first (clear other primary flags, set this one)
         dao.clearPrimaryImages(existing.customerId, workspaceId, now)
         dao.setPrimaryImage(imageId, workspaceId, now)
 
