@@ -14,7 +14,6 @@ import coil3.util.DebugLogger
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.ImageCacheKeyer
 import com.ampairs.common.httpClient
-import io.github.vinceglb.filekit.core.FileKit
 import io.ktor.client.engine.HttpClientEngine
 import okio.Path.Companion.toOkioPath
 import org.koin.android.ext.android.get
@@ -25,7 +24,7 @@ class MainActivity : ComponentActivity() {
         actionBar?.hide()
 
         // Initialize FileKit for Android platform
-        FileKit.init(this)
+
         setContent {
             setSingletonImageLoaderFactory { context ->
                 generateImageLoader()
