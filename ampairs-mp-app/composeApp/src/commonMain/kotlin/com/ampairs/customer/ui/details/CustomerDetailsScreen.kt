@@ -8,11 +8,13 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.window.core.layout.WindowWidthSizeClass
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.ui.components.images.CustomerImageManagementScreen
 import org.koin.compose.koinInject
@@ -108,18 +110,106 @@ private fun CustomerDetailsContent(
     customer: Customer,
     modifier: Modifier = Modifier
 ) {
+    // Get window size class to determine layout
+    val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
+    val isCompactOrMedium = windowSizeClass.windowWidthSizeClass != WindowWidthSizeClass.EXPANDED
+
+    if (isCompactOrMedium) {
+        // Compact/Medium: Use TabLayout for mobile/tablet
+        CustomerDetailsTabLayout(customer = customer, modifier = modifier)
+    } else {
+        // Expanded: Use side-by-side layout for desktop/large screens
+        CustomerDetailsSideBySideLayout(customer = customer, modifier = modifier)
+    }
+}
+
+@Composable
+private fun CustomerDetailsTabLayout(
+    customer: Customer,
+    modifier: Modifier = Modifier
+) {
+    var selectedTabIndex by remember { mutableStateOf(0) }
+    val tabs = listOf("Details", "Images")
+
+    Column(modifier = modifier.fillMaxSize()) {
+        TabRow(selectedTabIndex = selectedTabIndex) {
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTabIndex == index,
+                    onClick = { selectedTabIndex = index },
+                    text = { Text(title) }
+                )
+            }
+        }
+
+        when (selectedTabIndex) {
+            0 -> CustomerDetailsTab(customer = customer, modifier = Modifier.fillMaxSize())
+            1 -> CustomerImagesTab(customer = customer, modifier = Modifier.fillMaxSize())
+        }
+    }
+}
+
+@Composable
+private fun CustomerDetailsSideBySideLayout(
+    customer: Customer,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Left side: Customer Details (60% width)
+        Card(
+            modifier = Modifier
+                .weight(0.6f)
+                .fillMaxHeight()
+        ) {
+            CustomerDetailsTab(
+                customer = customer,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        // Right side: Customer Images (40% width)
+        Card(
+            modifier = Modifier
+                .weight(0.4f)
+                .fillMaxHeight()
+        ) {
+            CustomerImageManagementScreen(
+                customerId = customer.uid,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun CustomerImagesTab(
+    customer: Customer,
+    modifier: Modifier = Modifier
+) {
+    CustomerImageManagementScreen(
+        customerId = customer.uid,
+        modifier = modifier.padding(16.dp)
+    )
+}
+
+@Composable
+private fun CustomerDetailsTab(
+    customer: Customer,
+    modifier: Modifier = Modifier
+) {
     Column(
         modifier = modifier
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Customer Images Section
-        CustomerImageManagementScreen(
-            customerId = customer.uid,
-            modifier = Modifier.fillMaxWidth()
-        )
-
         // Basic Information
         InfoSection(title = "Basic Information") {
             InfoRow(label = "Name", value = customer.name)

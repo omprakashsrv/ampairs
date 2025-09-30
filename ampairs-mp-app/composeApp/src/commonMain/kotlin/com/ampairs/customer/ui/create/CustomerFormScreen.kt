@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -35,9 +36,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.adaptive.currentWindowAdaptiveInfo
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -52,6 +56,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import androidx.window.core.layout.WindowWidthSizeClass
 import com.ampairs.customer.domain.CustomerGroup
 import org.koin.compose.koinInject
 import org.koin.core.parameter.parametersOf
@@ -163,6 +168,223 @@ private fun CustomerForm(
     onCustomerGroupSelected: (CustomerGroup) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    // Get window size class to determine layout
+    val windowSizeClass = currentWindowAdaptiveInfo().windowSizeClass
+    val isCompactOrMedium = windowSizeClass.windowWidthSizeClass != WindowWidthSizeClass.EXPANDED
+
+    // Only show adaptive layout for existing customers (when images are present)
+    if (customerId != null && isCompactOrMedium) {
+        // Compact/Medium: Use TabLayout for mobile/tablet
+        CustomerFormTabLayout(
+            customerId = customerId,
+            formState = formState,
+            onFormChange = onFormChange,
+            error = error,
+            onSave = onSave,
+            canSave = canSave,
+            isSaving = isSaving,
+            states = states,
+            onStateSelected = onStateSelected,
+            cities = cities,
+            pincodes = pincodes,
+            customerTypes = customerTypes,
+            onCustomerTypeSelected = onCustomerTypeSelected,
+            customerGroups = customerGroups,
+            onCustomerGroupSelected = onCustomerGroupSelected,
+            modifier = modifier
+        )
+    } else if (customerId != null) {
+        // Expanded: Use side-by-side layout for desktop/large screens
+        CustomerFormSideBySideLayout(
+            customerId = customerId,
+            formState = formState,
+            onFormChange = onFormChange,
+            error = error,
+            onSave = onSave,
+            canSave = canSave,
+            isSaving = isSaving,
+            states = states,
+            onStateSelected = onStateSelected,
+            cities = cities,
+            pincodes = pincodes,
+            customerTypes = customerTypes,
+            onCustomerTypeSelected = onCustomerTypeSelected,
+            customerGroups = customerGroups,
+            onCustomerGroupSelected = onCustomerGroupSelected,
+            modifier = modifier
+        )
+    } else {
+        // New customer: No images, show form only
+        CustomerFormFields(
+            customerId = null,
+            formState = formState,
+            onFormChange = onFormChange,
+            error = error,
+            onSave = onSave,
+            canSave = canSave,
+            isSaving = isSaving,
+            states = states,
+            onStateSelected = onStateSelected,
+            cities = cities,
+            pincodes = pincodes,
+            customerTypes = customerTypes,
+            onCustomerTypeSelected = onCustomerTypeSelected,
+            customerGroups = customerGroups,
+            onCustomerGroupSelected = onCustomerGroupSelected,
+            modifier = modifier
+        )
+    }
+}
+
+@Composable
+private fun CustomerFormTabLayout(
+    customerId: String,
+    formState: CustomerFormState,
+    onFormChange: (CustomerFormState) -> Unit,
+    error: String?,
+    onSave: () -> Unit,
+    canSave: Boolean,
+    isSaving: Boolean,
+    states: List<State>,
+    onStateSelected: (State) -> Unit,
+    cities: List<String>,
+    pincodes: List<String>,
+    customerTypes: List<CustomerType>,
+    onCustomerTypeSelected: (CustomerType) -> Unit,
+    customerGroups: List<CustomerGroup>,
+    onCustomerGroupSelected: (CustomerGroup) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var selectedTabIndex by remember { mutableStateOf(0) }
+    val tabs = listOf("Details", "Images")
+
+    Column(modifier = modifier.fillMaxSize()) {
+        TabRow(selectedTabIndex = selectedTabIndex) {
+            tabs.forEachIndexed { index, title ->
+                Tab(
+                    selected = selectedTabIndex == index,
+                    onClick = { selectedTabIndex = index },
+                    text = { Text(title) }
+                )
+            }
+        }
+
+        when (selectedTabIndex) {
+            0 -> CustomerFormFields(
+                customerId = customerId,
+                formState = formState,
+                onFormChange = onFormChange,
+                error = error,
+                onSave = onSave,
+                canSave = canSave,
+                isSaving = isSaving,
+                states = states,
+                onStateSelected = onStateSelected,
+                cities = cities,
+                pincodes = pincodes,
+                customerTypes = customerTypes,
+                onCustomerTypeSelected = onCustomerTypeSelected,
+                customerGroups = customerGroups,
+                onCustomerGroupSelected = onCustomerGroupSelected,
+                modifier = Modifier.fillMaxSize()
+            )
+            1 -> CustomerImageManagementScreen(
+                customerId = customerId,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun CustomerFormSideBySideLayout(
+    customerId: String,
+    formState: CustomerFormState,
+    onFormChange: (CustomerFormState) -> Unit,
+    error: String?,
+    onSave: () -> Unit,
+    canSave: Boolean,
+    isSaving: Boolean,
+    states: List<State>,
+    onStateSelected: (State) -> Unit,
+    cities: List<String>,
+    pincodes: List<String>,
+    customerTypes: List<CustomerType>,
+    onCustomerTypeSelected: (CustomerType) -> Unit,
+    customerGroups: List<CustomerGroup>,
+    onCustomerGroupSelected: (CustomerGroup) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Left side: Customer Form (60% width)
+        Card(
+            modifier = Modifier
+                .weight(0.6f)
+                .fillMaxHeight()
+        ) {
+            CustomerFormFields(
+                customerId = customerId,
+                formState = formState,
+                onFormChange = onFormChange,
+                error = error,
+                onSave = onSave,
+                canSave = canSave,
+                isSaving = isSaving,
+                states = states,
+                onStateSelected = onStateSelected,
+                cities = cities,
+                pincodes = pincodes,
+                customerTypes = customerTypes,
+                onCustomerTypeSelected = onCustomerTypeSelected,
+                customerGroups = customerGroups,
+                onCustomerGroupSelected = onCustomerGroupSelected,
+                modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        // Right side: Customer Images (40% width)
+        Card(
+            modifier = Modifier
+                .weight(0.4f)
+                .fillMaxHeight()
+        ) {
+            CustomerImageManagementScreen(
+                customerId = customerId,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CustomerFormFields(
+    customerId: String?,
+    formState: CustomerFormState,
+    onFormChange: (CustomerFormState) -> Unit,
+    error: String?,
+    onSave: () -> Unit,
+    canSave: Boolean,
+    isSaving: Boolean,
+    states: List<State>,
+    onStateSelected: (State) -> Unit,
+    cities: List<String>,
+    pincodes: List<String>,
+    customerTypes: List<CustomerType>,
+    onCustomerTypeSelected: (CustomerType) -> Unit,
+    customerGroups: List<CustomerGroup>,
+    onCustomerGroupSelected: (CustomerGroup) -> Unit,
+    modifier: Modifier = Modifier
+) {
     val focusManager = LocalFocusManager.current
 
     Column(
@@ -183,14 +405,6 @@ private fun CustomerForm(
                     color = MaterialTheme.colorScheme.onErrorContainer
                 )
             }
-        }
-
-        // Customer Images Section (only for existing customers)
-        if (customerId != null) {
-            CustomerImageManagementScreen(
-                customerId = customerId,
-                modifier = Modifier.fillMaxWidth()
-            )
         }
 
         // Basic Information
