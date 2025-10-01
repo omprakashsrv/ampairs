@@ -233,31 +233,6 @@ compose.desktop {
     }
 }
 
-// Native binary build tasks
-tasks.register("buildNativeMacOS") {
-    group = "build"
-    description = "Build native macOS executables for Intel and Apple Silicon"
-    dependsOn("linkDebugExecutableMacosX64", "linkDebugExecutableMacosArm64")
-}
-
-tasks.register("buildNativeLinux") {
-    group = "build"
-    description = "Build native Linux executable"
-    dependsOn("linkDebugExecutableLinuxX64")
-}
-
-tasks.register("buildNativeWindows") {
-    group = "build"
-    description = "Build native Windows executable"
-    dependsOn("linkDebugExecutableMingwX64")
-}
-
-tasks.register("buildAllNative") {
-    group = "build"
-    description = "Build all native platform executables (macOS, Linux, Windows)"
-    dependsOn("buildNativeMacOS", "buildNativeLinux", "buildNativeWindows")
-}
-
 room {
     schemaDirectory("$projectDir/schemas")
 }
