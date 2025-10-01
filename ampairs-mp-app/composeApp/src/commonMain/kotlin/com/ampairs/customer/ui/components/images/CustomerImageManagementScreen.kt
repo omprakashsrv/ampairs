@@ -32,7 +32,8 @@ fun CustomerImageManagementScreen(
         CustomerImageHeader(
             imageCount = uiState.images.size,
             onSync = viewModel::syncImages,
-            isLoading = uiState.isLoading
+            isLoading = uiState.isLoading,
+            showSyncButton = uiState.syncError
         )
 
         // Error Display
@@ -111,6 +112,7 @@ private fun CustomerImageHeader(
     imageCount: Int,
     onSync: () -> Unit,
     isLoading: Boolean,
+    showSyncButton: Boolean,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -140,21 +142,24 @@ private fun CustomerImageHeader(
                 )
             }
 
-            IconButton(
-                onClick = onSync,
-                enabled = !isLoading
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
-                } else {
-                    Icon(
-                        Icons.Default.Refresh,
-                        contentDescription = "Sync images",
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer
-                    )
+            // Only show sync button on error
+            if (showSyncButton) {
+                IconButton(
+                    onClick = onSync,
+                    enabled = !isLoading
+                ) {
+                    if (isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = "Retry sync",
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        )
+                    }
                 }
             }
         }

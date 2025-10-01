@@ -22,7 +22,8 @@ data class CustomerImageUiState(
     val uploadProgress: Float? = null,
     val showImageViewer: Boolean = false,
     val showUploadDialog: Boolean = false,
-    val uploadData: ImageUploadData? = null
+    val uploadData: ImageUploadData? = null,
+    val syncError: Boolean = false // Track if error occurred during sync
 )
 
 class CustomerImageViewModel(
@@ -36,6 +37,7 @@ class CustomerImageViewModel(
 
     init {
         loadImages()
+        syncImages() // Auto-sync on screen entry
     }
 
     fun loadImages() {
@@ -352,21 +354,22 @@ class CustomerImageViewModel(
     fun syncImages() {
         viewModelScope.launch {
             try {
-                _uiState.update { it.copy(isLoading = true, error = null) }
+                _uiState.update { it.copy(isLoading = true, error = null, syncError = false) }
 
                 val result = repository.syncCustomerImages(customerId)
                 result.fold(
                     onSuccess = { syncedCount ->
                         CustomerLogger.i("CustomerImageViewModel", "Images synced successfully: $syncedCount images")
                         // Images will be automatically updated via the Flow
-                        _uiState.update { it.copy(isLoading = false) }
+                        _uiState.update { it.copy(isLoading = false, syncError = false) }
                     },
                     onFailure = { error ->
                         CustomerLogger.e("CustomerImageViewModel", "Failed to sync images", error)
                         _uiState.update {
                             it.copy(
                                 isLoading = false,
-                                error = "Sync failed: ${error.message}"
+                                error = "Sync failed: ${error.message}",
+                                syncError = true
                             )
                         }
                     }
@@ -376,7 +379,8 @@ class CustomerImageViewModel(
                 _uiState.update {
                     it.copy(
                         isLoading = false,
-                        error = "Sync failed: ${e.message}"
+                        error = "Sync failed: ${e.message}",
+                        syncError = true
                     )
                 }
             }
