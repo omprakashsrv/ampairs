@@ -191,9 +191,14 @@ class CustomerImageRepository(
         // 3. Background server sync
         try {
             val serverImage = api.updateCustomerImage(existing.customerId, imageId, updateRequest)
-            val syncedEntity = serverImage.toEntity(synced = true, localUpdatedAt = now)
+            // Merge server response with local fields to preserve localPath, uploadStatus
+            val mergedImage = serverImage.copy(
+                localPath = existing.localPath,
+                uploadStatus = existing.uploadStatus
+            )
+            val syncedEntity = mergedImage.toEntity(synced = true, localCreatedAt = existing.localCreatedAt, localUpdatedAt = now)
             dao.insertCustomerImage(syncedEntity)
-            return Result.success(serverImage)
+            return Result.success(mergedImage)
         } catch (e: Exception) {
             CustomerLogger.e("CustomerImageRepository", "Failed to sync image update to server", e)
             return Result.success(updatedImage)
@@ -254,9 +259,14 @@ class CustomerImageRepository(
         // 3. Background server sync
         try {
             val serverImage = api.setPrimaryImage(existing.customerId, imageId)
-            val syncedEntity = serverImage.toEntity(synced = true, localUpdatedAt = now)
+            // Merge server response with local fields to preserve localPath, uploadStatus
+            val mergedImage = serverImage.copy(
+                localPath = existing.localPath,
+                uploadStatus = existing.uploadStatus
+            )
+            val syncedEntity = mergedImage.toEntity(synced = true, localCreatedAt = existing.localCreatedAt, localUpdatedAt = now)
             dao.insertCustomerImage(syncedEntity)
-            return Result.success(serverImage)
+            return Result.success(mergedImage)
         } catch (e: Exception) {
             CustomerLogger.e("CustomerImageRepository", "Failed to sync primary image to server", e)
             return Result.success(updatedImage)
@@ -354,7 +364,12 @@ class CustomerImageRepository(
                             metadata = image.metadata
                         )
                         val serverImage = api.updateCustomerImage(image.customerId, image.uid, updateRequest)
-                        val syncedEntity = serverImage.toEntity(synced = true, localCreatedAt = entity.localCreatedAt, localUpdatedAt = now)
+                        // Merge server response with local fields to preserve localPath, uploadStatus
+                        val mergedImage = serverImage.copy(
+                            localPath = entity.localPath,
+                            uploadStatus = entity.uploadStatus
+                        )
+                        val syncedEntity = mergedImage.toEntity(synced = true, localCreatedAt = entity.localCreatedAt, localUpdatedAt = now)
                         entitiesToUpdate.add(syncedEntity)
                         syncedCount++
                     }
