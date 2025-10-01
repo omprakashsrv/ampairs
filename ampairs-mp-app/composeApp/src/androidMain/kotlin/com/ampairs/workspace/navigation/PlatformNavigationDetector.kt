@@ -8,4 +8,12 @@ actual object PlatformNavigationDetector {
     actual fun getNavigationPattern(): NavigationPattern {
         return NavigationPattern.SIDE_DRAWER
     }
+
+    /**
+     * Android has hardware back button or gesture navigation,
+     * so UI back button is optional
+     */
+    actual fun requiresBackButton(): Boolean {
+        return true
+    }
 }

@@ -51,11 +51,31 @@ fun AppHeader(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Hamburger menu for mobile platforms (observing global navigation state)
+            // Navigation button logic - platform-aware
             val globalNavManager = GlobalNavigationManager.getInstance()
             val shouldShowHamburger by globalNavManager.shouldShowHamburgerMenu.collectAsState()
+            val canNavigateBack = navController.previousBackStackEntry != null
+            val platformRequiresBackButton = PlatformNavigationDetector.requiresBackButton()
 
-            if (shouldShowHamburger && onNavigationDrawerClick != null) {
+            // iOS Navigation Pattern:
+            // - Show hamburger at root level (no back stack)
+            // - Show back button when in navigation hierarchy
+            // - Prioritize back button over hamburger when both could be shown
+            //
+            // Android Navigation Pattern:
+            // - Show hamburger (uses hardware back for navigation)
+            // - Hide back button when hamburger is shown
+            val showHamburgerButton = shouldShowHamburger && onNavigationDrawerClick != null && (
+                if (platformRequiresBackButton) !canNavigateBack  // iOS: hide hamburger when back is available
+                else true  // Android: always show hamburger
+            )
+
+            val showBackButton = canNavigateBack && (
+                platformRequiresBackButton || (!shouldShowHamburger || onNavigationDrawerClick == null)
+            )
+
+            // Hamburger menu button
+            if (showHamburgerButton) {
                 IconButton(
                     onClick = onNavigationDrawerClick,
                     modifier = Modifier.size(40.dp)
@@ -70,23 +90,21 @@ fun AppHeader(
                 Spacer(modifier = Modifier.width(8.dp))
             }
 
-            // Back button (shown when hamburger menu is not available and navigation is possible)
-            if (!shouldShowHamburger || onNavigationDrawerClick == null) {
-                val canNavigateBack = navController.previousBackStackEntry != null
-                if (canNavigateBack) {
-                    IconButton(
-                        onClick = { navController.popBackStack() },
-                        modifier = Modifier.size(40.dp)
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onSurface,
-                            modifier = Modifier.size(24.dp)
-                        )
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
+            // Back button
+
+            if (showBackButton) {
+                IconButton(
+                    onClick = { navController.popBackStack() },
+                    modifier = Modifier.size(40.dp)
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
+                Spacer(modifier = Modifier.width(8.dp))
             }
 
             // Center - Workspace selector with management menu

@@ -174,4 +174,12 @@ enum class NavigationPattern {
  */
 expect object PlatformNavigationDetector {
     fun getNavigationPattern(): NavigationPattern
+
+    /**
+     * Returns true if the platform requires a back button in the UI
+     * (e.g., iOS has no hardware back button)
+     * Returns false if the platform has hardware/gesture navigation
+     * (e.g., Android has hardware back button or gesture navigation)
+     */
+    fun requiresBackButton(): Boolean
 }
