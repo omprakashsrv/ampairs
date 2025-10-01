@@ -6,6 +6,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarBorder
@@ -32,6 +34,8 @@ fun CustomerImageViewer(
     onSetPrimary: (CustomerImage) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var isDetailsExpanded by remember { mutableStateOf(false) }
+
     if (image != null) {
         Dialog(
             onDismissRequest = onDismiss,
@@ -59,7 +63,7 @@ fun CustomerImageViewer(
                         onSetPrimary = { onSetPrimary(image) }
                     )
 
-                    // Image Content
+                    // Image Content - takes all available space
                     Box(
                         modifier = Modifier
                             .weight(1f)
@@ -70,10 +74,12 @@ fun CustomerImageViewer(
                         ImageContent(image = image)
                     }
 
-                    // Image Details
-                    ImageDetails(
+                    // Expandable Image Details
+                    ImageDetailsExpandable(
                         image = image,
-                        modifier = Modifier.padding(16.dp)
+                        isExpanded = isDetailsExpanded,
+                        onToggleExpanded = { isDetailsExpanded = !isDetailsExpanded },
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
@@ -214,9 +220,7 @@ private fun ImageContent(
             AsyncImage(
                 model = imageModel,
                 contentDescription = "Customer image: ${image.fileName}",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 400.dp),
+                modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Fit,
                 onError = { error ->
                     CustomerLogger.w("CustomerImageViewer", "Failed to load image: $imageModel", error.result.throwable)
@@ -260,66 +264,101 @@ private fun ImageContent(
 }
 
 @Composable
-private fun ImageDetails(
+private fun ImageDetailsExpandable(
     image: CustomerImage,
+    isExpanded: Boolean,
+    onToggleExpanded: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceContainerLow
         )
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Text(
-                text = "Image Details",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.primary
-            )
+        Column {
+            // Toggle Button
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Image Details",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary
+                )
 
-            // File Information
-            DetailRow(label = "File Name", value = image.fileName)
-            DetailRow(label = "File Size", value = formatFileSize(image.fileSize))
-            DetailRow(label = "Content Type", value = image.contentType)
-
-            if (!image.description.isNullOrBlank()) {
-                DetailRow(label = "Description", value = image.description)
-            }
-
-            // Status Information
-            DetailRow(
-                label = "Upload Status",
-                value = when (image.uploadStatus) {
-                    CustomerImageStatus.PENDING -> "Pending Upload"
-                    CustomerImageStatus.UPLOADING -> "Uploading..."
-                    CustomerImageStatus.COMPLETED -> "Uploaded Successfully"
-                    CustomerImageStatus.FAILED -> "Upload Failed"
-                    else -> "Unknown"
+                IconButton(onClick = onToggleExpanded) {
+                    Icon(
+                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                        contentDescription = if (isExpanded) "Collapse details" else "Expand details",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
-            )
-
-            // URLs (if available)
-            if (!image.imageUrl.isNullOrBlank()) {
-                DetailRow(label = "Server URL", value = "Available", isUrl = true)
-            }
-            if (!image.thumbnailUrl.isNullOrBlank()) {
-                DetailRow(label = "Thumbnail", value = "Available", isUrl = true)
-            }
-            if (!image.localPath.isNullOrBlank()) {
-                DetailRow(label = "Local Copy", value = "Available", isUrl = true)
             }
 
-            // Timestamps
-            image.createdAt?.let { createdAt ->
-                DetailRow(label = "Created", value = createdAt)
+            // Details Content - shown only when expanded
+            if (isExpanded) {
+                ImageDetails(
+                    image = image,
+                    modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                )
             }
-            image.updatedAt?.let { updatedAt ->
-                DetailRow(label = "Updated", value = updatedAt)
+        }
+    }
+}
+
+@Composable
+private fun ImageDetails(
+    image: CustomerImage,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // File Information
+        DetailRow(label = "File Name", value = image.fileName)
+        DetailRow(label = "File Size", value = formatFileSize(image.fileSize))
+        DetailRow(label = "Content Type", value = image.contentType)
+
+        if (!image.description.isNullOrBlank()) {
+            DetailRow(label = "Description", value = image.description)
+        }
+
+        // Status Information
+        DetailRow(
+            label = "Upload Status",
+            value = when (image.uploadStatus) {
+                CustomerImageStatus.PENDING -> "Pending Upload"
+                CustomerImageStatus.UPLOADING -> "Uploading..."
+                CustomerImageStatus.COMPLETED -> "Uploaded Successfully"
+                CustomerImageStatus.FAILED -> "Upload Failed"
+                else -> "Unknown"
             }
+        )
+
+        // URLs (if available)
+        if (!image.imageUrl.isNullOrBlank()) {
+            DetailRow(label = "Server URL", value = "Available", isUrl = true)
+        }
+        if (!image.thumbnailUrl.isNullOrBlank()) {
+            DetailRow(label = "Thumbnail", value = "Available", isUrl = true)
+        }
+        if (!image.localPath.isNullOrBlank()) {
+            DetailRow(label = "Local Copy", value = "Available", isUrl = true)
+        }
+
+        // Timestamps
+        image.createdAt?.let { createdAt ->
+            DetailRow(label = "Created", value = createdAt)
+        }
+        image.updatedAt?.let { updatedAt ->
+            DetailRow(label = "Updated", value = updatedAt)
         }
     }
 }
