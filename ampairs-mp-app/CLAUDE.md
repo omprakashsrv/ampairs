@@ -642,6 +642,159 @@ val entityListStore: Store<EntityListKey, List<EntityListItem>> = StoreBuilder
 
 This architecture provides enterprise-grade offline capabilities while maintaining excellent user experience and data consistency across all platforms.
 
+## **🔄 Workspace-Scoped Database Management (October 2025)**
+
+### **📋 Overview**
+
+The app implements comprehensive workspace-scoped database management to ensure proper data isolation when switching between workspaces. Each workspace maintains its own isolated database instances that are properly created, cached, and cleaned up during workspace transitions.
+
+### **🎯 Key Concepts**
+
+#### **Database Scope Management**
+- **DatabaseScopeManager**: Centralized singleton that manages database lifecycle per workspace
+- **Caching Strategy**: Databases cached by `{workspaceSlug}:{moduleName}` key
+- **Lifecycle**: Databases created on-demand, cached during use, closed on workspace switch
+
+#### **Koin Dependency Injection Pattern**
+- **CRITICAL**: All workspace-aware components must use `factory` instead of `single`
+- **Affected Layers**: Database → DAOs → Repositories → Stores
+- **Reason**: `single` retains old references even after workspace switch
+- **ViewModels**: Already use `viewModel`/`viewModelOf` which creates per-navigation instances
+
+#### **Platform-Specific Path Structures**
+- **Android**: `workspace_{slug}_{module}.db` (single file)
+- **iOS/Desktop**: `workspace_{slug}/customer.db` (directory structure)
+- **Parsing**: Path extraction logic differs per platform
+
+### **⚠️ Critical Rules**
+
+#### **1. Koin Module Definitions**
+
+**❌ WRONG (Causes stale data):**
+```kotlin
+val customerPlatformModule = module {
+    single<CustomerDatabase> {  // ❌ Singleton caches old database
+        factory.createDatabase(...)
+    }
+}
+```
+
+**✅ CORRECT:**
+```kotlin
+val customerPlatformModule = module {
+    factory<CustomerDatabase> {  // ✅ Fresh instance on each request
+        factory.createDatabase(...)
+    }
+}
+```
+
+#### **2. Complete Dependency Chain**
+
+All layers must use `factory` for workspace-aware components:
+
+```
+Database (factory)
+    ↓
+DAOs (factory)
+    ↓
+Repositories (factory)
+    ↓
+Stores (factory)
+    ↓
+ViewModels (viewModel/viewModelOf - already correct)
+```
+
+#### **3. Non-Workspace Databases**
+
+Some databases should remain as `single`:
+- **AuthRoomDatabase**: Login happens before workspace selection
+- **WorkspaceRoomDatabase**: Stores the workspace list itself
+
+### **🔍 Debugging Workspace Switching**
+
+The implementation includes comprehensive logging to trace database lifecycle:
+
+**Expected Log Flow:**
+```
+1. Workspace Switch:
+   WorkspaceListScreen: 🔄 Switching to workspace: Store B
+   DatabaseScopeManager: 🧹 Clearing databases for workspace: store-a
+   DatabaseScopeManager: Keys to remove: [store-a:customer, store-a:product]
+   DatabaseScopeManager: Cache after clear: []
+
+2. Module Navigation:
+   [Platform]DatabaseFactory: Creating database for module=customer, workspace=store-b
+   DatabaseScopeManager: 🆕 Creating NEW database for key: store-b:customer
+```
+
+**Problem Indicators:**
+- `✅ Returning cached database` with wrong workspace slug
+- Missing "Creating NEW database" log after workspace switch
+- Database not appearing in "Keys to remove" list
+
+### **🛠️ Common Issues & Solutions**
+
+#### **Issue: Stale Data After Workspace Switch**
+
+**Symptoms:**
+- Database created with correct workspace but shows old data
+- Logs show cached database being returned
+
+**Root Causes:**
+1. Platform module still uses `single` instead of `factory`
+2. DAO/Repository/Store layer uses `single`
+3. ViewModel retained by navigation backstack
+
+**Fix:**
+1. Change all workspace-aware Koin definitions to `factory`
+2. Verify entire dependency chain uses `factory`
+3. Ensure ViewModels use `viewModel`/`viewModelOf`
+
+#### **Issue: Wrong Module Name in Logs**
+
+**Symptoms:**
+- `Creating database for module=unknown`
+- Path parsing extracting incorrect module name
+
+**Root Cause:**
+- Path parsing logic doesn't match actual path structure
+
+**Fix:**
+- Android: Parse `workspace_{slug}_{module}.db` format
+- iOS/Desktop: Parse `workspace_{slug}/module.db` directory format
+
+### **📦 Files Involved**
+
+**Core Components:**
+- `DatabaseScopeManager.kt` - Central database lifecycle management
+- `CoroutineExceptionHandling.kt` - Cancellation exception filtering
+
+**Platform Factories:**
+- `AndroidDatabaseFactory.kt`
+- `WorkspaceAwareDatabaseFactory.desktop.kt`
+- `WorkspaceAwareDatabaseFactory.ios.kt`
+
+**Koin Modules (All must use `factory`):**
+- `CustomerPlatformModule.{platform}.kt`
+- `ProductModule.{platform}.kt`
+- `TaxModule.{platform}.kt`
+- `TallyModule.{platform}.kt`
+- Common: `CustomerModule.kt` (DAOs, Repositories, Stores)
+
+### **✅ Verification Checklist**
+
+When implementing new workspace-aware modules:
+
+- [ ] Database defined as `factory` in platform module
+- [ ] DAOs defined as `factory` in common module
+- [ ] Repositories defined as `factory` in common module
+- [ ] Stores defined as `factory` in common module
+- [ ] ViewModels use `viewModel` or `viewModelOf`
+- [ ] Path parsing handles platform-specific structure
+- [ ] DatabaseScopeManager integration in platform factory
+
+**Reference Commit**: `a0db3e7` - Complete workspace-scoped database implementation (October 2025)
+
 ## **🔧 Backend DTO Alignment & API Integration Patterns (January 2025)**
 
 ### **📋 DTO Migration Best Practices**
