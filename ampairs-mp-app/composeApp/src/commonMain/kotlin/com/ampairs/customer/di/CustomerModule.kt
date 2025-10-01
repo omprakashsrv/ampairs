@@ -44,27 +44,27 @@ val customerModule = module {
     singleOf(::CustomerGroupApiImpl) bind CustomerGroupApi::class
     singleOf(::CustomerImageApiImpl) bind CustomerImageApi::class
 
-    // Database Layer
-    single { get<CustomerDatabase>().customerDao() }
-    single { get<CustomerDatabase>().customerTypeDao() }
-    single { get<CustomerDatabase>().customerGroupDao() }
-    single { get<CustomerDatabase>().customerImageDao() }
-    single { get<CustomerDatabase>().stateDao() }
+    // Database Layer - Use factory to get fresh DAOs with new database instance
+    factory { get<CustomerDatabase>().customerDao() }
+    factory { get<CustomerDatabase>().customerTypeDao() }
+    factory { get<CustomerDatabase>().customerGroupDao() }
+    factory { get<CustomerDatabase>().customerImageDao() }
+    factory { get<CustomerDatabase>().stateDao() }
 
     // File Picker
     singleOf(::FileKitImagePicker) bind ImageFilePicker::class
 
-    // Repository Layer
-    single { CustomerRepository(get(), get(), get()) }
-    single { CustomerTypeRepository(get(), get(), get()) }
-    single { CustomerGroupRepository(get(), get(), get()) }
-    single { CustomerImageRepository(get(), get(), get(), get(), get()) }
+    // Repository Layer - Use factory to recreate with new DAOs after workspace switch
+    factory { CustomerRepository(get(), get(), get()) }
+    factory { CustomerTypeRepository(get(), get(), get()) }
+    factory { CustomerGroupRepository(get(), get(), get()) }
+    factory { CustomerImageRepository(get(), get(), get(), get(), get()) }
 
-    // Domain Layer
-    singleOf(::CustomerStore)
-    singleOf(::CustomerTypeStore)
-    singleOf(::CustomerGroupStore)
-    singleOf(::StateStore)
+    // Domain Layer - Use factory to recreate Stores with new repositories/DAOs
+    factory { CustomerStore(get()) }
+    factory { CustomerTypeStore(get(), get()) }
+    factory { CustomerGroupStore(get(), get()) }
+    factory { StateStore(get(), get()) }
 
     // ViewModels
     viewModelOf(::CustomersListViewModel)

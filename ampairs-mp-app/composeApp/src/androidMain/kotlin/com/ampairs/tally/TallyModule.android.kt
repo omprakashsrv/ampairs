@@ -9,7 +9,9 @@ import org.koin.core.module.Module
 import org.koin.dsl.module
 
 val tallyPlatformModule: Module = module {
-    single<TallyRoomDatabase> {
+    // Use factory instead of single to ensure fresh database instances after workspace switch
+    // DatabaseScopeManager handles actual singleton behavior per workspace
+    factory<TallyRoomDatabase> {
         val factory = get<WorkspaceAwareDatabaseFactory>()
         factory.createAndroidDatabase(
             klass = TallyRoomDatabase::class,

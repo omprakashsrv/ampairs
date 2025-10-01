@@ -9,7 +9,9 @@ import org.koin.core.module.Module
 import org.koin.dsl.module
 
 val productPlatformModule: Module = module {
-    single<ProductRoomDatabase> {
+    // Use factory instead of single to ensure fresh database instances after workspace switch
+    // DatabaseScopeManager handles actual singleton behavior per workspace
+    factory<ProductRoomDatabase> {
         val factory = get<WorkspaceAwareDatabaseFactory>()
         factory.createAndroidDatabase(
             klass = ProductRoomDatabase::class,

@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.customer.domain.CustomerListItem
 import com.ampairs.customer.domain.CustomerStore
+import com.ampairs.common.viewmodel.handleCancellation
+import com.ampairs.common.viewmodel.shouldShowAsError
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -31,11 +33,14 @@ class CustomersListViewModel(
     }
 
     fun loadCustomers() {
-
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            try {
+            handleCancellation(
+                onError = { error ->
+                    _uiState.update { it.copy(isLoading = false, error = error) }
+                }
+            ) {
                 val query = _uiState.value.searchQuery
                 val flow = if (query.isBlank()) {
                     customerStore.observeCustomers()
@@ -44,11 +49,13 @@ class CustomersListViewModel(
                 }
 
                 flow.catch { throwable ->
-                    _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            error = throwable.message ?: "Unknown error"
-                        )
+                    if (throwable.shouldShowAsError()) {
+                        _uiState.update {
+                            it.copy(
+                                isLoading = false,
+                                error = throwable.message ?: "Unknown error"
+                            )
+                        }
                     }
                 }.collect { customers ->
                     _uiState.update {
@@ -59,13 +66,6 @@ class CustomersListViewModel(
                         )
                     }
                 }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = e.message ?: "Failed to load customers"
-                    )
-                }
             }
         }
     }
@@ -75,11 +75,14 @@ class CustomersListViewModel(
     }
 
     fun syncCustomers() {
-
         viewModelScope.launch {
             _uiState.update { it.copy(isRefreshing = true, error = null) }
 
-            try {
+            handleCancellation(
+                onError = { error ->
+                    _uiState.update { it.copy(isRefreshing = false, error = error) }
+                }
+            ) {
                 val result = customerStore.syncCustomers()
                 _uiState.update {
                     it.copy(
@@ -87,13 +90,6 @@ class CustomersListViewModel(
                         error = if (result.isFailure) {
                             result.exceptionOrNull()?.message ?: "Sync failed"
                         } else null
-                    )
-                }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isRefreshing = false,
-                        error = e.message ?: "Sync failed"
                     )
                 }
             }
@@ -114,8 +110,11 @@ class CustomersListViewModel(
     }
 
     private suspend fun performSearch(query: String) {
-
-        try {
+        handleCancellation(
+            onError = { error ->
+                _uiState.update { it.copy(error = error) }
+            }
+        ) {
             val flow = if (query.isBlank()) {
                 customerStore.observeCustomers()
             } else {
@@ -123,8 +122,10 @@ class CustomersListViewModel(
             }
 
             flow.catch { throwable ->
-                _uiState.update {
-                    it.copy(error = throwable.message ?: "Search failed")
+                if (throwable.shouldShowAsError()) {
+                    _uiState.update {
+                        it.copy(error = throwable.message ?: "Search failed")
+                    }
                 }
             }.collect { customers ->
                 _uiState.update {
@@ -133,10 +134,6 @@ class CustomersListViewModel(
                         error = null
                     )
                 }
-            }
-        } catch (e: Exception) {
-            _uiState.update {
-                it.copy(error = e.message ?: "Search failed")
             }
         }
     }

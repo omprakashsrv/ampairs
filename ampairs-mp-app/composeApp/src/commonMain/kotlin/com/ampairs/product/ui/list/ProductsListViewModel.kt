@@ -6,6 +6,8 @@ import com.ampairs.workspace.context.WorkspaceContextManager
 import com.ampairs.product.domain.ProductListItem
 import com.ampairs.product.domain.ProductListKey
 import com.ampairs.product.domain.ProductStore
+import com.ampairs.common.viewmodel.handleCancellation
+import com.ampairs.common.viewmodel.shouldShowAsError
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -38,16 +40,22 @@ class ProductsListViewModel(
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            try {
+            handleCancellation(
+                onError = { error ->
+                    _uiState.update { it.copy(isLoading = false, error = error) }
+                }
+            ) {
                 val key = ProductListKey(searchQuery = _uiState.value.searchQuery)
                 productStore.productListStore
                     .stream(StoreReadRequest.cached(key, refresh = false))
                     .catch { throwable ->
-                        _uiState.update {
-                            it.copy(
-                                isLoading = false,
-                                error = throwable.message ?: "Unknown error"
-                            )
+                        if (throwable.shouldShowAsError()) {
+                            _uiState.update {
+                                it.copy(
+                                    isLoading = false,
+                                    error = throwable.message ?: "Unknown error"
+                                )
+                            }
                         }
                     }
                     .collect { response ->
@@ -85,13 +93,6 @@ class ProductsListViewModel(
                             }
                         }
                     }
-            } catch (e: Exception) {
-                _uiState.update {
-                    it.copy(
-                        isLoading = false,
-                        error = e.message ?: "Failed to load products"
-                    )
-                }
             }
         }
     }

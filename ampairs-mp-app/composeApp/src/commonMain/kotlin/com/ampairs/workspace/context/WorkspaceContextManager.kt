@@ -5,6 +5,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import com.ampairs.common.concurrency.Volatile
 import com.ampairs.common.concurrency.synchronized
+import com.ampairs.common.database.DatabaseScopeManager
 
 /**
  * Global workspace context manager for state-based workspace management
@@ -54,6 +55,9 @@ class WorkspaceContextManager private constructor() {
      * Called when user logs out or switches to workspace selection
      */
     fun clearWorkspaceContext() {
+        // Close all databases before clearing context
+        DatabaseScopeManager.getInstance().clearAllDatabases()
+
         _currentWorkspace.value = null
         _isWorkspaceSelected.value = false
     }

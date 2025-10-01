@@ -8,7 +8,9 @@ import org.koin.dsl.bind
 import org.koin.dsl.module
 
 actual val customerPlatformModule = module {
-    single<CustomerDatabase> {
+    // Use factory instead of single to ensure fresh database instances after workspace switch
+    // DatabaseScopeManager handles actual singleton behavior per workspace
+    factory<CustomerDatabase> {
         get<WorkspaceAwareDatabaseFactory>().createDatabase(
             klass = CustomerDatabase::class,
             moduleName = "customer"

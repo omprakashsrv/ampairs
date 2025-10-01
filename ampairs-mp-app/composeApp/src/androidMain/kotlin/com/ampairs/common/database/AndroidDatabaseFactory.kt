@@ -29,7 +29,8 @@ fun WorkspaceAwareDatabaseFactory.createDatabaseForAndroid(
 }
 
 /**
- * Type-safe Android database creation
+ * Type-safe Android database creation with scope management.
+ * Uses DatabaseScopeManager to cache and properly close databases when switching workspaces.
  */
 inline fun <reified T : androidx.room.RoomDatabase> WorkspaceAwareDatabaseFactory.createAndroidDatabase(
     klass: kotlin.reflect.KClass<T>,
@@ -39,14 +40,21 @@ inline fun <reified T : androidx.room.RoomDatabase> WorkspaceAwareDatabaseFactor
     workspaceSlug: String? = null
 ): T {
     val slug = workspaceSlug ?: WorkspaceContext.getCurrentWorkspaceSlugOrDefault()
-    val workspaceDbName = "workspace_${slug}_${moduleName}.db"
+    println("AndroidDatabaseFactory: Creating database for module=$moduleName, workspace=$slug")
 
-    return Room.databaseBuilder<T>(
-        context = context,
-        name = context.getDatabasePath(workspaceDbName).absolutePath
-    )
-        .setDriver(BundledSQLiteDriver())
-        .setQueryCoroutineContext(queryDispatcher)
-        .fallbackToDestructiveMigration(true)
-        .build()
+    val scopeManager = DatabaseScopeManager.getInstance()
+
+    return scopeManager.getOrCreateDatabase(slug, moduleName) {
+        val workspaceDbName = "workspace_${slug}_${moduleName}.db"
+        println("AndroidDatabaseFactory: Building Room database: $workspaceDbName")
+
+        Room.databaseBuilder<T>(
+            context = context,
+            name = context.getDatabasePath(workspaceDbName).absolutePath
+        )
+            .setDriver(BundledSQLiteDriver())
+            .setQueryCoroutineContext(queryDispatcher)
+            .fallbackToDestructiveMigration(true)
+            .build()
+    }
 }

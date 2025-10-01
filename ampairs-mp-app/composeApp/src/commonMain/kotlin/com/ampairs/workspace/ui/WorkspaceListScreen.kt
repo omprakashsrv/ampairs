@@ -33,6 +33,8 @@ import com.ampairs.workspace.domain.UserInvitation
 import com.ampairs.workspace.viewmodel.WorkspaceListViewModel
 import com.ampairs.workspace.integration.WorkspaceContextIntegration
 import com.ampairs.workspace.navigation.GlobalNavigationManager
+import com.ampairs.common.database.DatabaseScopeManager
+import com.ampairs.workspace.context.WorkspaceContextManager
 import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -311,10 +313,26 @@ fun WorkspaceListScreen(
                                 isOfflineMode = state.isOfflineMode,
                                 onClick = {
                                     coroutineScope.launch {
+                                        println("WorkspaceListScreen: 🔄 Switching to workspace: ${workspace.name} (slug: ${workspace.slug})")
+
+                                        // Get previously selected workspace slug to clear its databases
+                                        val previousWorkspace = WorkspaceContextManager.getInstance().currentWorkspace.value
+                                        val previousSlug = previousWorkspace?.slug
+                                        println("WorkspaceListScreen: Previous workspace slug: $previousSlug")
+
+                                        // Clear old workspace databases before switching
+                                        if (previousSlug != null && previousSlug != workspace.slug) {
+                                            println("WorkspaceListScreen: Clearing databases for previous workspace: $previousSlug")
+                                            DatabaseScopeManager.getInstance().clearWorkspaceDatabases(previousSlug)
+                                        } else {
+                                            println("WorkspaceListScreen: No previous workspace or same workspace, skipping clear")
+                                        }
+
                                         viewModel.selectWorkSpace(workspace.id)
 
                                         // Set workspace context for both business logic and database
                                         WorkspaceContextIntegration.setWorkspaceFromDomain(workspace)
+                                        println("WorkspaceListScreen: ✅ Workspace context updated to: ${workspace.slug}")
 
                                         // Initialize global navigation service for this workspace
                                         GlobalNavigationManager.getInstance().onWorkspaceSelected()
