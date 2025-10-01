@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.ampairs.workspace.api.model.AvailableModule
@@ -28,6 +29,39 @@ import org.koin.core.parameter.parametersOf
 import androidx.navigation.NavController
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.GlobalNavigationManager
+
+/**
+ * Truncates error messages to prevent overwhelming the UI.
+ * Extracts meaningful error information and limits display length.
+ */
+private fun truncateErrorMessage(error: String, maxLength: Int = 120): String {
+    // Extract meaningful error from iOS/Android network errors
+    val meaningfulError = when {
+        // iOS Darwin network errors - extract the main error code/message
+        error.contains("DarwinHttpRequestException") -> {
+            val codeMatch = "Code=([-0-9]+)".toRegex().find(error)
+            val messageMatch = "\"([^\"]+)\"".toRegex().find(error)
+            when {
+                messageMatch != null -> messageMatch.groupValues[1]
+                codeMatch != null -> "Network error (${codeMatch.groupValues[1]})"
+                else -> "Could not connect to server"
+            }
+        }
+        // Generic connection errors
+        error.contains("Connection refused", ignoreCase = true) -> "Could not connect to server"
+        error.contains("timeout", ignoreCase = true) -> "Connection timeout"
+        error.contains("host", ignoreCase = true) -> "Could not reach server"
+        // Take first line for other errors
+        else -> error.lines().first()
+    }
+
+    // Truncate if still too long
+    return if (meaningfulError.length > maxLength) {
+        meaningfulError.take(maxLength - 3) + "..."
+    } else {
+        meaningfulError
+    }
+}
 
 /**
  * Workspace modules screen showing active modules
@@ -351,10 +385,12 @@ private fun ModuleStoreDialog(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = error,
+                                text = truncateErrorMessage(error),
                                 modifier = Modifier.weight(1f),
                                 color = MaterialTheme.colorScheme.onErrorContainer,
-                                style = MaterialTheme.typography.bodySmall
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
                             )
                             TextButton(
                                 onClick = { viewModel.clearError() }
