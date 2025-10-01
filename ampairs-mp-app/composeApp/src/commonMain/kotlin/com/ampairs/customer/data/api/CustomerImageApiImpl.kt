@@ -59,7 +59,7 @@ class CustomerImageApiImpl(
             response.data?.images ?: emptyList()
         } catch (e: Exception) {
             CustomerLogger.e("CustomerImageApi", "Error getting customer images", e)
-            emptyList()
+            throw e // Propagate exception to repository for proper error handling
         }
     }
 
