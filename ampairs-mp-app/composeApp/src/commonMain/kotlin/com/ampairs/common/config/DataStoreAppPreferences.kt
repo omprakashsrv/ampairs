@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import com.ampairs.common.theme.ThemePreference
+import com.ampairs.common.workspace.WorkspaceContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -19,7 +20,12 @@ class DataStoreAppPreferences(
 
     companion object {
         private val THEME_PREFERENCE_KEY = stringPreferencesKey("theme_preference")
-        private val CUSTOMER_LAST_SYNC_TIME_KEY = stringPreferencesKey("customer_last_sync_time")
+
+        // Workspace-aware preference keys
+        // Note: These keys include workspace slug to maintain separate state per workspace
+        private fun getCustomerLastSyncTimeKey(workspaceSlug: String) =
+            stringPreferencesKey("customer_last_sync_time_$workspaceSlug")
+
         // Future preference keys can be added here:
         // private val LANGUAGE_PREFERENCE_KEY = stringPreferencesKey("language_preference")
         // private val NOTIFICATION_SETTINGS_KEY = stringPreferencesKey("notification_settings")
@@ -45,13 +51,18 @@ class DataStoreAppPreferences(
 
     override fun getCustomerLastSyncTime(): Flow<String> {
         return dataStore.data.map { preferences ->
-            preferences[CUSTOMER_LAST_SYNC_TIME_KEY] ?: "" // Default to empty string (sync all on first run)
+            val workspaceSlug = WorkspaceContext.getCurrentWorkspaceSlugOrDefault()
+            val key = getCustomerLastSyncTimeKey(workspaceSlug)
+            preferences[key] ?: "" // Default to empty string (sync all on first run)
         }
     }
 
     override suspend fun setCustomerLastSyncTime(timestamp: String) {
+        val workspaceSlug = WorkspaceContext.getCurrentWorkspaceSlugOrDefault()
+        val key = getCustomerLastSyncTimeKey(workspaceSlug)
+
         dataStore.edit { preferences ->
-            preferences[CUSTOMER_LAST_SYNC_TIME_KEY] = timestamp
+            preferences[key] = timestamp
         }
     }
 }
