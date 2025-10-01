@@ -23,6 +23,41 @@ import kotlinx.serialization.json.Json
  */
 class NetworkException(message: String, cause: Throwable? = null) : Exception(message, cause)
 
+/**
+ * Extracts meaningful error message from verbose iOS NSURLError.
+ * iOS DarwinHttpRequestException includes extensive UserInfo dictionary that overwhelms UI.
+ *
+ * Example input: "Exception in http request: Error Domain=NSURLErrorDomain Code=-1004
+ * \"Could not connect to the server.\" UserInfo={_kCFStreamErrorCodeKey=61...}"
+ *
+ * Example output: "Could not connect to the server."
+ */
+private fun extractMeaningfulErrorFromDarwin(errorMessage: String): String {
+    // Extract quoted error message (e.g., "Could not connect to the server.")
+    val quotedMessage = "\"([^\"]+)\"".toRegex().find(errorMessage)?.groupValues?.get(1)
+    if (quotedMessage != null) {
+        return quotedMessage
+    }
+
+    // Extract error code and map to friendly message
+    val codeMatch = "Code=([-0-9]+)".toRegex().find(errorMessage)
+    if (codeMatch != null) {
+        val code = codeMatch.groupValues[1].toIntOrNull()
+        return when (code) {
+            -1004 -> "Could not connect to the server."
+            -1001 -> "Request timed out."
+            -1009 -> "No internet connection."
+            -1003 -> "Server not found."
+            -1005 -> "Network connection was lost."
+            -1200 -> "Secure connection failed."
+            else -> "Network error (code $code)"
+        }
+    }
+
+    // Fallback: return first line of error message
+    return errorMessage.lines().first().take(100)
+}
+
 fun httpClient(engine: HttpClientEngine, tokenRepository: TokenRepository) = HttpClient(engine) {
 
     // Log configuration for debugging
@@ -69,6 +104,12 @@ fun httpClient(engine: HttpClientEngine, tokenRepository: TokenRepository) = Htt
                 "SocketTimeoutException" -> {
                     println("❌ Request timed out: ${exception.message}")
                     throw NetworkException("Request timed out. Please try again.", exception)
+                }
+                "DarwinHttpRequestException" -> {
+                    // iOS-specific error - extract meaningful message from verbose NSURLError
+                    val cleanMessage = extractMeaningfulErrorFromDarwin(exception.message ?: "Network error")
+                    println("❌ iOS Network error: $cleanMessage")
+                    throw NetworkException(cleanMessage, exception)
                 }
                 else -> {
                     println("❌ Network error: ${exception.message}")

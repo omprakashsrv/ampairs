@@ -37,39 +37,6 @@ import com.ampairs.common.database.DatabaseScopeManager
 import com.ampairs.workspace.context.WorkspaceContextManager
 import org.koin.compose.viewmodel.koinViewModel
 
-/**
- * Truncates error messages to prevent overwhelming the UI.
- * Extracts meaningful error information and limits display length.
- */
-private fun truncateErrorMessage(error: String, maxLength: Int = 120): String {
-    // Extract meaningful error from iOS/Android network errors
-    val meaningfulError = when {
-        // iOS Darwin network errors - extract the main error code/message
-        error.contains("DarwinHttpRequestException") -> {
-            val codeMatch = "Code=([-0-9]+)".toRegex().find(error)
-            val messageMatch = "\"([^\"]+)\"".toRegex().find(error)
-            when {
-                messageMatch != null -> messageMatch.groupValues[1]
-                codeMatch != null -> "Network error (${codeMatch.groupValues[1]})"
-                else -> "Could not connect to server"
-            }
-        }
-        // Generic connection errors
-        error.contains("Connection refused", ignoreCase = true) -> "Could not connect to server"
-        error.contains("timeout", ignoreCase = true) -> "Connection timeout"
-        error.contains("host", ignoreCase = true) -> "Could not reach server"
-        // Take first line for other errors
-        else -> error.lines().first()
-    }
-
-    // Truncate if still too long
-    return if (meaningfulError.length > maxLength) {
-        meaningfulError.take(maxLength - 3) + "..."
-    } else {
-        meaningfulError
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkspaceListScreen(
@@ -193,17 +160,15 @@ fun WorkspaceListScreen(
 
                         Text(
                             text = if (state.isOfflineMode && state.workspaces.isNotEmpty())
-                                "Showing cached data • ${truncateErrorMessage(error)}"
+                                "Showing cached data • $error"
                             else
-                                truncateErrorMessage(error),
+                                error,
                             color = if (state.isOfflineMode && state.workspaces.isNotEmpty())
                                 MaterialTheme.colorScheme.onSecondaryContainer
                             else
                                 MaterialTheme.colorScheme.onErrorContainer,
                             modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.bodyMedium,
-                            maxLines = 2,
-                            overflow = TextOverflow.Ellipsis
+                            style = MaterialTheme.typography.bodyMedium
                         )
 
                         Row {
