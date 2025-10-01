@@ -32,39 +32,6 @@ kotlin {
         }
     }
 
-    // macOS targets with executable configuration
-    listOf(
-        macosX64(),
-        macosArm64()
-    ).forEach { macosTarget ->
-        macosTarget.binaries {
-            executable {
-                baseName = "Ampairs"
-                entryPoint = "main"
-            }
-        }
-    }
-
-    // Linux target with executable configuration
-    linuxX64 {
-        binaries {
-            executable {
-                baseName = "ampairs"
-                entryPoint = "main"
-            }
-        }
-    }
-
-    // Windows target with executable configuration
-    mingwX64 {
-        binaries {
-            executable {
-                baseName = "Ampairs"
-                entryPoint = "main"
-            }
-        }
-    }
-
     sourceSets {
 
         val androidMain by getting {
@@ -155,36 +122,6 @@ kotlin {
             dependencies {
                 implementation(libs.ktor.client.darwin)
                 // Note: Using Room database now, no longer need SQLDelight
-            }
-        }
-
-        // macOS source sets
-        val macosX64Main by getting
-        val macosArm64Main by getting
-        val macosMain by creating {
-            dependsOn(commonMain)
-            macosX64Main.dependsOn(this)
-            macosArm64Main.dependsOn(this)
-            dependencies {
-                implementation(libs.ktor.client.darwin)
-            }
-        }
-
-        // Linux source sets
-        val linuxX64Main by getting {
-            dependsOn(commonMain)
-            dependencies {
-                // Linux can use curl or okHttp - using okHttp for consistency with desktop
-                implementation(libs.ktor.client.okHttp)
-            }
-        }
-
-        // Windows source sets
-        val mingwX64Main by getting {
-            dependsOn(commonMain)
-            dependencies {
-                // Windows can use WinHttp or okHttp - using okHttp for consistency
-                implementation(libs.ktor.client.okHttp)
             }
         }
     }
@@ -338,16 +275,6 @@ dependencies {
     add("kspIosX64", libs.room.compiler)
     add("kspIosArm64", libs.room.compiler)
     add("kspIosSimulatorArm64", libs.room.compiler)
-
-    // macOS native targets
-    add("kspMacosX64", libs.room.compiler)
-    add("kspMacosArm64", libs.room.compiler)
-
-    // Linux native target
-    add("kspLinuxX64", libs.room.compiler)
-
-    // Windows native target
-    add("kspMingwX64", libs.room.compiler)
 }
 
 // Fix KSP and Compose resource generation dependency issues
