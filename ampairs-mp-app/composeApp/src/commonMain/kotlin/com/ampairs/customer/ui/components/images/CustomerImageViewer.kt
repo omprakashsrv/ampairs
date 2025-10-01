@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -246,7 +247,31 @@ private fun ImageContent(
                 modifier = Modifier
                     .fillMaxSize()
                     .pointerInput(Unit) {
-                        // Double-tap to reset zoom
+                        // Handle both tap gestures and scroll events
+                        awaitPointerEventScope {
+                            while (true) {
+                                val event = awaitPointerEvent()
+
+                                // Handle mouse scroll for desktop zoom
+                                if (event.type == PointerEventType.Scroll) {
+                                    val scrollDelta = event.changes.first().scrollDelta.y
+
+                                    // Zoom with mouse wheel (scroll up = zoom in, scroll down = zoom out)
+                                    val zoomChange = if (scrollDelta > 0) 0.9f else 1.1f
+                                    scale = (scale * zoomChange).coerceIn(1f, 5f)
+
+                                    // Reset offset when zooming out to 1x
+                                    if (scale == 1f) {
+                                        offset = Offset.Zero
+                                    }
+
+                                    event.changes.forEach { it.consume() }
+                                }
+                            }
+                        }
+                    }
+                    .pointerInput(Unit) {
+                        // Double-tap to reset zoom (separate pointerInput for tap gestures)
                         detectTapGestures(
                             onDoubleTap = {
                                 scale = 1f
