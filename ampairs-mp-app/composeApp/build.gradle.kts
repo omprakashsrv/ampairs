@@ -20,6 +20,7 @@ kotlin {
 
     jvm("desktop")
 
+    // iOS targets
     listOf(
         iosX64(),
         iosArm64(),
@@ -30,6 +31,16 @@ kotlin {
             isStatic = true
         }
     }
+
+    // macOS targets
+    macosX64()
+    macosArm64()
+
+    // Linux targets
+    linuxX64()
+
+    // Windows targets
+    mingwX64()
 
     sourceSets {
 
@@ -121,6 +132,36 @@ kotlin {
             dependencies {
                 implementation(libs.ktor.client.darwin)
                 // Note: Using Room database now, no longer need SQLDelight
+            }
+        }
+
+        // macOS source sets
+        val macosX64Main by getting
+        val macosArm64Main by getting
+        val macosMain by creating {
+            dependsOn(commonMain)
+            macosX64Main.dependsOn(this)
+            macosArm64Main.dependsOn(this)
+            dependencies {
+                implementation(libs.ktor.client.darwin)
+            }
+        }
+
+        // Linux source sets
+        val linuxX64Main by getting {
+            dependsOn(commonMain)
+            dependencies {
+                // Linux can use curl or okHttp - using okHttp for consistency with desktop
+                implementation(libs.ktor.client.okHttp)
+            }
+        }
+
+        // Windows source sets
+        val mingwX64Main by getting {
+            dependsOn(commonMain)
+            dependencies {
+                // Windows can use WinHttp or okHttp - using okHttp for consistency
+                implementation(libs.ktor.client.okHttp)
             }
         }
     }
