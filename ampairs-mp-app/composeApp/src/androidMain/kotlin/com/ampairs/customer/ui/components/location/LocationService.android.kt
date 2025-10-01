@@ -11,20 +11,29 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
+
+/**
+ * Request to show map picker - emitted by LocationService when selectLocationFromMap is called
+ */
+data class MapSelectionRequest(
+    val initialLocation: LocationData?,
+    val deferred: CompletableDeferred<LocationData>
+)
 
 /**
  * Android implementation of LocationService using Google Play Services
  * Provides real GPS location, Google Maps integration, and Geocoding
  */
-@OptIn(ExperimentalTime::class)
 actual class LocationService(private val context: Context) {
 
     private val fusedLocationClient: FusedLocationProviderClient =
@@ -39,6 +48,13 @@ actual class LocationService(private val context: Context) {
     } else {
         null
     }
+
+    // Event flow for map selection requests - UI layer should collect this
+    private val _mapSelectionRequests = MutableSharedFlow<MapSelectionRequest>(replay = 0)
+    val mapSelectionRequests: SharedFlow<MapSelectionRequest> = _mapSelectionRequests.asSharedFlow()
+
+    // Holds pending map selection deferred result
+    private var pendingMapSelection: CompletableDeferred<LocationData>? = null
 
     actual suspend fun getCurrentLocation(): Result<LocationData> {
         return withContext(Dispatchers.IO) {
@@ -86,14 +102,39 @@ actual class LocationService(private val context: Context) {
     actual suspend fun selectLocationFromMap(initialLocation: LocationData?): Result<LocationData> {
         return withContext(Dispatchers.Main) {
             try {
-                // This will be handled by the MapPickerScreen composable
-                // The actual implementation involves launching an Activity/composable
-                // For now, return a failure to indicate it needs UI integration
-                Result.failure(LocationError.ServiceUnavailable)
+                // Create a deferred result that will be completed by the UI
+                val deferred = CompletableDeferred<LocationData>()
+                pendingMapSelection = deferred
+
+                // Emit request for UI to show map picker
+                _mapSelectionRequests.emit(MapSelectionRequest(initialLocation, deferred))
+
+                // Wait for UI to complete the selection
+                val selectedLocation = deferred.await()
+                pendingMapSelection = null
+
+                Result.success(selectedLocation)
             } catch (e: Exception) {
+                pendingMapSelection = null
                 Result.failure(LocationError.ServiceUnavailable)
             }
         }
+    }
+
+    /**
+     * Call this from UI when user selects a location from the map
+     * This completes the pending map selection request
+     */
+    fun completeMapSelection(location: LocationData) {
+        pendingMapSelection?.complete(location)
+    }
+
+    /**
+     * Call this from UI when user cancels map selection
+     */
+    fun cancelMapSelection() {
+        pendingMapSelection?.cancel()
+        pendingMapSelection = null
     }
 
     actual suspend fun reverseGeocode(latitude: Double, longitude: Double): Result<AddressData> {
