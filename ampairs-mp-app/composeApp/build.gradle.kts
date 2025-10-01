@@ -281,11 +281,27 @@ room {
 
 dependencies {
     add("kspCommonMainMetadata", libs.room.compiler)
-    add("kspDesktop", libs.room.compiler)
+
+    // Android
     add("kspAndroid", libs.room.compiler)
+
+    // Desktop JVM
+    add("kspDesktop", libs.room.compiler)
+
+    // iOS targets
     add("kspIosX64", libs.room.compiler)
     add("kspIosArm64", libs.room.compiler)
     add("kspIosSimulatorArm64", libs.room.compiler)
+
+    // macOS native targets
+    add("kspMacosX64", libs.room.compiler)
+    add("kspMacosArm64", libs.room.compiler)
+
+    // Linux native target
+    add("kspLinuxX64", libs.room.compiler)
+
+    // Windows native target
+    add("kspMingwX64", libs.room.compiler)
 }
 
 // Fix KSP and Compose resource generation dependency issues
