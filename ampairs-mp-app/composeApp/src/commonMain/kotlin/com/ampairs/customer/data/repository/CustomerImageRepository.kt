@@ -35,32 +35,29 @@ class CustomerImageRepository(
     private val fileManager: PlatformFileManager
 ) {
 
-    private val workspaceId: String
-        get() = workspaceContextManager.getCurrentWorkspaceId() ?: "default"
-
     // Observing operations
 
     fun observeCustomerImages(customerId: String): Flow<List<CustomerImageListItem>> {
-        return dao.observeCustomerImages(customerId, workspaceId)
+        return dao.observeCustomerImages(customerId)
             .map { entities -> entities.map { it.toListItem() } }
     }
 
     fun observePrimaryImage(customerId: String): Flow<CustomerImage?> {
-        return dao.observePrimaryCustomerImage(customerId, workspaceId)
+        return dao.observePrimaryCustomerImage(customerId)
             .map { it?.toCustomerImage() }
     }
 
     suspend fun getCustomerImages(customerId: String): List<CustomerImageListItem> {
-        return dao.getCustomerImages(customerId, workspaceId)
+        return dao.getCustomerImages(customerId)
             .map { it.toListItem() }
     }
 
     suspend fun getCustomerImage(imageId: String): CustomerImage? {
-        return dao.getCustomerImage(imageId, workspaceId)?.toCustomerImage()
+        return dao.getCustomerImage(imageId)?.toCustomerImage()
     }
 
     suspend fun getPrimaryImage(customerId: String): CustomerImage? {
-        return dao.getPrimaryCustomerImage(customerId, workspaceId)?.toCustomerImage()
+        return dao.getPrimaryCustomerImage(customerId)?.toCustomerImage()
     }
 
     // Image upload operations
@@ -116,13 +113,13 @@ class CustomerImageRepository(
             localPath = localPath ?: "",
             uploadStatus = CustomerImageStatus.UPLOADING
         )
-        val initialEntity = initialImage.toEntity(workspaceId, synced = false, localCreatedAt = now, localUpdatedAt = now)
+        val initialEntity = initialImage.toEntity(synced = false, localCreatedAt = now, localUpdatedAt = now)
         dao.insertCustomerImage(initialEntity)
 
         // 3. Handle primary image logic if needed
         if (isPrimary) {
-            dao.clearPrimaryImages(customerId, workspaceId, now)
-            dao.setPrimaryImage(uid, workspaceId, now)
+            dao.clearPrimaryImages(customerId, now)
+            dao.setPrimaryImage(uid, now)
         }
 
         // 4. Background server upload using multipart form data
@@ -147,7 +144,7 @@ class CustomerImageRepository(
                     thumbnailUrl = uploadResponse.thumbnailUrl,
                     uploadStatus = CustomerImageStatus.COMPLETED
                 )
-                val syncedEntity = syncedImage.toEntity(workspaceId, synced = true, localCreatedAt = now, localUpdatedAt = now)
+                val syncedEntity = syncedImage.toEntity(synced = true, localCreatedAt = now, localUpdatedAt = now)
                 dao.insertCustomerImage(syncedEntity)
 
                 CustomerLogger.i("CustomerImageRepository", "Multipart upload successful for: $fileName")
@@ -156,18 +153,18 @@ class CustomerImageRepository(
             return Result.success(serverImage)
         } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
             CustomerLogger.w("CustomerImageRepository", "Upload timeout for: $fileName after 60 seconds")
-            dao.updateUploadStatus(uid, workspaceId, CustomerImageStatus.FAILED, now)
+            dao.updateUploadStatus(uid, CustomerImageStatus.FAILED, now)
             return Result.success(initialImage.copy(uploadStatus = CustomerImageStatus.FAILED))
         } catch (e: Exception) {
             CustomerLogger.e("CustomerImageRepository", "Background multipart upload failed", e)
-            dao.updateUploadStatus(uid, workspaceId, CustomerImageStatus.FAILED, now)
+            dao.updateUploadStatus(uid, CustomerImageStatus.FAILED, now)
             return Result.success(initialImage.copy(uploadStatus = CustomerImageStatus.FAILED))
         }
     }
 
     @OptIn(ExperimentalTime::class)
     suspend fun updateImage(imageId: String, updateRequest: CustomerImageUpdateRequest): Result<CustomerImage> {
-        val existing = dao.getCustomerImage(imageId, workspaceId)
+        val existing = dao.getCustomerImage(imageId)
             ?: return Result.failure(Exception("Image not found"))
 
         val now = Clock.System.now().toString()
@@ -182,19 +179,19 @@ class CustomerImageRepository(
         )
 
         // 1. Update local database first (offline-first)
-        val unsyncedEntity = updatedImage.toEntity(workspaceId, synced = false, localUpdatedAt = now)
+        val unsyncedEntity = updatedImage.toEntity(synced = false, localUpdatedAt = now)
         dao.insertCustomerImage(unsyncedEntity)
 
         // 2. Handle primary image logic
         if (updateRequest.isPrimary == true) {
-            dao.clearPrimaryImages(existing.customerId, workspaceId, now)
-            dao.setPrimaryImage(imageId, workspaceId, now)
+            dao.clearPrimaryImages(existing.customerId, now)
+            dao.setPrimaryImage(imageId, now)
         }
 
         // 3. Background server sync
         try {
             val serverImage = api.updateCustomerImage(existing.customerId, imageId, updateRequest)
-            val syncedEntity = serverImage.toEntity(workspaceId, synced = true, localUpdatedAt = now)
+            val syncedEntity = serverImage.toEntity(synced = true, localUpdatedAt = now)
             dao.insertCustomerImage(syncedEntity)
             return Result.success(serverImage)
         } catch (e: Exception) {
@@ -204,11 +201,11 @@ class CustomerImageRepository(
     }
 
     suspend fun deleteImage(imageId: String): Result<Unit> {
-        val existing = dao.getCustomerImage(imageId, workspaceId)
+        val existing = dao.getCustomerImage(imageId)
             ?: return Result.failure(Exception("Image not found"))
 
         // 1. Delete from local database first
-        dao.deleteCustomerImage(imageId, workspaceId)
+        dao.deleteCustomerImage(imageId)
 
         // 2. Delete local file if exists
         existing.localPath?.let { localPath ->
@@ -233,7 +230,7 @@ class CustomerImageRepository(
 
     @OptIn(ExperimentalTime::class)
     suspend fun setPrimaryImage(imageId: String): Result<CustomerImage> {
-        val existing = dao.getCustomerImage(imageId, workspaceId)
+        val existing = dao.getCustomerImage(imageId)
             ?: return Result.failure(Exception("Image not found"))
 
         val now = Clock.System.now().toString()
@@ -246,18 +243,18 @@ class CustomerImageRepository(
 
         // Set as primary
         // 1. Update local database first (clear other primary flags, set this one)
-        dao.clearPrimaryImages(existing.customerId, workspaceId, now)
-        dao.setPrimaryImage(imageId, workspaceId, now)
+        dao.clearPrimaryImages(existing.customerId, now)
+        dao.setPrimaryImage(imageId, now)
 
         // 2. Mark as unsynced
-        dao.updateSyncStatus(imageId, workspaceId, synced = false, syncPending = true, lastSyncAttempt = null)
+        dao.updateSyncStatus(imageId, synced = false, syncPending = true, lastSyncAttempt = null)
 
         val updatedImage = existing.toCustomerImage().copy(isPrimary = true)
 
         // 3. Background server sync
         try {
             val serverImage = api.setPrimaryImage(existing.customerId, imageId)
-            val syncedEntity = serverImage.toEntity(workspaceId, synced = true, localUpdatedAt = now)
+            val syncedEntity = serverImage.toEntity(synced = true, localUpdatedAt = now)
             dao.insertCustomerImage(syncedEntity)
             return Result.success(serverImage)
         } catch (e: Exception) {
@@ -277,7 +274,7 @@ class CustomerImageRepository(
             cleanupStaleUploadingRecords(customerId)
 
             // 1. Sync unsynced local images to server first
-            val unsyncedImages = dao.getUnsyncedCustomerImages(workspaceId).filter { it.customerId == customerId }
+            val unsyncedImages = dao.getUnsyncedCustomerImages().filter { it.customerId == customerId }
             var syncedCount = 0
             val now = Clock.System.now().toString()
 
@@ -318,7 +315,7 @@ class CustomerImageRepository(
                                         thumbnailUrl = uploadResponse.thumbnailUrl,
                                         uploadStatus = CustomerImageStatus.COMPLETED
                                     )
-                                    val syncedEntity = syncedImage.toEntity(workspaceId, synced = true, localCreatedAt = entity.localCreatedAt, localUpdatedAt = now)
+                                    val syncedEntity = syncedImage.toEntity(synced = true, localCreatedAt = entity.localCreatedAt, localUpdatedAt = now)
 
                                     // Replace UPLOADING entity with COMPLETED entity
                                     entitiesToUpdate.removeAll { it.uid == entity.uid }
@@ -357,7 +354,7 @@ class CustomerImageRepository(
                             metadata = image.metadata
                         )
                         val serverImage = api.updateCustomerImage(image.customerId, image.uid, updateRequest)
-                        val syncedEntity = serverImage.toEntity(workspaceId, synced = true, localCreatedAt = entity.localCreatedAt, localUpdatedAt = now)
+                        val syncedEntity = serverImage.toEntity(synced = true, localCreatedAt = entity.localCreatedAt, localUpdatedAt = now)
                         entitiesToUpdate.add(syncedEntity)
                         syncedCount++
                     }
@@ -371,7 +368,7 @@ class CustomerImageRepository(
             val serverImages = api.getCustomerImages(customerId, lastSyncTime)
 
             // Fetch all existing entities at once to reduce DB calls
-            val existingEntitiesMap = dao.getCustomerImages(customerId, workspaceId).associateBy { it.uid }
+            val existingEntitiesMap = dao.getCustomerImages(customerId).associateBy { it.uid }
 
             for (serverImage in serverImages) {
                 val existing = existingEntitiesMap[serverImage.uid]
@@ -380,7 +377,7 @@ class CustomerImageRepository(
                     val entity = serverImage.copy(
                         uploadStatus = CustomerImageStatus.COMPLETED,
                         localPath = null
-                    ).toEntity(workspaceId, synced = true, localCreatedAt = now, localUpdatedAt = now)
+                    ).toEntity(synced = true, localCreatedAt = now, localUpdatedAt = now)
                     entitiesToUpdate.add(entity)
                     syncedCount++
                 } else if (existing.synced) {
@@ -390,7 +387,6 @@ class CustomerImageRepository(
                         localPath = existing.localPath
                     )
                     val entity = mergedImage.toEntity(
-                        workspaceId = workspaceId,
                         synced = true,
                         localCreatedAt = existing.localCreatedAt,
                         localUpdatedAt = now
@@ -439,7 +435,7 @@ class CustomerImageRepository(
             CustomerLogger.i("CustomerImageRepository", "Starting cleanup of all stale UPLOADING records older than $timeoutMinutes minutes")
 
             // Find all UPLOADING records that are older than the timeout
-            val allUploadingImages = dao.getUnsyncedCustomerImages(workspaceId)
+            val allUploadingImages = dao.getUnsyncedCustomerImages()
                 .filter { entity ->
                     entity.uploadStatus == CustomerImageStatus.UPLOADING &&
                     entity.localUpdatedAt < thresholdString
@@ -451,7 +447,7 @@ class CustomerImageRepository(
                 // Mark them as FAILED so they can be retried
                 allUploadingImages.forEach { entity ->
                     CustomerLogger.w("CustomerImageRepository", "Marking stale UPLOADING record as FAILED: ${entity.uid} (customer: ${entity.customerId})")
-                    dao.updateUploadStatus(entity.uid, workspaceId, CustomerImageStatus.FAILED, now.toString())
+                    dao.updateUploadStatus(entity.uid, CustomerImageStatus.FAILED, now.toString())
                 }
 
                 CustomerLogger.i("CustomerImageRepository", "Cleaned up ${allUploadingImages.size} stale UPLOADING records")
@@ -477,7 +473,7 @@ class CustomerImageRepository(
             CustomerLogger.d("CustomerImageSync", "Cleaning up UPLOADING records older than $timeoutMinutes minutes (before $thresholdString)")
 
             // Find all UPLOADING records for this customer that are older than the timeout
-            val allUploadingImages = dao.getUnsyncedCustomerImages(workspaceId)
+            val allUploadingImages = dao.getUnsyncedCustomerImages()
                 .filter { entity ->
                     entity.customerId == customerId &&
                     entity.uploadStatus == CustomerImageStatus.UPLOADING &&
@@ -490,7 +486,7 @@ class CustomerImageRepository(
                 // Mark them as FAILED so they can be retried
                 allUploadingImages.forEach { entity ->
                     CustomerLogger.w("CustomerImageSync", "Marking stale UPLOADING record as FAILED: ${entity.uid}")
-                    dao.updateUploadStatus(entity.uid, workspaceId, CustomerImageStatus.FAILED, now.toString())
+                    dao.updateUploadStatus(entity.uid, CustomerImageStatus.FAILED, now.toString())
                 }
             } else {
                 CustomerLogger.d("CustomerImageSync", "No stale UPLOADING records found")
@@ -501,31 +497,31 @@ class CustomerImageRepository(
     }
 
     private suspend fun getNextSortOrder(customerId: String): Int {
-        val existingImages = dao.getCustomerImages(customerId, workspaceId)
+        val existingImages = dao.getCustomerImages(customerId)
         return (existingImages.maxOfOrNull { it.sortOrder } ?: 0) + 1
     }
 
     suspend fun getImageCount(customerId: String): Int {
-        return dao.getCustomerImageCount(customerId, workspaceId)
+        return dao.getCustomerImageCount(customerId)
     }
 
     suspend fun getUnsyncedCount(): Int {
-        return dao.getUnsyncedCount(workspaceId)
+        return dao.getUnsyncedCount()
     }
 
     suspend fun getPendingUploadCount(): Int {
-        return dao.getPendingUploadCount(workspaceId)
+        return dao.getPendingUploadCount()
     }
 
     suspend fun searchImages(customerId: String, query: String): List<CustomerImageListItem> {
-        return dao.searchCustomerImages(customerId, workspaceId, query)
+        return dao.searchCustomerImages(customerId, query)
             .map { it.toListItem() }
     }
 
     suspend fun deleteAllImages(customerId: String): Result<Unit> {
         return try {
             // Get all images for cleanup
-            val images = dao.getCustomerImages(customerId, workspaceId)
+            val images = dao.getCustomerImages(customerId)
 
             // Delete local files
             images.forEach { entity ->
@@ -539,7 +535,7 @@ class CustomerImageRepository(
             }
 
             // Delete from local database
-            dao.deleteCustomerImagesByCustomer(customerId, workspaceId)
+            dao.deleteCustomerImagesByCustomer(customerId)
 
             // Background server delete
             try {

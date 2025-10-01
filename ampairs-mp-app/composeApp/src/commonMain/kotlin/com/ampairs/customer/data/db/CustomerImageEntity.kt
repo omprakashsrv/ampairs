@@ -17,7 +17,6 @@ import kotlin.time.ExperimentalTime
     tableName = "customer_images",
     indices = [
         Index(value = ["customer_id"]),
-        Index(value = ["workspace_id"]),
         Index(value = ["is_primary"]),
         Index(value = ["upload_status"]),
         Index(value = ["synced"]),
@@ -63,10 +62,6 @@ data class CustomerImageEntity(
     // Additional metadata
     val tags: String?, // JSON string of tags array
     val metadata: String?, // JSON string of metadata map
-
-    // Multi-tenancy
-    @ColumnInfo(name = "workspace_id")
-    val workspaceId: String,
 
     // Sync metadata for offline-first
     val synced: Boolean = false,
@@ -122,7 +117,6 @@ fun CustomerImageEntity.toCustomerImage(): CustomerImage = CustomerImage(
 
 @OptIn(ExperimentalTime::class)
 fun CustomerImage.toEntity(
-    workspaceId: String,
     synced: Boolean = false,
     localCreatedAt: String = Clock.System.now().toString(),
     localUpdatedAt: String = Clock.System.now().toString()
@@ -141,7 +135,6 @@ fun CustomerImage.toEntity(
     localPath = localPath,
     tags = tags?.let { kotlinx.serialization.json.Json.encodeToString(it) },
     metadata = metadata?.let { kotlinx.serialization.json.Json.encodeToString(it) },
-    workspaceId = workspaceId,
     synced = synced,
     syncPending = !synced,
     lastSyncAttempt = null,
