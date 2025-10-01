@@ -1,15 +1,8 @@
 package com.ampairs.customer.ui.components.location
 
-import org.koin.dsl.module
+import org.koin.core.module.Module
 
 /**
- * Koin module for location services
+ * Platform-specific Koin module for location services
  */
-val locationServiceModule = module {
-    single<LocationService> { createLocationService() }
-}
-
-/**
- * Platform-specific factory function
- */
-expect fun createLocationService(): LocationService
+expect val locationServiceModule: Module

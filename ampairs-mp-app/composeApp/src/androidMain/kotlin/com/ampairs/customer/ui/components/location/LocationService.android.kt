@@ -225,11 +225,3 @@ actual class LocationService(private val context: Context) {
         }
     }
 }
-
-/**
- * Android factory function
- */
-actual fun createLocationService(): LocationService {
-    // This should be injected via Koin with application context
-    throw IllegalStateException("LocationService must be created with Android Context. Use Koin dependency injection.")
-}

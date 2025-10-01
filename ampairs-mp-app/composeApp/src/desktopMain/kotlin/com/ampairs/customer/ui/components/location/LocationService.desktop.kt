@@ -186,8 +186,3 @@ actual class LocationService {
         return true
     }
 }
-
-/**
- * Desktop factory function
- */
-actual fun createLocationService(): LocationService = LocationService()

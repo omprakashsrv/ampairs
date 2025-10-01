@@ -150,8 +150,3 @@ actual class LocationService {
         return true
     }
 }
-
-/**
- * iOS factory function
- */
-actual fun createLocationService(): LocationService = LocationService()
