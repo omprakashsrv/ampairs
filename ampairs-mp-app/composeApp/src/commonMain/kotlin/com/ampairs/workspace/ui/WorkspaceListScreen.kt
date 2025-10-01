@@ -37,6 +37,39 @@ import com.ampairs.common.database.DatabaseScopeManager
 import com.ampairs.workspace.context.WorkspaceContextManager
 import org.koin.compose.viewmodel.koinViewModel
 
+/**
+ * Truncates error messages to prevent overwhelming the UI.
+ * Extracts meaningful error information and limits display length.
+ */
+private fun truncateErrorMessage(error: String, maxLength: Int = 120): String {
+    // Extract meaningful error from iOS/Android network errors
+    val meaningfulError = when {
+        // iOS Darwin network errors - extract the main error code/message
+        error.contains("DarwinHttpRequestException") -> {
+            val codeMatch = "Code=([-0-9]+)".toRegex().find(error)
+            val messageMatch = "\"([^\"]+)\"".toRegex().find(error)
+            when {
+                messageMatch != null -> messageMatch.groupValues[1]
+                codeMatch != null -> "Network error (${codeMatch.groupValues[1]})"
+                else -> "Could not connect to server"
+            }
+        }
+        // Generic connection errors
+        error.contains("Connection refused", ignoreCase = true) -> "Could not connect to server"
+        error.contains("timeout", ignoreCase = true) -> "Connection timeout"
+        error.contains("host", ignoreCase = true) -> "Could not reach server"
+        // Take first line for other errors
+        else -> error.lines().first()
+    }
+
+    // Truncate if still too long
+    return if (meaningfulError.length > maxLength) {
+        meaningfulError.take(maxLength - 3) + "..."
+    } else {
+        meaningfulError
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkspaceListScreen(
@@ -103,31 +136,31 @@ fun WorkspaceListScreen(
                 )
 
                 // Offline Mode Indicator (only show when offline)
-                if (state.isOfflineMode) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Surface(
-                        color = MaterialTheme.colorScheme.errorContainer,
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.WifiOff,
-                                contentDescription = "Offline",
-                                tint = MaterialTheme.colorScheme.onErrorContainer,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Offline",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        }
-                    }
-                }
+//                if (state.isOfflineMode) {
+//                    Spacer(modifier = Modifier.width(8.dp))
+//                    Surface(
+//                        color = MaterialTheme.colorScheme.errorContainer,
+//                        shape = RoundedCornerShape(8.dp)
+//                    ) {
+//                        Row(
+//                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+//                            verticalAlignment = Alignment.CenterVertically
+//                        ) {
+//                            Icon(
+//                                imageVector = Icons.Default.WifiOff,
+//                                contentDescription = "Offline",
+//                                tint = MaterialTheme.colorScheme.onErrorContainer,
+//                                modifier = Modifier.size(16.dp)
+//                            )
+//                            Spacer(modifier = Modifier.width(4.dp))
+//                            Text(
+//                                text = "Offline",
+//                                style = MaterialTheme.typography.labelSmall,
+//                                color = MaterialTheme.colorScheme.onErrorContainer
+//                            )
+//                        }
+//                    }
+//                }
             }
 
             // Error message with retry option
@@ -160,15 +193,17 @@ fun WorkspaceListScreen(
 
                         Text(
                             text = if (state.isOfflineMode && state.workspaces.isNotEmpty())
-                                "Showing cached data • $error"
+                                "Showing cached data • ${truncateErrorMessage(error)}"
                             else
-                                error,
+                                truncateErrorMessage(error),
                             color = if (state.isOfflineMode && state.workspaces.isNotEmpty())
                                 MaterialTheme.colorScheme.onSecondaryContainer
                             else
                                 MaterialTheme.colorScheme.onErrorContainer,
                             modifier = Modifier.weight(1f),
-                            style = MaterialTheme.typography.bodyMedium
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
 
                         Row {
