@@ -32,15 +32,38 @@ kotlin {
         }
     }
 
-    // macOS targets
-    macosX64()
-    macosArm64()
+    // macOS targets with executable configuration
+    listOf(
+        macosX64(),
+        macosArm64()
+    ).forEach { macosTarget ->
+        macosTarget.binaries {
+            executable {
+                baseName = "Ampairs"
+                entryPoint = "main"
+            }
+        }
+    }
 
-    // Linux targets
-    linuxX64()
+    // Linux target with executable configuration
+    linuxX64 {
+        binaries {
+            executable {
+                baseName = "ampairs"
+                entryPoint = "main"
+            }
+        }
+    }
 
-    // Windows targets
-    mingwX64()
+    // Windows target with executable configuration
+    mingwX64 {
+        binaries {
+            executable {
+                baseName = "Ampairs"
+                entryPoint = "main"
+            }
+        }
+    }
 
     sourceSets {
 
@@ -273,7 +296,30 @@ compose.desktop {
     }
 }
 
+// Native binary build tasks
+tasks.register("buildNativeMacOS") {
+    group = "build"
+    description = "Build native macOS executables for Intel and Apple Silicon"
+    dependsOn("linkDebugExecutableMacosX64", "linkDebugExecutableMacosArm64")
+}
 
+tasks.register("buildNativeLinux") {
+    group = "build"
+    description = "Build native Linux executable"
+    dependsOn("linkDebugExecutableLinuxX64")
+}
+
+tasks.register("buildNativeWindows") {
+    group = "build"
+    description = "Build native Windows executable"
+    dependsOn("linkDebugExecutableMingwX64")
+}
+
+tasks.register("buildAllNative") {
+    group = "build"
+    description = "Build all native platform executables (macOS, Linux, Windows)"
+    dependsOn("buildNativeMacOS", "buildNativeLinux", "buildNativeWindows")
+}
 
 room {
     schemaDirectory("$projectDir/schemas")
