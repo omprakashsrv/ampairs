@@ -4,6 +4,7 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import androidx.room.Update
 import kotlinx.coroutines.flow.Flow
 
@@ -72,6 +73,43 @@ interface CustomerImageDao {
 
     @Query("UPDATE customer_images SET is_primary = 1, local_updated_at = :updatedAt WHERE uid = :uid")
     suspend fun setPrimaryImage(uid: String, updatedAt: String)
+
+    @Query("""
+        UPDATE customer_images
+        SET is_primary = 1,
+            synced = :synced,
+            sync_pending = :syncPending,
+            last_sync_attempt = :lastSyncAttempt,
+            local_updated_at = :updatedAt
+        WHERE uid = :uid
+    """)
+    suspend fun setPrimaryImageWithSyncStatus(
+        uid: String,
+        synced: Boolean,
+        syncPending: Boolean,
+        lastSyncAttempt: String?,
+        updatedAt: String
+    )
+
+    /**
+     * Atomically set an image as primary and update sync status.
+     * Combines clearPrimaryImages + setPrimaryImageWithSyncStatus in a single transaction.
+     */
+    @Transaction
+    suspend fun setPrimaryImageAtomic(
+        customerId: String,
+        imageId: String,
+        updatedAt: String
+    ) {
+        clearPrimaryImages(customerId, updatedAt)
+        setPrimaryImageWithSyncStatus(
+            uid = imageId,
+            synced = false,
+            syncPending = true,
+            lastSyncAttempt = null,
+            updatedAt = updatedAt
+        )
+    }
 
     // Batch operations
 

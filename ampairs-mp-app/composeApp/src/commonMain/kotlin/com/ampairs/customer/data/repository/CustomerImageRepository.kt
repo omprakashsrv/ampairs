@@ -245,13 +245,8 @@ class CustomerImageRepository(
             return Result.success(existing.toCustomerImage())
         }
 
-        // Set as primary
-        // 1. Update local database first (clear other primary flags, set this one)
-        dao.clearPrimaryImages(existing.customerId, now)
-        dao.setPrimaryImage(imageId, now)
-
-        // 2. Mark as unsynced
-        dao.updateSyncStatus(imageId, synced = false, syncPending = true, lastSyncAttempt = null)
+        // Set as primary (optimized: single transaction instead of 3 separate queries)
+        dao.setPrimaryImageAtomic(existing.customerId, imageId, now)
 
         val updatedImage = existing.toCustomerImage().copy(isPrimary = true)
 
