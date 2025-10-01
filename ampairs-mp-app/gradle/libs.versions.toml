@@ -45,6 +45,10 @@ androidx-work-runtime = "2.10.5"
 store5 = "5.1.0-alpha07"
 jmapviewer = "2.24"
 filekit = "0.11.0"
+play-services-location = "21.3.0"
+maps-compose = "6.12.0"
+accompanist-permissions = "0.37.3"
+play-services-coroutines = "1.9.1"
 
 
 [libraries]
@@ -122,6 +126,11 @@ jmapviewer = { module = "org.openstreetmap.jmapviewer:jmapviewer", version.ref =
 
 filekit-dialogs = { module = "io.github.vinceglb:filekit-dialogs", version.ref = "filekit" }
 filekit-dialogs-compose = { module = "io.github.vinceglb:filekit-dialogs-compose", version.ref = "filekit" }
+
+play-services-location = { module = "com.google.android.gms:play-services-location", version.ref = "play-services-location" }
+play-services-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "play-services-coroutines" }
+maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = "maps-compose" }
+accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist-permissions" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }

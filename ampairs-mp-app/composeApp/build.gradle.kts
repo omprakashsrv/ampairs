@@ -41,6 +41,12 @@ kotlin {
                 implementation(libs.ktor.client.okHttp)
                 implementation(libs.splash.screen)
                 implementation(libs.aws.s3)
+
+                // Location and Maps
+                implementation(libs.play.services.location)
+                implementation(libs.play.services.coroutines)
+                implementation(libs.maps.compose)
+                implementation(libs.accompanist.permissions)
             }
         }
 

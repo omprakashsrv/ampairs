@@ -51,3 +51,6 @@ logs/
 .env.production
 secrets/
 credentials/
+
+### Storage ###
+storage/
