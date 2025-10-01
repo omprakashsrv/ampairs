@@ -1,6 +1,10 @@
 package com.ampairs.customer.ui.components.images
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.rememberTransformableState
+import androidx.compose.foundation.gestures.transformable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -15,6 +19,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -182,6 +189,22 @@ private fun ImageContent(
     image: CustomerImage,
     modifier: Modifier = Modifier
 ) {
+    // Zoom state
+    var scale by remember { mutableStateOf(1f) }
+    var offset by remember { mutableStateOf(Offset.Zero) }
+
+    // Transformable state for pinch-to-zoom and pan
+    val state = rememberTransformableState { zoomChange, offsetChange, _ ->
+        scale = (scale * zoomChange).coerceIn(1f, 5f)
+
+        // Only allow panning when zoomed in
+        if (scale > 1f) {
+            offset += offsetChange
+        } else {
+            offset = Offset.Zero
+        }
+    }
+
     // Use the same URL building logic as CustomerImageGrid for consistency - respect sync status
     val imageModel = when {
         // Prefer local file if available (for uploaded images)
@@ -220,7 +243,24 @@ private fun ImageContent(
             AsyncImage(
                 model = imageModel,
                 contentDescription = "Customer image: ${image.fileName}",
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .pointerInput(Unit) {
+                        // Double-tap to reset zoom
+                        detectTapGestures(
+                            onDoubleTap = {
+                                scale = 1f
+                                offset = Offset.Zero
+                            }
+                        )
+                    }
+                    .transformable(state = state)
+                    .graphicsLayer(
+                        scaleX = scale,
+                        scaleY = scale,
+                        translationX = offset.x,
+                        translationY = offset.y
+                    ),
                 contentScale = ContentScale.Fit,
                 onError = { error ->
                     CustomerLogger.w("CustomerImageViewer", "Failed to load image: $imageModel", error.result.throwable)
@@ -277,10 +317,11 @@ private fun ImageDetailsExpandable(
         )
     ) {
         Column {
-            // Toggle Button
+            // Toggle Button - entire row is clickable
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .clickable(onClick = onToggleExpanded)
                     .padding(horizontal = 16.dp, vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -292,13 +333,11 @@ private fun ImageDetailsExpandable(
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                IconButton(onClick = onToggleExpanded) {
-                    Icon(
-                        imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                        contentDescription = if (isExpanded) "Collapse details" else "Expand details",
-                        tint = MaterialTheme.colorScheme.primary
-                    )
-                }
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = if (isExpanded) "Collapse details" else "Expand details",
+                    tint = MaterialTheme.colorScheme.primary
+                )
             }
 
             // Details Content - shown only when expanded
