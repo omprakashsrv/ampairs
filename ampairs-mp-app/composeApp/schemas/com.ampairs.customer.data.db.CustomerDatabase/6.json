@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 6,
-    "identityHash": "aff168f29dcaa938e3f7bd01927f7a8b",
+    "identityHash": "0494786d286cdf9bdfe40d4f4467ad21",
     "entities": [
       {
         "tableName": "customers",
@@ -379,7 +379,7 @@
       },
       {
         "tableName": "customer_images",
-        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT NOT NULL, `customer_id` TEXT NOT NULL, `file_name` TEXT NOT NULL, `file_size` INTEGER NOT NULL, `content_type` TEXT NOT NULL, `description` TEXT, `is_primary` INTEGER NOT NULL, `sort_order` INTEGER NOT NULL, `image_url` TEXT, `thumbnail_url` TEXT, `upload_status` TEXT NOT NULL, `local_path` TEXT, `tags` TEXT, `metadata` TEXT, `workspace_id` TEXT NOT NULL, `synced` INTEGER NOT NULL, `sync_pending` INTEGER NOT NULL, `last_sync_attempt` TEXT, `created_at` TEXT, `updated_at` TEXT, `local_created_at` TEXT NOT NULL, `local_updated_at` TEXT NOT NULL, PRIMARY KEY(`uid`))",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`uid` TEXT NOT NULL, `customer_id` TEXT NOT NULL, `file_name` TEXT NOT NULL, `file_size` INTEGER NOT NULL, `content_type` TEXT NOT NULL, `description` TEXT, `is_primary` INTEGER NOT NULL, `sort_order` INTEGER NOT NULL, `image_url` TEXT, `thumbnail_url` TEXT, `upload_status` TEXT NOT NULL, `local_path` TEXT, `tags` TEXT, `metadata` TEXT, `synced` INTEGER NOT NULL, `sync_pending` INTEGER NOT NULL, `last_sync_attempt` TEXT, `created_at` TEXT, `updated_at` TEXT, `local_created_at` TEXT NOT NULL, `local_updated_at` TEXT NOT NULL, PRIMARY KEY(`uid`))",
         "fields": [
           {
             "fieldPath": "uid",
@@ -460,12 +460,6 @@
             "affinity": "TEXT"
           },
           {
-            "fieldPath": "workspaceId",
-            "columnName": "workspace_id",
-            "affinity": "TEXT",
-            "notNull": true
-          },
-          {
             "fieldPath": "synced",
             "columnName": "synced",
             "affinity": "INTEGER",
@@ -522,15 +516,6 @@
             "createSql": "CREATE INDEX IF NOT EXISTS `index_customer_images_customer_id` ON `${TABLE_NAME}` (`customer_id`)"
           },
           {
-            "name": "index_customer_images_workspace_id",
-            "unique": false,
-            "columnNames": [
-              "workspace_id"
-            ],
-            "orders": [],
-            "createSql": "CREATE INDEX IF NOT EXISTS `index_customer_images_workspace_id` ON `${TABLE_NAME}` (`workspace_id`)"
-          },
-          {
             "name": "index_customer_images_is_primary",
             "unique": false,
             "columnNames": [
@@ -582,7 +567,7 @@
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'aff168f29dcaa938e3f7bd01927f7a8b')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '0494786d286cdf9bdfe40d4f4467ad21')"
     ]
   }
 }

@@ -31,7 +31,6 @@ class CustomerImageRepository(
     private val dao: CustomerImageDao,
     private val api: CustomerImageApi,
     private val appPreferences: AppPreferencesDataStore,
-    private val workspaceContextManager: WorkspaceContextManager,
     private val fileManager: PlatformFileManager
 ) {
 
