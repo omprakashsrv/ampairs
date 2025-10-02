@@ -4,6 +4,7 @@ import MainView
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import coil3.disk.DiskCache
@@ -14,6 +15,9 @@ import coil3.util.DebugLogger
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.ImageCacheKeyer
 import com.ampairs.common.httpClient
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.dialogs.init
+import io.github.vinceglb.filekit.manualFileKitCoreInitialization
 import io.ktor.client.engine.HttpClientEngine
 import okio.Path.Companion.toOkioPath
 import org.koin.android.ext.android.get
@@ -21,9 +25,14 @@ import org.koin.android.ext.android.get
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Enable modern edge-to-edge (Android 15+ compatible)
+        enableEdgeToEdge()
+
         actionBar?.hide()
 
         // Initialize FileKit for Android platform
+        FileKit.init(this)
 
         setContent {
             setSingletonImageLoaderFactory { context ->
