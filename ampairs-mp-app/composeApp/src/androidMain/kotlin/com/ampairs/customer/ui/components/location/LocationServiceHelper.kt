@@ -105,6 +105,7 @@ fun LocationServiceMapHandler() {
 
 /**
  * Internal composable that wraps LocationPermissionHandler and provides result callback
+ * Automatically launches the system permission request dialog
  */
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -119,10 +120,35 @@ private fun PermissionRequestDialog(
         )
     )
 
+    // Automatically launch permission request when dialog shows
+    LaunchedEffect(Unit) {
+        if (!locationPermissionState.allPermissionsGranted) {
+            locationPermissionState.launchMultiplePermissionRequest()
+        }
+    }
+
     // Monitor permission state changes
     LaunchedEffect(locationPermissionState.allPermissionsGranted) {
         if (locationPermissionState.allPermissionsGranted) {
             onPermissionResult(true)
+        }
+    }
+
+    // Monitor if user denied permission
+    LaunchedEffect(locationPermissionState.permissions.map { it.status }) {
+        // If not all permissions granted and request has been made
+        if (!locationPermissionState.allPermissionsGranted) {
+            // Check if any permission was explicitly denied (not just not granted yet)
+            val hasBeenDenied = locationPermissionState.permissions.any { perm ->
+                when (perm.status) {
+                    is com.google.accompanist.permissions.PermissionStatus.Denied -> true
+                    else -> false
+                }
+            }
+
+            if (hasBeenDenied) {
+                onPermissionResult(false)
+            }
         }
     }
 
