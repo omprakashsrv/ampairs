@@ -23,6 +23,7 @@ class CustomerService @Autowired constructor(
     val customerRepository: CustomerRepository,
     val customerPagingRepository: CustomerPagingRepository,
     val stateRepository: StateRepository,
+    val customerConfigValidationService: CustomerConfigValidationService
 ) {
 
     @Transactional
@@ -93,17 +94,26 @@ class CustomerService @Autowired constructor(
     @Transactional
     fun createCustomer(customer: Customer): Customer {
 
+        // Apply default attribute values
+        customerConfigValidationService.applyDefaultAttributes(customer)
+
+        // Validate against field configurations and attribute definitions
+        val validationResult = customerConfigValidationService.validateCustomer(customer)
+        if (!validationResult.valid) {
+            throw IllegalArgumentException("Customer validation failed: ${validationResult.errors.joinToString("; ")}")
+        }
+
         // Validate GST number if provided
         if (!customer.isValidGstNumber()) {
             throw IllegalArgumentException("Invalid GST number format: ${customer.gstNumber}")
         }
-        
+
         customer.gstNumber?.let {
             if (customerRepository.findByGstNumber(it).isPresent) {
                 throw IllegalArgumentException("GST number already exists: $it")
             }
         }
-        
+
         customer.status = "ACTIVE"
         customer.lastUpdated = System.currentTimeMillis()
         return customerRepository.save(customer)
@@ -112,7 +122,7 @@ class CustomerService @Autowired constructor(
     @Transactional
     fun updateCustomer(customerId: String, updates: Customer): Customer? {
         val existingCustomer = customerRepository.findByUid(customerId) ?: return null
-        
+
         // Update fields
         existingCustomer.name = updates.name.takeIf { it.isNotBlank() } ?: existingCustomer.name
         existingCustomer.phone = updates.phone.takeIf { it.isNotBlank() } ?: existingCustomer.phone
@@ -122,12 +132,18 @@ class CustomerService @Autowired constructor(
         existingCustomer.creditDays = updates.creditDays.takeIf { it >= 0 } ?: existingCustomer.creditDays
         existingCustomer.attributes = updates.attributes
         existingCustomer.status = updates.status.takeIf { it.isNotBlank() } ?: existingCustomer.status
-        
+
+        // Validate against field configurations and attribute definitions
+        val validationResult = customerConfigValidationService.validateCustomer(existingCustomer)
+        if (!validationResult.valid) {
+            throw IllegalArgumentException("Customer validation failed: ${validationResult.errors.joinToString("; ")}")
+        }
+
         // Validate GST number if updated
         if (updates.gstNumber != existingCustomer.gstNumber && !existingCustomer.isValidGstNumber()) {
             throw IllegalArgumentException("Invalid GST number format: ${updates.gstNumber}")
         }
-        
+
         existingCustomer.lastUpdated = System.currentTimeMillis()
         return customerRepository.save(existingCustomer)
     }
