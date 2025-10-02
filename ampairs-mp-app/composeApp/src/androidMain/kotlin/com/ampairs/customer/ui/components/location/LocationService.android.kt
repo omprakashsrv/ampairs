@@ -31,6 +31,13 @@ data class MapSelectionRequest(
 )
 
 /**
+ * Request to show permission dialog - emitted when location permission is needed
+ */
+data class PermissionRequest(
+    val deferred: CompletableDeferred<Boolean>
+)
+
+/**
  * Android implementation of LocationService using Google Play Services
  * Provides real GPS location, Google Maps integration, and Geocoding
  */
@@ -53,15 +60,25 @@ actual class LocationService(private val context: Context) {
     private val _mapSelectionRequests = MutableSharedFlow<MapSelectionRequest>(replay = 0)
     val mapSelectionRequests: SharedFlow<MapSelectionRequest> = _mapSelectionRequests.asSharedFlow()
 
+    // Event flow for permission requests - UI layer should collect this
+    private val _permissionRequests = MutableSharedFlow<PermissionRequest>(replay = 0)
+    val permissionRequests: SharedFlow<PermissionRequest> = _permissionRequests.asSharedFlow()
+
     // Holds pending map selection deferred result
     private var pendingMapSelection: CompletableDeferred<LocationData>? = null
+
+    // Holds pending permission request deferred result
+    private var pendingPermissionRequest: CompletableDeferred<Boolean>? = null
 
     actual suspend fun getCurrentLocation(): Result<LocationData> {
         return withContext(Dispatchers.IO) {
             try {
-                // Check permissions
+                // Check permissions - request if not granted
                 if (!hasLocationPermissionInternal()) {
-                    return@withContext Result.failure(LocationError.PermissionDenied)
+                    val granted = requestPermissionFromUI()
+                    if (!granted) {
+                        return@withContext Result.failure(LocationError.PermissionDenied)
+                    }
                 }
 
                 // Request current location with high accuracy
@@ -122,6 +139,30 @@ actual class LocationService(private val context: Context) {
     }
 
     /**
+     * Internal method to request permission from UI layer
+     */
+    private suspend fun requestPermissionFromUI(): Boolean {
+        return withContext(Dispatchers.Main) {
+            try {
+                val deferred = CompletableDeferred<Boolean>()
+                pendingPermissionRequest = deferred
+
+                // Emit request for UI to show permission dialog
+                _permissionRequests.emit(PermissionRequest(deferred))
+
+                // Wait for UI to complete the permission request
+                val granted = deferred.await()
+                pendingPermissionRequest = null
+
+                granted
+            } catch (e: Exception) {
+                pendingPermissionRequest = null
+                false
+            }
+        }
+    }
+
+    /**
      * Call this from UI when user selects a location from the map
      * This completes the pending map selection request
      */
@@ -135,6 +176,21 @@ actual class LocationService(private val context: Context) {
     fun cancelMapSelection() {
         pendingMapSelection?.cancel()
         pendingMapSelection = null
+    }
+
+    /**
+     * Call this from UI when permission is granted
+     */
+    fun completePermissionRequest(granted: Boolean) {
+        pendingPermissionRequest?.complete(granted)
+    }
+
+    /**
+     * Call this from UI when permission request is cancelled
+     */
+    fun cancelPermissionRequest() {
+        pendingPermissionRequest?.complete(false)
+        pendingPermissionRequest = null
     }
 
     actual suspend fun reverseGeocode(latitude: Double, longitude: Double): Result<AddressData> {
