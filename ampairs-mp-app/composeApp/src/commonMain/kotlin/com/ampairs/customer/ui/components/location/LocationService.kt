@@ -95,10 +95,10 @@ enum class LocationType {
 /**
  * Location service errors
  */
-sealed class LocationError : Exception() {
-    object PermissionDenied : LocationError()
-    object LocationUnavailable : LocationError()
-    object NetworkError : LocationError()
-    object ServiceUnavailable : LocationError()
-    data class Unknown(override val cause: Throwable) : LocationError()
+sealed class LocationError(message: String) : Exception(message) {
+    object PermissionDenied : LocationError("Location permission was denied. Please grant location access in settings.")
+    object LocationUnavailable : LocationError("Unable to get current location. Please ensure GPS/Location Services are enabled.")
+    object NetworkError : LocationError("Network error occurred while fetching location data.")
+    object ServiceUnavailable : LocationError("Location service is currently unavailable.")
+    data class Unknown(override val cause: Throwable) : LocationError("An unknown error occurred: ${cause.message}")
 }

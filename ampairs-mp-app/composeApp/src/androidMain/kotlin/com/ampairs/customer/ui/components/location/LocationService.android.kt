@@ -83,12 +83,20 @@ actual class LocationService(private val context: Context) {
                     }
                 }
 
-                // Request current location with high accuracy
-                val cancellationToken = CancellationTokenSource()
-                val location = fusedLocationClient.getCurrentLocation(
-                    Priority.PRIORITY_HIGH_ACCURACY,
-                    cancellationToken.token
-                ).await()
+                // Request current location with high accuracy and 30-second timeout
+                val cancellationTokenSource = CancellationTokenSource()
+                val location = try {
+                    withTimeout(30000L) { // 30 second timeout for GPS fix
+                        fusedLocationClient.getCurrentLocation(
+                            Priority.PRIORITY_HIGH_ACCURACY,
+                            cancellationTokenSource.token
+                        ).await()
+                    }
+                } catch (e: TimeoutCancellationException) {
+                    // Cancel the location request
+                    cancellationTokenSource.cancel()
+                    throw e
+                }
 
                 if (location != null) {
                     // Get address from coordinates
@@ -110,6 +118,9 @@ actual class LocationService(private val context: Context) {
                 } else {
                     Result.failure(LocationError.LocationUnavailable)
                 }
+            } catch (e: TimeoutCancellationException) {
+                // GPS location fetch timed out - location services might be disabled
+                Result.failure(LocationError.LocationUnavailable)
             } catch (e: SecurityException) {
                 Result.failure(LocationError.PermissionDenied)
             } catch (e: Exception) {
