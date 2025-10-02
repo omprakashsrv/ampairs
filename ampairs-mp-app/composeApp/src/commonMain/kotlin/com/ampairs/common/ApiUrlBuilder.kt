@@ -75,6 +75,14 @@ object ApiUrlBuilder {
     }
 
     /**
+     * Build complete API URL for form configuration endpoints
+     */
+    fun formUrl(path: String): String {
+        val cleanPath = path.removePrefix("/")
+        return "${ConfigurationManager.apiBaseUrl}/form/$cleanPath"
+    }
+
+    /**
      * Build WebSocket URL
      */
     fun wsUrl(path: String): String {
