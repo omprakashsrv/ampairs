@@ -13,6 +13,7 @@ import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeout
 
 /**
  * Request to show map picker - emitted by LocationService when selectLocationFromMap is called
@@ -140,6 +142,7 @@ actual class LocationService(private val context: Context) {
 
     /**
      * Internal method to request permission from UI layer
+     * Timeout after 60 seconds to prevent infinite waiting
      */
     private suspend fun requestPermissionFromUI(): Boolean {
         return withContext(Dispatchers.Main) {
@@ -150,11 +153,18 @@ actual class LocationService(private val context: Context) {
                 // Emit request for UI to show permission dialog
                 _permissionRequests.emit(PermissionRequest(deferred))
 
-                // Wait for UI to complete the permission request
-                val granted = deferred.await()
+                // Wait for UI to complete the permission request with timeout
+                val granted = withTimeout(60000L) { // 60 second timeout
+                    deferred.await()
+                }
                 pendingPermissionRequest = null
 
                 granted
+            } catch (e: TimeoutCancellationException) {
+                // Permission request timed out - user didn't respond
+                pendingPermissionRequest?.cancel()
+                pendingPermissionRequest = null
+                false
             } catch (e: Exception) {
                 pendingPermissionRequest = null
                 false
