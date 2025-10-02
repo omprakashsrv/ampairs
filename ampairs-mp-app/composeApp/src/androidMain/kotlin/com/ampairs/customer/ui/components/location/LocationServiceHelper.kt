@@ -1,7 +1,12 @@
 package com.ampairs.customer.ui.components.location
 
 import android.Manifest
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
@@ -104,8 +109,8 @@ fun LocationServiceMapHandler() {
 }
 
 /**
- * Internal composable that wraps LocationPermissionHandler and provides result callback
- * Automatically launches the system permission request dialog
+ * Internal composable that automatically launches system permission dialog
+ * and completes when user grants/denies permission
  */
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
@@ -120,42 +125,53 @@ private fun PermissionRequestDialog(
         )
     )
 
-    // Automatically launch permission request when dialog shows
+    // Track if we've launched and if we've already reported result
+    var hasLaunched by remember { mutableStateOf(false) }
+    var hasReportedResult by remember { mutableStateOf(false) }
+
+    // Automatically launch permission request when composable shows
     LaunchedEffect(Unit) {
-        if (!locationPermissionState.allPermissionsGranted) {
+        if (locationPermissionState.allPermissionsGranted) {
+            // Already granted, complete immediately
+            hasReportedResult = true
+            onPermissionResult(true)
+        } else if (!hasLaunched) {
+            hasLaunched = true
             locationPermissionState.launchMultiplePermissionRequest()
         }
     }
 
-    // Monitor permission state changes
+    // Monitor ONLY when permission is granted
     LaunchedEffect(locationPermissionState.allPermissionsGranted) {
-        if (locationPermissionState.allPermissionsGranted) {
+        if (locationPermissionState.allPermissionsGranted && hasLaunched && !hasReportedResult) {
+            // Permission granted - automatically continue location fetch
+            hasReportedResult = true
             onPermissionResult(true)
         }
     }
 
-    // Monitor if user denied permission
+    // Monitor for permission denial - separate effect
     LaunchedEffect(locationPermissionState.permissions.map { it.status }) {
-        // If not all permissions granted and request has been made
-        if (!locationPermissionState.allPermissionsGranted) {
-            // Check if any permission was explicitly denied (not just not granted yet)
-            val hasBeenDenied = locationPermissionState.permissions.any { perm ->
-                when (perm.status) {
-                    is com.google.accompanist.permissions.PermissionStatus.Denied -> true
-                    else -> false
-                }
+        if (hasLaunched && !hasReportedResult && !locationPermissionState.allPermissionsGranted) {
+            // Check if any permission was explicitly denied
+            val anyDenied = locationPermissionState.permissions.any { perm ->
+                perm.status is com.google.accompanist.permissions.PermissionStatus.Denied
             }
 
-            if (hasBeenDenied) {
+            if (anyDenied) {
+                // User denied permission
+                hasReportedResult = true
                 onPermissionResult(false)
             }
         }
     }
 
-    // Show the permission handler UI
-    LocationPermissionHandler(
-        onPermissionGranted = {
-            // Permission was granted, callback already handled by LaunchedEffect
-        }
-    )
+    // Show minimal loading UI while waiting for permission dialog
+    // Don't show the full LocationPermissionHandler cards
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        CircularProgressIndicator()
+    }
 }
