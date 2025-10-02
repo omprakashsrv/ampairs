@@ -1,28 +1,45 @@
 package com.ampairs.form.data.repository
 
 import com.ampairs.form.data.api.ConfigApi
+import com.ampairs.form.data.db.EntityAttributeDefinitionDao
+import com.ampairs.form.data.db.EntityFieldConfigDao
+import com.ampairs.form.data.db.toEntity
+import com.ampairs.form.data.db.toEntityAttributeDefinition
+import com.ampairs.form.data.db.toEntityFieldConfig
 import com.ampairs.form.domain.EntityConfigSchema
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 
 /**
  * Repository for managing entity configuration schemas
- * Provides caching and reactive updates per entity type
+ * Provides offline-first architecture with database caching and reactive updates per entity type
  */
 class ConfigRepository(
-    private val api: ConfigApi
+    private val api: ConfigApi,
+    private val fieldConfigDao: EntityFieldConfigDao,
+    private val attributeDefinitionDao: EntityAttributeDefinitionDao
 ) {
     // Cache configs by entity type
     private val _configCache = MutableStateFlow<Map<String, EntityConfigSchema>>(emptyMap())
 
     /**
      * Get config schema for specific entity type
-     * Fetches from backend and updates cache
+     * Fetches from backend, saves to database, and updates cache
      */
     suspend fun getConfigSchema(entityType: String): Result<EntityConfigSchema> {
         return try {
             val schema = api.getConfigSchema(entityType)
+
+            // Save field configs to database
+            val fieldConfigEntities = schema.fieldConfigs.map { it.toEntity() }
+            fieldConfigDao.insertFieldConfigs(fieldConfigEntities)
+
+            // Save attribute definitions to database
+            val attributeDefinitionEntities = schema.attributeDefinitions.map { it.toEntity() }
+            attributeDefinitionDao.insertAttributeDefinitions(attributeDefinitionEntities)
+
             updateCache(entityType, schema)
             Result.success(schema)
         } catch (e: Exception) {
@@ -31,11 +48,24 @@ class ConfigRepository(
     }
 
     /**
-     * Observe config schema for specific entity type
-     * Returns Flow that emits cached value
+     * Observe config schema for specific entity type from database
+     * Returns Flow that emits data from local database
      */
     fun observeConfigSchema(entityType: String): Flow<EntityConfigSchema?> {
-        return _configCache.map { cache -> cache[entityType] }
+        return combine(
+            fieldConfigDao.getFieldConfigsByEntityType(entityType),
+            attributeDefinitionDao.getAttributeDefinitionsByEntityType(entityType)
+        ) { fieldConfigs, attributeDefinitions ->
+            // Combine field configs and attribute definitions into schema
+            if (fieldConfigs.isEmpty() && attributeDefinitions.isEmpty()) {
+                null
+            } else {
+                EntityConfigSchema(
+                    fieldConfigs = fieldConfigs.map { it.toEntityFieldConfig() },
+                    attributeDefinitions = attributeDefinitions.map { it.toEntityAttributeDefinition() }
+                )
+            }
+        }
     }
 
     /**

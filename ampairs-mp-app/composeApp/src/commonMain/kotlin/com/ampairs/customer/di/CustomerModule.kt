@@ -2,8 +2,6 @@ package com.ampairs.customer.di
 
 import com.ampairs.customer.data.api.CustomerApi
 import com.ampairs.customer.data.api.CustomerApiImpl
-import com.ampairs.customer.data.api.CustomerConfigApi
-import com.ampairs.customer.data.api.CustomerConfigApiImpl
 import com.ampairs.customer.data.api.CustomerGroupApi
 import com.ampairs.customer.data.api.CustomerGroupApiImpl
 import com.ampairs.customer.data.api.CustomerImageApi
@@ -11,7 +9,6 @@ import com.ampairs.customer.data.api.CustomerImageApiImpl
 import com.ampairs.customer.data.api.CustomerTypeApi
 import com.ampairs.customer.data.api.CustomerTypeApiImpl
 import com.ampairs.customer.data.db.CustomerDatabase
-import com.ampairs.customer.data.repository.CustomerConfigRepository
 import com.ampairs.customer.data.repository.CustomerGroupRepository
 import com.ampairs.customer.data.repository.CustomerImageRepository
 import com.ampairs.customer.data.repository.CustomerRepository
@@ -24,7 +21,6 @@ import com.ampairs.customer.domain.CustomerStore
 import com.ampairs.customer.domain.CustomerTypeStore
 import com.ampairs.customer.domain.StateStore
 import com.ampairs.customer.ui.components.images.CustomerImageViewModel
-import com.ampairs.customer.ui.config.CustomerConfigViewModel
 import com.ampairs.customer.ui.create.CustomerFormViewModel
 import com.ampairs.customer.ui.customergroup.CustomerGroupFormViewModel
 import com.ampairs.customer.ui.customergroup.CustomerGroupListViewModel
@@ -47,7 +43,6 @@ val customerModule = module {
     singleOf(::CustomerTypeApiImpl) bind CustomerTypeApi::class
     singleOf(::CustomerGroupApiImpl) bind CustomerGroupApi::class
     singleOf(::CustomerImageApiImpl) bind CustomerImageApi::class
-    singleOf(::CustomerConfigApiImpl) bind CustomerConfigApi::class
 
     // Database Layer - Use factory to get fresh DAOs with new database instance
     factory { get<CustomerDatabase>().customerDao() }
@@ -64,9 +59,6 @@ val customerModule = module {
     factory { CustomerTypeRepository(get(), get(), get()) }
     factory { CustomerGroupRepository(get(), get(), get()) }
     factory { CustomerImageRepository(get(), get(), get(), get()) }
-
-    // Configuration Repository - Singleton with workspace-level caching
-    singleOf(::CustomerConfigRepository)
 
     // Domain Layer - Use factory to recreate Stores with new repositories/DAOs
     factory { CustomerStore(get()) }
@@ -98,9 +90,6 @@ val customerModule = module {
 
     // CustomerImage ViewModels
     viewModel { (customerId: String) -> CustomerImageViewModel(customerId, get(), get()) }
-
-    // Configuration ViewModel
-    viewModelOf(::CustomerConfigViewModel)
 }
 
 expect val customerPlatformModule: org.koin.core.module.Module
