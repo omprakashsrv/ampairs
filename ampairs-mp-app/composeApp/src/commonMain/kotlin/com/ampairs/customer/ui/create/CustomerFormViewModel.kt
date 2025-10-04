@@ -21,6 +21,9 @@ import com.ampairs.customer.domain.CustomerGroupStore
 import com.ampairs.customer.domain.CustomerGroupKey
 import com.ampairs.common.id_generator.UidGenerator
 import com.ampairs.customer.util.CustomerConstants
+import com.ampairs.form.data.repository.ConfigRepository
+import com.ampairs.form.domain.EntityConfigSchema
+import com.ampairs.form.domain.EntityType
 import com.ampairs.customer.util.CustomerConstants.DEFAULT_COUNTRY_CODE
 import com.ampairs.customer.util.CustomerConstants.STATUS_ACTIVE
 import com.ampairs.customer.util.CustomerConstants.ERROR_VALIDATION_FIX
@@ -174,7 +177,8 @@ data class CustomerFormUiState(
     val customerTypes: List<CustomerType> = emptyList(),
     val isLoadingCustomerTypes: Boolean = false,
     val customerGroups: List<CustomerGroup> = emptyList(),
-    val isLoadingCustomerGroups: Boolean = false
+    val isLoadingCustomerGroups: Boolean = false,
+    val entityConfig: EntityConfigSchema? = null
 )
 
 class CustomerFormViewModel(
@@ -182,7 +186,8 @@ class CustomerFormViewModel(
     private val customerStore: CustomerStore,
     private val stateStore: StateStore,
     private val customerTypeStore: CustomerTypeStore,
-    private val customerGroupStore: CustomerGroupStore
+    private val customerGroupStore: CustomerGroupStore,
+    private val configRepository: ConfigRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(CustomerFormUiState())
@@ -196,6 +201,7 @@ class CustomerFormViewModel(
         loadCitiesAndPincodes()
         loadCustomerTypes()
         loadCustomerGroups()
+        loadEntityConfig()
     }
 
     fun loadCustomer() {
@@ -473,6 +479,25 @@ class CustomerFormViewModel(
                         error = e.message ?: "Failed to load customer groups"
                     )
                 }
+            }
+        }
+    }
+
+    private fun loadEntityConfig() {
+        // Observe database for reactive updates (will emit immediately if cached data exists)
+        configRepository.observeConfigSchema(EntityType.CUSTOMER)
+            .onEach { schema ->
+                _uiState.update { it.copy(entityConfig = schema) }
+            }
+            .launchIn(viewModelScope)
+
+        // Sync all form configs from backend (will update database, triggering flow above)
+        viewModelScope.launch {
+            try {
+                configRepository.syncFormConfigs()
+            } catch (e: Exception) {
+                // Silently fail - form will work without config using default behavior
+                println("Failed to sync form configs: ${e.message}")
             }
         }
     }

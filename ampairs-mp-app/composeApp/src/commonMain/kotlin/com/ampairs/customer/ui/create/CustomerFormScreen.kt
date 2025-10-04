@@ -141,6 +141,7 @@ fun CustomerFormScreen(
                     onCustomerTypeSelected = viewModel::onCustomerTypeSelected,
                     customerGroups = uiState.customerGroups,
                     onCustomerGroupSelected = viewModel::onCustomerGroupSelected,
+                    entityConfig = uiState.entityConfig,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -166,6 +167,7 @@ private fun CustomerForm(
     onCustomerTypeSelected: (CustomerType) -> Unit,
     customerGroups: List<CustomerGroup>,
     onCustomerGroupSelected: (CustomerGroup) -> Unit,
+    entityConfig: com.ampairs.form.domain.EntityConfigSchema?,
     modifier: Modifier = Modifier
 ) {
     // Get window size class to determine layout
@@ -191,6 +193,7 @@ private fun CustomerForm(
             onCustomerTypeSelected = onCustomerTypeSelected,
             customerGroups = customerGroups,
             onCustomerGroupSelected = onCustomerGroupSelected,
+            entityConfig = entityConfig,
             modifier = modifier
         )
     } else if (customerId != null) {
@@ -211,6 +214,7 @@ private fun CustomerForm(
             onCustomerTypeSelected = onCustomerTypeSelected,
             customerGroups = customerGroups,
             onCustomerGroupSelected = onCustomerGroupSelected,
+            entityConfig = entityConfig,
             modifier = modifier
         )
     } else {
@@ -231,6 +235,7 @@ private fun CustomerForm(
             onCustomerTypeSelected = onCustomerTypeSelected,
             customerGroups = customerGroups,
             onCustomerGroupSelected = onCustomerGroupSelected,
+            entityConfig = entityConfig,
             modifier = modifier
         )
     }
@@ -253,6 +258,7 @@ private fun CustomerFormTabLayout(
     onCustomerTypeSelected: (CustomerType) -> Unit,
     customerGroups: List<CustomerGroup>,
     onCustomerGroupSelected: (CustomerGroup) -> Unit,
+    entityConfig: com.ampairs.form.domain.EntityConfigSchema?,
     modifier: Modifier = Modifier
 ) {
     var selectedTabIndex by remember { mutableStateOf(0) }
@@ -286,6 +292,7 @@ private fun CustomerFormTabLayout(
                 onCustomerTypeSelected = onCustomerTypeSelected,
                 customerGroups = customerGroups,
                 onCustomerGroupSelected = onCustomerGroupSelected,
+                entityConfig = entityConfig,
                 modifier = Modifier.fillMaxSize()
             )
             1 -> CustomerImageManagementScreen(
@@ -315,6 +322,7 @@ private fun CustomerFormSideBySideLayout(
     onCustomerTypeSelected: (CustomerType) -> Unit,
     customerGroups: List<CustomerGroup>,
     onCustomerGroupSelected: (CustomerGroup) -> Unit,
+    entityConfig: com.ampairs.form.domain.EntityConfigSchema?,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -345,6 +353,7 @@ private fun CustomerFormSideBySideLayout(
                 onCustomerTypeSelected = onCustomerTypeSelected,
                 customerGroups = customerGroups,
                 onCustomerGroupSelected = onCustomerGroupSelected,
+                entityConfig = entityConfig,
                 modifier = Modifier.fillMaxSize()
             )
         }
@@ -383,9 +392,30 @@ private fun CustomerFormFields(
     onCustomerTypeSelected: (CustomerType) -> Unit,
     customerGroups: List<CustomerGroup>,
     onCustomerGroupSelected: (CustomerGroup) -> Unit,
+    entityConfig: com.ampairs.form.domain.EntityConfigSchema?,
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
+
+    // Helper functions for field config
+    fun isFieldVisible(fieldName: String): Boolean {
+        return entityConfig?.isFieldVisible(fieldName) ?: true
+    }
+
+    fun isFieldMandatory(fieldName: String): Boolean {
+        return entityConfig?.isFieldMandatory(fieldName) ?: false
+    }
+
+    fun getFieldLabel(fieldName: String, defaultLabel: String): String {
+        val config = entityConfig?.getFieldConfig(fieldName)
+        val label = config?.displayName ?: defaultLabel
+        val isMandatory = isFieldMandatory(fieldName)
+        return if (isMandatory) "$label *" else label
+    }
+
+    fun getFieldPlaceholder(fieldName: String): String? {
+        return entityConfig?.getFieldConfig(fieldName)?.placeholder
+    }
 
     Column(
         modifier = modifier
@@ -409,48 +439,44 @@ private fun CustomerFormFields(
 
         // Basic Information
         FormSection(title = "Basic Information") {
-//            OutlinedTextField(
-//                value = formState.refId,
-//                onValueChange = { onFormChange(formState.copy(refId = it)) },
-//                label = { Text("Reference ID") },
-//                modifier = Modifier.fillMaxWidth(),
-//                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-//                keyboardActions = KeyboardActions(
-//                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
-//                ),
-//                singleLine = true
-//            )
+            // Name field - with config integration
+            if (isFieldVisible("name")) {
+                OutlinedTextField(
+                    value = formState.name,
+                    onValueChange = { onFormChange(formState.copy(name = it)) },
+                    label = { Text(getFieldLabel("name", "Name")) },
+                    placeholder = getFieldPlaceholder("name")?.let { { Text(it) } },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    isError = formState.nameError != null,
+                    supportingText = formState.nameError?.let { { Text(it) } },
+                    singleLine = true
+                )
+            }
 
-            OutlinedTextField(
-                value = formState.name,
-                onValueChange = { onFormChange(formState.copy(name = it)) },
-                label = { Text("Name *") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                ),
-                isError = formState.nameError != null,
-                supportingText = formState.nameError?.let { { Text(it) } },
-                singleLine = true
-            )
-
-            OutlinedTextField(
-                value = formState.email,
-                onValueChange = { onFormChange(formState.copy(email = it)) },
-                label = { Text("Email") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Email,
-                    imeAction = ImeAction.Next
-                ),
-                keyboardActions = KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                ),
-                isError = formState.emailError != null,
-                supportingText = formState.emailError?.let { { Text(it) } },
-                singleLine = true
-            )
+            // Email field - with config integration
+            if (isFieldVisible("email")) {
+                OutlinedTextField(
+                    value = formState.email,
+                    onValueChange = { onFormChange(formState.copy(email = it)) },
+                    label = { Text(getFieldLabel("email", "Email")) },
+                    placeholder = getFieldPlaceholder("email")?.let { { Text(it) } },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Email,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    isError = formState.emailError != null,
+                    supportingText = formState.emailError?.let { { Text(it) } },
+                    singleLine = true
+                )
+            }
 
             // Customer Type Dropdown
             var customerTypeExpanded by remember { mutableStateOf(false) }
@@ -541,51 +567,56 @@ private fun CustomerFormFields(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Phone(
-                        countryCode = formState.countryCode,
-                        phone = formState.phone,
-                        onValueChange = { phone ->
-                            onFormChange(formState.copy(phone = phone))
-                        },
-                        onValidChange = { /* Validation handled in ViewModel */ }
-                    )
-
-                    formState.phoneError?.let { error ->
-                        Text(
-                            text = error,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                if (isFieldVisible("phone")) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Phone(
+                            countryCode = formState.countryCode,
+                            phone = formState.phone,
+                            onValueChange = { phone ->
+                                onFormChange(formState.copy(phone = phone))
+                            },
+                            onValidChange = { /* Validation handled in ViewModel */ }
                         )
+
+                        formState.phoneError?.let { error ->
+                            Text(
+                                text = error,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(start = 16.dp, top = 4.dp)
+                            )
+                        }
                     }
                 }
 
-                Column(modifier = Modifier.weight(1f)) {
-                    OutlinedTextField(
-                        value = formState.landline,
-                        onValueChange = { onFormChange(formState.copy(landline = it)) },
-                        label = { Text("Landline") },
-                        modifier = Modifier.fillMaxWidth(),
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Phone,
-                            imeAction = ImeAction.Next
-                        ),
-                        keyboardActions = KeyboardActions(
-                            onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                        ),
-                        singleLine = true,
-                        isError = formState.landlineError != null,
-                        supportingText = formState.landlineError?.let { error ->
-                            {
-                                Text(
-                                    text = error,
-                                    color = MaterialTheme.colorScheme.error,
-                                    style = MaterialTheme.typography.bodySmall
-                                )
+                if (isFieldVisible("landline")) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        OutlinedTextField(
+                            value = formState.landline,
+                            onValueChange = { onFormChange(formState.copy(landline = it)) },
+                            label = { Text(getFieldLabel("landline", "Landline")) },
+                            placeholder = getFieldPlaceholder("landline")?.let { { Text(it) } },
+                            modifier = Modifier.fillMaxWidth(),
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Phone,
+                                imeAction = ImeAction.Next
+                            ),
+                            keyboardActions = KeyboardActions(
+                                onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                            ),
+                            singleLine = true,
+                            isError = formState.landlineError != null,
+                            supportingText = formState.landlineError?.let { error ->
+                                {
+                                    Text(
+                                        text = error,
+                                        color = MaterialTheme.colorScheme.error,
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
 
@@ -593,29 +624,35 @@ private fun CustomerFormFields(
 
         // Business Information
         FormSection(title = "Business Information") {
-            OutlinedTextField(
-                value = formState.gstNumber,
-                onValueChange = { onFormChange(formState.copy(gstNumber = it)) },
-                label = { Text("GST Number") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                ),
-                singleLine = true
-            )
+            if (isFieldVisible("gstNumber")) {
+                OutlinedTextField(
+                    value = formState.gstNumber,
+                    onValueChange = { onFormChange(formState.copy(gstNumber = it)) },
+                    label = { Text(getFieldLabel("gstNumber", "GST Number")) },
+                    placeholder = getFieldPlaceholder("gstNumber")?.let { { Text(it) } },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true
+                )
+            }
 
-            OutlinedTextField(
-                value = formState.panNumber,
-                onValueChange = { onFormChange(formState.copy(panNumber = it)) },
-                label = { Text("PAN Number") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                keyboardActions = KeyboardActions(
-                    onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                ),
-                singleLine = true
-            )
+            if (isFieldVisible("panNumber")) {
+                OutlinedTextField(
+                    value = formState.panNumber,
+                    onValueChange = { onFormChange(formState.copy(panNumber = it)) },
+                    label = { Text(getFieldLabel("panNumber", "PAN Number")) },
+                    placeholder = getFieldPlaceholder("panNumber")?.let { { Text(it) } },
+                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
+                    singleLine = true
+                )
+            }
         }
 
         // Credit Management

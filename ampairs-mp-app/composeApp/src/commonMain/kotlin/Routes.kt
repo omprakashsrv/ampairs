@@ -28,6 +28,11 @@ sealed interface Route {
 
     @Serializable
     data object Tax : Route
+
+    @Serializable
+    data class FormConfig(
+        val entityType: String = ""
+    ) : Route
 }
 
 // Auth routes

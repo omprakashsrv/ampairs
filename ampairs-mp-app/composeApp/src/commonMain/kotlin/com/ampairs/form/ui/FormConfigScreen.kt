@@ -1,0 +1,340 @@
+package com.ampairs.form.ui
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Save
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.ampairs.form.domain.EntityAttributeDefinition
+import com.ampairs.form.domain.EntityFieldConfig
+import org.koin.compose.viewmodel.koinViewModel
+import org.koin.core.parameter.parametersOf
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun FormConfigScreen(
+    entityType: String,
+    onNavigateBack: () -> Unit,
+    viewModel: FormConfigViewModel = koinViewModel { parametersOf(entityType) }
+) {
+    val uiState by viewModel.uiState.collectAsState()
+
+    LaunchedEffect(uiState.successMessage) {
+        if (uiState.successMessage != null) {
+            // Auto-dismiss success message after 2 seconds
+            kotlinx.coroutines.delay(2000)
+            viewModel.clearMessages()
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Configure ${uiState.entityType} Form") },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                            contentDescription = "Back"
+                        )
+                    }
+                }
+            )
+        },
+        floatingActionButton = {
+            if (!uiState.isSaving && (uiState.fieldConfigs.isNotEmpty() || uiState.attributeDefinitions.isNotEmpty())) {
+                ExtendedFloatingActionButton(
+                    onClick = { viewModel.saveChanges() },
+                    icon = { Icon(Icons.Default.Save, contentDescription = null) },
+                    text = { Text("Save Changes") }
+                )
+            }
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            when {
+                uiState.isLoading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
+                uiState.fieldConfigs.isEmpty() && uiState.attributeDefinitions.isEmpty() -> {
+                    // Empty state - backend should seed configuration
+                    Column(
+                        modifier = Modifier
+                            .align(Alignment.Center)
+                            .padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Text(
+                            text = "No Configuration Found",
+                            style = MaterialTheme.typography.headlineSmall
+                        )
+                        Text(
+                            text = "Please contact your administrator to seed the form configuration for ${uiState.entityType}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        // Field Configurations Section
+                        if (uiState.fieldConfigs.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = "Field Configurations",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    modifier = Modifier.padding(bottom = 8.dp)
+                                )
+                            }
+
+                            items(uiState.fieldConfigs) { fieldConfig ->
+                                FieldConfigCard(
+                                    fieldConfig = fieldConfig,
+                                    onUpdate = { viewModel.updateFieldConfig(it) }
+                                )
+                            }
+                        }
+
+                        // Attribute Definitions Section
+                        if (uiState.attributeDefinitions.isNotEmpty()) {
+                            item {
+                                Text(
+                                    text = "Custom Attributes",
+                                    style = MaterialTheme.typography.titleLarge,
+                                    modifier = Modifier.padding(top = 16.dp, bottom = 8.dp)
+                                )
+                            }
+
+                            items(uiState.attributeDefinitions) { attributeDefinition ->
+                                AttributeDefinitionCard(
+                                    attributeDefinition = attributeDefinition,
+                                    onUpdate = { viewModel.updateAttributeDefinition(it) }
+                                )
+                            }
+                        }
+
+                        // Bottom padding for FAB
+                        item {
+                            Spacer(modifier = Modifier.height(80.dp))
+                        }
+                    }
+                }
+            }
+
+            // Error Snackbar
+            if (uiState.error != null) {
+                Snackbar(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp),
+                    action = {
+                        TextButton(onClick = { viewModel.clearMessages() }) {
+                            Text("Dismiss")
+                        }
+                    }
+                ) {
+                    Text(uiState.error ?: "")
+                }
+            }
+
+            // Success Snackbar
+            if (uiState.successMessage != null) {
+                Snackbar(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .padding(16.dp),
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                ) {
+                    Text(uiState.successMessage ?: "")
+                }
+            }
+
+            // Saving Overlay
+            if (uiState.isSaving) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(paddingValues),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Card {
+                        Column(
+                            modifier = Modifier.padding(24.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            CircularProgressIndicator()
+                            Text("Saving changes...")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FieldConfigCard(
+    fieldConfig: EntityFieldConfig,
+    onUpdate: (EntityFieldConfig) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = fieldConfig.fieldName,
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            OutlinedTextField(
+                value = fieldConfig.displayName,
+                onValueChange = { onUpdate(fieldConfig.copy(displayName = it)) },
+                label = { Text("Display Name") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = fieldConfig.placeholder ?: "",
+                onValueChange = { onUpdate(fieldConfig.copy(placeholder = it.takeIf { it.isNotBlank() })) },
+                label = { Text("Placeholder") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Checkbox(
+                        checked = fieldConfig.visible,
+                        onCheckedChange = { onUpdate(fieldConfig.copy(visible = it)) }
+                    )
+                    Text("Visible", modifier = Modifier.padding(start = 8.dp))
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Checkbox(
+                        checked = fieldConfig.mandatory,
+                        onCheckedChange = { onUpdate(fieldConfig.copy(mandatory = it)) }
+                    )
+                    Text("Mandatory", modifier = Modifier.padding(start = 8.dp))
+                }
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Checkbox(
+                    checked = fieldConfig.enabled,
+                    onCheckedChange = { onUpdate(fieldConfig.copy(enabled = it)) }
+                )
+                Text("Enabled", modifier = Modifier.padding(start = 8.dp))
+            }
+        }
+    }
+}
+
+@Composable
+private fun AttributeDefinitionCard(
+    attributeDefinition: EntityAttributeDefinition,
+    onUpdate: (EntityAttributeDefinition) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                text = attributeDefinition.attributeKey,
+                style = MaterialTheme.typography.titleMedium
+            )
+
+            OutlinedTextField(
+                value = attributeDefinition.displayName,
+                onValueChange = { onUpdate(attributeDefinition.copy(displayName = it)) },
+                label = { Text("Display Name") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = attributeDefinition.category ?: "",
+                onValueChange = { onUpdate(attributeDefinition.copy(category = it.takeIf { it.isNotBlank() })) },
+                label = { Text("Category") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Checkbox(
+                        checked = attributeDefinition.visible,
+                        onCheckedChange = { onUpdate(attributeDefinition.copy(visible = it)) }
+                    )
+                    Text("Visible", modifier = Modifier.padding(start = 8.dp))
+                }
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Checkbox(
+                        checked = attributeDefinition.mandatory,
+                        onCheckedChange = { onUpdate(attributeDefinition.copy(mandatory = it)) }
+                    )
+                    Text("Mandatory", modifier = Modifier.padding(start = 8.dp))
+                }
+            }
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Checkbox(
+                    checked = attributeDefinition.enabled,
+                    onCheckedChange = { onUpdate(attributeDefinition.copy(enabled = it)) }
+                )
+                Text("Enabled", modifier = Modifier.padding(start = 8.dp))
+            }
+        }
+    }
+}

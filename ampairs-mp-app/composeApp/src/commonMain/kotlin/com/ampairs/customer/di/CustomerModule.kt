@@ -75,6 +75,7 @@ val customerModule = module {
             get(),
             get(),
             get(),
+            get(),
             get()
         )
     }

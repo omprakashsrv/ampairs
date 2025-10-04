@@ -29,6 +29,16 @@ interface AppPreferencesDataStore {
      */
     suspend fun setCustomerLastSyncTime(timestamp: String)
 
+    /**
+     * Get the last form config sync time as ISO 8601 string (yyyy-mm-ddTHH:mm:ss)
+     */
+    fun getFormConfigLastSyncTime(): Flow<String>
+
+    /**
+     * Set the last form config sync time as ISO 8601 string (yyyy-mm-ddTHH:mm:ss)
+     */
+    suspend fun setFormConfigLastSyncTime(timestamp: String)
+
     // Future app settings can be added here:
     // fun getLanguagePreference(): Flow<String>
     // suspend fun setLanguagePreference(language: String)

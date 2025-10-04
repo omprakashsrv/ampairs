@@ -15,6 +15,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navOptions
+import androidx.navigation.toRoute
 import com.ampairs.auth.authNavigation
 import com.ampairs.common.ui.AppScreenWithHeader
 import com.ampairs.common.UnauthenticatedHandler
@@ -165,6 +166,15 @@ fun AppNavigation(
             }
         }
 
+        // Form Config navigation
+        composable<Route.FormConfig> { backStackEntry ->
+            val route = backStackEntry.toRoute<Route.FormConfig>()
+            com.ampairs.form.ui.FormConfigScreen(
+                entityType = route.entityType,
+                onNavigateBack = { navController.navigateUp() }
+            )
+        }
+
         customerNavigation(navController)
         productNavigation(navController)
         taxNavigation(navController)
@@ -198,6 +208,7 @@ fun navigateToMenuItem(navController: androidx.navigation.NavHostController, rou
                 "/customers/states" -> navController.navigate(StateListRoute)
                 "/customers/types" -> navController.navigate(com.ampairs.customer.ui.CustomerTypeListRoute)
                 "/customers/groups" -> navController.navigate(com.ampairs.customer.ui.CustomerGroupListRoute)
+                "/customers/config" -> navController.navigate(Route.FormConfig("customer"))
                 else -> navController.navigate(Route.Customer)
             }
         }
@@ -236,6 +247,12 @@ fun navigateToMenuItem(navController: androidx.navigation.NavHostController, rou
 
         route.startsWith("/tax") -> {
             navController.navigate(Route.Tax)
+        }
+
+        route.startsWith("/form-config") -> {
+            // Extract entity type from route like /form-config/customer
+            val entityType = route.removePrefix("/form-config/")
+            navController.navigate(Route.FormConfig(entityType))
         }
 
         else -> {

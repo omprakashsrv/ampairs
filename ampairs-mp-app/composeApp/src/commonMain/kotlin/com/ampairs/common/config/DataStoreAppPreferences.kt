@@ -26,6 +26,9 @@ class DataStoreAppPreferences(
         private fun getCustomerLastSyncTimeKey(workspaceSlug: String) =
             stringPreferencesKey("customer_last_sync_time_$workspaceSlug")
 
+        private fun getFormConfigLastSyncTimeKey(workspaceSlug: String) =
+            stringPreferencesKey("form_config_last_sync_time_$workspaceSlug")
+
         // Future preference keys can be added here:
         // private val LANGUAGE_PREFERENCE_KEY = stringPreferencesKey("language_preference")
         // private val NOTIFICATION_SETTINGS_KEY = stringPreferencesKey("notification_settings")
@@ -60,6 +63,23 @@ class DataStoreAppPreferences(
     override suspend fun setCustomerLastSyncTime(timestamp: String) {
         val workspaceSlug = WorkspaceContext.getCurrentWorkspaceSlugOrDefault()
         val key = getCustomerLastSyncTimeKey(workspaceSlug)
+
+        dataStore.edit { preferences ->
+            preferences[key] = timestamp
+        }
+    }
+
+    override fun getFormConfigLastSyncTime(): Flow<String> {
+        return dataStore.data.map { preferences ->
+            val workspaceSlug = WorkspaceContext.getCurrentWorkspaceSlugOrDefault()
+            val key = getFormConfigLastSyncTimeKey(workspaceSlug)
+            preferences[key] ?: "" // Default to empty string (sync all on first run)
+        }
+    }
+
+    override suspend fun setFormConfigLastSyncTime(timestamp: String) {
+        val workspaceSlug = WorkspaceContext.getCurrentWorkspaceSlugOrDefault()
+        val key = getFormConfigLastSyncTimeKey(workspaceSlug)
 
         dataStore.edit { preferences ->
             preferences[key] = timestamp

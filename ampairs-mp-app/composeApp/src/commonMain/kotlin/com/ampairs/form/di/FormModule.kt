@@ -4,6 +4,8 @@ import com.ampairs.form.data.api.ConfigApi
 import com.ampairs.form.data.api.ConfigApiImpl
 import com.ampairs.form.data.db.FormDatabase
 import com.ampairs.form.data.repository.ConfigRepository
+import com.ampairs.form.ui.FormConfigViewModel
+import org.koin.core.module.dsl.viewModelOf
 import org.koin.dsl.module
 
 /**
@@ -24,8 +26,11 @@ val formModule = module {
     factory { get<FormDatabase>().entityAttributeDefinitionDao() }
 
     // API
-    single<ConfigApi> { ConfigApiImpl(get()) }
+    single<ConfigApi> { ConfigApiImpl(get(), get()) }
 
     // Repository
-    factory<ConfigRepository> { ConfigRepository(get(), get(), get()) }
+    factory<ConfigRepository> { ConfigRepository(get(), get(), get(), get()) }
+
+    // ViewModels
+    viewModelOf(::FormConfigViewModel)
 }
