@@ -55,7 +55,7 @@ val customerModule = module {
     singleOf(::FileKitImagePicker) bind ImageFilePicker::class
 
     // Repository Layer - Use factory to recreate with new DAOs after workspace switch
-    factory { CustomerRepository(get(), get(), get()) }
+    factory { CustomerRepository(get(), get(), get(), getOrNull()) } // EventManager optional
     factory { CustomerTypeRepository(get(), get(), get()) }
     factory { CustomerGroupRepository(get(), get(), get()) }
     factory { CustomerImageRepository(get(), get(), get(), get()) }

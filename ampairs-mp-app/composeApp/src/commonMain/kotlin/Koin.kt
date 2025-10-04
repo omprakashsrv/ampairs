@@ -2,6 +2,7 @@ import com.ampairs.auth.authModule
 import com.ampairs.common.theme.themeModule
 import com.ampairs.customer.di.customerModule
 import com.ampairs.customer.ui.components.location.locationServiceModule
+import com.ampairs.event.di.eventModule
 import com.ampairs.form.di.formModule
 import com.ampairs.product.productModule
 import com.ampairs.tax.taxModule
@@ -25,6 +26,7 @@ fun initKoin(koinApplication: KoinApplication): KoinApplication {
             taxPlatformModule,
             authModule(),
             workspaceModule(),
+            eventModule(),
             formModule,
             customerModule,
             locationServiceModule,

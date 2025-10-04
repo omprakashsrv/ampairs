@@ -98,6 +98,9 @@ kotlin {
                 // Store5 for offline-first caching
                 implementation(libs.store5)
 
+                // Krossbow for WebSocket/STOMP support
+                implementation(libs.bundles.krossbow)
+
                 // DataStore for preferences
                 implementation(libs.datastore)
                 implementation(libs.datastore.preferences)

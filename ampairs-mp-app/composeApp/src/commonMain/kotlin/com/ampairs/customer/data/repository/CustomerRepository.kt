@@ -8,9 +8,15 @@ import com.ampairs.customer.data.db.toEntity
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.domain.CustomerListItem
 import com.ampairs.customer.domain.toListItem
+import com.ampairs.event.EventManager
+import com.ampairs.event.domain.EventType
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.launch
 import kotlin.time.ExperimentalTime
 import com.ampairs.customer.util.CustomerConstants.ERROR_CUSTOMER_UID_REQUIRED
 import com.ampairs.customer.util.CustomerLogger
@@ -18,8 +24,68 @@ import com.ampairs.customer.util.CustomerLogger
 class CustomerRepository(
     private val customerDao: CustomerDao,
     private val customerApi: CustomerApi,
-    private val appPreferences: AppPreferencesDataStore
+    private val appPreferences: AppPreferencesDataStore,
+    private val eventManager: EventManager? = null // Optional: null if not connected to workspace
 ) {
+
+    init {
+        // Listen to real-time customer events if EventManager is available
+        eventManager?.let { manager ->
+            CoroutineScope(Dispatchers.Default).launch {
+                manager.events
+                    .filter { it.isForEntityType("customer") }
+                    .collect { event ->
+                        handleCustomerEvent(event.eventType, event.entityId)
+                    }
+            }
+            CustomerLogger.info("Real-time event listener initialized for customer module")
+        }
+    }
+
+    /**
+     * Handle incoming customer events from other devices.
+     * Updates local database to reflect changes made on other devices.
+     */
+    private suspend fun handleCustomerEvent(eventType: EventType, customerId: String) {
+        CustomerLogger.info("📨 Received event: $eventType for customer: $customerId")
+
+        when (eventType) {
+            EventType.CUSTOMER_CREATED,
+            EventType.CUSTOMER_UPDATED -> {
+                // Fetch fresh data from server and update local database
+                refreshCustomerFromServer(customerId)
+            }
+
+            EventType.CUSTOMER_DELETED -> {
+                // Delete from local database
+                customerDao.deleteCustomer(customerId)
+                CustomerLogger.info("🗑️ Deleted customer: $customerId")
+            }
+
+            else -> {
+                // Ignore other event types
+            }
+        }
+    }
+
+    /**
+     * Refresh a single customer from server (called when event received from another device).
+     * Updates local Room database which automatically triggers Flow updates.
+     */
+    private suspend fun refreshCustomerFromServer(customerId: String) {
+        try {
+            // Fetch latest customer data from server
+            val freshCustomer = customerApi.getCustomerById(customerId)
+
+            // Update Room database - this automatically triggers Flow updates!
+            customerDao.insertCustomer(freshCustomer.toEntity().copy(synced = true))
+
+            CustomerLogger.info("✅ Refreshed customer from server: $customerId")
+        } catch (e: Exception) {
+            CustomerLogger.warn("Failed to refresh customer $customerId: ${e.message}")
+            // Graceful degradation - UI continues showing cached data
+        }
+    }
 
     fun observeCustomers(): Flow<List<CustomerListItem>> {
         return customerDao.getAllCustomers()
