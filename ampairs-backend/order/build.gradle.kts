@@ -35,6 +35,7 @@ repositories {
 dependencies {
     api(project(mapOf("path" to ":core")))
     api(project(mapOf("path" to ":invoice")))
+    api(project(mapOf("path" to ":event")))
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework:spring-web")
     implementation("org.springframework:spring-webmvc")

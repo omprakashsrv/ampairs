@@ -119,6 +119,18 @@ spring:
       max-lifetime: 300000
       validation-timeout: 5000
       leak-detection-threshold: 300000
+  # RabbitMQ Configuration for distributed WebSocket with STOMP
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+    virtual-host: ${RABBITMQ_VHOST:/}
+    # STOMP configuration
+    stomp:
+      port: ${RABBITMQ_STOMP_PORT:61613}
+      login: ${RABBITMQ_USER:guest}
+      passcode: ${RABBITMQ_PASSWORD:guest}
   servlet:
     multipart:
       enabled: true

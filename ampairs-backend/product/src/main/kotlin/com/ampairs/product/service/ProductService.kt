@@ -1,5 +1,11 @@
 package com.ampairs.product.service
 
+import com.ampairs.core.multitenancy.DeviceContextHolder
+import com.ampairs.core.multitenancy.TenantContextHolder
+import com.ampairs.core.security.AuthenticationHelper
+import com.ampairs.event.domain.events.ProductCreatedEvent
+import com.ampairs.event.domain.events.ProductDeletedEvent
+import com.ampairs.event.domain.events.ProductUpdatedEvent
 import com.ampairs.product.domain.model.Product
 import com.ampairs.product.domain.model.Unit
 import com.ampairs.product.domain.model.group.ProductBrand
@@ -7,10 +13,12 @@ import com.ampairs.product.domain.model.group.ProductCategory
 import com.ampairs.product.domain.model.group.ProductGroup
 import com.ampairs.product.domain.model.group.ProductSubCategory
 import com.ampairs.product.repository.*
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.*
@@ -24,7 +32,21 @@ class ProductService(
     val productCategoryRepository: ProductCategoryRepository,
     val productSubCategoryRepository: ProductSubCategoryRepository,
     val productRepository: ProductRepository,
+    val eventPublisher: ApplicationEventPublisher
 ) {
+
+    /**
+     * Helper methods for event publishing
+     */
+    private fun getWorkspaceId(): String = TenantContextHolder.getCurrentTenant() ?: ""
+
+    private fun getUserId(): String {
+        val auth = SecurityContextHolder.getContext().authentication
+        return auth?.let { AuthenticationHelper.getCurrentUserId(it) } ?: ""
+    }
+
+    private fun getDeviceId(): String = DeviceContextHolder.getCurrentDevice() ?: ""
+
 
     fun getProducts(lastUpdated: Long?): List<Product> {
         return productPagingRepository.findAllByLastUpdatedGreaterThanEqual(
@@ -177,29 +199,81 @@ class ProductService(
         if (product.sku.isBlank()) {
             product.sku = generateSku(product.name, product.categoryId)
         }
-        
+
         // Validate SKU uniqueness
         if (productRepository.findBySku(product.sku).isPresent) {
             throw IllegalArgumentException("SKU already exists: ${product.sku}")
         }
-        
+
         product.status = "ACTIVE"
-        return productRepository.save(product)
+        val savedProduct = productRepository.save(product)
+
+        // Publish ProductCreatedEvent
+        eventPublisher.publishEvent(
+            ProductCreatedEvent(
+                source = this,
+                workspaceId = getWorkspaceId(),
+                entityId = savedProduct.uid,
+                userId = getUserId(),
+                deviceId = getDeviceId(),
+                productName = savedProduct.name,
+                sku = savedProduct.sku
+            )
+        )
+
+        return savedProduct
     }
 
     @Transactional
     fun updateProduct(productId: String, updates: Product): Product? {
         val existingProduct = productRepository.findByUid(productId) ?: return null
-        
-        // Update fields
-        existingProduct.name = updates.name.takeIf { it.isNotBlank() } ?: existingProduct.name
-        existingProduct.description = updates.description ?: existingProduct.description
-        existingProduct.basePrice = updates.basePrice.takeIf { it > 0 } ?: existingProduct.basePrice
-        existingProduct.costPrice = updates.costPrice.takeIf { it > 0 } ?: existingProduct.costPrice
-        existingProduct.attributes = updates.attributes
-        existingProduct.status = updates.status.takeIf { it.isNotBlank() } ?: existingProduct.status
-        
-        return productRepository.save(existingProduct)
+
+        // Track changes for event
+        val fieldChanges = mutableMapOf<String, Any>()
+
+        // Update fields and track changes
+        if (updates.name.isNotBlank() && updates.name != existingProduct.name) {
+            fieldChanges["name"] = mapOf("old" to existingProduct.name, "new" to updates.name)
+            existingProduct.name = updates.name
+        }
+        if (updates.description != null && updates.description != existingProduct.description) {
+            fieldChanges["description"] = mapOf("old" to (existingProduct.description ?: ""), "new" to updates.description)
+            existingProduct.description = updates.description
+        }
+        if (updates.basePrice > 0 && updates.basePrice != existingProduct.basePrice) {
+            fieldChanges["basePrice"] = mapOf("old" to existingProduct.basePrice, "new" to updates.basePrice)
+            existingProduct.basePrice = updates.basePrice
+        }
+        if (updates.costPrice > 0 && updates.costPrice != existingProduct.costPrice) {
+            fieldChanges["costPrice"] = mapOf("old" to existingProduct.costPrice, "new" to updates.costPrice)
+            existingProduct.costPrice = updates.costPrice
+        }
+        if (updates.attributes?.isNotEmpty() == true && updates.attributes != existingProduct.attributes) {
+            fieldChanges["attributes"] = mapOf("old" to existingProduct.attributes, "new" to updates.attributes!!)
+            existingProduct.attributes = updates.attributes
+        }
+        if (updates.status.isNotBlank() && updates.status != existingProduct.status) {
+            fieldChanges["status"] = mapOf("old" to existingProduct.status, "new" to updates.status)
+            existingProduct.status = updates.status
+        }
+
+        val savedProduct = productRepository.save(existingProduct)
+
+        // Publish ProductUpdatedEvent only if there were changes
+        if (fieldChanges.isNotEmpty()) {
+            eventPublisher.publishEvent(
+                ProductUpdatedEvent(
+                    source = this,
+                    workspaceId = getWorkspaceId(),
+                    entityId = savedProduct.uid,
+                    userId = getUserId(),
+                    deviceId = getDeviceId(),
+                    fieldChanges = fieldChanges
+                )
+            )
+        }
+
+        return savedProduct
     }
 
     fun searchProducts(searchTerm: String?, category: String?, brand: String?, 

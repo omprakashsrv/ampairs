@@ -37,6 +37,7 @@ dependencies {
     implementation(project(mapOf("path" to ":auth")))
     implementation(project(mapOf("path" to ":workspace")))
     implementation(project(mapOf("path" to ":form")))
+    implementation(project(mapOf("path" to ":event")))
     implementation(project(mapOf("path" to ":customer")))
     implementation(project(mapOf("path" to ":product")))
     implementation(project(mapOf("path" to ":order")))
