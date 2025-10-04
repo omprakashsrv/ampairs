@@ -5,7 +5,6 @@ import com.ampairs.event.domain.WorkspaceEvent
 import com.ampairs.event.domain.dto.asWorkspaceEventResponse
 import com.ampairs.event.domain.events.*
 import com.ampairs.event.repository.WorkspaceEventRepository
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.messaging.simp.SimpMessagingTemplate

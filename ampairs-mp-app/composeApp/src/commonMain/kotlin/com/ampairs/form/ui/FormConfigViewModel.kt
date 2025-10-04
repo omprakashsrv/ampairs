@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlin.time.ExperimentalTime
 
 data class FormConfigUiState(
     val entityType: String = "",
@@ -110,7 +112,8 @@ class FormConfigViewModel(
                     _uiState.update {
                         it.copy(
                             isSaving = false,
-                            error = result.exceptionOrNull()?.message ?: "Failed to save configuration"
+                            error = result.exceptionOrNull()?.message
+                                ?: "Failed to save configuration"
                         )
                     }
                 }
@@ -129,9 +132,12 @@ class FormConfigViewModel(
         _uiState.update { it.copy(error = null, successMessage = null) }
     }
 
+    @OptIn(ExperimentalTime::class)
     fun addNewAttribute() {
         val newAttribute = EntityAttributeDefinition(
-            uid = "temp-${System.currentTimeMillis()}", // Temporary UID until saved
+            uid = "temp-${
+                kotlin.time.Clock.System.now().toEpochMilliseconds()
+            }", // Temporary UID until saved
             entityType = entityType,
             attributeKey = "", // User will fill this
             displayName = "",
