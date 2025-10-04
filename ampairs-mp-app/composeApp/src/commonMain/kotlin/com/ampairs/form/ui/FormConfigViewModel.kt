@@ -91,19 +91,15 @@ class FormConfigViewModel(
 
         viewModelScope.launch {
             try {
-                // Bulk update field configs
-                val fieldResult = configRepository.updateFieldConfigs(
-                    entityType,
-                    state.fieldConfigs
+                // Use bulk save endpoint - single API call for both field configs and attributes
+                val schema = EntityConfigSchema(
+                    fieldConfigs = state.fieldConfigs,
+                    attributeDefinitions = state.attributeDefinitions
                 )
 
-                // Bulk update attribute definitions
-                val attrResult = configRepository.updateAttributeDefinitions(
-                    entityType,
-                    state.attributeDefinitions
-                )
+                val result = configRepository.saveConfigSchema(entityType, schema)
 
-                if (fieldResult.isSuccess && attrResult.isSuccess) {
+                if (result.isSuccess) {
                     _uiState.update {
                         it.copy(
                             isSaving = false,
@@ -114,7 +110,7 @@ class FormConfigViewModel(
                     _uiState.update {
                         it.copy(
                             isSaving = false,
-                            error = "Failed to save some configurations"
+                            error = result.exceptionOrNull()?.message ?: "Failed to save configuration"
                         )
                     }
                 }
