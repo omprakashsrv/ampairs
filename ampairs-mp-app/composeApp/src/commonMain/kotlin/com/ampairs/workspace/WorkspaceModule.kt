@@ -103,7 +103,7 @@ fun workspaceModule() = module {
     single { WorkspaceContextManager.getInstance() }
 
     // ViewModels with parameter support
-    viewModel { WorkspaceListViewModel(get<OfflineFirstWorkspaceRepository>(), get(), get(), get(), get()) }
+    viewModel { WorkspaceListViewModel(get<OfflineFirstWorkspaceRepository>(), get(), get(), get(), get(), get()) }
     viewModelOf(::WorkspaceCreateViewModel)
 
     // Member and invitation ViewModels with workspaceId parameter

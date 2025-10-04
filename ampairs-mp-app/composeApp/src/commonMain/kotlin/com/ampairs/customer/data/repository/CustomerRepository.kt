@@ -12,6 +12,7 @@ import com.ampairs.event.EventManager
 import com.ampairs.event.domain.EventType
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
@@ -24,22 +25,39 @@ import com.ampairs.customer.util.CustomerLogger
 class CustomerRepository(
     private val customerDao: CustomerDao,
     private val customerApi: CustomerApi,
-    private val appPreferences: AppPreferencesDataStore,
-    private val eventManager: EventManager? = null // Optional: null if not connected to workspace
+    private val appPreferences: AppPreferencesDataStore
 ) {
+    // Event listener job for cleanup
+    private var eventListenerJob: Job? = null
 
-    init {
-        // Listen to real-time customer events if EventManager is available
-        eventManager?.let { manager ->
-            CoroutineScope(Dispatchers.Default).launch {
-                manager.events
-                    .filter { it.isForEntityType("customer") }
-                    .collect { event ->
-                        handleCustomerEvent(event.eventType, event.entityId)
-                    }
-            }
-            CustomerLogger.info("Real-time event listener initialized for customer module")
+    /**
+     * Set up real-time event listener for customer updates from other devices.
+     * Call this after workspace is selected and EventManager is available.
+     *
+     * @param eventManager The EventManager instance for the current workspace
+     */
+    fun setupEventListener(eventManager: EventManager) {
+        // Cancel existing listener if any
+        eventListenerJob?.cancel()
+
+        // Set up new listener
+        eventListenerJob = CoroutineScope(Dispatchers.Default).launch {
+            eventManager.events
+                .filter { it.isForEntityType("customer") }
+                .collect { event ->
+                    handleCustomerEvent(event.eventType, event.entityId)
+                }
         }
+        CustomerLogger.info("Real-time event listener initialized for customer module")
+    }
+
+    /**
+     * Stop listening to real-time events (e.g., when switching workspaces)
+     */
+    fun stopEventListener() {
+        eventListenerJob?.cancel()
+        eventListenerJob = null
+        CustomerLogger.info("Real-time event listener stopped")
     }
 
     /**

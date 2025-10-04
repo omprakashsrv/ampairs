@@ -2,37 +2,48 @@
 
 ## Quick Start: Add Real-Time Sync to Your Module
 
-### Step 1: Add EventManager to Your Repository
+### Step 1: Add Event Listener Method to Your Repository
 
 ```kotlin
 class ProductRepository(
     private val productDao: ProductDao,
-    private val productApi: ProductApi,
-    private val eventManager: EventManager? = null  // ← Add this parameter
+    private val productApi: ProductApi
 ) {
-    init {
-        // Setup event listener
-        eventManager?.let { manager ->
-            CoroutineScope(Dispatchers.Default).launch {
-                manager.events
-                    .filter { it.entityType == "product" }  // ← Your entity type
-                    .collect { event ->
-                        when (event.eventType) {
-                            EventType.PRODUCT_CREATED,
-                            EventType.PRODUCT_UPDATED -> refreshProductFromServer(event.entityId)
-                            EventType.PRODUCT_DELETED -> productDao.deleteProduct(event.entityId)
-                            else -> {}
-                        }
+    private var eventListenerJob: Job? = null
+
+    /**
+     * Set up real-time event listener for product updates from other devices.
+     * Call this after workspace is selected and EventManager is available.
+     */
+    fun setupEventListener(eventManager: EventManager) {
+        eventListenerJob?.cancel() // Cancel existing listener
+
+        eventListenerJob = CoroutineScope(Dispatchers.Default).launch {
+            eventManager.events
+                .filter { it.entityType == "product" }  // ← Your entity type
+                .collect { event ->
+                    when (event.eventType) {
+                        EventType.PRODUCT_CREATED,
+                        EventType.PRODUCT_UPDATED -> refreshProductFromServer(event.entityId)
+                        EventType.PRODUCT_DELETED -> productDao.deleteProduct(event.entityId)
+                        else -> {}
                     }
-            }
+                }
         }
+    }
+
+    fun stopEventListener() {
+        eventListenerJob?.cancel()
+        eventListenerJob = null
     }
 
     private suspend fun refreshProductFromServer(productId: String) {
         try {
-            val fresh = productApi.getProductById(productId)
-            productDao.insertProduct(fresh.toEntity().copy(synced = true))
-            // Room Flow emits automatically → UI updates!
+            val fresh = productApi.getProduct(productId)
+            if (fresh != null) {
+                productDao.insertProduct(fresh.toEntity())
+                // Room Flow emits automatically → UI updates!
+            }
         } catch (e: Exception) {
             // Log error, UI shows cached data
         }
@@ -40,14 +51,29 @@ class ProductRepository(
 }
 ```
 
-### Step 2: Update Your Koin Module
+### Step 2: Connect Event Listener When Workspace Selected
 
 ```kotlin
-val productModule = module {
-    // Add getOrNull() as last parameter
-    factory { ProductRepository(get(), get(), getOrNull()) }
-    //                                         ^^^^^^^^^^
-    //                                      EventManager injection
+// WorkspaceListViewModel or WorkspaceSelectionScreen
+fun selectWorkspace(workspace: Workspace) {
+    viewModelScope.launch {
+        // 1. Get EventManager
+        val eventManager: EventManager = koinInject {
+            parametersOf(workspace.uid, userId, deviceId)
+        }
+
+        // 2. Connect to WebSocket
+        eventManager.connect()
+
+        // 3. Setup repository listeners
+        val customerRepo: CustomerRepository = koinInject()
+        customerRepo.setupEventListener(eventManager)
+
+        val productRepo: ProductRepository = koinInject()
+        productRepo.setupEventListener(eventManager)
+
+        // ... setup other repositories
+    }
 }
 ```
 

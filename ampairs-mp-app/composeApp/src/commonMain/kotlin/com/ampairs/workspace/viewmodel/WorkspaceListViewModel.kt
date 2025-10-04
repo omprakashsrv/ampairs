@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.UserRepository
+import com.ampairs.common.DeviceService
+import com.ampairs.event.EventConnectionManager
 import com.ampairs.workspace.db.OfflineFirstWorkspaceRepository
 import com.ampairs.workspace.db.UserInvitationRepository
 import com.ampairs.workspace.domain.Workspace
@@ -23,10 +25,13 @@ class WorkspaceListViewModel(
     private val tokenRepository: TokenRepository,
     private val userRepository: UserRepository,
     private val invitationRepository: UserInvitationRepository,
+    private val deviceService: DeviceService,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(WorkspaceListState())
     val state: StateFlow<WorkspaceListState> = _state.asStateFlow()
+
+    private val eventConnectionManager = EventConnectionManager()
 
     init {
         loadUserData()
@@ -62,7 +67,21 @@ class WorkspaceListViewModel(
         val currentUserId = tokenRepository.getCurrentUserId()
         if (currentUserId != null) {
             userWorkspaceRepository.setWorkspaceIdForUser(currentUserId, workspaceId)
+
+            // Connect to workspace events for real-time sync
+            val deviceId = deviceService.getDeviceId()
+            eventConnectionManager.connectToWorkspace(
+                workspaceId = workspaceId,
+                userId = currentUserId,
+                deviceId = deviceId,
+                scope = viewModelScope
+            )
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        eventConnectionManager.disconnect()
     }
 
     fun loadWorkspaces(forceRefresh: Boolean = false) {
