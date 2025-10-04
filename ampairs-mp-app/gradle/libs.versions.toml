@@ -48,8 +48,8 @@ filekit = "0.11.0"
 play-services-location = "21.3.0"
 maps-compose = "6.12.0"
 accompanist-permissions = "0.37.3"
-play-services-coroutines = "1.9.1"
-krossbow = "7.0.0"
+play-services-coroutines = "1.10.2"
+krossbow = "9.3.0"
 
 
 [libraries]

@@ -3,7 +3,7 @@ package com.ampairs.event.di
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.event.EventManager
 import com.ampairs.event.EventManagerFactory
-import com.ampairs.common.ConfigurationManager
+import com.ampairs.common.config.ConfigurationManager
 import com.ampairs.common.httpClient
 import io.ktor.client.engine.HttpClientEngine
 import org.koin.core.module.Module
@@ -47,7 +47,7 @@ val eventModule: Module = module {
             deviceId = deviceId,
             httpClient = httpClient(get<HttpClientEngine>(), get<TokenRepository>()),
             tokenProvider = { get<TokenRepository>().getAccessToken() ?: "" },
-            baseUrl = ConfigurationManager.getConfig().apiBaseUrl
+            baseUrl = ConfigurationManager.apiBaseUrl
         )
     }
 }

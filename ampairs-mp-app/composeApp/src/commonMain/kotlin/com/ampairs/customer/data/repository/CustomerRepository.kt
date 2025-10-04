@@ -75,12 +75,16 @@ class CustomerRepository(
     private suspend fun refreshCustomerFromServer(customerId: String) {
         try {
             // Fetch latest customer data from server
-            val freshCustomer = customerApi.getCustomerById(customerId)
+            val freshCustomer = customerApi.getCustomer(customerId)
 
-            // Update Room database - this automatically triggers Flow updates!
-            customerDao.insertCustomer(freshCustomer.toEntity().copy(synced = true))
+            if (freshCustomer != null) {
+                // Update Room database - this automatically triggers Flow updates!
+                customerDao.insertCustomer(freshCustomer.toEntity())
 
-            CustomerLogger.info("✅ Refreshed customer from server: $customerId")
+                CustomerLogger.info("✅ Refreshed customer from server: $customerId")
+            } else {
+                CustomerLogger.warn("Customer not found on server: $customerId")
+            }
         } catch (e: Exception) {
             CustomerLogger.warn("Failed to refresh customer $customerId: ${e.message}")
             // Graceful degradation - UI continues showing cached data

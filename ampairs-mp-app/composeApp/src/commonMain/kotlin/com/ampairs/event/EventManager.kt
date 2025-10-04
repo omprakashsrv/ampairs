@@ -19,8 +19,13 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import org.hildan.krossbow.stomp.StompClient
 import org.hildan.krossbow.stomp.StompSession
-import org.hildan.krossbow.stomp.conversions.kxserialization.convertAndCollect
+import org.hildan.krossbow.stomp.frame.FrameBody
+import org.hildan.krossbow.stomp.headers.StompSendHeaders
+import org.hildan.krossbow.stomp.headers.StompSubscribeHeaders
+import org.hildan.krossbow.stomp.use
 import org.hildan.krossbow.websocket.ktor.KtorWebSocketClient
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.decodeFromString
 
 /**
  * Manages WebSocket/STOMP connection for a specific workspace.
@@ -66,6 +71,12 @@ class EventManager(
 
     // Krossbow STOMP client with Ktor WebSocket transport
     private val stompClient = StompClient(KtorWebSocketClient(httpClient))
+
+    // JSON parser for manual deserialization
+    private val json = Json {
+        ignoreUnknownKeys = true
+        prettyPrint = false
+    }
 
     /**
      * Connect to WebSocket and subscribe to workspace events.
@@ -133,10 +144,17 @@ class EventManager(
             val destination = "/topic/workspace/$workspaceId/events"
             EventLogger.i("EventManager", "Subscribing to: $destination")
 
-            // Use convertAndCollect with automatic JSON deserialization
+            // Subscribe to STOMP messages and manually deserialize
             subscriptionJob = CoroutineScope(Dispatchers.Default).launch {
-                session.convertAndCollect<WorkspaceEvent>(destination) { event ->
-                    handleIncomingEvent(event)
+                val headers = StompSubscribeHeaders(destination)
+                val subscription = session.subscribe(headers)
+                subscription.collect { message ->
+                    try {
+                        val event = json.decodeFromString<WorkspaceEvent>(message.bodyAsText)
+                        handleIncomingEvent(event)
+                    } catch (e: Exception) {
+                        EventLogger.e("EventManager", "Failed to parse event", e)
+                    }
                 }
             }
 
@@ -189,7 +207,8 @@ class EventManager(
                 delay(30_000) // 30 seconds
 
                 try {
-                    stompSession?.sendEmptyMsg("/app/heartbeat")
+                    val headers = StompSendHeaders("/app/heartbeat")
+                    stompSession?.send(headers, FrameBody.Text(""))
                     EventLogger.d("EventManager", "💓 Heartbeat sent")
                 } catch (e: Exception) {
                     EventLogger.w("EventManager", "Heartbeat failed", e)
@@ -226,12 +245,13 @@ class EventManager(
     }
 
     /**
-     * Send a message to a STOMP destination (for future use).
+     * Send a text message to a STOMP destination (for future use).
      * Currently not used as backend auto-broadcasts events.
      */
-    suspend fun sendMessage(destination: String, message: Any) {
+    suspend fun sendTextMessage(destination: String, message: String) {
         try {
-            stompSession?.convertAndSend(destination, message)
+            val headers = StompSendHeaders(destination)
+            stompSession?.send(headers, FrameBody.Text(message))
             EventLogger.d("EventManager", "Sent message to: $destination")
         } catch (e: Exception) {
             EventLogger.e("EventManager", "Failed to send message", e)
