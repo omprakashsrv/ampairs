@@ -83,6 +83,7 @@ Your module now receives real-time updates from other devices. The UI updates au
 
 ## How It Works
 
+### Normal Flow
 ```
 Another device updates product
     ↓
@@ -99,6 +100,25 @@ Update Room database
 Room DAO Flow emits
     ↓
 UI updates automatically ✅
+```
+
+### Connection Resilience
+```
+WebSocket connection drops (network issue, token expiry, etc.)
+    ↓
+EventManager detects disconnection
+    ↓
+Automatic reconnection scheduled (exponential backoff)
+    ↓
+Refresh token before reconnecting
+    ↓
+Retry connection (1s → 2s → 4s → ... → 30s max)
+    ↓
+Keep retrying indefinitely while user is in workspace
+    ↓
+Reconnection successful → Resume real-time updates ✅
+    ↓
+ONLY STOPS when user exits workspace (disconnect() called)
 ```
 
 ## Event Types
@@ -173,6 +193,7 @@ eventManager.disconnect()
 
 ### Logs to Look For
 
+**Successful Connection:**
 ```
 [Event][EventManager] INFO: Connecting to workspace: workspace-123
 [Event][EventManager] INFO: ✅ Connected to workspace: workspace-123
@@ -181,16 +202,35 @@ eventManager.disconnect()
 [Event][ProductRepository] INFO: ✅ Refreshed product from server: PRD...
 ```
 
+**Automatic Reconnection:**
+```
+[Event][EventManager] ERROR: Connection failed for workspace: workspace-123
+[Event][EventManager] INFO: Scheduling reconnection in 1000ms (attempt 1)
+[Event][EventManager] INFO: 🔄 Refreshing token before reconnection
+[Event][EventManager] INFO: ✅ Token refreshed, attempting reconnection
+[Event][EventManager] INFO: Connecting to workspace: workspace-123 (attempt 2)
+[Event][EventManager] INFO: ✅ Connected to workspace: workspace-123
+```
+
 ### Common Errors
 
 **"No access token available"**
 - EventManager needs JWT token to connect
 - Ensure user is logged in before connecting
+- Token refresh will be attempted automatically
 
 **"Connection failed: timeout"**
 - Check backend URL configuration
 - Verify network connectivity
 - Check backend WebSocket endpoint is accessible
+- **Don't worry**: Auto-reconnection will keep trying with exponential backoff
+
+**Connection keeps dropping**
+- Check network stability
+- Verify backend RabbitMQ is stable
+- **Normal behavior**: EventManager will auto-reconnect indefinitely
+- Backoff delays: 1s → 2s → 4s → 8s → 16s → 30s (max)
+- Only stops when you call `disconnect()` or switch workspaces
 
 ## Best Practices
 

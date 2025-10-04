@@ -1,10 +1,10 @@
 package com.ampairs.event.di
 
 import com.ampairs.auth.api.TokenRepository
-import com.ampairs.event.EventManager
-import com.ampairs.event.EventManagerFactory
 import com.ampairs.common.config.ConfigurationManager
 import com.ampairs.common.httpClient
+import com.ampairs.common.refreshTokens
+import com.ampairs.event.EventManagerFactory
 import io.ktor.client.engine.HttpClientEngine
 import org.koin.core.module.Module
 import org.koin.dsl.module
@@ -41,12 +41,15 @@ val eventModule: Module = module {
         val userId = params.get<String>(1)
         val deviceId = params.get<String>(2)
 
+        val tokenRepository = get<TokenRepository>()
+
         EventManagerFactory.getOrCreate(
             workspaceId = workspaceId,
             userId = userId,
             deviceId = deviceId,
-            httpClient = httpClient(get<HttpClientEngine>(), get<TokenRepository>()),
-            tokenProvider = { get<TokenRepository>().getAccessToken() ?: "" },
+            httpClient = httpClient(get<HttpClientEngine>(), tokenRepository),
+            tokenProvider = { tokenRepository.getAccessToken() ?: "" },
+            tokenRefresher = { refreshTokens(tokenRepository) },
             baseUrl = ConfigurationManager.apiBaseUrl
         )
     }

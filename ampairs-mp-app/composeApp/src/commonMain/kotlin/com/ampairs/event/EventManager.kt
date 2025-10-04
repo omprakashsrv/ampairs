@@ -26,6 +26,7 @@ import org.hildan.krossbow.stomp.use
 import org.hildan.krossbow.websocket.ktor.KtorWebSocketClient
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.decodeFromString
+import kotlin.math.min
 
 /**
  * Manages WebSocket/STOMP connection for a specific workspace.
@@ -34,15 +35,29 @@ import kotlinx.serialization.decodeFromString
  * Features:
  * - Single STOMP connection per workspace
  * - Automatic event subscription to workspace topic
- * - Heartbeat mechanism to maintain connection
+ * - Heartbeat mechanism to maintain connection (30s interval)
  * - Event filtering (skips own device events)
  * - Reactive connection state
+ * - Infinite automatic reconnection while user is in workspace
+ * - Exponential backoff (1s → 2s → 4s → ... → max 30s)
+ * - Automatic token refresh before each reconnection attempt
+ * - Only stops reconnecting when disconnect() is called (user exits workspace)
+ *
+ * Reconnection Strategy:
+ * - Attempt 1: 1 second
+ * - Attempt 2: 2 seconds
+ * - Attempt 3: 4 seconds
+ * - Attempt 4: 8 seconds
+ * - Attempt 5: 16 seconds
+ * - Attempt 6+: 30 seconds (max delay)
+ * - Continues indefinitely until disconnect() or successful connection
  *
  * @param workspaceId Workspace identifier for event topic subscription
  * @param userId Current user identifier
  * @param deviceId Current device identifier (to filter own events)
  * @param httpClient Ktor HTTP client for WebSocket transport
  * @param tokenProvider Function to get current JWT access token
+ * @param tokenRefresher Function to refresh expired tokens (returns true on success)
  * @param baseUrl API base URL (will be converted to WebSocket URL)
  */
 class EventManager(
@@ -51,6 +66,7 @@ class EventManager(
     private val deviceId: String,
     private val httpClient: HttpClient,
     private val tokenProvider: suspend () -> String,
+    private val tokenRefresher: suspend () -> Boolean,
     private val baseUrl: String
 ) {
     // Connection state exposed as StateFlow
@@ -68,6 +84,13 @@ class EventManager(
     private var stompSession: StompSession? = null
     private var heartbeatJob: Job? = null
     private var subscriptionJob: Job? = null
+    private var reconnectionJob: Job? = null
+
+    // Reconnection configuration
+    private var reconnectionAttempts = 0
+    private val baseReconnectionDelay = 1000L // 1 second
+    private val maxReconnectionDelay = 30000L // 30 seconds (reasonable max)
+    private var shouldReconnect = false
 
     // Krossbow STOMP client with Ktor WebSocket transport
     private val stompClient = StompClient(KtorWebSocketClient(httpClient))
@@ -81,6 +104,7 @@ class EventManager(
     /**
      * Connect to WebSocket and subscribe to workspace events.
      * Safe to call multiple times - will not reconnect if already connected.
+     * Enables automatic reconnection on connection failure.
      */
     suspend fun connect() {
         if (_connectionState.value is ConnectionState.Connected) {
@@ -88,8 +112,18 @@ class EventManager(
             return
         }
 
+        shouldReconnect = true // Enable auto-reconnect
+        reconnectionAttempts = 0 // Reset counter
+        performConnection()
+    }
+
+    /**
+     * Internal method to perform the actual connection.
+     * Called by connect() and reconnection logic.
+     */
+    private suspend fun performConnection() {
         _connectionState.value = ConnectionState.Connecting
-        EventLogger.i("EventManager", "Connecting to workspace: $workspaceId")
+        EventLogger.i("EventManager", "Connecting to workspace: $workspaceId (attempt ${reconnectionAttempts + 1})")
 
         try {
             // Build WebSocket URL (replace http with ws/wss)
@@ -98,9 +132,17 @@ class EventManager(
                 .replace("https://", "wss://") + "/ws"
 
             // Get JWT token
-            val token = tokenProvider()
+            var token = tokenProvider()
             if (token.isBlank()) {
-                throw IllegalStateException("No access token available")
+                // Try refreshing token if empty
+                EventLogger.w("EventManager", "No access token, attempting refresh")
+                val refreshed = tokenRefresher()
+                if (refreshed) {
+                    token = tokenProvider()
+                }
+                if (token.isBlank()) {
+                    throw IllegalStateException("No access token available after refresh")
+                }
             }
 
             // Connect with JWT token in query parameter (backend supports this)
@@ -111,6 +153,7 @@ class EventManager(
             stompSession = stompClient.connect(urlWithToken)
 
             _connectionState.value = ConnectionState.Connected(stompSession.toString())
+            reconnectionAttempts = 0 // Reset on successful connection
             EventLogger.i("EventManager", "✅ Connected to workspace: $workspaceId")
 
             // Subscribe to workspace events topic
@@ -125,8 +168,48 @@ class EventManager(
                 message = "Connection failed: ${e.message}",
                 exception = e
             )
+
             // Clean up partial connection
             cleanup()
+
+            // Attempt reconnection if enabled
+            if (shouldReconnect) {
+                scheduleReconnection()
+            }
+        }
+    }
+
+    /**
+     * Schedule automatic reconnection with exponential backoff.
+     * Keeps retrying indefinitely while shouldReconnect is true (user is in workspace).
+     * Only stops when user explicitly exits workspace (disconnect() is called).
+     */
+    private fun scheduleReconnection() {
+        reconnectionAttempts++
+
+        // Calculate exponential backoff delay (capped at maxReconnectionDelay)
+        val delay = min(
+            baseReconnectionDelay * (1 shl (reconnectionAttempts - 1)),
+            maxReconnectionDelay
+        )
+
+        EventLogger.i("EventManager", "Scheduling reconnection in ${delay}ms (attempt $reconnectionAttempts)")
+
+        reconnectionJob = CoroutineScope(Dispatchers.Default).launch {
+            delay(delay)
+
+            if (shouldReconnect && isActive) {
+                // Try refreshing token before reconnecting
+                EventLogger.i("EventManager", "🔄 Refreshing token before reconnection")
+                val refreshed = tokenRefresher()
+                if (refreshed) {
+                    EventLogger.i("EventManager", "✅ Token refreshed, attempting reconnection")
+                } else {
+                    EventLogger.w("EventManager", "⚠️ Token refresh failed, attempting reconnection anyway")
+                }
+
+                performConnection()
+            }
         }
     }
 
@@ -146,14 +229,28 @@ class EventManager(
 
             // Subscribe to STOMP messages and manually deserialize
             subscriptionJob = CoroutineScope(Dispatchers.Default).launch {
-                val headers = StompSubscribeHeaders(destination)
-                val subscription = session.subscribe(headers)
-                subscription.collect { message ->
-                    try {
-                        val event = json.decodeFromString<WorkspaceEvent>(message.bodyAsText)
-                        handleIncomingEvent(event)
-                    } catch (e: Exception) {
-                        EventLogger.e("EventManager", "Failed to parse event", e)
+                try {
+                    val headers = StompSubscribeHeaders(destination)
+                    val subscription = session.subscribe(headers)
+                    subscription.collect { message ->
+                        try {
+                            val event = json.decodeFromString<WorkspaceEvent>(message.bodyAsText)
+                            handleIncomingEvent(event)
+                        } catch (e: Exception) {
+                            EventLogger.e("EventManager", "Failed to parse event", e)
+                        }
+                    }
+                } catch (e: Exception) {
+                    EventLogger.e("EventManager", "Subscription collection failed - connection likely dropped", e)
+                    _connectionState.value = ConnectionState.Error(
+                        message = "Connection dropped: ${e.message}",
+                        exception = e
+                    )
+
+                    // Trigger reconnection
+                    if (shouldReconnect) {
+                        cleanup()
+                        scheduleReconnection()
                     }
                 }
             }
@@ -166,6 +263,12 @@ class EventManager(
                 message = "Subscription failed: ${e.message}",
                 exception = e
             )
+
+            // Trigger reconnection
+            if (shouldReconnect) {
+                cleanup()
+                scheduleReconnection()
+            }
         }
     }
 
@@ -221,9 +324,13 @@ class EventManager(
     /**
      * Disconnect from WebSocket and clean up resources.
      * Safe to call multiple times.
+     * Disables automatic reconnection.
      */
     suspend fun disconnect() {
         EventLogger.i("EventManager", "Disconnecting from workspace: $workspaceId")
+        shouldReconnect = false // Disable auto-reconnect
+        reconnectionJob?.cancel()
+        reconnectionJob = null
         cleanup()
         _connectionState.value = ConnectionState.Disconnected
     }
