@@ -390,9 +390,105 @@ object DefaultFormConfigs {
 
     /**
      * Default customer attribute definitions
-     * These are custom fields that can be added beyond standard fields
+     * These are PRECONFIGURED custom fields - users can only enter values, not create keys
+     *
+     * IMPORTANT: These are NOT free-form key-value pairs!
+     * - Admin defines attribute keys in backend configuration
+     * - Users can only fill values for predefined attributes
+     * - No "Add Attribute" button for random attributes
      */
-    fun getDefaultCustomerAttributeDefinitions(): List<EntityAttributeDefinition> = emptyList()
+    fun getDefaultCustomerAttributeDefinitions(): List<EntityAttributeDefinition> = listOf(
+        // Example: Industry attribute
+        EntityAttributeDefinition(
+            uid = "customer-attr-industry",
+            entityType = "customer",
+            attributeKey = "industry",
+            displayName = "Industry",
+            dataType = AttributeDataType.STRING,
+            visible = true,
+            mandatory = false,
+            enabled = true,
+            displayOrder = 1,
+            category = "Business",
+            placeholder = "e.g., Retail, Manufacturing, Services",
+            helpText = "Customer's industry sector"
+        ),
+        // Example: Annual Revenue attribute
+        EntityAttributeDefinition(
+            uid = "customer-attr-annual-revenue",
+            entityType = "customer",
+            attributeKey = "annualRevenue",
+            displayName = "Annual Revenue",
+            dataType = AttributeDataType.NUMBER,
+            visible = true,
+            mandatory = false,
+            enabled = true,
+            displayOrder = 2,
+            category = "Financial",
+            placeholder = "0.00",
+            helpText = "Estimated annual revenue"
+        ),
+        // Example: Company Size attribute
+        EntityAttributeDefinition(
+            uid = "customer-attr-company-size",
+            entityType = "customer",
+            attributeKey = "companySize",
+            displayName = "Company Size",
+            dataType = AttributeDataType.STRING,
+            visible = true,
+            mandatory = false,
+            enabled = true,
+            displayOrder = 3,
+            category = "Business",
+            enumValues = listOf("1-10", "11-50", "51-200", "201-500", "500+"),
+            placeholder = "Select company size",
+            helpText = "Number of employees"
+        ),
+        // Example: Payment Terms attribute
+        EntityAttributeDefinition(
+            uid = "customer-attr-payment-terms",
+            entityType = "customer",
+            attributeKey = "paymentTerms",
+            displayName = "Payment Terms",
+            dataType = AttributeDataType.STRING,
+            visible = true,
+            mandatory = false,
+            enabled = true,
+            displayOrder = 4,
+            category = "Financial",
+            placeholder = "e.g., Net 30, Net 60",
+            helpText = "Preferred payment terms"
+        ),
+        // Example: Tax Exemption attribute
+        EntityAttributeDefinition(
+            uid = "customer-attr-tax-exempt",
+            entityType = "customer",
+            attributeKey = "taxExempt",
+            displayName = "Tax Exempt",
+            dataType = AttributeDataType.BOOLEAN,
+            visible = true,
+            mandatory = false,
+            enabled = true,
+            displayOrder = 5,
+            category = "Tax",
+            helpText = "Is customer tax exempt?"
+        ),
+        // Example: Notes/Remarks attribute
+        EntityAttributeDefinition(
+            uid = "customer-attr-notes",
+            entityType = "customer",
+            attributeKey = "notes",
+            displayName = "Additional Notes",
+            dataType = AttributeDataType.STRING,
+            visible = true,
+            mandatory = false,
+            enabled = true,
+            displayOrder = 6,
+            category = "General",
+            placeholder = "Enter any additional information",
+            helpText = "Additional remarks about the customer"
+        )
+    )
 
     /**
      * Get default config schema for any entity type

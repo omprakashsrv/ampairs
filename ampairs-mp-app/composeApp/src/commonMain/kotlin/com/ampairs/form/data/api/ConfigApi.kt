@@ -45,4 +45,10 @@ interface ConfigApi {
      * Bulk update attribute definitions for an entity type
      */
     suspend fun updateAttributeDefinitions(entityType: String, attributeDefinitions: List<EntityAttributeDefinition>): List<EntityAttributeDefinition>
+
+    /**
+     * Bulk save complete configuration schema (field configs + attribute definitions)
+     * Used for initializing defaults or bulk updates
+     */
+    suspend fun saveConfigSchema(entityType: String, schema: EntityConfigSchema): EntityConfigSchema
 }

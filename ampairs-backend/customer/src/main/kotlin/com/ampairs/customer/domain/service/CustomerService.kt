@@ -22,8 +22,7 @@ import java.util.*
 class CustomerService @Autowired constructor(
     val customerRepository: CustomerRepository,
     val customerPagingRepository: CustomerPagingRepository,
-    val stateRepository: StateRepository,
-    val customerConfigValidationService: CustomerConfigValidationService
+    val stateRepository: StateRepository
 ) {
 
     @Transactional
@@ -94,15 +93,6 @@ class CustomerService @Autowired constructor(
     @Transactional
     fun createCustomer(customer: Customer): Customer {
 
-        // Apply default attribute values
-        customerConfigValidationService.applyDefaultAttributes(customer)
-
-        // Validate against field configurations and attribute definitions
-        val validationResult = customerConfigValidationService.validateCustomer(customer)
-        if (!validationResult.valid) {
-            throw IllegalArgumentException("Customer validation failed: ${validationResult.errors.joinToString("; ")}")
-        }
-
         // Validate GST number if provided
         if (!customer.isValidGstNumber()) {
             throw IllegalArgumentException("Invalid GST number format: ${customer.gstNumber}")
@@ -132,12 +122,6 @@ class CustomerService @Autowired constructor(
         existingCustomer.creditDays = updates.creditDays.takeIf { it >= 0 } ?: existingCustomer.creditDays
         existingCustomer.attributes = updates.attributes
         existingCustomer.status = updates.status.takeIf { it.isNotBlank() } ?: existingCustomer.status
-
-        // Validate against field configurations and attribute definitions
-        val validationResult = customerConfigValidationService.validateCustomer(existingCustomer)
-        if (!validationResult.valid) {
-            throw IllegalArgumentException("Customer validation failed: ${validationResult.errors.joinToString("; ")}")
-        }
 
         // Validate GST number if updated
         if (updates.gstNumber != existingCustomer.gstNumber && !existingCustomer.isValidGstNumber()) {

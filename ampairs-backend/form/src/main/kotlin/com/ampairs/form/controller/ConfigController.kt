@@ -1,11 +1,7 @@
 package com.ampairs.form.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
-import com.ampairs.form.domain.dto.AttributeDefinitionRequest
-import com.ampairs.form.domain.dto.AttributeDefinitionResponse
-import com.ampairs.form.domain.dto.EntityConfigSchemaResponse
-import com.ampairs.form.domain.dto.FieldConfigRequest
-import com.ampairs.form.domain.dto.FieldConfigResponse
+import com.ampairs.form.domain.dto.*
 import com.ampairs.form.domain.service.ConfigService
 import org.springframework.web.bind.annotation.*
 
@@ -14,7 +10,7 @@ import org.springframework.web.bind.annotation.*
  * Base path: /api/v1/form
  */
 @RestController
-@RequestMapping("/api/v1/form")
+@RequestMapping("/form/v1")
 class ConfigController(
     private val configService: ConfigService
 ) {
@@ -39,6 +35,19 @@ class ConfigController(
     fun getAllConfigSchemas(): ApiResponse<List<EntityConfigSchemaResponse>> {
         val schemas = configService.getAllConfigSchemas()
         return ApiResponse.success(schemas)
+    }
+
+    /**
+     * Bulk create/update configuration schema (field configs + attribute definitions)
+     * POST /api/v1/form/config
+     * Used for initializing defaults or bulk updates from frontend
+     */
+    @PostMapping("/config")
+    fun saveConfigSchema(
+        @RequestBody request: EntityConfigSchemaRequest
+    ): ApiResponse<EntityConfigSchemaResponse> {
+        val saved = configService.saveConfigSchema(request)
+        return ApiResponse.success(saved)
     }
 
     /**

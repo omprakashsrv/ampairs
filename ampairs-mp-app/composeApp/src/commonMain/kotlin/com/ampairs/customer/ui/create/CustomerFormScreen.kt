@@ -982,14 +982,18 @@ private fun CustomerFormFields(
             }
         }
 
-        // Custom Attributes
-        FormSection(title = "Custom Attributes") {
-            AttributesEditor(
-                attributes = formState.attributes,
-                onAttributesChange = { newAttributes ->
-                    onFormChange(formState.copy(attributes = newAttributes))
-                }
-            )
+        // Custom Attributes - Only show configured attributes
+        val attributeDefinitions = entityConfig?.attributeDefinitions?.filter { it.visible } ?: emptyList()
+        if (attributeDefinitions.isNotEmpty()) {
+            FormSection(title = "Custom Attributes") {
+                AttributesEditor(
+                    attributes = formState.attributes,
+                    attributeDefinitions = attributeDefinitions,
+                    onAttributesChange = { newAttributes ->
+                        onFormChange(formState.copy(attributes = newAttributes))
+                    }
+                )
+            }
         }
 
         // Status Information
@@ -1081,136 +1085,72 @@ private fun FormSection(
 @Composable
 private fun AttributesEditor(
     attributes: Map<String, String>,
+    attributeDefinitions: List<com.ampairs.form.domain.EntityAttributeDefinition>,
     onAttributesChange: (Map<String, String>) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val focusManager = LocalFocusManager.current
-    val mutableAttributes = remember(attributes) { attributes.toMutableMap() }
 
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        // Display existing attributes
-        mutableAttributes.forEach { (key, value) ->
-            AttributeItem(
-                key = key,
-                value = value,
-                onKeyChange = { newKey ->
-                    if (newKey != key) {
-                        mutableAttributes.remove(key)
-                        if (newKey.isNotBlank()) {
-                            mutableAttributes[newKey] = value
+        // Display only pre-configured attributes
+        attributeDefinitions
+            .filter { it.visible && it.enabled }
+            .sortedBy { it.displayOrder }
+            .forEach { definition ->
+                val currentValue = attributes[definition.attributeKey] ?: ""
+
+                ConfiguredAttributeField(
+                    definition = definition,
+                    value = currentValue,
+                    onValueChange = { newValue ->
+                        val updatedAttributes = attributes.toMutableMap()
+                        if (newValue.isBlank()) {
+                            updatedAttributes.remove(definition.attributeKey)
+                        } else {
+                            updatedAttributes[definition.attributeKey] = newValue
                         }
-                        onAttributesChange(mutableAttributes.toMap())
-                    }
-                },
-                onValueChange = { newValue ->
-                    mutableAttributes[key] = newValue
-                    onAttributesChange(mutableAttributes.toMap())
-                },
-                onRemove = {
-                    mutableAttributes.remove(key)
-                    onAttributesChange(mutableAttributes.toMap())
-                },
-                focusManager = focusManager
-            )
-        }
-
-        // Add new attribute button
-        OutlinedButton(
-            onClick = {
-                val newKey = "Key${mutableAttributes.size + 1}"
-                mutableAttributes[newKey] = ""
-                onAttributesChange(mutableAttributes.toMap())
-            },
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Icon(Icons.Default.Add, contentDescription = null)
-            Spacer(modifier = Modifier.width(8.dp))
-            Text("Add Attribute")
-        }
-
-        if (mutableAttributes.isEmpty()) {
-            Text(
-                text = "No custom attributes. Tap 'Add Attribute' to create one.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(8.dp)
-            )
-        }
+                        onAttributesChange(updatedAttributes)
+                    },
+                    focusManager = focusManager
+                )
+            }
     }
 }
 
 @Composable
-private fun AttributeItem(
-    key: String,
+private fun ConfiguredAttributeField(
+    definition: com.ampairs.form.domain.EntityAttributeDefinition,
     value: String,
-    onKeyChange: (String) -> Unit,
     onValueChange: (String) -> Unit,
-    onRemove: () -> Unit,
     focusManager: androidx.compose.ui.focus.FocusManager,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    val label = if (definition.mandatory) "${definition.displayName} *" else definition.displayName
+
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        label = { Text(label) },
+        placeholder = definition.placeholder?.let { { Text(it) } },
+        supportingText = definition.helpText?.let { { Text(it) } },
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
-    ) {
-        Column(
-            modifier = Modifier.padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "Attribute",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                IconButton(onClick = onRemove) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Remove Attribute",
-                        tint = MaterialTheme.colorScheme.error
-                    )
-                }
+        keyboardOptions = KeyboardOptions(
+            imeAction = ImeAction.Next,
+            keyboardType = when (definition.dataType) {
+                "number" -> KeyboardType.Number
+                "email" -> KeyboardType.Email
+                "phone" -> KeyboardType.Phone
+                else -> KeyboardType.Text
             }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                OutlinedTextField(
-                    value = key,
-                    onValueChange = onKeyChange,
-                    label = { Text("Key") },
-                    modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    keyboardActions = KeyboardActions(
-                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                    ),
-                    singleLine = true
-                )
-
-                OutlinedTextField(
-                    value = value,
-                    onValueChange = onValueChange,
-                    label = { Text("Value") },
-                    modifier = Modifier.weight(1f),
-                    keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
-                    keyboardActions = KeyboardActions(
-                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
-                    ),
-                    singleLine = true
-                )
-            }
-        }
-    }
+        ),
+        keyboardActions = KeyboardActions(
+            onNext = { focusManager.moveFocus(FocusDirection.Next) }
+        ),
+        singleLine = definition.dataType != "text_multiline"
+    )
 }
 
 @Composable

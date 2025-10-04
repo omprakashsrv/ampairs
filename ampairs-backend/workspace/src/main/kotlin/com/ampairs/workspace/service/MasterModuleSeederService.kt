@@ -116,6 +116,7 @@ class MasterModuleSeederService(
                 createMenuItem("customer-states", "Manage States", "/customers/states", "location_on", 4),
                 createMenuItem("customer-types", "Customer Types", "/customers/types", "category", 5),
                 createMenuItem("customer-groups", "Customer Groups", "/customers/groups", "group", 6),
+                createMenuItem("customer-config", "Configuration", "/customers/config", "tune", 7),
             )
         )
         navigationIndex = 20

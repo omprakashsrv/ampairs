@@ -132,4 +132,32 @@ class FormConfigViewModel(
     fun clearMessages() {
         _uiState.update { it.copy(error = null, successMessage = null) }
     }
+
+    fun addNewAttribute() {
+        val newAttribute = EntityAttributeDefinition(
+            uid = "temp-${System.currentTimeMillis()}", // Temporary UID until saved
+            entityType = entityType,
+            attributeKey = "", // User will fill this
+            displayName = "",
+            dataType = "STRING",
+            visible = true,
+            mandatory = false,
+            enabled = true,
+            displayOrder = _uiState.value.attributeDefinitions.size + 1
+        )
+
+        _uiState.update { state ->
+            state.copy(attributeDefinitions = state.attributeDefinitions + newAttribute)
+        }
+    }
+
+    fun deleteAttributeDefinition(attributeDefinition: EntityAttributeDefinition) {
+        _uiState.update { state ->
+            state.copy(
+                attributeDefinitions = state.attributeDefinitions.filter {
+                    it.uid != attributeDefinition.uid
+                }
+            )
+        }
+    }
 }

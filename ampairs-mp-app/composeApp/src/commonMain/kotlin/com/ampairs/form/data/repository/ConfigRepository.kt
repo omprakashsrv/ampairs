@@ -265,6 +265,37 @@ class ConfigRepository(
     }
 
     /**
+     * Save complete configuration schema (field configs + attribute definitions)
+     * Used for initializing backend with defaults from frontend
+     */
+    suspend fun saveConfigSchema(entityType: String, schema: EntityConfigSchema): Result<EntityConfigSchema> {
+        return try {
+            println("🔄 Saving complete config schema for $entityType to backend")
+
+            val savedSchema = api.saveConfigSchema(entityType, schema)
+
+            // Save to local database
+            if (savedSchema.fieldConfigs.isNotEmpty()) {
+                val fieldConfigEntities = savedSchema.fieldConfigs.map { it.toEntity() }
+                fieldConfigDao.insertFieldConfigs(fieldConfigEntities)
+            }
+
+            if (savedSchema.attributeDefinitions.isNotEmpty()) {
+                val attributeDefinitionEntities = savedSchema.attributeDefinitions.map { it.toEntity() }
+                attributeDefinitionDao.insertAttributeDefinitions(attributeDefinitionEntities)
+            }
+
+            updateCache(entityType, savedSchema)
+            println("✅ Successfully saved config schema for $entityType")
+
+            Result.success(savedSchema)
+        } catch (e: Exception) {
+            println("❌ Failed to save config schema for $entityType: ${e.message}")
+            Result.failure(e)
+        }
+    }
+
+    /**
      * Update cache with new schema
      */
     private fun updateCache(entityType: String, schema: EntityConfigSchema) {

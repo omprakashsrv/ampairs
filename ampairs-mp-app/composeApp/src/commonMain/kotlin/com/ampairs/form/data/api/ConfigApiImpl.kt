@@ -88,4 +88,19 @@ class ConfigApiImpl(
 
         return response.data ?: emptyList()
     }
+
+    override suspend fun saveConfigSchema(entityType: String, schema: EntityConfigSchema): EntityConfigSchema {
+        val requestBody = mapOf(
+            "field_configs" to schema.fieldConfigs,
+            "attribute_definitions" to schema.attributeDefinitions
+        )
+
+        val response = client.post(
+            ApiUrlBuilder.formUrl("v1/config")
+        ) {
+            setBody(requestBody)
+        }.body<Response<EntityConfigSchema>>()
+
+        return response.data ?: throw Exception("Failed to save config schema for entity type: $entityType")
+    }
 }

@@ -33,30 +33,20 @@ data class AttributeDefinitionResponse(
  * Attribute definition create/update request DTO
  */
 data class AttributeDefinitionRequest(
-    @JsonProperty("entity_type")
     val entityType: String,
-    @JsonProperty("attribute_key")
     val attributeKey: String,
-    @JsonProperty("display_name")
     val displayName: String,
-    @JsonProperty("data_type")
     val dataType: String = "STRING",
     val visible: Boolean = true,
     val mandatory: Boolean = false,
     val enabled: Boolean = true,
-    @JsonProperty("display_order")
     val displayOrder: Int = 0,
     val category: String? = null,
-    @JsonProperty("default_value")
     val defaultValue: String? = null,
-    @JsonProperty("validation_type")
     val validationType: String? = null,
-    @JsonProperty("validation_params")
     val validationParams: Map<String, String>? = null,
-    @JsonProperty("enum_values")
     val enumValues: List<String>? = null,
     val placeholder: String? = null,
-    @JsonProperty("help_text")
     val helpText: String? = null
 )
 
