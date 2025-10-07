@@ -227,7 +227,7 @@ When everything is wired correctly, you should see these logs:
 [Event][EventConnectionManager] INFO: Connecting to workspace: workspace-123
 [Event][EventManager] INFO: Connecting to workspace: workspace-123
 [Event][EventManager] INFO: ✅ Connected to workspace: workspace-123
-[Event][EventManager] INFO: Subscribing to: /topic/workspace/workspace-123/events
+[Event][EventManager] INFO: Subscribing to: /topic/workspace.events.workspace-123
 [Event][EventManager] INFO: ✅ Subscribed to workspace events
 [Event][CustomerRepository] INFO: Real-time event listener initialized for customer module
 [Event][EventConnectionManager] INFO: Repository event listeners configured

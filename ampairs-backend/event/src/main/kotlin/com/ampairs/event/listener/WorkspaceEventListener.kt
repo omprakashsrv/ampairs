@@ -1,5 +1,6 @@
 package com.ampairs.event.domain.listener
 
+import com.ampairs.event.config.Constants
 import com.ampairs.event.domain.EventType
 import com.ampairs.event.domain.WorkspaceEvent
 import com.ampairs.event.domain.dto.asWorkspaceEventResponse
@@ -306,7 +307,7 @@ class WorkspaceEventListener(
             webSocketPublisher?.let { publisher ->
                 try {
                     publisher.convertAndSend(
-                        "/topic/workspace/$workspaceId/events",
+                        Constants.WORKSPACE_EVENTS_TOPIC_PREFIX + workspaceId,
                         workspaceEvent.asWorkspaceEventResponse()
                     )
                     logger.debug("Broadcasted event to workspace: {}", workspaceId)

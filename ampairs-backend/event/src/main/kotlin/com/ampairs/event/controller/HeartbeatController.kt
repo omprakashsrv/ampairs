@@ -1,15 +1,16 @@
 package com.ampairs.event.controller
 
-import com.ampairs.event.repository.WebSocketSessionRepository
+import com.ampairs.core.multitenancy.DeviceContextHolder
+import com.ampairs.core.multitenancy.TenantContextHolder
+import com.ampairs.event.service.DeviceStatusService
 import org.slf4j.LoggerFactory
-import org.springframework.messaging.handler.annotation.Header
 import org.springframework.messaging.handler.annotation.MessageMapping
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor
 import org.springframework.stereotype.Controller
 
 @Controller
 class HeartbeatController(
-    private val webSocketSessionRepository: WebSocketSessionRepository
+    private val deviceStatusService: DeviceStatusService
 ) {
 
     private val logger = LoggerFactory.getLogger(HeartbeatController::class.java)
@@ -19,23 +20,33 @@ class HeartbeatController(
      * Clients should send heartbeat every 30 seconds to /app/heartbeat
      */
     @MessageMapping("/heartbeat")
-    fun handleHeartbeat(@Header("simpSessionId") sessionId: String) {
+    fun handleHeartbeat(headerAccessor: SimpMessageHeaderAccessor) {
+        val sessionId = headerAccessor.sessionId
+        if (sessionId.isNullOrBlank()) {
+            logger.warn("Heartbeat received without session ID")
+            return
+        }
+
+        val sessionAttributes = headerAccessor.sessionAttributes ?: emptyMap<String, Any>()
+        val tenantAttr = sessionAttributes["tenantId"] as? String
+        val workspaceAttr = sessionAttributes["workspaceId"] as? String
+        val deviceAttr = sessionAttributes["deviceId"] as? String
+        val effectiveTenant = tenantAttr?.takeIf { it.isNotBlank() } ?: workspaceAttr
+
         try {
-            val session = webSocketSessionRepository.findBySessionId(sessionId)
+            effectiveTenant?.let { TenantContextHolder.setCurrentTenant(it) }
+            deviceAttr?.let { DeviceContextHolder.setCurrentDevice(it) }
 
-            if (session != null) {
-                session.updateHeartbeat()
-                webSocketSessionRepository.save(session)
-
-                logger.debug(
-                    "Heartbeat received: session={}, user={}, device={}",
-                    sessionId, session.userId, session.deviceId
-                )
+            if (deviceStatusService.updateHeartbeat(sessionId)) {
+                logger.debug("Heartbeat received: session={}, tenant={}, device={}", sessionId, effectiveTenant, deviceAttr)
             } else {
                 logger.warn("Heartbeat received for unknown session: {}", sessionId)
             }
         } catch (e: Exception) {
             logger.error("Error processing heartbeat for session: {}", sessionId, e)
+        } finally {
+            TenantContextHolder.clearTenantContext()
+            DeviceContextHolder.clearDeviceContext()
         }
     }
 
@@ -44,9 +55,6 @@ class HeartbeatController(
      */
     @MessageMapping("/ping")
     fun handlePing(headerAccessor: SimpMessageHeaderAccessor) {
-        val sessionId = headerAccessor.sessionId
-        if (sessionId != null) {
-            handleHeartbeat(sessionId)
-        }
+        handleHeartbeat(headerAccessor)
     }
 }

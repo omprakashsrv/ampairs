@@ -1,5 +1,6 @@
 package com.ampairs.event.service
 
+import com.ampairs.event.config.Constants
 import com.ampairs.event.domain.WebSocketSession
 import com.ampairs.event.domain.DeviceStatus
 import com.ampairs.event.domain.dto.UserStatusEvent
@@ -109,7 +110,7 @@ class DeviceStatusService(
      * Update heartbeat for a session
      */
     @Transactional
-    fun updateHeartbeat(sessionId: String) {
+    fun updateHeartbeat(sessionId: String): Boolean {
         val session = webSocketSessionRepository.findBySessionId(sessionId)
         if (session != null) {
             val previousStatus = session.status
@@ -126,7 +127,9 @@ class DeviceStatusService(
                     deviceName = session.deviceName
                 )
             }
+            return true
         }
+        return false
     }
 
     /**
@@ -215,7 +218,7 @@ class DeviceStatusService(
             )
 
             messagingTemplate.convertAndSend(
-                "/topic/workspace/$workspaceId/status",
+                Constants.WORKSPACE_STATUS_TOPIC_PREFIX + workspaceId,
                 statusEvent
             )
 

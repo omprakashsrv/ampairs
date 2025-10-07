@@ -21,7 +21,7 @@ Successfully implemented a comprehensive real-time event synchronization system 
 ### 3. **Core Components** (`com.ampairs.event/`)
 - ✅ `EventManager.kt` - WebSocket connection manager per workspace
   - Connects to `/ws` endpoint with JWT authentication
-  - Subscribes to `/topic/workspace/{workspaceId}/events`
+  - Subscribes to `/topic/workspace.events.{workspaceId}`
   - Filters own device events (prevents echo)
   - Sends heartbeat every 30 seconds to `/app/heartbeat`
   - Exposes `StateFlow<ConnectionState>` and `SharedFlow<WorkspaceEvent>`
@@ -48,7 +48,7 @@ Successfully implemented a comprehensive real-time event synchronization system 
 ┌─────────────────────────────────────────────────┐
 │            Backend (Spring Boot)                 │
 │  /ws → STOMP Broker Relay → RabbitMQ           │
-│  Publishes to: /topic/workspace/{id}/events     │
+│  Publishes to: /topic/workspace.events.{id}    │
 └─────────────────────────────────────────────────┘
                       │ WebSocket/STOMP
                       ↓
@@ -193,7 +193,7 @@ Backend receives update
     │─── CustomerService publishes CustomerUpdatedEvent
     │       └─ Spring @EventListener → WorkspaceEventListener
     │           └─ Persist to workspace_events table
-    │           └─ Broadcast via WebSocket to /topic/workspace/{id}/events
+    │           └─ Broadcast via WebSocket to /topic/workspace.events.{id}
     │
 Device B (Desktop) ← WebSocket message arrives
     │
@@ -229,7 +229,7 @@ Device B UI updates automatically ✅
 - Authentication: JWT token in query parameter
 
 ### **Subscription Topics**
-- Workspace Events: `/topic/workspace/{workspaceId}/events`
+- Workspace Events: `/topic/workspace.events.{workspaceId}`
 - User Status (future): `/user/queue/status`
 
 ### **Message Destinations**
@@ -294,7 +294,7 @@ Location: `EventManager.kt` line 61
 ```
 [Event][EventManager] INFO: Connecting to workspace: workspace-123
 [Event][EventManager] INFO: ✅ Connected to workspace: workspace-123
-[Event][EventManager] INFO: Subscribing to: /topic/workspace/workspace-123/events
+[Event][EventManager] INFO: Subscribing to: /topic/workspace.events.workspace-123
 [Event][EventManager] INFO: ✅ Subscribed to workspace events
 [Event][EventManager] DEBUG: 💓 Heartbeat sent
 [Event][EventManager] INFO: 📨 Received event: CUSTOMER_UPDATED for customer:CUS20250104... (seq: 42)

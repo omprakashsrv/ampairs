@@ -1,5 +1,7 @@
 package com.ampairs.event.listener
 
+import com.ampairs.core.multitenancy.TenantContextHolder
+import com.ampairs.event.config.Constants
 import com.ampairs.event.domain.WebSocketSession
 import com.ampairs.event.domain.DeviceStatus
 import com.ampairs.event.domain.dto.UserStatusEvent
@@ -45,50 +47,70 @@ class WebSocketEventListener(
 
         val sessionId = accessor.sessionId ?: return
         val userId = sessionAttributes["userId"] as? String ?: return
-        val tenantId = sessionAttributes["tenantId"] as? String ?: return
+        val tenantAttr = sessionAttributes["tenantId"] as? String
+        val workspaceAttr = sessionAttributes["workspaceId"] as? String
         val deviceId = sessionAttributes["deviceId"] as? String ?: return
+        val workspaceIdCandidate = tenantAttr?.takeIf { it.isNotBlank() } ?: workspaceAttr
+        if (workspaceIdCandidate.isNullOrBlank()) {
+            logger.warn(
+                "Skipping WebSocket CONNECTED processing due to missing workspace. session={}, user={}, tenantAttr={}, workspaceAttr={}",
+                sessionId, userId, tenantAttr, workspaceAttr
+            )
+            return
+        }
+        val workspaceId = workspaceIdCandidate
 
         logger.info(
             "WebSocket CONNECTED: session={}, user={}, tenant={}, device={}",
-            sessionId, userId, tenantId, deviceId
+            sessionId, userId, workspaceId, deviceId
         )
 
-        // Check if session already exists (reconnection)
-        val existingSession = webSocketSessionRepository.findByWorkspaceIdAndUserIdAndDeviceId(
-            tenantId, userId, deviceId
-        )
+        TenantContextHolder.setCurrentTenant(workspaceId)
+        var registeredDeviceName: String? = null
+        try {
+            // Check if session already exists (reconnection)
+            val existingSession = webSocketSessionRepository.findByWorkspaceIdAndUserIdAndDeviceId(
+                workspaceId, userId, deviceId
+            )
 
-        val deviceSession = existingSession ?: WebSocketSession()
+            val deviceSession = existingSession ?: WebSocketSession()
 
-        deviceSession.apply {
-            workspaceId = tenantId
-            this.userId = userId
-            this.deviceId = deviceId
-            this.sessionId = sessionId
-            status = DeviceStatus.ONLINE
-            lastHeartbeat = LocalDateTime.now()
-            if (existingSession == null) {
-                connectedAt = LocalDateTime.now()
-                // Could extract device name from User-Agent header if available
-                deviceName = extractDeviceName(accessor)
-            } else {
-                // Reconnection
-                disconnectedAt = null
+            deviceSession.apply {
+                this.workspaceId = workspaceId
+                this.userId = userId
+                this.deviceId = deviceId
+                this.sessionId = sessionId
+                status = DeviceStatus.ONLINE
+                lastHeartbeat = LocalDateTime.now()
+                if (existingSession == null) {
+                    connectedAt = LocalDateTime.now()
+                    // Could extract device name from User-Agent header if available
+                    deviceName = extractDeviceName(accessor)
+                } else {
+                    // Reconnection
+                    disconnectedAt = null
+                }
             }
-        }
 
-        webSocketSessionRepository.save(deviceSession)
+            webSocketSessionRepository.save(deviceSession)
+            registeredDeviceName = deviceSession.deviceName
+
+            logger.info(
+                "Registered device session: uid={}, workspace={}, user={}, device={}",
+                deviceSession.uid, workspaceId, userId, deviceId
+            )
+        } finally {
+            TenantContextHolder.clearTenantContext()
+        }
 
         // Broadcast status change to workspace
         broadcastStatusChange(
-            workspaceId = tenantId,
+            workspaceId = workspaceId,
             userId = userId,
             deviceId = deviceId,
             status = DeviceStatus.ONLINE,
-            deviceName = deviceSession.deviceName
+            deviceName = registeredDeviceName
         )
-
-        logger.debug("Device session created/updated: {}", deviceSession.uid)
     }
 
     @EventListener
@@ -96,13 +118,22 @@ class WebSocketEventListener(
         val accessor = StompHeaderAccessor.wrap(event.message)
         val sessionId = event.sessionId
 
-        logger.info("WebSocket DISCONNECT: session={}", sessionId)
+        logger.info(
+            "WebSocket DISCONNECT: session={}, closeStatus={}",
+            sessionId,
+            event.closeStatus?.code
+        )
 
         // Find and update session
         val session = webSocketSessionRepository.findBySessionId(sessionId)
         if (session != null) {
-            session.markOffline()
-            webSocketSessionRepository.save(session)
+            TenantContextHolder.setCurrentTenant(session.workspaceId)
+            try {
+                session.markOffline()
+                webSocketSessionRepository.save(session)
+            } finally {
+                TenantContextHolder.clearTenantContext()
+            }
 
             // Broadcast status change to workspace
             broadcastStatusChange(
@@ -135,7 +166,7 @@ class WebSocketEventListener(
             )
 
             messagingTemplate.convertAndSend(
-                "/topic/workspace/$workspaceId/status",
+                Constants.WORKSPACE_STATUS_TOPIC_PREFIX + workspaceId,
                 statusEvent
             )
 

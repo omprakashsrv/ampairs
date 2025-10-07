@@ -22,6 +22,8 @@ import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBr
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer
 import org.springframework.web.socket.server.HandshakeInterceptor
+import java.net.InetSocketAddress
+import java.net.Socket
 import java.security.Principal
 
 @Configuration
@@ -30,21 +32,42 @@ class WebSocketConfig(
     private val jwtService: JwtService
 ) : WebSocketMessageBrokerConfigurer {
 
+    private val logger = LoggerFactory.getLogger(WebSocketConfig::class.java)
+
     override fun configureMessageBroker(registry: MessageBrokerRegistry) {
-        // Use STOMP broker relay for distributed WebSocket support
-        registry.enableStompBrokerRelay("/topic", "/queue")
-            .setRelayHost("${System.getenv("RABBITMQ_HOST") ?: "localhost"}")
-            .setRelayPort(61613) // STOMP port
-            .setClientLogin("${System.getenv("RABBITMQ_USER") ?: "guest"}")
-            .setClientPasscode("${System.getenv("RABBITMQ_PASSWORD") ?: "guest"}")
-            .setSystemLogin("${System.getenv("RABBITMQ_USER") ?: "guest"}")
-            .setSystemPasscode("${System.getenv("RABBITMQ_PASSWORD") ?: "guest"}")
-            .setVirtualHost("${System.getenv("RABBITMQ_VHOST") ?: "/"}")
+        val relayHost = System.getenv("RABBITMQ_HOST") ?: "localhost"
+        val relayPort = (System.getenv("RABBITMQ_STOMP_PORT") ?: "61613").toInt()
+        val useSimpleBroker = System.getenv("WEBSOCKET_SIMPLE_BROKER")?.toBooleanStrictOrNull()
+            ?: !isBrokerAvailable(relayHost, relayPort)
+
+        if (useSimpleBroker) {
+            logger.warn(
+                "STOMP broker relay at {}:{} unavailable or disabled. Falling back to simple broker.",
+                relayHost, relayPort
+            )
+            registry.enableSimpleBroker("/topic", "/queue")
+        } else {
+            logger.info("Using STOMP broker relay at {}:{}", relayHost, relayPort)
+            registry.enableStompBrokerRelay("/topic", "/queue")
+                .setRelayHost(relayHost)
+                .setRelayPort(relayPort)
+                .setClientLogin("${System.getenv("RABBITMQ_USER") ?: "guest"}")
+                .setClientPasscode("${System.getenv("RABBITMQ_PASSWORD") ?: "guest"}")
+                .setSystemLogin("${System.getenv("RABBITMQ_USER") ?: "guest"}")
+                .setSystemPasscode("${System.getenv("RABBITMQ_PASSWORD") ?: "guest"}")
+                .setVirtualHost("${System.getenv("RABBITMQ_VHOST") ?: "/"}")
+        }
 
         registry.setApplicationDestinationPrefixes("/app")
     }
 
     override fun registerStompEndpoints(registry: StompEndpointRegistry) {
+        // Native WebSocket endpoint for clients that use standard WS (KMP, desktop, etc.)
+        registry.addEndpoint("/ws")
+            .addInterceptors(WebSocketAuthInterceptor(jwtService))
+            .setAllowedOriginPatterns("*")
+
+        // SockJS fallback endpoint for legacy browsers
         registry.addEndpoint("/ws")
             .addInterceptors(WebSocketAuthInterceptor(jwtService))
             .setAllowedOriginPatterns("*")
@@ -53,6 +76,16 @@ class WebSocketConfig(
 
     override fun configureClientInboundChannel(registration: ChannelRegistration) {
         registration.interceptors(WebSocketChannelInterceptor(jwtService))
+    }
+
+    private fun isBrokerAvailable(host: String, port: Int): Boolean {
+        return runCatching {
+            Socket().use { socket ->
+                socket.connect(InetSocketAddress(host, port), 500)
+            }
+        }.onFailure {
+            logger.debug("STOMP broker probe failed for {}:{} -> {}", host, port, it.message)
+        }.isSuccess
     }
 }
 
@@ -82,8 +115,19 @@ class WebSocketAuthInterceptor(
             // Validate token
             val username = jwtService.extractUsername(token)
             val userId = jwtService.extractUserId(token)
-            val tenantId = jwtService.extractTenantId(token)
+            var tenantId = jwtService.extractTenantId(token)
             val deviceId = jwtService.extractDeviceId(token)
+
+            // Allow workspace to be provided explicitly when not embedded in token (e.g., mobile clients)
+            val workspaceFromRequest = resolveWorkspaceId(request)
+            if (tenantId.isNullOrBlank() && !workspaceFromRequest.isNullOrBlank()) {
+                tenantId = workspaceFromRequest
+            } else if (!tenantId.isNullOrBlank() && !workspaceFromRequest.isNullOrBlank() && tenantId != workspaceFromRequest) {
+                logger.warn(
+                    "Workspace mismatch: token tenant {} differs from requested workspace {}",
+                    tenantId, workspaceFromRequest
+                )
+            }
 
             if (username.isNullOrBlank()) {
                 logger.warn("Invalid JWT token: no username")
@@ -96,6 +140,7 @@ class WebSocketAuthInterceptor(
             attributes["tenantId"] = tenantId ?: ""
             attributes["deviceId"] = deviceId ?: ""
             attributes["token"] = token
+            workspaceFromRequest?.let { attributes["workspaceId"] = it }
 
             logger.debug(
                 "WebSocket handshake successful for user: {}, tenant: {}, device: {}",
@@ -135,6 +180,16 @@ class WebSocketAuthInterceptor(
 
         return null
     }
+
+    private fun resolveWorkspaceId(request: ServerHttpRequest): String? {
+        if (request is ServletServerHttpRequest) {
+            request.servletRequest.getParameter("workspaceId")
+                ?.takeIf { it.isNotBlank() }
+                ?.let { return it }
+        }
+
+        return request.headers.getFirst("X-Workspace-ID")?.takeIf { it.isNotBlank() }
+    }
 }
 
 /**
@@ -165,12 +220,14 @@ class WebSocketChannelInterceptor(
 
         val userId = sessionAttributes["userId"] as? String
         val tenantId = sessionAttributes["tenantId"] as? String
+        val workspaceId = sessionAttributes["workspaceId"] as? String
         val deviceId = sessionAttributes["deviceId"] as? String
 
         logger.debug("WebSocket CONNECT: user={}, tenant={}, device={}", userId, tenantId, deviceId)
 
         // Set context
-        tenantId?.let { TenantContextHolder.setCurrentTenant(it) }
+        val effectiveTenant = tenantId?.takeIf { it.isNotBlank() } ?: workspaceId
+        effectiveTenant?.let { TenantContextHolder.setCurrentTenant(it) }
         deviceId?.let { DeviceContextHolder.setCurrentDevice(it) }
 
         // Set user principal
@@ -183,29 +240,34 @@ class WebSocketChannelInterceptor(
 
         val userId = sessionAttributes["userId"] as? String
         val tenantId = sessionAttributes["tenantId"] as? String
+        val workspaceAttr = sessionAttributes["workspaceId"] as? String
         val deviceId = sessionAttributes["deviceId"] as? String
 
         logger.debug(
             "WebSocket SUBSCRIBE: destination={}, user={}, tenant={}, device={}",
-            destination, userId, tenantId, deviceId
+            destination, userId, tenantId ?: workspaceAttr, deviceId
         )
 
         // Validate workspace access
-        if (destination.startsWith("/topic/workspace/")) {
-            val workspaceId = destination.split("/").getOrNull(3)
-
-            // Ensure user can only subscribe to their own workspace
-            if (workspaceId != null && workspaceId != tenantId) {
+        extractWorkspaceId(destination)?.let { workspaceId ->
+            if (!tenantId.isNullOrBlank() && workspaceId != tenantId) {
                 logger.warn(
                     "Access denied: User {} attempted to subscribe to workspace {}",
                     userId, workspaceId
                 )
                 throw SecurityException("Access denied to workspace")
             }
+
+            // Remember resolved workspace for sessions where tenant is inferred from destination
+            sessionAttributes["workspaceId"] = workspaceId
+            if (tenantId.isNullOrBlank()) {
+                TenantContextHolder.setCurrentTenant(workspaceId)
+            }
         }
 
         // Set context for this message
-        tenantId?.let { TenantContextHolder.setCurrentTenant(it) }
+        val effectiveTenant = tenantId?.takeIf { it.isNotBlank() } ?: (sessionAttributes["workspaceId"] as? String)
+        effectiveTenant?.let { TenantContextHolder.setCurrentTenant(it) }
         deviceId?.let { DeviceContextHolder.setCurrentDevice(it) }
     }
 
@@ -213,11 +275,23 @@ class WebSocketChannelInterceptor(
         val sessionAttributes = accessor.sessionAttributes ?: return
 
         val tenantId = sessionAttributes["tenantId"] as? String
+        val workspaceId = sessionAttributes["workspaceId"] as? String
         val deviceId = sessionAttributes["deviceId"] as? String
 
         // Set context for this message
-        tenantId?.let { TenantContextHolder.setCurrentTenant(it) }
+        val effectiveTenant = tenantId?.takeIf { it.isNotBlank() } ?: workspaceId
+        effectiveTenant?.let { TenantContextHolder.setCurrentTenant(it) }
         deviceId?.let { DeviceContextHolder.setCurrentDevice(it) }
+    }
+
+    private fun extractWorkspaceId(destination: String): String? {
+        return when {
+            destination.startsWith(Constants.WORKSPACE_EVENTS_TOPIC_PREFIX) ->
+                destination.removePrefix(Constants.WORKSPACE_EVENTS_TOPIC_PREFIX)
+            destination.startsWith(Constants.WORKSPACE_STATUS_TOPIC_PREFIX) ->
+                destination.removePrefix(Constants.WORKSPACE_STATUS_TOPIC_PREFIX)
+            else -> null
+        }
     }
 }
 

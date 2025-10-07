@@ -66,7 +66,7 @@ export class EventSyncService {
   }
 
   private subscribeToWorkspaceEvents(workspaceId: string): void {
-    this.client?.subscribe(`/topic/workspace/${workspaceId}/events`, (message: IMessage) => {
+    this.client?.subscribe(`/topic/workspace.events.${workspaceId}`, (message: IMessage) => {
       const event = JSON.parse(message.body);
       this.handleWorkspaceEvent(event);
     });
@@ -118,7 +118,7 @@ export class EventSyncService {
 - Injects existing AuthService and WorkspaceService
 - SockJS fallback for browser compatibility
 - JWT token in connection headers
-- Workspace-aware topic subscription: `/topic/workspace/{workspaceId}/events`
+- Workspace-aware topic subscription: `/topic/workspace.events.{workspaceId}`
 - 30-second heartbeat interval
 - Automatic event dispatching based on type
 
@@ -492,7 +492,7 @@ export class CustomerService {
 - **Endpoint**: `ws://localhost:8080/ws` (SockJS)
 - **Authentication**: JWT token in `Authorization` header
 - **Workspace Context**: `X-Workspace-ID` header
-- **Topics**: `/topic/workspace/{workspaceId}/events`
+- **Topics**: `/topic/workspace.events.{workspaceId}`
 - **Application Prefix**: `/app/heartbeat`
 
 ### REST APIs
