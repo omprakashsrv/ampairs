@@ -25,7 +25,7 @@ ampairs/
 ## 🛠️ Development Setup
 
 ### Prerequisites
-- **Java 17+** for backend development
+- **Java 25+** for backend development
 - **Node.js 18+** for web frontend
 - **Android Studio** for mobile development
 - **PostgreSQL** for database

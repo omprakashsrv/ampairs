@@ -10,7 +10,7 @@
 - `core/*` supplies analytics, logging, permissions, notifications, and dispatchers; `common/*` hosts design primitives and image loading.
 - `desktop-app/`, `tallyModule/`, `tasks/`, and `thirdparty/` house desktop packaging, tally sync, scheduled jobs, and vendored sources; shared assets live in `resources/`.
 ## Build, Test, and Development Commands
-- Use Java 17 (`sdk use java 17`) before Gradle tasks.
+- Use Java 25 (`sdk use java 25`) before Gradle tasks.
 - `./gradlew :composeApp:run` for desktop previews, `:composeApp:assembleDebug` for Android, and open `iosApp/iosApp.xcodeproj` for iOS targets.
 - `./gradlew :desktop-app:package` creates native installers; `./gradlew :composeApp:check` runs unit tests and static checks.
 - `./cleanup.sh` clears build artifacts when switching branches.
