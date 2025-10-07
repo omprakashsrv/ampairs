@@ -5,6 +5,9 @@ import com.ampairs.event.domain.EventType
 import com.ampairs.event.domain.WorkspaceEvent
 import com.ampairs.event.util.EventLogger
 import io.ktor.client.HttpClient
+import io.ktor.client.plugins.ResponseException
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.encodeURLParameter
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -17,16 +20,17 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import org.hildan.krossbow.stomp.StompClient
 import org.hildan.krossbow.stomp.StompSession
+import org.hildan.krossbow.stomp.config.HeartBeat
+import org.hildan.krossbow.stomp.config.HeartBeatTolerance
 import org.hildan.krossbow.stomp.frame.FrameBody
 import org.hildan.krossbow.stomp.headers.StompSendHeaders
 import org.hildan.krossbow.stomp.headers.StompSubscribeHeaders
-import org.hildan.krossbow.stomp.use
 import org.hildan.krossbow.websocket.ktor.KtorWebSocketClient
-import kotlinx.serialization.json.Json
-import kotlinx.serialization.decodeFromString
 import kotlin.math.min
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Manages WebSocket/STOMP connection for a specific workspace.
@@ -91,9 +95,17 @@ class EventManager(
     private val baseReconnectionDelay = 1000L // 1 second
     private val maxReconnectionDelay = 30000L // 30 seconds (reasonable max)
     private var shouldReconnect = false
+    private val heartbeatIntervalMillis = 15_000L
 
     // Krossbow STOMP client with Ktor WebSocket transport
-    private val stompClient = StompClient(KtorWebSocketClient(httpClient))
+    private val stompClient = StompClient(KtorWebSocketClient(httpClient)) {
+        heartBeat = HeartBeat(15.seconds, 15.seconds)
+        heartBeatTolerance = HeartBeatTolerance(
+            outgoingMargin = 3.seconds,
+            incomingMargin = 5.seconds
+        )
+        connectionTimeout = 30.seconds
+    }
 
     // JSON parser for manual deserialization
     private val json = Json {
@@ -146,7 +158,13 @@ class EventManager(
             }
 
             // Connect with JWT token in query parameter (backend supports this)
-            val urlWithToken = "$wsUrl?token=$token"
+            val urlWithToken = buildString {
+                append(wsUrl)
+                append("?token=")
+                append(token.encodeURLParameter())
+                append("&workspaceId=")
+                append(workspaceId.encodeURLParameter())
+            }
             EventLogger.d("EventManager", "Connecting to: $wsUrl")
 
             // Connect using Krossbow STOMP client
@@ -163,6 +181,7 @@ class EventManager(
             startHeartbeat()
 
         } catch (e: Exception) {
+            val authFailure = e.isAuthenticationFailure()
             EventLogger.e("EventManager", "Connection failed for workspace: $workspaceId", e)
             _connectionState.value = ConnectionState.Error(
                 message = "Connection failed: ${e.message}",
@@ -174,7 +193,7 @@ class EventManager(
 
             // Attempt reconnection if enabled
             if (shouldReconnect) {
-                scheduleReconnection()
+                scheduleReconnection(authFailure)
             }
         }
     }
@@ -184,7 +203,7 @@ class EventManager(
      * Keeps retrying indefinitely while shouldReconnect is true (user is in workspace).
      * Only stops when user explicitly exits workspace (disconnect() is called).
      */
-    private fun scheduleReconnection() {
+    private fun scheduleReconnection(refreshToken: Boolean = false) {
         reconnectionAttempts++
 
         // Calculate exponential backoff delay (capped at maxReconnectionDelay)
@@ -199,13 +218,14 @@ class EventManager(
             delay(delay)
 
             if (shouldReconnect && isActive) {
-                // Try refreshing token before reconnecting
-                EventLogger.i("EventManager", "🔄 Refreshing token before reconnection")
-                val refreshed = tokenRefresher()
-                if (refreshed) {
-                    EventLogger.i("EventManager", "✅ Token refreshed, attempting reconnection")
-                } else {
-                    EventLogger.w("EventManager", "⚠️ Token refresh failed, attempting reconnection anyway")
+                if (refreshToken) {
+                    EventLogger.i("EventManager", "🔄 Refreshing token before reconnection")
+                    val refreshed = tokenRefresher()
+                    if (refreshed) {
+                        EventLogger.i("EventManager", "✅ Token refreshed, attempting reconnection")
+                    } else {
+                        EventLogger.w("EventManager", "⚠️ Token refresh failed, attempting reconnection anyway")
+                    }
                 }
 
                 performConnection()
@@ -215,7 +235,7 @@ class EventManager(
 
     /**
      * Subscribe to workspace events topic using STOMP.
-     * Backend publishes events to: /topic/workspace/{workspaceId}/events
+     * Backend publishes events to: /topic/workspace.events.{workspaceId}
      */
     private suspend fun subscribeToWorkspaceEvents() {
         val session = stompSession ?: run {
@@ -224,7 +244,7 @@ class EventManager(
         }
 
         try {
-            val destination = "/topic/workspace/$workspaceId/events"
+            val destination = "/topic/workspace.events.$workspaceId"
             EventLogger.i("EventManager", "Subscribing to: $destination")
 
             // Subscribe to STOMP messages and manually deserialize
@@ -241,6 +261,7 @@ class EventManager(
                         }
                     }
                 } catch (e: Exception) {
+                    val authFailure = e.isAuthenticationFailure()
                     EventLogger.e("EventManager", "Subscription collection failed - connection likely dropped", e)
                     _connectionState.value = ConnectionState.Error(
                         message = "Connection dropped: ${e.message}",
@@ -250,7 +271,7 @@ class EventManager(
                     // Trigger reconnection
                     if (shouldReconnect) {
                         cleanup()
-                        scheduleReconnection()
+                        scheduleReconnection(authFailure)
                     }
                 }
             }
@@ -258,6 +279,7 @@ class EventManager(
             EventLogger.i("EventManager", "✅ Subscribed to workspace events")
 
         } catch (e: Exception) {
+            val authFailure = e.isAuthenticationFailure()
             EventLogger.e("EventManager", "Subscription failed", e)
             _connectionState.value = ConnectionState.Error(
                 message = "Subscription failed: ${e.message}",
@@ -267,7 +289,7 @@ class EventManager(
             // Trigger reconnection
             if (shouldReconnect) {
                 cleanup()
-                scheduleReconnection()
+                scheduleReconnection(authFailure)
             }
         }
     }
@@ -307,7 +329,7 @@ class EventManager(
     private fun startHeartbeat() {
         heartbeatJob = CoroutineScope(Dispatchers.Default).launch {
             while (isActive && stompSession != null) {
-                delay(30_000) // 30 seconds
+                delay(heartbeatIntervalMillis)
 
                 try {
                     val headers = StompSendHeaders("/app/heartbeat")
@@ -384,5 +406,25 @@ class EventManager(
      */
     fun getEventsByType(vararg eventTypes: EventType): SharedFlow<WorkspaceEvent> {
         return events
+    }
+
+    private fun Throwable.isAuthenticationFailure(): Boolean {
+        var current: Throwable? = this
+        while (current != null) {
+            when (current) {
+                is ResponseException -> {
+                    val status = current.response.status
+                    if (status == HttpStatusCode.Unauthorized || status == HttpStatusCode.Forbidden) {
+                        return true
+                    }
+                }
+
+                else -> if (current.message?.contains("401", ignoreCase = false) == true) {
+                    return true
+                }
+            }
+            current = current.cause
+        }
+        return false
     }
 }

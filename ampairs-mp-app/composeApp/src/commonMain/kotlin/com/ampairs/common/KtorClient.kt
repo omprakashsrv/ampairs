@@ -59,11 +59,15 @@ private fun extractMeaningfulErrorFromDarwin(errorMessage: String): String {
     return errorMessage.lines().first().take(100)
 }
 
-fun httpClient(engine: HttpClientEngine, tokenRepository: TokenRepository) = HttpClient(engine) {
+fun httpClient(
+    engine: HttpClientEngine,
+    tokenRepository: TokenRepository,
+    withTimeout: Boolean = true,
+) = HttpClient(engine) {
 
     // Log configuration for debugging
     println(ConfigurationManager.logCurrentConfig())
-    
+
     install(ContentNegotiation) {
         json(
             Json {
@@ -86,13 +90,16 @@ fun httpClient(engine: HttpClientEngine, tokenRepository: TokenRepository) = Htt
         }
         level = LogLevel.INFO
     }
-    
-    install(HttpTimeout) {
-        val timeout = 30000L
-        connectTimeoutMillis = timeout
-        requestTimeoutMillis = timeout
-        socketTimeoutMillis = timeout
+
+    if (withTimeout) {
+        install(HttpTimeout) {
+            val timeout = 30000L
+            connectTimeoutMillis = timeout
+            requestTimeoutMillis = timeout
+            socketTimeoutMillis = timeout
+        }
     }
+
 
     // Global exception handling for network connectivity issues
     install(HttpCallValidator) {
@@ -100,22 +107,33 @@ fun httpClient(engine: HttpClientEngine, tokenRepository: TokenRepository) = Htt
             when (exception::class.simpleName) {
                 "ConnectException" -> {
                     println("❌ Connection failed: ${exception.message}")
-                    throw NetworkException("Unable to connect to server. Please check your network connection.", exception)
+                    throw NetworkException(
+                        "Unable to connect to server. Please check your network connection.",
+                        exception
+                    )
                 }
+
                 "UnknownHostException" -> {
                     println("❌ Host not found: ${exception.message}")
-                    throw NetworkException("Server not found. Please check your network connection.", exception)
+                    throw NetworkException(
+                        "Server not found. Please check your network connection.",
+                        exception
+                    )
                 }
+
                 "SocketTimeoutException" -> {
                     println("❌ Request timed out: ${exception.message}")
                     throw NetworkException("Request timed out. Please try again.", exception)
                 }
+
                 "DarwinHttpRequestException" -> {
                     // iOS-specific error - extract meaningful message from verbose NSURLError
-                    val cleanMessage = extractMeaningfulErrorFromDarwin(exception.message ?: "Network error")
+                    val cleanMessage =
+                        extractMeaningfulErrorFromDarwin(exception.message ?: "Network error")
                     println("❌ iOS Network error: $cleanMessage")
                     throw NetworkException(cleanMessage, exception)
                 }
+
                 else -> {
                     println("❌ Network error: ${exception.message}")
                     throw exception
@@ -126,7 +144,7 @@ fun httpClient(engine: HttpClientEngine, tokenRepository: TokenRepository) = Htt
 
     // Disable expectSuccess so we can manually handle 401s
     expectSuccess = false
-    
+
     // Default request configuration
     defaultRequest {
         // Add workspace header only if available and user has selected a workspace
@@ -134,13 +152,13 @@ fun httpClient(engine: HttpClientEngine, tokenRepository: TokenRepository) = Htt
         if (workspaceId.isNotEmpty()) {
             header("X-Workspace-ID", workspaceId)
         }
-        
+
         // Add bearer token if available
         val accessToken = tokenRepository.getAccessToken()
         if (!accessToken.isNullOrEmpty()) {
             header("Authorization", "Bearer $accessToken")
         }
-        
+
         // Set default content type
         contentType(ContentType.Application.Json)
     }

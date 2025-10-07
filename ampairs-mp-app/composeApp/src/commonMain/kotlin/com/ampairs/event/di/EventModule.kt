@@ -47,7 +47,11 @@ val eventModule: Module = module {
             workspaceId = workspaceId,
             userId = userId,
             deviceId = deviceId,
-            httpClient = httpClient(get<HttpClientEngine>(), tokenRepository),
+            httpClient = httpClient(
+                engine = get<HttpClientEngine>(),
+                tokenRepository = tokenRepository,
+                withTimeout = false,
+            ),
             tokenProvider = { tokenRepository.getAccessToken() ?: "" },
             tokenRefresher = { refreshTokens(tokenRepository) },
             baseUrl = ConfigurationManager.apiBaseUrl
