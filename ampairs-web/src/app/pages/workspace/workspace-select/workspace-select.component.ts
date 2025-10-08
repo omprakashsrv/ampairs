@@ -17,6 +17,8 @@ import {MatMenuModule} from '@angular/material/menu';
 import {MatDialog} from '@angular/material/dialog';
 import {WorkspaceListItem, WorkspaceService} from '../../../core/services/workspace.service';
 import {WorkspaceEditDialogComponent} from '../workspace-edit-dialog/workspace-edit-dialog.component';
+import {InvitationService, InvitationResponse} from '../../../core/services/invitation.service';
+import {PendingInvitationCardComponent} from '../../../shared/components/pending-invitation-card/pending-invitation-card.component';
 
 @Component({
   selector: 'app-workspace-select',
@@ -36,25 +38,30 @@ import {WorkspaceEditDialogComponent} from '../workspace-edit-dialog/workspace-e
     MatListModule,
     MatChipsModule,
     MatRippleModule,
-    MatMenuModule
+    MatMenuModule,
+    PendingInvitationCardComponent
   ],
   templateUrl: './workspace-select.component.html',
   styleUrl: './workspace-select.component.scss'
 })
 export class WorkspaceSelectComponent implements OnInit {
   private workspaceService = inject(WorkspaceService);
+  private invitationService = inject(InvitationService);
   private router = inject(Router);
   private snackBar = inject(MatSnackBar);
   private dialog = inject(MatDialog);
 
   // Signals for reactive state management
   workspaces = signal<WorkspaceListItem[]>([]);
+  pendingInvitations = signal<InvitationResponse[]>([]);
   isLoading = signal(false);
+  isLoadingInvitations = signal(false);
   isSelecting = signal(false);
   selectedWorkspaceId = signal('');
 
   ngOnInit(): void {
     this.loadWorkspaces();
+    this.loadPendingInvitations();
   }
 
   async loadWorkspaces(): Promise<void> {
@@ -76,12 +83,26 @@ export class WorkspaceSelectComponent implements OnInit {
     }
   }
 
+  async loadPendingInvitations(): Promise<void> {
+    this.isLoadingInvitations.set(true);
+
+    try {
+      const invitations = await this.invitationService.getPendingInvitations();
+      this.pendingInvitations.set(invitations);
+    } catch (error: any) {
+      console.error('Failed to load pending invitations:', error);
+      // Don't show error for invitations - it's optional information
+    } finally {
+      this.isLoadingInvitations.set(false);
+    }
+  }
+
   selectWorkspace(workspace: WorkspaceListItem): void {
     if (this.isSelecting()) return;
 
     this.isSelecting.set(true);
     this.selectedWorkspaceId.set(workspace.id);
-
+    localStorage.setItem('workspace_id', workspace.id);
     // Get full workspace details
     this.workspaceService.getWorkspaceById(workspace.id).subscribe({
       next: (fullWorkspace) => {
@@ -191,7 +212,7 @@ export class WorkspaceSelectComponent implements OnInit {
       if (result) {
         // Workspace was updated, refresh the list
         this.loadWorkspaces();
-        
+
         // Update current workspace if it was the one edited
         const currentWorkspace = this.workspaceService.getCurrentWorkspace();
         if (currentWorkspace && currentWorkspace.id === workspace.id) {
@@ -212,5 +233,36 @@ export class WorkspaceSelectComponent implements OnInit {
       duration: 3000,
       panelClass: ['info-snackbar']
     });
+  }
+
+  onInvitationAccepted(invitation: InvitationResponse): void {
+    this.snackBar.open(`Successfully joined ${invitation.workspace_name}!`, 'Close', {
+      duration: 5000,
+      panelClass: ['success-snackbar']
+    });
+
+    // Remove the accepted invitation from the list
+    const currentInvitations = this.pendingInvitations();
+    const updatedInvitations = currentInvitations.filter(inv => inv.id !== invitation.id);
+    this.pendingInvitations.set(updatedInvitations);
+
+    // Refresh workspace list to include the newly joined workspace
+    this.loadWorkspaces();
+  }
+
+  onInvitationRejected(invitation: InvitationResponse): void {
+    this.snackBar.open(`Invitation from ${invitation.workspace_name} declined.`, 'Close', {
+      duration: 3000,
+      panelClass: ['info-snackbar']
+    });
+
+    // Remove the rejected invitation from the list
+    const currentInvitations = this.pendingInvitations();
+    const updatedInvitations = currentInvitations.filter(inv => inv.id !== invitation.id);
+    this.pendingInvitations.set(updatedInvitations);
+  }
+
+  onInvitationError(errorMessage: string): void {
+    this.showError(errorMessage);
   }
 }

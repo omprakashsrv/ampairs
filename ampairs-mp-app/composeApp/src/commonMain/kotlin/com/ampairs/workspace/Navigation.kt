@@ -1,28 +1,34 @@
 package com.ampairs.workspace
 
-import AuthRoute
 import Route
 import WorkspaceRoute
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
 import com.ampairs.common.ui.AppScreenWithHeader
+import com.ampairs.workspace.ui.MemberDetailsScreen
 import com.ampairs.workspace.ui.WorkspaceCreateScreen
+import com.ampairs.workspace.ui.WorkspaceInvitationCreateScreen
+import com.ampairs.workspace.ui.WorkspaceInvitationsScreen
 import com.ampairs.workspace.ui.WorkspaceListScreen
 import com.ampairs.workspace.ui.WorkspaceMembersScreen
-import com.ampairs.workspace.ui.MemberDetailsScreen
-import com.ampairs.workspace.ui.WorkspaceInvitationsScreen
-import com.ampairs.workspace.ui.WorkspaceInvitationCreateScreen
 import com.ampairs.workspace.ui.WorkspaceModulesScreen
-import org.koin.compose.koinInject
 
-fun NavGraphBuilder.workspaceNavigation(navController: NavController, onWorkspaceSelected: () -> Unit) {
+fun NavGraphBuilder.workspaceNavigation(
+    navController: NavHostController,
+    onNavigationServiceReady: ((com.ampairs.workspace.navigation.DynamicModuleNavigationService?) -> Unit)? = null,
+    onWorkspaceSelected: () -> Unit
+) {
+    // Create navigation service at workspace level when needed
+    var workspaceNavigationService: com.ampairs.workspace.navigation.DynamicModuleNavigationService? = null
     navigation<Route.Workspace>(startDestination = WorkspaceRoute.Root) {
         
         // Workspace list screen (with offline-first data synchronization)
@@ -36,8 +42,8 @@ fun NavGraphBuilder.workspaceNavigation(navController: NavController, onWorkspac
                         navController.navigate(WorkspaceRoute.Create)
                     },
                     onWorkspaceSelected = { workspaceId: String ->
-                        // Call the callback to navigate to main app
-                        onWorkspaceSelected()
+                        // Navigate to modules list for the selected workspace
+                        navController.navigate(WorkspaceRoute.Modules(workspaceId))
                     },
                     onWorkspaceEdit = { workspaceId: String ->
                         navController.navigate(WorkspaceRoute.Edit(workspaceId))
@@ -169,14 +175,15 @@ fun NavGraphBuilder.workspaceNavigation(navController: NavController, onWorkspac
                 isWorkspaceSelection = false
             ) { paddingValues ->
                 WorkspaceModulesScreen(
-                    viewModel = koinInject(),
-                    onNavigateBack = {
-                        navController.popBackStack()
+                    navController = navController,
+                    onModuleSelected = { moduleCode ->
+                        // Navigate to main app after module selection
+                        onWorkspaceSelected()
                     },
-                    onNavigateToModuleDetail = { moduleId ->
-                        // TODO: Add module detail navigation when implemented
-                        // navController.navigate(WorkspaceRoute.ModuleDetail(modulesRoute.workspaceId, moduleId))
-                    }
+                    onNavigationServiceReady = onNavigationServiceReady,
+                    workspaceId = modulesRoute.workspaceId,
+                    showStoreByDefault = modulesRoute.showStoreByDefault,
+                    paddingValues = paddingValues
                 )
             }
         }

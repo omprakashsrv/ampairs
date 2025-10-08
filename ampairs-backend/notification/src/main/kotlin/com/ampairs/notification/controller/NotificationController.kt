@@ -1,5 +1,6 @@
 package com.ampairs.notification.controller
 
+import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.notification.provider.NotificationChannel
 import com.ampairs.notification.service.NotificationService
 import org.slf4j.LoggerFactory
@@ -21,32 +22,20 @@ class NotificationController @Autowired constructor(
      * Get notification queue statistics
      */
     @GetMapping("/stats")
-    fun getNotificationStatistics(): Map<String, Any> {
+    fun getNotificationStatistics(): ApiResponse<Any> {
         logger.info("Fetching notification statistics")
-
         val stats = notificationService.getNotificationStatistics()
-
-        return mapOf(
-            "success" to true,
-            "data" to stats,
-            "message" to "Notification statistics retrieved successfully"
-        )
+        return ApiResponse.success(stats)
     }
 
     /**
      * Get SMS-specific statistics (for backward compatibility)
      */
     @GetMapping("/sms/stats")
-    fun getSmsStatistics(): Map<String, Any> {
+    fun getSmsStatistics(): ApiResponse<Any> {
         logger.info("Fetching SMS statistics")
-
         val stats = notificationService.getSmsStatistics()
-
-        return mapOf(
-            "success" to true,
-            "data" to stats,
-            "message" to "SMS statistics retrieved successfully"
-        )
+        return ApiResponse.success(stats)
     }
 
     /**

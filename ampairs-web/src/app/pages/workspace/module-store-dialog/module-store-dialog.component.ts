@@ -10,9 +10,10 @@ import { MatSnackBar } from '@angular/material/snack-bar';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatSelectModule } from '@angular/material/select';
+import {MatToolbar, MatToolbarModule, MatToolbarRow} from '@angular/material/toolbar';
 import { MatTabChangeEvent } from '@angular/material/tabs';
 
-import { WorkspaceModuleService, AvailableModule } from '../../../core/services/workspace-module.service';
+import { WorkspaceModuleService, AvailableModule, ModuleWithActions, ModuleCatalogResponse } from '../../../core/services/workspace-module.service';
 
 @Component({
   selector: 'app-module-store-dialog',
@@ -27,7 +28,9 @@ import { WorkspaceModuleService, AvailableModule } from '../../../core/services/
     MatProgressSpinnerModule,
     MatTabsModule,
     MatFormFieldModule,
-    MatSelectModule
+    MatSelectModule,
+    MatToolbar,
+    MatToolbarRow
   ],
   templateUrl: './module-store-dialog.component.html',
   styleUrl: './module-store-dialog.component.scss'
@@ -38,8 +41,9 @@ export class ModuleStoreDialogComponent implements OnInit {
   private dialogRef = inject(MatDialogRef<ModuleStoreDialogComponent>);
 
   // Component state
-  availableModules = signal<AvailableModule[]>([]);
-  filteredModules = signal<AvailableModule[]>([]);
+  availableModules = signal<ModuleWithActions[]>([]);
+  filteredModules = signal<ModuleWithActions[]>([]);
+  catalog = signal<ModuleCatalogResponse | null>(null);
   isLoading = signal(false);
   isInstalling = signal<string | null>(null);
   selectedCategory = signal<string | null>(null);
@@ -48,7 +52,7 @@ export class ModuleStoreDialogComponent implements OnInit {
   // Available categories
   readonly categories = [
     'CUSTOMER_MANAGEMENT',
-    'ORDER_MANAGEMENT', 
+    'ORDER_MANAGEMENT',
     'PRODUCT_MANAGEMENT',
     'INVENTORY_MANAGEMENT',
     'FINANCIAL_MANAGEMENT',
@@ -58,26 +62,29 @@ export class ModuleStoreDialogComponent implements OnInit {
   ];
 
   async ngOnInit() {
-    await this.loadAvailableModules();
+    await this.loadModuleCatalog();
   }
 
-  async loadAvailableModules() {
+  async loadModuleCatalog() {
     this.isLoading.set(true);
     try {
-      let modules: AvailableModule[] = [];
-      
+      const catalog = await this.workspaceModuleService.getModuleCatalog(
+        this.selectedCategory() || undefined
+      );
+
+      this.catalog.set(catalog);
+
       if (this.selectedTab() === 0) {
-        // Featured modules
-        modules = await this.workspaceModuleService.getAvailableModules(undefined, true);
+        // Installed modules - show modules that are installed
+        this.availableModules.set(catalog.installed_modules);
+        this.filteredModules.set(catalog.installed_modules);
       } else {
-        // All modules (optionally filtered by category)
-        modules = await this.workspaceModuleService.getAvailableModules(this.selectedCategory() || undefined);
+        // Available modules - show modules that are not installed
+        this.availableModules.set(catalog.available_modules);
+        this.filteredModules.set(catalog.available_modules);
       }
-      
-      this.availableModules.set(modules);
-      this.filteredModules.set(modules);
     } catch (error) {
-      this.snackBar.open('Failed to load available modules', 'Close', { duration: 3000 });
+      this.snackBar.open('Failed to load module catalog', 'Close', { duration: 3000 });
     } finally {
       this.isLoading.set(false);
     }
@@ -85,30 +92,30 @@ export class ModuleStoreDialogComponent implements OnInit {
 
   async onTabChange(event: MatTabChangeEvent) {
     this.selectedTab.set(event.index);
-    await this.loadAvailableModules();
+    await this.loadModuleCatalog();
   }
 
   async onCategoryChange(category: string | null) {
     this.selectedCategory.set(category);
     if (this.selectedTab() === 1) {
-      await this.loadAvailableModules();
+      await this.loadModuleCatalog();
     }
   }
 
-  async installModule(module: AvailableModule) {
-    if (this.isModuleInstalled(module.module_code)) {
+  async installModule(module: ModuleWithActions) {
+    if (module.installation_status.is_installed) {
       this.snackBar.open('Module is already installed', 'Close', { duration: 3000 });
       return;
     }
 
     this.isInstalling.set(module.module_code);
-    
+
     try {
       const result = await this.workspaceModuleService.installModule(module.module_code);
       this.snackBar.open(`${module.name} installed successfully!`, 'Close', { duration: 3000 });
-      
-      // Close dialog after successful installation
-      this.dialogRef.close(result);
+
+      // Refresh the catalog to get updated installation status
+      await this.loadModuleCatalog();
     } catch (error: any) {
       this.snackBar.open(error.message || 'Failed to install module', 'Close', { duration: 5000 });
     } finally {
@@ -116,8 +123,30 @@ export class ModuleStoreDialogComponent implements OnInit {
     }
   }
 
+  async uninstallModule(module: ModuleWithActions) {
+    if (!module.installation_status.is_installed || !module.installation_status.workspace_module_id) {
+      this.snackBar.open('Module is not installed', 'Close', { duration: 3000 });
+      return;
+    }
+
+    this.isInstalling.set(module.module_code);
+
+    try {
+      const result = await this.workspaceModuleService.uninstallModule(module.installation_status.workspace_module_id);
+      this.snackBar.open(`${module.name} uninstalled successfully!`, 'Close', { duration: 3000 });
+
+      // Refresh the catalog to get updated installation status
+      await this.loadModuleCatalog();
+    } catch (error: any) {
+      this.snackBar.open(error.message || 'Failed to uninstall module', 'Close', { duration: 5000 });
+    } finally {
+      this.isInstalling.set(null);
+    }
+  }
+
   isModuleInstalled(moduleCode: string): boolean {
-    return this.workspaceModuleService.isModuleInstalled(moduleCode);
+    const module = this.availableModules().find(m => m.module_code === moduleCode);
+    return module?.installation_status.is_installed || false;
   }
 
   getCategoryDisplayName(category: string): string {

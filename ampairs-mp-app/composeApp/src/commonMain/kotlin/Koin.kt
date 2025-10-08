@@ -1,19 +1,21 @@
 import com.ampairs.auth.authModule
-import com.ampairs.workspace.workspaceModule
-import com.ampairs.customer.customerModule
-import com.ampairs.home.homeModule
-import com.ampairs.inventory.inventoryModule
-import com.ampairs.invoice.invoiceModule
-import com.ampairs.menu.menuModule
-import com.ampairs.order.orderModule
+import com.ampairs.common.theme.themeModule
+import com.ampairs.customer.di.customerModule
+import com.ampairs.customer.ui.components.location.locationServiceModule
+import com.ampairs.event.di.eventModule
+import com.ampairs.form.di.formModule
 import com.ampairs.product.productModule
+import com.ampairs.tax.taxModule
+import com.ampairs.workspace.workspaceModule
 import org.koin.core.KoinApplication
 import org.koin.core.module.Module
 
 
 fun initKoin(koinApplication: KoinApplication): KoinApplication {
+    // Initialize module providers for dynamic navigation
     koinApplication.modules(
         listOf(
+            themeModule,
             platformModule,
             awsModule,
             // Platform-specific Room database modules
@@ -21,20 +23,15 @@ fun initKoin(koinApplication: KoinApplication): KoinApplication {
             workspacePlatformModule,
             customerPlatformModule,
             productPlatformModule,
-            orderPlatformModule,
-            invoicePlatformModule,
-            inventoryPlatformModule,
-            tallyPlatformModule,
-            // Common feature modules
-            menuModule(),
+            taxPlatformModule,
             authModule(),
             workspaceModule(),
-            customerModule(),
-            homeModule(),
+            eventModule(),
+            formModule,
+            customerModule,
+            locationServiceModule,
             productModule(),
-            inventoryModule(),
-            orderModule(),
-            invoiceModule(),
+            taxModule,
         )
     )
     return koinApplication
@@ -46,8 +43,5 @@ expect val authPlatformModule: Module
 expect val workspacePlatformModule: Module
 expect val customerPlatformModule: Module
 expect val productPlatformModule: Module
-expect val orderPlatformModule: Module
-expect val invoicePlatformModule: Module
-expect val inventoryPlatformModule: Module
-expect val tallyPlatformModule: Module
+expect val taxPlatformModule: Module
 

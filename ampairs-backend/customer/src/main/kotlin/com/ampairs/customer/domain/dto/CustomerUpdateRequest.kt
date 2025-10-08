@@ -4,11 +4,12 @@ import com.ampairs.core.domain.model.Address
 import com.ampairs.core.validation.*
 import com.ampairs.customer.domain.model.Customer
 import jakarta.validation.constraints.*
+import org.springframework.data.geo.Point
 
 data class CustomerUpdateRequest(
     @field:SafeString(maxLength = 50, message = "ID contains invalid characters")
     @field:Size(max = 50, message = "ID cannot exceed 50 characters")
-    var id: String?,
+    var uid: String?,
 
     @field:SafeString(maxLength = 50, message = "Reference ID contains invalid characters")
     @field:Size(max = 50, message = "Reference ID cannot exceed 50 characters")
@@ -23,14 +24,14 @@ data class CustomerUpdateRequest(
     @field:ValidGstin
     var gstin: String?,
 
-    @field:ValidCountryCode
+//    @field:ValidCountryCode
     val countryCode: Int,
 
     @field:ValidPhone
     var phone: String?,
 
     @field:SafeString(maxLength = 15, message = "Landline contains invalid characters")
-    @field:Pattern(regexp = "^[0-9\\-\\+\\(\\)\\s]*$", message = "Invalid landline format")
+    @field:Pattern(regexp = "^[0-9\\-+()\\s]*$", message = "Invalid landline format")
     var landline: String?,
 
     @field:ValidEmail
@@ -38,6 +39,30 @@ data class CustomerUpdateRequest(
 
     @field:ValidPincode
     var pincode: String?,
+
+    var customerType: String?,
+
+    var customerGroup: String?,
+
+    var businessName: String?,
+
+    var companyId: String?,
+
+    var gstNumber: String?,
+
+    var panNumber: String?,
+
+    @field:DecimalMin(value = "0.0", message = "Credit limit must be non-negative")
+    var creditLimit: Double?,
+
+    @field:Min(value = 0, message = "Credit days must be non-negative")
+    var creditDays: Int?,
+
+    var customerNumber: String?,
+
+    var status: String?,
+
+    var attributes: Map<String, Any>?,
 
     @field:SafeString(maxLength = 500, message = "Address contains invalid characters")
     var address: String?,
@@ -75,13 +100,11 @@ data class CustomerUpdateRequest(
 
     val active: Boolean,
     val softDeleted: Boolean,
-    var billingSameAsRegistered: Boolean,
-    var shippingSameAsBilling: Boolean,
 )
 
 fun CustomerUpdateRequest.toCustomer(): Customer {
     val customer = Customer()
-    customer.uid = this.id ?: ""
+    customer.uid = this.uid ?: ""
     customer.refId = this.refId ?: ""
     customer.name = this.name
     customer.countryCode = this.countryCode
@@ -89,18 +112,26 @@ fun CustomerUpdateRequest.toCustomer(): Customer {
     customer.landline = this.landline ?: ""
     customer.email = this.email ?: ""
     customer.pincode = this.pincode ?: ""
-    customer.gstin = this.gstin ?: ""
+    customer.customerType = this.customerType ?: "RETAIL"
+    customer.customerGroup = this.customerGroup ?: "REGULAR"
+    customer.gstNumber = this.gstNumber
+    customer.panNumber = this.panNumber
+    customer.creditLimit = this.creditLimit ?: 0.0
+    customer.creditDays = this.creditDays ?: 0
     customer.address = this.address ?: ""
     customer.state = this.state ?: ""
     customer.street = this.street
     customer.street2 = this.street2
     customer.city = this.city
+    customer.country = this.country
     customer.billingAddress = this.billingAddress ?: Address()
     customer.shippingAddress = this.shippingAddress ?: Address()
-    customer.active = this.active
-    customer.softDeleted = this.softDeleted
-    customer.billingSameAsRegistered = this.billingSameAsRegistered
-    customer.shippingSameAsBilling = this.shippingSameAsBilling
+    customer.location = if (this.latitude != null && this.longitude != null) {
+        // Spring Data Point expects (longitude, latitude) as (X, Y) coordinates
+        Point(this.longitude, this.latitude)
+    } else null
+    customer.status = this.status ?: "ACTIVE"
+    customer.attributes = this.attributes
     return customer
 }
 

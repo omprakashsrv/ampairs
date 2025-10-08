@@ -30,30 +30,9 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
     fun findByWorkspaceIdAndUserIdAndIsActiveTrue(workspaceId: String, userId: String): Optional<WorkspaceMember>
 
     /**
-     * Check if user is member of workspace
-     */
-    fun existsByWorkspaceIdAndUserIdAndIsActiveTrue(workspaceId: String, userId: String): Boolean
-
-    /**
-     * Find all active members of a workspace
-     */
-    fun findByWorkspaceIdAndIsActiveTrueOrderByJoinedAtDesc(workspaceId: String): List<WorkspaceMember>
-
-    /**
      * Find all active members of a workspace with pagination
      */
     fun findByWorkspaceIdAndIsActiveTrue(workspaceId: String, pageable: Pageable): Page<WorkspaceMember>
-
-
-    /**
-     * Find all workspaces a user is member of
-     */
-    fun findByUserIdAndIsActiveTrueOrderByLastActiveAtDesc(userId: String): List<WorkspaceMember>
-
-    /**
-     * Find members by role in workspace
-     */
-    fun findByWorkspaceIdAndRoleAndIsActiveTrue(workspaceId: String, role: WorkspaceRole): List<WorkspaceMember>
 
     /**
      * Find workspace owners
@@ -69,16 +48,6 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
      * Count members by role in workspace
      */
     fun countByWorkspaceIdAndRoleAndIsActiveTrue(workspaceId: String, role: WorkspaceRole): Long
-
-    /**
-     * Find inactive members (for cleanup)
-     */
-    fun findByLastActiveAtBeforeAndIsActiveTrue(lastActiveDate: LocalDateTime): List<WorkspaceMember>
-
-    /**
-     * Find recently joined members
-     */
-    fun findByJoinedAtAfterAndIsActiveTrue(joinedAfter: LocalDateTime): List<WorkspaceMember>
 
     /**
      * Search members by user ID (simplified to avoid cross-module JPA queries)
@@ -98,119 +67,14 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
     fun updateLastActivity(@Param("memberId") memberId: String, @Param("timestamp") timestamp: LocalDateTime)
 
     /**
-     * Update member role
-     */
-    @Modifying
-    @Query("UPDATE com.ampairs.workspace.model.WorkspaceMember wm SET wm.role = :role WHERE wm.uid = :memberId")
-    fun updateMemberRole(@Param("memberId") memberId: String, @Param("role") role: WorkspaceRole)
-
-    /**
-     * Deactivate member
-     */
-    @Modifying
-    @Query(
-        """
-        UPDATE com.ampairs.workspace.model.WorkspaceMember wm 
-        SET wm.isActive = false, 
-            wm.deactivatedAt = :deactivatedAt,
-            wm.deactivatedBy = :deactivatedBy,
-            wm.deactivationReason = :reason
-        WHERE wm.uid = :memberId
-    """
-    )
-    fun deactivateMember(
-        @Param("memberId") memberId: String,
-        @Param("deactivatedAt") deactivatedAt: LocalDateTime,
-        @Param("deactivatedBy") deactivatedBy: String,
-        @Param("reason") reason: String?,
-    )
-
-    /**
-     * Get member statistics for a workspace
-     */
-    @Query(
-        """
-        SELECT 
-            COUNT(wm) as totalMembers,
-            COUNT(CASE WHEN wm.isActive = true THEN 1 END) as activeMembers,
-            COUNT(CASE WHEN wm.role = :ownerRole AND wm.isActive = true THEN 1 END) as owners,
-            COUNT(CASE WHEN wm.role = :adminRole AND wm.isActive = true THEN 1 END) as admins,
-            COUNT(CASE WHEN wm.role = :memberRole AND wm.isActive = true THEN 1 END) as members
-        FROM com.ampairs.workspace.model.WorkspaceMember wm 
-        WHERE wm.workspaceId = :workspaceId
-    """
-    )
-    fun getMemberStatistics(
-        @Param("workspaceId") workspaceId: String,
-        @Param("ownerRole") ownerRole: WorkspaceRole = WorkspaceRole.OWNER,
-        @Param("adminRole") adminRole: WorkspaceRole = WorkspaceRole.ADMIN,
-        @Param("memberRole") memberRole: WorkspaceRole = WorkspaceRole.MEMBER,
-    ): Map<String, Long>
-
-    /**
-     * Find members with specific permission level or higher
-     */
-    @Query(
-        """
-        SELECT wm FROM com.ampairs.workspace.model.WorkspaceMember wm
-        WHERE wm.workspaceId = :workspaceId 
-        AND wm.isActive = true
-        AND wm.role IN :roles
-    """
-    )
-    fun findMembersWithRoles(
-        @Param("workspaceId") workspaceId: String,
-        @Param("roles") roles: List<WorkspaceRole>,
-    ): List<WorkspaceMember>
-
-    /**
-     * Delete inactive members (hard delete for cleanup)
-     */
-    @Modifying
-    @Query("DELETE FROM com.ampairs.workspace.model.WorkspaceMember wm WHERE wm.isActive = false AND wm.deactivatedAt < :cleanupDate")
-    fun deleteInactiveMembers(@Param("cleanupDate") cleanupDate: LocalDateTime): Int
-
-    /**
-     * Find members who haven't been active for a long time
-     */
-    @Query(
-        """
-        SELECT wm FROM com.ampairs.workspace.model.WorkspaceMember wm
-        WHERE wm.isActive = true 
-        AND (wm.lastActiveAt IS NULL OR wm.lastActiveAt < :inactiveDate)
-        AND wm.joinedAt < :joinedBefore
-    """
-    )
-    fun findLongInactiveMembers(
-        @Param("inactiveDate") inactiveDate: LocalDateTime,
-        @Param("joinedBefore") joinedBefore: LocalDateTime,
-    ): List<WorkspaceMember>
-
-    // Additional methods needed by services
-
-    /**
      * Check if user exists in workspace
      */
     fun existsByWorkspaceIdAndUserId(workspaceId: String, userId: String): Boolean
 
     /**
-     * Count members by role in workspace
-     */
-    fun countByWorkspaceIdAndRole(workspaceId: String, role: WorkspaceRole): Long
-
-    /**
      * Find all members by workspace ordered by creation date
      */
     fun findByWorkspaceIdOrderByCreatedAtDesc(workspaceId: String): List<WorkspaceMember>
-
-    /**
-     * Check if user has specific role and is active in workspace
-     */
-    fun existsByWorkspaceIdAndUserIdAndRoleAndIsActiveTrue(
-        workspaceId: String,
-        userId: String,
-        role: WorkspaceRole,
-    ): Boolean
 
     /**
      * Count total members in workspace (active and inactive)
@@ -272,35 +136,6 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
     @Query("SELECT COUNT(*) FROM workspace_members wm WHERE JSON_CONTAINS(wm.team_ids, JSON_QUOTE(:teamId))", nativeQuery = true)
     fun countByTeamIdsContaining(@Param("teamId") teamId: String): Int
 
-    // EntityGraph methods for efficient loading of team data
-
-    /**
-     * Find active members with primary team loaded via EntityGraph
-     */
-    @EntityGraph(attributePaths = ["primaryTeam"])
-    @Query("SELECT wm FROM WorkspaceMember wm WHERE wm.workspaceId = :workspaceId AND wm.isActive = true ORDER BY wm.joinedAt DESC")
-    fun findByWorkspaceIdAndIsActiveTrueWithPrimaryTeam(
-        @Param("workspaceId") workspaceId: String,
-        pageable: Pageable
-    ): Page<WorkspaceMember>
-
-    /**
-     * Find active members with primary team loaded via EntityGraph (list version)
-     */
-    @EntityGraph(attributePaths = ["primaryTeam"])
-    @Query("SELECT wm FROM WorkspaceMember wm WHERE wm.workspaceId = :workspaceId AND wm.isActive = true ORDER BY wm.joinedAt DESC")
-    fun findByWorkspaceIdAndIsActiveTrueWithPrimaryTeam(@Param("workspaceId") workspaceId: String): List<WorkspaceMember>
-
-    /**
-     * Find single member with primary team loaded via EntityGraph
-     */
-    @EntityGraph(attributePaths = ["primaryTeam"])
-    @Query("SELECT wm FROM WorkspaceMember wm WHERE wm.workspaceId = :workspaceId AND wm.userId = :userId AND wm.isActive = true")
-    fun findByWorkspaceIdAndUserIdAndIsActiveTrueWithPrimaryTeam(
-        @Param("workspaceId") workspaceId: String,
-        @Param("userId") userId: String
-    ): Optional<WorkspaceMember>
-
     /**
      * Find member by ID with primary team loaded via EntityGraph
      */
@@ -317,4 +152,29 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
      * Find multiple members by UIDs (string identifiers)
      */
     fun findByUidIn(uids: Collection<String>): List<WorkspaceMember>
+
+    /**
+     * Find active members with primary team loaded via EntityGraph - uses @TenantId
+     */
+    @EntityGraph(attributePaths = ["primaryTeam"])
+    @Query("SELECT wm FROM WorkspaceMember wm WHERE wm.isActive = true ORDER BY wm.joinedAt DESC")
+    fun findByIsActiveTrueWithPrimaryTeam(pageable: Pageable): Page<WorkspaceMember>
+
+    /**
+     * Find user's membership in current tenant - uses @TenantId
+     */
+    @Query("SELECT wm FROM WorkspaceMember wm WHERE wm.userId = :userId AND wm.isActive = true")
+    fun findByUserIdAndIsActiveTrue(@Param("userId") userId: String): Optional<WorkspaceMember>
+
+    /**
+     * Find user's membership with primary team in current tenant - uses @TenantId
+     */
+    @EntityGraph(attributePaths = ["primaryTeam"])
+    @Query("SELECT wm FROM WorkspaceMember wm WHERE wm.userId = :userId AND wm.isActive = true")
+    fun findByUserIdAndIsActiveTrueWithPrimaryTeam(@Param("userId") userId: String): Optional<WorkspaceMember>
+
+    /**
+     * Check if user exists with specific role in current tenant - uses @TenantId
+     */
+    fun existsByUserIdAndRoleAndIsActiveTrue(userId: String, role: WorkspaceRole): Boolean
 }

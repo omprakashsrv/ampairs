@@ -8,6 +8,7 @@ import com.ampairs.auth.api.model.Token
 import com.ampairs.auth.api.model.UserApiModel
 import com.ampairs.auth.api.model.UserUpdateRequest
 import com.ampairs.auth.domain.DeviceSession
+import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
 import com.ampairs.common.post
@@ -17,8 +18,6 @@ import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.plugins.auth.authProvider
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 
-const val AUTH_ENDPOINT = "http://localhost:8080"
-
 class AuthApiImpl(engine: HttpClientEngine, private val tokenRepository: TokenRepository) : AuthApi {
 
     private val client = httpClient(engine, tokenRepository)
@@ -26,14 +25,15 @@ class AuthApiImpl(engine: HttpClientEngine, private val tokenRepository: TokenRe
     override suspend fun initAuth(authInit: AuthInit): Response<AuthInitResponse> {
         return post(
             client,
-            AUTH_ENDPOINT + "/auth/v1/init",
+            ApiUrlBuilder.authUrl("auth/v1/init"),
             authInit
         )
     }
 
     override suspend fun completeAuth(authComplete: AuthComplete): Response<Token> {
         return post(
-            client, AUTH_ENDPOINT + "/auth/v1/verify",
+            client,
+            ApiUrlBuilder.authUrl("auth/v1/verify"),
             authComplete
         )
     }
@@ -43,27 +43,27 @@ class AuthApiImpl(engine: HttpClientEngine, private val tokenRepository: TokenRe
             refreshToken = tokenRepository.getRefreshToken(),
             deviceId = deviceId
         )
-        return post(client, AUTH_ENDPOINT + "/auth/v1/refresh_token", refreshTokenModel)
+        return post(client, ApiUrlBuilder.authUrl("auth/v1/refresh_token"), refreshTokenModel)
     }
 
     override suspend fun getUser(): Response<UserApiModel> {
-        return get(client, AUTH_ENDPOINT + "/user/v1")
+        return get(client, ApiUrlBuilder.userUrl("v1"))
     }
 
     override suspend fun updateUser(userUpdateRequest: UserUpdateRequest): Response<UserApiModel> {
-        return post(client, AUTH_ENDPOINT + "/user/v1/update", userUpdateRequest)
+        return post(client, ApiUrlBuilder.userUrl("v1/update"), userUpdateRequest)
     }
 
     override suspend fun getDeviceSessions(): Response<List<DeviceSession>> {
-        return get(client, AUTH_ENDPOINT + "/auth/v1/devices")
+        return get(client, ApiUrlBuilder.authUrl("auth/v1/devices"))
     }
 
     override suspend fun logoutDevice(deviceId: String): Response<GenericSuccess> {
-        return post(client, AUTH_ENDPOINT + "/auth/v1/devices/$deviceId/logout", null)
+        return post(client, ApiUrlBuilder.authUrl("auth/v1/devices/$deviceId/logout"), null)
     }
 
     override suspend fun logoutAllDevices(): Response<GenericSuccess> {
-        return post(client, AUTH_ENDPOINT + "/auth/v1/logout/all", null)
+        return post(client, ApiUrlBuilder.authUrl("auth/v1/logout/all"), null)
     }
 
     override fun clearToken() {

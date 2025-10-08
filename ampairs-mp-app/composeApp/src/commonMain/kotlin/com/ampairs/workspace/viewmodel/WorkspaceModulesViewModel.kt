@@ -2,411 +2,342 @@ package com.ampairs.workspace.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.ampairs.workspace.api.WorkspaceModuleApi
-import com.ampairs.workspace.api.model.WorkspaceModuleApiModel
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
+import com.ampairs.workspace.api.model.InstalledModule
+import com.ampairs.workspace.api.model.AvailableModule
+import com.ampairs.workspace.api.model.ModuleInstallationResponse
+import com.ampairs.workspace.api.model.ModuleUninstallationResponse
+import com.ampairs.workspace.db.WorkspaceModuleRepository
+import com.ampairs.workspace.navigation.DynamicModuleNavigationService
+import com.ampairs.workspace.navigation.GlobalNavigationManager
+import com.ampairs.workspace.store.InstalledModuleKey
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import org.mobilenativefoundation.store.store5.StoreReadRequest
+import org.mobilenativefoundation.store.store5.StoreReadResponse
 
 /**
- * ViewModel for Workspace Modules Screen
- *
- * Manages state for module management functionality including:
- * - Module dashboard and analytics
- * - Installed modules management
- * - Available modules discovery
- * - Module operations (install, uninstall, configure)
+ * ViewModel for Workspace Modules matching web implementation
+ * Follows web: workspace-modules.component.ts with signals pattern
  */
 class WorkspaceModulesViewModel(
-    private val moduleApi: WorkspaceModuleApi,
+    private val moduleRepository: WorkspaceModuleRepository,
+    private val workspaceId: String? = null // Optional workspace context
 ) : ViewModel() {
 
-    private val _state = MutableStateFlow(WorkspaceModulesState())
-    val state: StateFlow<WorkspaceModulesState> = _state.asStateFlow()
+    // Use global navigation manager instead of local service
+    private val globalNavigationManager = GlobalNavigationManager.getInstance()
 
-    /**
-     * Load module dashboard data
-     */
-    fun loadModuleDashboard() {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
+    private val _isLoading = MutableStateFlow(false)
+    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
 
-            moduleApi.getModuleDashboard().fold(
-                onSuccess = { dashboard ->
-                    _state.value = _state.value.copy(
-                        dashboardData = dashboard,
-                        isLoading = false
-                    )
-                },
-                onFailure = { error ->
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Failed to load dashboard"
-                    )
-                }
-            )
-        }
+    private val _errorMessage = MutableStateFlow<String?>(null)
+    val errorMessage: StateFlow<String?> = _errorMessage.asStateFlow()
+
+    // Installed modules - using UI state pattern like StateListViewModel
+    private val _installedModules = MutableStateFlow<List<InstalledModule>>(emptyList())
+    val installedModules: StateFlow<List<InstalledModule>> = _installedModules.asStateFlow()
+
+    // Active modules - matches web: get activeModules()
+    val activeModules: StateFlow<List<InstalledModule>> = installedModules
+        .map { modules -> modules.filter { it.status == "ACTIVE" && it.enabled } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Available modules for store - matches web: availableModules
+    private val _availableModules = MutableStateFlow<List<AvailableModule>>(emptyList())
+    val availableModules: StateFlow<List<AvailableModule>> = _availableModules.asStateFlow()
+
+    // Featured modules - matches web: get featuredModules()
+    val featuredModules: StateFlow<List<AvailableModule>> = availableModules
+        .map { modules -> modules.filter { it.featured } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+    // Note: Data loading is handled by the UI screen with explicit refresh=true
+    // This ensures fresh data is fetched from the backend via Store5
+
+    init {
+        // Sync to global navigation manager is now enabled in loadInstalledModules()
+        // Auto-loading is disabled to prevent infinite loops - only load when explicitly called
     }
 
     /**
-     * Load installed modules
+     * Load installed modules - exact StateListViewModel pattern
      */
     fun loadInstalledModules() {
+        val wsId = workspaceId ?: return
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
+            _isLoading.value = true
+            _errorMessage.value = null
+            // Set loading state in global navigation manager
+            globalNavigationManager.setModuleLoading(true)
 
-            val currentState = _state.value
-            moduleApi.searchInstalledModules(
-                query = currentState.searchQuery.takeIf { it.isNotBlank() },
-                category = currentState.selectedCategory.takeIf { it.isNotBlank() },
-                status = currentState.selectedStatus.takeIf { it.isNotBlank() },
-                page = currentState.currentPage,
-                size = currentState.pageSize,
-                sortBy = "display_order",
-                sortDirection = "asc"
-            ).fold(
-                onSuccess = { response ->
-                    _state.value = _state.value.copy(
-                        installedModules = response.modules,
-                        totalElements = response.totalElements,
-                        totalPages = response.totalPages,
-                        isLoading = false
-                    )
-                },
-                onFailure = { error ->
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Failed to load modules"
-                    )
-                }
-            )
-        }
-    }
+            try {
+                val key = InstalledModuleKey.refresh(wsId)
+                moduleRepository.moduleStore
+                    .stream(StoreReadRequest.cached(key, refresh = true))
+                    .collect { response ->
+                        when (response) {
+                            is StoreReadResponse.Data -> {
+                                _installedModules.value = response.value
+                                _isLoading.value = false
+                                _errorMessage.value = null
+                                // Sync modules to global navigation manager
+                                globalNavigationManager.updateInstalledModules(response.value)
+                            }
 
-    /**
-     * Load available modules for installation
-     */
-    fun loadAvailableModules() {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
+                            is StoreReadResponse.Loading -> {
+                                _isLoading.value = true
+                            }
 
-            moduleApi.getAvailableModules().fold(
-                onSuccess = { response ->
-                    val allModules = response.essentialModules +
-                            response.recommendedModules +
-                            response.availableModules
-                    _state.value = _state.value.copy(
-                        availableModules = allModules,
-                        isLoading = false
-                    )
-                },
-                onFailure = { error ->
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Failed to load available modules"
-                    )
-                }
-            )
-        }
-    }
+                            is StoreReadResponse.Error.Exception -> {
+                                _isLoading.value = false
+                                _errorMessage.value = response.error.message ?: "Failed to load modules"
+                                // Set error in global navigation manager
+                                globalNavigationManager.setNavigationError(_errorMessage.value)
+                            }
 
-    /**
-     * Install a module
-     */
-    fun installModule(masterModule: WorkspaceModuleApiModel.MasterModule) {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
+                            is StoreReadResponse.Error.Message -> {
+                                _isLoading.value = false
+                                _errorMessage.value = response.message
+                                // Set error in global navigation manager
+                                globalNavigationManager.setNavigationError(_errorMessage.value)
+                            }
 
-            val installRequest = WorkspaceModuleApiModel.ModuleInstallationRequest(
-                masterModuleId = masterModule.id,
-                displayOrder = _state.value.installedModules.size + 1
-            )
-
-            moduleApi.installModule(installRequest).fold(
-                onSuccess = { response ->
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        successMessage = "${masterModule.name} installed successfully"
-                    )
-                    // Refresh data
-                    loadInstalledModules()
-                    loadModuleDashboard()
-                },
-                onFailure = { error ->
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Failed to install ${masterModule.name}"
-                    )
-                }
-            )
-        }
-    }
-
-    /**
-     * Uninstall a module
-     */
-    fun uninstallModule(moduleId: String, preserveData: Boolean = false) {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
-
-            val moduleName = _state.value.installedModules.find { it.id == moduleId }?.effectiveName ?: "Module"
-
-            moduleApi.uninstallModule(moduleId, preserveData).fold(
-                onSuccess = { response ->
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        successMessage = "$moduleName uninstalled successfully"
-                    )
-                    // Refresh data
-                    loadInstalledModules()
-                    loadModuleDashboard()
-                },
-                onFailure = { error ->
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Failed to uninstall $moduleName"
-                    )
-                }
-            )
-        }
-    }
-
-    /**
-     * Toggle module enabled/disabled status
-     */
-    fun toggleModuleStatus(moduleId: String, enabled: Boolean) {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
-
-            val moduleName = _state.value.installedModules.find { it.id == moduleId }?.effectiveName ?: "Module"
-
-            moduleApi.toggleModuleStatus(moduleId, enabled).fold(
-                onSuccess = { response ->
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        successMessage = "$moduleName ${if (enabled) "enabled" else "disabled"} successfully"
-                    )
-                    // Update the module in the list
-                    val updatedModules = _state.value.installedModules.map { module ->
-                        if (module.id == moduleId) {
-                            module.copy(enabled = enabled)
-                        } else {
-                            module
+                            else -> {
+                                // Handle other response types if needed
+                            }
                         }
                     }
-                    _state.value = _state.value.copy(installedModules = updatedModules)
-                },
-                onFailure = { error ->
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Failed to update $moduleName status"
-                    )
-                }
-            )
+            } catch (e: Exception) {
+                _isLoading.value = false
+                _errorMessage.value = e.message ?: "Failed to load modules"
+                // Set error in global navigation manager
+                globalNavigationManager.setNavigationError(_errorMessage.value)
+            }
         }
     }
 
     /**
-     * Update module configuration
+     * Load available modules - matches web: async getAvailableModules()
+     * Uses offline-first approach with fallback to cached data or mock data
      */
-    fun updateModuleConfiguration(
-        moduleId: String,
-        settings: Map<String, kotlinx.serialization.json.JsonElement>,
-        notes: String? = null,
+    fun loadAvailableModules(
+        category: String? = null,
+        featured: Boolean = false,
+        refresh: Boolean = false
     ) {
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
+            try {
+                _isLoading.value = true
+                _errorMessage.value = null
 
-            val configRequest = WorkspaceModuleApiModel.ModuleConfigurationRequest(
-                settings = settings,
-                notes = notes
+                // Call actual API through repository (Store5 handles caching automatically)
+                val modules = moduleRepository.getAvailableModules(category, featured, refresh)
+                _availableModules.value = modules
+
+            } catch (e: Exception) {
+                // Check if we have existing cached data
+                val currentModules = _availableModules.value
+                if (currentModules.isEmpty()) {
+                    // No cached data available, use mock data as fallback
+                    val mockModules = createMockAvailableModules()
+                    _availableModules.value = mockModules
+                    _errorMessage.value = "Using sample data - connection unavailable"
+                } else {
+                    // We have cached data, show subtle connectivity warning
+                    _errorMessage.value = "Using offline data - connection unavailable"
+                }
+            } finally {
+                _isLoading.value = false
+            }
+        }
+    }
+
+    /**
+     * Mock data for testing - remove when backend is ready
+     */
+    private fun createMockAvailableModules(): List<AvailableModule> {
+        return listOf(
+            AvailableModule(
+                moduleCode = "CUSTOMER_MGMT",
+                name = "Customer Management",
+                description = "Comprehensive customer relationship management with advanced analytics",
+                category = "Business",
+                version = "2.1.0",
+                rating = 4.8,
+                installCount = 15420,
+                complexity = "Medium",
+                icon = "customers",
+                primaryColor = "#2196F3",
+                featured = true,
+                requiredTier = "FREE",
+                sizeMb = 45
+            ),
+            AvailableModule(
+                moduleCode = "INVENTORY_MGMT",
+                name = "Inventory Management",
+                description = "Real-time inventory tracking with automated alerts",
+                category = "Operations",
+                version = "1.8.2",
+                rating = 4.6,
+                installCount = 12300,
+                complexity = "Simple",
+                icon = "inventory",
+                primaryColor = "#4CAF50",
+                featured = true,
+                requiredTier = "FREE",
+                sizeMb = 32
+            ),
+            AvailableModule(
+                moduleCode = "ANALYTICS_PRO",
+                name = "Analytics Dashboard",
+                description = "Advanced business intelligence and reporting tools",
+                category = "Analytics",
+                version = "3.0.1",
+                rating = 4.9,
+                installCount = 8750,
+                complexity = "Advanced",
+                icon = "analytics",
+                primaryColor = "#FF9800",
+                featured = true,
+                requiredTier = "PRO",
+                sizeMb = 78
+            ),
+            AvailableModule(
+                moduleCode = "ORDER_MGMT",
+                name = "Order Management",
+                description = "Streamlined order processing and fulfillment",
+                category = "Business",
+                version = "2.3.0",
+                rating = 4.5,
+                installCount = 9850,
+                complexity = "Simple",
+                icon = "orders",
+                primaryColor = "#9C27B0",
+                featured = false,
+                requiredTier = "FREE",
+                sizeMb = 28
+            ),
+            AvailableModule(
+                moduleCode = "FINANCIAL_MGMT",
+                name = "Financial Management",
+                description = "Complete accounting and financial tracking solution",
+                category = "Finance",
+                version = "2.0.5",
+                rating = 4.7,
+                installCount = 6420,
+                complexity = "Advanced",
+                icon = "finance",
+                primaryColor = "#E91E63",
+                featured = false,
+                requiredTier = "PRO",
+                sizeMb = 95
+            ),
+            AvailableModule(
+                moduleCode = "HR_MGMT",
+                name = "Human Resources",
+                description = "Employee management and HR workflows",
+                category = "HR",
+                version = "1.5.8",
+                rating = 4.3,
+                installCount = 4200,
+                complexity = "Medium",
+                icon = "hr",
+                primaryColor = "#607D8B",
+                featured = false,
+                requiredTier = "BUSINESS",
+                sizeMb = 52
             )
+        )
+    }
 
-            val moduleName = _state.value.installedModules.find { it.id == moduleId }?.effectiveName ?: "Module"
+    /**
+     * Install module - matches web: async installModule(moduleCode: string)
+     */
+    fun installModule(moduleCode: String, onResult: (ModuleInstallationResponse?) -> Unit) {
+        val wsId = workspaceId ?: run {
+            onResult(null)
+            return
+        }
 
-            moduleApi.updateModuleConfiguration(moduleId, configRequest).fold(
-                onSuccess = { response ->
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        successMessage = "$moduleName configuration updated successfully"
-                    )
+        viewModelScope.launch {
+            try {
+                _errorMessage.value = null
+
+                // Call actual API through repository
+                val result = moduleRepository.installModule(wsId, moduleCode)
+                if (result.isSuccess) {
+                    onResult(result.getOrThrow())
                     loadInstalledModules()
-                },
-                onFailure = { error ->
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Failed to update $moduleName configuration"
-                    )
+                } else {
+                    val error = result.exceptionOrNull()?.message ?: "Failed to install module"
+                    _errorMessage.value = error
+                    onResult(null)
                 }
-            )
+            } catch (e: Exception) {
+                val error = e.message ?: "Failed to install module"
+                _errorMessage.value = error
+                onResult(null)
+            }
         }
     }
 
     /**
-     * Update module to latest version
+     * Uninstall module - matches web: async uninstallModule(moduleId: string)
      */
-    fun updateModule(moduleId: String) {
+    fun uninstallModule(moduleId: String, onResult: (ModuleUninstallationResponse?) -> Unit) {
+        val wsId = workspaceId ?: run {
+            onResult(null)
+            return
+        }
+
         viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
+            try {
+                _isLoading.value = true
+                _errorMessage.value = null
 
-            val moduleName = _state.value.installedModules.find { it.id == moduleId }?.effectiveName ?: "Module"
-
-            moduleApi.updateModule(moduleId).fold(
-                onSuccess = { response ->
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        successMessage = "$moduleName updated successfully"
-                    )
+                val result = moduleRepository.uninstallModule(wsId, moduleId)
+                if (result.isSuccess) {
+                    onResult(result.getOrThrow())
+                    // Refresh installed modules after successful uninstallation
                     loadInstalledModules()
-                },
-                onFailure = { error ->
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Failed to update $moduleName"
-                    )
+                } else {
+                    val error = result.exceptionOrNull()?.message ?: "Failed to uninstall module"
+                    _errorMessage.value = error
+                    onResult(null)
                 }
-            )
+            } catch (e: Exception) {
+                val error = e.message ?: "Failed to uninstall module"
+                _errorMessage.value = error
+                onResult(null)
+            } finally {
+                _isLoading.value = false
+            }
         }
     }
 
     /**
-     * Reset module configuration to defaults
+     * Check if module is installed - matches web: isModuleInstalled(moduleCode: string)
      */
-    fun resetModuleConfiguration(moduleId: String) {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
-
-            val moduleName = _state.value.installedModules.find { it.id == moduleId }?.effectiveName ?: "Module"
-
-            moduleApi.resetModuleConfiguration(moduleId).fold(
-                onSuccess = { response ->
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        successMessage = "$moduleName reset to default configuration"
-                    )
-                    loadInstalledModules()
-                },
-                onFailure = { error ->
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Failed to reset $moduleName"
-                    )
-                }
-            )
-        }
+    suspend fun isModuleInstalled(moduleCode: String): Boolean {
+        val wsId = workspaceId ?: return false
+        return moduleRepository.isModuleInstalled(wsId, moduleCode)
     }
 
     /**
-     * Get module analytics
+     * Get module by code - helper method
      */
-    fun loadModuleAnalytics(moduleId: String, period: String = "30d") {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
-
-            moduleApi.getModuleAnalytics(moduleId, period).fold(
-                onSuccess = { analytics ->
-                    _state.value = _state.value.copy(
-                        moduleAnalytics = _state.value.moduleAnalytics + (moduleId to analytics),
-                        isLoading = false
-                    )
-                },
-                onFailure = { error ->
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Failed to load module analytics"
-                    )
-                }
-            )
-        }
-    }
-
-    /**
-     * Check for module updates
-     */
-    fun checkForUpdates() {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(isLoading = true, errorMessage = null)
-
-            moduleApi.checkForUpdates().fold(
-                onSuccess = { updates ->
-                    _state.value = _state.value.copy(
-                        availableUpdates = updates,
-                        isLoading = false
-                    )
-                },
-                onFailure = { error ->
-                    _state.value = _state.value.copy(
-                        isLoading = false,
-                        errorMessage = error.message ?: "Failed to check for updates"
-                    )
-                }
-            )
-        }
-    }
-
-    /**
-     * Update search query
-     */
-    fun updateSearchQuery(query: String) {
-        _state.value = _state.value.copy(
-            searchQuery = query,
-            currentPage = 0
-        )
-        loadInstalledModules()
-    }
-
-    /**
-     * Update selected category filter
-     */
-    fun updateCategory(category: String) {
-        _state.value = _state.value.copy(
-            selectedCategory = category,
-            currentPage = 0
-        )
-        loadInstalledModules()
-    }
-
-    /**
-     * Update selected status filter
-     */
-    fun updateStatus(status: String) {
-        _state.value = _state.value.copy(
-            selectedStatus = status,
-            currentPage = 0
-        )
-        loadInstalledModules()
-    }
-
-    /**
-     * Change page
-     */
-    fun changePage(page: Int) {
-        _state.value = _state.value.copy(currentPage = page)
-        loadInstalledModules()
-    }
-
-    /**
-     * Clear all filters
-     */
-    fun clearFilters() {
-        _state.value = _state.value.copy(
-            searchQuery = "",
-            selectedCategory = "",
-            selectedStatus = "",
-            currentPage = 0
-        )
-        loadInstalledModules()
+    suspend fun getModuleByCode(moduleCode: String): InstalledModule? {
+        val wsId = workspaceId ?: return null
+        return moduleRepository.getModuleByCode(wsId, moduleCode)
     }
 
     /**
      * Refresh all data
      */
     fun refresh() {
-        loadModuleDashboard()
         loadInstalledModules()
-        if (_state.value.availableModules.isNotEmpty()) {
-            loadAvailableModules()
+        if (_availableModules.value.isNotEmpty()) {
+            loadAvailableModules(refresh = true)
         }
     }
 
@@ -414,44 +345,6 @@ class WorkspaceModulesViewModel(
      * Clear error message
      */
     fun clearError() {
-        _state.value = _state.value.copy(errorMessage = null)
-    }
-
-    /**
-     * Clear success message
-     */
-    fun clearSuccess() {
-        _state.value = _state.value.copy(successMessage = null)
+        _errorMessage.value = null
     }
 }
-
-/**
- * State class for Workspace Modules Screen
- */
-data class WorkspaceModulesState(
-    val isLoading: Boolean = false,
-    val errorMessage: String? = null,
-    val successMessage: String? = null,
-
-    // Dashboard data
-    val dashboardData: WorkspaceModuleApiModel.ModuleDashboardResponse? = null,
-
-    // Installed modules
-    val installedModules: List<WorkspaceModuleApiModel.WorkspaceModule> = emptyList(),
-    val totalElements: Long = 0,
-    val totalPages: Int = 0,
-    val currentPage: Int = 0,
-    val pageSize: Int = 20,
-
-    // Available modules
-    val availableModules: List<WorkspaceModuleApiModel.MasterModule> = emptyList(),
-
-    // Filters
-    val searchQuery: String = "",
-    val selectedCategory: String = "",
-    val selectedStatus: String = "",
-
-    // Analytics
-    val moduleAnalytics: Map<String, WorkspaceModuleApiModel.ModuleAnalyticsResponse> = emptyMap(),
-    val availableUpdates: WorkspaceModuleApiModel.ModuleUpdatesResponse? = null,
-)

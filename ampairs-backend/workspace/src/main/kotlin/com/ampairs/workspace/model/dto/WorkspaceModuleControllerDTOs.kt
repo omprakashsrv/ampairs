@@ -1,5 +1,7 @@
 package com.ampairs.workspace.model.dto
 
+import com.ampairs.workspace.model.enums.WorkspaceModuleStatus
+import com.ampairs.workspace.model.ModuleRouteInfo
 import java.time.LocalDateTime
 
 /**
@@ -11,13 +13,15 @@ data class InstalledModuleResponse(
     var name: String = "",
     var category: String = "",
     var version: String = "",
-    var status: String = "",
+    var status: WorkspaceModuleStatus = WorkspaceModuleStatus.ACTIVE,
     var enabled: Boolean = true,
     var installedAt: LocalDateTime = LocalDateTime.now(),
     var icon: String = "",
     var primaryColor: String = "",
     var healthScore: Double = 1.0,
     var needsAttention: Boolean = false,
+    var routeInfo: ModuleRouteInfo = ModuleRouteInfo(),
+    var navigationIndex: Int = 0
 )
 
 /**
@@ -143,6 +147,8 @@ data class AvailableModuleResponse(
     var featured: Boolean = false,
     var requiredTier: String = "",
     var sizeMb: Int = 0,
+    var routeInfo: ModuleRouteInfo = ModuleRouteInfo(),
+    var navigationIndex: Int = 0
 )
 
 /**
@@ -177,3 +183,97 @@ data class ModuleUninstallationResponse(
     var message: String = "",
     var uninstalledAt: LocalDateTime = LocalDateTime.now(),
 )
+
+/**
+ * Unified module catalog response that includes both installed and available modules
+ * with their respective action states (GET /workspace/v1/modules/catalog)
+ */
+data class ModuleCatalogResponse(
+    var installedModules: List<ModuleWithActionsResponse> = emptyList(),
+    var availableModules: List<ModuleWithActionsResponse> = emptyList(),
+    var categories: List<ModuleCategoryResponse> = emptyList(),
+    var statistics: ModuleCatalogStatistics = ModuleCatalogStatistics(),
+)
+
+/**
+ * Module information with available actions
+ */
+data class ModuleWithActionsResponse(
+    var moduleCode: String = "",
+    var name: String = "",
+    var description: String? = null,
+    var category: String = "",
+    var version: String = "",
+    var icon: String = "",
+    var primaryColor: String = "",
+    var featured: Boolean = false,
+    var rating: Double = 0.0,
+    var installCount: Int = 0,
+    var complexity: String = "",
+    var sizeMb: Int = 0,
+    var requiredTier: String = "",
+    var installationStatus: ModuleInstallationStatus = ModuleInstallationStatus(),
+    var availableActions: List<ModuleActionOption> = emptyList(),
+    var permissions: ModuleActionPermissions = ModuleActionPermissions(),
+    var routeInfo: ModuleRouteInfo = ModuleRouteInfo(),
+    var navigationIndex: Int = 0
+)
+
+/**
+ * Installation status information for a module
+ */
+data class ModuleInstallationStatus(
+    var isInstalled: Boolean = false,
+    var workspaceModuleId: String? = null,
+    var status: WorkspaceModuleStatus? = null,
+    var enabled: Boolean? = null,
+    var installedAt: LocalDateTime? = null,
+    var healthScore: Double? = null,
+    var needsAttention: Boolean = false,
+)
+
+/**
+ * Available action options for a module
+ */
+data class ModuleActionOption(
+    var actionType: ModuleActionType = ModuleActionType.INSTALL,
+    var label: String = "",
+    var description: String = "",
+    var enabled: Boolean = true,
+    var requiresConfirmation: Boolean = false,
+    var confirmationMessage: String? = null,
+)
+
+/**
+ * User permissions for module actions
+ */
+data class ModuleActionPermissions(
+    var canInstall: Boolean = false,
+    var canUninstall: Boolean = false,
+    var canConfigure: Boolean = false,
+    var canEnable: Boolean = false,
+    var canDisable: Boolean = false,
+)
+
+/**
+ * Statistics for the module catalog
+ */
+data class ModuleCatalogStatistics(
+    var totalInstalled: Int = 0,
+    var totalAvailable: Int = 0,
+    var enabledModules: Int = 0,
+    var disabledModules: Int = 0,
+    var modulesNeedingAttention: Int = 0,
+)
+
+/**
+ * Enum for module action types
+ */
+enum class ModuleActionType {
+    INSTALL,
+    UNINSTALL,
+    ENABLE,
+    DISABLE,
+    CONFIGURE,
+    UPDATE
+}

@@ -1,5 +1,6 @@
 package com.ampairs.order.controller
 
+import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.order.domain.dto.*
 import com.ampairs.order.service.OrderService
 import jakarta.validation.Valid
@@ -13,22 +14,25 @@ class OrderController @Autowired constructor(
 ) {
 
     @PostMapping("")
-    fun updateOrder(@RequestBody @Valid orderUpdateRequest: OrderUpdateRequest): OrderResponse {
+    fun updateOrder(@RequestBody @Valid orderUpdateRequest: OrderUpdateRequest): ApiResponse<OrderResponse> {
         val order = orderUpdateRequest.toOrder()
         val orderItems = orderUpdateRequest.orderItems.toOrderItems()
-        return orderService.updateOrder(order, orderItems)
+        val result = orderService.updateOrder(order, orderItems)
+        return ApiResponse.success(result)
     }
 
     @PostMapping("create_invoice")
-    fun createInvoice(@RequestBody @Valid orderUpdateRequest: OrderUpdateRequest): OrderResponse {
+    fun createInvoice(@RequestBody @Valid orderUpdateRequest: OrderUpdateRequest): ApiResponse<OrderResponse> {
         val order = orderUpdateRequest.toOrder()
         val orderItems = orderUpdateRequest.orderItems.toOrderItems()
-        return orderService.createInvoice(order, orderItems)
+        val result = orderService.createInvoice(order, orderItems)
+        return ApiResponse.success(result)
     }
 
     @GetMapping("")
-    fun getOrders(@RequestParam("last_updated") lastUpdated: Long?): List<OrderResponse> {
-        return orderService.getOrders(lastUpdated ?: 0).toResponse()
+    fun getOrders(@RequestParam("last_updated") lastUpdated: Long?): ApiResponse<List<OrderResponse>> {
+        val result = orderService.getOrders(lastUpdated ?: 0).toResponse()
+        return ApiResponse.success(result)
     }
 
 }

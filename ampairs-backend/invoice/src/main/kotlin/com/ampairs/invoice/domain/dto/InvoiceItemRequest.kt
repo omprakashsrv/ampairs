@@ -41,8 +41,6 @@ fun List<InvoiceItemRequest>.toInvoiceItems(): List<InvoiceItem> {
         invoiceItem.productId = it.productId
         invoiceItem.taxCode = it.taxCode
         invoiceItem.taxInfos = it.taxInfos
-        invoiceItem.active = it.active
-        invoiceItem.softDeleted = it.softDeleted
         invoiceItem.discount = it.discount
         invoiceItem
     }

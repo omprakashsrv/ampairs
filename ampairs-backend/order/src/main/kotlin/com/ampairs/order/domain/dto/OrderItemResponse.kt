@@ -41,8 +41,6 @@ fun List<OrderItem>.toResponse(): List<OrderItemResponse> {
             productId = it.productId,
             taxCode = it.taxCode,
             taxInfos = it.taxInfos,
-            active = it.active,
-            softDeleted = it.softDeleted,
             discount = it.discount
         )
     }

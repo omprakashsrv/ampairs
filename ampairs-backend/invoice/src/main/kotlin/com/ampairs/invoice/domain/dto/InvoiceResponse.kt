@@ -61,8 +61,6 @@ fun Invoice.toResponse(invoiceItems: List<InvoiceItem>): InvoiceResponse {
         shippingAddress = this.shippingAddress,
         taxInfos = this.taxInfos,
         invoiceItems = invoiceItems.toResponse(),
-        active = this.active,
-        softDeleted = this.softDeleted,
         discount = this.discount
     )
 }

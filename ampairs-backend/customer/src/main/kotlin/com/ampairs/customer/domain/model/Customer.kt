@@ -11,7 +11,6 @@ import org.hibernate.type.SqlTypes
 import org.springframework.data.geo.Point
 
 @Entity(name = "customer")
-@Table(indexes = [Index(name = "customer_ref_idx", columnList = "ref_id", unique = true)])
 class Customer : OwnableBaseDomain() {
 
     @Column(name = "country_code", nullable = false)
@@ -20,18 +19,11 @@ class Customer : OwnableBaseDomain() {
     @Column(name = "name", nullable = false, length = 255)
     var name: String = ""
 
-    @Column(name = "customer_number", length = 50, unique = true)
-    var customerNumber: String? = null
+    @Column(name = "customer_type", nullable = false, length = 100)
+    var customerType: String = ""
 
-    @Column(name = "customer_type", nullable = false, length = 20)
-    @Enumerated(EnumType.STRING)
-    var customerType: CustomerType = CustomerType.RETAIL
-
-    @Column(name = "business_name", length = 255)
-    var businessName: String? = null
-
-    @Column(name = "company_id", nullable = false, length = 255)
-    var companyId: String = ""
+    @Column(name = "customer_group", nullable = false, length = 100)
+    var customerGroup: String = ""
 
     @Column(name = "phone", nullable = false, length = 20)
     var phone: String = ""
@@ -44,9 +36,6 @@ class Customer : OwnableBaseDomain() {
 
     @Column(name = "email", length = 255, nullable = false)
     var email: String = ""
-
-    @Column(name = "gstin", length = 100, nullable = false)
-    var gstin: String = ""
 
     @Column(name = "gst_number", length = 15)
     var gstNumber: String? = null
@@ -81,12 +70,6 @@ class Customer : OwnableBaseDomain() {
     @Column(name = "state", length = 20, nullable = false)
     var state: String = ""
 
-    @Column(name = "billingSameAsRegistered", nullable = false)
-    var billingSameAsRegistered: Boolean = true
-
-    @Column(name = "shippingSameAsBilling", nullable = false)
-    var shippingSameAsBilling: Boolean = true
-
     @Column(name = "country", length = 20, nullable = false)
     var country: String = "India"
 
@@ -110,7 +93,16 @@ class Customer : OwnableBaseDomain() {
      */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "attributes", columnDefinition = "JSON")
-    var attributes: Map<String, Any> = emptyMap()
+    var attributes: Map<String, Any>? = null
+
+    /**
+     * Customer images relationship
+     * Lazy loading to avoid N+1 queries. Use @EntityGraph when needed.
+     */
+    @OneToMany(cascade = [CascadeType.ALL], fetch = FetchType.LAZY)
+    @JoinColumn(name = "customer_uid", referencedColumnName = "uid")
+    @OrderBy("displayOrder ASC, createdAt ASC")
+    var images: MutableSet<CustomerImage> = mutableSetOf()
 
     override fun obtainSeqIdPrefix(): String {
         return Constants.CUSTOMER_PREFIX
@@ -120,9 +112,7 @@ class Customer : OwnableBaseDomain() {
      * Validate GST number format (Indian GST format: 15 characters)
      */
     fun isValidGstNumber(): Boolean {
-        return gstNumber?.let { 
-            it.matches(Regex("^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$"))
-        } ?: true // null is valid (optional field)
+        return gstNumber?.matches(Regex("^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$")) ?: true // null is valid (optional field)
     }
 
     /**
@@ -154,19 +144,41 @@ class Customer : OwnableBaseDomain() {
     }
 
     /**
-     * Generate customer number if not set
+     * Get the primary image for this customer
      */
-    fun generateCustomerNumber(): String {
-        return customerNumber ?: "CUST${System.currentTimeMillis().toString().takeLast(6)}"
+    fun getPrimaryImage(): CustomerImage? {
+        return images.find { it.isPrimary && it.active }
     }
+
+    /**
+     * Get all active images for this customer
+     */
+    fun getActiveImages(): List<CustomerImage> {
+        return images.filter { it.active }.sortedWith(
+            compareBy<CustomerImage> { it.displayOrder }.thenBy { it.createdAt }
+        )
+    }
+
+    /**
+     * Check if customer has any images
+     */
+    fun hasImages(): Boolean {
+        return images.any { it.active }
+    }
+
+    /**
+     * Get total count of active images
+     */
+    fun getImageCount(): Int {
+        return images.count { it.active }
+    }
+
+    /**
+     * Get primary image URL or null if no primary image
+     */
+    fun getPrimaryImageUrl(): String? {
+        return getPrimaryImage()?.storageUrl
+    }
+
 }
 
-/**
- * Customer types for retail businesses
- */
-enum class CustomerType(val displayName: String) {
-    RETAIL("Retail Customer"),
-    WHOLESALE("Wholesale Customer"),
-    DISTRIBUTOR("Distributor"),
-    CORPORATE("Corporate Customer")
-}

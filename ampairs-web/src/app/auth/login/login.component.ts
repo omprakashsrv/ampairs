@@ -1,5 +1,5 @@
 import {Component, OnDestroy, OnInit} from '@angular/core';
-import {Router} from '@angular/router';
+import {Router, ActivatedRoute} from '@angular/router';
 import {FormBuilder, FormGroup, ReactiveFormsModule, Validators} from '@angular/forms';
 import {MatCardModule} from '@angular/material/card';
 import {MatFormFieldModule} from '@angular/material/form-field';
@@ -39,6 +39,7 @@ export class LoginComponent implements OnInit, OnDestroy {
     private fb: FormBuilder,
     private authService: AuthService,
     private router: Router,
+    private route: ActivatedRoute,
     private snackBar: MatSnackBar,
     private recaptchaV3Service: ReCaptchaV3Service
   ) {
@@ -53,10 +54,24 @@ export class LoginComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    // Check for return URL from invitation flow
+    const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl');
+    if (returnUrl) {
+      // Store the return URL in session storage so it persists through the OTP flow
+      sessionStorage.setItem('auth_return_url', returnUrl);
+    }
+
     // Check if user is already authenticated
     this.authService.isAuthenticated$.subscribe(isAuthenticated => {
       if (isAuthenticated === true) {
-        this.router.navigate(['/home']);
+        // If there's a return URL, go there instead of default home
+        const storedReturnUrl = sessionStorage.getItem('auth_return_url');
+        if (storedReturnUrl) {
+          sessionStorage.removeItem('auth_return_url');
+          this.router.navigateByUrl(storedReturnUrl);
+        } else {
+          this.router.navigate(['/home']);
+        }
       }
     });
   }

@@ -81,6 +81,103 @@ data class AuthInitRequest(
 - **Entity Relationships**: Use `@EntityGraph` for efficient data loading
 - **Error Handling**: Standardized error responses with proper HTTP codes
 
+### **Spring Data JPA Best Practices**
+
+#### **@EntityGraph Pattern (Preferred over JOIN FETCH)**
+**Entity Level**: Define named entity graphs
+```kotlin
+@NamedEntityGraph(
+    name = "EntityName.withRelations",
+    attributeNodes = [NamedAttributeNode("relationshipProperty")]
+)
+class EntityName
+```
+
+**Repository Level**: Use @EntityGraph with EXISTS subquery
+```kotlin
+@EntityGraph("EntityName.withRelations")
+@Query("SELECT e FROM Entity e WHERE ... AND EXISTS (SELECT r FROM e.relations r WHERE ...)")
+fun findWithRelations(): EntityName?
+```
+
+**Benefits**: Prevents N+1 queries, cleaner separation of concerns, reusable across methods
+
+#### **Repository Method Patterns**
+- **Prefer**: Spring Data JPA derived query methods (`findByActiveTrueOrderByName()`)
+- **When needed**: Custom `@Query` for complex business logic only
+- **Avoid**: `JOIN FETCH` in JPQL when `@EntityGraph` achieves same result
+
+#### **Controller Exception Handling**
+- **Never**: Use try-catch blocks in controllers for business logic exceptions
+- **Let exceptions bubble up**: Global exception handler converts exceptions to HTTP responses
+- **Focus**: Controllers should handle HTTP concerns only, not exception mapping
+- **Consistency**: Centralized error handling ensures uniform response format
+
+#### **API Response Standardization**
+- **Always**: Use `ApiResponse<T>` wrapper for all controller return types
+- **Import**: `com.ampairs.core.domain.dto.ApiResponse`
+- **Success**: `return ApiResponse.success(data)`
+- **Consistent format**: All endpoints return `{"success": true, "data": T, "timestamp": "..."}`
+- **Global error handling**: Exception handler returns `ApiResponse` with error details
+
+#### **DTO Pattern for Controllers**
+- **NEVER expose JPA entities directly** in API responses - creates security risks and tight coupling
+- **Always use Response DTOs** for API outputs - only expose fields clients need
+- **Always use Request DTOs** for API inputs - proper validation and input sanitization
+- **Pattern**: Entity → Response DTO via extension functions (`entity.asEntityResponse()`)
+
+**Required DTO Structure:**
+```kotlin
+// Response DTO - in domain/dto/ package
+data class EntityResponse(
+    val uid: String,
+    val name: String,
+    // ... only API-relevant fields, no internal fields
+)
+
+// Request DTOs - in domain/dto/ package
+data class EntityCreateRequest(
+    @field:NotBlank val name: String,
+    // ... validation annotations
+)
+
+// Extension functions - in same DTO file
+fun Entity.asEntityResponse(): EntityResponse = EntityResponse(/*...*/)
+fun EntityCreateRequest.toEntity(): Entity = Entity().apply {/*...*/}
+```
+
+**Controller Implementation:**
+```kotlin
+@GetMapping
+fun getEntities(): ApiResponse<List<EntityResponse>> {
+    return ApiResponse.success(service.findAll().asEntityResponses())
+}
+
+@PostMapping
+fun create(@Valid request: EntityCreateRequest): ApiResponse<EntityResponse> {
+    val created = service.create(request.toEntity())
+    return ApiResponse.success(created.asEntityResponse())
+}
+```
+
+### **Multi-Tenant Architecture Patterns**
+
+#### **@TenantId Best Practices**
+- **Entity Field**: Add `@TenantId` to tenant identifier field (e.g., `workspaceId`)
+- **Automatic Filtering**: Repository methods auto-filtered by current tenant context
+- **Field Population**: Entity field auto-populated from `TenantContextHolder.getCurrentTenant()`
+
+#### **Tenant Context Timing**
+- **CRITICAL**: Set tenant context at controller level, before repository injection
+- **Pattern**: Controller level tenant switching with try-finally cleanup
+- **Validation**: @TenantId validation occurs at entity persist/save time
+- **Service Layer**: Should NOT handle tenant context switching
+
+#### **Cross-Tenant Data Access**
+- **Native SQL**: Use `nativeQuery = true` to bypass @TenantId automatic filtering
+- **JPA Queries**: Automatically filtered by @TenantId, cannot access cross-tenant data
+- **Use Cases**: User workspace listing, admin operations, invitation acceptance
+
 ## Module Structure
 
 **Foundation**: core (shared utilities, AWS, multi-tenancy)
@@ -88,7 +185,28 @@ data class AuthInitRequest(
 **Business**: customer, product, order, invoice, tax_code, notification
 **Application**: ampairs_service (main aggregator)
 
-## Recent Changes (Retail Management Platform - 2025-01-06)
+## Recent Changes
+
+### **Workspace Controller Refactoring (2025-01-15)**
+
+#### **@TenantId Integration & Simplification**
+- Eliminated dual security (workspaceId params + @TenantId filtering)
+- Controllers use `TenantContextHolder.getCurrentTenant()` from X-Workspace-ID header
+- Added `@TenantId` to `WorkspaceMember.workspaceId` for automatic filtering
+- Endpoint paths simplified: `/workspace/v1/member` (no workspaceId params)
+
+#### **Critical Fix: @TenantId Validation Error**
+- **Issue**: `assigned tenant id differs from current tenant id` during invitation acceptance
+- **Root Cause**: Tenant context set in service layer, but @TenantId validation happens at repository injection
+- **Solution**: Move tenant context to controller level before any repository operations
+- **Pattern**: Controller sets tenant → Service operates → Controller restores tenant
+
+#### **Repository Patterns**
+- **Tenant-Aware**: Methods automatically filtered by @TenantId annotation
+- **Cross-Tenant**: Use native SQL queries to bypass @TenantId filtering
+- **Column Mapping**: JPA properties → database columns (createdAt → created_at)
+
+### **Retail Management Platform (2025-01-06)**
 
 ### **New API Contracts**
 - **Workspace Management**: `/workspace/v1` - Multi-tenant business environments with role-based access
@@ -142,7 +260,11 @@ data class ApiResponse<T>(
 ## Key Rules Summary
 
 1. **Use global snake_case configuration** - no redundant @JsonProperty annotations
-2. **Angular M3 components only** - no other UI frameworks  
+2. **Angular M3 components only** - no other UI frameworks
 3. **@EntityGraph for efficient loading** - avoid N+1 queries
 4. **Follow existing patterns** - maintain consistency across modules
 5. **Multi-tenant aware** - all data operations include tenant context
+6. **@TenantId at controller level** - set tenant context before repository injection
+7. **Native SQL for cross-tenant** - bypass @TenantId filtering when needed
+8. **Single security approach** - use either @TenantId OR workspaceId parameters, not both
+9. **DTO pattern required** - never expose JPA entities in controllers, always use proper DTOs

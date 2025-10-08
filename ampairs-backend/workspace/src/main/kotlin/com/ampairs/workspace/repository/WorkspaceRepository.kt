@@ -1,8 +1,6 @@
 package com.ampairs.workspace.repository
 
 import com.ampairs.workspace.model.Workspace
-import com.ampairs.workspace.model.enums.SubscriptionPlan
-import com.ampairs.workspace.model.enums.WorkspaceType
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
@@ -31,54 +29,6 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
     fun existsBySlug(slug: String): Boolean
 
     /**
-     * Find active workspaces by type
-     */
-    fun findByWorkspaceTypeAndActiveTrue(workspaceType: WorkspaceType, pageable: Pageable): Page<Workspace>
-
-    /**
-     * Find workspaces by subscription plan
-     */
-    fun findBySubscriptionPlan(subscriptionPlan: SubscriptionPlan, pageable: Pageable): Page<Workspace>
-
-    /**
-     * Find workspaces that haven't been active since a specific date
-     */
-    fun findByLastActivityAtBefore(date: LocalDateTime): List<Workspace>
-
-    /**
-     * Find workspaces with expired trials
-     */
-    @Query(
-        """
-        SELECT w FROM Workspace w 
-        WHERE w.trialExpiresAt IS NOT NULL 
-        AND w.trialExpiresAt < :currentDate
-        AND w.subscriptionPlan = :freePlan
-    """
-    )
-    fun findExpiredTrials(
-        @Param("currentDate") currentDate: LocalDateTime,
-        @Param("freePlan") freePlan: SubscriptionPlan = SubscriptionPlan.FREE,
-    ): List<Workspace>
-
-    /**
-     * Find workspaces approaching storage limit
-     */
-    @Query(
-        """
-        SELECT w FROM Workspace w 
-        WHERE w.active = true 
-        AND (w.storageUsedGb * 100.0 / w.storageLimitGb) >= :percentage
-    """
-    )
-    fun findWorkspacesApproachingStorageLimit(@Param("percentage") percentage: Double): List<Workspace>
-
-    /**
-     * Count active workspaces by type
-     */
-    fun countByWorkspaceTypeAndActiveTrue(workspaceType: WorkspaceType): Long
-
-    /**
      * Search workspaces by name or description
      */
     @Query(
@@ -92,31 +42,28 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
     fun searchWorkspaces(@Param("searchTerm") searchTerm: String, pageable: Pageable): Page<Workspace>
 
     /**
-     * Find workspaces that a user has access to (via WorkspaceMember relationship)
-     */
-    @Query(
-        """
-        SELECT DISTINCT w FROM Workspace w 
-        INNER JOIN WorkspaceMember wm ON w.uid = wm.workspaceId 
-        WHERE wm.userId = :userId 
-        AND wm.isActive = true 
-        AND w.active = true
-        ORDER BY wm.lastActiveAt DESC, w.lastActivityAt DESC
-    """
-    )
-    fun findWorkspacesByUserId(@Param("userId") userId: String): List<Workspace>
-
-    /**
      * Find workspaces that a user has access to with pagination
      */
+    /**
+     * Find workspaces by user ID - bypasses @TenantId filtering for cross-tenant workspace listing
+     * Uses native query to avoid automatic tenant filtering since users can belong to multiple workspaces
+     */
     @Query(
-        """
-        SELECT DISTINCT w FROM Workspace w 
-        INNER JOIN  WorkspaceMember wm ON w.uid = wm.workspaceId 
-        WHERE wm.userId = :userId 
-        AND wm.isActive = true 
+        value = """
+        SELECT DISTINCT w.* FROM workspaces w
+        INNER JOIN workspace_members wm ON w.uid = wm.workspace_id
+        WHERE wm.user_id = :userId
+        AND wm.is_active = true
         AND w.active = true
-    """
+        """,
+        countQuery = """
+        SELECT COUNT(DISTINCT w.uid) FROM workspaces w
+        INNER JOIN workspace_members wm ON w.uid = wm.workspace_id
+        WHERE wm.user_id = :userId
+        AND wm.is_active = true
+        AND w.active = true
+        """,
+        nativeQuery = true
     )
     fun findWorkspacesByUserId(@Param("userId") userId: String, pageable: Pageable): Page<Workspace>
 
@@ -127,42 +74,4 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
     @Query("UPDATE Workspace w SET w.lastActivityAt = :timestamp WHERE w.id = :workspaceId")
     fun updateLastActivity(@Param("workspaceId") workspaceId: String, @Param("timestamp") timestamp: LocalDateTime)
 
-    /**
-     * Update storage usage for a workspace
-     */
-    @Modifying
-    @Query("UPDATE Workspace w SET w.storageUsedGb = :storageUsedGb WHERE w.id = :workspaceId")
-    fun updateStorageUsage(@Param("workspaceId") workspaceId: String, @Param("storageUsedGb") storageUsedGb: Int)
-
-    /**
-     * Get workspace statistics
-     */
-    @Query(
-        """
-        SELECT 
-            COUNT(w) as totalWorkspaces,
-            COUNT(CASE WHEN w.active = true THEN 1 END) as activeWorkspaces,
-            COUNT(CASE WHEN w.subscriptionPlan = :freePlan THEN 1 END) as freeWorkspaces,
-            COUNT(CASE WHEN w.subscriptionPlan != :freePlan THEN 1 END) as paidWorkspaces
-        FROM Workspace w
-    """
-    )
-    fun getWorkspaceStatistics(@Param("freePlan") freePlan: SubscriptionPlan = SubscriptionPlan.FREE): Map<String, Long>
-
-    /**
-     * Deactivate inactive workspaces
-     */
-    @Modifying
-    @Query(
-        """
-        UPDATE Workspace w 
-        SET w.active = false, w.updatedAt = :currentDate 
-        WHERE w.lastActivityAt < :inactiveDate
-        AND w.active = true
-    """
-    )
-    fun deactivateInactiveWorkspaces(
-        @Param("inactiveDate") inactiveDate: LocalDateTime,
-        @Param("currentDate") currentDate: LocalDateTime,
-    ): Int
 }

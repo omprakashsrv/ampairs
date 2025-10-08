@@ -13,7 +13,7 @@ This guide covers the complete CI/CD setup for the Ampairs business management s
 
 ### 2. Server Prerequisites  
 - [ ] Ubuntu 20.04+ server
-- [ ] Java 17 installed
+- [ ] Java 25 installed
 - [ ] PostgreSQL installed and configured
 - [ ] SSH access configured
 - [ ] Firewall configured for port 8080
@@ -101,8 +101,8 @@ AMPAIRS_UPLOAD_DIR    # Upload directory path
 # Update system
 sudo apt update && sudo apt upgrade -y
 
-# Install Java 17
-sudo apt install openjdk-17-jdk -y
+# Install Java 25
+sudo apt install openjdk-25-jdk -y
 java -version
 
 # Install PostgreSQL

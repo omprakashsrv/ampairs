@@ -1,21 +1,21 @@
 plugins {
-    id("org.springframework.boot") version "3.5.3"
+    id("org.springframework.boot") version "3.5.6"
     id("io.spring.dependency-management") version "1.1.7"
-    kotlin("jvm") version "2.2.0"
-    kotlin("plugin.spring") version "2.2.0"
-    id("org.jetbrains.kotlin.plugin.allopen") version "2.2.0"
+    kotlin("jvm") version "2.2.20"
+    kotlin("plugin.spring") version "2.2.20"
+    id("org.jetbrains.kotlin.plugin.allopen") version "2.2.20"
 }
 
 group = "com.ampairs"
 version = "0.0.1-SNAPSHOT"
-java.sourceCompatibility = JavaVersion.VERSION_21
+java.sourceCompatibility = JavaVersion.VERSION_25
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(25))
     }
 }
 kotlin {
-    jvmToolchain(21)
+    jvmToolchain(25)
 }
 
 configurations {
@@ -24,9 +24,7 @@ configurations {
     }
 }
 
-extra.apply {
-    set("jakarta-servlet.version", "5.0.0")
-}
+
 
 repositories {
     mavenCentral()
@@ -57,6 +55,9 @@ dependencies {
     implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.3.0"))
     implementation("io.awspring.cloud:spring-cloud-aws-starter-s3")
     implementation("io.awspring.cloud:spring-cloud-aws-starter-sns")
+
+    // MinIO Java SDK for object storage
+    implementation("io.minio:minio:8.5.17")
 
     // Database
     runtimeOnly("com.mysql:mysql-connector-j")

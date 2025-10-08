@@ -2,6 +2,16 @@
 <mat-toolbar
   class="app-header-toolbar">
 
+  <!-- Sidenav Toggle -->
+  @if (shouldShowSidenavToggle()) {
+    <button
+      mat-icon-button
+      (click)="onToggleSidenav()"
+      matTooltip="Toggle Navigation">
+      <mat-icon>menu</mat-icon>
+    </button>
+  }
+
   <!-- Back Button (conditional) -->
   @if (headerContext().showBackButton) {
     <button
@@ -107,8 +117,9 @@
       <button
         (click)="toggleTheme()"
         mat-icon-button
-        matTooltip="Toggle Theme">
-        <mat-icon>palette</mat-icon>
+        [matTooltip]="'Theme: ' + getThemeModeLabel() + ' (click to cycle)'"
+        class="theme-toggle-button">
+        <mat-icon>{{ getThemeModeIcon() }}</mat-icon>
       </button>
 
       <!-- Theme Settings Button -->
@@ -174,3 +185,4 @@
   }
 
 </mat-toolbar>
+

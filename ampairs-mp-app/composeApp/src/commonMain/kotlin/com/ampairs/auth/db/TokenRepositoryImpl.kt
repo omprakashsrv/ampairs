@@ -7,6 +7,7 @@ import com.ampairs.auth.db.dao.UserTokenDao
 import com.ampairs.auth.db.entity.UserSessionEntity
 import com.ampairs.auth.db.entity.UserTokenEntity
 import kotlinx.coroutines.runBlocking
+import com.ampairs.common.time.currentTimeMillis
 
 class TokenRepositoryImpl(
     val userTokenDao: UserTokenDao,
@@ -47,7 +48,7 @@ class TokenRepositoryImpl(
                         refresh_token = refreshToken ?: "",
                         access_token = accessToken,
                         is_active = true,
-                        last_used = System.currentTimeMillis()
+                        last_used = currentTimeMillis()
                     )
                 )
             }
@@ -85,7 +86,7 @@ class TokenRepositoryImpl(
                 refresh_token = refreshToken ?: "",
                 access_token = accessToken,
                 is_active = true,
-                last_used = System.currentTimeMillis()
+                last_used = currentTimeMillis()
             )
         )
     }
@@ -156,14 +157,14 @@ class TokenRepositoryImpl(
                     user_id = userId,
                     is_current = false,
                     workspace_id = "",
-                    last_login = System.currentTimeMillis()
+                    last_login = currentTimeMillis()
                 )
             )
         }
     }
 
     private fun generateTokenId(userId: String): String {
-        return "token_${userId}_${System.currentTimeMillis()}"
+        return "token_${userId}_${currentTimeMillis()}"
     }
 
     /**
@@ -171,7 +172,7 @@ class TokenRepositoryImpl(
      * This allows getCurrentUserId() to work during the auth process
      */
     override suspend fun createDummyUserSession(): String {
-        val dummyUserId = "temp_user_${System.currentTimeMillis()}"
+        val dummyUserId = "temp_user_${currentTimeMillis()}"
 
         // Clear any existing dummy sessions (previous login attempts)
         clearDummySessions()
@@ -182,7 +183,7 @@ class TokenRepositoryImpl(
                 user_id = dummyUserId,
                 is_current = true,
                 workspace_id = "",
-                last_login = System.currentTimeMillis()
+                last_login = currentTimeMillis()
             )
         )
 
@@ -213,7 +214,7 @@ class TokenRepositoryImpl(
                     user_id = realUserId,
                     is_current = true,
                     workspace_id = "",
-                    last_login = System.currentTimeMillis()
+                    last_login = currentTimeMillis()
                 )
             )
 

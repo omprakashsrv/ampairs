@@ -90,6 +90,18 @@
   font: variables.$font-body-medium;
 }
 
+// M3 Invitations Section
+.invitations-section {
+  margin-bottom: variables.$spacing-xxl;
+}
+
+.invitations-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: variables.$spacing-lg;
+  margin-bottom: variables.$spacing-xl;
+}
+
 // M3 Workspaces Section
 .workspaces-section {
   margin-bottom: variables.$spacing-xxl;
@@ -304,6 +316,7 @@
     padding: variables.$spacing-xl;
   }
 
+  .invitations-grid,
   .workspaces-grid {
     grid-template-columns: repeat(auto-fill, minmax(280px, 320px));
     gap: variables.$spacing-lg;
@@ -319,6 +332,7 @@
     padding: variables.$spacing-lg;
   }
 
+  .invitations-grid,
   .workspaces-grid {
     grid-template-columns: 1fr;
     gap: variables.$spacing-md;

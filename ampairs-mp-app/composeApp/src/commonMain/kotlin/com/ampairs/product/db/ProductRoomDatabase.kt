@@ -1,7 +1,9 @@
 package com.ampairs.product.db
 
+import androidx.room.ConstructedBy
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import androidx.room.RoomDatabaseConstructor
 import com.ampairs.product.db.dao.BrandDao
 import com.ampairs.product.db.dao.CategoryDao
 import com.ampairs.product.db.dao.GroupDao
@@ -42,6 +44,7 @@ import com.ampairs.product.db.entity.UnitEntity
     version = 1,
     exportSchema = true
 )
+@ConstructedBy(ProductRoomDatabaseConstructor::class)
 abstract class ProductRoomDatabase : RoomDatabase() {
     abstract fun productDao(): ProductDao
     abstract fun taxCodeDao(): TaxCodeDao
@@ -55,3 +58,6 @@ abstract class ProductRoomDatabase : RoomDatabase() {
     abstract fun imageDao(): ImageDao
     abstract fun productImageDao(): ProductImageDao
 }
+
+@Suppress("NO_ACTUAL_FOR_EXPECT")
+expect object ProductRoomDatabaseConstructor : RoomDatabaseConstructor<ProductRoomDatabase>

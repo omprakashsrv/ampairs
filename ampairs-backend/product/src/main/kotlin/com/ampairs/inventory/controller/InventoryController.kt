@@ -1,5 +1,6 @@
 package com.ampairs.inventory.controller
 
+import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.inventory.domain.dto.InventoryRequest
 import com.ampairs.inventory.domain.dto.InventoryResponse
 import com.ampairs.inventory.domain.dto.asResponse
@@ -15,13 +16,15 @@ class InventoryController @Autowired constructor(
 ) {
 
     @GetMapping("")
-    fun getInventories(@RequestParam("last_updated") lastUpdated: Long?) {
-
+    fun getInventories(@RequestParam("last_updated") lastUpdated: Long?): ApiResponse<Unit> {
+        // TODO: Implement inventory retrieval
+        return ApiResponse.success(Unit)
     }
 
     @PostMapping("/inventories")
-    fun updateInventories(@RequestBody @Valid inventoryUpdateRequest: List<InventoryRequest>): List<InventoryResponse> {
-        return inventoryService.updateInventories(inventoryUpdateRequest).asResponse()
+    fun updateInventories(@RequestBody @Valid inventoryUpdateRequest: List<InventoryRequest>): ApiResponse<List<InventoryResponse>> {
+        val result = inventoryService.updateInventories(inventoryUpdateRequest).asResponse()
+        return ApiResponse.success(result)
     }
 
 }

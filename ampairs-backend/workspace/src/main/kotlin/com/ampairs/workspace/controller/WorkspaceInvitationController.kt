@@ -2,6 +2,7 @@ package com.ampairs.workspace.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
+import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.core.security.AuthenticationHelper
 import com.ampairs.core.service.UserService
 import com.ampairs.workspace.model.dto.CreateInvitationRequest
@@ -95,7 +96,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
     """
 )
 @RestController
-@RequestMapping("/workspace/v1")
+@RequestMapping("/workspace/v1/invitation")
 @SecurityRequirement(name = "BearerAuth")
 @SecurityRequirement(name = "WorkspaceContext")
 class WorkspaceInvitationController(
@@ -237,16 +238,9 @@ class WorkspaceInvitationController(
             )
         ]
     )
-    @GetMapping("/{workspaceId}/invitations")
-    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    @GetMapping
+    @PreAuthorize("@workspaceAuthorizationService.hasCurrentTenantPermission(authentication, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
     fun getWorkspaceInvitations(
-        @Parameter(
-            name = "workspaceId",
-            description = "**Target workspace identifier** containing the invitations to retrieve",
-            required = true,
-            example = "WS_ABC123_XYZ789"
-        )
-        @PathVariable workspaceId: String,
 
         @Parameter(
             name = "page",
@@ -286,6 +280,8 @@ class WorkspaceInvitationController(
         val sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy)
         val pageable = PageRequest.of(page, size, sort)
 
+        val workspaceId = TenantContextHolder.getCurrentTenant()
+            ?: throw IllegalStateException("Workspace context is required")
         val invitations = invitationService.getWorkspaceInvitations(workspaceId, null, pageable)
         return ApiResponse.success(PageResponse.from(invitations))
     }
@@ -429,17 +425,10 @@ class WorkspaceInvitationController(
             )
         ]
     )
-    @PostMapping("/{workspaceId}/invitations")
+    @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    @PreAuthorize("@workspaceAuthorizationService.hasCurrentTenantPermission(authentication, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
     fun createInvitation(
-        @Parameter(
-            name = "workspaceId",
-            description = "**Target workspace identifier** where the invitee will become a member",
-            required = true,
-            example = "WS_ABC123_XYZ789"
-        )
-        @PathVariable workspaceId: String,
 
         @io.swagger.v3.oas.annotations.parameters.RequestBody(
             description = """
@@ -483,200 +472,9 @@ class WorkspaceInvitationController(
         val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
+        val workspaceId = TenantContextHolder.getCurrentTenant()
+            ?: throw IllegalStateException("Workspace context is required")
         val invitation = invitationService.createInvitation(workspaceId, request, userId)
-        return ApiResponse.success(invitation)
-    }
-
-    @Operation(
-        summary = "Accept Workspace Invitation",
-        description = """
-        ## ✅ **Accept Workspace Invitation via Token**
-        
-        Public endpoint for accepting workspace invitations using the secure invitation token.
-        This completes the invitation workflow by adding the user to the workspace with
-        the pre-assigned role and permissions.
-        
-        ### **Acceptance Process:**
-        
-        #### **🔐 Token Validation**
-        - **Token Verification**: Validate invitation token authenticity and integrity
-        - **Expiration Check**: Ensure invitation has not expired
-        - **Single Use**: Confirm token hasn't been used previously
-        - **Workspace Validation**: Verify target workspace still exists and is active
-        
-        #### **👤 User Integration**
-        - **Account Linking**: Associate invitation with authenticated user account
-        - **Role Assignment**: Apply pre-configured role and permissions
-        - **Workspace Access**: Grant immediate access to workspace resources
-        - **Profile Integration**: Merge any provided profile information
-        
-        #### **🔔 Notification & Communication**
-        - **Welcome Email**: Send personalized welcome message to new member
-        - **Team Notification**: Notify workspace admins of successful acceptance
-        - **Onboarding Trigger**: Initialize guided tour and onboarding workflow
-        - **Activity Log**: Record acceptance in audit trail
-        
-        ### **Post-Acceptance Setup:**
-        
-        **Immediate Access:**
-        - **Workspace Dashboard**: Access to workspace overview and navigation
-        - **Role-Specific Features**: Immediate availability of role-appropriate tools
-        - **Team Directory**: Access to member directory and contact information
-        - **Resource Library**: Access to shared documents and resources
-        
-        **Onboarding Experience:**
-        - **Welcome Tour**: Guided introduction to workspace features
-        - **Profile Completion**: Prompts to complete member profile
-        - **Preference Setup**: Configure notification and communication preferences
-        - **Integration Setup**: Connect with relevant business tools and modules
-        
-        ### **Security Considerations:**
-        - **Authentication Required**: User must be logged in to accept invitation
-        - **Account Verification**: Confirm account email matches invitation recipient
-        - **IP Tracking**: Log acceptance IP address for security audit
-        - **Session Management**: Establish secure workspace session context
-        
-        ### **Error Handling:**
-        Common acceptance failures and resolutions:
-        - **Expired Token**: Invitation has passed expiration date (request new invitation)
-        - **Invalid Token**: Token is malformed or doesn't exist (verify invitation link)
-        - **Already Used**: Invitation already accepted (check existing workspace access)
-        - **Account Mismatch**: User email doesn't match invitation recipient (contact administrator)
-        
-        ### **Use Cases:**
-        - **New Employee Onboarding**: First-time workspace access for new hires
-        - **External Collaboration**: Partner or consultant joining project workspace
-        - **Role Migration**: User accepting invitation to different workspace or role
-        - **Account Recovery**: Re-establishing workspace access after account issues
-        """,
-        tags = ["Invitation Acceptance"]
-    )
-    @ApiResponses(
-        value = [
-            SwaggerApiResponse(
-                responseCode = "200",
-                description = "✅ Invitation successfully accepted, user added to workspace",
-                content = [Content(
-                    mediaType = "application/json",
-                    schema = Schema(implementation = ApiResponse::class),
-                    examples = [ExampleObject(
-                        name = "Invitation Acceptance Success",
-                        value = """{{
-  "success": true,
-  "data": {{
-    "id": "INV_003_ALEX_TAYLOR",
-    "status": "ACCEPTED",
-    "accepted_at": "2025-01-15T10:30:00Z",
-    "workspace_info": {{
-      "id": "WS_ABC123_XYZ789",
-      "name": "Acme Corp - Project Management",
-      "description": "Collaborative workspace for project coordination",
-      "member_count": 16,
-      "your_role": "MEMBER"
-    }},
-    "member_details": {{
-      "member_id": "MBR_003_ALEX_TAYLOR",
-      "user_id": "USR_ALEX_TAYLOR_456",
-      "email": "alex.taylor@example.com",
-      "name": "Alex Taylor",
-      "role": "MEMBER",
-      "status": "ACTIVE",
-      "joined_at": "2025-01-15T10:30:00Z",
-      "permissions": [
-        "VIEW_DATA",
-        "CREATE_DATA",
-        "UPDATE_DATA",
-        "BASIC_REPORTS"
-      ]
-    }},
-    "onboarding": {{
-      "welcome_tour_available": true,
-      "profile_completion_required": false,
-      "setup_tasks": [
-        "Complete profile information",
-        "Set notification preferences",
-        "Join relevant project teams"
-      ],
-      "welcome_message": "Welcome to Acme Corp! We're excited to have you on the team."
-    }},
-    "immediate_access": {{
-      "dashboard_url": "/workspace/WS_ABC123_XYZ789/dashboard",
-      "available_modules": ["Customer CRM", "Project Management", "Basic Reporting"],
-      "team_members": 15,
-      "recent_activity_available": true
-    }}
-  }},
-  "timestamp": "2025-01-15T10:30:00Z"
-}}"""
-                    )]
-                )]
-            ),
-            SwaggerApiResponse(
-                responseCode = "400",
-                description = "❌ Bad request - Invalid invitation token format"
-            ),
-            SwaggerApiResponse(
-                responseCode = "401",
-                description = "🚫 Authentication required - Must be logged in to accept invitation"
-            ),
-            SwaggerApiResponse(
-                responseCode = "404",
-                description = "🔍 Invitation not found - Invalid or expired invitation token"
-            ),
-            SwaggerApiResponse(
-                responseCode = "409",
-                description = "⚠️ Conflict - Invitation already accepted or user already workspace member"
-            ),
-            SwaggerApiResponse(
-                responseCode = "410",
-                description = "⏰ Gone - Invitation has expired and is no longer valid"
-            ),
-            SwaggerApiResponse(
-                responseCode = "422",
-                description = "🚫 Unprocessable Entity - Account email doesn't match invitation recipient"
-            )
-        ]
-    )
-    @PostMapping("/invitations/{token}/accept")
-    fun acceptInvitation(
-        @Parameter(
-            name = "token",
-            description = """
-            **Secure Invitation Token**
-            
-            The unique, cryptographically secure token provided in the invitation email.
-            This token contains all necessary information to validate and process the
-            invitation acceptance.
-            
-            **Token Format:** Usually starts with 'inv_' followed by random characters
-            **Example:** 'inv_AbCdEfGhIjKlMnOpQrStUvWxYz123456'
-            
-            **Token Properties:**
-            - **Single Use**: Can only be used once for acceptance
-            - **Time-Limited**: Expires after configured period (default: 7 days)
-            - **Secure**: Cryptographically generated and tamper-evident
-            - **Workspace-Specific**: Tied to specific workspace and role assignment
-            
-            **Where to Find Token:**
-            1. **Invitation Email**: Primary source - click 'Accept Invitation' button or link
-            2. **Manual Extraction**: Copy token from invitation URL if needed
-            3. **Mobile App**: Token handled automatically when opening invitation link
-            
-            **Security Notes:**
-            - Never share invitation tokens with others
-            - Tokens are single-use and expire automatically
-            - Contact workspace administrator if token is lost or expired
-            """,
-            required = true,
-            example = "inv_AbCdEfGhIjKlMnOpQrStUvWxYz123456"
-        )
-        @PathVariable token: String,
-    ): ApiResponse<InvitationResponse> {
-        val auth: Authentication = SecurityContextHolder.getContext().authentication
-        val userId = AuthenticationHelper.getCurrentUserId(auth)
-            ?: throw IllegalStateException("User not authenticated")
-
-        val invitation = invitationService.acceptInvitation(token, userId)
         return ApiResponse.success(invitation)
     }
 
@@ -828,16 +626,9 @@ class WorkspaceInvitationController(
             )
         ]
     )
-    @PostMapping("/{workspaceId}/invitations/{invitationId}/resend")
-    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    @PostMapping("/{invitationId}/resend")
+    @PreAuthorize("@workspaceAuthorizationService.hasCurrentTenantPermission(authentication, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
     fun resendInvitation(
-        @Parameter(
-            name = "workspaceId",
-            description = "**Target workspace identifier** containing the invitation to resend",
-            required = true,
-            example = "WS_ABC123_XYZ789"
-        )
-        @PathVariable workspaceId: String,
 
         @Parameter(
             name = "invitationId",
@@ -1052,16 +843,9 @@ class WorkspaceInvitationController(
             )
         ]
     )
-    @DeleteMapping("/{workspaceId}/invitations/{invitationId}")
-    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    @DeleteMapping("/{invitationId}")
+    @PreAuthorize("@workspaceAuthorizationService.hasCurrentTenantPermission(authentication, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
     fun cancelInvitation(
-        @Parameter(
-            name = "workspaceId",
-            description = "**Target workspace identifier** containing the invitation to cancel",
-            required = true,
-            example = "WS_ABC123_XYZ789"
-        )
-        @PathVariable workspaceId: String,
 
         @Parameter(
             name = "invitationId",
@@ -1136,10 +920,9 @@ class WorkspaceInvitationController(
         """,
         tags = ["Invitation Search"]
     )
-    @GetMapping("/{workspaceId}/invitations/search")
-    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    @GetMapping("/search")
+    @PreAuthorize("@workspaceAuthorizationService.hasCurrentTenantPermission(authentication, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
     fun searchWorkspaceInvitations(
-        @PathVariable workspaceId: String,
         @RequestParam(defaultValue = "0") page: Int,
         @RequestParam(defaultValue = "20") size: Int,
         @RequestParam(defaultValue = "createdAt") sortBy: String,
@@ -1154,6 +937,8 @@ class WorkspaceInvitationController(
         val sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy)
         val pageable = PageRequest.of(page, size, sort)
 
+        val workspaceId = TenantContextHolder.getCurrentTenant()
+            ?: throw IllegalStateException("Workspace context is required")
         val invitations = invitationService.searchWorkspaceInvitations(
             workspaceId,
             pageable,
@@ -1190,11 +975,11 @@ class WorkspaceInvitationController(
         """,
         tags = ["Invitation Analytics"]
     )
-    @GetMapping("/{workspaceId}/invitations/statistics")
-    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
-    fun getInvitationStatistics(
-        @PathVariable workspaceId: String
-    ): ApiResponse<Map<String, Any>> {
+    @GetMapping("/statistics")
+    @PreAuthorize("@workspaceAuthorizationService.hasCurrentTenantPermission(authentication, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    fun getInvitationStatistics(): ApiResponse<Map<String, Any>> {
+        val workspaceId = TenantContextHolder.getCurrentTenant()
+            ?: throw IllegalStateException("Workspace context is required")
         val statistics = invitationService.getInvitationStatistics(workspaceId)
         return ApiResponse.success(statistics)
     }
@@ -1215,16 +1000,17 @@ class WorkspaceInvitationController(
         """,
         tags = ["Bulk Operations"]
     )
-    @DeleteMapping("/{workspaceId}/invitations/bulk")
-    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    @DeleteMapping("/bulk")
+    @PreAuthorize("@workspaceAuthorizationService.hasCurrentTenantPermission(authentication, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
     fun bulkCancelInvitations(
-        @PathVariable workspaceId: String,
         @RequestBody request: Map<String, Any>,
         authentication: Authentication
     ): ApiResponse<Map<String, Any>> {
         val invitationIds = request["invitation_ids"] as? List<String> ?: emptyList()
         val reason = request["reason"] as? String
         val currentUserId = authentication.name
+        val workspaceId = TenantContextHolder.getCurrentTenant()
+            ?: throw IllegalStateException("Workspace context is required")
         val result = invitationService.bulkCancelInvitations(workspaceId, invitationIds, reason, currentUserId)
         return ApiResponse.success(result)
     }
@@ -1245,16 +1031,17 @@ class WorkspaceInvitationController(
         """,
         tags = ["Bulk Operations"]
     )
-    @PostMapping("/{workspaceId}/invitations/bulk-resend")
-    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    @PostMapping("/bulk-resend")
+    @PreAuthorize("@workspaceAuthorizationService.hasCurrentTenantPermission(authentication, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
     fun bulkResendInvitations(
-        @PathVariable workspaceId: String,
         @RequestBody request: Map<String, Any>,
         authentication: Authentication
     ): ApiResponse<Map<String, Any>> {
         val invitationIds = request["invitation_ids"] as? List<String> ?: emptyList()
         val message = request["message"] as? String
         val currentUserId = authentication.name
+        val workspaceId = TenantContextHolder.getCurrentTenant()
+            ?: throw IllegalStateException("Workspace context is required")
         val result = invitationService.bulkResendInvitations(workspaceId, invitationIds, message, currentUserId)
         return ApiResponse.success(result)
     }
@@ -1279,10 +1066,9 @@ class WorkspaceInvitationController(
         """,
         tags = ["Data Export"]
     )
-    @GetMapping("/{workspaceId}/invitations/export")
-    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
+    @GetMapping("/export")
+    @PreAuthorize("@workspaceAuthorizationService.hasCurrentTenantPermission(authentication, T(com.ampairs.workspace.security.WorkspacePermission).MEMBER_INVITE)")
     fun exportInvitations(
-        @PathVariable workspaceId: String,
         @RequestParam(defaultValue = "CSV") format: String,
         @RequestParam(required = false) status: String?,
         @RequestParam(required = false) role: String?,
@@ -1291,6 +1077,8 @@ class WorkspaceInvitationController(
         @RequestParam(required = false) start_date: String?,
         @RequestParam(required = false) end_date: String?
     ): ResponseEntity<ByteArray> {
+        val workspaceId = TenantContextHolder.getCurrentTenant()
+            ?: throw IllegalStateException("Workspace context is required")
         val exportData = invitationService.exportInvitations(
             workspaceId,
             format,

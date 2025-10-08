@@ -14,7 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.workspace.domain.WorkspaceInvitation
 import com.ampairs.workspace.viewmodel.WorkspaceInvitationsViewModel
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 /**
@@ -26,7 +26,7 @@ fun WorkspaceInvitationsScreen(
     workspaceId: String,
     onInviteClick: () -> Unit,
 ) {
-    val viewModel: WorkspaceInvitationsViewModel = koinInject { parametersOf(workspaceId) }
+    val viewModel: WorkspaceInvitationsViewModel = koinViewModel { parametersOf(workspaceId) }
     val state by viewModel.state.collectAsState()
 
     var showFilters by remember { mutableStateOf(false) }
@@ -488,7 +488,7 @@ private fun InvitationCard(
                     DeliveryStatusIndicator(
                         label = "Sent",
                         isCompleted = invitation.emailSent,
-                        icon = Icons.Default.Send
+                        icon = Icons.AutoMirrored.Default.Send
                     )
 
                     DeliveryStatusIndicator(
@@ -603,7 +603,7 @@ private fun EmptyInvitationsState(onInviteClick: () -> Unit) {
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
-            Icons.Default.Send,
+            Icons.AutoMirrored.Default.Send,
             contentDescription = null,
             modifier = Modifier.size(64.dp),
             tint = MaterialTheme.colorScheme.outline
@@ -633,7 +633,7 @@ private fun EmptyInvitationsState(onInviteClick: () -> Unit) {
                 .fillMaxWidth(0.6f)
                 .height(48.dp)
         ) {
-            Icon(Icons.Default.Send, contentDescription = null)
+            Icon(Icons.AutoMirrored.Default.Send, contentDescription = null)
             Spacer(modifier = Modifier.width(8.dp))
             Text(
                 text = "Send Your First Invitation",

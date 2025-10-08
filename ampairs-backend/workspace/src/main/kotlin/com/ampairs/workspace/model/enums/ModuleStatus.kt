@@ -1,5 +1,7 @@
 package com.ampairs.workspace.model.enums
 
+import com.fasterxml.jackson.annotation.JsonValue
+
 /**
  * Status of a module in the master registry or workspace configuration
  */
@@ -9,7 +11,10 @@ enum class ModuleStatus(val displayName: String, val description: String) {
     BETA("Beta", "Module is in beta testing phase"),
     DEPRECATED("Deprecated", "Module is deprecated but still functional"),
     MAINTENANCE("Maintenance", "Module is under maintenance"),
-    COMING_SOON("Coming Soon", "Module is planned for future release")
+    COMING_SOON("Coming Soon", "Module is planned for future release");
+
+    @JsonValue
+    fun getValue(): String = this.name
 }
 
 /**
@@ -72,6 +77,9 @@ enum class WorkspaceModuleStatus(val displayName: String, val description: Strin
     SUSPENDED("Suspended", "Module access is temporarily suspended"),
     ARCHIVED("Archived", "Module is archived but data is retained"),
     INSTALLATION_FAILED("Installation Failed", "Module installation failed"),
-    UNINSTALLING("Uninstalling", "Module is being uninstalled")
+    UNINSTALLING("Uninstalling", "Module is being uninstalled");
+
+    @JsonValue
+    fun getValue(): String = this.name
 }
 

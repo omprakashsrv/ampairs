@@ -18,8 +18,6 @@ fun List<ProductGroupRequest>.asDatabaseModel(): List<ProductGroup> {
         productGroup.name = it.name
         productGroup.refId = it.refId
         productGroup.imageId = it.imageId
-        productGroup.active = it.active ?: true
-        productGroup.softDeleted = it.softDeleted ?: false
         productGroup
     }
 }

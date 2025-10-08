@@ -205,6 +205,20 @@
 }
 
 // Module Content
+.module-content {
+  @include theme.flex-column;
+  @include theme.flex-center;
+  text-align: center;
+  gap: variables.$spacing-lg;
+  padding: variables.$spacing-xl;
+
+  .module-name {
+    font: variables.$font-title-medium;
+    color: variables.$color-on-surface;
+    margin: 0;
+  }
+}
+
 .module-status {
   @include theme.flex-between;
   align-items: center;

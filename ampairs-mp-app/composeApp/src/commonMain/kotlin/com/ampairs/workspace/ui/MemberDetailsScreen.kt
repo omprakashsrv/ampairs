@@ -16,7 +16,7 @@ import com.ampairs.workspace.api.model.UserRoleResponse
 import com.ampairs.workspace.api.model.WorkspaceRole
 import com.ampairs.workspace.domain.WorkspaceMember
 import com.ampairs.workspace.viewmodel.MemberDetailsViewModel
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 /**
@@ -30,7 +30,7 @@ fun MemberDetailsScreen(
     onNavigateBack: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val viewModel: MemberDetailsViewModel = koinInject { parametersOf(workspaceId, memberId) }
+    val viewModel: MemberDetailsViewModel = koinViewModel { parametersOf(workspaceId, memberId) }
     val state by viewModel.state.collectAsState()
 
     var isEditing by remember { mutableStateOf(false) }

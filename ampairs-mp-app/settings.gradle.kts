@@ -6,6 +6,7 @@ pluginManagement {
         google()
         gradlePluginPortal()
         mavenCentral()
+        maven("https://josm.openstreetmap.de/repository/releases/")
     }
 }
 
@@ -13,6 +14,8 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // Add JOSM repository for OpenStreetMap jmapviewer library
+        maven("https://josm.openstreetmap.de/repository/releases/")
     }
     versionCatalogs {
         create("awssdk") {

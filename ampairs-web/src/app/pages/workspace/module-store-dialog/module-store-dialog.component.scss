@@ -13,42 +13,41 @@
 .store-header {
   background-color: variables.$color-surface-container;
   border-bottom: 1px solid variables.$color-outline-variant;
-  padding: variables.$spacing-lg variables.$spacing-xl;
+  color: variables.$color-on-surface;
 
-  .header-content {
-    @include theme.flex-between;
-    align-items: flex-start;
-    gap: variables.$spacing-lg;
-  }
-
-  .header-text {
-    flex: 1;
+  .header-main {
+    .title-icon {
+      font-size: 1.5rem;
+      color: variables.$color-primary;
+      margin-right: variables.$spacing-md;
+    }
 
     .dialog-title {
-      @include theme.flex-center;
-      gap: variables.$spacing-md;
       font: variables.$font-headline-small;
       color: variables.$color-on-surface;
-      margin: 0 0 variables.$spacing-xs 0;
+    }
 
-      .title-icon {
-        font-size: 1.5rem;
-        color: variables.$color-primary;
+    .spacer {
+      flex: 1 1 auto;
+    }
+
+    .close-button {
+      color: variables.$color-on-surface-variant;
+
+      &:hover {
+        background-color: variables.$color-surface-container-high;
       }
     }
+  }
+
+  .header-subtitle {
+    padding: 0 variables.$spacing-lg variables.$spacing-md variables.$spacing-lg;
+    min-height: auto;
+    height: auto;
 
     .dialog-subtitle {
       font: variables.$font-body-medium;
       color: variables.$color-on-surface-variant;
-      margin: 0;
-    }
-  }
-
-  .close-button {
-    color: variables.$color-on-surface-variant;
-
-    &:hover {
-      background-color: variables.$color-surface-container-high;
     }
   }
 }
@@ -56,21 +55,48 @@
 // Store Content
 .store-content {
   flex: 1;
-  overflow: hidden;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 
   .store-tabs {
-    height: 100%;
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
 
     .tab-icon {
       margin-right: variables.$spacing-sm;
+    }
+
+    ::ng-deep {
+      .mat-mdc-tab-group {
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .mat-mdc-tab-body-wrapper {
+        flex: 1;
+        min-height: 0;
+      }
+
+      .mat-mdc-tab-body {
+        height: 100%;
+      }
+
+      .mat-mdc-tab-body-content {
+        height: 100%;
+        overflow: hidden;
+      }
     }
   }
 }
 
 .tab-content {
-  height: 500px;
+  height: 100%;
   overflow-y: auto;
-  padding: variables.$spacing-lg;
+  padding: variables.$spacing-lg variables.$spacing-lg variables.$spacing-xxl variables.$spacing-lg;
 }
 
 // Filters Section
@@ -127,6 +153,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
   gap: variables.$spacing-lg;
+  padding-bottom: variables.$spacing-xl;
 }
 
 // Module Card
@@ -232,16 +259,6 @@
   @include theme.flex-center;
   justify-content: center;
   padding: variables.$spacing-md variables.$spacing-lg;
-
-  button {
-    @include theme.flex-center;
-    gap: variables.$spacing-sm;
-    min-width: 120px;
-
-    mat-spinner {
-      margin-right: variables.$spacing-sm;
-    }
-  }
 }
 
 // Responsive Design
@@ -252,14 +269,9 @@
     gap: variables.$spacing-md;
   }
 
-  .store-header {
-    padding: variables.$spacing-md variables.$spacing-lg;
-
-    .header-content {
-      flex-direction: column;
-      align-items: stretch;
-      gap: variables.$spacing-md;
-    }
+  .store-header .header-subtitle {
+    padding: 0 variables.$spacing-lg variables.$spacing-sm variables.$spacing-lg;
+    min-height: auto;
   }
 }
 
@@ -270,8 +282,7 @@
   }
 
   .tab-content {
-    height: 400px;
-    padding: variables.$spacing-md;
+    padding: variables.$spacing-md variables.$spacing-md variables.$spacing-xl variables.$spacing-md;
   }
 
   .modules-grid {
@@ -280,13 +291,20 @@
   }
 
   .store-header {
-    padding: variables.$spacing-md;
+    .header-main .title-icon {
+      font-size: 1.25rem;
+    }
 
-    .dialog-title {
+    .header-main .dialog-title {
       font: variables.$font-headline-small;
+    }
 
-      .title-icon {
-        font-size: 1.25rem;
+    .header-subtitle {
+      padding: 0 variables.$spacing-md variables.$spacing-sm variables.$spacing-md;
+      min-height: auto;
+
+      .dialog-subtitle {
+        font: variables.$font-body-small;
       }
     }
   }

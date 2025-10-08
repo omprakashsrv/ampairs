@@ -64,6 +64,11 @@ interface WorkspaceInvitationRepository : JpaRepository<WorkspaceInvitation, Str
     fun findByEmailAndStatus(email: String, status: InvitationStatus): List<WorkspaceInvitation>
 
     /**
+     * Find pending invitations by phone across all workspaces
+     */
+    fun findByPhoneAndStatus(phone: String, status: InvitationStatus): List<WorkspaceInvitation>
+
+    /**
      * Find invitations by inviter
      */
     fun findByInvitedByOrderByCreatedAtDesc(inviterId: String): List<WorkspaceInvitation>

@@ -6,8 +6,8 @@ data class Address(
     var address: String = "",
     var city: String = "",
     var state: String = "",
-    var zip: String = "",
     var country: String = "",
     var attention: String = "",
+    var pincode: String = "",
     var phone: String = "",
 )

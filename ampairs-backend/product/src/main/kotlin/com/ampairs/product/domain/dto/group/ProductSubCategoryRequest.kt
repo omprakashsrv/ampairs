@@ -18,8 +18,6 @@ fun List<ProductSubCategoryRequest>.asDatabaseModel(): List<ProductSubCategory> 
         productCategory.name = it.name
         productCategory.refId = it.refId
         productCategory.imageId = it.imageId
-        productCategory.active = it.active ?: true
-        productCategory.softDeleted = it.softDeleted ?: false
         productCategory
     }
 }

@@ -5,7 +5,7 @@ import Route
 import androidx.compose.foundation.layout.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.navigation.NavController
+import androidx.navigation.NavHostController
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.UserRepository
@@ -14,12 +14,13 @@ import com.ampairs.common.navigation.BackNavigationHandler
 import com.ampairs.common.state.AppHeaderStateManager
 import com.ampairs.workspace.db.WorkspaceRepository
 import com.ampairs.workspace.domain.WorkspaceList
+import com.ampairs.workspace.integration.WorkspaceContextIntegration
 import kotlinx.coroutines.flow.firstOrNull
 import org.koin.compose.koinInject
 
 @Composable
 fun AppScreenWithHeader(
-    navController: NavController,
+    navController: NavHostController,
     modifier: Modifier = Modifier,
     isWorkspaceSelection: Boolean = false,
     content: @Composable (PaddingValues) -> Unit
@@ -115,6 +116,8 @@ fun AppScreenWithHeader(
         isWorkspaceLoading = headerState.isWorkspaceLoading,
         onWorkspaceClick = {
             if (!isWorkspaceSelection) {
+                // Clear workspace context and modules before switching
+                WorkspaceContextIntegration.clearWorkspaceContext()
                 navController.navigate(Route.Workspace) {
                     // Clear back stack up to workspace selection screen
                     // This removes any deep navigation within the current workspace
@@ -129,6 +132,8 @@ fun AppScreenWithHeader(
             navController.navigate(AuthRoute.UserUpdate)
         },
         onLogout = {
+            // Clear workspace context and modules before logout
+            WorkspaceContextIntegration.clearWorkspaceContext()
             // Clear user data and navigate to login
             headerStateManager.reset()
             navController.navigate(Route.Login) {
@@ -141,6 +146,8 @@ fun AppScreenWithHeader(
                 // Clear the current user so they stay on user selection screen
                 tokenRepository.clearCurrentUser()
             }
+            // Clear workspace context and modules before switching users
+            WorkspaceContextIntegration.clearWorkspaceContext()
             // Clear header state before navigation to prevent scope issues
             headerStateManager.reset()
             navController.navigate(AuthRoute.UserSelection) {

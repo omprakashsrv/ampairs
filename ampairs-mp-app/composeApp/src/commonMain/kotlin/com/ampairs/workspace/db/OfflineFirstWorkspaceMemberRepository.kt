@@ -1,16 +1,17 @@
 package com.ampairs.workspace.db
 
+import com.ampairs.auth.api.TokenRepository
+import com.ampairs.common.model.PageResult
+import com.ampairs.common.time.currentTimeMillis
 import com.ampairs.workspace.api.WorkspaceMemberApi
 import com.ampairs.workspace.api.model.UpdateMemberRequest
 import com.ampairs.workspace.db.dao.WorkspaceMemberDao
 import com.ampairs.workspace.domain.WorkspaceMember
-import com.ampairs.common.model.PageResult
 import com.ampairs.workspace.domain.asDatabaseModel
 import com.ampairs.workspace.domain.asDomainModel
-import com.ampairs.auth.api.TokenRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 
 /**
  * Offline-first workspace member repository - simplified version for compilation
@@ -66,7 +67,7 @@ class OfflineFirstWorkspaceMemberRepository(
 
             // Update in local database with current user association
             val currentUserId = getCurrentUserId() ?: "unknown_user"
-            val currentTime = System.currentTimeMillis()
+            val currentTime = currentTimeMillis()
             
             val memberEntity = member.asDatabaseModel().copy(
                 user_id = currentUserId,
@@ -147,7 +148,7 @@ class OfflineFirstWorkspaceMemberRepository(
 
                 // Save to local database with current user association
                 val currentUserId = getCurrentUserId() ?: "unknown_user"
-                val currentTime = System.currentTimeMillis()
+                val currentTime = currentTimeMillis()
                 
                 members.forEach { member ->
                     val memberEntity = member.asDatabaseModel().copy(

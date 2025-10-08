@@ -4,8 +4,6 @@ import com.ampairs.core.domain.dto.FileResponse
 import com.ampairs.core.domain.dto.toFileResponse
 import com.ampairs.inventory.domain.dto.InventoryResponse
 import com.ampairs.inventory.domain.dto.asResponse
-import com.ampairs.product.domain.dto.tax.TaxCodeResponse
-import com.ampairs.product.domain.dto.tax.asResponse
 import com.ampairs.product.domain.dto.unit.UnitConversionResponse
 import com.ampairs.product.domain.dto.unit.UnitResponse
 import com.ampairs.product.domain.dto.unit.asResponse
@@ -30,12 +28,9 @@ data class ProductResponse(
     val categoryId: String,
     val subCategoryId: String,
     val attributes: Map<String, Any>,
-    val active: Boolean,
-    val softDeleted: Boolean,
     val mrp: Double,
     val dp: Double,
     val sellingPrice: Double,
-    val taxCodes: List<TaxCodeResponse>,
     val unitConversions: List<UnitConversionResponse>,
     val lastUpdated: Long?,
     val createdAt: LocalDateTime?,
@@ -64,8 +59,6 @@ fun List<Product>.asResponse(): List<ProductResponse> {
             mrp = it.mrp,
             dp = it.dp,
             sellingPrice = it.sellingPrice,
-            active = it.active,
-            taxCodes = it.taxCodes?.asResponse() ?: arrayListOf(),
             groupId = it.groupId ?: "",
             categoryId = it.categoryId ?: "",
             subCategoryId = it.subCategoryId ?: "",
@@ -80,7 +73,6 @@ fun List<Product>.asResponse(): List<ProductResponse> {
                 fileResponse.refId = productImage.uid
                 fileResponse
             },
-            softDeleted = it.softDeleted,
             baseUnitId = it.baseUnitId,
             inventory = if (it.inventory.size > 0) it.inventory[0].asResponse() else null
         )
@@ -104,8 +96,6 @@ fun Product.asResponse(): ProductResponse {
         mrp = mrp,
         dp = dp,
         sellingPrice = sellingPrice,
-        active = active,
-        taxCodes = taxCodes?.asResponse() ?: arrayListOf(),
         groupId = groupId ?: "",
         categoryId = categoryId ?: "",
         subCategoryId = subCategoryId ?: "",
@@ -120,7 +110,6 @@ fun Product.asResponse(): ProductResponse {
             fileResponse.refId = productImage.uid
             fileResponse
         },
-        softDeleted = softDeleted,
         baseUnitId = baseUnitId,
         inventory = if (inventory.size > 0) inventory[0].asResponse() else null
     )

@@ -52,7 +52,7 @@ class WorkspaceMemberService(
         }
 
         val member = WorkspaceMember().apply {
-            this.workspaceId = workspaceId
+            // workspaceId will be automatically populated by @TenantId from current tenant context
             this.userId = userId
             this.role = WorkspaceRole.OWNER
             this.isActive = true
@@ -75,7 +75,7 @@ class WorkspaceMemberService(
         }
 
         val member = WorkspaceMember().apply {
-            this.workspaceId = workspaceId
+            // workspaceId will be automatically populated by @TenantId from current tenant context
             this.userId = userId
             this.role = role
             this.isActive = true
@@ -217,11 +217,11 @@ class WorkspaceMemberService(
      * Additionally, if a UserDetailProvider is available, it will batch-load user details
      * from the external user service for enhanced user information.
      */
-    fun getWorkspaceMembersOptimized(workspaceId: String, pageable: Pageable): Page<MemberListResponse> {
-        logger.debug("Fetching workspace members with optimized loading (EntityGraph) for workspace: $workspaceId")
+    fun getWorkspaceMembersOptimized(pageable: Pageable): Page<MemberListResponse> {
+        logger.debug("Fetching workspace members with optimized loading (EntityGraph) using @TenantId filtering")
 
-        // Use EntityGraph to load members with primary team in a single query
-        val members = memberRepository.findByWorkspaceIdAndIsActiveTrueWithPrimaryTeam(workspaceId, pageable)
+        // Use EntityGraph to load members with primary team in a single query - @TenantId provides workspace filtering
+        val members = memberRepository.findByIsActiveTrueWithPrimaryTeam(pageable)
 
         // Extract user IDs for batch loading
         val userIds = members.content.map { it.userId }
@@ -240,22 +240,6 @@ class WorkspaceMemberService(
         }
     }
 
-    /**
-     * Extract first name from full name
-     */
-    private fun extractFirstName(fullName: String?): String? {
-        return fullName?.split(" ")?.firstOrNull()
-    }
-
-    /**
-     * Extract last name from full name
-     */
-    private fun extractLastName(fullName: String?): String? {
-        val nameParts = fullName?.split(" ")
-        return if (nameParts != null && nameParts.size > 1) {
-            nameParts.drop(1).joinToString(" ")
-        } else null
-    }
 
     /**
      * Get member by ID with user details and team information using EntityGraph
@@ -273,19 +257,17 @@ class WorkspaceMemberService(
     }
 
     /**
-     * Check if user is workspace member
+     * Check if user is workspace member - uses @TenantId for workspace filtering
      */
-    fun isWorkspaceMember(workspaceId: String, userId: String): Boolean {
-        return memberRepository.existsByWorkspaceIdAndUserIdAndIsActiveTrue(workspaceId, userId)
+    fun isWorkspaceMember(userId: String): Boolean {
+        return memberRepository.findByUserIdAndIsActiveTrue(userId).isPresent
     }
 
     /**
      * Check if user is workspace owner
      */
-    fun isWorkspaceOwner(workspaceId: String, userId: String): Boolean {
-        return memberRepository.existsByWorkspaceIdAndUserIdAndRoleAndIsActiveTrue(
-            workspaceId, userId, WorkspaceRole.OWNER
-        )
+    fun isWorkspaceOwner(userId: String): Boolean {
+        return memberRepository.existsByUserIdAndRoleAndIsActiveTrue(userId, WorkspaceRole.OWNER)
     }
 
     /**
@@ -299,17 +281,17 @@ class WorkspaceMemberService(
     /**
      * Get workspace member by workspace ID and user ID with team information using EntityGraph
      */
-    fun getWorkspaceMember(workspaceId: String, userId: String): WorkspaceMember? {
-        return memberRepository.findByWorkspaceIdAndUserIdAndIsActiveTrueWithPrimaryTeam(workspaceId, userId)
+    fun getWorkspaceMember(userId: String): WorkspaceMember? {
+        return memberRepository.findByUserIdAndIsActiveTrueWithPrimaryTeam(userId)
             .orElse(null)
     }
 
     /**
      * Check if user has specific permission
      */
-    fun hasPermission(workspaceId: String, userId: String, permission: WorkspacePermission): Boolean {
+    fun hasPermission(userId: String, permission: WorkspacePermission): Boolean {
         return try {
-            val member = memberRepository.findByWorkspaceIdAndUserIdAndIsActiveTrue(workspaceId, userId)
+            val member = memberRepository.findByUserIdAndIsActiveTrue(userId)
                 .orElse(null) ?: return false
 
             // Standardized permission mapping with clear, consistent naming
@@ -342,18 +324,18 @@ class WorkspaceMemberService(
                 )
             }
         } catch (e: Exception) {
-            logger.warn("Error checking permissions for user $userId in workspace $workspaceId: ${e.message}")
+            logger.warn("Error checking permissions for user $userId: ${e.message}")
             // Fallback: try alternative query or return conservative result
             try {
                 // Alternative approach using existence check
-                memberRepository.existsByWorkspaceIdAndUserIdAndIsActiveTrue(workspaceId, userId)
+                memberRepository.findByUserIdAndIsActiveTrue(userId).isPresent
                 // If exists but couldn't get role, be conservative and deny advanced permissions
                 when (permission) {
                     WorkspacePermission.MEMBER_VIEW -> true // Basic permission
                     else -> false // Conservative approach for advanced permissions
                 }
             } catch (ex: Exception) {
-                logger.warn("Fallback permission check also failed for user $userId in workspace $workspaceId: ${ex.message}")
+                logger.warn("Fallback permission check also failed for user $userId: ${ex.message}")
                 false // Conservative fallback
             }
         }

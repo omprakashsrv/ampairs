@@ -4,6 +4,22 @@ import { Observable, firstValueFrom } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 import { environment } from '../../../environments/environment';
 
+export interface ModuleMenuItemResponse {
+  id: string;
+  label: string;
+  route_path: string;
+  icon: string;
+  order: number;
+  is_default: boolean;
+}
+
+export interface ModuleRouteInfoResponse {
+  base_path: string;
+  display_name: string;
+  icon_name: string;
+  menu_items: ModuleMenuItemResponse[];
+}
+
 export interface InstalledModule {
   id: string;
   module_code: string;
@@ -18,6 +34,8 @@ export interface InstalledModule {
   health_score?: number;
   needs_attention?: boolean;
   description?: string;
+  route_info: ModuleRouteInfoResponse;
+  navigation_index: number;
 }
 
 export interface AvailableModule {
@@ -85,6 +103,67 @@ export interface ModuleUninstallationResponse {
   name: string;
   uninstalled_at: string;
   message: string;
+}
+
+export interface ModuleInstallationStatus {
+  is_installed: boolean;
+  workspace_module_id?: string;
+  status?: 'ACTIVE' | 'INSTALLED' | 'INACTIVE';
+  enabled?: boolean;
+  installed_at?: string;
+  health_score?: number;
+  needs_attention?: boolean;
+}
+
+export interface ModuleActionOption {
+  action_type: 'INSTALL' | 'UNINSTALL' | 'ENABLE' | 'DISABLE' | 'CONFIGURE' | 'UPDATE';
+  label: string;
+  description: string;
+  enabled: boolean;
+  requires_confirmation: boolean;
+  confirmation_message?: string;
+}
+
+export interface ModuleActionPermissions {
+  can_install: boolean;
+  can_uninstall: boolean;
+  can_configure: boolean;
+  can_enable: boolean;
+  can_disable: boolean;
+}
+
+export interface ModuleWithActions {
+  module_code: string;
+  name: string;
+  description?: string;
+  category: string;
+  version: string;
+  icon: string;
+  primary_color: string;
+  featured: boolean;
+  rating: number;
+  install_count: number;
+  complexity: string;
+  size_mb: number;
+  required_tier: string;
+  installation_status: ModuleInstallationStatus;
+  available_actions: ModuleActionOption[];
+  permissions: ModuleActionPermissions;
+}
+
+export interface ModuleCatalogStatistics {
+  total_installed: number;
+  total_available: number;
+  enabled_modules: number;
+  disabled_modules: number;
+  modules_needing_attention: number;
+}
+
+export interface ModuleCatalogResponse {
+  installed_modules: ModuleWithActions[];
+  available_modules: ModuleWithActions[];
+  categories: ModuleCategory[];
+  statistics: ModuleCatalogStatistics;
 }
 
 @Injectable({
@@ -160,6 +239,36 @@ export class WorkspaceModuleService {
       return modules;
     } catch (error: any) {
       this._error.set(error.message || 'Failed to load available modules');
+      throw error;
+    } finally {
+      this._loading.set(false);
+    }
+  }
+
+  /**
+   * Get unified module catalog with both installed and available modules
+   * This includes installation status and available actions for each module
+   */
+  async getModuleCatalog(category?: string, includeDisabled = false): Promise<ModuleCatalogResponse> {
+    this._loading.set(true);
+    this._error.set(null);
+
+    try {
+      const params: any = {};
+      if (category) params.category = category;
+      if (includeDisabled) params.include_disabled = includeDisabled;
+
+      const catalog = await firstValueFrom(
+        this.http.get<ModuleCatalogResponse>(`${this.MODULE_API_URL}/catalog`, { params })
+          .pipe(catchError(this.handleError.bind(this)))
+      );
+
+      // Update the categories from the catalog response
+      this._categories.set(catalog.categories);
+
+      return catalog;
+    } catch (error: any) {
+      this._error.set(error.message || 'Failed to load module catalog');
       throw error;
     } finally {
       this._loading.set(false);

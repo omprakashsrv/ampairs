@@ -9,7 +9,6 @@ import com.ampairs.workspace.model.dto.SettingsResponse
 import com.ampairs.workspace.model.dto.UpdateSettingsRequest
 import com.ampairs.workspace.model.dto.toResponse
 import com.ampairs.workspace.repository.WorkspaceSettingsRepository
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -22,8 +21,7 @@ import java.time.LocalDateTime
 @Transactional
 class WorkspaceSettingsService(
     private val settingsRepository: WorkspaceSettingsRepository,
-    private val activityService: WorkspaceActivityService,
-    private val objectMapper: ObjectMapper,
+    private val activityService: WorkspaceActivityService
 ) {
 
     companion object {

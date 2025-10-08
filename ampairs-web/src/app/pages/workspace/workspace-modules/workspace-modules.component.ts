@@ -16,6 +16,7 @@ import { MatDivider } from "@angular/material/divider";
 import { WorkspaceService } from '../../../core/services/workspace.service';
 import { WorkspaceModuleService, InstalledModule } from '../../../core/services/workspace-module.service';
 import { ModuleStoreDialogComponent } from '../module-store-dialog/module-store-dialog.component';
+import { DynamicNavigationMenuComponent } from '../../../shared/components/dynamic-navigation-menu/dynamic-navigation-menu.component';
 
 @Component({
   selector: 'app-workspace-modules',
@@ -32,7 +33,7 @@ import { ModuleStoreDialogComponent } from '../module-store-dialog/module-store-
     MatMenuModule,
     MatTabsModule,
     MatBadgeModule,
-    MatDivider
+    DynamicNavigationMenuComponent
   ],
   templateUrl: './workspace-modules.component.html',
   styleUrl: './workspace-modules.component.scss'

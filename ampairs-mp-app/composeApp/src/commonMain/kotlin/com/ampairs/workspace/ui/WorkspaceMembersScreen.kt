@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -13,7 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.ampairs.workspace.domain.WorkspaceMember
 import com.ampairs.workspace.viewmodel.WorkspaceMembersViewModel
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
 /**
@@ -27,7 +28,7 @@ fun WorkspaceMembersScreen(
     onMemberClick: (String) -> Unit,
     onInviteClick: () -> Unit,
 ) {
-    val viewModel: WorkspaceMembersViewModel = koinInject { parametersOf(workspaceId) }
+    val viewModel: WorkspaceMembersViewModel = koinViewModel { parametersOf(workspaceId) }
     val state by viewModel.state.collectAsState()
 
     var showFilters by remember { mutableStateOf(false) }
@@ -51,7 +52,7 @@ fun WorkspaceMembersScreen(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = onNavigateBack) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                    Icon(Icons.AutoMirrored.Default.ArrowBack, contentDescription = "Back")
                 }
                 Text(
                     text = "Team Members",

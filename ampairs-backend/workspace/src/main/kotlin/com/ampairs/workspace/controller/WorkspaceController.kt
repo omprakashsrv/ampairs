@@ -379,7 +379,16 @@ class WorkspaceController(
         val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
-        val sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy)
+        // Map JPA property names to database column names for native query compatibility
+        val dbColumnName = when (sortBy) {
+            "createdAt" -> "created_at"
+            "updatedAt" -> "updated_at"
+            "name" -> "name"
+            "type" -> "type"
+            else -> "created_at" // default fallback
+        }
+
+        val sort = Sort.by(Sort.Direction.fromString(sortDir), dbColumnName)
         val pageable = PageRequest.of(page, size, sort)
 
         val workspaces = workspaceService.getUserWorkspaces(userId, pageable)

@@ -18,6 +18,10 @@ export const routes: Routes = [
     path: 'verify-otp',
     loadComponent: () => import('./auth/verify-otp/verify-otp.component').then(m => m.VerifyOtpComponent)
   },
+  {
+    path: 'accept-invitation/:token',
+    loadComponent: () => import('./pages/accept-invitation/accept-invitation.component').then(m => m.AcceptInvitationComponent)
+  },
   // Authenticated routes (with main layout)
   {
     path: '',
@@ -54,6 +58,16 @@ export const routes: Routes = [
           {
             path: 'modules',
             loadComponent: () => import('./pages/workspace/workspace-modules/workspace-modules.component').then(m => m.WorkspaceModulesComponent)
+          },
+          {
+            path: 'modules/:moduleCode',
+            loadComponent: () => import('./shared/components/dynamic-module-router/dynamic-module-router.component').then(m => m.DynamicModuleRouterComponent),
+            canActivate: [ModuleGuard]
+          },
+          {
+            path: 'modules/:moduleCode/**',
+            loadComponent: () => import('./shared/components/dynamic-module-router/dynamic-module-router.component').then(m => m.DynamicModuleRouterComponent),
+            canActivate: [ModuleGuard]
           },
           {
             path: 'dashboard',

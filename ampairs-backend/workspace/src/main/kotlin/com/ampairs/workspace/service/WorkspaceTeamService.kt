@@ -37,7 +37,7 @@ class WorkspaceTeamService(
 
         // Validate team lead if provided
         request.teamLeadId?.let { leadId ->
-            if (!memberService.isWorkspaceMember(workspaceId, leadId)) {
+            if (!memberService.isWorkspaceMember(leadId)) {
                 throw BusinessException("INVALID_TEAM_LEAD", "Team lead must be a workspace member")
             }
         }
@@ -78,7 +78,7 @@ class WorkspaceTeamService(
         // Update team lead if changed
         request.teamLeadId?.let { leadId ->
             if (leadId != team.teamLeadId) {
-                if (!memberService.isWorkspaceMember(workspaceId, leadId)) {
+                if (!memberService.isWorkspaceMember(leadId)) {
                     throw BusinessException("INVALID_TEAM_LEAD", "Team lead must be a workspace member")
                 }
                 team.teamLeadId = leadId

@@ -3,6 +3,7 @@ package com.ampairs.auth.db.entity
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.ampairs.common.time.currentTimeMillis
 
 @Entity(
     tableName = "userTokenEntity",
@@ -21,7 +22,7 @@ data class UserTokenEntity(
     val access_token_expires_at: Long? = null,
     val refresh_token_expires_at: Long? = null,
     val is_active: Boolean = true,  // Track if this user session is active
-    val last_used: Long = System.currentTimeMillis(),
+    val last_used: Long = currentTimeMillis(),
     @Deprecated("Use access_token_expires_at instead")
     val expires_at: Long? = null,
 )

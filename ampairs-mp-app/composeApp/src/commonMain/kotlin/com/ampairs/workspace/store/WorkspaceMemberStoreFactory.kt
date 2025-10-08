@@ -1,16 +1,19 @@
 package com.ampairs.workspace.store
 
+import com.ampairs.common.model.PageResult
+import com.ampairs.common.time.currentTimeMillis
 import com.ampairs.workspace.api.WorkspaceMemberApi
-import com.ampairs.workspace.api.model.MemberListResponse
 import com.ampairs.workspace.api.model.MemberDetailsResponse
+import com.ampairs.workspace.api.model.MemberListResponse
 import com.ampairs.workspace.db.dao.WorkspaceMemberDao
 import com.ampairs.workspace.db.entity.WorkspaceMemberEntity
 import com.ampairs.workspace.domain.WorkspaceMember
-import com.ampairs.common.model.PageResult
-import org.mobilenativefoundation.store.store5.*
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
+import org.mobilenativefoundation.store.store5.Fetcher
+import org.mobilenativefoundation.store.store5.SourceOfTruth
+import org.mobilenativefoundation.store.store5.Store
+import org.mobilenativefoundation.store.store5.StoreBuilder
 
 /**
  * Store5 Factory for WorkspaceMember data management with pagination support
@@ -188,7 +191,7 @@ class WorkspaceMemberStoreFactory(
             },
             writer = { key, pageResult ->
                 // Convert Domain models to entities with sync metadata
-                val currentTime = System.currentTimeMillis()
+                val currentTime = currentTimeMillis()
                 val entities = pageResult.content.map { member ->
                     member.toEntityModel(key.userId, key.workspaceId).copy(
                         sync_state = "SYNCED",
@@ -274,9 +277,9 @@ private fun MemberListResponse.toEntityModel(
         avatar_url = this.user?.profilePictureUrl,
         // Default sync metadata
         sync_state = "SYNCED",
-        last_synced_at = System.currentTimeMillis(),
-        local_updated_at = System.currentTimeMillis(),
-        server_updated_at = System.currentTimeMillis(),
+        last_synced_at = currentTimeMillis(),
+        local_updated_at = currentTimeMillis(),
+        server_updated_at = currentTimeMillis(),
         pending_changes = "",
         conflict_data = "",
         retry_count = 0
@@ -320,9 +323,9 @@ private fun WorkspaceMember.toEntityModel(
         avatar_url = this.avatarUrl,
         // Default sync metadata
         sync_state = "SYNCED",
-        last_synced_at = System.currentTimeMillis(),
-        local_updated_at = System.currentTimeMillis(),
-        server_updated_at = System.currentTimeMillis(),
+        last_synced_at = currentTimeMillis(),
+        local_updated_at = currentTimeMillis(),
+        server_updated_at = currentTimeMillis(),
         pending_changes = "",
         conflict_data = "",
         retry_count = 0

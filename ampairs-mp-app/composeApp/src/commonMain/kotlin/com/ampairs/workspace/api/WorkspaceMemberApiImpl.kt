@@ -1,6 +1,7 @@
 package com.ampairs.workspace.api
 
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.common.delete
 import com.ampairs.common.get
 import com.ampairs.common.httpClient
@@ -37,14 +38,14 @@ class WorkspaceMemberApiImpl(
             "sortBy" to sortBy,
             "sortDir" to sortDir
         )
-        return get(client, "$WORKSPACE_ENDPOINT/workspace/v1/$workspaceId/members", params)
+        return get(client, ApiUrlBuilder.workspaceUrl("v1/member"), params)
     }
 
     override suspend fun getMemberDetails(
         workspaceId: String,
         memberId: String,
     ): Response<MemberDetailsResponse> {
-        return get(client, "$WORKSPACE_ENDPOINT/workspace/v1/$workspaceId/members/$memberId")
+        return get(client, ApiUrlBuilder.workspaceUrl("v1/member/$memberId"))
     }
 
     override suspend fun updateMember(
@@ -52,25 +53,25 @@ class WorkspaceMemberApiImpl(
         memberId: String,
         request: UpdateMemberRequest,
     ): Response<MemberDetailsResponse> {
-        return put(client, "$WORKSPACE_ENDPOINT/workspace/v1/$workspaceId/members/$memberId", request)
+        return put(client, ApiUrlBuilder.workspaceUrl("v1/member/$memberId"), request)
     }
 
     override suspend fun removeMember(
         workspaceId: String,
         memberId: String,
     ): Response<String> {
-        return delete(client, "$WORKSPACE_ENDPOINT/workspace/v1/$workspaceId/members/$memberId")
+        return delete(client, ApiUrlBuilder.workspaceUrl("v1/member/$memberId"))
     }
 
     override suspend fun getMyRole(workspaceId: String): Response<UserRoleResponse> {
-        return get(client, "$WORKSPACE_ENDPOINT/workspace/v1/$workspaceId/my-role")
+        return get(client, ApiUrlBuilder.workspaceUrl("v1/member/my-role"))
     }
 
     override suspend fun getAvailableRoles(workspaceId: String): Response<List<WorkspaceRole>> {
-        return get(client, "$WORKSPACE_ENDPOINT/workspace/v1/$workspaceId/roles")
+        return get(client, ApiUrlBuilder.workspaceUrl("v1/member/roles"))
     }
 
     override suspend fun getAvailablePermissions(workspaceId: String): Response<List<WorkspacePermissionResponse>> {
-        return get(client, "$WORKSPACE_ENDPOINT/workspace/v1/$workspaceId/permissions")
+        return get(client, ApiUrlBuilder.workspaceUrl("v1/member/permissions"))
     }
 }

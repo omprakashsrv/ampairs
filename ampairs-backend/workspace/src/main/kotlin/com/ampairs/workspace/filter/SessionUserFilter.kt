@@ -4,7 +4,6 @@ import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.multitenancy.CurrentTenantIdentifierResolver
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.core.security.AuthenticationHelper
-import com.ampairs.core.service.UserService
 import com.ampairs.workspace.service.WorkspaceMemberService
 import com.fasterxml.jackson.databind.ObjectMapper
 import jakarta.servlet.FilterChain
@@ -13,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.MediaType
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Component
@@ -21,8 +21,7 @@ import org.springframework.web.filter.OncePerRequestFilter
 @Component
 class SessionUserFilter @Autowired constructor(
     private val memberService: WorkspaceMemberService,
-    private val objectMapper: ObjectMapper,
-    private val userService: UserService,
+    private val objectMapper: ObjectMapper
 ) : OncePerRequestFilter() {
 
     companion object {
@@ -68,18 +67,17 @@ class SessionUserFilter @Autowired constructor(
                 return
             }
 
-            // Validate workspace membership
-            if (!memberService.isWorkspaceMember(workspaceId, userId)) {
-                log.warn("User $userId attempted to access workspace $workspaceId without membership")
-                sendAccessDeniedResponse(response, request.requestURI, "You don't have access to this workspace")
-                return
-            }
-
             // Set tenant context using Spring-native approach
             setTenantInSecurityContext(workspaceId)
             TenantContextHolder.setCurrentTenant(workspaceId)
             log.debug("Set tenant context to workspace: $workspaceId for user: $userId")
 
+            // Validate workspace membership - @TenantId automatically filters by workspace context
+            if (!memberService.isWorkspaceMember(userId)) {
+                log.warn("User $userId attempted to access workspace $workspaceId without membership")
+                sendAccessDeniedResponse(response, request.requestURI, "You don't have access to this workspace")
+                return
+            }
             // Continue with request
             chain.doFilter(request, response)
 
@@ -95,11 +93,7 @@ class SessionUserFilter @Autowired constructor(
     private fun shouldSkipFilter(requestPath: String): Boolean {
         return requestPath.contains("/auth/v1") ||
                 requestPath.contains("/user/v1") ||
-                requestPath.contains("/workspace/v1/check-slug") ||
-                requestPath.contains("/workspace/v1/search") ||
-                requestPath.contains("/workspace/v1/invitations/") && requestPath.contains("/accept") ||
                 isWorkspaceListEndpoint(requestPath) ||
-                isWorkspaceDetailEndpoint(requestPath) ||
                 requestPath.contains("/actuator/health") ||
                 requestPath.contains("/actuator/info") ||
                 requestPath.contains("/swagger") ||
@@ -109,13 +103,7 @@ class SessionUserFilter @Autowired constructor(
     private fun isWorkspaceListEndpoint(requestPath: String): Boolean {
         // Match exact path /workspace/v1 or /workspace/v1/ for GET requests (getUserWorkspaces)
         // and POST requests (createWorkspace)
-        return requestPath.matches(Regex("^/workspace/v1/?$"))
-    }
-
-    private fun isWorkspaceDetailEndpoint(requestPath: String): Boolean {
-        // Match workspace detail endpoints like /workspace/v1/{workspaceId}
-        // These endpoints are used to fetch workspace details before setting workspace context
-        return requestPath.matches(Regex("^/workspace/v1/[A-Z0-9]+$"))
+        return requestPath.matches(Regex("^/workspace/v1/?$")) || requestPath.contains("/workspace/v1/search")
     }
 
     private fun sendAccessDeniedResponse(
@@ -150,8 +138,8 @@ class SessionUserFilter @Autowired constructor(
 
                 // Create new authentication token with tenant details
                 val authWithDetails = when (authentication) {
-                    is org.springframework.security.authentication.UsernamePasswordAuthenticationToken -> {
-                        val newAuth = org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                    is UsernamePasswordAuthenticationToken -> {
+                        val newAuth = UsernamePasswordAuthenticationToken(
                             authentication.principal,
                             authentication.credentials,
                             authentication.authorities

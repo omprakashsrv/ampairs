@@ -61,8 +61,6 @@ fun Order.toResponse(orderItems: List<OrderItem>): OrderResponse {
         shippingAddress = this.shippingAddress,
         taxInfos = this.taxInfos,
         orderItems = orderItems.toResponse(),
-        active = this.active,
-        softDeleted = this.softDeleted,
         discount = this.discount
     )
 }

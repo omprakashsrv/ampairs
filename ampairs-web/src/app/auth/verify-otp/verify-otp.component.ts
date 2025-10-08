@@ -180,6 +180,22 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
 
         try {
           const user = await this.authService.getUserProfile();
+
+          // Check if there's a pending invitation to handle
+          const pendingInvitationToken = sessionStorage.getItem('pending_invitation_token');
+          const authReturnUrl = sessionStorage.getItem('auth_return_url');
+
+          if (pendingInvitationToken) {
+            // Redirect back to invitation acceptance page
+            this.router.navigate(['/accept-invitation', pendingInvitationToken]);
+            return;
+          } else if (authReturnUrl) {
+            // Redirect to the stored return URL from login
+            sessionStorage.removeItem('auth_return_url');
+            this.router.navigateByUrl(authReturnUrl);
+            return;
+          }
+
           if (this.authService.isProfileIncomplete(user)) {
             this.router.navigate(['/complete-profile']);
           } else {
@@ -190,6 +206,20 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
           // Extract error message from interceptor-formatted error
           const errorMessage = profileError.error?.message || profileError.message || 'Failed to load profile.';
           console.error('Profile load error:', errorMessage);
+
+          // Check for pending invitation or return URL even if profile load fails
+          const pendingInvitationToken = sessionStorage.getItem('pending_invitation_token');
+          const authReturnUrl = sessionStorage.getItem('auth_return_url');
+
+          if (pendingInvitationToken) {
+            this.router.navigate(['/accept-invitation', pendingInvitationToken]);
+            return;
+          } else if (authReturnUrl) {
+            sessionStorage.removeItem('auth_return_url');
+            this.router.navigateByUrl(authReturnUrl);
+            return;
+          }
+
           // Still redirect to workspace selection even if profile load fails
           this.router.navigate(['/workspaces']);
         }
