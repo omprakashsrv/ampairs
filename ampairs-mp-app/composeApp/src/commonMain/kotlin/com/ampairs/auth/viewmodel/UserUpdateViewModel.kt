@@ -9,8 +9,8 @@ import com.ampairs.auth.api.AuthApi
 import com.ampairs.auth.api.model.UserApiModel
 import com.ampairs.auth.api.model.UserUpdateRequest
 import com.ampairs.common.model.UiState
-import com.ampairs.network.model.onError
-import com.ampairs.network.model.onSuccess
+import com.ampairs.common.model.onError
+import com.ampairs.common.model.onSuccess
 import kotlinx.coroutines.launch
 
 class UserUpdateViewModel(

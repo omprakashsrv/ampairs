@@ -1,11 +1,12 @@
 package com.ampairs.common
 
-import com.ampairs.auth.api.AUTH_ENDPOINT
+import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.auth.api.model.RefreshToken
 import com.ampairs.auth.api.model.Token
 import com.ampairs.auth.domain.asRefreshTokens
 import com.ampairs.network.model.ErrorResponse
-import com.ampairs.network.model.Response
+import com.ampairs.common.model.Response
+import com.ampairs.common.model.Error
 import com.ampairs.network.model.toResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
@@ -13,6 +14,7 @@ import io.ktor.client.request.forms.submitFormWithBinaryData
 import io.ktor.client.request.get
 import io.ktor.client.request.header
 import io.ktor.client.request.parameter
+import io.ktor.client.request.delete
 import io.ktor.client.request.post
 import io.ktor.client.request.put
 import io.ktor.client.request.setBody
@@ -29,12 +31,13 @@ import kotlinx.serialization.json.Json
  * POST request with automatic token refresh handling
  */
 suspend inline fun <reified T> post(client: HttpClient, url: String, body: Any?): T {
-    val tokenRepository = getTokenRepository(client)
-    var response = client.post(url) {
-        if (body != null) {
-            setBody(body)
+    return try {
+        val tokenRepository = getTokenRepository(client)
+        var response = client.post(url) {
+            if (body != null) {
+                setBody(body)
+            }
         }
-    }
     
     // Handle 401 and attempt token refresh
     if (response.status == HttpStatusCode.Unauthorized) {
@@ -57,9 +60,16 @@ suspend inline fun <reified T> post(client: HttpClient, url: String, body: Any?)
         } else {
             println("❌ Token refresh failed")
         }
+        }
+
+        handleResponse<T>(response)
+    } catch (e: NetworkException) {
+        println("❌ Network request failed: ${e.message}")
+        createNetworkErrorResponse<T>(e)
+    } catch (e: Exception) {
+        println("❌ Unexpected error: ${e.message}")
+        createNetworkErrorResponse<T>(e)
     }
-    
-    return handleResponse<T>(response)
 }
 
 /**
@@ -84,6 +94,54 @@ suspend inline fun <reified T> put(client: HttpClient, url: String, body: Any?):
             response = client.put(url) {
                 if (body != null) {
                     setBody(body)
+                }
+                // Add the new token manually
+                val newAccessToken = tokenRepository.getAccessToken()
+                if (!newAccessToken.isNullOrEmpty()) {
+                    header("Authorization", "Bearer $newAccessToken")
+                }
+            }
+        } else {
+            println("❌ Token refresh failed")
+        }
+    }
+    
+    return handleResponse<T>(response)
+}
+
+/**
+ * DELETE request with automatic token refresh handling
+ */
+suspend inline fun <reified T> delete(client: HttpClient, url: String): T {
+    return delete(client, url, null)
+}
+
+/**
+ * DELETE request with parameters and automatic token refresh handling
+ */
+suspend inline fun <reified T> delete(
+    client: HttpClient,
+    url: String,
+    parameters: Map<String, Any>?
+): T {
+    val tokenRepository = getTokenRepository(client)
+    var response = client.delete(url) {
+        parameters?.forEach { (key, value) ->
+            parameter(key, value)
+        }
+    }
+    
+    // Handle 401 and attempt token refresh
+    if (response.status == HttpStatusCode.Unauthorized) {
+        println("🔄 401 Unauthorized - attempting token refresh")
+        
+        val refreshed = refreshTokens(tokenRepository)
+        if (refreshed) {
+            println("✅ Token refreshed - retrying original request")
+            // Retry with refreshed token
+            response = client.delete(url) {
+                parameters?.forEach { (key, value) ->
+                    parameter(key, value)
                 }
                 // Add the new token manually
                 val newAccessToken = tokenRepository.getAccessToken()
@@ -200,7 +258,7 @@ suspend inline fun <reified T> handleResponse(response: HttpResponse): T {
             errorBody.toResponse()
         } catch (_: Exception) {
             Response(
-                error = com.ampairs.network.model.Error(
+                error = Error(
                     code = response.status.value.toString(),
                     message = "HTTP ${response.status.value}: ${response.status.description}"
                 ),
@@ -258,7 +316,7 @@ suspend fun refreshTokens(tokenRepository: com.ampairs.auth.api.TokenRepository)
         
         println("🔑 Using device ID for refresh: ${deviceId.take(10)}...")
         
-        val response = refreshClient.post("$AUTH_ENDPOINT/auth/v1/refresh_token") {
+        val response = refreshClient.post(ApiUrlBuilder.authUrl("auth/v1/refresh_token")) {
             contentType(ContentType.Application.Json)
             setBody(RefreshToken(refreshToken, deviceId))
         }
@@ -286,7 +344,7 @@ suspend fun refreshTokens(tokenRepository: com.ampairs.auth.api.TokenRepository)
         
         refreshClient.close()
         false
-        
+
     } catch (e: Exception) {
         println("💥 Token refresh failed with exception: ${e.message}")
         e.printStackTrace()
@@ -294,4 +352,24 @@ suspend fun refreshTokens(tokenRepository: com.ampairs.auth.api.TokenRepository)
         tokenRepository.clearTokens()
         false
     }
+}
+
+/**
+ * Create a standardized error response for network failures
+ */
+inline fun <reified T> createNetworkErrorResponse(exception: Exception): T {
+    val errorResponse = Response(
+        error = Error(
+            code = "NETWORK_ERROR",
+            message = when {
+                exception is NetworkException -> exception.message ?: "Network connection failed"
+                exception::class.simpleName == "ConnectException" -> "Unable to connect to server. Please check your network connection."
+                exception::class.simpleName == "UnknownHostException" -> "Server not found. Please check your network connection."
+                exception::class.simpleName == "SocketTimeoutException" -> "Request timed out. Please try again."
+                else -> "Network error: ${exception.message ?: "Unknown error"}"
+            }
+        ),
+        data = null
+    )
+    return errorResponse as T
 }

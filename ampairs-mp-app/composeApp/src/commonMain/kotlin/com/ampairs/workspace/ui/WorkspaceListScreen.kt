@@ -10,8 +10,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.WifiOff
@@ -26,8 +29,13 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.runtime.collectAsState
 import com.ampairs.workspace.domain.Workspace
+import com.ampairs.workspace.domain.UserInvitation
 import com.ampairs.workspace.viewmodel.WorkspaceListViewModel
-import org.koin.compose.koinInject
+import com.ampairs.workspace.integration.WorkspaceContextIntegration
+import com.ampairs.workspace.navigation.GlobalNavigationManager
+import com.ampairs.common.database.DatabaseScopeManager
+import com.ampairs.workspace.context.WorkspaceContextManager
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,7 +44,7 @@ fun WorkspaceListScreen(
     onWorkspaceSelected: (String) -> Unit,
     modifier: Modifier = Modifier,
     onWorkspaceEdit: (String) -> Unit = {},
-    viewModel: WorkspaceListViewModel = koinInject(),
+    viewModel: WorkspaceListViewModel = koinViewModel(),
 ) {
     val state by viewModel.state.collectAsState()
     val coroutineScope = rememberCoroutineScope()
@@ -60,6 +68,22 @@ fun WorkspaceListScreen(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp)
         ) {
+
+            // Invitations section - placed above workspace search/content
+            if (state.invitations.isNotEmpty()) {
+                InvitationsSection(
+                    invitations = state.invitations,
+                    isLoading = state.isInvitationsLoading,
+                    error = state.invitationsError,
+                    processingIds = state.processingInvitationIds,
+                    onAccept = viewModel::acceptInvitation,
+                    onReject = viewModel::rejectInvitation,
+                    onClearError = viewModel::clearInvitationsError,
+                    onRefresh = viewModel::refreshInvitations
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+
             // Search Bar with offline/online indicator
             Row(
                 modifier = Modifier
@@ -77,33 +101,33 @@ fun WorkspaceListScreen(
                     modifier = Modifier.weight(1f),
                     singleLine = true
                 )
-                
+
                 // Offline Mode Indicator (only show when offline)
-                if (state.isOfflineMode) {
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Surface(
-                        color = MaterialTheme.colorScheme.errorContainer,
-                        shape = RoundedCornerShape(8.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.WifiOff,
-                                contentDescription = "Offline",
-                                tint = MaterialTheme.colorScheme.onErrorContainer,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Offline",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onErrorContainer
-                            )
-                        }
-                    }
-                }
+//                if (state.isOfflineMode) {
+//                    Spacer(modifier = Modifier.width(8.dp))
+//                    Surface(
+//                        color = MaterialTheme.colorScheme.errorContainer,
+//                        shape = RoundedCornerShape(8.dp)
+//                    ) {
+//                        Row(
+//                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+//                            verticalAlignment = Alignment.CenterVertically
+//                        ) {
+//                            Icon(
+//                                imageVector = Icons.Default.WifiOff,
+//                                contentDescription = "Offline",
+//                                tint = MaterialTheme.colorScheme.onErrorContainer,
+//                                modifier = Modifier.size(16.dp)
+//                            )
+//                            Spacer(modifier = Modifier.width(4.dp))
+//                            Text(
+//                                text = "Offline",
+//                                style = MaterialTheme.typography.labelSmall,
+//                                color = MaterialTheme.colorScheme.onErrorContainer
+//                            )
+//                        }
+//                    }
+//                }
             }
 
             // Error message with retry option
@@ -115,7 +139,7 @@ fun WorkspaceListScreen(
                     colors = CardDefaults.cardColors(
                         containerColor = if (state.isOfflineMode && state.workspaces.isNotEmpty())
                             MaterialTheme.colorScheme.secondaryContainer
-                        else 
+                        else
                             MaterialTheme.colorScheme.errorContainer
                     )
                 ) {
@@ -128,25 +152,25 @@ fun WorkspaceListScreen(
                             contentDescription = null,
                             tint = if (state.isOfflineMode && state.workspaces.isNotEmpty())
                                 MaterialTheme.colorScheme.onSecondaryContainer
-                            else 
+                            else
                                 MaterialTheme.colorScheme.onErrorContainer
                         )
-                        
+
                         Spacer(modifier = Modifier.width(8.dp))
-                        
+
                         Text(
-                            text = if (state.isOfflineMode && state.workspaces.isNotEmpty()) 
+                            text = if (state.isOfflineMode && state.workspaces.isNotEmpty())
                                 "Showing cached data • $error"
-                            else 
+                            else
                                 error,
                             color = if (state.isOfflineMode && state.workspaces.isNotEmpty())
                                 MaterialTheme.colorScheme.onSecondaryContainer
-                            else 
+                            else
                                 MaterialTheme.colorScheme.onErrorContainer,
                             modifier = Modifier.weight(1f),
                             style = MaterialTheme.typography.bodyMedium
                         )
-                        
+
                         Row {
                             // Retry button for network errors
                             if (!state.isRefreshing) {
@@ -158,12 +182,12 @@ fun WorkspaceListScreen(
                                         contentDescription = "Retry",
                                         tint = if (state.isOfflineMode && state.workspaces.isNotEmpty())
                                             MaterialTheme.colorScheme.onSecondaryContainer
-                                        else 
+                                        else
                                             MaterialTheme.colorScheme.onErrorContainer
                                     )
                                 }
                             }
-                            
+
                             TextButton(
                                 onClick = { viewModel.clearError() }
                             ) {
@@ -282,14 +306,37 @@ fun WorkspaceListScreen(
                                 }
                             }
                         }
-                        
+
                         items(state.workspaces) { workspace ->
                             WorkspaceCard(
                                 workspace = workspace,
                                 isOfflineMode = state.isOfflineMode,
                                 onClick = {
                                     coroutineScope.launch {
+                                        println("WorkspaceListScreen: 🔄 Switching to workspace: ${workspace.name} (slug: ${workspace.slug})")
+
+                                        // Get previously selected workspace slug to clear its databases
+                                        val previousWorkspace = WorkspaceContextManager.getInstance().currentWorkspace.value
+                                        val previousSlug = previousWorkspace?.slug
+                                        println("WorkspaceListScreen: Previous workspace slug: $previousSlug")
+
+                                        // Clear old workspace databases before switching
+                                        if (previousSlug != null && previousSlug != workspace.slug) {
+                                            println("WorkspaceListScreen: Clearing databases for previous workspace: $previousSlug")
+                                            DatabaseScopeManager.getInstance().clearWorkspaceDatabases(previousSlug)
+                                        } else {
+                                            println("WorkspaceListScreen: No previous workspace or same workspace, skipping clear")
+                                        }
+
                                         viewModel.selectWorkSpace(workspace.id)
+
+                                        // Set workspace context for both business logic and database
+                                        WorkspaceContextIntegration.setWorkspaceFromDomain(workspace)
+                                        println("WorkspaceListScreen: ✅ Workspace context updated to: ${workspace.slug}")
+
+                                        // Initialize global navigation service for this workspace
+                                        GlobalNavigationManager.getInstance().onWorkspaceSelected()
+
                                         onWorkspaceSelected(workspace.id)
                                     }
                                 },
@@ -307,7 +354,7 @@ fun WorkspaceListScreen(
                 }
             }
         }
-        
+
         // Floating Action Button
         FloatingActionButton(
             onClick = onNavigateToCreateWorkspace,
@@ -334,9 +381,9 @@ private fun WorkspaceCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(
-            containerColor = if (isOfflineMode) 
+            containerColor = if (isOfflineMode)
                 MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.8f)
-            else 
+            else
                 MaterialTheme.colorScheme.surface
         )
     ) {
@@ -422,7 +469,7 @@ private fun WorkspaceCard(
                             color = MaterialTheme.colorScheme.outline
                         )
                     }
-                    
+
                     // Offline sync indicator
                     if (isOfflineMode) {
                         Spacer(modifier = Modifier.width(8.dp))
@@ -452,7 +499,7 @@ private fun WorkspaceCard(
                     }
                 }
             }
-            
+
             // Edit button
             IconButton(
                 onClick = onEdit,
@@ -464,6 +511,248 @@ private fun WorkspaceCard(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(20.dp)
                 )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InvitationsSection(
+    invitations: List<UserInvitation>,
+    isLoading: Boolean,
+    error: String?,
+    processingIds: Set<String>,
+    onAccept: (String) -> Unit,
+    onReject: (String) -> Unit,
+    onClearError: () -> Unit,
+    onRefresh: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.1f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    Icons.Default.Mail,
+                    contentDescription = "Invitations",
+                    tint = MaterialTheme.colorScheme.primary
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "Workspace Invitations",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.weight(1f)
+                )
+
+                if (!isLoading) {
+                    IconButton(
+                        onClick = onRefresh,
+                        modifier = Modifier.size(32.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Refresh,
+                            contentDescription = "Refresh invitations",
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+
+            if (error != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = error,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.weight(1f)
+                    )
+                    TextButton(onClick = onClearError) {
+                        Text("Dismiss", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+            }
+
+            if (isLoading) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Loading invitations...",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.outline
+                    )
+                }
+            } else {
+                Spacer(modifier = Modifier.height(12.dp))
+
+                invitations.forEach { invitation ->
+                    InvitationCard(
+                        invitation = invitation,
+                        isProcessing = processingIds.contains(invitation.id),
+                        onAccept = { onAccept(invitation.id) },
+                        onReject = { onReject(invitation.id) }
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun InvitationCard(
+    invitation: UserInvitation,
+    isProcessing: Boolean,
+    onAccept: () -> Unit,
+    onReject: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
+            ) {
+                // Workspace icon
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.secondary),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = invitation.workspaceName.take(2).uppercase(),
+                        color = MaterialTheme.colorScheme.onSecondary,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(12.dp))
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = invitation.workspaceName,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold
+                    )
+
+                    Text(
+                        text = "Role: ${invitation.role}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+
+                    invitation.inviterName?.let { inviter ->
+                        Text(
+                            text = "Invited by $inviter",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.outline
+                        )
+                    }
+
+                    invitation.daysUntilExpiry?.let { days ->
+                        Text(
+                            text = if (days > 0) "Expires in $days days" else "Expires soon",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = if (days <= 3) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outline
+                        )
+                    }
+
+                    invitation.message?.let { message ->
+                        if (message.isNotBlank()) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = "\"$message\"",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                OutlinedButton(
+                    onClick = onReject,
+                    enabled = !isProcessing,
+                    modifier = Modifier.height(32.dp)
+                ) {
+                    if (isProcessing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(14.dp),
+                            strokeWidth = 1.dp
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.Clear,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Decline", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                Button(
+                    onClick = onAccept,
+                    enabled = !isProcessing,
+                    modifier = Modifier.height(32.dp)
+                ) {
+                    if (isProcessing) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(14.dp),
+                            strokeWidth = 1.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.Check,
+                            contentDescription = null,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Accept", style = MaterialTheme.typography.labelSmall)
+                    }
+                }
             }
         }
     }

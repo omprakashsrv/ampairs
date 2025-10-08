@@ -16,7 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Computer
-import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Tablet
@@ -51,12 +51,12 @@ import ampairsapp.composeapp.generated.resources.device_sessions
 import ampairsapp.composeapp.generated.resources.loading_device_sessions
 import ampairsapp.composeapp.generated.resources.logout_all_devices
 import kotlinx.coroutines.flow.filterNotNull
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DeviceManagementScreen(
-    viewModel: DeviceManagementViewModel = koinInject(),
+    viewModel: DeviceManagementViewModel = koinViewModel(),
     onNavigateBack: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -265,7 +265,7 @@ private fun DeviceSessionCard(
                         enabled = !isLoggingOut
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Logout,
+                            imageVector = Icons.AutoMirrored.Default.Logout,
                             contentDescription = "Logout device",
                             tint = MaterialTheme.colorScheme.error
                         )

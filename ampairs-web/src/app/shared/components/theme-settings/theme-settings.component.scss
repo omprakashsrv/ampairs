@@ -1,88 +1,92 @@
-// M3 Material Design Theme Settings Component  
-@use '../../styles/variables' as vars;
-@use '../../styles/mixins' as mixins;
+// M3 Material Design Theme Settings Component
+@use '../../../../theme/mixins' as theme;
+@use '../../../../theme/variables' as vars;
 
 .theme-settings-container {
   max-width: 600px;
   min-width: 480px;
   padding: 0;
-  background-color: var(--surface-container-color);
-  border: 1px solid var(--outline-variant-color);
+  background-color: vars.$color-surface-container;
+  border: 1px solid vars.$color-outline-variant;
 
-  @include mixins.tablet {
+  @include theme.tablet {
     min-width: 320px;
     max-width: 100vw;
   }
 }
 
 .settings-header {
-  padding: 24px 24px 0;
+  padding: vars.$spacing-xxl vars.$spacing-xxl 0;
   text-align: center;
-  border-bottom: 1px solid var(--outline-variant-color);
+  border-bottom: 1px solid vars.$color-outline-variant;
 
-  @include mixins.tablet {
-    padding: 16px 16px 0;
+  @include theme.tablet {
+    padding: vars.$spacing-xl vars.$spacing-xl 0;
   }
 }
 
 .settings-title {
-  @include mixins.flex-center;
-  gap: 8px;
-  margin: 0 0 8px 0;
-  font-size: 1.5rem;
-  font-weight: 400;
-  color: var(--on-surface-color);
+  @include theme.flex-center;
+  gap: vars.$spacing-md;
+  margin: 0 0 vars.$spacing-md 0;
+  font: vars.$font-headline-small;
+  color: vars.$color-on-surface;
 }
 
 .settings-icon {
   font-size: 1.5rem;
-  color: var(--primary-color);
+  color: vars.$color-primary;
 }
 
 .settings-subtitle {
-  margin: 0 0 16px 0;
-  color: var(--on-surface-variant-color);
-  font-size: 0.875rem;
+  margin: 0 0 vars.$spacing-xl 0;
+  color: vars.$color-on-surface-variant;
+  font: vars.$font-body-medium;
 }
 
 .settings-content {
-  padding: 0 24px;
+  padding: 0 vars.$spacing-xxl;
   max-height: 70vh;
   overflow-y: auto;
 
-  @include mixins.tablet {
-    padding: 0 16px;
+  @include theme.tablet {
+    padding: 0 vars.$spacing-xl;
     max-height: 60vh;
   }
 }
 
 .settings-tabs .mat-mdc-tab-group {
-  --mat-tab-header-inactive-label-text-color: var(--on-surface-variant-color);
-  --mat-tab-header-active-label-text-color: var(--primary-color);
-  --mat-tab-header-indicator-color: var(--primary-color);
+  --mat-tab-header-inactive-label-text-color: #{vars.$color-on-surface-variant};
+  --mat-tab-header-active-label-text-color: #{vars.$color-primary};
+  --mat-tab-header-indicator-color: #{vars.$color-primary};
 }
 
 .tab-content {
-  padding: 24px 0;
-  @include mixins.tablet { padding: 16px 0; }
+  padding: vars.$spacing-xxl 0;
+  @include theme.tablet {
+    padding: vars.$spacing-xl 0;
+  }
 }
 
 .setting-section {
-  margin-bottom: 32px;
-  &:last-child { margin-bottom: 0; }
+  margin-bottom: 2rem; // Using rem for consistent large spacing
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 }
 
 .section-title {
   margin: 0 0 8px 0;
   font-size: 1rem;
   font-weight: 500;
-  color: var(--on-surface-color);
+  color: vars.$color-on-surface;
 }
 
 .section-description {
   margin: 0 0 16px 0;
   font-size: 0.875rem;
-  color: var(--on-surface-variant-color);
+  color: vars.$color-on-surface-variant;
   line-height: 1.25rem;
 }
 
@@ -97,22 +101,22 @@
 .theme-card {
   position: relative;
   padding: 12px;
-  border: 2px solid var(--outline-variant-color);
+  border: 2px solid vars.$color-outline-variant;
   border-radius: 12px;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  background-color: var(--surface-container-color);
+  background-color: vars.$color-surface-container;
 
   &:hover {
-    border-color: var(--primary-color);
+    border-color: vars.$color-primary;
     transform: translateY(-2px);
-    box-shadow: var(--shadow-2);
+    box-shadow: vars.$shadow-2;
   }
 
   &.selected {
-    border-color: var(--primary-color);
-    background-color: var(--primary-container-color);
-    box-shadow: var(--shadow-2);
+    border-color: vars.$color-primary;
+    background-color: vars.$color-primary-container;
+    box-shadow: vars.$shadow-2;
 
     &::after {
       content: '✓';
@@ -121,12 +125,12 @@
       right: 8px;
       width: 16px;
       height: 16px;
-      background-color: var(--primary-color);
+      background-color: vars.$color-primary;
       border-radius: 50%;
-      color: var(--on-primary-color);
+      color: vars.$color-on-primary;
       font-size: 10px;
       font-weight: bold;
-      @include mixins.flex-center;
+      @include theme.flex-center;
     }
   }
 }
@@ -141,75 +145,97 @@
 .color-swatch {
   flex: 1;
   border-radius: 4px;
-  border: 1px solid var(--outline-variant-color);
-  &.primary { flex: 2; }
+  border: 1px solid vars.$color-outline-variant;
+
+  &.primary {
+    flex: 2;
+  }
 }
 
 .theme-info {
-  @include mixins.flex-between;
+  @include theme.flex-between;
   font-size: 0.75rem;
-  color: var(--on-surface-color);
+  color: vars.$color-on-surface;
 }
 
-.theme-name { font-weight: 500; }
+.theme-name {
+  font-weight: 500;
+}
 
-.dark-icon, .light-icon { font-size: 14px; }
-.dark-icon { color: var(--on-surface-variant-color); }
-.light-icon { color: var(--tertiary-color); }
+.dark-icon, .light-icon {
+  font-size: 14px;
+}
 
-.quick-actions { @include mixins.flex-center; }
+.dark-icon {
+  color: vars.$color-on-surface-variant;
+}
+
+.light-icon {
+  color: vars.$color-tertiary;
+}
+
+.quick-actions {
+  @include theme.flex-center;
+}
 
 .toggle-button {
-  @include mixins.flex-center;
+  @include theme.flex-center;
   gap: 8px;
 }
 
 // M3 Density & Typography controls
-.density-control, .typography-select { margin-bottom: 24px; }
+.density-control, .typography-select {
+  margin-bottom: 24px;
+}
 
 .slider-container {
-  @include mixins.flex-center;
+  @include theme.flex-center;
   gap: 16px;
   margin-bottom: 12px;
 }
 
 .slider-label {
   font-size: 0.75rem;
-  color: var(--on-surface-variant-color);
+  color: vars.$color-on-surface-variant;
   white-space: nowrap;
 }
 
 .density-slider {
   flex: 1;
+
   .mat-mdc-slider {
-    --mdc-slider-active-track-color: var(--primary-color);
-    --mdc-slider-inactive-track-color: var(--outline-variant-color);
-    --mdc-slider-handle-color: var(--primary-color);
+    --mdc-slider-active-track-color: #{vars.$color-primary};
+    --mdc-slider-inactive-track-color: #{vars.$color-outline-variant};
+    --mdc-slider-handle-color: #{vars.$color-primary};
   }
 }
 
-.density-info { text-align: center; }
+.density-info {
+  text-align: center;
+}
 
 .density-level {
   font-weight: 500;
-  color: var(--on-surface-color);
+  color: vars.$color-on-surface;
   display: block;
   margin-bottom: 4px;
   font-size: 0.875rem;
 }
 
-.density-description { 
-  color: var(--on-surface-variant-color);
+.density-description {
+  color: vars.$color-on-surface-variant;
   font-size: 0.75rem;
 }
 
-.density-preview { margin-top: 16px; }
+.density-preview {
+  margin-top: 16px;
+}
 
 .preview-card {
   max-width: 300px;
   margin: 0 auto;
-  background-color: var(--surface-container-low-color);
-  border: 1px solid var(--outline-variant-color);
+  background-color: vars.$color-surface-container-low;
+  border: 1px solid vars.$color-outline-variant;
 }
 
 .preview-buttons {
@@ -220,86 +246,127 @@
 
 .typography-select {
   width: 100%;
+
   .mat-mdc-form-field {
-    --mdc-outlined-text-field-label-text-color: var(--on-surface-variant-color);
-    --mdc-outlined-text-field-input-text-color: var(--on-surface-color);
-    --mdc-outlined-text-field-outline-color: var(--outline-color);
-    --mdc-outlined-text-field-focus-outline-color: var(--primary-color);
+    --mdc-outlined-text-field-label-text-color: #{vars.$color-on-surface-variant};
+    --mdc-outlined-text-field-input-text-color: #{vars.$color-on-surface};
+    --mdc-outlined-text-field-outline-color: #{vars.$color-outline};
+    --mdc-outlined-text-field-focus-outline-color: #{vars.$color-primary};
   }
 }
 
 .typography-preview {
-  background-color: var(--surface-container-low-color);
-  border: 1px solid var(--outline-variant-color);
+  background-color: vars.$color-surface-container-low;
+  border: 1px solid vars.$color-outline-variant;
   border-radius: 8px;
   padding: 24px;
 }
 
 .text-samples > * {
   margin: 0 0 16px 0;
-  color: var(--on-surface-color);
-  &:last-child { margin-bottom: 0; }
+  color: vars.$color-on-surface;
+
+  &:last-child {
+    margin-bottom: 0;
+  }
 }
 
 // Configuration & Settings
 .config-actions {
-  @include mixins.flex-column;
+  @include theme.flex-column;
   gap: 12px;
   margin-bottom: 24px;
-  @media (min-width: 600px) { flex-direction: row; flex-wrap: wrap; }
+  @media (min-width: 600px) {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
 }
 
 .config-button {
-  @include mixins.flex-center;
+  @include theme.flex-center;
   gap: 8px;
   flex: 1;
-  @media (min-width: 600px) { flex: none; min-width: 160px; }
+  @media (min-width: 600px) {
+    flex: none;
+    min-width: 160px;
+  }
 }
 
 .reset-button {
-  color: var(--error-color);
+  color: vars.$color-error;
 }
 
-.import-wrapper { display: contents; }
+.import-wrapper {
+  display: contents;
+}
 
-.current-settings { @include mixins.flex-column; gap: 12px; }
+.current-settings {
+  @include theme.flex-column;
+  gap: 12px;
+}
 
 .setting-item {
-  @include mixins.flex-between;
+  @include theme.flex-between;
   padding: 8px 0;
-  border-bottom: 1px solid var(--outline-variant-color);
-  &:last-child { border-bottom: none; }
+  border-bottom: 1px solid vars.$color-outline-variant;
+
+  &:last-child {
+    border-bottom: none;
+  }
 }
 
-.setting-label, .setting-value { font-size: 0.875rem; }
-.setting-label { font-weight: 500; color: var(--on-surface-variant-color); }
-.setting-value { font-weight: 500; color: var(--on-surface-color); }
+.setting-label, .setting-value {
+  font-size: 0.875rem;
+}
+
+.setting-label {
+  font-weight: 500;
+  color: vars.$color-on-surface-variant;
+}
+
+.setting-value {
+  font-weight: 500;
+  color: vars.$color-on-surface;
+}
 
 .settings-actions {
   padding: 16px 24px 24px;
-  @include mixins.flex-between;
+  @include theme.flex-between;
   gap: 12px;
-  border-top: 1px solid var(--outline-variant-color);
-  @include mixins.tablet { padding: 16px; @include mixins.flex-column; }
+  border-top: 1px solid vars.$color-outline-variant;
+  @include theme.tablet {
+    padding: 16px;
+    @include theme.flex-column;
+  }
 }
 
 .cancel-button {
-  color: var(--on-surface-variant-color);
+  color: vars.$color-on-surface-variant;
 }
 
 .apply-button {
-  @include mixins.flex-center;
+  @include theme.flex-center;
   gap: 8px;
-  @include mixins.tablet { order: -1; }
+  @include theme.tablet {
+    order: -1;
+  }
 }
 
 // Responsive
-@include mixins.mobile {
-  .theme-grid { grid-template-columns: repeat(2, 1fr); }
-  .slider-container { 
-    @include mixins.flex-column; 
-    gap: 8px; 
-    .density-slider { width: 100%; }
+@include theme.mobile {
+  .theme-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
-  .preview-buttons { @include mixins.flex-column; align-items: stretch; }
+  .slider-container {
+    @include theme.flex-column;
+    gap: 8px;
+
+    .density-slider {
+      width: 100%;
+    }
+  }
+  .preview-buttons {
+    @include theme.flex-column;
+    align-items: stretch;
+  }
 }

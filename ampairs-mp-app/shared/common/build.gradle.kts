@@ -14,6 +14,9 @@ kotlin {
     jvmToolchain(17)
     androidTarget()
     jvm()
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
     sourceSets {
         commonMain {
             dependencies {
@@ -25,9 +28,6 @@ kotlin {
                 api(projects.core.permissions)
                 api(projects.core.powercontroller)
                 api(projects.core.preferences)
-                api(projects.ui.developer.log)
-                api(projects.ui.developer.notifications)
-                api(projects.ui.developer.settings)
                 api(projects.tasks)
                 implementation(libs.kotlin.inject.runtime)
 
@@ -39,12 +39,20 @@ kotlin {
         val androidMain by getting {
             dependencies {
                 implementation(libs.ktor.client.okHttp)
+                // Developer modules only for Android
+                api(projects.ui.developer.log)
+                api(projects.ui.developer.notifications)
+                api(projects.ui.developer.settings)
             }
         }
 
         jvmMain {
             dependencies {
                 api(libs.ktor.client.okHttp)
+                // Developer modules only for JVM/Desktop
+                api(projects.ui.developer.log)
+                api(projects.ui.developer.notifications)
+                api(projects.ui.developer.settings)
             }
         }
     }

@@ -1,228 +1,89 @@
 // M3 Material Design Home Component
-@use '../shared/styles/variables' as vars;
-@use '../shared/styles/mixins' as mixins;
+@use '../../theme/mixins' as theme;
+@use '../../theme/variables' as vars;
 
 .home-container {
-  min-height: 100vh;
-  background-color: var(--background-color);
-}
-
-.header-toolbar {
-  position: sticky;
-  top: 0;
-  z-index: vars.$z-index-sticky;
-  background-color: var(--primary-color);
-  color: var(--on-primary-color);
-}
-
-.logo {
-  @include mixins.flex-center;
-  gap: var(--spacing-sm, 8px);
-}
-
-.logo-icon {
-  font-size: var(--font-title-large-size, 1.375rem);
-  width: 24px;
-  height: 24px;
-}
-
-.spacer {
-  flex: 1 1 auto;
-}
-
-.workspace-info {
-  margin-left: var(--spacing-lg, 24px);
-}
-
-.workspace-button {
-  @include mixins.flex-center;
-  gap: var(--spacing-xs, 4px);
-  color: var(--on-primary-color);
-  background-color: transparent;
-  border: 1px solid var(--outline-variant-color);
-  border-radius: var(--border-radius-sm, 8px);
-  padding: var(--spacing-xs, 6px) var(--spacing-sm, 12px);
-  min-width: 150px;
-  transition: var(--transition-standard);
-
-  &:hover {
-    background-color: var(--primary-container-color);
-    color: var(--on-primary-container-color);
-    border-color: var(--outline-color);
-  }
-}
-
-.workspace-name {
-  font-size: var(--font-body-medium-size, 0.875rem);
-  font-weight: var(--font-body-medium-weight, 400);
-  max-width: 150px;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.dropdown-icon {
-  font-size: 18px;
-  width: 18px;
-  height: 18px;
-}
-
-.workspace-menu {
-  min-width: 280px;
-}
-
-.workspace-details {
-  padding: var(--spacing-md, 16px);
-}
-
-.workspace-header {
-  @include mixins.flex-center;
-  gap: var(--spacing-sm, 12px);
-  align-items: flex-start;
-}
-
-.workspace-info-text {
-  flex: 1;
-}
-
-.workspace-title {
-  margin: 0 0 4px 0;
-  font-size: var(--font-body-large-size, 1rem);
-  font-weight: var(--font-title-medium-weight, 500);
-  color: var(--on-surface-color);
-}
-
-.workspace-slug {
-  margin: 0 0 8px 0;
-  font-size: var(--font-body-small-size, 0.875rem);
-  color: var(--on-surface-variant-color);
-  font-family: monospace;
-}
-
-.workspace-description {
-  margin: 8px 0 0 0;
-  font-size: var(--font-body-small-size, 0.875rem);
-  color: var(--on-surface-variant-color);
-  line-height: var(--font-body-small-line-height, 1.25rem);
-}
-
-.profile-avatar mat-icon {
-  font-size: 32px;
-  width: 32px;
-  height: 32px;
-}
-
-.user-menu {
-  min-width: 280px;
-}
-
-.user-info {
-  @include mixins.flex-between;
-  padding: var(--spacing-md, 16px);
-  gap: var(--spacing-sm, 12px);
-}
-
-.user-avatar-large mat-icon {
-  font-size: 48px;
-  width: 48px;
-  height: 48px;
-}
-
-.user-details {
-  flex: 1;
-}
-
-.user-name {
-  margin: 0 0 4px 0;
-  font-size: var(--font-body-large-size, 1rem);
-  font-weight: var(--font-title-medium-weight, 500);
-  color: var(--on-surface-color);
-}
-
-.user-mobile,
-.user-email {
-  margin: 2px 0;
-  font-size: var(--font-body-small-size, 0.875rem);
-  color: var(--on-surface-variant-color);
+  // Remove min-height since header is now at layout level
+  background-color: vars.$color-background;
 }
 
 .main-content {
-  padding: var(--spacing-lg, 24px);
+  padding: vars.$spacing-xxl;
   max-width: 1200px;
   margin: 0 auto;
 }
 
 .welcome-card {
-  margin-bottom: var(--spacing-lg, 24px);
-  background-color: var(--surface-container-color);
-  color: var(--on-surface-color);
+  margin-bottom: vars.$spacing-xxl;
+  background-color: vars.$color-surface-container;
+  color: vars.$color-on-surface;
 }
 
 .welcome-icon {
-  margin-right: var(--spacing-sm, 8px);
-  color: var(--primary-color);
+  margin-right: vars.$spacing-md;
+  color: vars.$color-primary;
 }
 
 .user-welcome {
-  margin-bottom: var(--spacing-lg, 24px);
+  margin-bottom: vars.$spacing-xxl;
 }
 
 .greeting {
-  font-size: var(--font-headline-small-size, 1.5rem);
-  font-weight: var(--font-headline-small-weight, 400);
-  margin: 0 0 var(--spacing-sm, 8px) 0;
-  color: var(--on-surface-color);
+  font: vars.$font-headline-small;
+  font-weight: 400;
+  margin: 0 0 vars.$spacing-md 0;
+  color: vars.$color-on-surface;
 }
 
 .login-info {
   margin: 0;
-  color: var(--on-surface-variant-color);
-  font-size: var(--font-body-small-size, 0.875rem);
+  color: vars.$color-on-surface-variant;
+  font: vars.$font-label-medium;
 }
 
 .features-grid {
-  margin-top: var(--spacing-lg, 24px);
+  margin-top: vars.$spacing-xxl;
 }
 
 .feature-card {
   height: 100%;
   text-align: center;
-  background-color: var(--surface-container-color);
+  background-color: vars.$color-surface-container;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 
   &:hover {
-    box-shadow: var(--shadow-2);
+    box-shadow: vars.$shadow-2;
     transform: translateY(-2px);
   }
 }
 
 .feature-icon {
-  font-size: 48px;
-  width: 48px;
-  height: 48px;
-  color: var(--primary-color);
+  font-size: 3rem; // M3 large icon size
+  width: 3rem;
+  height: 3rem;
+  color: vars.$color-primary;
 }
 
 .feature-card p {
   margin: 0;
-  color: var(--on-surface-variant-color);
-  font-size: var(--font-body-small-size, 0.875rem);
-  line-height: var(--font-body-small-line-height, 1.25rem);
+  color: vars.$color-on-surface-variant;
+  font: vars.$font-label-medium;
+  line-height: vars.$line-height-normal;
 }
 
 .quick-actions {
-  margin-top: var(--spacing-lg, 24px);
+  margin-top: vars.$spacing-xxl;
 }
 
 
 .actions-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: var(--spacing-md, 16px);
+  gap: vars.$spacing-xl;
 }
 
 .action-button {
-  @include mixins.flex-column-center;
+  @include theme.flex-column-center;
   gap: 4px;
 }
 
@@ -233,13 +94,13 @@
 }
 
 /* M3 Responsive Design */
-@include mixins.tablet {
+@include theme.tablet {
   .main-content {
-    padding: var(--spacing-md, 16px);
+    padding: vars.$spacing-xl;
   }
 
   .user-info {
-    @include mixins.flex-column-center;
+    @include theme.flex-column-center;
     text-align: center;
   }
 
@@ -252,18 +113,18 @@
   }
 }
 
-@include mixins.mobile {
+@include theme.mobile {
   .logo {
-    font-size: var(--font-body-large-size, 1rem);
+    font: vars.$font-body-large;
   }
 
   .workspace-info {
-    margin-left: var(--spacing-sm, 8px);
+    margin-left: vars.$spacing-md;
   }
 
   .workspace-button {
     min-width: 120px;
-    padding: var(--spacing-xs, 4px) var(--spacing-xs, 8px);
+    padding: vars.$spacing-sm vars.$spacing-md;
   }
 
   .workspace-name {
@@ -275,10 +136,10 @@
   }
 
   .main-content {
-    padding: var(--spacing-sm, 8px);
+    padding: vars.$spacing-md;
   }
 
   .feature-card {
-    padding: var(--spacing-sm, 12px);
+    padding: vars.$spacing-lg;
   }
 }

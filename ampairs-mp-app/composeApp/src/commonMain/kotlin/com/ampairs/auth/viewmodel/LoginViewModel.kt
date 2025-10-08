@@ -6,13 +6,13 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
-import com.ampairs.auth.api.isAuthenticated
 import com.ampairs.auth.db.UserRepository
 import com.ampairs.auth.db.entity.UserEntity
 import com.ampairs.auth.domain.LoginStatus
 import com.ampairs.common.DeviceService
-import com.ampairs.network.model.onError
-import com.ampairs.network.model.onSuccess
+import com.ampairs.common.coroutines.DispatcherProvider
+import com.ampairs.common.model.onError
+import com.ampairs.common.model.onSuccess
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -35,7 +35,7 @@ class LoginViewModel(
     )
 
     fun checkUserLogin(onLoginStatus: (LoginStatus, userEntity: UserEntity?) -> Unit) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             val token = userRepository.getToken()
             if (token != null) {
                 if (token.refreshToken.isEmpty() || token.accessToken.isEmpty()) {
@@ -50,7 +50,7 @@ class LoginViewModel(
                     val userApiResponse = userRepository.getUserApi()
                     userApiResponse.onSuccess {
                         val userData = this
-                        viewModelScope.launch(Dispatchers.IO) {
+                        viewModelScope.launch(DispatcherProvider.io) {
                             // Save the new user
                             userRepository.saveUser(userData)
 
@@ -77,7 +77,7 @@ class LoginViewModel(
                     }
                 } else {
                     // User exists, make sure they're set as current user
-                    viewModelScope.launch(Dispatchers.IO) {
+                    viewModelScope.launch(DispatcherProvider.io) {
                         tokenRepository.setCurrentUser(userEntity.id)
                         viewModelScope.launch(Dispatchers.Main) {
                             loginStatus = LoginStatus.LOGGED_IN
@@ -99,7 +99,7 @@ class LoginViewModel(
         recaptchaLoading = true
         progressMessage = "Verifying reCAPTCHA..."
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             // Create dummy user session for token operations during auth flow
             tokenRepository.createDummyUserSession()
             
@@ -136,7 +136,7 @@ class LoginViewModel(
         recaptchaLoading = true
         progressMessage = "Verifying reCAPTCHA..."
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             userRepository.completeAuth(sessionId, otp).onSuccess {
                 // Store tokens to dummy session (now getCurrentUserId() will work)
                 tokenRepository.updateToken(this.accessToken, this.refreshToken)
@@ -145,11 +145,11 @@ class LoginViewModel(
                 val authResponse = this
 
                 // Now fetch user information (API call will work because dummy session has tokens)
-                viewModelScope.launch(Dispatchers.IO) {
+                viewModelScope.launch(DispatcherProvider.io) {
                     val userApiResponse = userRepository.getUserApi()
                     userApiResponse.onSuccess {
                         val userData = this
-                        viewModelScope.launch(Dispatchers.IO) {
+                        viewModelScope.launch(DispatcherProvider.io) {
                             // Save user to database
                             userRepository.saveUser(userData)
 
@@ -195,7 +195,7 @@ class LoginViewModel(
         recaptchaLoading = true
         progressMessage = "Preparing to resend OTP..."
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(DispatcherProvider.io) {
             userRepository.resendOtp(phoneNumber).onSuccess {
                 viewModelScope.launch(Dispatchers.Main) {
                     loading = false

@@ -15,6 +15,7 @@ interface SubCategoryDao {
     @Query("SELECT * FROM subCategoryEntity WHERE id = :id")
     suspend fun subCategoryById(id: String): SubCategoryEntity?
 
+    @Transaction
     @Query("SELECT * FROM subCategoryEntity ORDER BY name ASC, active DESC")
     suspend fun getSubCategories(): List<SubCategoryModel>
 

@@ -25,13 +25,14 @@ sealed interface Route {
     
     @Serializable
     data object Invoice : Route
-}
 
-// Home routes
-@Serializable
-sealed interface HomeRoute {
     @Serializable
-    data object Root : HomeRoute
+    data object Tax : Route
+
+    @Serializable
+    data class FormConfig(
+        val entityType: String = ""
+    ) : Route
 }
 
 // Auth routes
@@ -71,6 +72,38 @@ sealed interface WorkspaceRoute {
     data class Detail(
         val workspaceId: String = "",
     ) : WorkspaceRoute
+
+    @Serializable
+    data class Members(
+        val workspaceId: String = "",
+    ) : WorkspaceRoute
+
+    @Serializable
+    data class MemberDetail(
+        val workspaceId: String = "",
+        val memberId: String = "",
+    ) : WorkspaceRoute
+
+    @Serializable
+    data class Invitations(
+        val workspaceId: String = "",
+    ) : WorkspaceRoute
+
+    @Serializable
+    data class CreateInvitation(
+        val workspaceId: String = "",
+    ) : WorkspaceRoute
+
+    @Serializable
+    data class AcceptInvitation(
+        val token: String = "",
+    ) : WorkspaceRoute
+
+    @Serializable
+    data class Modules(
+        val workspaceId: String = "",
+        val showStoreByDefault: Boolean = false // For "Manage Modules" to show install screen directly
+    ) : WorkspaceRoute
 }
 
 // Product routes
@@ -81,23 +114,33 @@ sealed interface ProductRoute {
         val type: String = "GROUP",
         val edit: Boolean = false
     ) : ProductRoute
-    
+
     @Serializable
     data class Product(
         val groupId: String = ""
     ) : ProductRoute
-    
+
     @Serializable
     data class ProductEdit(
         val productId: String = ""
     ) : ProductRoute
-    
+
     @Serializable
     data object Products : ProductRoute
-    
+
+    @Serializable
+    data class ProductDetails(
+        val productId: String = ""
+    ) : ProductRoute
+
+    @Serializable
+    data class ProductForm(
+        val productId: String? = null
+    ) : ProductRoute
+
     @Serializable
     data object TaxInfo : ProductRoute
-    
+
     @Serializable
     data object TaxCode : ProductRoute
 }

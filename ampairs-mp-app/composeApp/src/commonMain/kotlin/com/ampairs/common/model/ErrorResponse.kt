@@ -1,5 +1,7 @@
 package com.ampairs.network.model
 
+import com.ampairs.common.model.Error
+import com.ampairs.common.model.Response
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

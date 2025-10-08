@@ -15,6 +15,7 @@ interface CategoryDao {
     @Query("SELECT * FROM categoryEntity WHERE id = :id")
     suspend fun categoryById(id: String): CategoryEntity?
 
+    @Transaction
     @Query("SELECT * FROM categoryEntity ORDER BY name ASC, active DESC")
     suspend fun getCategories(): List<CategoryModel>
 

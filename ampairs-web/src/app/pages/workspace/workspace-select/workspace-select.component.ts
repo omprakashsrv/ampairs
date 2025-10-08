@@ -1,6 +1,6 @@
-import {Component, OnInit} from '@angular/core';
+import {Component, OnInit, inject, signal} from '@angular/core';
 import {Router} from '@angular/router';
-import {CommonModule} from '@angular/common';
+import {CommonModule, NgOptimizedImage} from '@angular/common';
 import {MatCardModule} from '@angular/material/card';
 import {MatButtonModule} from '@angular/material/button';
 import {MatIconModule} from '@angular/material/icon';
@@ -14,15 +14,18 @@ import {MatListModule} from '@angular/material/list';
 import {MatChipsModule} from '@angular/material/chips';
 import {MatRippleModule} from '@angular/material/core';
 import {MatMenuModule} from '@angular/material/menu';
+import {MatDialog} from '@angular/material/dialog';
 import {WorkspaceListItem, WorkspaceService} from '../../../core/services/workspace.service';
-import {AuthService, User} from '../../../core/services/auth.service';
-import {Observable} from 'rxjs';
+import {WorkspaceEditDialogComponent} from '../workspace-edit-dialog/workspace-edit-dialog.component';
+import {InvitationService, InvitationResponse} from '../../../core/services/invitation.service';
+import {PendingInvitationCardComponent} from '../../../shared/components/pending-invitation-card/pending-invitation-card.component';
 
 @Component({
   selector: 'app-workspace-select',
   standalone: true,
   imports: [
     CommonModule,
+    NgOptimizedImage,
     MatCardModule,
     MatButtonModule,
     MatIconModule,
@@ -35,58 +38,71 @@ import {Observable} from 'rxjs';
     MatListModule,
     MatChipsModule,
     MatRippleModule,
-    MatMenuModule
+    MatMenuModule,
+    PendingInvitationCardComponent
   ],
   templateUrl: './workspace-select.component.html',
   styleUrl: './workspace-select.component.scss'
 })
 export class WorkspaceSelectComponent implements OnInit {
-  workspaces: WorkspaceListItem[] = [];
-  isLoading = false;
-  isSelecting = false;
-  selectedWorkspaceId = '';
-  currentUser$: Observable<User | null>;
+  private workspaceService = inject(WorkspaceService);
+  private invitationService = inject(InvitationService);
+  private router = inject(Router);
+  private snackBar = inject(MatSnackBar);
+  private dialog = inject(MatDialog);
 
-  constructor(
-    private workspaceService: WorkspaceService,
-    private authService: AuthService,
-    private router: Router,
-    private snackBar: MatSnackBar
-  ) {
-    this.currentUser$ = this.authService.currentUser$;
-  }
+  // Signals for reactive state management
+  workspaces = signal<WorkspaceListItem[]>([]);
+  pendingInvitations = signal<InvitationResponse[]>([]);
+  isLoading = signal(false);
+  isLoadingInvitations = signal(false);
+  isSelecting = signal(false);
+  selectedWorkspaceId = signal('');
 
   ngOnInit(): void {
     this.loadWorkspaces();
+    this.loadPendingInvitations();
   }
 
-  loadWorkspaces(): void {
-    this.isLoading = true;
+  async loadWorkspaces(): Promise<void> {
+    this.isLoading.set(true);
 
-    this.workspaceService.getUserWorkspaces().subscribe({
-      next: (workspaces) => {
-        this.workspaces = workspaces;
-        this.isLoading = false;
+    try {
+      const workspaces = await this.workspaceService.getUserWorkspaces();
+      this.workspaces.set(workspaces);
+      this.isLoading.set(false);
 
-        // If no workspaces found, show create workspace option
-        if (workspaces.length === 0) {
-          this.showNoWorkspacesMessage();
-        }
-      },
-      error: (error) => {
-        this.isLoading = false;
-        console.error('Failed to load workspaces:', error);
-        this.showError('Failed to load workspaces. Please try again.');
+      // If no workspaces found, show create workspace option
+      if (workspaces.length === 0) {
+        this.showNoWorkspacesMessage();
       }
-    });
+    } catch (error: any) {
+      this.isLoading.set(false);
+      console.error('Failed to load workspaces:', error);
+      this.showError('Failed to load workspaces. Please try again.');
+    }
+  }
+
+  async loadPendingInvitations(): Promise<void> {
+    this.isLoadingInvitations.set(true);
+
+    try {
+      const invitations = await this.invitationService.getPendingInvitations();
+      this.pendingInvitations.set(invitations);
+    } catch (error: any) {
+      console.error('Failed to load pending invitations:', error);
+      // Don't show error for invitations - it's optional information
+    } finally {
+      this.isLoadingInvitations.set(false);
+    }
   }
 
   selectWorkspace(workspace: WorkspaceListItem): void {
-    if (this.isSelecting) return;
+    if (this.isSelecting()) return;
 
-    this.isSelecting = true;
-    this.selectedWorkspaceId = workspace.id;
-
+    this.isSelecting.set(true);
+    this.selectedWorkspaceId.set(workspace.id);
+    localStorage.setItem('workspace_id', workspace.id);
     // Get full workspace details
     this.workspaceService.getWorkspaceById(workspace.id).subscribe({
       next: (fullWorkspace) => {
@@ -98,12 +114,12 @@ export class WorkspaceSelectComponent implements OnInit {
           panelClass: ['success-snackbar']
         });
 
-        // Navigate to workspace using slug
-        this.router.navigate(['/w', fullWorkspace.slug]);
+        // Navigate to workspace modules page using slug
+        this.router.navigate(['/w', fullWorkspace.slug, 'modules']);
       },
       error: (error) => {
-        this.isSelecting = false;
-        this.selectedWorkspaceId = '';
+        this.isSelecting.set(false);
+        this.selectedWorkspaceId.set('');
         console.error('Failed to select workspace:', error);
         this.showError('Failed to select workspace. Please try again.');
       }
@@ -114,13 +130,6 @@ export class WorkspaceSelectComponent implements OnInit {
     this.router.navigate(['/workspace/create']);
   }
 
-  logout(): void {
-    this.authService.logout('User logged out from workspace selection');
-  }
-
-  formatDate(dateString: string): string {
-    return new Date(dateString).toLocaleDateString();
-  }
 
   formatLastActivity(lastActivity?: string): string {
     if (!lastActivity) return 'No recent activity';
@@ -187,5 +196,73 @@ export class WorkspaceSelectComponent implements OnInit {
       duration: 5000,
       panelClass: ['error-snackbar']
     });
+  }
+
+  editWorkspace(workspace: WorkspaceListItem): void {
+    const dialogRef = this.dialog.open(WorkspaceEditDialogComponent, {
+      width: '600px',
+      maxWidth: '90vw',
+      maxHeight: '90vh',
+      data: { workspace },
+      disableClose: false,
+      autoFocus: true
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        // Workspace was updated, refresh the list
+        this.loadWorkspaces();
+
+        // Update current workspace if it was the one edited
+        const currentWorkspace = this.workspaceService.getCurrentWorkspace();
+        if (currentWorkspace && currentWorkspace.id === workspace.id) {
+          // Reload the full workspace details to update the current workspace
+          this.workspaceService.getWorkspaceById(workspace.id).subscribe({
+            next: (updatedWorkspace) => {
+              this.workspaceService.setCurrentWorkspace(updatedWorkspace);
+            }
+          });
+        }
+      }
+    });
+  }
+
+  viewWorkspaceSettings(workspace: WorkspaceListItem): void {
+    // Navigate to workspace settings - we can implement this route later
+    this.snackBar.open('Workspace settings coming soon!', 'Close', {
+      duration: 3000,
+      panelClass: ['info-snackbar']
+    });
+  }
+
+  onInvitationAccepted(invitation: InvitationResponse): void {
+    this.snackBar.open(`Successfully joined ${invitation.workspace_name}!`, 'Close', {
+      duration: 5000,
+      panelClass: ['success-snackbar']
+    });
+
+    // Remove the accepted invitation from the list
+    const currentInvitations = this.pendingInvitations();
+    const updatedInvitations = currentInvitations.filter(inv => inv.id !== invitation.id);
+    this.pendingInvitations.set(updatedInvitations);
+
+    // Refresh workspace list to include the newly joined workspace
+    this.loadWorkspaces();
+  }
+
+  onInvitationRejected(invitation: InvitationResponse): void {
+    this.snackBar.open(`Invitation from ${invitation.workspace_name} declined.`, 'Close', {
+      duration: 3000,
+      panelClass: ['info-snackbar']
+    });
+
+    // Remove the rejected invitation from the list
+    const currentInvitations = this.pendingInvitations();
+    const updatedInvitations = currentInvitations.filter(inv => inv.id !== invitation.id);
+    this.pendingInvitations.set(updatedInvitations);
+  }
+
+  onInvitationError(errorMessage: string): void {
+    this.showError(errorMessage);
   }
 }

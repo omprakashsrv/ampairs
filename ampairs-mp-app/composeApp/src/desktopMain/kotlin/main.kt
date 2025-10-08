@@ -1,5 +1,6 @@
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateListOf
@@ -15,10 +16,12 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
-import com.ampairs.menu.AppNavigator
-import com.ampairs.product.ui.group.GroupType
-import com.ampairs.tally.TallyApp
-import com.seiko.imageloader.LocalImageLoader
+// import com.ampairs.tally.TallyApp
+import com.ampairs.workspace.navigation.DynamicModuleNavigationService
+import com.ampairs.workspace.navigation.DynamicModulesMenu
+import coil3.compose.LocalPlatformContext
+import coil3.compose.setSingletonImageLoaderFactory
+import coil3.PlatformContext
 import org.koin.compose.koinInject
 
 import org.koin.core.context.GlobalContext
@@ -32,6 +35,9 @@ fun main() = application {
     }
     val applicationState = remember { ApplicationState() }
     applicationState.windows
+    setSingletonImageLoaderFactory { context ->
+        generateImageLoader()
+    }
     for (window in applicationState.windows) {
         key(window) {
             if (window.title == "Main") {
@@ -47,113 +53,61 @@ fun main() = application {
 @Composable
 private fun ApplicationScope.TallyWindow(
     state: AppWindowState,
-) = Window(onCloseRequest = state::close, title = state.title,
+) = Window(
+    onCloseRequest = state::close, title = state.title,
     onKeyEvent = {
         false
     }) {
-    CompositionLocalProvider(
-        LocalImageLoader provides remember { generateImageLoader() },
-    ) {
-        TallyApp()
-    }
+    // TallyApp()
 }
 
 @Composable
 private fun ApplicationScope.MainWindow(state: AppWindowState) =
-    Window(onCloseRequest = ::exitApplication,
+    Window(
+        onCloseRequest = ::exitApplication,
         state = WindowState(placement = WindowPlacement.Maximized),
-        title = "Ampairs",
-        onKeyEvent = {
-            if (it.key == Key.Escape) {
-                val appNavigator = get<AppNavigator>(AppNavigator::class.java)
-                appNavigator.goBack()
-                return@Window true
-            }
-            return@Window false
-        }) {
+        title = "Ampairs"
+    ) {
 
         var loggedIn by remember { mutableStateOf(false) }
-        CompositionLocalProvider(
-            LocalImageLoader provides remember { generateImageLoader() },
-        ) {
-            MainView {
+
+        // Get navigationService from the app content to ensure consistency
+        var navigationService by remember { mutableStateOf<DynamicModuleNavigationService?>(null) }
+
+        // Navigation callback that will be set up by the app
+        var navigationCallback by remember { mutableStateOf<((String) -> Unit)?>(null) }
+
+
+        MainView(
+            onLoggedIn = {
+                println("MainWindow: onLoggedIn callback - changing from $loggedIn to $it")
                 loggedIn = it
+            },
+            onNavigationServiceReady = {
+                println("MainWindow: Callback received navigationService: ${if (it != null) "NOT NULL" else "NULL"}")
+                navigationService = it
+                if (it == null) {
+                    println("MainWindow: NavigationService cleared - menus will be hidden")
+                }
+            },
+            onNavigationReady = { callback ->
+                println("MainWindow: Navigation callback ready")
+                navigationCallback = callback
             }
-        }
-        val appNavigator = koinInject<AppNavigator>()
+        )
+
         MenuBar {
-            if (loggedIn) {
-                Menu("Product", mnemonic = 'P') {
-                    Item(
-                        "Group",
-                        onClick = { appNavigator.navigate(ProductRoute.Group(type = GroupType.GROUP.name, edit = true).toString()) },
-                        shortcut = KeyShortcut(Key.G, ctrl = true)
-                    )
-                    Item(
-                        "Category",
-                        onClick = { appNavigator.navigate(ProductRoute.Group(type = GroupType.CATEGORY.name, edit = true).toString()) },
-                        shortcut = KeyShortcut(Key.P, ctrl = true)
-                    )
-                    Item(
-                        "Sub Category",
-                        onClick = { appNavigator.navigate(ProductRoute.Group(type = GroupType.SUBCATEGORY.name, edit = true).toString()) },
-                        shortcut = KeyShortcut(Key.P, ctrl = true)
-                    )
-                    Item(
-                        "Brand",
-                        onClick = { appNavigator.navigate(ProductRoute.Group(type = GroupType.BRAND.name, edit = true).toString()) },
-                        shortcut = KeyShortcut(Key.P, ctrl = true)
-                    )
-                    Item(
-                        "All Products",
-                        onClick = { appNavigator.navigate(ProductRoute.Products.toString()) },
-                        shortcut = KeyShortcut(Key.P, ctrl = true)
-                    )
-                }
-                Menu("Tax", mnemonic = 'T') {
-                    Item(
-                        "Tax Info",
-                        onClick = { appNavigator.navigate(ProductRoute.TaxInfo.toString()) },
-                        shortcut = KeyShortcut(Key.G, ctrl = true)
-                    )
-                    Item(
-                        "Tax Codes",
-                        onClick = { appNavigator.navigate(ProductRoute.TaxCode.toString()) },
-                        shortcut = KeyShortcut(Key.P, ctrl = true)
-                    )
-                }
-                Menu("Customer", mnemonic = 'F') {
-                    Item(
-                        "States",
-                        onClick = { appNavigator.navigate(Route.Customer.toString()) },
-                        shortcut = KeyShortcut(Key.V, ctrl = true)
-                    )
-                    Item(
-                        "All Customers",
-                        onClick = { appNavigator.navigate(CustomerRoute.CustomerView.toString()) },
-                        shortcut = KeyShortcut(Key.C, ctrl = true)
-                    )
-                }
-                Menu("Order", mnemonic = 'O') {
-                    Item(
-                        "New Order",
-                        onClick = { appNavigator.navigate(Route.Customer.toString()) },
-                        shortcut = KeyShortcut(Key.O, ctrl = true)
-                    )
-                    Item(
-                        "All Orders",
-                        onClick = { appNavigator.navigate(OrderRoute.Orders.toString()) },
-                        shortcut = KeyShortcut(Key.O, ctrl = true)
-                    )
-                }
-                Menu("Tally", mnemonic = 'O') {
-                    Item(
-                        "Open Tally Window",
-                        onClick = { state.openNewWindow() },
-                        shortcut = KeyShortcut(Key.O, ctrl = true)
-                    )
-                }
-            }
+            // Dynamic Workspace Module Menus - only show if navigationService is available
+            navigationService?.let { navService ->
+                println("MenuBar: About to render DynamicModulesMenu")
+                DynamicModulesMenu(
+                    navigationService = navService,
+                    onNavigate = { route ->
+                        println("MenuBar: onNavigate to $route")
+                        navigationCallback?.invoke(route)
+                    }
+                )
+            } ?: println("MenuBar: navigationService is null, not rendering DynamicModulesMenu")
         }
     }
 

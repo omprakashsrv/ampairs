@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.ampairs.auth.db.entity.UserTokenEntity
+import com.ampairs.common.time.currentTimeMillis
 
 @Dao
 interface UserTokenDao {
@@ -29,10 +30,10 @@ interface UserTokenDao {
     suspend fun deactivateUser(userId: String)
     
     @Query("UPDATE userTokenEntity SET is_active = 1, last_used = :lastUsed WHERE user_id = :userId")
-    suspend fun activateUser(userId: String, lastUsed: Long = System.currentTimeMillis())
+    suspend fun activateUser(userId: String, lastUsed: Long = currentTimeMillis())
     
     @Query("UPDATE userTokenEntity SET last_used = :lastUsed WHERE user_id = :userId")
-    suspend fun updateLastUsed(userId: String, lastUsed: Long = System.currentTimeMillis())
+    suspend fun updateLastUsed(userId: String, lastUsed: Long = currentTimeMillis())
     
     @Query("DELETE FROM userTokenEntity WHERE user_id = :userId")
     suspend fun deleteByUserId(userId: String)

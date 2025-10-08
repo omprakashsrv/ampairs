@@ -1,13 +1,14 @@
 
 package com.ampairs.network.security
 
-import com.ampairs.auth.api.AUTH_ENDPOINT
+import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.model.RefreshToken
 import com.ampairs.auth.api.model.Token
 import com.ampairs.auth.domain.asRefreshTokens
 import com.ampairs.common.UnauthenticatedHandler
-import com.ampairs.network.model.Response
+import com.ampairs.common.model.Response
+import com.ampairs.common.security.SecurityException
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.HttpClientEngine
@@ -20,7 +21,6 @@ import io.ktor.client.plugins.defaultRequest
 import io.ktor.client.plugins.logging.LogLevel
 import io.ktor.client.plugins.logging.Logger
 import io.ktor.client.plugins.logging.Logging
-import io.ktor.client.request.header
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.client.request.url
@@ -114,7 +114,7 @@ class SecureKtorClientFactory(
 
                         try {
                             val tokenResponse: Response<Token> = client.post {
-                                url(AUTH_ENDPOINT + "/auth/v1/refresh_token")
+                                url(ApiUrlBuilder.authUrl("auth/v1/refresh_token"))
                                 contentType(ContentType.Application.Json)
                                 setBody(
                                     RefreshToken(

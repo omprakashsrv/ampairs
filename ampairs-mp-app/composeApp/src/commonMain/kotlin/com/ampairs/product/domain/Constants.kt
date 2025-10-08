@@ -12,5 +12,9 @@ interface Constants {
         const val HSN_CODE_PREFIX = "HSN"
         const val UNIT_PREFIX = "UNT"
         const val PRODUCT_IMAGE_PREFIX = "PIM"
+
+        // Added for product ViewModels
+        const val PAGE_SIZE = 20
+        const val DEFAULT_STRING = ""
     }
 }

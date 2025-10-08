@@ -1,14 +1,15 @@
-import { Injectable } from '@angular/core';
-import { BehaviorSubject } from 'rxjs';
+import {Injectable, signal} from '@angular/core';
+import {toObservable} from '@angular/core/rxjs-interop';
 
 @Injectable({
   providedIn: 'root'
 })
 export class LoadingService {
-  private loadingSubject = new BehaviorSubject<boolean>(false);
+  private _loading = signal(false);
   private loadingCount = 0;
 
-  public loading$ = this.loadingSubject.asObservable();
+  readonly loading = this._loading.asReadonly();
+  readonly loading$ = toObservable(this._loading);
 
   setLoading(loading: boolean): void {
     if (loading) {
@@ -16,11 +17,11 @@ export class LoadingService {
     } else {
       this.loadingCount = Math.max(0, this.loadingCount - 1);
     }
-    
-    this.loadingSubject.next(this.loadingCount > 0);
+
+    this._loading.set(this.loadingCount > 0);
   }
 
   isLoading(): boolean {
-    return this.loadingSubject.value;
+    return this._loading();
   }
 }

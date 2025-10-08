@@ -4,55 +4,69 @@ import MainView
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.remember
+import androidx.activity.enableEdgeToEdge
+import coil3.ImageLoader
+import coil3.compose.setSingletonImageLoaderFactory
+import coil3.disk.DiskCache
+import coil3.memory.MemoryCache
+import coil3.network.ktor3.KtorNetworkFetcherFactory
+import coil3.request.crossfade
+import coil3.util.DebugLogger
+import com.ampairs.auth.api.TokenRepository
 import com.ampairs.common.ImageCacheKeyer
-import com.seiko.imageloader.ImageLoader
-import com.seiko.imageloader.LocalImageLoader
-import com.seiko.imageloader.cache.CachePolicy
-import com.seiko.imageloader.cache.memory.maxSizePercent
-import com.seiko.imageloader.component.setupDefaultComponents
-import com.seiko.imageloader.intercept.imageMemoryCacheConfig
-import com.seiko.imageloader.option.androidContext
+import com.ampairs.common.httpClient
+import io.github.vinceglb.filekit.FileKit
+import io.github.vinceglb.filekit.dialogs.init
+import io.github.vinceglb.filekit.manualFileKitCoreInitialization
+import io.ktor.client.engine.HttpClientEngine
 import okio.Path.Companion.toOkioPath
+import org.koin.android.ext.android.get
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Enable modern edge-to-edge (Android 15+ compatible)
+        enableEdgeToEdge()
+
         actionBar?.hide()
+
+        // Initialize FileKit for Android platform
+        FileKit.init(this)
+
         setContent {
-            CompositionLocalProvider(
-                LocalImageLoader provides remember { generateImageLoader() },
-            ) {
-                MainView()
+            setSingletonImageLoaderFactory { context ->
+                generateImageLoader()
             }
+            MainView()
         }
     }
 
+    // Your shared Ktor client with global auth headers
     private fun generateImageLoader(): ImageLoader {
-        return ImageLoader {
-            options {
-                memoryCachePolicy = CachePolicy.ENABLED
-                diskCachePolicy = CachePolicy.ENABLED
+        val engine = get<HttpClientEngine>()
+        val tokenRepository = get<TokenRepository>()
+        val client = httpClient(engine, tokenRepository)
+
+        return ImageLoader.Builder(this@MainActivity)
+            .memoryCache {
+                MemoryCache.Builder()
+                    .maxSizePercent(this@MainActivity, 0.25) // Increased for better on-demand performance
+                    .build()
             }
-            options {
-                androidContext(this@MainActivity)
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(this@MainActivity.cacheDir.resolve("customer_images_cache").toOkioPath())
+                    .maxSizeBytes(100L * 1024 * 1024) // Increased to 100MB for better offline experience
+                    .build()
             }
-            components {
+            .components {
+                add(KtorNetworkFetcherFactory(client))
                 add(ImageCacheKeyer())
-                setupDefaultComponents()
             }
-            interceptor {
-                imageMemoryCacheConfig {
-                    // Set the max size to 25% of the app's available memory.
-                    maxSizePercent(this@MainActivity, 0.25)
-                }
-                diskCacheConfig {
-                    directory(this@MainActivity.cacheDir.resolve("image_cache").toOkioPath())
-                    maxSizeBytes(50L * 1024 * 1024) // 50MB
-                }
-            }
-        }
+            .crossfade(true)
+            .logger(DebugLogger())
+            .build()
     }
 }
 

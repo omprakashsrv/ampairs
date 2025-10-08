@@ -12,41 +12,41 @@ import {WorkspaceInterceptor} from './core/interceptors/workspace.interceptor';
 import {environment} from '../environments/environment';
 
 export const appConfig: ApplicationConfig = {
-    providers: [
-        provideZoneChangeDetection({eventCoalescing: true}),
-        provideRouter(routes),
-        provideAnimationsAsync(),
-        provideHttpClient(withInterceptorsFromDi()),
-        importProvidersFrom(RecaptchaV3Module),
-        {
-            provide: HTTP_INTERCEPTORS,
-            useClass: ApiResponseInterceptor,
-            multi: true
-        },
-        {
-            provide: HTTP_INTERCEPTORS,
-            useClass: LoadingInterceptor,
-            multi: true
-        },
-        {
-            provide: HTTP_INTERCEPTORS,
-            useClass: AuthInterceptor,
-            multi: true
-        },
-      {
-        provide: HTTP_INTERCEPTORS,
-        useClass: WorkspaceInterceptor,
-        multi: true
-        },
-        {
-            provide: RECAPTCHA_V3_SITE_KEY,
-            useValue: environment.recaptcha.siteKey
-        },
-        {
-            provide: RECAPTCHA_SETTINGS,
-            useValue: {
-                siteKey: environment.recaptcha.siteKey
-            }
-        }
-    ]
+  providers: [
+    provideZoneChangeDetection({eventCoalescing: true}),
+    provideRouter(routes),
+    provideAnimationsAsync(),
+    provideHttpClient(withInterceptorsFromDi()),
+    importProvidersFrom(RecaptchaV3Module),
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: ApiResponseInterceptor,
+      multi: true
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: LoadingInterceptor,
+      multi: true
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: AuthInterceptor,
+      multi: true
+    },
+    {
+      provide: HTTP_INTERCEPTORS,
+      useClass: WorkspaceInterceptor,
+      multi: true
+    },
+    {
+      provide: RECAPTCHA_V3_SITE_KEY,
+      useValue: environment.recaptcha.siteKey
+    },
+    {
+      provide: RECAPTCHA_SETTINGS,
+      useValue: {
+        siteKey: environment.recaptcha.siteKey
+      }
+    }
+  ]
 };

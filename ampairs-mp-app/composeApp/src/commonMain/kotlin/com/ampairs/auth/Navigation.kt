@@ -15,16 +15,16 @@ import com.ampairs.auth.ui.OtpScreen
 import com.ampairs.auth.ui.PhoneScreen
 import com.ampairs.auth.ui.UserSelectionScreen
 import com.ampairs.auth.ui.UserUpdateScreen
-import org.koin.core.context.GlobalContext
+import org.koin.compose.koinInject
 
 fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () -> Unit) {
 
     navigation<Route.Login>(startDestination = AuthRoute.UserSelection) {
 
-        val tokenRepository = GlobalContext.get().get<TokenRepository>()
-        val userWorkspaceRepository = GlobalContext.get().get<UserWorkspaceRepository>()
-
         composable<AuthRoute.UserSelection> {
+            val tokenRepository = koinInject<TokenRepository>()
+            val userWorkspaceRepository = koinInject<UserWorkspaceRepository>()
+
             UserSelectionScreen(
                 onUserSelected = { userId ->
                     // Set the selected user as current and check their state
@@ -57,6 +57,9 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
         }
 
         composable<AuthRoute.LoginRoot> {
+            val tokenRepository = koinInject<TokenRepository>()
+            val userWorkspaceRepository = koinInject<UserWorkspaceRepository>()
+
             LoginScreen { loginStatus, userEntity ->
                 if (loginStatus == LoginStatus.LOGGED_IN) {
                     // Check if user's first name is empty, then navigate to UserUpdate screen
@@ -112,6 +115,9 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
             )
         }
         composable<AuthRoute.UserUpdate> {
+            val tokenRepository = koinInject<TokenRepository>()
+            val userWorkspaceRepository = koinInject<UserWorkspaceRepository>()
+
             UserUpdateScreen {
                 kotlinx.coroutines.runBlocking {
                     // Add user to multi-user system after profile update

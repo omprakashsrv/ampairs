@@ -21,6 +21,7 @@ import org.koin.dsl.module
 import java.io.File
 
 val authPlatformModule: Module = module {
+    // Auth database is NOT workspace-aware - login happens before workspace selection
     single<AuthRoomDatabase> {
         val dbFile = File(getDatabaseDir(), "auth.db")
         Room.databaseBuilder<AuthRoomDatabase>(

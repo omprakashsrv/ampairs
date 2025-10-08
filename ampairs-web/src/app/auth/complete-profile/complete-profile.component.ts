@@ -59,10 +59,10 @@ export class CompleteProfileComponent implements OnInit, OnDestroy {
         this.isEditMode = params['edit'] === 'true';
       });
 
-    // Subscribe to current user changes
+    // Subscribe to current user changes using signal
     this.authService.currentUser$
       .pipe(takeUntil(this.destroy$))
-      .subscribe(user => {
+      .subscribe((user: User | null) => {
         this.currentUser = user;
         if (user) {
           this.updateFormWithUserData(user);
@@ -86,7 +86,7 @@ export class CompleteProfileComponent implements OnInit, OnDestroy {
     this.router.navigate(['/home']);
   }
 
-  onSubmit(): void {
+  async onSubmit(): Promise<void> {
     if (this.profileForm.invalid || this.isSubmitting) {
       this.markFormGroupTouched();
       return;
@@ -99,35 +99,31 @@ export class CompleteProfileComponent implements OnInit, OnDestroy {
     const trimmedFirstName = firstName.trim();
     const trimmedLastName = lastName.trim();
 
-    this.authService.updateUserName(trimmedFirstName, trimmedLastName || undefined)
-      .pipe(takeUntil(this.destroy$))
-      .subscribe({
-        next: (_updatedUser) => {
-          this.isSubmitting = false;
+    try {
+      await this.authService.updateUserName(trimmedFirstName, trimmedLastName || undefined);
+      this.isSubmitting = false;
 
-          if (this.isEditMode) {
-            this.showSuccessMessage('Profile updated successfully!');
-            // Navigate back to home page after a short delay
-            setTimeout(() => {
-              this.router.navigate(['/home']).catch(error =>
-                console.error('Navigation error:', error)
-              );
-            }, 1000);
-          } else {
-            this.showSuccessMessage('Profile completed successfully!');
-            // Navigate to workspace selection after a short delay
-            setTimeout(() => {
-              this.router.navigate(['/workspaces']).catch(error =>
-                console.error('Navigation error:', error)
-              );
-            }, 1000);
-          }
-        },
-        error: (error) => {
-          this.isSubmitting = false;
-          this.handleError(error);
-        }
-      });
+      if (this.isEditMode) {
+        this.showSuccessMessage('Profile updated successfully!');
+        // Navigate back to home page after a short delay
+        setTimeout(() => {
+          this.router.navigate(['/home']).catch(error =>
+            console.error('Navigation error:', error)
+          );
+        }, 1000);
+      } else {
+        this.showSuccessMessage('Profile completed successfully!');
+        // Navigate to workspace selection after a short delay
+        setTimeout(() => {
+          this.router.navigate(['/workspaces']).catch(error =>
+            console.error('Navigation error:', error)
+          );
+        }, 1000);
+      }
+    } catch (error: any) {
+      this.isSubmitting = false;
+      this.handleError(error);
+    }
   }
 
   private createForm(): FormGroup {

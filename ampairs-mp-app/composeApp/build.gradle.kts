@@ -14,21 +14,23 @@ configurations.all {
     exclude(group = "androidx.compose.ui", module = "ui-test-android")
 }
 
+
 kotlin {
     androidTarget()
 
     jvm("desktop")
 
-//    listOf(
-//        iosX64(),
-//        iosArm64(),
-//        iosSimulatorArm64()
-//    ).forEach { iosTarget ->
-//        iosTarget.binaries.framework {
-//            baseName = "ComposeApp"
-//            isStatic = true
-//        }
-//    }
+    // iOS targets
+    listOf(
+        iosX64(),
+        iosArm64(),
+        iosSimulatorArm64()
+    ).forEach { iosTarget ->
+        iosTarget.binaries.framework {
+            baseName = "ComposeApp"
+            isStatic = true
+        }
+    }
 
     sourceSets {
 
@@ -39,6 +41,12 @@ kotlin {
                 implementation(libs.ktor.client.okHttp)
                 implementation(libs.splash.screen)
                 implementation(libs.aws.s3)
+
+                // Location and Maps
+                implementation(libs.play.services.location)
+                implementation(libs.play.services.coroutines)
+                implementation(libs.maps.compose)
+                implementation(libs.accompanist.permissions)
             }
         }
 
@@ -55,11 +63,22 @@ kotlin {
                 implementation(libs.kotlinx.dateTime)
                 implementation(libs.koin.core)
                 implementation(libs.koin.compose)
+                implementation(libs.koin.compose.viewmodel)
 
                 implementation(libs.bundles.ktor.common)
 
                 implementation(libs.paging.common)
                 implementation(libs.image.loader)
+
+                // Coil for efficient image loading and caching
+                implementation(libs.coil.core)
+                implementation(libs.coil.compose)
+                implementation(libs.coil.network)
+
+                // FileKit for platform-specific file picking
+                implementation(libs.filekit.core)
+                implementation(libs.filekit.dialogs)
+                implementation(libs.filekit.dialogs.compose)
 
                 implementation(libs.file.picker)
                 implementation(libs.uuid)
@@ -71,13 +90,20 @@ kotlin {
                 implementation(libs.savedstate)
                 implementation(libs.savedstate.compose)
                 implementation(projects.thirdparty.androidx.paging.compose)
-                
+
                 implementation(libs.room.runtime)
                 implementation(libs.room.paging)
                 implementation(libs.sqlite.bundled)
-                
+
                 // Store5 for offline-first caching
                 implementation(libs.store5)
+
+                // Krossbow for WebSocket/STOMP support
+                implementation(libs.bundles.krossbow)
+
+                // DataStore for preferences
+                implementation(libs.datastore)
+                implementation(libs.datastore.preferences)
             }
         }
 
@@ -87,24 +113,27 @@ kotlin {
                 implementation(compose.desktop.currentOs)
                 implementation(libs.ktor.client.okHttp)
                 implementation(libs.aws.s3)
+                // Library for OpenStreetMap - now using JOSM repository
+                implementation(libs.jmapviewer)
+
                 implementation(project(":tallyModule"))
             }
         }
 
 
-//        val iosX64Main by getting
-//        val iosArm64Main by getting
-//        val iosSimulatorArm64Main by getting
-//        val iosMain by creating {
-//            dependsOn(commonMain)
-//            iosX64Main.dependsOn(this)
-//            iosArm64Main.dependsOn(this)
-//            iosSimulatorArm64Main.dependsOn(this)
-//            dependencies {
-//                implementation(libs.ktor.client.darwin)
-//                implementation(libs.sqlDelight.native)
-//            }
-//        }
+        val iosX64Main by getting
+        val iosArm64Main by getting
+        val iosSimulatorArm64Main by getting
+        val iosMain by creating {
+            dependsOn(commonMain)
+            iosX64Main.dependsOn(this)
+            iosArm64Main.dependsOn(this)
+            iosSimulatorArm64Main.dependsOn(this)
+            dependencies {
+                implementation(libs.ktor.client.darwin)
+                // Note: Using Room database now, no longer need SQLDelight
+            }
+        }
     }
 }
 
@@ -126,6 +155,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     packaging {
         resources {
@@ -141,6 +171,10 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+
+        // Environment configuration
+        buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.6:8080\"")
+        buildConfigField("String", "ENVIRONMENT", "\"dev\"")
     }
 
     signingConfigs {
@@ -153,9 +187,13 @@ android {
     }
     buildTypes {
         val debug by getting {
+            buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.6:8080\"")
+            buildConfigField("String", "ENVIRONMENT", "\"dev\"")
             signingConfig = signingConfigs["release"]
         }
         val release by getting {
+            buildConfigField("String", "API_BASE_URL", "\"https://api.ampairs.com\"")
+            buildConfigField("String", "ENVIRONMENT", "\"production\"")
             isMinifyEnabled = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
@@ -205,14 +243,29 @@ compose.desktop {
     }
 }
 
-
-
 room {
     schemaDirectory("$projectDir/schemas")
 }
 
 dependencies {
     add("kspCommonMainMetadata", libs.room.compiler)
-    add("kspDesktop", libs.room.compiler)
+
+    // Android
     add("kspAndroid", libs.room.compiler)
+
+    // Desktop JVM
+    add("kspDesktop", libs.room.compiler)
+
+    // iOS targets
+    add("kspIosX64", libs.room.compiler)
+    add("kspIosArm64", libs.room.compiler)
+    add("kspIosSimulatorArm64", libs.room.compiler)
+}
+
+// Fix KSP and Compose resource generation dependency issues
+tasks.withType<com.google.devtools.ksp.gradle.KspAATask>().configureEach {
+    dependsOn(tasks.matching { it.name.startsWith("generateComposeResClass") })
+    dependsOn(tasks.matching { it.name.startsWith("generateResourceAccessorsFor") })
+    dependsOn(tasks.matching { it.name.startsWith("generateActualResourceCollectorsFor") })
+    dependsOn(tasks.matching { it.name.startsWith("generateExpectResourceCollectorsFor") })
 }

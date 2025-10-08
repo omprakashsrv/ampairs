@@ -1,6 +1,7 @@
-import {Injectable} from '@angular/core';
+import {computed, inject, Injectable, signal} from '@angular/core';
+import {toObservable} from '@angular/core/rxjs-interop';
 import {HttpClient} from '@angular/common/http';
-import {BehaviorSubject, Observable} from 'rxjs';
+import {firstValueFrom, Observable} from 'rxjs';
 import {catchError, map} from 'rxjs/operators';
 import {environment} from '../../../environments/environment';
 
@@ -49,6 +50,19 @@ export interface CreateWorkspaceRequest {
   timezone?: string;
   language?: string;
   slug?: string;
+  // Business Details
+  address_line1?: string;
+  address_line2?: string;
+  city?: string;
+  state?: string;
+  postal_code?: string;
+  country?: string;
+  phone?: string;
+  email?: string;
+  website?: string;
+  registration_number?: string;
+  business_hours_start?: string;
+  business_hours_end?: string;
 }
 
 export interface ApiResponse<T> {
@@ -94,78 +108,119 @@ export interface PaginatedResponse<T> {
 })
 export class WorkspaceService {
   private readonly WORKSPACE_API_URL = `${environment.apiBaseUrl}/workspace/v1`;
+  private http = inject(HttpClient);
 
-  private currentWorkspaceSubject = new BehaviorSubject<Workspace | null>(null);
-  public currentWorkspace$ = this.currentWorkspaceSubject.asObservable();
-  private workspacesSubject = new BehaviorSubject<WorkspaceListItem[]>([]);
-  public workspaces$ = this.workspacesSubject.asObservable();
+  // Signal-based state management
+  private _currentWorkspace = signal<Workspace | null>(null);
+  // Public readonly signals
+  readonly currentWorkspace = this._currentWorkspace.asReadonly();
+  // Backward compatibility Observable properties (deprecated - use signals instead)
+  /** @deprecated Use currentWorkspace signal instead */
+  readonly currentWorkspace$ = toObservable(this._currentWorkspace);
+  // Computed signals
+  readonly hasSelectedWorkspace = computed(() => this._currentWorkspace() !== null);
+  readonly currentWorkspaceName = computed(() => this._currentWorkspace()?.name || '');
+  readonly currentWorkspaceSlug = computed(() => this._currentWorkspace()?.slug || '');
+  readonly storageUsage = computed(() => {
+    const workspace = this._currentWorkspace();
+    if (!workspace || !workspace.storage_limit_gb) return 0;
+    return Math.round((workspace.storage_used_gb / workspace.storage_limit_gb) * 100);
+  });
+  readonly isTrialWorkspace = computed(() => {
+    const workspace = this._currentWorkspace();
+    return workspace?.is_trial === true;
+  });
+  private _workspaces = signal<WorkspaceListItem[]>([]);
+  readonly workspaces = this._workspaces.asReadonly();
+  readonly workspaceCount = computed(() => this._workspaces().length);
+  private _loading = signal(false);
+  readonly loading = this._loading.asReadonly();
+  private _error = signal<string | null>(null);
+  readonly error = this._error.asReadonly();
 
-  constructor(private http: HttpClient) {
+  constructor() {
     this.loadSelectedWorkspace();
   }
 
   /**
    * Get user's workspaces with pagination
    */
-  getUserWorkspaces(page = 0, size = 20, sortBy = 'createdAt', sortDir = 'desc'): Observable<WorkspaceListItem[]> {
-    const params = {
-      page: page.toString(),
-      size: size.toString(),
-      sortBy,
-      sortDir
-    };
+  async getUserWorkspaces(page = 0, size = 20, sortBy = 'createdAt', sortDir = 'desc'): Promise<WorkspaceListItem[]> {
+    this._loading.set(true);
+    this._error.set(null);
 
-    return this.http.get<any>(`${this.WORKSPACE_API_URL}`, {params})
-      .pipe(
-        map(response => {
-          console.log('Full API Response:', response);
-          console.log('Response properties:', Object.keys(response || {}));
+    try {
+      const params = {
+        page: page.toString(),
+        size: size.toString(),
+        sortBy,
+        sortDir
+      };
 
-          // Check if response has the ApiResponse wrapper structure
-          if (response && response.data && response.data.content) {
-            console.log('Found ApiResponse wrapper with data.content');
-            const workspaces = response.data.content;
-            this.workspacesSubject.next(workspaces);
-            return workspaces;
-          }
-
-          // Check if response is directly the paginated structure
-          if (response && response.content) {
-            console.log('Found direct paginated response with content');
-            const workspaces = response.content;
-            this.workspacesSubject.next(workspaces);
-            return workspaces;
-          }
-
-          // Check if response is directly an array
-          if (Array.isArray(response)) {
-            console.log('Response is directly an array');
-            const workspaces = response;
-            this.workspacesSubject.next(workspaces);
-            return workspaces;
-          }
-
-          console.error('Unexpected response structure. Available properties:', Object.keys(response || {}));
-          return [];
-        }),
-        catchError(this.handleError)
+      const response = await firstValueFrom(
+        this.http.get<any>(`${this.WORKSPACE_API_URL}`, {params})
+          .pipe(catchError(this.handleError))
       );
+
+      console.log('Full API Response:', response);
+      console.log('Response properties:', Object.keys(response || {}));
+
+      let workspaces: WorkspaceListItem[] = [];
+
+      // Check if response has the ApiResponse wrapper structure
+      if (response && response.data && response.data.content) {
+        console.log('Found ApiResponse wrapper with data.content');
+        workspaces = response.data.content;
+      }
+      // Check if response is directly the paginated structure
+      else if (response && response.content) {
+        console.log('Found direct paginated response with content');
+        workspaces = response.content;
+      }
+      // Check if response is directly an array
+      else if (Array.isArray(response)) {
+        console.log('Response is directly an array');
+        workspaces = response;
+      } else {
+        console.error('Unexpected response structure. Available properties:', Object.keys(response || {}));
+        workspaces = [];
+      }
+
+      this._workspaces.set(workspaces);
+      return workspaces;
+    } catch (error: any) {
+      this._error.set(error.message || 'Failed to load workspaces');
+      throw error;
+    } finally {
+      this._loading.set(false);
+    }
   }
 
   /**
    * Create a new workspace
    */
-  createWorkspace(workspaceData: CreateWorkspaceRequest): Observable<Workspace> {
-    return this.http.post<ApiResponse<Workspace>>(`${this.WORKSPACE_API_URL}`, workspaceData)
-      .pipe(
-        map(response => {
-          const workspace = response.data;
-          // Refresh workspace list after creation
-          this.getUserWorkspaces().subscribe();
-          return workspace;
-        }),
-        catchError(this.handleError)
+  async createWorkspace(workspaceData: CreateWorkspaceRequest): Promise<Workspace> {
+    this._loading.set(true);
+    this._error.set(null);
+
+    try {
+      const response = await firstValueFrom(
+        this.http.post<ApiResponse<Workspace>>(`${this.WORKSPACE_API_URL}`, workspaceData)
+          .pipe(catchError(this.handleError))
       );
+
+      const workspace = response.data;
+
+      // Refresh workspace list after creation
+      await this.getUserWorkspaces();
+
+      return workspace;
+    } catch (error: any) {
+      this._error.set(error.message || 'Failed to create workspace');
+      throw error;
+    } finally {
+      this._loading.set(false);
+    }
   }
 
   /**
@@ -206,8 +261,8 @@ export class WorkspaceService {
         map(response => {
           const workspace = response.data;
           // Update current workspace if it's the one being updated
-          if (this.currentWorkspaceSubject.value?.id === workspaceId) {
-            this.currentWorkspaceSubject.next(workspace);
+          if (this._currentWorkspace()?.id === workspaceId) {
+            this._currentWorkspace.set(workspace);
           }
           return workspace;
         }),
@@ -249,34 +304,35 @@ export class WorkspaceService {
       console.error('Invalid workspace provided to setCurrentWorkspace:', workspace);
       return;
     }
-    
-    this.currentWorkspaceSubject.next(workspace);
+
+    this._currentWorkspace.set(workspace);
     localStorage.setItem('selected_workspace', JSON.stringify(workspace));
     // Set workspace header for API requests
     localStorage.setItem('workspace_id', workspace.id);
   }
 
   /**
-   * Get current workspace
+   * Get current workspace (legacy method - use signal instead)
    */
   getCurrentWorkspace(): Workspace | null {
-    return this.currentWorkspaceSubject.value;
+    return this._currentWorkspace();
   }
 
   /**
    * Clear current workspace
    */
   clearCurrentWorkspace(): void {
-    this.currentWorkspaceSubject.next(null);
+    this._currentWorkspace.set(null);
     localStorage.removeItem('selected_workspace');
     localStorage.removeItem('workspace_id');
   }
 
   /**
-   * Check if user has selected a workspace
+   * Check if user has selected a workspace (legacy method - use computed signal instead)
+   * @deprecated Use hasSelectedWorkspace computed signal instead
    */
-  hasSelectedWorkspace(): boolean {
-    return this.getCurrentWorkspace() !== null;
+  hasSelectedWorkspaceLegacy(): boolean {
+    return this._currentWorkspace() !== null;
   }
 
   /**
@@ -287,7 +343,7 @@ export class WorkspaceService {
     if (savedWorkspace) {
       try {
         const workspace = JSON.parse(savedWorkspace);
-        this.currentWorkspaceSubject.next(workspace);
+        this._currentWorkspace.set(workspace);
       } catch (error) {
         console.error('Failed to parse saved workspace:', error);
         localStorage.removeItem('selected_workspace');

@@ -31,7 +31,7 @@ import androidx.compose.ui.unit.dp
 import com.ampairs.auth.viewmodel.UserUpdateViewModel
 import com.ampairs.common.model.UiState
 import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
+import org.koin.compose.viewmodel.koinViewModel
 import org.jetbrains.compose.resources.stringResource
 import ampairsapp.composeapp.generated.resources.Res
 import ampairsapp.composeapp.generated.resources.loading_user_details
@@ -45,7 +45,7 @@ import ampairsapp.composeapp.generated.resources.error_colon
 fun UserUpdateScreen(
     onUpdateSuccess: () -> Unit
 ) {
-    val viewModel: UserUpdateViewModel = koinInject()
+    val viewModel: UserUpdateViewModel = koinViewModel()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Show error/success messages

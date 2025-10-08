@@ -1,18 +1,18 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { MatDialogModule, MatDialogRef } from '@angular/material/dialog';
-import { MatButtonModule } from '@angular/material/button';
-import { MatIconModule } from '@angular/material/icon';
-import { MatSelectModule } from '@angular/material/select';
-import { MatSliderModule } from '@angular/material/slider';
-import { MatCardModule } from '@angular/material/card';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatTooltipModule } from '@angular/material/tooltip';
-import { MatTabsModule } from '@angular/material/tabs';
-import { Subject } from 'rxjs';
-import { takeUntil } from 'rxjs/operators';
-import { ThemeService, M3ThemeConfig, M3DensityConfig, M3TypographyConfig } from '../../../core/services/theme.service';
+import {Component, OnDestroy, OnInit} from '@angular/core';
+import {CommonModule} from '@angular/common';
+import {FormsModule} from '@angular/forms';
+import {MatDialogModule, MatDialogRef} from '@angular/material/dialog';
+import {MatButtonModule} from '@angular/material/button';
+import {MatIconModule} from '@angular/material/icon';
+import {MatSelectModule} from '@angular/material/select';
+import {MatSliderModule} from '@angular/material/slider';
+import {MatCardModule} from '@angular/material/card';
+import {MatDividerModule} from '@angular/material/divider';
+import {MatTooltipModule} from '@angular/material/tooltip';
+import {MatTabsModule} from '@angular/material/tabs';
+import {Subject} from 'rxjs';
+import {takeUntil} from 'rxjs/operators';
+import {M3DensityConfig, M3ThemeConfig, M3TypographyConfig, ThemeService} from '../../../core/services/theme.service';
 
 @Component({
   selector: 'app-theme-settings',
@@ -34,27 +34,25 @@ import { ThemeService, M3ThemeConfig, M3DensityConfig, M3TypographyConfig } from
   styleUrl: './theme-settings.component.scss'
 })
 export class ThemeSettingsComponent implements OnInit, OnDestroy {
-  private destroy$ = new Subject<void>();
-
   // Current configurations
   currentTheme!: M3ThemeConfig;
   currentDensity!: M3DensityConfig;
   currentTypography!: M3TypographyConfig;
-
   // Available options
   availableThemes: readonly M3ThemeConfig[] = [];
   availableDensities: readonly M3DensityConfig[] = [];
   availableTypographies: readonly M3TypographyConfig[] = [];
-
   // Selected values
   selectedTheme: string = '';
   selectedDensityLevel: number = 0;
   selectedTypographyIndex: number = 0;
+  private destroy$ = new Subject<void>();
 
   constructor(
     private themeService: ThemeService,
     private dialogRef: MatDialogRef<ThemeSettingsComponent>
-  ) {}
+  ) {
+  }
 
   ngOnInit(): void {
     // Load available options
@@ -115,9 +113,9 @@ export class ThemeSettingsComponent implements OnInit, OnDestroy {
 
   exportConfiguration(): void {
     const config = this.themeService.exportConfiguration();
-    
+
     // Create and download configuration file
-    const blob = new Blob([config], { type: 'application/json' });
+    const blob = new Blob([config], {type: 'application/json'});
     const url = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
@@ -131,7 +129,7 @@ export class ThemeSettingsComponent implements OnInit, OnDestroy {
     if (input.files && input.files[0]) {
       const file = input.files[0];
       const reader = new FileReader();
-      
+
       reader.onload = (e) => {
         try {
           const config = e.target?.result as string;
@@ -140,7 +138,7 @@ export class ThemeSettingsComponent implements OnInit, OnDestroy {
           console.error('Failed to import configuration:', error);
         }
       };
-      
+
       reader.readAsText(file);
     }
   }
@@ -166,8 +164,8 @@ export class ThemeSettingsComponent implements OnInit, OnDestroy {
   getTypographyName(index: number): string {
     const typography = this.availableTypographies[index];
     if (!typography) return 'Unknown';
-    
-    return typography.fontFamily.split(',')[0].replace(/['"]/g, '');
+
+    return typography.fontFamily.split(',')[0]?.replace(/['"]/g, '') || 'Unknown';
   }
 
 }

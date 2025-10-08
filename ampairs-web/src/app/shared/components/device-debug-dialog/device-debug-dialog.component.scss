@@ -1,4 +1,5 @@
 // M3 Material Design Device Debug Dialog Component
+@use '../../../../theme/variables' as variables;
 .debug-content {
   min-width: 500px;
   max-width: 80vw;
@@ -7,27 +8,27 @@
 }
 
 .debug-content pre {
-  background-color: var(--surface-container-low-color);
-  padding: var(--spacing-md, 16px);
+  background-color: variables.$color-surface-container-low;
+  padding: variables.$spacing-lg;
   border-radius: 4px;
-  font-size: var(--font-body-small-size, 0.75rem);
-  line-height: var(--font-body-small-line-height, 1.4);
+  font: variables.$font-label-small;
+  line-height: variables.$line-height-normal;
   white-space: pre-wrap;
   word-wrap: break-word;
   margin: 0;
-  color: var(--on-surface-color);
-  border: 1px solid var(--outline-variant-color);
+  color: variables.$color-on-surface;
+  border: 1px solid variables.$color-outline-variant;
 }
 
 h2[mat-dialog-title] {
   display: flex;
   align-items: center;
-  gap: var(--spacing-sm, 8px);
-  color: var(--on-surface-color);
+  gap: variables.$spacing-sm;
+  color: variables.$color-on-surface;
 }
 
 h2[mat-dialog-title] mat-icon {
-  color: var(--primary-color);
+  color: variables.$color-primary;
 }
 
 @media (max-width: 768px) {
@@ -37,6 +38,6 @@ h2[mat-dialog-title] mat-icon {
   }
 
   .debug-content pre {
-    font-size: var(--font-body-small-size, 0.625rem);
+    font: variables.$font-label-small;
   }
 }

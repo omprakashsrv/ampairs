@@ -1,0 +1,49 @@
+# Test Profile Configuration for Product Module
+spring:
+  # Test database settings - H2 in-memory for tests
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+
+  # Test JPA settings - Drop and create schema for clean tests
+  jpa:
+    hibernate:
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+
+  # Jackson configuration for consistent JSON naming
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+
+  # Disable AWS auto-configuration for tests
+  cloud:
+    aws:
+      region:
+        static: us-east-1
+        auto: false
+      credentials:
+        instance-profile: false
+        access-key: test
+        secret-key: test
+
+# Logging for tests
+logging:
+  level:
+    com.ampairs: WARN
+    org.springframework: WARN
+    org.hibernate: WARN
+
+# Disable AWS services for testing
+ampairs:
+  aws:
+    s3:
+      enabled: false
+    sns:
+      enabled: false

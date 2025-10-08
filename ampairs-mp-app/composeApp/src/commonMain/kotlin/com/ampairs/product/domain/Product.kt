@@ -4,8 +4,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.ampairs.domain.Unit
-import com.ampairs.inventory.db.entity.InventoryEntity
-import com.ampairs.inventory.domain.Inventory
 import com.ampairs.product.api.model.ProductApiModel
 import com.ampairs.product.db.entity.ProductEntity
 import com.ampairs.product.db.model.ProductImageModel
@@ -30,10 +28,21 @@ data class Product(
     var baseUnitId: String? = null,
     var baseUnit: Unit? = null,
     var taxInfos: List<TaxInfo>? = null,
-    var images: List<Image>? = null,
-    var inventory: Inventory? = null
+    var images: List<ProductImage>? = null,
+    var description: String = "",
+    var stockQuantity: Double? = null,
+    var lowStockAlert: Double? = null,
+    var categoryName: String? = null,
+    var brandName: String? = null,
+    // var inventory: Inventory? = null
 ) {
     var quantity: Double by mutableStateOf(0.0)
+
+    val primaryImageUrl: String?
+        get() = images?.firstOrNull()?.image?.url
+
+    val isLowStock: Boolean
+        get() = stockQuantity != null && lowStockAlert != null && stockQuantity!! <= lowStockAlert!!
 }
 
 fun ProductEntity.asDomainModel(): Product {
@@ -143,29 +152,29 @@ fun List<ProductApiModel>.asDatabaseModel(): List<ProductEntity> {
     }
 }
 
-fun List<ProductApiModel>.asInventoryDatabaseModel(): List<InventoryEntity> {
-    return map {
-        InventoryEntity(
-            seq_id = 0,
-            id = it.inventory?.id ?: "",
-            product_id = it.inventory?.productId ?: "",
-            description = it.inventory?.description ?: "",
-            last_updated = it.inventory?.lastUpdated,
-            created_at = it.inventory?.createdAt,
-            updated_at = it.inventory?.updatedAt,
-            mrp = it.inventory?.mrp ?: 0.0,
-            dp = it.inventory?.dp ?: 0.0,
-            unit_id = it.inventory?.baseUnitId,
-            selling_price = it.inventory?.sellingPrice ?: 0.0,
-            buying_price = it.inventory?.buyingPrice ?: 0.0,
-            stock = it.inventory?.stock ?: 0.0,
-            active = if (it.inventory?.active == true) 1 else 0,
-            soft_deleted = if (it.inventory?.softDeleted == true) 1 else 0,
-            custom_fields = null,
-            synced = 1,
-        )
-    }
-}
+// fun List<ProductApiModel>.asInventoryDatabaseModel(): List<InventoryEntity> {
+//     return map {
+//         InventoryEntity(
+//             seq_id = 0,
+//             id = it.inventory?.id ?: "",
+//             product_id = it.inventory?.productId ?: "",
+//             description = it.inventory?.description ?: "",
+//             last_updated = it.inventory?.lastUpdated,
+//             created_at = it.inventory?.createdAt,
+//             updated_at = it.inventory?.updatedAt,
+//             mrp = it.inventory?.mrp ?: 0.0,
+//             dp = it.inventory?.dp ?: 0.0,
+//             unit_id = it.inventory?.baseUnitId,
+//             selling_price = it.inventory?.sellingPrice ?: 0.0,
+//             buying_price = it.inventory?.buyingPrice ?: 0.0,
+//             stock = it.inventory?.stock ?: 0.0,
+//             active = if (it.inventory?.active == true) 1 else 0,
+//             soft_deleted = if (it.inventory?.softDeleted == true) 1 else 0,
+//             custom_fields = null,
+//             synced = 1,
+//         )
+//     }
+// }
 
 fun List<ProductImageModel>.asProductImageDomainModel(): List<ProductImage> {
     return map {

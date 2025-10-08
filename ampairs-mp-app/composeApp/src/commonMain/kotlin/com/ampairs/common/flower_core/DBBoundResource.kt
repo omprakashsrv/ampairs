@@ -16,7 +16,7 @@
 
 package com.ampairs.common.flower_core
 
-import com.ampairs.network.model.Response
+import com.ampairs.common.model.Response
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow

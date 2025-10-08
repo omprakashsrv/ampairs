@@ -1,6 +1,7 @@
 package com.ampairs.workspace.ui
 
 import com.ampairs.workspace.domain.Workspace
+import com.ampairs.workspace.domain.UserInvitation
 
 data class WorkspaceListState(
     val workspaces: List<Workspace> = emptyList(),
@@ -11,7 +12,13 @@ data class WorkspaceListState(
     val hasNoWorkspaces: Boolean = false,
     val userFullName: String = "User",
     val isUserLoading: Boolean = false,
-    val isOfflineMode: Boolean = false // Indicates if we're in offline mode due to network issues
+    val isOfflineMode: Boolean = false, // Indicates if we're in offline mode due to network issues
+
+    // User invitations
+    val invitations: List<UserInvitation> = emptyList(),
+    val isInvitationsLoading: Boolean = false,
+    val invitationsError: String? = null,
+    val processingInvitationIds: Set<String> = emptySet() // Track invitations being processed
 )
 
 data class WorkspaceCreateState(
