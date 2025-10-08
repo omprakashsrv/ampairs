@@ -92,6 +92,9 @@ logging:
     console: "%highlight(%-5level) [%date{HH:mm:ss.SSS}] [%thread] [%cyan(%logger{36})]: %message%n"
 
 spring:
+  threads:
+    virtual:
+      enabled: ${SPRING_VIRTUAL_THREADS_ENABLED:true}
   jackson:
     property-naming-strategy: SNAKE_CASE
     serialization:

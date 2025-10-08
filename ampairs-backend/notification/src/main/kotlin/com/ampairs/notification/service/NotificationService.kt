@@ -49,9 +49,6 @@ class NotificationService @Autowired constructor(
     @Value("\${notification.cleanup-days:30}")
     private var cleanupDays: Long = 30
 
-    @Value("\${notification.parallel-threads:5}")
-    private var parallelThreads: Int = 5
-
     /**
      * Send notification via specified channel
      */
@@ -168,8 +165,8 @@ class NotificationService @Autowired constructor(
 
             if (pendingNotifications.isNotEmpty()) {
                 logger.info(
-                    "Processing {} pending notifications in parallel with {} threads",
-                    pendingNotifications.size, parallelThreads
+                    "Processing {} pending notifications with virtual threads",
+                    pendingNotifications.size
                 )
 
                 // Process notifications in parallel using thread pool
