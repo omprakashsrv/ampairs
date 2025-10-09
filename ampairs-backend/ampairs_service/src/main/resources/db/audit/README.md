@@ -168,12 +168,86 @@ Because MySQL `TIMESTAMP` columns already store UTC:
 2. Verify `BaseDomain.prePersist()` is called
 3. Add explicit `Instant.now()` if needed
 
+## MySQL TIMESTAMP UTC Storage Verification
+
+### Purpose
+
+The `verify_timestamp_utc.sql` script proves that MySQL TIMESTAMP columns store data in UTC internally, regardless of connection timezone. This verification is critical to understanding why no database migration is needed.
+
+### What This Script Tests
+
+The verification script includes 10 comprehensive tests:
+
+1. **Current Timezone Configuration** - Verifies session is using UTC
+2. **Create Test Table** - Sets up TIMESTAMP and DATETIME columns for comparison
+3. **Insert Data with UTC** - Inserts test records with UTC timezone
+4. **Read with Different Timezones** - Demonstrates timezone conversion behavior
+5. **TIMESTAMP vs DATETIME** - Proves DATETIME is literal, TIMESTAMP converts
+6. **UNIX_TIMESTAMP Consistency** - Verifies epoch values are timezone-independent
+7. **CONVERT_TZ Function** - Tests manual timezone conversion
+8. **Application Simulation** - Simulates JDBC serverTimezone=UTC behavior
+9. **Existing Table Verification** - Checks real database tables
+10. **Summary** - Provides conclusion and next steps
+
+### Running the Verification Script
+
+```bash
+# Using mysql command-line
+mysql -u root -p munsi_app < verify_timestamp_utc.sql
+
+# Or save output for review
+mysql -u root -p munsi_app < verify_timestamp_utc.sql > timestamp_verification.txt
+```
+
+### Expected Results
+
+All 10 tests should show `✅ PASS`. This proves:
+
+- MySQL TIMESTAMP columns store UTC internally
+- Connection timezone (serverTimezone=UTC) controls conversion
+- With UTC connection, no conversion occurs (data flows as UTC)
+- DATETIME columns store literal values (no timezone awareness)
+- Existing data is already stored as UTC
+
+### Key Takeaways
+
+After running verification:
+
+1. **Database Schema**: No ALTER TABLE needed
+2. **Data Migration**: No data conversion required
+3. **JPA Mapping**: Change is transparent to database (LocalDateTime → Instant)
+4. **API Serialization**: Only visible change is Z suffix in JSON responses
+
+### Verification in Different Scenarios
+
+#### Scenario 1: Development (Local MySQL)
+
+```bash
+# Check your local MySQL timezone
+mysql -u root -p -e "SELECT @@system_time_zone, @@session.time_zone;"
+
+# Run verification
+mysql -u root -p munsi_app < verify_timestamp_utc.sql
+```
+
+#### Scenario 2: Staging/Production
+
+```bash
+# Connect to remote database
+mysql -h staging-db.example.com -u app_user -p munsi_app < verify_timestamp_utc.sql > staging_verification.txt
+
+# Review results
+cat staging_verification.txt | grep -E "(PASS|FAIL)"
+```
+
 ### Additional Resources
 
 - [MySQL TIMESTAMP Documentation](https://dev.mysql.com/doc/refman/8.0/en/datetime.html)
+- [MySQL Timezone Support](https://dev.mysql.com/doc/refman/8.0/en/time-zone-support.html)
 - [Java Instant API](https://docs.oracle.com/javase/8/docs/api/java/time/Instant.html)
 - [ISO-8601 Format Specification](https://en.wikipedia.org/wiki/ISO_8601)
 - [Project Timezone Support Plan](/specs/002-timezone-support/plan.md)
+- [Timezone Assumptions Documentation](./TIMEZONE_ASSUMPTIONS.md)
 
 ### Contact
 
