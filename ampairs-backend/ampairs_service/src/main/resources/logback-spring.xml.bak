@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <!-- Include Spring Boot's base configuration -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    
+    <!-- Console Appender -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%highlight(%-5level) [%date{HH:mm:ss.SSS}] [%thread] [%cyan(%logger{36})]: %message%n</pattern>
+        </encoder>
+    </appender>
+    
+    <!-- Main Application Log -->
+    <appender name="APPLICATION_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/application.log</file>
+        <encoder>
+            <pattern>%highlight(%-5level) [%date] [%thread] [%X{traceId:-}] [%cyan(%logger{0})] : %message%n</pattern>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/application-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>1000MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>7</maxHistory>
+            <totalSizeCap>7GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- Security Audit Log - Separate file for security events -->
+    <appender name="SECURITY_AUDIT_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/security-audit.log</file>
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp/>
+                <logLevel/>
+                <loggerName/>
+                <message/>
+                <mdc/>
+                <arguments/>
+            </providers>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/security-audit-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>500MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>15GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- Authentication Events Log -->
+    <appender name="AUTH_EVENTS_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/auth-events.log</file>
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp/>
+                <logLevel/>
+                <loggerName/>
+                <message/>
+                <mdc/>
+                <arguments/>
+            </providers>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/auth-events-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>500MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>15GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- Rate Limiting Events Log -->
+    <appender name="RATE_LIMIT_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/rate-limit-events.log</file>
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp/>
+                <logLevel/>
+                <loggerName/>
+                <message/>
+                <mdc/>
+                <arguments/>
+            </providers>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/rate-limit-events-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>500MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>15</maxHistory>
+            <totalSizeCap>7.5GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+    
+    <!-- Access Events Log -->
+    <appender name="ACCESS_EVENTS_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>logs/access-events.log</file>
+        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
+            <providers>
+                <timestamp/>
+                <logLevel/>
+                <loggerName/>
+                <message/>
+                <mdc/>
+                <arguments/>
+            </providers>
+        </encoder>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>logs/access-events-%d{yyyy-MM-dd}.%i.log</fileNamePattern>
+            <timeBasedFileNamingAndTriggeringPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedFNATP">
+                <maxFileSize>500MB</maxFileSize>
+            </timeBasedFileNamingAndTriggeringPolicy>
+            <maxHistory>15</maxHistory>
+            <totalSizeCap>7.5GB</totalSizeCap>
+        </rollingPolicy>
+    </appender>
+
+    <!-- Security Audit Logger -->
+    <logger name="SECURITY_AUDIT" level="INFO" additivity="false">
+        <appender-ref ref="SECURITY_AUDIT_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Authentication Events Logger -->
+    <logger name="AUTH_EVENTS" level="INFO" additivity="false">
+        <appender-ref ref="AUTH_EVENTS_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Rate Limiting Events Logger -->
+    <logger name="RATE_LIMIT_EVENTS" level="WARN" additivity="false">
+        <appender-ref ref="RATE_LIMIT_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Access Events Logger -->
+    <logger name="ACCESS_EVENTS" level="WARN" additivity="false">
+        <appender-ref ref="ACCESS_EVENTS_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </logger>
+    
+    <!-- Root Logger -->
+    <root level="INFO">
+        <appender-ref ref="APPLICATION_FILE"/>
+        <appender-ref ref="CONSOLE"/>
+    </root>
+    
+    <!-- Application-specific loggers -->
+    <logger name="com.ampairs" level="${LOG_LEVEL_AMPAIRS:-DEBUG}"/>
+    <logger name="org.springframework.web" level="${LOG_LEVEL_SPRING_WEB:-INFO}"/>
+    <logger name="org.springframework.security" level="${LOG_LEVEL_SPRING_SECURITY:-INFO}"/>
+    <logger name="org.hibernate.SQL" level="${LOG_LEVEL_HIBERNATE_SQL:-INFO}"/>
+    <logger name="org.hibernate.type.descriptor.sql.BasicBinder" level="${LOG_LEVEL_HIBERNATE_BINDER:-INFO}"/>
+</configuration>

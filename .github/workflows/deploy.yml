@@ -1,0 +1,126 @@
+name: Ampairs Service CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+    inputs:
+      deploy:
+        description: 'Deploy to server'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  test:
+    name: Test & Build
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up JDK 25
+      uses: actions/setup-java@v4
+      with:
+        java-version: '25'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Grant execute permission for gradlew
+      run: chmod +x ampairs-backend/gradlew
+
+    - name: Run tests
+      run: cd ampairs-backend && ./gradlew test
+
+    - name: Build application
+      run: cd ampairs-backend && ./gradlew :ampairs_service:bootJar
+      env:
+        SPRING_PROFILES_ACTIVE: ${{ vars.SPRING_PROFILES_ACTIVE || 'production' }}
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: ampairs-service-jar
+        path: ampairs-backend/ampairs_service/build/libs/*.jar
+
+  deploy:
+    name: Deploy to Server
+    needs: test
+    runs-on: ubuntu-latest
+    if: (github.ref == 'refs/heads/master' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: ampairs-service-jar
+        path: ./artifacts
+
+    - name: Setup SSH Key
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+        ssh-passphrase: ${{ secrets.SSH_PASSPHRASE }}
+
+    - name: Add server to known hosts
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan -H ${{ vars.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Copy JAR to server
+      run: |
+        scp ./artifacts/*.jar ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:/opt/ampairs/
+
+    - name: Copy deployment scripts
+      run: |
+        scp ./scripts/deploy.sh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:/opt/ampairs/
+        scp ./scripts/ampairs.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:/tmp/
+
+    - name: Deploy application
+      run: |
+        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
+          cd /opt/ampairs
+          chmod +x deploy.sh
+          sudo ./deploy.sh
+        EOF
+
+    - name: Health check
+      run: |
+        echo "Waiting for application to start..."
+        sleep 30
+        
+        # Check if application is responding
+        for i in {1..10}; do
+          if curl -f http://${{ vars.SERVER_HOST }}:${{ vars.APP_PORT }}/actuator/health; then
+            echo "✅ Application is healthy!"
+            exit 0
+          fi
+          echo "⏳ Attempt $i/10: Waiting for application..."
+          sleep 10
+        done
+        
+        echo "❌ Application health check failed"
+        exit 1
+
+  notification:
+    name: Send Notification
+    needs: [test, deploy]
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Notify deployment status
+      run: |
+        if [ "${{ needs.deploy.result }}" == "success" ]; then
+          echo "🎉 Deployment successful!"
+          echo "✅ Ampairs service deployed to production"
+        else
+          echo "❌ Deployment failed!"
+          echo "🚨 Check the logs for details"
+        fi

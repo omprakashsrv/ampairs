@@ -1,0 +1,157 @@
+# Test Profile Configuration
+# This profile is designed for automated testing with database recreation
+
+spring:
+  # Test database settings - H2 in-memory for tests
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DATABASE_TO_UPPER=false;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=false
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+    hikari:
+      pool-name: test-db-pool
+      maximum-pool-size: 10
+      minimum-idle: 2
+      connection-timeout: 20000
+
+  # Test JPA settings - Drop and create schema for clean tests
+  jpa:
+    hibernate:
+      naming:
+        physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
+      ddl-auto: create-drop  # Drop and recreate schema for each test run
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+
+  # Test caching settings
+  cache:
+    type: caffeine
+    caffeine:
+      spec: maximumSize=100,expireAfterAccess=60s
+    cache-names: userDetails
+    cache-specs:
+      userDetails: maximumSize=10,expireAfterWrite=30s
+
+  # Jackson configuration for consistent JSON naming
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+
+  # Spring Cloud AWS settings for tests - use mocks
+  cloud:
+    aws:
+      region:
+        static: us-east-1
+        auto: false
+      credentials:
+        instance-profile: false
+        access-key: test
+        secret-key: test
+      s3:
+        endpoint: http://localhost:4566  # LocalStack endpoint for tests
+      sns:
+        endpoint: http://localhost:4566  # LocalStack endpoint for tests
+
+# reCAPTCHA - DISABLED for testing
+google:
+  recaptcha:
+    enabled: false
+    secret-key: 6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe  # Test secret key
+    site-key: 6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI    # Test site key
+    min-score: 0.0  # Always pass in tests
+
+# Logging for tests - less verbose
+logging:
+  level:
+    com.ampairs: INFO
+    org.springframework: WARN
+    org.hibernate: WARN
+    org.springframework.web: INFO
+  pattern:
+    console: "%highlight(%-5level) [%thread] [%cyan(%logger{36})]: %message%n"
+
+# Test-specific application settings
+application:
+  # Test OTP settings - hardcoded OTP enabled for tests
+  auth:
+    otp:
+      development-mode: true      # Enable development mode for tests
+      hardcoded-otp: "123456"     # Test hardcoded OTP
+      allow-hardcoded: true       # Allow hardcoded OTP bypass in tests
+  
+  # Test security settings
+  security:
+    jwt:
+      secret-key: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      expiration: PT1H  # 1 hour for tests
+      refresh-token:
+        expiration: P1D # 1 day for tests
+    cors:
+      allowed-origins: "http://localhost:4200,http://127.0.0.1:4200"
+      allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+      allowed-headers: "*"
+      allow-credentials: true
+      max-age: PT1H
+    # Rate limiting - DISABLED for testing (using custom rate limiting service)
+    rate-limiting:
+      enabled: false  # Disabled for testing
+
+  # Test cache settings
+  cache:
+    default-ttl: PT5M
+    max-size: 100
+
+  # Mock integration settings
+  integration:
+    notifications:
+      sms:
+        enabled: false  # Disable actual SMS in tests
+      email:
+        enabled: false  # Disable actual email in tests
+
+# Application-specific AWS settings for tests
+ampairs:
+  aws:
+    s3:
+      default-bucket: test-bucket
+      upload-folder: test-uploads
+      max-file-size: 1MB  # Small for tests
+    sns:
+      enabled: false  # Disable actual SNS in tests
+
+# Test server settings
+server:
+  port: 8080
+  error:
+    include-stacktrace: always
+    include-message: always
+    include-binding-errors: always
+
+# Test management endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "health,info,env"
+  endpoint:
+    health:
+      show-details: always
+
+# Test-specific debug settings
+debug: false
+
+# Notification Configuration for tests
+notification:
+  batch-size: 5
+  retry-delay-minutes: 1
+  cleanup-days: 1
+  sms:
+    primary-provider: MSG91
+    msg91:
+      enabled: false  # Disable SMS in tests
+    aws-sns:
+      enabled: false  # Disable SMS in tests
+  email:
+    enabled: false  # Disable email in tests

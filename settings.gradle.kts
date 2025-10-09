@@ -1,10 +1,10 @@
 rootProject.name = "ampairs"
 
-include("core")
-include("auth")
-include("core_user")
-include("product")
-include("customer")
-include("order")
-include("invoice")
-include("ampairs_service")
+// Include backend Spring Boot modules
+includeBuild("ampairs-backend")
+
+// Include web frontend (Angular) - if using Gradle for build coordination
+// includeBuild("ampairs-web")
+
+// Include mobile app (Kotlin Multiplatform) - if using Gradle for build coordination  
+// includeBuild("ampairs-mp-app")
