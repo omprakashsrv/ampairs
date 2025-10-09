@@ -97,6 +97,7 @@ spring:
       enabled: ${SPRING_VIRTUAL_THREADS_ENABLED:true}
   jackson:
     property-naming-strategy: SNAKE_CASE
+    time-zone: UTC  # Serialize all timestamps in UTC timezone (ISO-8601 with Z suffix)
     serialization:
       write-dates-as-timestamps: false
     deserialization:
