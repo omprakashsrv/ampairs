@@ -109,7 +109,7 @@ spring:
     cache-specs:
       userDetails: maximumSize=1000,expireAfterWrite=${CACHE_USER_DETAILS_EXPIRE:300s},recordStats
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/munsi_app}
+    url: ${DB_URL:jdbc:mysql://localhost:3306/munsi_app?serverTimezone=UTC}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:om711590}
     driver-class-name: ${DB_DRIVER:com.mysql.cj.jdbc.Driver}
