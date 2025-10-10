@@ -7,7 +7,7 @@ import com.ampairs.workspace.model.enums.WorkspaceRole
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
-import java.time.LocalDateTime
+import java.time.Instant
 import java.util.*
 
 /**
@@ -75,7 +75,7 @@ class WorkspaceInvitation : BaseDomain() {
      * When the invitation expires
      */
     @Column(name = "expires_at", nullable = false)
-    var expiresAt: LocalDateTime = LocalDateTime.now().plusDays(7)
+    var expiresAt: Instant = Instant.now().plusSeconds(7 * 86400)
 
     /**
      * Personal message included with the invitation
@@ -131,13 +131,13 @@ class WorkspaceInvitation : BaseDomain() {
      * When the invitation was accepted
      */
     @Column(name = "accepted_at")
-    var acceptedAt: LocalDateTime? = null
+    var acceptedAt: Instant? = null
 
     /**
      * When the invitation was rejected
      */
     @Column(name = "rejected_at")
-    var rejectedAt: LocalDateTime? = null
+    var rejectedAt: Instant? = null
 
     /**
      * Reason for rejection (optional)
@@ -155,13 +155,13 @@ class WorkspaceInvitation : BaseDomain() {
      * When the invitation was last sent/resent
      */
     @Column(name = "last_sent_at", nullable = true)
-    var lastSentAt: LocalDateTime? = null
+    var lastSentAt: Instant? = null
 
     /**
      * When the invitation was cancelled
      */
     @Column(name = "cancelled_at")
-    var cancelledAt: LocalDateTime? = null
+    var cancelledAt: Instant? = null
 
     /**
      * ID of the user who cancelled the invitation
@@ -209,7 +209,7 @@ class WorkspaceInvitation : BaseDomain() {
      */
     fun isValid(): Boolean {
         return status == InvitationStatus.PENDING &&
-                LocalDateTime.now().isBefore(expiresAt)
+                Instant.now().isBefore(expiresAt)
     }
 
     /**
@@ -217,7 +217,7 @@ class WorkspaceInvitation : BaseDomain() {
      */
     fun accept() {
         status = InvitationStatus.ACCEPTED
-        acceptedAt = LocalDateTime.now()
+        acceptedAt = Instant.now()
     }
 
     /**
@@ -225,7 +225,7 @@ class WorkspaceInvitation : BaseDomain() {
      */
     fun reject(reason: String? = null) {
         status = InvitationStatus.DECLINED
-        rejectedAt = LocalDateTime.now()
+        rejectedAt = Instant.now()
         rejectionReason = reason
     }
 

@@ -9,7 +9,7 @@ import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.annotations.TenantId
 import org.hibernate.type.SqlTypes
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * Represents a user's membership in a workspace with their role and permissions.
@@ -86,13 +86,13 @@ class WorkspaceMember : BaseDomain() {
      * When the invitation was sent
      */
     @Column(name = "invited_at")
-    var invitedAt: LocalDateTime? = null
+    var invitedAt: Instant? = null
 
     /**
      * When the member joined the workspace (accepted invitation)
      */
     @Column(name = "joined_at")
-    var joinedAt: LocalDateTime? = null
+    var joinedAt: Instant? = null
 
     /**
      * Whether this membership is currently active
@@ -104,7 +104,7 @@ class WorkspaceMember : BaseDomain() {
      * When this member was last active in the workspace
      */
     @Column(name = "last_active_at")
-    var lastActiveAt: LocalDateTime? = null
+    var lastActiveAt: Instant? = null
 
     /**
      * Administrative notes about this member
@@ -116,7 +116,7 @@ class WorkspaceMember : BaseDomain() {
      * When this member was deactivated (if applicable)
      */
     @Column(name = "deactivated_at")
-    var deactivatedAt: LocalDateTime? = null
+    var deactivatedAt: Instant? = null
 
     /**
      * ID of the user who deactivated this member
@@ -216,20 +216,20 @@ class WorkspaceMember : BaseDomain() {
     /**
      * Alias for lastActiveAt to match DTO expectations
      */
-    val lastActivityAt: LocalDateTime?
+    val lastActivityAt: Instant?
         get() = lastActiveAt
 
     /**
      * Alias for joinedAt to match invitation accepted at
      */
-    val invitationAcceptedAt: LocalDateTime?
+    val invitationAcceptedAt: Instant?
         get() = joinedAt
 
     /**
      * Update last active timestamp
      */
     fun recordActivity() {
-        lastActiveAt = LocalDateTime.now()
+        lastActiveAt = Instant.now()
     }
 
     /**
@@ -237,7 +237,7 @@ class WorkspaceMember : BaseDomain() {
      */
     fun deactivate(deactivatedByUserId: String, reason: String? = null) {
         isActive = false
-        deactivatedAt = LocalDateTime.now()
+        deactivatedAt = Instant.now()
         deactivatedBy = deactivatedByUserId
         deactivationReason = reason
     }
@@ -303,7 +303,7 @@ class WorkspaceMember : BaseDomain() {
      */
     fun getDaysSinceJoined(): Long? {
         return joinedAt?.let {
-            java.time.Duration.between(it, LocalDateTime.now()).toDays()
+            java.time.Duration.between(it, Instant.now()).toDays()
         }
     }
 
@@ -312,7 +312,7 @@ class WorkspaceMember : BaseDomain() {
      */
     fun getDaysSinceLastActive(): Long? {
         return lastActiveAt?.let {
-            java.time.Duration.between(it, LocalDateTime.now()).toDays()
+            java.time.Duration.between(it, Instant.now()).toDays()
         }
     }
 
@@ -328,8 +328,8 @@ class WorkspaceMember : BaseDomain() {
      */
     fun acceptInvitation(userName: String? = null, userEmail: String? = null) {
         isActive = true
-        joinedAt = LocalDateTime.now()
-        lastActiveAt = LocalDateTime.now()
+        joinedAt = Instant.now()
+        lastActiveAt = Instant.now()
         memberName = userName
         memberEmail = userEmail
     }

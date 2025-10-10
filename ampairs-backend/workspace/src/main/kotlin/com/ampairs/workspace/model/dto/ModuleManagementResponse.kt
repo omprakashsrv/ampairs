@@ -2,7 +2,7 @@ package com.ampairs.workspace.model.dto
 
 import com.ampairs.workspace.model.*
 import com.ampairs.workspace.model.enums.WorkspaceModuleStatus
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * Response for workspace module information
@@ -22,13 +22,13 @@ data class WorkspaceModuleResponse(
 
     var installedVersion: String = "",
 
-    var installedAt: LocalDateTime = LocalDateTime.now(),
+    var installedAt: Instant = Instant.now(),
 
     var installedBy: String? = null,
 
     var installedByName: String? = null,
 
-    var lastUpdatedAt: LocalDateTime? = null,
+    var lastUpdatedAt: Instant? = null,
 
     var lastUpdatedBy: String? = null,
 
@@ -44,7 +44,7 @@ data class WorkspaceModuleResponse(
 
     var licenseInfo: String? = null,
 
-    var licenseExpiresAt: LocalDateTime? = null,
+    var licenseExpiresAt: Instant? = null,
 
     var storageUsedMb: Int = 0,
 
@@ -74,9 +74,9 @@ data class WorkspaceModuleResponse(
 
     var isPopular: Boolean = false,
 
-    var createdAt: LocalDateTime = LocalDateTime.now(),
+    var createdAt: Instant = Instant.now(),
 
-    var updatedAt: LocalDateTime = LocalDateTime.now()
+    var updatedAt: Instant = Instant.now()
 ) {
     companion object {
         fun from(workspaceModule: WorkspaceModule): WorkspaceModuleResponse {
@@ -114,8 +114,8 @@ data class WorkspaceModuleResponse(
                 healthScore = workspaceModule.getHealthScore(),
                 engagementLevel = workspaceModule.getUserEngagementLevel(),
                 isPopular = workspaceModule.isPopular(),
-                createdAt = workspaceModule.createdAt ?: LocalDateTime.now(),
-                updatedAt = workspaceModule.updatedAt ?: LocalDateTime.now()
+                createdAt = workspaceModule.createdAt ?: Instant.now(),
+                updatedAt = workspaceModule.updatedAt ?: Instant.now()
             )
         }
     }
@@ -181,11 +181,11 @@ data class MasterModuleResponse(
 
     var releaseNotes: String? = null,
 
-    var lastUpdatedAt: LocalDateTime? = null,
+    var lastUpdatedAt: Instant? = null,
 
-    var createdAt: LocalDateTime = LocalDateTime.now(),
+    var createdAt: Instant = Instant.now(),
 
-    var updatedAt: LocalDateTime = LocalDateTime.now()
+    var updatedAt: Instant = Instant.now()
 ) {
     companion object {
         fun from(masterModule: MasterModule): MasterModuleResponse {
@@ -219,8 +219,8 @@ data class MasterModuleResponse(
                 active = masterModule.active,
                 releaseNotes = masterModule.releaseNotes,
                 lastUpdatedAt = masterModule.lastUpdatedAt,
-                createdAt = masterModule.createdAt ?: LocalDateTime.now(),
-                updatedAt = masterModule.updatedAt ?: LocalDateTime.now()
+                createdAt = masterModule.createdAt ?: Instant.now(),
+                updatedAt = masterModule.updatedAt ?: Instant.now()
             )
         }
     }
@@ -365,7 +365,7 @@ data class ExportMetadata(
 
     var workspaceName: String = "",
 
-    var exportedAt: LocalDateTime = LocalDateTime.now(),
+    var exportedAt: Instant = Instant.now(),
 
     var exportedBy: String = "",
 

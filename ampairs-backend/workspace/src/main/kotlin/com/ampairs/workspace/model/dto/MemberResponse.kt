@@ -4,7 +4,7 @@ import com.ampairs.core.domain.User
 import com.ampairs.workspace.model.WorkspaceMember
 import com.ampairs.workspace.model.enums.WorkspaceRole
 import com.ampairs.workspace.security.WorkspacePermission
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * Summary information for teams associated with a member
@@ -45,15 +45,15 @@ data class MemberResponse(
 
     val isActive: Boolean,
 
-    val joinedAt: LocalDateTime,
+    val joinedAt: Instant,
 
-    val lastActivityAt: LocalDateTime?,
+    val lastActivityAt: Instant?,
 
-    val invitationAcceptedAt: LocalDateTime?,
+    val invitationAcceptedAt: Instant?,
 
-    val createdAt: LocalDateTime,
+    val createdAt: Instant,
 
-    val updatedAt: LocalDateTime,
+    val updatedAt: Instant,
 
     // Team information
     val primaryTeam: TeamSummary? = null,
@@ -78,11 +78,11 @@ data class MemberListResponse(
 
     val isActive: Boolean,
 
-    val joinedAt: LocalDateTime,
+    val joinedAt: Instant,
 
     val permissions: Set<WorkspacePermission>,
 
-    val lastActivityAt: LocalDateTime?,
+    val lastActivityAt: Instant?,
 
     // Team information
     val primaryTeam: TeamSummary? = null,
@@ -131,11 +131,11 @@ fun WorkspaceMember.toResponse(
         role = this.role,
         permissions = this.permissions,
         isActive = this.isActive,
-        joinedAt = this.joinedAt ?: LocalDateTime.now(),
+        joinedAt = this.joinedAt ?: Instant.now(),
         lastActivityAt = this.lastActiveAt,
         invitationAcceptedAt = this.invitationAcceptedAt,
-        createdAt = this.createdAt ?: LocalDateTime.now(),
-        updatedAt = this.updatedAt ?: LocalDateTime.now(),
+        createdAt = this.createdAt ?: Instant.now(),
+        updatedAt = this.updatedAt ?: Instant.now(),
         primaryTeam = primaryTeamSummary,
         teams = teamsList,
         jobTitle = this.jobTitle
@@ -190,7 +190,7 @@ fun WorkspaceMember.toListResponse(
         user = userInfo,
         role = this.role,
         isActive = this.isActive,
-        joinedAt = this.joinedAt ?: LocalDateTime.now(),
+        joinedAt = this.joinedAt ?: Instant.now(),
         lastActivityAt = this.lastActiveAt,
         primaryTeam = primaryTeamSummary,
         teams = teamsList,
