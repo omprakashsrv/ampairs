@@ -9,8 +9,9 @@ import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.math.BigDecimal
+import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalDateTime
+import java.time.ZoneOffset
 
 @Entity
 @Table(
@@ -106,8 +107,8 @@ class TaxRate : OwnableBaseDomain() {
         return Constants.TAX_RATE_PREFIX
     }
 
-    fun isValidForDate(date: LocalDateTime = LocalDateTime.now()): Boolean {
-        val checkDate = date.toLocalDate()
+    fun isValidForDate(date: Instant = Instant.now()): Boolean {
+        val checkDate = date.atZone(ZoneOffset.UTC).toLocalDate()
         return (checkDate.isAfter(effectiveFrom) || checkDate.isEqual(effectiveFrom)) &&
                 (effectiveTo == null || checkDate.isBefore(effectiveTo))
     }

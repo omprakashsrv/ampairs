@@ -22,8 +22,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import java.time.Instant
 import java.util.*
 
 @Service
@@ -57,13 +56,13 @@ class CustomerService @Autowired constructor(
             if (customer.uid.isNotEmpty()) {
                 val existingCustomer = customerRepository.findByUid(customer.uid)
                 customer.refId = existingCustomer?.refId ?: ""
-                customer.createdAt = existingCustomer?.createdAt ?: LocalDateTime.now()
-                customer.updatedAt = existingCustomer?.updatedAt ?: LocalDateTime.now()
+                customer.createdAt = existingCustomer?.createdAt ?: Instant.now()
+                customer.updatedAt = existingCustomer?.updatedAt ?: Instant.now()
             } else if (customer.refId?.isNotEmpty() == true) {
                 val existingCustomer = customerRepository.findByRefId(customer.refId)
                 customer.uid = existingCustomer?.uid ?: ""
-                customer.createdAt = existingCustomer?.createdAt ?: LocalDateTime.now()
-                customer.updatedAt = existingCustomer?.updatedAt ?: LocalDateTime.now()
+                customer.createdAt = existingCustomer?.createdAt ?: Instant.now()
+                customer.updatedAt = existingCustomer?.updatedAt ?: Instant.now()
             }
             customer.lastUpdated = System.currentTimeMillis()
             customerRepository.save(customer)
@@ -92,14 +91,10 @@ class CustomerService @Autowired constructor(
                 // URL decode the datetime string first (handles %3A to : conversion)
                 val decodedLastSync = URLDecoder.decode(lastSync, StandardCharsets.UTF_8)
 
-                // Parse ISO datetime string to LocalDateTime (supports both with and without 'T')
-                val lastSyncDateTime = if (decodedLastSync.contains('T')) {
-                    LocalDateTime.parse(decodedLastSync, DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-                } else {
-                    LocalDateTime.parse(decodedLastSync.replace(' ', 'T'), DateTimeFormatter.ISO_LOCAL_DATE_TIME)
-                }
+                // Parse ISO-8601 datetime string to Instant (expects format like "2025-01-09T14:30:00Z")
+                val lastSyncInstant = Instant.parse(decodedLastSync)
 
-                customerRepository.findCustomersUpdatedAfter(lastSyncDateTime, pageable)
+                customerRepository.findCustomersUpdatedAfter(lastSyncInstant, pageable)
             } catch (e: Exception) {
                 // If parsing fails, return all customers with pagination
                 customerRepository.findAll(pageable)

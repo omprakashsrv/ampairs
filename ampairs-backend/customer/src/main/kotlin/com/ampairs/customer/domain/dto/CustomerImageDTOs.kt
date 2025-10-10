@@ -2,7 +2,7 @@ package com.ampairs.customer.domain.dto
 
 import com.ampairs.customer.domain.model.CustomerImage
 import jakarta.validation.constraints.*
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * Request DTO for uploading customer image
@@ -49,12 +49,12 @@ data class CustomerImageResponse(
     val description: String?,
     val width: Int?,
     val height: Int?,
-    val uploadedAt: LocalDateTime,
+    val uploadedAt: Instant,
     val active: Boolean,
     val etag: String?,
-    val lastModified: LocalDateTime?,
-    val createdAt: LocalDateTime,
-    val updatedAt: LocalDateTime
+    val lastModified: Instant?,
+    val createdAt: Instant,
+    val updatedAt: Instant
 )
 
 /**
@@ -103,7 +103,7 @@ data class CustomerImageReorderRequest(
  */
 data class CustomerImageUploadResponse(
     val image: CustomerImageResponse,
-    val uploadedAt: LocalDateTime,
+    val uploadedAt: Instant,
     val processingTime: Long // in milliseconds
 )
 
@@ -189,8 +189,8 @@ fun CustomerImage.asCustomerImageResponse(): CustomerImageResponse = CustomerIma
     active = active,
     etag = etag,
     lastModified = lastModified,
-    createdAt = createdAt ?: LocalDateTime.now(),
-    updatedAt = updatedAt ?: LocalDateTime.now()
+    createdAt = createdAt ?: Instant.now(),
+    updatedAt = updatedAt ?: Instant.now()
 )
 
 fun List<CustomerImage>.asCustomerImageResponses(): List<CustomerImageResponse> =
@@ -238,7 +238,7 @@ data class ThumbnailResponse(
     val formattedFileSize: String,
     val url: String?,
     val cached: Boolean,
-    val lastModified: LocalDateTime?,
+    val lastModified: Instant?,
     val etag: String?
 )
 

@@ -1,7 +1,7 @@
 package com.ampairs.customer.domain.dto
 
 import com.ampairs.customer.domain.model.CustomerGroup
-import java.time.LocalDateTime
+import java.time.Instant
 
 data class CustomerGroupResponse(
     val uid: String,
@@ -13,8 +13,8 @@ data class CustomerGroupResponse(
     val defaultDiscountPercentage: Double,
     val priorityLevel: Int,
     val metadata: String?,
-    val createdAt: LocalDateTime?,
-    val updatedAt: LocalDateTime?
+    val createdAt: Instant?,
+    val updatedAt: Instant?
 )
 
 fun CustomerGroup.asCustomerGroupResponse(): CustomerGroupResponse {

@@ -1,7 +1,7 @@
 package com.ampairs.customer.domain.dto
 
 import com.ampairs.customer.domain.model.MasterState
-import java.time.LocalDateTime
+import java.time.Instant
 
 data class MasterStateResponse(
     val uid: String,
@@ -20,8 +20,8 @@ data class MasterStateResponse(
     val postalCodePattern: String?,
     val active: Boolean,
     val metadata: String?,
-    val createdAt: LocalDateTime?,
-    val updatedAt: LocalDateTime?
+    val createdAt: Instant?,
+    val updatedAt: Instant?
 )
 
 fun MasterState.asMasterStateResponse(): MasterStateResponse {
