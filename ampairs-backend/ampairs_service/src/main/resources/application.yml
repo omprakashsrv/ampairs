@@ -146,13 +146,30 @@ spring:
     hibernate:
       naming:
         physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
-      ddl-auto: update
+      # IMPORTANT: Never use 'update' in production. Use Flyway for all DDL changes.
+      # Options: validate (recommended for production), none (if you want to disable validation)
+      ddl-auto: ${JPA_DDL_AUTO:validate}
     show-sql: ${JPA_SHOW_SQL:false}
     open-in-view: false
     properties:
       hibernate:
         format_sql: ${JPA_FORMAT_SQL:true}
         use_sql_comments: ${JPA_USE_SQL_COMMENTS:true}
+  # Flyway Database Migration Configuration
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+    baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE:true}
+    baseline-version: ${FLYWAY_BASELINE_VERSION:0}
+    validate-on-migrate: ${FLYWAY_VALIDATE_ON_MIGRATE:true}
+    out-of-order: ${FLYWAY_OUT_OF_ORDER:false}
+    # Vendor-specific locations: {vendor} is replaced with mysql or postgresql automatically
+    locations: ${FLYWAY_LOCATIONS:classpath:db/migration/{vendor}}
+    # User Configuration
+    # The database user must have DDL permissions (CREATE, ALTER, DROP, etc.)
+    # For MySQL: GRANT ALL ON database.* TO 'user'@'host';
+    # For PostgreSQL: GRANT ALL PRIVILEGES ON DATABASE dbname TO user;
+    user: ${FLYWAY_USER:${spring.datasource.username}}
+    password: ${FLYWAY_PASSWORD:${spring.datasource.password}}
   # Spring Cloud AWS Auto-configuration
   cloud:
     aws:

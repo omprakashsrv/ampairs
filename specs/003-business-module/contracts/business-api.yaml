@@ -1,0 +1,726 @@
+openapi: 3.0.3
+info:
+  title: Business API
+  description: API for managing business profiles within workspaces
+  version: 1.0.0
+  contact:
+    name: Ampairs API Support
+    email: api@ampairs.com
+
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Local development
+  - url: https://api.ampairs.com/api/v1
+    description: Production
+
+security:
+  - BearerAuth: []
+  - WorkspaceHeader: []
+
+paths:
+  /business:
+    get:
+      summary: Get current workspace's business profile
+      description: Retrieves the business profile for the workspace specified in X-Workspace-ID header
+      operationId: getBusiness
+      tags:
+        - Business
+      responses:
+        '200':
+          description: Business profile retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessSuccessResponse'
+              example:
+                success: true
+                data:
+                  uid: "bus_abc123def456"
+                  seq_id: "BUS-0001"
+                  name: "Acme Corporation"
+                  business_type: "RETAIL"
+                  description: "Leading retail business in electronics"
+                  owner_name: "John Doe"
+                  address_line1: "123 Main Street"
+                  address_line2: "Suite 100"
+                  city: "Mumbai"
+                  state: "Maharashtra"
+                  postal_code: "400001"
+                  country: "India"
+                  latitude: 19.0760
+                  longitude: 72.8777
+                  phone: "+91-22-12345678"
+                  email: "info@acme.com"
+                  website: "https://www.acme.com"
+                  tax_id: "27AABCU9603R1ZM"
+                  registration_number: "U12345MH2020PTC123456"
+                  timezone: "Asia/Kolkata"
+                  currency: "INR"
+                  language: "en"
+                  date_format: "DD-MM-YYYY"
+                  time_format: "12H"
+                  opening_hours: "09:00"
+                  closing_hours: "18:00"
+                  operating_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+                  active: true
+                  created_at: "2025-10-10T10:00:00Z"
+                  updated_at: "2025-10-10T10:00:00Z"
+                timestamp: "2025-10-10T10:00:00Z"
+                path: "/api/v1/business"
+        '404':
+          description: Business profile not found for workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                data: null
+                error:
+                  code: "BUSINESS_NOT_FOUND"
+                  message: "Business profile not found for workspace"
+                  details: null
+                timestamp: "2025-10-10T10:00:00Z"
+                path: "/api/v1/business"
+                trace_id: "abc-def-123"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+    post:
+      summary: Create business profile
+      description: Creates a new business profile for the workspace
+      operationId: createBusiness
+      tags:
+        - Business
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessCreateRequest'
+            example:
+              name: "Acme Corporation"
+              business_type: "RETAIL"
+              description: "Leading retail business"
+              owner_name: "John Doe"
+              address_line1: "123 Main Street"
+              city: "Mumbai"
+              state: "Maharashtra"
+              postal_code: "400001"
+              country: "India"
+              phone: "+91-22-12345678"
+              email: "info@acme.com"
+              website: "https://www.acme.com"
+              tax_id: "27AABCU9603R1ZM"
+              timezone: "Asia/Kolkata"
+              currency: "INR"
+              operating_days: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
+      responses:
+        '201':
+          description: Business profile created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessSuccessResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+              example:
+                success: false
+                data: null
+                error:
+                  code: "VALIDATION_ERROR"
+                  message: "Invalid input data"
+                  details:
+                    - field: "name"
+                      message: "Business name is required"
+                    - field: "email"
+                      message: "Invalid email format"
+                timestamp: "2025-10-10T10:00:00Z"
+                path: "/api/v1/business"
+        '409':
+          description: Business profile already exists for workspace
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              example:
+                success: false
+                data: null
+                error:
+                  code: "BUSINESS_ALREADY_EXISTS"
+                  message: "Business profile already exists for this workspace"
+                timestamp: "2025-10-10T10:00:00Z"
+                path: "/api/v1/business"
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+    put:
+      summary: Update business profile
+      description: Updates the business profile for the workspace
+      operationId: updateBusiness
+      tags:
+        - Business
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BusinessUpdateRequest'
+            example:
+              name: "Acme Corporation Ltd"
+              phone: "+91-22-87654321"
+              email: "contact@acme.com"
+              opening_hours: "10:00"
+              closing_hours: "19:00"
+      responses:
+        '200':
+          description: Business profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BusinessSuccessResponse'
+        '400':
+          description: Invalid request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+        '404':
+          description: Business profile not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from authentication
+
+    WorkspaceHeader:
+      type: apiKey
+      in: header
+      name: X-Workspace-ID
+      description: Workspace identifier for multi-tenant context
+
+  schemas:
+    BusinessType:
+      type: string
+      enum:
+        - RETAIL
+        - WHOLESALE
+        - MANUFACTURING
+        - SERVICE
+        - RESTAURANT
+        - ECOMMERCE
+        - HEALTHCARE
+        - EDUCATION
+        - REAL_ESTATE
+        - LOGISTICS
+        - OTHER
+      description: Type of business operation
+
+    BusinessResponse:
+      type: object
+      required:
+        - uid
+        - seq_id
+        - name
+        - business_type
+        - timezone
+        - currency
+        - language
+        - active
+        - created_at
+        - updated_at
+      properties:
+        uid:
+          type: string
+          description: Unique business identifier
+          example: "bus_abc123def456"
+        seq_id:
+          type: string
+          description: Sequential business ID
+          example: "BUS-0001"
+        name:
+          type: string
+          minLength: 2
+          maxLength: 255
+          description: Business name
+          example: "Acme Corporation"
+        business_type:
+          $ref: '#/components/schemas/BusinessType'
+        description:
+          type: string
+          maxLength: 1000
+          nullable: true
+          description: Business description
+        owner_name:
+          type: string
+          maxLength: 255
+          nullable: true
+          description: Business owner's name
+        address_line1:
+          type: string
+          maxLength: 255
+          nullable: true
+          description: Primary address line
+        address_line2:
+          type: string
+          maxLength: 255
+          nullable: true
+          description: Secondary address line
+        city:
+          type: string
+          maxLength: 100
+          nullable: true
+        state:
+          type: string
+          maxLength: 100
+          nullable: true
+        postal_code:
+          type: string
+          maxLength: 20
+          nullable: true
+        country:
+          type: string
+          maxLength: 100
+          nullable: true
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+          nullable: true
+          description: GPS latitude
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+          nullable: true
+          description: GPS longitude
+        phone:
+          type: string
+          maxLength: 20
+          nullable: true
+          pattern: '^\+?[1-9]\d{1,14}$'
+          description: Primary phone number (E.164 format)
+          example: "+91-22-12345678"
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          nullable: true
+          description: Primary email address
+        website:
+          type: string
+          format: uri
+          maxLength: 500
+          nullable: true
+          description: Business website URL
+        tax_id:
+          type: string
+          maxLength: 50
+          nullable: true
+          description: Tax identification number (GST/VAT)
+          example: "27AABCU9603R1ZM"
+        registration_number:
+          type: string
+          maxLength: 100
+          nullable: true
+          description: Business registration number
+        timezone:
+          type: string
+          maxLength: 50
+          description: IANA timezone identifier
+          example: "Asia/Kolkata"
+          default: "UTC"
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          description: ISO 4217 currency code
+          example: "INR"
+          default: "INR"
+        language:
+          type: string
+          maxLength: 10
+          description: ISO 639-1 language code
+          example: "en"
+          default: "en"
+        date_format:
+          type: string
+          maxLength: 20
+          description: Date display format
+          example: "DD-MM-YYYY"
+          default: "DD-MM-YYYY"
+        time_format:
+          type: string
+          maxLength: 10
+          enum: ["12H", "24H"]
+          description: Time display format
+          default: "12H"
+        opening_hours:
+          type: string
+          pattern: '^([0-1][0-9]|2[0-3]):[0-5][0-9]$'
+          nullable: true
+          description: Opening time (HH:MM format)
+          example: "09:00"
+        closing_hours:
+          type: string
+          pattern: '^([0-1][0-9]|2[0-3]):[0-5][0-9]$'
+          nullable: true
+          description: Closing time (HH:MM format)
+          example: "18:00"
+        operating_days:
+          type: array
+          items:
+            type: string
+            enum: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+          description: Days of the week business operates
+          example: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+        active:
+          type: boolean
+          description: Whether business is active
+          default: true
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp
+
+    BusinessCreateRequest:
+      type: object
+      required:
+        - name
+        - business_type
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 255
+          description: Business name
+        business_type:
+          $ref: '#/components/schemas/BusinessType'
+        description:
+          type: string
+          maxLength: 1000
+        owner_name:
+          type: string
+          maxLength: 255
+        address_line1:
+          type: string
+          maxLength: 255
+        address_line2:
+          type: string
+          maxLength: 255
+        city:
+          type: string
+          maxLength: 100
+        state:
+          type: string
+          maxLength: 100
+        postal_code:
+          type: string
+          maxLength: 20
+        country:
+          type: string
+          maxLength: 100
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+        phone:
+          type: string
+          maxLength: 20
+          pattern: '^\+?[1-9]\d{1,14}$'
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        website:
+          type: string
+          format: uri
+          maxLength: 500
+        tax_id:
+          type: string
+          maxLength: 50
+        registration_number:
+          type: string
+          maxLength: 100
+        timezone:
+          type: string
+          maxLength: 50
+          default: "UTC"
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+          default: "INR"
+        language:
+          type: string
+          maxLength: 10
+          default: "en"
+        date_format:
+          type: string
+          maxLength: 20
+          default: "DD-MM-YYYY"
+        time_format:
+          type: string
+          enum: ["12H", "24H"]
+          default: "12H"
+        opening_hours:
+          type: string
+          pattern: '^([0-1][0-9]|2[0-3]):[0-5][0-9]$'
+        closing_hours:
+          type: string
+          pattern: '^([0-1][0-9]|2[0-3]):[0-5][0-9]$'
+        operating_days:
+          type: array
+          items:
+            type: string
+            enum: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+          default: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
+
+    BusinessUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 255
+        business_type:
+          $ref: '#/components/schemas/BusinessType'
+        description:
+          type: string
+          maxLength: 1000
+        owner_name:
+          type: string
+          maxLength: 255
+        address_line1:
+          type: string
+          maxLength: 255
+        address_line2:
+          type: string
+          maxLength: 255
+        city:
+          type: string
+          maxLength: 100
+        state:
+          type: string
+          maxLength: 100
+        postal_code:
+          type: string
+          maxLength: 20
+        country:
+          type: string
+          maxLength: 100
+        latitude:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+        longitude:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+        phone:
+          type: string
+          maxLength: 20
+          pattern: '^\+?[1-9]\d{1,14}$'
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        website:
+          type: string
+          format: uri
+          maxLength: 500
+        tax_id:
+          type: string
+          maxLength: 50
+        registration_number:
+          type: string
+          maxLength: 100
+        timezone:
+          type: string
+          maxLength: 50
+        currency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        language:
+          type: string
+          maxLength: 10
+        date_format:
+          type: string
+          maxLength: 20
+        time_format:
+          type: string
+          enum: ["12H", "24H"]
+        opening_hours:
+          type: string
+          pattern: '^([0-1][0-9]|2[0-3]):[0-5][0-9]$'
+        closing_hours:
+          type: string
+          pattern: '^([0-1][0-9]|2[0-3]):[0-5][0-9]$'
+        operating_days:
+          type: array
+          items:
+            type: string
+            enum: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+        active:
+          type: boolean
+      description: All fields are optional for partial updates
+
+    BusinessSuccessResponse:
+      type: object
+      required:
+        - success
+        - data
+        - timestamp
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/BusinessResponse'
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+          example: "/api/v1/business"
+
+    ErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+        - timestamp
+      properties:
+        success:
+          type: boolean
+          example: false
+        data:
+          nullable: true
+          example: null
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              example: "BUSINESS_NOT_FOUND"
+            message:
+              type: string
+              example: "Business profile not found"
+            details:
+              nullable: true
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+          example: "/api/v1/business"
+        trace_id:
+          type: string
+          example: "abc-def-123"
+
+    ValidationErrorResponse:
+      type: object
+      required:
+        - success
+        - error
+        - timestamp
+      properties:
+        success:
+          type: boolean
+          example: false
+        data:
+          nullable: true
+        error:
+          type: object
+          required:
+            - code
+            - message
+          properties:
+            code:
+              type: string
+              example: "VALIDATION_ERROR"
+            message:
+              type: string
+              example: "Invalid input data"
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  message:
+                    type: string
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+
+  responses:
+    UnauthorizedError:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "UNAUTHORIZED"
+              message: "Authentication required"
+            timestamp: "2025-10-10T10:00:00Z"
+
+    ForbiddenError:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+          example:
+            success: false
+            error:
+              code: "FORBIDDEN"
+              message: "Insufficient permissions to access this resource"
+            timestamp: "2025-10-10T10:00:00Z"
+
+tags:
+  - name: Business
+    description: Business profile management operations
