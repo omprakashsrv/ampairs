@@ -7,7 +7,7 @@ import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.annotations.TenantId
 import org.hibernate.type.SqlTypes
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * Workspace-specific module settings and customizations
@@ -33,11 +33,11 @@ data class ModuleSettings(
 data class ModuleUsageMetrics(
     var totalAccesses: Int = 0,
     var uniqueUsers: Int = 0,
-    var lastAccessedAt: LocalDateTime? = null,
+    var lastAccessedAt: Instant? = null,
     var averageSessionDuration: Long = 0, // in seconds
     var totalUsageDuration: Long = 0, // in seconds
     var errorCount: Int = 0,
-    var lastErrorAt: LocalDateTime? = null,
+    var lastErrorAt: Instant? = null,
     var performanceScore: Double = 1.0, // 0.0 to 1.0
     var userSatisfactionScore: Double = 0.0, // 0.0 to 5.0
     var featureUsageStats: Map<String, Int> = emptyMap(),
@@ -56,7 +56,7 @@ data class UserModulePreferences(
     var displayOrder: Int? = null,
     var quickAccess: Boolean = false,
     var notificationsEnabled: Boolean = true,
-    var lastAccessedAt: LocalDateTime? = null,
+    var lastAccessedAt: Instant? = null,
     var accessCount: Int = 0,
     var favorited: Boolean = false,
     var grantedPermissions: List<String> = emptyList()
@@ -119,7 +119,7 @@ class WorkspaceModule : BaseDomain() {
      * When the module was first installed in this workspace
      */
     @Column(name = "installed_at", nullable = false)
-    var installedAt: LocalDateTime = LocalDateTime.now()
+    var installedAt: Instant = Instant.now()
 
     /**
      * User who installed the module
@@ -137,7 +137,7 @@ class WorkspaceModule : BaseDomain() {
      * When the module was last updated
      */
     @Column(name = "last_updated_at")
-    var lastUpdatedAt: LocalDateTime? = null
+    var lastUpdatedAt: Instant? = null
 
     /**
      * User who last updated the module
@@ -195,7 +195,7 @@ class WorkspaceModule : BaseDomain() {
      * License expiration date
      */
     @Column(name = "license_expires_at")
-    var licenseExpiresAt: LocalDateTime? = null
+    var licenseExpiresAt: Instant? = null
 
     /**
      * Storage space used by this module in MB
@@ -224,7 +224,7 @@ class WorkspaceModule : BaseDomain() {
      * Check if license is valid (if license is required)
      */
     fun hasValidLicense(): Boolean {
-        return licenseInfo == null || licenseExpiresAt?.let { it.isAfter(LocalDateTime.now()) } ?: true
+        return licenseInfo == null || licenseExpiresAt?.let { it.isAfter(Instant.now()) } ?: true
     }
 
     /**
@@ -283,13 +283,13 @@ class WorkspaceModule : BaseDomain() {
         // Update overall metrics
         usageMetrics = usageMetrics.copy(
             totalAccesses = usageMetrics.totalAccesses + 1,
-            lastAccessedAt = LocalDateTime.now()
+            lastAccessedAt = Instant.now()
         )
 
         // Update user-specific preferences
         val currentPrefs = getUserPreferences(userId) ?: UserModulePreferences(userId = userId)
         val updatedPrefs = currentPrefs.copy(
-            lastAccessedAt = LocalDateTime.now(),
+            lastAccessedAt = Instant.now(),
             accessCount = currentPrefs.accessCount + 1
         )
         updateUserPreferences(userId, updatedPrefs)
@@ -301,7 +301,7 @@ class WorkspaceModule : BaseDomain() {
     fun recordError() {
         usageMetrics = usageMetrics.copy(
             errorCount = usageMetrics.errorCount + 1,
-            lastErrorAt = LocalDateTime.now()
+            lastErrorAt = Instant.now()
         )
     }
 
@@ -325,7 +325,7 @@ class WorkspaceModule : BaseDomain() {
      */
     fun updateToLatestVersion(updatedBy: String? = null) {
         installedVersion = masterModule.version
-        lastUpdatedAt = LocalDateTime.now()
+        lastUpdatedAt = Instant.now()
         lastUpdatedBy = updatedBy
     }
 

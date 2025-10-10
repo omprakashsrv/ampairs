@@ -2,7 +2,7 @@ package com.ampairs.event.domain.dto
 
 import com.ampairs.event.domain.EventType
 import com.ampairs.event.domain.WorkspaceEvent
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * Response DTO for WorkspaceEvent
@@ -18,7 +18,7 @@ data class WorkspaceEventResponse(
     val sequenceNumber: Long,
     val consumed: Boolean,
     val workspaceId: String,
-    val createdAt: LocalDateTime?
+    val createdAt: Instant?
 )
 
 /**

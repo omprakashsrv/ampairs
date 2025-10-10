@@ -10,8 +10,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
 import java.io.InputStream
-import java.time.LocalDateTime
-import java.time.ZoneOffset
+import java.time.Instant
 import java.util.concurrent.TimeUnit
 
 /**
@@ -68,7 +67,7 @@ class MinioObjectStorageService(
                 objectKey = objectKey,
                 etag = response.etag(),
                 contentLength = contentLength,
-                lastModified = LocalDateTime.now(),
+                lastModified = Instant.now(),
                 url = generatePresignedUrl(bucketName, objectKey)
             )
         } catch (e: Exception) {
@@ -141,9 +140,7 @@ class MinioObjectStorageService(
                 contentType = response.contentType() ?: "application/octet-stream",
                 contentLength = response.size(),
                 etag = response.etag(),
-                lastModified = response.lastModified()?.let {
-                    LocalDateTime.ofInstant(it.toInstant(), ZoneOffset.UTC)
-                },
+                lastModified = response.lastModified()?.toInstant(),
                 metadata = response.userMetadata()
             )
         } catch (e: ErrorResponseException) {
@@ -258,7 +255,7 @@ class MinioObjectStorageService(
                 sourceKey = sourceKey,
                 targetKey = targetKey,
                 etag = response.etag(),
-                lastModified = LocalDateTime.now()
+                lastModified = Instant.now()
             )
         } catch (e: Exception) {
             logger.error("Failed to copy object in MinIO: source={}:{}, target={}:{}, error={}",
@@ -282,9 +279,7 @@ class MinioObjectStorageService(
                 ObjectSummary(
                     objectKey = item.objectName(),
                     size = item.size(),
-                    lastModified = item.lastModified()?.let {
-                        LocalDateTime.ofInstant(it.toInstant(), ZoneOffset.UTC)
-                    },
+                    lastModified = item.lastModified()?.toInstant(),
                     etag = item.etag()
                 )
             }

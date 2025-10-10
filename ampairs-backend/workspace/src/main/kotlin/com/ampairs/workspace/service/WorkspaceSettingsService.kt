@@ -12,6 +12,7 @@ import com.ampairs.workspace.repository.WorkspaceSettingsRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 import java.time.LocalDateTime
 
 /**
@@ -36,7 +37,7 @@ class WorkspaceSettingsService(
             this.workspaceId = workspaceId
             this.logoUrl = null
             // Use default JSON values already defined in entity
-            this.lastModifiedAt = LocalDateTime.now()
+            this.lastModifiedAt = Instant.now()
         }
 
         val savedSettings = settingsRepository.save(defaultSettings)

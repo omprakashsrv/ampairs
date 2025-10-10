@@ -5,7 +5,7 @@ import com.ampairs.tax.config.Constants
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
-import java.time.LocalDateTime
+import java.time.Instant
 
 @Entity
 @Table(
@@ -70,10 +70,10 @@ class HsnCode : OwnableBaseDomain() {
     var taxRates: MutableList<TaxRate> = mutableListOf()
 
     @Column(name = "effective_from")
-    var effectiveFrom: LocalDateTime? = null
+    var effectiveFrom: Instant? = null
 
     @Column(name = "effective_to")
-    var effectiveTo: LocalDateTime? = null
+    var effectiveTo: Instant? = null
 
     override fun obtainSeqIdPrefix(): String {
         return Constants.HSN_CODE_PREFIX
@@ -95,7 +95,7 @@ class HsnCode : OwnableBaseDomain() {
         return path.joinToString(" > ")
     }
 
-    fun hasValidTaxRates(date: LocalDateTime = LocalDateTime.now()): Boolean {
+    fun hasValidTaxRates(date: Instant = Instant.now()): Boolean {
         return taxRates.any { it.isValidForDate(date) }
     }
 

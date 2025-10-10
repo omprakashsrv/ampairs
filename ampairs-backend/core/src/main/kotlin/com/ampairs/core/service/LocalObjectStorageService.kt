@@ -10,8 +10,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.BasicFileAttributes
-import java.time.LocalDateTime
-import java.time.ZoneOffset
+import java.time.Instant
 import java.util.*
 
 /**
@@ -70,7 +69,7 @@ class LocalObjectStorageService(
                 objectKey = objectKey,
                 etag = generateETag(bytes),
                 contentLength = bytes.size.toLong(),
-                lastModified = LocalDateTime.now(),
+                lastModified = Instant.now(),
                 url = generateUrl(bucketName, objectKey)
             )
         } catch (e: Exception) {
@@ -105,7 +104,7 @@ class LocalObjectStorageService(
                 objectKey = objectKey,
                 etag = generateETag(Files.readAllBytes(filePath)),
                 contentLength = bytesWritten,
-                lastModified = LocalDateTime.now(),
+                lastModified = Instant.now(),
                 url = generateUrl(bucketName, objectKey)
             )
         } catch (e: Exception) {
@@ -173,7 +172,7 @@ class LocalObjectStorageService(
                 contentType = savedMetadata["Content-Type"] ?: "application/octet-stream",
                 contentLength = fileAttrs.size(),
                 etag = savedMetadata["ETag"],
-                lastModified = LocalDateTime.ofInstant(fileAttrs.lastModifiedTime().toInstant(), ZoneOffset.UTC),
+                lastModified = fileAttrs.lastModifiedTime().toInstant(),
                 metadata = savedMetadata.filterKeys { !it.startsWith("Content-") && it != "ETag" }
             )
         } catch (e: Exception) {
@@ -201,7 +200,7 @@ class LocalObjectStorageService(
                     ObjectSummary(
                         objectKey = objectKey,
                         size = fileAttrs.size(),
-                        lastModified = LocalDateTime.ofInstant(fileAttrs.lastModifiedTime().toInstant(), ZoneOffset.UTC),
+                        lastModified = fileAttrs.lastModifiedTime().toInstant(),
                         etag = loadMetadata(filePath)["ETag"]
                     )
                 }
@@ -242,7 +241,7 @@ class LocalObjectStorageService(
                 sourceKey = sourceKey,
                 targetKey = targetKey,
                 etag = sourceMetadata["ETag"],
-                lastModified = LocalDateTime.now()
+                lastModified = Instant.now()
             )
         } catch (e: Exception) {
             logger.error("Failed to copy file: from={}:{} to={}:{}", sourceBucket, sourceKey, targetBucket, targetKey, e)

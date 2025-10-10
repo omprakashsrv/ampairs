@@ -5,7 +5,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import java.io.ByteArrayInputStream
 import java.io.InputStream
-import java.time.LocalDateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 /**
  * Service for managing thumbnail cache in object storage
@@ -94,7 +95,7 @@ class ThumbnailCacheService(
                     mapOf(
                         "thumbnail-size" to size.pixels.toString(),
                         "original-path" to originalImagePath,
-                        "generated-at" to LocalDateTime.now().toString(),
+                        "generated-at" to Instant.now().toString(),
                         "cache-type" to "thumbnail"
                     )
                 )
@@ -223,14 +224,14 @@ class ThumbnailCacheService(
      */
     fun cleanupOldThumbnails(bucketName: String, olderThanDays: Int = 30): Int {
         var deletedCount = 0
-        val cutoffDate = LocalDateTime.now().minusDays(olderThanDays.toLong())
+        val cutoffInstant = Instant.now().minus(olderThanDays.toLong(), ChronoUnit.DAYS)
 
         try {
             // List objects with thumbs prefix
             val thumbnailObjects = objectStorageService.listObjects(bucketName, "thumbs/", 1000)
 
             thumbnailObjects.forEach { objectSummary ->
-                if (objectSummary.lastModified?.isBefore(cutoffDate) == true) {
+                if (objectSummary.lastModified?.isBefore(cutoffInstant) == true) {
                     try {
                         objectStorageService.deleteObject(bucketName, objectSummary.objectKey)
                         deletedCount++
@@ -273,7 +274,7 @@ data class ThumbnailMetadata(
     val size: ImageResizingService.ThumbnailSize,
     val contentType: String,
     val contentLength: Long,
-    val lastModified: LocalDateTime?,
+    val lastModified: Instant?,
     val etag: String?,
     val cached: Boolean
 )

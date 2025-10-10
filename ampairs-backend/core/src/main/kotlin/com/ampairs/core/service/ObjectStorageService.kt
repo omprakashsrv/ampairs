@@ -1,7 +1,7 @@
 package com.ampairs.core.service
 
 import java.io.InputStream
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * Object Storage Service interface that supports both S3 and MinIO implementations.
@@ -121,7 +121,7 @@ data class UploadResult(
     val objectKey: String,
     val etag: String?,
     val contentLength: Long,
-    val lastModified: LocalDateTime?,
+    val lastModified: Instant?,
     val url: String? = null
 )
 
@@ -132,7 +132,7 @@ data class CopyResult(
     val sourceKey: String,
     val targetKey: String,
     val etag: String?,
-    val lastModified: LocalDateTime?
+    val lastModified: Instant?
 )
 
 /**
@@ -143,7 +143,7 @@ data class ObjectMetadata(
     val contentType: String,
     val contentLength: Long,
     val etag: String?,
-    val lastModified: LocalDateTime?,
+    val lastModified: Instant?,
     val metadata: Map<String, String> = emptyMap()
 )
 
@@ -153,7 +153,7 @@ data class ObjectMetadata(
 data class ObjectSummary(
     val objectKey: String,
     val size: Long,
-    val lastModified: LocalDateTime?,
+    val lastModified: Instant?,
     val etag: String?
 )
 

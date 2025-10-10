@@ -7,7 +7,7 @@ import com.ampairs.workspace.model.enums.WorkspaceStatus
 import com.ampairs.workspace.model.enums.WorkspaceType
 import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.persistence.*
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * Core workspace entity representing a business organization within the Ampairs system.
@@ -153,7 +153,7 @@ class Workspace : BaseDomain() {
      * Last activity timestamp
      */
     @Column(name = "last_activity_at")
-    var lastActivityAt: LocalDateTime? = null
+    var lastActivityAt: Instant? = null
 
     /**
      * Workspace status
@@ -196,13 +196,13 @@ class Workspace : BaseDomain() {
      * Subscription last updated timestamp
      */
     @Column(name = "subscription_updated_at")
-    var subscriptionUpdatedAt: LocalDateTime? = null
+    var subscriptionUpdatedAt: Instant? = null
 
     /**
      * Trial expiration date
      */
     @Column(name = "trial_expires_at")
-    var trialExpiresAt: LocalDateTime? = null
+    var trialExpiresAt: Instant? = null
 
     /**
      * Business hours start time (24H format)
@@ -319,14 +319,14 @@ class Workspace : BaseDomain() {
      * Update last activity timestamp
      */
     fun recordActivity() {
-        lastActivityAt = LocalDateTime.now()
+        lastActivityAt = Instant.now()
     }
 
     /**
      * Check if workspace is in trial period
      */
     fun isInTrial(): Boolean {
-        return trialExpiresAt?.let { it.isAfter(LocalDateTime.now()) } ?: false
+        return trialExpiresAt?.let { it.isAfter(Instant.now()) } ?: false
     }
 
     /**
@@ -362,7 +362,7 @@ class Workspace : BaseDomain() {
      * Check if trial has expired
      */
     private fun isTrialExpired(): Boolean {
-        return trialExpiresAt?.let { it.isBefore(LocalDateTime.now()) } ?: false
+        return trialExpiresAt?.let { it.isBefore(Instant.now()) } ?: false
     }
 
     /**

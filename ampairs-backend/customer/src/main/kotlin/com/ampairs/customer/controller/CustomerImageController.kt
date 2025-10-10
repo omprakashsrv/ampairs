@@ -197,7 +197,7 @@ class CustomerImageController(
 
                 // Set Last-Modified header
                 image.lastModified?.let {
-                    lastModified = it.atZone(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
+                    lastModified = it.toEpochMilli()
                 }
 
                 // Additional headers for image optimization

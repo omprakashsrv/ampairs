@@ -3,7 +3,7 @@ package com.ampairs.tax.domain.dto
 import com.ampairs.tax.domain.model.HsnCode
 import com.ampairs.tax.service.HsnCodeStatistics
 import jakarta.validation.constraints.*
-import java.time.LocalDateTime
+import java.time.Instant
 
 data class HsnCodeRequestDto(
     val uid: String? = null, // Optional UID for UPSERT operations
@@ -39,9 +39,9 @@ data class HsnCodeRequestDto(
 
     val attributes: Map<String, Any> = emptyMap(),
 
-    val effectiveFrom: LocalDateTime? = null,
+    val effectiveFrom: Instant? = null,
 
-    val effectiveTo: LocalDateTime? = null,
+    val effectiveTo: Instant? = null,
 
     val isActive: Boolean = true
 ) {
@@ -77,10 +77,10 @@ data class HsnCodeResponseDto(
     val exemptionAvailable: Boolean,
     val businessCategoryRules: Map<String, Any>,
     val attributes: Map<String, Any>,
-    val effectiveFrom: LocalDateTime?,
-    val effectiveTo: LocalDateTime?,
-    val createdAt: LocalDateTime?,
-    val updatedAt: LocalDateTime?,
+    val effectiveFrom: Instant?,
+    val effectiveTo: Instant?,
+    val createdAt: Instant?,
+    val updatedAt: Instant?,
     val hasValidTaxRates: Boolean,
     val fullPath: String,
     val childCount: Int
@@ -130,9 +130,9 @@ data class HsnCodeUpdateDto(
 
     val attributes: Map<String, Any> = emptyMap(),
 
-    val effectiveFrom: LocalDateTime? = null,
+    val effectiveFrom: Instant? = null,
 
-    val effectiveTo: LocalDateTime? = null,
+    val effectiveTo: Instant? = null,
 
     val isActive: Boolean = true
 )

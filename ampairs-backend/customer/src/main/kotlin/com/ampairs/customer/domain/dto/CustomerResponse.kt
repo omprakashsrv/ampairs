@@ -2,7 +2,7 @@ package com.ampairs.customer.domain.dto
 
 import com.ampairs.core.domain.model.Address
 import com.ampairs.customer.domain.model.Customer
-import java.time.LocalDateTime
+import java.time.Instant
 
 data class CustomerResponse(
     var uid: String,
@@ -32,8 +32,8 @@ data class CustomerResponse(
     val latitude: Double?,
     val longitude: Double?,
     var lastUpdated: Long?,
-    var createdAt: LocalDateTime?,
-    var updatedAt: LocalDateTime?,
+    var createdAt: Instant?,
+    var updatedAt: Instant?,
 )
 
 
