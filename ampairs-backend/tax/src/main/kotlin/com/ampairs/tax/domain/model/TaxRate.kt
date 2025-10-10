@@ -9,6 +9,7 @@ import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -114,7 +115,7 @@ class TaxRate : OwnableBaseDomain() {
     }
 
     fun calculateTaxAmount(baseAmount: BigDecimal, quantity: Int = 1): BigDecimal {
-        var taxAmount = baseAmount.multiply(ratePercentage).divide(BigDecimal(100), 4, BigDecimal.ROUND_HALF_UP)
+        var taxAmount = baseAmount.multiply(ratePercentage).divide(BigDecimal(100), 4, RoundingMode.HALF_UP)
 
         fixedAmountPerUnit?.let { fixedAmount ->
             taxAmount = taxAmount.add(fixedAmount.multiply(BigDecimal(quantity)))

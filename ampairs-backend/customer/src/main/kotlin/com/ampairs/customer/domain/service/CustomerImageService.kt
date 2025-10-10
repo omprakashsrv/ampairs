@@ -13,7 +13,7 @@ import org.springframework.web.multipart.MultipartFile
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.InputStream
-import java.time.LocalDateTime
+import java.time.Instant
 import javax.imageio.ImageIO
 
 /**
@@ -406,7 +406,7 @@ class CustomerImageService(
                 formattedFileSize = "Unknown",
                 url = null,
                 cached = true,
-                lastModified = LocalDateTime.now(),
+                lastModified = Instant.now(),
                 etag = null
             )
         }
@@ -537,7 +537,7 @@ class CustomerImageService(
             displayOrder = request.displayOrder ?: 0
             altText = request.altText
             description = request.description
-            uploadedAt = LocalDateTime.now()
+            uploadedAt = Instant.now()
             active = true
             // ownerId will be set by @TenantId
         }
@@ -610,6 +610,7 @@ class CustomerImageService(
             else -> "${bytes / (1024 * 1024 * 1024)} GB"
         }
     }
+
 }
 
 /**

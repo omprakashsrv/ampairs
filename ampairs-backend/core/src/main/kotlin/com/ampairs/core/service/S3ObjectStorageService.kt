@@ -8,8 +8,7 @@ import org.springframework.stereotype.Service
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.*
 import java.io.InputStream
-import java.time.LocalDateTime
-import java.time.ZoneOffset
+import java.time.Instant
 
 /**
  * S3 implementation of ObjectStorageService using Spring Cloud AWS S3Template
@@ -48,7 +47,7 @@ class S3ObjectStorageService(
                 objectKey = objectKey,
                 etag = s3Resource.contentLength().toString(),
                 contentLength = contentLength,
-                lastModified = LocalDateTime.now(),
+                lastModified = Instant.now(),
                 url = generatePresignedUrl(bucketName, objectKey)
             )
         } catch (e: Exception) {
@@ -110,9 +109,7 @@ class S3ObjectStorageService(
                 contentType = response.contentType() ?: "application/octet-stream",
                 contentLength = response.contentLength(),
                 etag = response.eTag(),
-                lastModified = response.lastModified()?.let {
-                    LocalDateTime.ofInstant(it, ZoneOffset.UTC)
-                },
+                lastModified = response.lastModified(),
                 metadata = response.metadata()
             )
         } catch (e: NoSuchKeyException) {
@@ -190,9 +187,7 @@ class S3ObjectStorageService(
                 sourceKey = sourceKey,
                 targetKey = targetKey,
                 etag = response.copyObjectResult().eTag(),
-                lastModified = response.copyObjectResult().lastModified()?.let {
-                    LocalDateTime.ofInstant(it, ZoneOffset.UTC)
-                }
+                lastModified = response.copyObjectResult().lastModified()
             )
         } catch (e: Exception) {
             logger.error("Failed to copy object in S3: source={}:{}, target={}:{}, error={}",
@@ -215,9 +210,7 @@ class S3ObjectStorageService(
                 ObjectSummary(
                     objectKey = obj.key(),
                     size = obj.size(),
-                    lastModified = obj.lastModified()?.let {
-                        LocalDateTime.ofInstant(it, ZoneOffset.UTC)
-                    },
+                    lastModified = obj.lastModified(),
                     etag = obj.eTag()
                 )
             }

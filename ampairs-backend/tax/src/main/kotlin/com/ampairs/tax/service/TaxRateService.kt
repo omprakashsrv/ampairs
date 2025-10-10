@@ -1,7 +1,6 @@
 package com.ampairs.tax.service
 
 import com.ampairs.tax.domain.enums.BusinessType
-import com.ampairs.tax.domain.enums.GeographicalZone
 import com.ampairs.tax.domain.enums.TaxComponentType
 import com.ampairs.tax.domain.model.TaxRate
 import com.ampairs.tax.repository.TaxRateRepository
@@ -12,8 +11,9 @@ import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.LocalDate
-import java.time.LocalDateTime
+import java.time.ZoneOffset
 
 @Service
 @Transactional
@@ -40,7 +40,7 @@ class TaxRateService(
             var matches = true
 
             if (isActive) matches = false
-            if (!rate.isValidForDate(effectiveDate.atStartOfDay())) matches = false
+            if (!rate.isValidForDate(effectiveDate.atStartOfDay(ZoneOffset.UTC).toInstant())) matches = false
             if (businessType != null && rate.businessType != businessType) matches = false
             if (componentType != null && rate.taxComponentType != componentType) matches = false
 
@@ -220,7 +220,7 @@ class TaxRateService(
         val nonZeroRates = activeRates.filter { it.ratePercentage > BigDecimal.ZERO }
         val averageRate = if (nonZeroRates.isNotEmpty()) {
             nonZeroRates.map { it.ratePercentage }.reduce { acc, rate -> acc.add(rate) }
-                .divide(BigDecimal(nonZeroRates.size), 4, BigDecimal.ROUND_HALF_UP)
+                .divide(BigDecimal.valueOf(nonZeroRates.size.toLong()), 4, RoundingMode.HALF_UP)
         } else BigDecimal.ZERO
 
         return TaxRateStatistics(
