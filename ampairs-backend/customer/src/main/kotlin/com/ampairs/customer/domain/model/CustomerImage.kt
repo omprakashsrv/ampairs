@@ -3,7 +3,7 @@ package com.ampairs.customer.domain.model
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.customer.config.Constants
 import jakarta.persistence.*
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * Customer image entity representing uploaded images for customers.
@@ -111,7 +111,7 @@ class CustomerImage : OwnableBaseDomain() {
      * Upload timestamp
      */
     @Column(name = "uploaded_at", nullable = false)
-    var uploadedAt: LocalDateTime = LocalDateTime.now()
+    var uploadedAt: Instant = Instant.now()
 
     /**
      * Whether the image is active/visible
@@ -129,7 +129,7 @@ class CustomerImage : OwnableBaseDomain() {
      * Last modified timestamp from object storage
      */
     @Column(name = "last_modified")
-    var lastModified: LocalDateTime? = null
+    var lastModified: Instant? = null
 
     override fun obtainSeqIdPrefix(): String {
         return Constants.CUSTOMER_IMAGE_PREFIX
@@ -195,7 +195,7 @@ class CustomerImage : OwnableBaseDomain() {
     /**
      * Update storage metadata
      */
-    fun updateStorageMetadata(url: String?, etag: String?, lastModified: LocalDateTime?) {
+    fun updateStorageMetadata(url: String?, etag: String?, lastModified: Instant?) {
         this.storageUrl = url
         this.etag = etag
         this.lastModified = lastModified
