@@ -9,7 +9,7 @@ import com.ampairs.product.domain.dto.unit.UnitResponse
 import com.ampairs.product.domain.dto.unit.asResponse
 import com.ampairs.product.domain.dto.unit.asUnitConversionResponse
 import com.ampairs.product.domain.model.Product
-import java.time.LocalDateTime
+import java.time.Instant
 
 data class ProductResponse(
     val id: String,
@@ -33,8 +33,8 @@ data class ProductResponse(
     val sellingPrice: Double,
     val unitConversions: List<UnitConversionResponse>,
     val lastUpdated: Long?,
-    val createdAt: LocalDateTime?,
-    val updatedAt: LocalDateTime?,
+    val createdAt: Instant?,
+    val updatedAt: Instant?,
     val baseUnit: UnitResponse?,
     val baseUnitId: String?,
     val images: List<FileResponse>?,

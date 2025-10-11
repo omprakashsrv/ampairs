@@ -55,6 +55,67 @@ data class AuthInitRequest(
 2. **Let the global Jackson configuration handle naming automatically**
 3. **Only use @JsonProperty for special cases that don't follow the standard pattern**
 
+### **Date/Time Handling (CRITICAL)**
+
+**ALWAYS use `java.time.Instant` for timestamps - NEVER use `LocalDateTime`**
+
+| Type | Timezone Info | Use Case | Status |
+|------|---------------|----------|--------|
+| `Instant` | UTC (implicit) | Timestamps, historical events, API responses | ✅ **USE THIS** |
+| `LocalDateTime` | None (ambiguous) | ❌ **DEPRECATED** - causes timezone bugs | ❌ DO NOT USE |
+
+**Why `Instant`?**
+- Represents a specific point in time on the UTC timeline
+- No ambiguity - always means the same moment globally
+- Serializes as ISO-8601 with Z suffix: `"2025-01-09T14:30:00Z"`
+- Prevents timezone-related bugs during DST transitions
+- Industry standard (AWS, Google, GitHub, Stripe)
+
+**Correct Entity Pattern:**
+```kotlin
+@Entity
+class MyEntity : BaseDomain() {
+    // ✅ CORRECT
+    @Column(name = "created_at")
+    var createdAt: Instant = Instant.now()
+
+    @Column(name = "updated_at")
+    var updatedAt: Instant = Instant.now()
+
+    // ❌ WRONG - DO NOT USE
+    // var createdAt: LocalDateTime = LocalDateTime.now()
+}
+```
+
+**Correct DTO Pattern:**
+```kotlin
+data class EntityResponse(
+    val uid: String,
+    val name: String,
+    val createdAt: Instant,    // ✅ Serializes to "2025-01-09T14:30:00Z"
+    val updatedAt: Instant     // ✅ UTC timezone explicit
+)
+```
+
+**Database:**
+- Use `TIMESTAMP` columns (not `DATETIME`)
+- Connection string must include: `?serverTimezone=UTC`
+- Hibernate maps `Instant` to `TIMESTAMP` automatically
+
+**Frontend (Angular/TypeScript):**
+```typescript
+// Parse API response (already in UTC)
+const date = new Date(response.created_at); // "2025-01-09T14:30:00Z"
+
+// Display in user's local timezone
+{{ date | date:'medium' }} // Automatic browser timezone conversion
+```
+
+**Migration Note:**
+- Legacy code may use `LocalDateTime` - this is being migrated to `Instant`
+- For new features, ALWAYS use `Instant`
+- Reference: `/specs/002-timezone-support/research.md`
+
 ### **Angular Web Application Design System**
 
 **CRITICAL: Use Angular Material 3 (M3) Design System Exclusively**
@@ -187,6 +248,30 @@ fun create(@Valid request: EntityCreateRequest): ApiResponse<EntityResponse> {
 
 ## Recent Changes
 
+### **Multi-Timezone Support Migration (2025-01-09)**
+
+#### **Critical Change: LocalDateTime → Instant**
+- **Breaking Change**: All timestamp fields migrated from `LocalDateTime` to `java.time.Instant`
+- **Reason**: `LocalDateTime` has no timezone info, causing bugs across timezones and DST transitions
+- **Action Required**:
+  * All new entities MUST use `Instant` for timestamps
+  * All new DTOs MUST use `Instant` for date/time fields
+  * Legacy `LocalDateTime` code is being phased out
+- **Serialization**: ISO-8601 with Z suffix (e.g., `"2025-01-09T14:30:00Z"`)
+- **Database**: Use `TIMESTAMP` columns with UTC timezone
+- **Reference**: `/specs/002-timezone-support/research.md`
+
+#### **Base Domain Classes Updated**
+- `BaseDomain.createdAt`: `LocalDateTime` → `Instant`
+- `BaseDomain.updatedAt`: `LocalDateTime` → `Instant`
+- `ApiResponse.timestamp`: `LocalDateTime` → `Instant`
+- All 46+ entities inheriting from `BaseDomain`/`OwnableBaseDomain` affected
+
+#### **Frontend Impact**
+- API responses now include `Z` suffix: `"created_at": "2025-01-09T14:30:00Z"`
+- Angular DatePipe automatically converts to browser timezone
+- No code changes needed - JavaScript Date handles ISO-8601 UTC
+
 ### **Workspace Controller Refactoring (2025-01-15)**
 
 #### **@TenantId Integration & Simplification**
@@ -222,8 +307,8 @@ fun create(@Valid request: EntityCreateRequest): ApiResponse<EntityResponse> {
 abstract class OwnableBaseDomain {
     val workspaceId: String     // Tenant isolation
     val ownerId: String         // Tenant context
-    val createdAt: LocalDateTime
-    val updatedAt: LocalDateTime
+    val createdAt: Instant      // ✅ UTC timestamps (migrated from LocalDateTime)
+    val updatedAt: Instant      // ✅ ISO-8601 with Z suffix
 }
 
 // Standard API response wrapper
@@ -231,7 +316,7 @@ data class ApiResponse<T>(
     val success: Boolean,
     val data: T?,
     val error: ErrorDetails?,
-    val timestamp: LocalDateTime,
+    val timestamp: Instant,     // ✅ UTC timestamp
     val path: String?,
     val traceId: String?
 )
@@ -259,12 +344,13 @@ data class ApiResponse<T>(
 
 ## Key Rules Summary
 
-1. **Use global snake_case configuration** - no redundant @JsonProperty annotations
-2. **Angular M3 components only** - no other UI frameworks
-3. **@EntityGraph for efficient loading** - avoid N+1 queries
-4. **Follow existing patterns** - maintain consistency across modules
-5. **Multi-tenant aware** - all data operations include tenant context
-6. **@TenantId at controller level** - set tenant context before repository injection
-7. **Native SQL for cross-tenant** - bypass @TenantId filtering when needed
-8. **Single security approach** - use either @TenantId OR workspaceId parameters, not both
-9. **DTO pattern required** - never expose JPA entities in controllers, always use proper DTOs
+1. **Use `Instant` for all timestamps** - NEVER use `LocalDateTime` (causes timezone bugs)
+2. **Use global snake_case configuration** - no redundant @JsonProperty annotations
+3. **Angular M3 components only** - no other UI frameworks
+4. **@EntityGraph for efficient loading** - avoid N+1 queries
+5. **Follow existing patterns** - maintain consistency across modules
+6. **Multi-tenant aware** - all data operations include tenant context
+7. **@TenantId at controller level** - set tenant context before repository injection
+8. **Native SQL for cross-tenant** - bypass @TenantId filtering when needed
+9. **Single security approach** - use either @TenantId OR workspaceId parameters, not both
+10. **DTO pattern required** - never expose JPA entities in controllers, always use proper DTOs

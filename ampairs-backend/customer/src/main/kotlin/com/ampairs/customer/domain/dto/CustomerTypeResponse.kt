@@ -1,7 +1,7 @@
 package com.ampairs.customer.domain.dto
 
 import com.ampairs.customer.domain.model.CustomerType
-import java.time.LocalDateTime
+import java.time.Instant
 
 data class CustomerTypeResponse(
     val uid: String,
@@ -13,8 +13,8 @@ data class CustomerTypeResponse(
     val defaultCreditLimit: Double,
     val defaultCreditDays: Int,
     val metadata: String?,
-    val createdAt: LocalDateTime?,
-    val updatedAt: LocalDateTime?
+    val createdAt: Instant?,
+    val updatedAt: Instant?
 )
 
 fun CustomerType.asCustomerTypeResponse(): CustomerTypeResponse {

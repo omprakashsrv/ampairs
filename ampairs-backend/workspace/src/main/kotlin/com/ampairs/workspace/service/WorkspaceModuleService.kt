@@ -11,6 +11,7 @@ import com.ampairs.workspace.repository.MasterModuleRepository
 import com.ampairs.workspace.repository.WorkspaceModuleRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 import java.time.LocalDateTime
 
 /**
@@ -119,7 +120,7 @@ class WorkspaceModuleService(
                 moduleCode = moduleCode,
                 workspaceId = workspaceId,
                 message = "Module $moduleCode is already installed in this workspace",
-                installedAt = existingModule?.installedAt ?: LocalDateTime.now()
+                installedAt = existingModule?.installedAt ?: Instant.now()
             )
         }
 
@@ -170,7 +171,7 @@ class WorkspaceModuleService(
             this.status = WorkspaceModuleStatus.INSTALLING
             this.enabled = true
             this.installedVersion = masterModule.version
-            this.installedAt = LocalDateTime.now()
+            this.installedAt = Instant.now()
             this.installedBy = installedBy
             this.installedByName = installedByName
             this.displayOrder = getNextDisplayOrder(workspaceId)

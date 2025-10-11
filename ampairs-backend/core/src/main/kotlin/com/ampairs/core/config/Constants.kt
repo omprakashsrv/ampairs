@@ -17,6 +17,7 @@ interface Constants {
         const val TOKEN_PREFIX = "JWT"
         const val DEVICE_SESSION_PREFIX = "DSS"
         const val FILE_ID_PREFIX = "FIL"
+        const val BUSINESS_PREFIX = "BUS"
 
         // SeqId Prefixes
         const val USER_SEQ_PREFIX = "USQ"

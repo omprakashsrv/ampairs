@@ -14,8 +14,8 @@ import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
+import java.time.Instant
+import java.time.ZoneOffset
 import java.util.*
 
 /**
@@ -81,10 +81,10 @@ class WorkspaceInvitationService(
             this.department = request.department
             this.teamIds = request.teamIds ?: setOf()
             this.primaryTeamId = request.primaryTeamId
-            this.expiresAt = LocalDateTime.now().plusDays(
+            this.expiresAt = Instant.now().plusSeconds(
                 (request.expiresInDays ?: DEFAULT_INVITATION_VALIDITY_DAYS)
                     .coerceIn(1, MAX_INVITATION_VALIDITY_DAYS)
-                    .toLong()
+                    .toLong() * 86400
             )
         }
 
@@ -139,7 +139,7 @@ class WorkspaceInvitationService(
             // Mark invitation as accepted if not already
             if (invitation.status != InvitationStatus.ACCEPTED) {
                 invitation.status = InvitationStatus.ACCEPTED
-                invitation.acceptedAt = LocalDateTime.now()
+                invitation.acceptedAt = Instant.now()
                 invitationRepository.save(invitation)
             }
         } else {
@@ -148,7 +148,7 @@ class WorkspaceInvitationService(
 
             // Update invitation status
             invitation.status = InvitationStatus.ACCEPTED
-            invitation.acceptedAt = LocalDateTime.now()
+            invitation.acceptedAt = Instant.now()
             invitationRepository.save(invitation)
         }
 
@@ -187,7 +187,7 @@ class WorkspaceInvitationService(
 
         // Update invitation status
         invitation.status = InvitationStatus.DECLINED
-        invitation.rejectedAt = LocalDateTime.now()
+        invitation.rejectedAt = Instant.now()
         invitation.rejectionReason = reason
         val updatedInvitation = invitationRepository.save(invitation)
 
@@ -217,7 +217,7 @@ class WorkspaceInvitationService(
         // Update expiry if provided
         if (request.expiresInDays != DEFAULT_INVITATION_VALIDITY_DAYS) {
             val expiryDays = request.expiresInDays.coerceIn(1, MAX_INVITATION_VALIDITY_DAYS)
-            invitation.expiresAt = LocalDateTime.now().plusDays(expiryDays.toLong())
+            invitation.expiresAt = Instant.now().plusSeconds(expiryDays.toLong() * 86400)
         }
 
         // Update message if provided
@@ -225,7 +225,7 @@ class WorkspaceInvitationService(
 
         // Update send tracking
         invitation.sendCount += 1
-        invitation.lastSentAt = LocalDateTime.now()
+        invitation.lastSentAt = Instant.now()
 
         val updatedInvitation = invitationRepository.save(invitation)
 
@@ -258,7 +258,7 @@ class WorkspaceInvitationService(
         }
 
         invitation.status = InvitationStatus.CANCELLED
-        invitation.cancelledAt = LocalDateTime.now()
+        invitation.cancelledAt = Instant.now()
         invitation.cancelledBy = cancelledBy
         invitation.cancellationReason = reason
         invitationRepository.save(invitation)
@@ -311,9 +311,9 @@ class WorkspaceInvitationService(
         startDate: String?,
         endDate: String?
     ): Page<InvitationListResponse> {
-        // Parse dates if provided
-        val startDateTime = startDate?.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME) }
-        val endDateTime = endDate?.let { LocalDateTime.parse(it, DateTimeFormatter.ISO_LOCAL_DATE_TIME) }
+        // Parse dates if provided (expecting ISO-8601 format with Z suffix)
+        val startDateTime = startDate?.let { Instant.parse(it) }
+        val endDateTime = endDate?.let { Instant.parse(it) }
 
         // Convert status string to enum if provided
         val invitationStatus = status?.let {
@@ -383,16 +383,15 @@ class WorkspaceInvitationService(
      */
     fun getInvitationStatistics(workspaceId: String): Map<String, Any> {
         val allInvitations = invitationRepository.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId)
-        val now = LocalDateTime.now()
-        val lastWeek = now.minusDays(7)
-        now.minusDays(30)
+        val now = Instant.now()
+        val lastWeek = now.minusSeconds(7 * 86400)
 
         // Calculate statistics
         val totalInvitations = allInvitations.size
-        val pendingInvitations = allInvitations.count { it.status == InvitationStatus.PENDING && !LocalDateTime.now().isAfter(it.expiresAt) }
+        val pendingInvitations = allInvitations.count { it.status == InvitationStatus.PENDING && !Instant.now().isAfter(it.expiresAt) }
         val acceptedInvitations = allInvitations.count { it.status == InvitationStatus.ACCEPTED }
         val declinedInvitations = allInvitations.count { it.status == InvitationStatus.DECLINED }
-        val expiredInvitations = allInvitations.count { LocalDateTime.now().isAfter(it.expiresAt) || it.status == InvitationStatus.EXPIRED }
+        val expiredInvitations = allInvitations.count { Instant.now().isAfter(it.expiresAt) || it.status == InvitationStatus.EXPIRED }
         val cancelledInvitations = allInvitations.count { it.status == InvitationStatus.CANCELLED }
         val recentInvitations = allInvitations.count { it.createdAt?.isAfter(lastWeek) == true }
 
@@ -405,17 +404,19 @@ class WorkspaceInvitationService(
             .mapValues { it.value.size }
 
         // Recent activity (last 30 days, grouped by day)
+        val zone = ZoneOffset.UTC
         val recentActivity = (0 until 30).map { daysAgo ->
-            val date = now.minusDays(daysAgo.toLong())
-            val dayStart = date.toLocalDate().atStartOfDay()
-            val dayEnd = dayStart.plusDays(1)
+            val currentDate = now.atZone(zone).toLocalDate().minusDays(daysAgo.toLong())
+            val dayStart = currentDate.atStartOfDay(zone).toInstant()
+            val dayEnd = currentDate.plusDays(1).atStartOfDay(zone).toInstant()
 
-            val dayInvitations = allInvitations.filter {
-                it.createdAt?.isAfter(dayStart) == true && it.createdAt?.isBefore(dayEnd) == true
+            val dayInvitations = allInvitations.filter { invitation ->
+                val createdAt = invitation.createdAt
+                createdAt != null && !createdAt.isBefore(dayStart) && createdAt.isBefore(dayEnd)
             }
 
             mapOf(
-                "date" to date.toLocalDate().toString(),
+                "date" to currentDate.toString(),
                 "sent" to dayInvitations.size,
                 "accepted" to dayInvitations.count { it.status == InvitationStatus.ACCEPTED },
                 "declined" to dayInvitations.count { it.status == InvitationStatus.DECLINED }
@@ -448,7 +449,7 @@ class WorkspaceInvitationService(
     fun cancelAllPendingInvitations(workspaceId: String, cancelledBy: String, reason: String) {
         val cancelledCount = invitationRepository.cancelAllPendingInvitations(
             workspaceId = workspaceId,
-            cancelledAt = LocalDateTime.now(),
+            cancelledAt = Instant.now(),
             cancelledBy = cancelledBy,
             reason = reason
         )
@@ -508,7 +509,7 @@ class WorkspaceInvitationService(
         // Cancel valid invitations
         validInvitations.forEach { invitation ->
             invitation.status = InvitationStatus.CANCELLED
-            invitation.cancelledAt = LocalDateTime.now()
+            invitation.cancelledAt = Instant.now()
             invitation.cancelledBy = cancelledBy
             invitation.cancellationReason = reason
         }
@@ -568,7 +569,7 @@ class WorkspaceInvitationService(
                     )
                 }
 
-                LocalDateTime.now().isAfter(invitation.expiresAt) -> {
+                Instant.now().isAfter(invitation.expiresAt) -> {
                     failedResends.add(
                         mapOf(
                             "invitation_id" to invitation.id.toString(),
@@ -584,7 +585,7 @@ class WorkspaceInvitationService(
         // Resend valid invitations
         validInvitations.forEach { invitation ->
             invitation.sendCount += 1
-            invitation.lastSentAt = LocalDateTime.now()
+            invitation.lastSentAt = Instant.now()
             message?.let { invitation.message = it }
         }
 
@@ -674,7 +675,7 @@ class WorkspaceInvitationService(
             invitation.status != InvitationStatus.PENDING ->
                 throw BusinessException("INVITATION_NOT_PENDING", "Invitation is not pending")
 
-            LocalDateTime.now().isAfter(invitation.expiresAt) ->
+            Instant.now().isAfter(invitation.expiresAt) ->
                 throw BusinessException("INVITATION_EXPIRED", "Invitation has expired")
         }
     }
@@ -753,7 +754,7 @@ class WorkspaceInvitationService(
         val pendingInvitations = invitationsList.distinctBy { it.id }
 
         // Filter out expired invitations (even if status is still PENDING)
-        val now = LocalDateTime.now()
+        val now = Instant.now()
         val validInvitations = pendingInvitations.filter {
             it.expiresAt.isAfter(now)
         }

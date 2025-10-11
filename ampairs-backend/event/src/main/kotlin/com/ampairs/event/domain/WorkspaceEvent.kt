@@ -47,7 +47,7 @@ class WorkspaceEvent : OwnableBaseDomain() {
      * Check if event is recent (within last 24 hours)
      */
     fun isRecent(): Boolean {
-        return createdAt?.isAfter(java.time.LocalDateTime.now().minusDays(1)) ?: false
+        return createdAt?.isAfter(java.time.Instant.now().minusSeconds(86400)) ?: false
     }
 
     /**

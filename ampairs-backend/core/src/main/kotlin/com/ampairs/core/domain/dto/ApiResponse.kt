@@ -2,8 +2,18 @@ package com.ampairs.core.domain.dto
 
 import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.annotation.JsonProperty
-import java.util.*
+import java.time.Instant
 
+/**
+ * Standard API response wrapper for all endpoints.
+ *
+ * **Timezone Note**:
+ * - `timestamp` uses Instant (always UTC)
+ * - Serializes as ISO-8601 with 'Z' suffix: "2025-01-09T14:30:00Z"
+ * - Clients should convert to local timezone for display
+ *
+ * @param T The type of data being returned
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class ApiResponse<T>(
     @JsonProperty("success")
@@ -16,7 +26,7 @@ data class ApiResponse<T>(
     val error: ErrorDetails? = null,
 
     @JsonProperty("timestamp")
-    val timestamp: Date = Date(),
+    val timestamp: Instant = Instant.now(),
 
     @JsonProperty("path")
     val path: String? = null,

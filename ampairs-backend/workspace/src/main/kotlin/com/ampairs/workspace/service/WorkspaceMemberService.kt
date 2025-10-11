@@ -13,6 +13,7 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 import java.time.LocalDateTime
 
 /**
@@ -44,7 +45,7 @@ class WorkspaceMemberService(
             if (member.role != WorkspaceRole.OWNER) {
                 member.role = WorkspaceRole.OWNER
                 member.isActive = true
-                member.joinedAt = member.joinedAt ?: LocalDateTime.now()
+                member.joinedAt = member.joinedAt ?: Instant.now()
                 return memberRepository.save(member)
             }
 
@@ -56,7 +57,7 @@ class WorkspaceMemberService(
             this.userId = userId
             this.role = WorkspaceRole.OWNER
             this.isActive = true
-            this.joinedAt = LocalDateTime.now()
+            this.joinedAt = Instant.now()
         }
 
         val savedMember = memberRepository.save(member)
@@ -79,7 +80,7 @@ class WorkspaceMemberService(
             this.userId = userId
             this.role = role
             this.isActive = true
-            this.joinedAt = LocalDateTime.now()
+            this.joinedAt = Instant.now()
         }
 
         val savedMember = memberRepository.save(member)

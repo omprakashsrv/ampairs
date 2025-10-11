@@ -3,7 +3,7 @@ package com.ampairs.workspace.model.dto
 import com.ampairs.workspace.model.Workspace
 import com.ampairs.workspace.model.enums.SubscriptionPlan
 import com.ampairs.workspace.model.enums.WorkspaceType
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * Response DTO for workspace information
@@ -37,13 +37,13 @@ data class WorkspaceResponse(
 
         val createdBy: String,
 
-        val createdAt: LocalDateTime,
+        val createdAt: Instant,
 
-        val updatedAt: LocalDateTime,
+        val updatedAt: Instant,
 
-        val lastActivityAt: LocalDateTime?,
+        val lastActivityAt: Instant?,
 
-        val trialExpiresAt: LocalDateTime?,
+        val trialExpiresAt: Instant?,
 
         val memberCount: Int? = null,
 
@@ -97,9 +97,9 @@ data class WorkspaceListResponse(
 
         val memberCount: Int,
 
-        val lastActivityAt: LocalDateTime?,
+        val lastActivityAt: Instant?,
 
-        val createdAt: LocalDateTime,
+        val createdAt: Instant,
         
         // Business contact information for list view
         val phone: String? = null,
@@ -127,8 +127,8 @@ fun Workspace.toResponse(memberCount: Int? = null): WorkspaceResponse {
         timezone = this.timezone,
         language = this.language,
         createdBy = this.createdBy ?: "", // Use createdBy field
-        createdAt = this.createdAt ?: LocalDateTime.now(),
-        updatedAt = this.updatedAt ?: LocalDateTime.now(),
+        createdAt = this.createdAt ?: Instant.now(),
+        updatedAt = this.updatedAt ?: Instant.now(),
         lastActivityAt = this.lastActivityAt,
         trialExpiresAt = this.trialExpiresAt,
         memberCount = memberCount,
@@ -176,7 +176,7 @@ fun Workspace.toListResponse(memberCount: Int): WorkspaceListResponse {
         subscriptionPlan = this.subscriptionPlan,
         memberCount = memberCount,
         lastActivityAt = this.lastActivityAt,
-        createdAt = this.createdAt ?: LocalDateTime.now(),
+        createdAt = this.createdAt ?: Instant.now(),
         
         // Business contact information for list view
         phone = this.phone,

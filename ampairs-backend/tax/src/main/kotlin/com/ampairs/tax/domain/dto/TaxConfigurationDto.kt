@@ -6,8 +6,8 @@ import com.ampairs.tax.domain.model.TaxConfiguration
 import com.ampairs.tax.service.TaxConfigurationStatistics
 import jakarta.validation.constraints.*
 import java.math.BigDecimal
+import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 data class TaxConfigurationRequestDto(
     @field:NotNull(message = "Business type ID is required")
@@ -135,8 +135,8 @@ data class TaxConfigurationResponseDto(
     val description: String?,
     val notificationReference: String?,
     val lastUpdatedBy: String?,
-    val createdAt: LocalDateTime?,
-    val updatedAt: LocalDateTime?,
+    val createdAt: Instant?,
+    val updatedAt: Instant?,
     val isValidForToday: Boolean,
     val daysUntilExpiry: Long?
 ) {

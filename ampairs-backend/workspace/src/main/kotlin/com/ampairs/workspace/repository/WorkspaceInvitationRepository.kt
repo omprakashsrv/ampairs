@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
-import java.time.LocalDateTime
+import java.time.Instant
 import java.util.*
 
 /**
@@ -76,15 +76,15 @@ interface WorkspaceInvitationRepository : JpaRepository<WorkspaceInvitation, Str
     /**
      * Find expired invitations
      */
-    fun findByStatusAndExpiresAtBefore(status: InvitationStatus, currentDate: LocalDateTime): List<WorkspaceInvitation>
+    fun findByStatusAndExpiresAtBefore(status: InvitationStatus, currentDate: Instant): List<WorkspaceInvitation>
 
     /**
      * Find expiring invitations (within next X days)
      */
     fun findByStatusAndExpiresAtBetween(
         status: InvitationStatus,
-        currentDate: LocalDateTime,
-        expirationDate: LocalDateTime,
+        currentDate: Instant,
+        expirationDate: Instant,
     ): List<WorkspaceInvitation>
 
     /**
@@ -114,7 +114,7 @@ interface WorkspaceInvitationRepository : JpaRepository<WorkspaceInvitation, Str
     /**
      * Find recent invitations (created after date)
      */
-    fun findByCreatedAtAfterOrderByCreatedAtDesc(createdAfter: LocalDateTime): List<WorkspaceInvitation>
+    fun findByCreatedAtAfterOrderByCreatedAtDesc(createdAfter: Instant): List<WorkspaceInvitation>
 
     /**
      * Mark expired invitations as expired
@@ -129,7 +129,7 @@ interface WorkspaceInvitationRepository : JpaRepository<WorkspaceInvitation, Str
     """
     )
     fun markExpiredInvitations(
-        @Param("currentDate") currentDate: LocalDateTime,
+        @Param("currentDate") currentDate: Instant,
         @Param("pendingStatus") pendingStatus: InvitationStatus = InvitationStatus.PENDING,
         @Param("expiredStatus") expiredStatus: InvitationStatus = InvitationStatus.EXPIRED,
     ): Int
@@ -169,7 +169,7 @@ interface WorkspaceInvitationRepository : JpaRepository<WorkspaceInvitation, Str
     """
     )
     fun deleteOldInvitations(
-        @Param("cleanupDate") cleanupDate: LocalDateTime,
+        @Param("cleanupDate") cleanupDate: Instant,
         @Param("finalStatuses") finalStatuses: List<InvitationStatus> = listOf(
             InvitationStatus.ACCEPTED,
             InvitationStatus.DECLINED,
@@ -192,8 +192,8 @@ interface WorkspaceInvitationRepository : JpaRepository<WorkspaceInvitation, Str
     """
     )
     fun findInvitationsForReminder(
-        @Param("currentDate") currentDate: LocalDateTime,
-        @Param("reminderDate") reminderDate: LocalDateTime,
+        @Param("currentDate") currentDate: Instant,
+        @Param("reminderDate") reminderDate: Instant,
         @Param("maxSendCount") maxSendCount: Int = 3,
         @Param("pendingStatus") pendingStatus: InvitationStatus = InvitationStatus.PENDING,
     ): List<WorkspaceInvitation>
@@ -209,7 +209,7 @@ interface WorkspaceInvitationRepository : JpaRepository<WorkspaceInvitation, Str
         WHERE wi.id = :invitationId
     """
     )
-    fun updateSendInfo(@Param("invitationId") invitationId: String, @Param("sentAt") sentAt: LocalDateTime)
+    fun updateSendInfo(@Param("invitationId") invitationId: String, @Param("sentAt") sentAt: Instant)
 
     /**
      * Cancel all pending invitations for a workspace
@@ -228,7 +228,7 @@ interface WorkspaceInvitationRepository : JpaRepository<WorkspaceInvitation, Str
     )
     fun cancelAllPendingInvitations(
         @Param("workspaceId") workspaceId: String,
-        @Param("cancelledAt") cancelledAt: LocalDateTime,
+        @Param("cancelledAt") cancelledAt: Instant,
         @Param("cancelledBy") cancelledBy: String,
         @Param("reason") reason: String,
         @Param("pendingStatus") pendingStatus: InvitationStatus = InvitationStatus.PENDING,
@@ -238,7 +238,7 @@ interface WorkspaceInvitationRepository : JpaRepository<WorkspaceInvitation, Str
     /**
      * Count invitations created after a specific date
      */
-    fun countByCreatedAtAfter(createdAfter: LocalDateTime): Long
+    fun countByCreatedAtAfter(createdAfter: Instant): Long
 
     /**
      * Delete all invitations for a workspace
