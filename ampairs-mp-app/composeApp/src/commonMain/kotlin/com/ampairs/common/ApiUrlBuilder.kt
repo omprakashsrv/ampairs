@@ -51,6 +51,15 @@ object ApiUrlBuilder {
     }
 
     /**
+     * Build complete API URL for business endpoints
+     */
+    fun businessUrl(path: String = ""): String {
+        val base = ConfigurationManager.getApiUrl("business")
+        val cleanPath = path.removePrefix("/")
+        return if (cleanPath.isBlank()) base else "$base/$cleanPath"
+    }
+
+    /**
      * Build complete API URL for order endpoints
      */
     fun orderUrl(path: String): String {
