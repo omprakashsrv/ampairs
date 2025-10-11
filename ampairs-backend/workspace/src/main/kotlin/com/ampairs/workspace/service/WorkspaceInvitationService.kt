@@ -449,7 +449,7 @@ class WorkspaceInvitationService(
     fun cancelAllPendingInvitations(workspaceId: String, cancelledBy: String, reason: String) {
         val cancelledCount = invitationRepository.cancelAllPendingInvitations(
             workspaceId = workspaceId,
-            cancelledAt = Instant.now().atZone(ZoneOffset.UTC).toLocalDateTime(),
+            cancelledAt = Instant.now(),
             cancelledBy = cancelledBy,
             reason = reason
         )

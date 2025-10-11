@@ -43,7 +43,26 @@ SELECT
 
     -- Profile fields
     w.name as name,
-    COALESCE(w.workspace_type, 'BUSINESS') as business_type,  -- Default to BUSINESS if null
+    -- Map WorkspaceType to BusinessType (translate unsupported values to closest match)
+    CASE w.workspace_type
+        -- Direct mappings (values exist in both enums)
+        WHEN 'RETAIL' THEN 'RETAIL'
+        WHEN 'WHOLESALE' THEN 'WHOLESALE'
+        WHEN 'MANUFACTURING' THEN 'MANUFACTURING'
+        WHEN 'SERVICE' THEN 'SERVICE'
+        WHEN 'ECOMMERCE' THEN 'ECOMMERCE'
+        -- Map RESTAURANT (WorkspaceType doesn't have it, but if added later)
+        WHEN 'RESTAURANT' THEN 'RESTAURANT'
+        -- Map WorkspaceType-specific values to closest BusinessType equivalent
+        WHEN 'ENTERPRISE' THEN 'OTHER'         -- Enterprise doesn't map to specific business type
+        WHEN 'FRANCHISE' THEN 'RETAIL'         -- Franchise is typically retail-based
+        WHEN 'KIRANA' THEN 'RETAIL'           -- Kirana store is a retail business
+        WHEN 'JEWELRY' THEN 'RETAIL'          -- Jewelry store is retail
+        WHEN 'HARDWARE' THEN 'RETAIL'         -- Hardware store is retail
+        WHEN 'BUSINESS' THEN 'OTHER'          -- Generic BUSINESS maps to OTHER
+        -- Default fallback
+        ELSE 'OTHER'
+    END as business_type,
     w.description as description,
 
     -- Address fields
