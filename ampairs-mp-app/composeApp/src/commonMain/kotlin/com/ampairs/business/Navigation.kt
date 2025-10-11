@@ -11,6 +11,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import com.ampairs.common.ui.AppScreenWithHeader
 import com.ampairs.business.ui.BusinessProfileScreen
+import com.ampairs.business.ui.BusinessSettingsScreen
+import com.ampairs.business.ui.BusinessBrandingScreen
 
 /**
  * Business module navigation graph.
@@ -35,6 +37,9 @@ fun NavGraphBuilder.businessNavigation(
                     },
                     onNavigateToBranding = {
                         navController.navigate(BusinessRoute.Branding)
+                    },
+                    onNavigateToEdit = {
+                        navController.navigate(BusinessRoute.Settings)
                     },
                     modifier = Modifier.padding(paddingValues)
                 )
@@ -65,25 +70,4 @@ fun NavGraphBuilder.businessNavigation(
             }
         }
     }
-}
-
-/**
- * Placeholder screens - to be implemented
- */
-@Composable
-private fun BusinessSettingsScreen(modifier: Modifier = Modifier) {
-    // TODO: Implement business settings UI
-    androidx.compose.material3.Text(
-        "Business Settings Screen",
-        modifier = modifier
-    )
-}
-
-@Composable
-private fun BusinessBrandingScreen(modifier: Modifier = Modifier) {
-    // TODO: Implement business branding UI
-    androidx.compose.material3.Text(
-        "Business Branding Screen",
-        modifier = modifier
-    )
 }
