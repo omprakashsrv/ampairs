@@ -55,9 +55,9 @@ CREATE TABLE businesses (
     -- Status
     active BOOLEAN NOT NULL DEFAULT TRUE,
 
-    -- Audit Timestamps (using TIMESTAMP for UTC storage)
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    -- Audit Timestamps (TIMESTAMPTZ stores Instant values with timezone)
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
     created_by VARCHAR(36),
     updated_by VARCHAR(36),
     last_updated BIGINT NOT NULL DEFAULT 0,
