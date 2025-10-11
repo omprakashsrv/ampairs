@@ -6,6 +6,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.ampairs.business.domain.Business
 import com.ampairs.business.domain.BusinessType
+import com.ampairs.business.util.BusinessConstants
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
@@ -18,7 +19,8 @@ import kotlin.time.ExperimentalTime
     indices = [
         Index(value = ["uid"], unique = true),
         Index(value = ["workspace_id"], unique = false),
-        Index(value = ["active"])
+        Index(value = ["active"]),
+        Index(value = ["synced"])  // Performance optimization for sync queries
     ]
 )
 data class BusinessEntity(
@@ -97,11 +99,12 @@ private val mapSerializer = MapSerializer(String.serializer(), String.serializer
 @OptIn(ExperimentalTime::class)
 fun Business.toEntity(
     markSynced: Boolean,
-    workspaceId: String?,
-    nowEpochMillis: Long = Clock.System.now().toEpochMilliseconds()
+    workspaceId: String?
 ): BusinessEntity {
+    // Evaluate timestamp inside function to avoid race conditions
+    val nowEpochMillis = Clock.System.now().toEpochMilliseconds()
     return BusinessEntity(
-        uid = id.ifBlank { "local_$nowEpochMillis" },
+        uid = id.ifBlank { "${BusinessConstants.LOCAL_ID_PREFIX}$nowEpochMillis" },
         seqId = seqId,
         workspaceId = workspaceId,
         name = name,

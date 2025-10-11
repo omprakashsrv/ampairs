@@ -24,8 +24,7 @@ class BusinessApiImpl(
                 client,
                 ApiUrlBuilder.businessUrl()
             )
-            response.data?.let { Result.success(it) }
-                ?: Result.failure(IllegalStateException("Empty business response"))
+            handleResponse(response, "Failed to fetch business profile")
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -38,8 +37,7 @@ class BusinessApiImpl(
                 ApiUrlBuilder.businessUrl(),
                 payload
             )
-            response.data?.let { Result.success(it) }
-                ?: Result.failure(IllegalStateException("Failed to create business profile"))
+            handleResponse(response, "Failed to create business profile")
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -52,10 +50,24 @@ class BusinessApiImpl(
                 ApiUrlBuilder.businessUrl(),
                 payload
             )
-            response.data?.let { Result.success(it) }
-                ?: Result.failure(IllegalStateException("Failed to update business profile"))
+            handleResponse(response, "Failed to update business profile")
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    /**
+     * Handle API response with proper error checking.
+     * Checks both response.error and response.data to ensure valid response.
+     */
+    private fun handleResponse(response: Response<Business>, errorMessage: String): Result<Business> {
+        val data = response.data
+        val error = response.error
+
+        return when {
+            data != null && error == null -> Result.success(data)
+            error != null -> Result.failure(Exception(error.message))
+            else -> Result.failure(IllegalStateException(errorMessage))
         }
     }
 }

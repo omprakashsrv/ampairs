@@ -17,6 +17,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navOptions
 import androidx.navigation.toRoute
 import com.ampairs.auth.authNavigation
+import com.ampairs.business.businessNavigation
 import com.ampairs.common.ui.AppScreenWithHeader
 import com.ampairs.common.UnauthenticatedHandler
 import com.ampairs.customer.ui.customerNavigation
@@ -178,6 +179,7 @@ fun AppNavigation(
         customerNavigation(navController)
         productNavigation(navController)
         taxNavigation(navController)
+        businessNavigation(navController)
         // Temporarily commented out pending customer integration updates
         // inventoryNavigation(navController) { }
         // orderNavigation(navController) { }

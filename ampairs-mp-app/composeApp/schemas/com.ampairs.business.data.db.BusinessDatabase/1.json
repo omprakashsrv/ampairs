@@ -2,7 +2,7 @@
   "formatVersion": 1,
   "database": {
     "version": 1,
-    "identityHash": "e3e853aadc84b62baa639c7b2b74aa1c",
+    "identityHash": "fff59c36c6bf7af09ad5bcbb05f50628",
     "entities": [
       {
         "tableName": "business_profile",
@@ -245,13 +245,22 @@
             ],
             "orders": [],
             "createSql": "CREATE INDEX IF NOT EXISTS `index_business_profile_active` ON `${TABLE_NAME}` (`active`)"
+          },
+          {
+            "name": "index_business_profile_synced",
+            "unique": false,
+            "columnNames": [
+              "synced"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_business_profile_synced` ON `${TABLE_NAME}` (`synced`)"
           }
         ]
       }
     ],
     "setupQueries": [
       "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
-      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'e3e853aadc84b62baa639c7b2b74aa1c')"
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, 'fff59c36c6bf7af09ad5bcbb05f50628')"
     ]
   }
 }

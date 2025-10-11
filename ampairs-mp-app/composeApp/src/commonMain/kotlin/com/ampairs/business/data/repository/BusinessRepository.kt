@@ -29,11 +29,10 @@ class BusinessRepository(
     suspend fun saveLocal(business: Business, markSynced: Boolean) {
         val workspaceId = business.workspaceId ?: workspaceContextManager.getCurrentWorkspaceId()
         val existing = businessDao.getBusiness()
-        val now = Clock.System.now().toEpochMilliseconds()
 
         var entity = business
             .ensureId(existing)
-            .toEntity(markSynced = markSynced, workspaceId = workspaceId, nowEpochMillis = now)
+            .toEntity(markSynced = markSynced, workspaceId = workspaceId)
 
         entity = entity.copy(
             seqId = entity.seqId ?: existing?.seqId,
@@ -43,6 +42,7 @@ class BusinessRepository(
 
         businessDao.upsertBusiness(entity)
         if (markSynced) {
+            val now = Clock.System.now().toEpochMilliseconds()
             businessDao.updateSyncStatus(entity.uid, true, now)
         }
     }
@@ -77,7 +77,7 @@ class BusinessRepository(
 
         val payload = ensuredBusiness.toPayload()
 
-        val apiResult = if (existing == null || ensuredBusiness.id.startsWith("local_")) {
+        val apiResult = if (existing == null || ensuredBusiness.id.startsWith(BusinessConstants.LOCAL_ID_PREFIX)) {
             businessApi.createBusiness(payload)
         } else {
             businessApi.updateBusiness(payload)
@@ -101,7 +101,7 @@ class BusinessRepository(
 
         val domain = pending.toDomain().copy(workspaceId = workspaceId)
         val payload = domain.toPayload()
-        val apiResult = if (pending.uid.startsWith("local_")) {
+        val apiResult = if (pending.uid.startsWith(BusinessConstants.LOCAL_ID_PREFIX)) {
             businessApi.createBusiness(payload)
         } else {
             businessApi.updateBusiness(payload)

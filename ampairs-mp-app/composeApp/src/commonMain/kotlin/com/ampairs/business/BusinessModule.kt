@@ -8,18 +8,17 @@ import com.ampairs.business.data.repository.BusinessRepository
 import com.ampairs.business.domain.BusinessStore
 import com.ampairs.business.ui.BusinessProfileViewModel
 import org.koin.core.module.Module
-import org.koin.core.module.dsl.singleOf
 import org.koin.core.module.dsl.viewModel
-import org.koin.dsl.bind
 import org.koin.dsl.module
 
 val businessModule: Module = module {
-    single<BusinessDao> { get<BusinessDatabase>().businessDao() }
+    // Use factory scope for workspace-aware components (Constitution Principle III)
+    factory<BusinessDao> { get<BusinessDatabase>().businessDao() }
 
-    single<BusinessApi> { BusinessApiImpl(get(), get()) }
+    factory<BusinessApi> { BusinessApiImpl(get(), get()) }
 
-    singleOf(::BusinessRepository)
-    singleOf(::BusinessStore)
+    factory { BusinessRepository(get(), get(), get()) }
+    factory { BusinessStore(get()) }
 
     viewModel { BusinessProfileViewModel(get(), get()) }
 }

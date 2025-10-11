@@ -67,9 +67,10 @@ class BusinessStore(
 
     /**
      * Clear cached store data. Useful when workspace context changes.
+     * Clears database first to prevent race conditions during store clearing.
      */
     suspend fun clearCache() {
-        store.clear()
-        repository.clearLocal()
+        repository.clearLocal()  // Clear database first
+        store.clear()            // Then clear cache
     }
 }
