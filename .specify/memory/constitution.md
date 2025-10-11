@@ -1,243 +1,286 @@
 <!--
 Sync Impact Report
 ===================
-Version Change: N/A (initial constitution) → 1.0.0
-Type: MAJOR (initial ratification)
-Modified Principles: N/A (initial creation)
+Version Change: 1.0.0 → 1.1.0
+Type: MINOR (expanded alignment with repository practices)
+Modified Principles: I-XI
 Added Sections:
-  - Core Principles (I-IX)
-  - Architecture Standards
-  - Development Workflow
-  - Governance
+  - Project Topology
+  - Testing & Quality Gates
+  - Tooling & Automation
 Templates Requiring Updates:
-  ✅ plan-template.md - Constitution Check section references this file
-  ✅ spec-template.md - Requirements align with constitution principles
-  ✅ tasks-template.md - Task categorization reflects principle-driven task types
+  ✅ plan-template.md - Constitution Check references CI commands
+  ✅ spec-template.md - Capture M3/Compose requirements
+  ✅ tasks-template.md - Reflect updated workflow enforcement
 Follow-up TODOs: None
 -->
 
 # Ampairs Constitution
 
+## Project Topology
+
+- Ampairs comprises three first-class applications: `ampairs-backend` (Spring Boot + Kotlin), `ampairs-web` (Angular 20 + Material Design 3), and `ampairs-mp-app` (Compose Multiplatform for Android, iOS, Desktop).
+- Shared tooling and automation live in `.github/workflows/`, `scripts/`, and `templates/`; generated artifacts remain under `build/` and `logs/` only.
+- The runnable backend entrypoint lives in `ampairs-backend/ampairs_service/src/main/kotlin`; domain modules (`core`, `auth`, `workspace`, `customer`, `product`, `order`, `invoice`, `tax_code`, `notification`) expose their own bounded contexts.
+- Compose shared business logic resides in `ampairs-mp-app/shared/src/commonMain`; launcher-specific overrides stay under each target (`androidApp`, `desktopApp`, `iosApp`).
+
 ## Core Principles
 
 ### I. Type Safety & Correctness (NON-NEGOTIABLE)
 
-All timestamps MUST use `java.time.Instant` - NEVER `LocalDateTime`. This prevents timezone ambiguity bugs during DST transitions and ensures unambiguous point-in-time representation across all timezones.
+All persisted or serialized timestamps MUST use `java.time.Instant`—NEVER `LocalDateTime`. Postgres columns MUST be `TIMESTAMPTZ` to preserve timezone data.
 
-**Rationale**: LocalDateTime has no timezone information, causing silent bugs when data crosses timezone boundaries. Instant represents a specific point on the UTC timeline, eliminating ambiguity. This is a non-negotiable standard used by AWS, Google, GitHub, and Stripe.
-
-**Rules**:
-- All entity timestamp fields MUST use `Instant`
-- All DTO timestamp fields MUST use `Instant`
-- Database columns MUST be `TIMESTAMP` (not `DATETIME`)
-- Connection strings MUST include `?serverTimezone=UTC`
-- Legacy `LocalDateTime` code is being actively migrated and MUST NOT be used in new features
-
-### II. Global Conventions Over Annotations
-
-Leverage global Jackson `SNAKE_CASE` configuration for property naming - NEVER add redundant `@JsonProperty` annotations for standard camelCase-to-snake_case conversions.
-
-**Rationale**: Spring Boot's global configuration handles naming strategy automatically, eliminating annotation clutter and reducing maintenance burden. Annotations should only be used for exceptional cases that deviate from the standard pattern.
+**Rationale**: `LocalDateTime` drops timezone context, creating hidden DST issues and inconsistent API payloads. `Instant` represents a precise UTC point, aligning with industry best practice.
 
 **Rules**:
-- NO `@JsonProperty` annotations for standard camelCase → snake_case mappings
-- Let global `spring.jackson.property-naming-strategy: SNAKE_CASE` handle conversion
-- Only use `@JsonProperty` for special cases that don't follow standard pattern
-- Document any exception to this rule with inline comments explaining why
+- Entity and DTO timestamp fields MUST be `Instant`; no legacy `LocalDateTime` in new code.
+- Database migrations MUST create `TIMESTAMPTZ` columns and default to `now()` at the database level if defaults are required.
+- JDBC/MySQL connection strings MUST include `?serverTimezone=UTC`; Hibernate dialect SHOULD stay configured for UTC.
+- JSON responses MUST emit ISO-8601 UTC strings (handled automatically when using `Instant`).
 
-### III. Data Transfer Object (DTO) Pattern (NON-NEGOTIABLE)
+### II. DTO & Contract Isolation (NON-NEGOTIABLE)
 
-NEVER expose JPA entities directly in API responses. ALWAYS use Request DTOs for inputs and Response DTOs for outputs.
+NEVER expose JPA entities directly in API responses. ALWAYS separate request and response DTOs to protect contracts.
 
-**Rationale**: Direct entity exposure creates security vulnerabilities (exposing internal fields), tight coupling (database schema changes force API changes), and prevents API evolution. DTOs provide a controlled API contract layer.
+**Rationale**: DTO isolation enforces security (no internal/audit leaks), decouples storage schemas from public APIs, and gives clients a stable contract.
 
 **Rules**:
-- Controllers MUST use Response DTOs for all API outputs
-- Controllers MUST use Request DTOs for all API inputs
-- DTOs MUST be in `domain/dto/` package
-- Entity-to-DTO conversion via extension functions (e.g., `entity.asEntityResponse()`)
-- Request DTOs MUST include validation annotations (`@NotBlank`, `@Valid`, etc.)
-- Response DTOs MUST only expose fields clients need - NO internal/audit fields
+- Controllers MUST accept request DTOs and return response DTOs in `domain/dto/`.
+- Entity ↔ DTO conversion occurs via extension/converter functions (e.g., `entity.asEntityResponse()`).
+- Request DTOs MUST include validation annotations (`@NotBlank`, `@Valid`, etc.) and capture only what the API accepts.
+- Response DTOs MAY expose only client-required fields—never internal identifiers, flags, or audit columns.
+
+### III. Global JSON Conventions Over Annotations
+
+Leverage the global Jackson `SNAKE_CASE` configuration—do not add redundant `@JsonProperty` annotations for standard camelCase to snake_case conversions.
+
+**Rationale**: Global naming strategy keeps DTOs clean, reduces annotation noise, and ensures parity across services and clients.
+
+**Rules**:
+- DO NOT annotate standard fields with `@JsonProperty` or `@JsonNaming`.
+- Only deviate for exceptional cases and document the reason inline.
+- Angular/Compose clients MUST trust the snake_case API contract; no bespoke casing transformations.
 
 ### IV. Multi-Tenant Data Isolation
 
-All tenant-scoped operations MUST respect workspace context. Set tenant context at controller level BEFORE any repository operations.
+Workspace context MUST be established before reaching repositories. Controllers are responsible for setting and clearing tenant scope.
 
-**Rationale**: Tenant context timing is critical - `@TenantId` validation occurs at repository injection time. Setting context in service layers causes "assigned tenant id differs from current tenant id" errors.
-
-**Rules**:
-- Add `@TenantId` annotation to entity tenant identifier fields (e.g., `workspaceId`)
-- Controllers MUST set tenant context using `TenantContextHolder.setCurrentTenant()` BEFORE repository calls
-- Use try-finally blocks to ensure tenant context cleanup
-- Service layers MUST NOT handle tenant context switching
-- Use native SQL queries (`nativeQuery = true`) to bypass `@TenantId` filtering for cross-tenant operations (e.g., workspace listing, invitations)
-- Single security approach: use EITHER `@TenantId` filtering OR `workspaceId` parameters, NOT both
-
-### V. Efficient Data Loading
-
-Use `@EntityGraph` with named attribute nodes for efficient relationship loading - AVOID `JOIN FETCH` in JPQL queries.
-
-**Rationale**: `@EntityGraph` prevents N+1 queries while maintaining clean separation between entity definitions and data access patterns. It's reusable across multiple repository methods and more maintainable than scattered JOIN FETCH queries.
+**Rationale**: Tenant context validation happens at repository injection; late binding leads to mismatched tenant errors and cross-tenant data exposure.
 
 **Rules**:
-- Define `@NamedEntityGraph` at entity level with relationship attribute nodes
-- Repository methods MUST use `@EntityGraph` annotation referencing named graphs
-- Use EXISTS subqueries for filtering with entity graphs
-- Prefer Spring Data JPA derived query methods (`findByActiveTrueOrderByName()`)
-- Custom `@Query` only for complex business logic that cannot be expressed via method names
-- NO `JOIN FETCH` when `@EntityGraph` achieves the same result
+- Tenant-scoped entities MUST extend `OwnableBaseDomain`, which centralizes tenant metadata and exposes the `@TenantId ownerId` tenant identifier (mapped to the active workspace) to the tenant context infrastructure.
+- Authentication filters establish tenant context post-authentication; controllers MUST verify the context before repository access and only invoke `TenantContextHolder.setCurrentTenant()` manually (wrapped in try/finally) when overriding scope.
+- Services MUST NOT mutate tenant context.
+- Cross-tenant administrative operations MUST use native queries (`nativeQuery = true`) with explicit safeguards.
+
+**Client Contract**:
+- Clients MUST send the `X-Workspace-ID` header on every workspace-scoped request. `SessionUserFilter` derives the current tenant from this header and rejects requests that omit it.
+
+### V. API Response Standardization
+
+All HTTP endpoints MUST return `ApiResponse<T>` wrappers for success and failure paths.
+
+**Rationale**: Consistent payload envelopes simplify client integrations, observability, and debugging.
+
+**Rules**:
+- Controllers return `ApiResponse.success(data)` on success; exceptions bubble to the global handler, which emits `ApiResponse` errors.
+- Standard response shape: `{"success": Boolean, "data": T?, "error": ErrorDetails?, "timestamp": Instant, "path": String?, "traceId": String?}`.
+- Paginated endpoints MUST wrap data in `ApiResponse.success(PageResponse<T>)`, using `PageResponse.from(page)` (or mapped variant) to provide `content`, `page_number`, `page_size`, `total_elements`, `total_pages`, `first`, `last`, `has_next`, `has_previous`, `empty`.
+- Timestamp fields inside the wrapper MUST stay aligned with Principle I.
 
 ### VI. Centralized Exception Handling
 
-Let exceptions bubble up from controllers - global exception handler converts them to standardized HTTP responses.
+Let business exceptions bubble from controllers to the global handler, which maps them to HTTP responses.
 
-**Rationale**: Controllers should focus on HTTP concerns (request/response mapping), not exception-to-HTTP mapping. Centralized handling ensures consistent error response format across all endpoints and reduces controller boilerplate.
-
-**Rules**:
-- NEVER use try-catch blocks in controllers for business logic exceptions
-- Let service layer exceptions propagate to global exception handler
-- Global handler MUST return `ApiResponse<T>` with error details
-- All controller methods return `ApiResponse<T>` wrapper for consistency
-- Use `ApiResponse.success(data)` for successful responses
-- Exception handler maps exception types to appropriate HTTP status codes
-
-### VII. Angular Material Design 3 (M3) Exclusively
-
-Web frontend MUST use Angular Material 3 components exclusively - NO Bootstrap, Tailwind CSS, PrimeNG, Ant Design, or custom CSS frameworks.
-
-**Rationale**: Material Design 3 provides comprehensive, accessible, themeable components with consistent UX patterns. Multiple UI frameworks create maintenance burden, larger bundle sizes, conflicting styles, and inconsistent user experience.
+**Rationale**: Consolidated error mapping prevents duplicated boilerplate and preserves a single formatting source of truth.
 
 **Rules**:
-- ALL UI components MUST be from `@angular/material` package
-- Theme system MUST use Material Design 3 color tokens
-- Icons MUST be Material Design Icons only
-- Support light/dark mode via M3 theme system
-- NO imports from Bootstrap, Tailwind, PrimeNG, Ant Design, or similar frameworks
-- Custom components MUST follow Material Design 3 guidelines
+- No try/catch in controllers for business exceptions.
+- The global handler MUST translate domain exceptions to appropriate status codes and `ApiResponse` error bodies.
+- Services and repositories MUST throw meaningful typed exceptions; avoid returning nulls for exceptional states.
 
-### VIII. API Response Standardization
+### VII. Efficient Data Loading
 
-All controller endpoints MUST return `ApiResponse<T>` wrapper with consistent structure for success and error responses.
+Use `@EntityGraph` with named attribute nodes to prevent N+1 queries while keeping repositories declarative.
 
-**Rationale**: Consistent response format simplifies client-side error handling, provides consistent metadata (timestamps, trace IDs), and enables centralized response transformation/logging.
+**Rationale**: `@EntityGraph` is reusable, composable, and avoids scattering `JOIN FETCH` logic across queries.
 
 **Rules**:
-- ALL controller methods MUST return `ApiResponse<T>`
-- Import `com.ampairs.core.domain.dto.ApiResponse`
-- Success responses: `ApiResponse.success(data)`
-- Error responses: handled by global exception handler returning `ApiResponse` with error details
-- Response structure: `{"success": Boolean, "data": T?, "error": ErrorDetails?, "timestamp": Instant, "path": String?, "traceId": String?}`
-- Timestamp field MUST use `Instant` type (see Principle I)
+- Define `@NamedEntityGraph` on entities for common relationship bundles.
+- Reference graphs via `@EntityGraph("Entity.graphName")` on repository methods.
+- Prefer derived query methods; resort to custom `@Query` only when the method name cannot express intent.
+- Avoid `JOIN FETCH` when an entity graph can represent the same fetch plan.
 
-### IX. Domain-Driven Design & Module Boundaries
+### VIII. Angular Material 3 Exclusivity
 
-Each module represents a bounded context with clear responsibility boundaries. Follow existing package structure and separation of concerns.
+The web application MUST rely solely on Angular Material 3 for UI components, theming, and iconography.
 
-**Rationale**: Domain-driven design prevents tangled dependencies, enables independent module evolution, and makes the system easier to understand and maintain. Clear boundaries reduce cognitive load and testing complexity.
+**Rationale**: A single design system keeps the UX cohesive, accessible, and lightweight.
 
 **Rules**:
-- Follow package structure: `com.ampairs.{module}.{layer}`
-- Module layers: `domain` (entities, DTOs), `repository`, `service`, `controller`
-- Use Kotlin data classes for DTOs
-- Extend `BaseDomain` or `OwnableBaseDomain` for entities
-- Maintain separation of concerns: controllers handle HTTP, services handle business logic, repositories handle data access
-- Cross-module dependencies MUST go through public service interfaces, NOT repositories
-- Each module MUST be independently testable
+- Components import only from `@angular/material`; no Bootstrap, Tailwind, PrimeNG, Ant Design, or equivalent frameworks.
+- Component selectors use the `amp-` prefix; templates/styles co-locate (`*.ts`, `*.html`, `*.scss`).
+- Themes use Material 3 color tokens and support light/dark modes.
+- Icons come from Material Design Icons.
+
+### IX. Domain-Driven Module Boundaries
+
+Respect bounded contexts across backend modules; keep cross-module interactions explicit.
+
+**Rationale**: Clear module ownership lowers coupling, eases testing, and preserves team autonomy.
+
+**Rules**:
+- Package layout: `com.ampairs.{module}.{layer}`; layers include `domain`, `repository`, `service`, `controller`.
+- DTOs are Kotlin `data class` implementations.
+- Entities extend `BaseDomain` (system-wide) or `OwnableBaseDomain` (tenant-scoped).
+- Cross-module access goes through public service interfaces, not repositories or entities.
+- Each module MUST be independently testable and deployable within the overall service.
+
+### X. Compose Multiplatform Parity
+
+Compose shared UI MUST live in `shared/src/commonMain` with platform overrides only when necessary.
+
+**Rationale**: Centralizing UI logic maximizes reuse across Android, iOS, and Desktop while keeping platform code thin.
+
+**Rules**:
+- Shared business flows, view models, and design tokens reside in `commonMain`.
+- Platform modules (`androidApp`, `desktopApp`, `iosApp`) SHOULD remain thin launchers delegating to shared code.
+- Follow Material design guidelines where available on Compose; document any platform deviations.
+- Feature parity across platforms MUST be tracked in specs before merge.
+
+### XI. Security & Secrets Hygiene
+
+Configuration secrets MUST never live in source control; rely on environment variables and sample placeholders only.
+
+**Rationale**: Central security posture depends on environment separation and audited secrets management.
+
+**Rules**:
+- Use environment variables (`SPRING_PROFILES_ACTIVE`, `RECAPTCHA_ENABLED`, `BUCKET4J_ENABLED`, etc.) and keep `keys/` redacted.
+- Provision local dependencies via `docker-compose.yml`; do not introduce ad-hoc scripts that bypass existing tooling.
+- JWT secrets, database credentials, SMTP keys, and third-party tokens live in GitHub Actions secrets or local `.env` files ignored by Git.
 
 ## Architecture Standards
 
 ### REST API Design
 
-- Endpoints MUST follow pattern: `/api/v1/{resource}` or `/{module}/v1/{resource}`
-- Use proper HTTP status codes: 200 (OK), 201 (Created), 400 (Bad Request), 401 (Unauthorized), 403 (Forbidden), 404 (Not Found), 500 (Internal Server Error)
-- List endpoints MUST support pagination
-- Use proper HTTP verbs: GET (read), POST (create), PUT (update), PATCH (partial update), DELETE (delete)
+- Versioned routes follow `/api/v1/{resource}` or `/{module}/v1/{resource}`.
+- Use appropriate HTTP verbs and status codes (200, 201, 204, 400, 401, 403, 404, 409, 422, 500).
+- Collections MUST provide pagination metadata; endpoints document filtering/sorting contracts in specs.
+- Authentication leverages JWT with workspace scoping; device identifiers travel within token claims.
 
-### Database Design
+### Backend Service Design
 
-- Entity field naming: camelCase (Kotlin) → underscore_case (database) via Hibernate naming strategy
-- Entities MUST extend `BaseDomain` (system entities) or `OwnableBaseDomain` (tenant-scoped entities)
-- Base domain fields: `uid` (primary key), `createdAt`, `updatedAt` (all Instant type)
-- Ownable base domain adds: `workspaceId`, `ownerId` for multi-tenancy
-- Use `@EntityGraph` for efficient relationship loading (see Principle V)
+- Main application assembles in `ampairs_service`; feature modules remain decoupled.
+- Services enforce business logic; controllers only translate HTTP to DTO/service calls.
+- Repositories remain persistence-only; no business logic.
+- Use constructor injection and immutable DTOs.
+
+### Web Application
+
+- Angular modules group features under `src/app/{feature}` with shared UI in `src/app/shared`.
+- ESLint (`npm run lint`) and Angular CLI formatting guard structure; never bypass lint fixes without justification.
+- Use Material theming utilities for typography, color, and density; keep styles scoped (`:host` selectors) to avoid global leaks.
+
+### Compose Multiplatform Application
+
+- Shared resources (strings, colors) stay in `commonMain`; avoid duplicating constants in platform modules.
+- Platform launchers configure only platform-specific APIs (e.g., Android activity, iOS UIViewController).
+- Desktop targets respect window sizing and theming parity with mobile.
+
+### Database & Multi-Tenancy
+
+- Hibernate naming strategy converts Kotlin camelCase to underscore_case automatically; do not override manually.
+- Tenant-scoped entities extend `OwnableBaseDomain`, inheriting the `@TenantId ownerId` column that binds rows to the current workspace.
+- Use `@EntityGraph` for relationship loading (see Principle VII).
+- Migration scripts MUST remain idempotent and live alongside module-specific plans when necessary.
+
+### Flyway Migrations
+
+- All schema changes (DDL and data backfills) MUST ship through Flyway; never enable Hibernate auto-DDL beyond `ddl-auto: validate` outside of isolated tests.
+- Place versioned migrations under each module’s `src/main/resources/db/migration` directory and follow the `V{semver}__description.sql` naming pattern (e.g., `V1.2.0__add_invoice_due_date.sql`); do not modify applied migrations—write a new version instead.
+- Use Flyway tasks to manage lifecycle: `./gradlew :ampairs_service:flywayInfo` (status), `flywayValidate` (checksum verification), `flywayMigrate` (apply), and `flywayBaseline` only when onboarding an existing schema.
+- Document intentional no-op changes in `NO_MIGRATION_NEEDED.md` and include rollback guidance or remediation notes within migration comments for operational traceability.
 
 ### Multi-Device Authentication
 
-- JWT tokens MUST include `device_id` for session management
-- Support multiple concurrent logins per user across different devices
-- Device-specific refresh tokens enable per-device logout
-- Token expiry and refresh handled via standard OAuth2 flows
+- JWT tokens include `device_id` claims for session management.
+- Multiple concurrent logins per user/device pair are supported; refresh tokens are device-scoped.
+- OAuth2-compatible refresh flows handle token rotation and logout per device.
 
-### Testing Standards
+## Testing & Quality Gates
 
-- Test organization: `contract/` (API contract tests), `integration/` (cross-layer tests), `unit/` (isolated tests)
-- Integration tests for: new modules, contract changes, inter-service communication, shared schemas
-- Test coverage goals: critical business logic >80%, API endpoints >90%
-- Use appropriate test frameworks: JUnit 5, MockK (Kotlin mocking), TestContainers (database tests)
+- Root orchestration commands: `./gradlew buildAll`, `./gradlew testAll`, `./gradlew ciBuild` (tests execute before builds).
+- Backend: `cd ampairs-backend && ./gradlew test`; keep Docker running for Testcontainers.
+- Web: `cd ampairs-web && npm test`; run `npm run test:e2e:headless` for Cypress coverage before merging UI/API changes; lint with `npm run lint`.
+- Multiplatform: `cd ampairs-mp-app && ./gradlew check`; add `desktopTest`, `iosTest`, or platform-specific suites when touching native bridges.
+- Target coverage: backend critical logic ≥80%, API endpoints ≥90%; document gaps in plan/task templates.
+- CI MUST stay green before merge; failures block promotion.
 
 ## Development Workflow
 
 ### Code Organization
 
-- Module structure: `ampairs-backend/{module}/src/main/kotlin/com/ampairs/{module}/`
-- Shared utilities in `core` module
-- Multi-tenancy infrastructure in `workspace` module
-- Authentication in `auth` module
-- Business domains: `customer`, `product`, `order`, `invoice`, `tax_code`, `notification`
-- Main application aggregator: `ampairs_service`
+- Backend modules sit under `ampairs-backend/{module}/src/main/kotlin/com/ampairs/{module}/`.
+- Shared backend utilities belong in the `core` module; multi-tenancy infrastructure stays in `workspace`.
+- Web components co-locate `.ts/.html/.scss`; selectors follow `amp-{feature}`; keep classes `PascalCase`.
+- Compose shared logic stays in `shared/`; platform overrides live under each launcher's `src`.
 
-### Build & Deployment
+### Branching & Commits
 
-- Build all modules: `./gradlew build`
-- Run main application: `./gradlew :ampairs_service:bootRun`
-- Run tests: `./gradlew test`
-- CI/CD: automated build, test, JAR creation, SSH deployment to Ubuntu server, service restart, health verification on push to `main` branch
+- Feature branches follow `###-feature-name` (e.g., `123-auth-mfa`); experimental work may use `spike/###-topic`.
+- Use Conventional Commits (`feat:`, `fix:`, `refactor:`, etc.); subjects ≤72 characters and reference issues (e.g., `AMP-123`) in bodies.
+- Commit after each logical unit of work; do not batch unrelated changes.
 
-### Version Control
+### Review & CI Expectations
 
-- Feature branches: `###-feature-name` pattern
-- Commit after each logical task or task group
-- Pull requests MUST pass CI build and tests before merge
-- Code reviews required for all changes
+- Pull requests MUST describe scope, affected modules, and validation commands.
+- Attach screenshots or API diffs when behavior changes.
+- Request reviewers from the owning squad (backend, web, mobile).
+- Ensure `./gradlew ciBuild`, Angular lint/tests, and multiplatform checks pass before requesting merge.
 
 ### Documentation Requirements
 
-- Feature specifications in `/specs/{###-feature}/spec.md`
-- Implementation plans in `/specs/{###-feature}/plan.md`
-- API contracts in `/specs/{###-feature}/contracts/`
-- Data models documented in `/specs/{###-feature}/data-model.md`
-- Quickstart guides in `/specs/{###-feature}/quickstart.md`
-- Update `CLAUDE.md` for new architectural patterns or critical rules
+- Feature specs live in `/specs/{###-feature}/spec.md`; implementation plans in `plan.md`.
+- API contracts belong in `/specs/{###-feature}/contracts/`; data models in `data-model.md`; quickstarts in `quickstart.md`.
+- Update `CLAUDE.md` and `AGENTS.md` when introducing new architectural patterns or rules.
+
+## Tooling & Automation
+
+- Preferred orchestration: `./gradlew buildAll`, `testAll`, `cleanAll`, `ciBuild`.
+- Backend bootstrapping: `cd ampairs-backend && ./gradlew bootRun`; use `SPRING_PROFILES_ACTIVE=test` for E2E flows.
+- Web startup: `cd ampairs-web && npm install && npm start`; production bundles via `npm run build:prod`.
+- Multiplatform launchers: `cd ampairs-mp-app && ./gradlew run`, `installDebug`, `package`.
+- Local dependencies load via `docker-compose.yml`; extend scripts under `scripts/` when automation is required—never commit ad-hoc tooling elsewhere.
+- Use `start-dev.sh` / `start-test.sh` for curated environments; keep them updated when dependencies change.
 
 ## Governance
 
 ### Amendment Procedure
 
-This constitution supersedes all other development practices. Amendments require:
+This constitution supersedes other practice guides. Amendments require:
 
-1. Documentation of proposed changes with clear rationale
-2. Impact analysis across affected modules and templates
-3. Team approval (for team environments) or architect approval (for solo projects)
-4. Migration plan for existing code if breaking changes introduced
-5. Update of all dependent templates and documentation
+1. Documentation of proposed changes with rationale.
+2. Impact analysis across modules and templates.
+3. Team approval (or architect approval in solo work).
+4. Migration plan for breaking changes.
+5. Updates to dependent templates and documentation.
 
 ### Versioning Policy
 
-Constitution follows semantic versioning (`MAJOR.MINOR.PATCH`):
-
-- **MAJOR**: Backward-incompatible governance changes, principle removals, or principle redefinitions
-- **MINOR**: New principles added or materially expanded guidance
-- **PATCH**: Clarifications, wording improvements, typo fixes, non-semantic refinements
+- Uses semantic versioning (`MAJOR.MINOR.PATCH`).
+- **MAJOR**: Breaking governance changes or principle redefinitions.
+- **MINOR**: New principles or materially expanded guidance.
+- **PATCH**: Clarifications, wording fixes, or typo corrections.
 
 ### Compliance Review
 
-- All pull requests MUST verify compliance with constitution principles
-- Complexity violations MUST be justified in `plan.md` Complexity Tracking section
-- Template updates MUST maintain alignment with constitution principles
-- Periodic constitution review (quarterly recommended) to ensure continued relevance
+- All pull requests MUST verify compliance with constitution principles.
+- Deviations require documented justification in `plan.md` under Complexity Tracking.
+- Templates MUST stay aligned with the constitution.
+- Review the constitution at least quarterly to confirm ongoing relevance.
 
 ### Living Document
 
-This constitution is a living document that evolves with the project. When principles are found insufficient or incorrect based on real-world experience, they should be amended through proper governance channels. Document lessons learned and encode them as principles when patterns emerge.
+The constitution evolves with real-world lessons. When new patterns emerge, encode them through the amendment procedure and document knowledge in specs and `CLAUDE.md`.
 
-**Version**: 1.0.0 | **Ratified**: 2025-10-11 | **Last Amended**: 2025-10-11
+**Version**: 1.1.0 | **Ratified**: 2025-10-11 | **Last Amended**: 2025-10-11
