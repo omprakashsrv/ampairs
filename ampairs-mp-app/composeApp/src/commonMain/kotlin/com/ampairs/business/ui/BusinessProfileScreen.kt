@@ -1,102 +1,153 @@
 package com.ampairs.business.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.ampairs.business.domain.BusinessStore
 import org.koin.compose.koinInject
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BusinessProfileScreen(
     onNavigateToSettings: () -> Unit = {},
     onNavigateToBranding: () -> Unit = {},
+    onNavigateToEdit: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: BusinessProfileViewModel = koinInject()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val pullRefreshState = rememberPullToRefreshState()
+    var isRefreshing by remember { mutableStateOf(false) }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.Top,
-        horizontalAlignment = Alignment.Start
-    ) {
-        Text(
-            text = "Business Profile",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
+    // When loading completes (after refresh finishes) reset local refreshing state
+    LaunchedEffect(uiState.isLoading) {
+        if (!uiState.isLoading) {
+            isRefreshing = false
+        }
+    }
 
-        when {
-            uiState.isLoading -> {
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .align(Alignment.CenterHorizontally)
-                        .padding(32.dp)
-                )
-            }
-
-            uiState.error != null -> {
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    ),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                ) {
-                    Text(
-                        text = uiState.error ?: "Unknown error",
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                }
-            }
-
-            uiState.business != null -> {
-                BusinessProfileContent(
-                    business = uiState.business!!,
-                    onNavigateToSettings = onNavigateToSettings,
-                    onNavigateToBranding = onNavigateToBranding,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
-
-            else -> {
-                // No business profile yet
-                EmptyBusinessState(
-                    onCreateProfile = { /* TODO: Navigate to create flow */ },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(32.dp)
-                )
+    PullToRefreshBox(
+        modifier = modifier.fillMaxSize(),
+        state = pullRefreshState,
+        isRefreshing = isRefreshing,
+        onRefresh = {
+            if (!isRefreshing) {
+                isRefreshing = true
+                viewModel.refresh()
             }
         }
-
-        // Floating actions
-        if (uiState.business != null && viewModel.hasWorkspaceContext()) {
-            Row(
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .fillMaxSize()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.Top,
+                horizontalAlignment = Alignment.Start
             ) {
-                OutlinedButton(
-                    onClick = onNavigateToSettings,
-                    modifier = Modifier.weight(1f)
-                ) {
-                    Text("Settings")
+                Text(
+                    text = "Business Profile",
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                when {
+                    uiState.isLoading -> {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .align(Alignment.CenterHorizontally)
+                                .padding(32.dp)
+                        )
+                    }
+
+                    uiState.error != null -> {
+                        Card(
+                            colors = CardDefaults.cardColors(
+                                containerColor = MaterialTheme.colorScheme.errorContainer
+                            ),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp)
+                        ) {
+                            Text(
+                                text = uiState.error ?: "Unknown error",
+                                color = MaterialTheme.colorScheme.onErrorContainer,
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
+                    }
+
+                    uiState.business != null -> {
+                        BusinessProfileContent(
+                            business = uiState.business!!,
+                            onNavigateToSettings = onNavigateToSettings,
+                            onNavigateToBranding = onNavigateToBranding,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+
+                    else -> {
+                        // No business profile yet
+                        EmptyBusinessState(
+                            onCreateProfile = onNavigateToSettings, // Use settings screen for profile creation
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(32.dp)
+                        )
+                    }
                 }
 
-                OutlinedButton(
-                    onClick = onNavigateToBranding,
-                    modifier = Modifier.weight(1f)
+                // Action buttons
+                if (uiState.business != null && viewModel.hasWorkspaceContext()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = onNavigateToSettings,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Settings")
+                        }
+
+                        OutlinedButton(
+                            onClick = onNavigateToBranding,
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text("Branding")
+                        }
+                    }
+                }
+            }
+
+            // Pull-to-refresh indicator
+            if (isRefreshing) {
+                LinearProgressIndicator(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter)
+                )
+            }
+
+            // Floating Edit Button
+            if (uiState.business != null && !uiState.isLoading) {
+                FloatingActionButton(
+                    onClick = onNavigateToEdit,
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(16.dp)
                 ) {
-                    Text("Branding")
+                    Icon(Icons.Default.Edit, contentDescription = "Edit Business Profile")
                 }
             }
         }
@@ -138,7 +189,7 @@ private fun BusinessProfileContent(
                 )
             }
 
-            Divider()
+            HorizontalDivider()
 
             // Contact Information
             if (business.phone != null || business.email != null) {
