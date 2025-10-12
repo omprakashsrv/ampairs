@@ -24,8 +24,6 @@ configurations {
     }
 }
 
-
-
 allOpen {
     annotation("jakarta.persistence.Entity")
 }
@@ -36,8 +34,6 @@ repositories {
 
 dependencies {
     api(project(mapOf("path" to ":core")))
-    api(project(mapOf("path" to ":event")))
-    api(project(mapOf("path" to ":unit")))
     compileOnly("org.springframework.boot:spring-boot-starter-data-rest")
     compileOnly("org.springframework.data:spring-data-rest-webmvc")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
@@ -51,6 +47,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("io.jsonwebtoken:jjwt-api:0.11.5")
     implementation("no.digipost.jaxb:jaxb2-jackson-helper:1.0.1")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
     runtimeOnly("com.mysql:mysql-connector-j")
@@ -60,7 +57,8 @@ dependencies {
     testImplementation("org.mockito.kotlin:mockito-kotlin:4.1.0")
     testImplementation("org.mockito:mockito-inline:4.11.0")
     testImplementation(project(":ampairs_service"))
-    testImplementation("com.h2database:h2")}
+    testImplementation("com.h2database:h2")
+}
 
 tasks.withType<Test> {
     useJUnitPlatform()
@@ -68,7 +66,6 @@ tasks.withType<Test> {
 
 tasks.register("prepareKotlinBuildScriptModel") {}
 
-// Disable bootJar since this module doesn't have a main class
 tasks.named("bootJar") {
     enabled = false
 }

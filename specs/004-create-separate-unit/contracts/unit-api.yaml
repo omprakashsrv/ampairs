@@ -1,0 +1,835 @@
+openapi: 3.0.3
+info:
+  title: Unit Management API
+  description: REST API for managing measurement units and unit conversions in the Ampairs system
+  version: 1.0.0
+  contact:
+    name: Ampairs Platform Team
+
+servers:
+  - url: https://api.ampairs.com/api/v1
+    description: Production server
+  - url: http://localhost:8080/api/v1
+    description: Development server
+
+security:
+  - BearerAuth: []
+  - WorkspaceHeader: []
+
+tags:
+  - name: Units
+    description: Operations for managing measurement units
+  - name: Unit Conversions
+    description: Operations for managing unit conversions
+
+paths:
+  /unit:
+    get:
+      tags:
+        - Units
+      summary: List all units
+      description: Retrieve all measurement units for the current workspace
+      operationId: listUnits
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceHeader'
+        - name: active
+          in: query
+          description: Filter by active status
+          required: false
+          schema:
+            type: boolean
+            default: true
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseUnitList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags:
+        - Units
+      summary: Create a new unit
+      description: Create a new measurement unit in the current workspace
+      operationId: createUnit
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnitRequest'
+      responses:
+        '201':
+          description: Unit created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseUnit'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /unit/{uid}:
+    get:
+      tags:
+        - Units
+      summary: Get unit by UID
+      description: Retrieve a specific unit by its unique identifier
+      operationId: getUnit
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceHeader'
+        - name: uid
+          in: path
+          required: true
+          description: Unique identifier of the unit
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseUnit'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Units
+      summary: Update a unit
+      description: Update an existing measurement unit
+      operationId: updateUnit
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceHeader'
+        - name: uid
+          in: path
+          required: true
+          description: Unique identifier of the unit
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnitRequest'
+      responses:
+        '200':
+          description: Unit updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseUnit'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Units
+      summary: Delete a unit
+      description: Delete a unit (soft delete). Cannot delete if unit is in use by products or conversions.
+      operationId: deleteUnit
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceHeader'
+        - name: uid
+          in: path
+          required: true
+          description: Unique identifier of the unit
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Unit deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Cannot delete unit that is in use
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+
+  /unit/{uid}/usage:
+    get:
+      tags:
+        - Units
+      summary: Check unit usage
+      description: Check if a unit is in use by products, inventory, or conversions
+      operationId: checkUnitUsage
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceHeader'
+        - name: uid
+          in: path
+          required: true
+          description: Unique identifier of the unit
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Unit usage information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseUnitUsage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /unit/conversion:
+    get:
+      tags:
+        - Unit Conversions
+      summary: List all unit conversions
+      description: Retrieve all unit conversions for the current workspace
+      operationId: listUnitConversions
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceHeader'
+        - name: product_id
+          in: query
+          description: Filter by product ID
+          required: false
+          schema:
+            type: string
+        - name: base_unit_id
+          in: query
+          description: Filter by base unit ID
+          required: false
+          schema:
+            type: string
+        - name: derived_unit_id
+          in: query
+          description: Filter by derived unit ID
+          required: false
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseUnitConversionList'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    post:
+      tags:
+        - Unit Conversions
+      summary: Create a unit conversion
+      description: Create a new unit conversion (global or product-specific)
+      operationId: createUnitConversion
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnitConversionRequest'
+      responses:
+        '201':
+          description: Unit conversion created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseUnitConversion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /unit/conversion/{uid}:
+    get:
+      tags:
+        - Unit Conversions
+      summary: Get unit conversion by UID
+      description: Retrieve a specific unit conversion by its unique identifier
+      operationId: getUnitConversion
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceHeader'
+        - name: uid
+          in: path
+          required: true
+          description: Unique identifier of the unit conversion
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseUnitConversion'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Unit Conversions
+      summary: Update a unit conversion
+      description: Update an existing unit conversion
+      operationId: updateUnitConversion
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceHeader'
+        - name: uid
+          in: path
+          required: true
+          description: Unique identifier of the unit conversion
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UnitConversionRequest'
+      responses:
+        '200':
+          description: Unit conversion updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseUnitConversion'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - Unit Conversions
+      summary: Delete a unit conversion
+      description: Delete a unit conversion (soft delete)
+      operationId: deleteUnitConversion
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceHeader'
+        - name: uid
+          in: path
+          required: true
+          description: Unique identifier of the unit conversion
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Unit conversion deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /unit/conversion/convert:
+    post:
+      tags:
+        - Unit Conversions
+      summary: Convert quantity between units
+      description: Convert a quantity from one unit to another using defined conversions
+      operationId: convertQuantity
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConvertQuantityRequest'
+      responses:
+        '200':
+          description: Conversion successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseConvertedQuantity'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: Conversion not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApiResponseError'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    WorkspaceHeader:
+      type: apiKey
+      in: header
+      name: X-Workspace-ID
+
+  parameters:
+    WorkspaceHeader:
+      name: X-Workspace-ID
+      in: header
+      required: true
+      description: Workspace identifier for multi-tenant isolation
+      schema:
+        type: string
+
+  schemas:
+    UnitRequest:
+      type: object
+      required:
+        - name
+        - decimal_places
+      properties:
+        id:
+          type: string
+          description: UID (optional on create, required on update)
+        name:
+          type: string
+          maxLength: 10
+          description: Full name of the unit
+          example: Kilogram
+        short_name:
+          type: string
+          maxLength: 10
+          description: Short symbol (defaults to name if not provided)
+          example: kg
+        decimal_places:
+          type: integer
+          minimum: 0
+          maximum: 6
+          description: Precision for quantities
+          example: 3
+        ref_id:
+          type: string
+          description: External reference ID
+          nullable: true
+
+    UnitResponse:
+      type: object
+      properties:
+        uid:
+          type: string
+          description: Unique identifier
+          example: UNIT-001
+        name:
+          type: string
+          description: Full name of the unit
+          example: Kilogram
+        short_name:
+          type: string
+          description: Short symbol
+          example: kg
+        decimal_places:
+          type: integer
+          description: Precision for quantities
+          example: 3
+        ref_id:
+          type: string
+          nullable: true
+          description: External reference ID
+        active:
+          type: boolean
+          description: Soft delete flag
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp (UTC)
+          example: "2025-10-12T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp (UTC)
+          example: "2025-10-12T10:00:00Z"
+
+    UnitConversionRequest:
+      type: object
+      required:
+        - base_unit_id
+        - derived_unit_id
+        - multiplier
+      properties:
+        id:
+          type: string
+          description: UID (optional on create, required on update)
+        base_unit_id:
+          type: string
+          description: UID of the base unit
+          example: UNIT-001
+        derived_unit_id:
+          type: string
+          description: UID of the derived unit
+          example: UNIT-002
+        product_id:
+          type: string
+          nullable: true
+          description: Optional product UID for product-specific conversions
+        multiplier:
+          type: number
+          format: double
+          minimum: 0
+          exclusiveMinimum: true
+          description: Conversion factor (derived = base × multiplier)
+          example: 1000.0
+        ref_id:
+          type: string
+          nullable: true
+          description: External reference ID
+
+    UnitConversionResponse:
+      type: object
+      properties:
+        uid:
+          type: string
+          description: Unique identifier
+          example: CONV-001
+        base_unit_id:
+          type: string
+          description: Base unit UID
+          example: UNIT-001
+        derived_unit_id:
+          type: string
+          description: Derived unit UID
+          example: UNIT-002
+        product_id:
+          type: string
+          nullable: true
+          description: Optional product UID
+        multiplier:
+          type: number
+          format: double
+          description: Conversion multiplier
+          example: 1000.0
+        base_unit:
+          $ref: '#/components/schemas/UnitResponse'
+        derived_unit:
+          $ref: '#/components/schemas/UnitResponse'
+        ref_id:
+          type: string
+          nullable: true
+          description: External reference ID
+        active:
+          type: boolean
+          description: Soft delete flag
+          example: true
+        created_at:
+          type: string
+          format: date-time
+          description: Creation timestamp (UTC)
+          example: "2025-10-12T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Last update timestamp (UTC)
+          example: "2025-10-12T10:00:00Z"
+
+    ConvertQuantityRequest:
+      type: object
+      required:
+        - quantity
+        - from_unit_id
+        - to_unit_id
+      properties:
+        quantity:
+          type: number
+          format: double
+          description: Quantity to convert
+          example: 2.5
+        from_unit_id:
+          type: string
+          description: Source unit UID
+          example: UNIT-001
+        to_unit_id:
+          type: string
+          description: Target unit UID
+          example: UNIT-002
+        product_id:
+          type: string
+          nullable: true
+          description: Optional product UID for product-specific conversion
+
+    ConvertedQuantity:
+      type: object
+      properties:
+        original_quantity:
+          type: number
+          format: double
+          description: Input quantity
+          example: 2.5
+        converted_quantity:
+          type: number
+          format: double
+          description: Converted quantity
+          example: 2500.0
+        from_unit:
+          $ref: '#/components/schemas/UnitResponse'
+        to_unit:
+          $ref: '#/components/schemas/UnitResponse'
+        multiplier:
+          type: number
+          format: double
+          description: Conversion multiplier used
+          example: 1000.0
+
+    UnitUsage:
+      type: object
+      properties:
+        unit_id:
+          type: string
+          description: Unit UID
+          example: UNIT-001
+        in_use:
+          type: boolean
+          description: Whether the unit is in use
+          example: true
+        product_count:
+          type: integer
+          description: Number of products using this unit
+          example: 5
+        conversion_count:
+          type: integer
+          description: Number of conversions using this unit
+          example: 3
+        product_ids:
+          type: array
+          items:
+            type: string
+          description: List of product UIDs using this unit
+          example: ["PROD-001", "PROD-002"]
+
+    ApiResponseUnit:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/UnitResponse'
+        error:
+          $ref: '#/components/schemas/ErrorDetails'
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+          example: "2025-10-12T10:00:00Z"
+        path:
+          type: string
+          example: /api/v1/unit
+        trace_id:
+          type: string
+          example: abc123
+
+    ApiResponseUnitList:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnitResponse'
+        error:
+          $ref: '#/components/schemas/ErrorDetails'
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+        trace_id:
+          type: string
+
+    ApiResponseUnitConversion:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/UnitConversionResponse'
+        error:
+          $ref: '#/components/schemas/ErrorDetails'
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+        trace_id:
+          type: string
+
+    ApiResponseUnitConversionList:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/UnitConversionResponse'
+        error:
+          $ref: '#/components/schemas/ErrorDetails'
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+        trace_id:
+          type: string
+
+    ApiResponseConvertedQuantity:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/ConvertedQuantity'
+        error:
+          $ref: '#/components/schemas/ErrorDetails'
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+        trace_id:
+          type: string
+
+    ApiResponseUnitUsage:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/UnitUsage'
+        error:
+          $ref: '#/components/schemas/ErrorDetails'
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+        trace_id:
+          type: string
+
+    ApiResponseError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        data:
+          nullable: true
+        error:
+          $ref: '#/components/schemas/ErrorDetails'
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+        trace_id:
+          type: string
+
+    ErrorDetails:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Error code
+          example: UNIT_NOT_FOUND
+        message:
+          type: string
+          description: Human-readable error message
+          example: Unit with UID UNIT-999 not found
+        field:
+          type: string
+          nullable: true
+          description: Field name if validation error
+        details:
+          type: object
+          additionalProperties: true
+          nullable: true
+          description: Additional error context
+
+  responses:
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Unauthorized:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Forbidden:
+      description: Access forbidden
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'
+    Conflict:
+      description: Resource conflict (e.g., duplicate name)
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiResponseError'

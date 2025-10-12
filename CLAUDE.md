@@ -247,59 +247,32 @@ fun create(@Valid request: EntityCreateRequest): ApiResponse<EntityResponse> {
 **Application**: ampairs_service (main aggregator)
 
 ## Recent Changes
+- 004-create-separate-unit: Added Kotlin 2.2.20 / Java 25 + Spring Boot 3.5.6, Spring Data JPA, Hibernate 6.2, MySQL Connector
 
 ### **Multi-Timezone Support Migration (2025-01-09)**
 
 #### **Critical Change: LocalDateTime → Instant**
 - **Breaking Change**: All timestamp fields migrated from `LocalDateTime` to `java.time.Instant`
 - **Reason**: `LocalDateTime` has no timezone info, causing bugs across timezones and DST transitions
-- **Action Required**:
   * All new entities MUST use `Instant` for timestamps
   * All new DTOs MUST use `Instant` for date/time fields
   * Legacy `LocalDateTime` code is being phased out
-- **Serialization**: ISO-8601 with Z suffix (e.g., `"2025-01-09T14:30:00Z"`)
-- **Database**: Use `TIMESTAMP` columns with UTC timezone
-- **Reference**: `/specs/002-timezone-support/research.md`
 
 #### **Base Domain Classes Updated**
-- `BaseDomain.createdAt`: `LocalDateTime` → `Instant`
-- `BaseDomain.updatedAt`: `LocalDateTime` → `Instant`
-- `ApiResponse.timestamp`: `LocalDateTime` → `Instant`
-- All 46+ entities inheriting from `BaseDomain`/`OwnableBaseDomain` affected
 
 #### **Frontend Impact**
-- API responses now include `Z` suffix: `"created_at": "2025-01-09T14:30:00Z"`
-- Angular DatePipe automatically converts to browser timezone
-- No code changes needed - JavaScript Date handles ISO-8601 UTC
 
 ### **Workspace Controller Refactoring (2025-01-15)**
 
 #### **@TenantId Integration & Simplification**
-- Eliminated dual security (workspaceId params + @TenantId filtering)
-- Controllers use `TenantContextHolder.getCurrentTenant()` from X-Workspace-ID header
-- Added `@TenantId` to `WorkspaceMember.workspaceId` for automatic filtering
-- Endpoint paths simplified: `/workspace/v1/member` (no workspaceId params)
 
 #### **Critical Fix: @TenantId Validation Error**
-- **Issue**: `assigned tenant id differs from current tenant id` during invitation acceptance
-- **Root Cause**: Tenant context set in service layer, but @TenantId validation happens at repository injection
-- **Solution**: Move tenant context to controller level before any repository operations
-- **Pattern**: Controller sets tenant → Service operates → Controller restores tenant
 
 #### **Repository Patterns**
-- **Tenant-Aware**: Methods automatically filtered by @TenantId annotation
-- **Cross-Tenant**: Use native SQL queries to bypass @TenantId filtering
-- **Column Mapping**: JPA properties → database columns (createdAt → created_at)
 
 ### **Retail Management Platform (2025-01-06)**
 
 ### **New API Contracts**
-- **Workspace Management**: `/workspace/v1` - Multi-tenant business environments with role-based access
-- **Product Catalog**: `/product/v1` - Product management with inventory tracking and tax codes
-- **Order Processing**: `/order/v1` - Sales transactions with status workflow (DRAFT→CONFIRMED→FULFILLED)
-- **Customer Management**: `/customer/v1` - Business contacts with GST compliance and credit limits
-- **Invoice Generation**: `/invoice/v1` - Billing with tax calculations, payment tracking, and PDF export
-- **Tax Code Management**: `/tax-code/v1` - GST compliance with component breakdown (SGST/CGST/IGST)
 
 ### **Key Entity Patterns**
 ```kotlin
@@ -323,11 +296,6 @@ data class ApiResponse<T>(
 ```
 
 ### **Business Rules**
-- **Order Status Flow**: DRAFT → CONFIRMED → PROCESSING → FULFILLED (with CANCELLED/RETURNED branches)
-- **Invoice Status Flow**: DRAFT → SENT → PARTIAL_PAID → PAID (with OVERDUE/CANCELLED)
-- **Inventory Reservations**: Stock reserved on CONFIRMED orders, consumed on FULFILLED
-- **GST Compliance**: Tax codes support SGST+CGST (intrastate) or IGST (interstate) calculations
-- **Multi-tenant Data**: All operations filtered by workspace context automatically
 
 ## Build Commands
 

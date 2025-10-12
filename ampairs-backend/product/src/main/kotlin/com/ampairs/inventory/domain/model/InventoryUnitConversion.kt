@@ -2,7 +2,7 @@ package com.ampairs.inventory.domain.model
 
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.product.config.Constants
-import com.ampairs.product.domain.model.Unit
+import com.ampairs.unit.domain.model.Unit
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.JoinColumn
