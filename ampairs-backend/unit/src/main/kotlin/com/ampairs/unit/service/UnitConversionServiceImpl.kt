@@ -27,12 +27,12 @@ class UnitConversionServiceImpl(
 
     @Transactional(readOnly = true)
     override fun findByProductId(productId: String): List<UnitConversionResponse> {
-        return unitConversionRepository.findByProductId(productId).asUnitConversionResponses()
+        return unitConversionRepository.findByProductIdAndActiveTrue(productId).asUnitConversionResponses()
     }
 
     @Transactional(readOnly = true)
     override fun findAll(): List<UnitConversionResponse> {
-        return unitConversionRepository.findAll().toList().asUnitConversionResponses()
+        return unitConversionRepository.findAllActive().asUnitConversionResponses()
     }
 
     @Transactional(readOnly = true)
@@ -131,25 +131,24 @@ class UnitConversionServiceImpl(
         unitRepository.findByUid(request.derivedUnitId)
             ?: throw UnitNotFoundException("Derived unit not found: ${request.derivedUnitId}")
 
-        val duplicate = unitConversionRepository.findExactConversion(request.baseUnitId, request.derivedUnitId, request.productId)
+        val duplicate = unitConversionRepository.findActiveExactConversion(request.baseUnitId, request.derivedUnitId, request.productId)
         if (duplicate != null && duplicate.uid != request.id) {
             throw IllegalArgumentException("Conversion already exists for ${request.baseUnitId} -> ${request.derivedUnitId}")
         }
     }
 
     private fun findExactConversion(baseUnitId: String, derivedUnitId: String, productId: String?): UnitConversion? {
-        val scoped = unitConversionRepository.findExactConversion(baseUnitId, derivedUnitId, productId)
+        val scoped = unitConversionRepository.findActiveExactConversion(baseUnitId, derivedUnitId, productId)
         if (scoped != null) return scoped
         if (productId != null) {
-            return unitConversionRepository.findExactConversion(baseUnitId, derivedUnitId, null)
+            return unitConversionRepository.findActiveExactConversion(baseUnitId, derivedUnitId, null)
         }
         return null
     }
 
     private fun buildAdjacencyMap(productId: String?, excludeUid: String?): MutableMap<String, MutableSet<String>> {
         val adjacency = mutableMapOf<String, MutableSet<String>>()
-        unitConversionRepository.findAll().forEach { conversion ->
-            if (!conversion.active) return@forEach
+        unitConversionRepository.findAllActive().forEach { conversion ->
             if (excludeUid != null && conversion.uid == excludeUid) return@forEach
             if (!isConversionApplicable(conversion, productId)) return@forEach
             adjacency.getOrPut(conversion.baseUnitId) { mutableSetOf() }.add(conversion.derivedUnitId)

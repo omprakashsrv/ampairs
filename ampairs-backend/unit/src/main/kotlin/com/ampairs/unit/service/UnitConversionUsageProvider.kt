@@ -9,8 +9,7 @@ class UnitConversionUsageProvider(
 ) : UnitUsageProvider {
 
     override fun findUsage(unitUid: String): UnitUsageSnapshot {
-        val conversions = unitConversionRepository.findAllLinkedToUnit(unitUid)
-            .filter { it.active }
+        val conversions = unitConversionRepository.findAllActiveLinkedToUnit(unitUid)
 
         if (conversions.isEmpty()) {
             return UnitUsageSnapshot(unitUid = unitUid)
