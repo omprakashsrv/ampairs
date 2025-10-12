@@ -4,6 +4,8 @@ import com.ampairs.core.utils.TimezoneTestUtils
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import java.time.Instant
@@ -55,17 +57,17 @@ class InstantSerializationTest {
         val json = objectMapper.writeValueAsString(entity)
 
         // Then - verify ISO-8601 with Z suffix
-        assert(json.contains("2025-01-09T14:30:00Z")) {
+        assertTrue(json.contains("2025-01-09T14:30:00Z")) {
             "JSON should contain UTC timestamp with Z suffix, but was: $json"
         }
 
         // Verify JSON field uses snake_case (global config)
-        assert(json.contains("\"timestamp\":")) {
+        assertTrue(json.contains("\"timestamp\":")) {
             "JSON should use camelCase for 'timestamp' (no underscore conversion), but was: $json"
         }
 
         // Verify no numeric timestamp
-        assert(!json.contains("\"timestamp\":1736432400")) {
+        assertFalse(json.contains("\"timestamp\":1736432400")) {
             "JSON should not use numeric timestamp, but was: $json"
         }
 
@@ -88,7 +90,7 @@ class InstantSerializationTest {
         val json = objectMapper.writeValueAsString(entity)
 
         // Then
-        assert(json.contains("\"timestamp\":null")) {
+        assertTrue(json.contains("\"timestamp\":null")) {
             "Null Instant should serialize to null, but was: $json"
         }
 
@@ -105,7 +107,7 @@ class InstantSerializationTest {
         val json = objectMapper.writeValueAsString(entity)
 
         // Then - should include milliseconds
-        assert(json.contains(".123Z") || json.contains("2025-01-09T14:30:00")) {
+        assertTrue(json.contains(".123Z") || json.contains("2025-01-09T14:30:00")) {
             "Instant with milliseconds should serialize correctly, but was: $json"
         }
 
