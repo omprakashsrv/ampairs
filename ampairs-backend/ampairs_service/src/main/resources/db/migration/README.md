@@ -1,6 +1,21 @@
 # Flyway Migration Conventions
 
-This project stores all relational schema changes in `ampairs-backend/ampairs_service/src/main/resources/db/migration/`. The module aggregates entities from every backend Gradle module, so Flyway migrations are the single source of truth for MySQL DDL.
+This project stores relational schema changes in the **owning Gradle module** under `src/main/resources/db/migration/mysql/`. Each bounded-context module now publishes its own migration scripts which are loaded on the classpath via the main service dependency graph.
+
+| Module | Migration Directory | Example |
+| --- | --- | --- |
+| `tax` | `ampairs-backend/tax/src/main/resources/db/migration/mysql/` | `V3_1__create_tax_module_tables.sql` |
+| `event` | `ampairs-backend/event/src/main/resources/db/migration/mysql/` | `V3_2__create_event_system_tables.sql` |
+| `core` | `ampairs-backend/core/src/main/resources/db/migration/mysql/` | `V4_1__create_core_tables.sql` |
+| `auth` | `ampairs-backend/auth/src/main/resources/db/migration/mysql/` | `V4_8__create_auth_module_tables.sql` |
+| `unit` | `ampairs-backend/unit/src/main/resources/db/migration/mysql/` | `V4_2__create_unit_module_tables.sql` |
+| `customer` | `ampairs-backend/customer/src/main/resources/db/migration/mysql/` | `V4_3__create_customer_module_tables.sql` |
+| `product` (includes inventory) | `ampairs-backend/product/src/main/resources/db/migration/mysql/` | `V4_4__create_product_module_tables.sql` |
+| `order` | `ampairs-backend/order/src/main/resources/db/migration/mysql/` | `V4_5__create_order_module_tables.sql` |
+| `invoice` | `ampairs-backend/invoice/src/main/resources/db/migration/mysql/` | `V4_6__create_invoice_module_tables.sql` |
+| `form` | `ampairs-backend/form/src/main/resources/db/migration/mysql/` | `V4_7__create_form_module_tables.sql` |
+
+Legacy migrations that apply to the aggregated service (e.g., tax/event) remain in `ampairs-backend/ampairs_service/src/main/resources/db/migration/mysql/`.
 
 ## Versioning Scheme
 - Format: `V{major}_{minor}__{description}.sql` (e.g. `V4_3__create_customer_module_tables.sql`)
@@ -10,7 +25,7 @@ This project stores all relational schema changes in `ampairs-backend/ampairs_se
 
 ## Naming Conventions
 - Keep descriptions lowercase with underscores, imperative verbs, and module grouping: `create_customer_module_tables`, `add_order_indexes`.
-- Place vendor specific SQL under `db/migration/` (no `{vendor}` suffixes in filenames).
+- Place vendor specific SQL under `db/migration/{vendor}` (e.g., `db/migration/mysql`). Repeat the migration in additional vendor folders if multi-database support is required.
 - Prefix module-specific content inside the script with comment banners (`-- =====================================================`).
 
 ### File Name Examples
@@ -32,7 +47,7 @@ Each SQL file must begin with:
 ```
 
 ## Determining the Next Version
-1. Run `ls V*.sql | sort` to inspect the latest merged version.
+1. Run `ls */src/main/resources/db/migration/mysql/V*.sql | sort` (from `ampairs-backend`) to inspect the latest merged version.
 2. Reserve the next available minor number on your feature branch (e.g. if `V4_7` exists, start at `V4_8`).
 3. Document reserved ranges in pull requests for parallel branches (e.g. "Reserving V4_8–V4_9 for AMP-123").
 4. If a merge conflict occurs, rename your migration with the next free number and update the header.
@@ -41,6 +56,7 @@ Each SQL file must begin with:
 - Group related tables per migration to keep files reviewable (e.g. one migration per bounded context).
 - Order migrations according to dependency chain: core → unit → customer → product → inventory → order → invoice → form.
 - Add inline comments when referential integrity cannot be enforced (length mismatches, optional domains).
+- Store migrations in the owning module so that classpath scanning (`classpath:db/migration/{vendor}`) automatically includes them via Gradle dependencies.
 
 ## Validation Checklist
 - File name matches `^V\d+_\d+__.+\.sql$`.
@@ -56,7 +72,7 @@ Each SQL file must begin with:
 
 ### Naming Regex Guard (optional)
 ```bash
-find ampairs-backend/ampairs_service/src/main/resources/db/migration -maxdepth 1 -name 'V*.sql' \
+find ampairs-backend -path '*/src/main/resources/db/migration/mysql/V*.sql' \
   | grep -Ev '^.*/V[0-9]+_[0-9]+__[a-z0-9_]+\.sql$' && echo '⚠️  Invalid migration filename detected'
 ```
 Wire this command into a pre-commit hook or CI check to enforce the naming pattern when the list is non-empty.

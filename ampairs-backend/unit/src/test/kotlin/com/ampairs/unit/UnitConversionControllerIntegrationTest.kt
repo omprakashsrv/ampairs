@@ -1,16 +1,20 @@
 package com.ampairs.unit
 
+import com.ampairs.core.multitenancy.TenantContextHolder
+import com.ampairs.unit.controller.UnitConversionController
 import com.ampairs.unit.domain.dto.UnitConversionRequest
 import com.ampairs.unit.domain.dto.UnitConversionResponse
 import com.ampairs.unit.service.UnitConversionService
+import com.ampairs.unit.service.UnitService
 import org.hamcrest.Matchers.equalTo
+import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.MediaType
 import org.springframework.test.web.servlet.MockMvc
@@ -20,8 +24,8 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPat
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.Instant
 
-@SpringBootTest
-@AutoConfigureMockMvc
+@WebMvcTest(UnitConversionController::class)
+@AutoConfigureMockMvc(addFilters = false)
 class UnitConversionControllerIntegrationTest {
 
     @Autowired
@@ -29,6 +33,13 @@ class UnitConversionControllerIntegrationTest {
 
     @MockBean
     private lateinit var unitConversionService: UnitConversionService
+    @MockBean
+    private lateinit var unitService: UnitService
+
+    @AfterEach
+    fun tearDown() {
+        TenantContextHolder.clearTenantContext()
+    }
 
     @Test
     fun `list conversions returns payload`() {

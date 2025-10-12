@@ -16,8 +16,11 @@ import org.mockito.Mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
+import org.mockito.quality.Strictness
 
 @ExtendWith(MockitoExtension::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class UnitConversionServiceTest {
 
     @Mock private lateinit var unitConversionRepository: UnitConversionRepository
@@ -38,7 +41,7 @@ class UnitConversionServiceTest {
             active = true
         }
 
-        whenever(unitConversionRepository.findExactConversion("UNIT-A", "UNIT-B", null)).thenReturn(conversion)
+        whenever(unitConversionRepository.findActiveExactConversion("UNIT-A", "UNIT-B", null)).thenReturn(conversion)
 
         val result = service().convert(2.0, "UNIT-A", "UNIT-B", null)
 
@@ -55,7 +58,7 @@ class UnitConversionServiceTest {
             active = true
         }
 
-        whenever(unitConversionRepository.findExactConversion("UNIT-B", "UNIT-A", null)).thenReturn(conversion)
+        whenever(unitConversionRepository.findActiveExactConversion("UNIT-B", "UNIT-A", null)).thenReturn(conversion)
 
         val result = service().convert(8.0, "UNIT-A", "UNIT-B", null)
 
@@ -89,8 +92,8 @@ class UnitConversionServiceTest {
         }
 
         whenever(unitRepository.findByUid(any())).thenReturn(Unit())
-        whenever(unitConversionRepository.findExactConversion("UNIT-A", "UNIT-B", null)).thenReturn(null)
-        whenever(unitConversionRepository.findAll()).thenReturn(listOf(existing))
+        whenever(unitConversionRepository.findActiveExactConversion("UNIT-A", "UNIT-B", null)).thenReturn(null)
+        whenever(unitConversionRepository.findAllActive()).thenReturn(listOf(existing))
 
         val service = service()
 

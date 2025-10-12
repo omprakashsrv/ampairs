@@ -41,7 +41,7 @@ class FlywayMigrationTest {
 
         flyway = Flyway.configure()
             .dataSource(dataSource)
-            .locations("classpath:db/migration")
+            .locations("classpath:db/migration/mysql", "classpath:db/migration")
             .baselineOnMigrate(true)
             .cleanDisabled(false)
             .load()
@@ -58,7 +58,7 @@ class FlywayMigrationTest {
         val appliedVersions = flyway.info().applied().mapNotNull { it.version?.canonical }
 
         assertThat(appliedVersions)
-            .contains("3.1", "3.2", "4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7")
+            .contains("3.1", "3.2", "4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7", "4.8")
         assertThat(flyway.info().pending()).isEmpty()
     }
 
@@ -85,7 +85,10 @@ class FlywayMigrationTest {
                 "customer_order",
                 "invoice",
                 "attribute_definition",
-                "field_config"
+                "field_config",
+                "device_session",
+                "login_session",
+                "auth_token"
             )
     }
 
