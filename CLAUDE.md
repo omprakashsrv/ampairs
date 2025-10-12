@@ -6,6 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Ampairs is a comprehensive business management system with **three integrated applications**:
 
+### Flyway Migration Baseline
+- Backend schema is version-controlled via Flyway migrations stored in each domain module under `src/main/resources/db/migration/mysql/` (e.g., `ampairs-backend/customer/src/main/resources/db/migration/mysql/V4_3__create_customer_module_tables.sql`).
+- Aggregated documentation lives in `ampairs-backend/ampairs_service/src/main/resources/db/migration/` (`README.md`, `MIGRATION_BASELINE.md`).
+- Integration tests for migrations live in `ampairs-backend/ampairs_service/src/test/kotlin/com/ampairs/FlywayMigrationTest.kt` (requires Docker/Testcontainers).
+
 ### **System Architecture**
 
 1. **Backend (Spring Boot + Kotlin)** - `/ampairs_service` + domain modules
@@ -247,13 +252,13 @@ fun create(@Valid request: EntityCreateRequest): ApiResponse<EntityResponse> {
 **Application**: ampairs_service (main aggregator)
 
 ## Recent Changes
+- 005-ampairs-backend-ampairs: Added Kotlin 2.2.20, Java 25 + Spring Boot 3.5.6, JPA/Hibernate 6.2, Flyway (already configured), MySQL JDBC Driver
 - 004-create-separate-unit: Added Kotlin 2.2.20 / Java 25 + Spring Boot 3.5.6, Spring Data JPA, Hibernate 6.2, MySQL Connector
 
 ### **Multi-Timezone Support Migration (2025-01-09)**
 
 #### **Critical Change: LocalDateTime → Instant**
 - **Breaking Change**: All timestamp fields migrated from `LocalDateTime` to `java.time.Instant`
-- **Reason**: `LocalDateTime` has no timezone info, causing bugs across timezones and DST transitions
   * All new entities MUST use `Instant` for timestamps
   * All new DTOs MUST use `Instant` for date/time fields
   * Legacy `LocalDateTime` code is being phased out
