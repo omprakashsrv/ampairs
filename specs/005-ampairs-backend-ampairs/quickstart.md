@@ -15,7 +15,7 @@
 
 This feature creates Flyway migration scripts for 22+ existing JPA entities across 6 modules to enable production deployment with `ddl-auto: validate` configuration.
 
-**Migration Files**: V4_1 through V4_8 (7 files)
+**Migration Files**: V4_1 through V4_10 (10 files)
 **Location**: `{module}/src/main/resources/db/migration/mysql/` (e.g., `ampairs-backend/unit/...`)
 **Pattern**: `V{major}_{minor}__{description}.sql`
 
@@ -261,7 +261,7 @@ ERROR - Schema-validation: wrong column type encountered in column [created_at]
 ERROR - in table [unit]; found [datetime], but expecting [timestamp]
 ```
 
-If validation fails, fix the migration SQL and increment version (e.g., V4_8__fix_unit_table.sql).
+If validation fails, fix the migration SQL and increment version (e.g., V4_10__fix_notification_queue.sql).
 
 ---
 
@@ -391,7 +391,7 @@ ERROR: Migration checksum mismatch for migration 4.2
 ./gradlew flywayRepair
 
 # Option 2: Create new migration (recommended)
-touch V4_8__fix_unit_table.sql
+touch V4_10__fix_notification_queue.sql
 ```
 
 ---
@@ -470,7 +470,7 @@ AND TABLE_SCHEMA = 'munsi_app';
 1. Read [research.md](./research.md) for detailed JPA-to-DDL patterns
 2. Review [data-model.md](./data-model.md) for entity mappings
 3. Use [contracts/migration-template.sql](./contracts/migration-template.sql) as starting point
-4. Create migration files V4_1 through V4_8
+4. Create migration files V4_1 through V4_10
 5. Test each migration independently
 6. Run full test suite
 7. Deploy to staging

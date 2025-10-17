@@ -103,7 +103,7 @@ fun AppScreenWithHeader(
     BackNavigationHandler(
         navController = navController,
         enabled = true,
-        fallbackRoute = if (isWorkspaceSelection) Route.Login else Route.Home
+        fallbackRoute = if (isWorkspaceSelection) Route.Login else Route.Workspace
     )
 
     AppScreenLayout(

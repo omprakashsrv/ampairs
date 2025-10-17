@@ -65,20 +65,23 @@ Use **V4.x** series with sequential minor versions for the new retail management
 
 2. **Module Definition**:
    ```
-   Module: unit          → V4_1 (2 tables: unit, unit_conversion)
-   Module: customer      → V4_2 (5 tables: customer, customer_image, customer_group, customer_type, master_state)
-   Module: product       → V4_3 (6 tables: product, product_image, product_brand, product_category, product_sub_category, product_group)
-   Module: inventory     → V4_4 (3 tables: inventory, inventory_transaction, inventory_unit_conversion)
-   Module: order         → V4_5 (2 tables: customer_order, order_item)
-   Module: invoice       → V4_6 (2 tables: invoice, invoice_item)
-   Module: form          → V4_8 (2 tables: attribute_definition, field_config) [OPTIONAL - for future]
+   Module: unit          → V1.0.0 (2 tables: unit, unit_conversion)
+   Module: customer      → V1.0.0 (5 tables: customer, customer_image, customer_group, customer_type, master_state)
+   Module: product       → V1.0.0 (6 tables: product, product_image, product_brand, product_category, product_sub_category, product_group)
+   Module: inventory     → V1.0.0 (3 tables: inventory, inventory_transaction, inventory_unit_conversion)
+   Module: order         → V1.0.0 (2 tables: customer_order, order_item)
+   Module: invoice       → V1.0.0 (2 tables: invoice, invoice_item)
+   Module: form          → V1.0.0 (2 tables: attribute_definition, field_config) [OPTIONAL - for future]
+   Module: auth          → V1.0.0 (3 tables: device_session, login_session, auth_token)
+   Module: workspace     → V1.0.0 (8 tables: workspaces, workspace_members, workspace_invitations, workspace_teams, master_modules, workspace_modules, workspace_settings, workspace_activities)
+   Module: notification  → V1.0.0 (1 table: notification_queue)
    ```
 
 3. **Future Extensions**:
-   - V4_8+ reserved for additional retail management features
-   - V5.x series reserved for next major feature set
+   - Future versions increment from V1.0.1+ within each module as needed
+   - Major version bumps reserved for schema changes that introduce breaking changes per module
 
-4. **Location**: `{module}/src/main/resources/db/migration/mysql/` (aggregated via `classpath:db/migration/{vendor}`)
+4. **Location**: `{module}/src/main/resources/db/migration/{vendor}/` (aggregated via `classpath:db/migration/{vendor}`)
    - Application.yml specifies: `locations: classpath:db/migration/{vendor}`
    - MySQL-specific migrations go in `db/migration/` (vendor replaced with mysql)
 

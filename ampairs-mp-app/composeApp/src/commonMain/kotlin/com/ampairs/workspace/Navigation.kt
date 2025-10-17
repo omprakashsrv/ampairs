@@ -14,6 +14,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import androidx.navigation.toRoute
 import com.ampairs.common.ui.AppScreenWithHeader
+import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.ui.MemberDetailsScreen
 import com.ampairs.workspace.ui.WorkspaceCreateScreen
 import com.ampairs.workspace.ui.WorkspaceInvitationCreateScreen
@@ -24,13 +25,11 @@ import com.ampairs.workspace.ui.WorkspaceModulesScreen
 
 fun NavGraphBuilder.workspaceNavigation(
     navController: NavHostController,
-    onNavigationServiceReady: ((com.ampairs.workspace.navigation.DynamicModuleNavigationService?) -> Unit)? = null,
-    onWorkspaceSelected: () -> Unit
+    onNavigationServiceReady: ((DynamicModuleNavigationService?) -> Unit)? = null,
 ) {
     // Create navigation service at workspace level when needed
-    var workspaceNavigationService: com.ampairs.workspace.navigation.DynamicModuleNavigationService? = null
     navigation<Route.Workspace>(startDestination = WorkspaceRoute.Root) {
-        
+
         // Workspace list screen (with offline-first data synchronization)
         composable<WorkspaceRoute.Root> {
             AppScreenWithHeader(
@@ -64,13 +63,14 @@ fun NavGraphBuilder.workspaceNavigation(
                     },
                     onWorkspaceCreated = { workspaceId ->
                         // Call the callback to navigate to main app after creation
-                        onWorkspaceSelected()
+                        // Navigate to modules list for the selected workspace
+                        navController.navigate(WorkspaceRoute.Modules(workspaceId))
                     },
                     modifier = Modifier.padding(paddingValues)
                 )
             }
         }
-        
+
         composable<WorkspaceRoute.Edit> { backStackEntry ->
             val editRoute = backStackEntry.toRoute<WorkspaceRoute.Edit>()
             AppScreenWithHeader(
@@ -91,12 +91,6 @@ fun NavGraphBuilder.workspaceNavigation(
             }
         }
 
-        composable<WorkspaceRoute.Detail> { backStackEntry ->
-            // This would be the workspace home/dashboard screen
-            // For now, we'll call the callback to navigate to main app
-            onWorkspaceSelected()
-        }
-
         // Workspace members management screen
         composable<WorkspaceRoute.Members> { backStackEntry ->
             val membersRoute = backStackEntry.toRoute<WorkspaceRoute.Members>()
@@ -110,7 +104,12 @@ fun NavGraphBuilder.workspaceNavigation(
                         navController.popBackStack()
                     },
                     onMemberClick = { memberId ->
-                        navController.navigate(WorkspaceRoute.MemberDetail(membersRoute.workspaceId, memberId))
+                        navController.navigate(
+                            WorkspaceRoute.MemberDetail(
+                                membersRoute.workspaceId,
+                                memberId
+                            )
+                        )
                     },
                     onInviteClick = {
                         navController.navigate(WorkspaceRoute.CreateInvitation(membersRoute.workspaceId))
@@ -177,8 +176,7 @@ fun NavGraphBuilder.workspaceNavigation(
                 WorkspaceModulesScreen(
                     navController = navController,
                     onModuleSelected = { moduleCode ->
-                        // Navigate to main app after module selection
-                        onWorkspaceSelected()
+                        navController.navigate(WorkspaceRoute.Modules(modulesRoute.workspaceId))
                     },
                     onNavigationServiceReady = onNavigationServiceReady,
                     workspaceId = modulesRoute.workspaceId,
@@ -190,8 +188,7 @@ fun NavGraphBuilder.workspaceNavigation(
 
         // Accept invitation screen (public access)
         composable<WorkspaceRoute.AcceptInvitation> { backStackEntry ->
-            val acceptInvitationRoute = backStackEntry.toRoute<WorkspaceRoute.AcceptInvitation>()
-            // TODO: Implement accept invitation screen
+            backStackEntry.toRoute<WorkspaceRoute.AcceptInvitation>()
             AppScreenWithHeader(
                 navController = navController,
                 isWorkspaceSelection = false

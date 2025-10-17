@@ -59,7 +59,7 @@
 
 ### Migration V4_1: Core Module
 
-- [x] **T012** [US1] Create migration file `ampairs-backend/core/src/main/resources/db/migration/mysql/V4_1__create_core_tables.sql`
+- [x] **T012** [US1] Create migration file `ampairs-backend/core/src/main/resources/db/migration/mysql/V1.0.0__create_core_tables.sql`
 - [x] **T013** [US1] Add migration header with version 4.1, description "Create core module tables", author, date, dependencies
 - [x] **T014** [US1] Add `file` table DDL matching File.kt entity (storage_url, file_name, file_type, file_size, uploaded_by) with BaseDomain fields
 - [x] **T015** [US1] Add `address` table DDL if Address.kt is standalone entity (check if embedded type or standalone table) — Address is value object, documented as no-op
@@ -79,7 +79,7 @@
 
 ### Migration V4_3: Customer Module
 
-- [x] **T026** [P] [US1] Create migration file `ampairs-backend/customer/src/main/resources/db/migration/mysql/V4_3__create_customer_module_tables.sql`
+- [x] **T026** [P] [US1] Create migration file `ampairs-backend/customer/src/main/resources/db/migration/mysql/V1.0.0__create_customer_module_tables.sql`
 - [x] **T027** [US1] Add migration header with version 4.3, description "Create customer module tables", author, date, dependencies (requires V4_1)
 - [x] **T028** [US1] Add `customer_group` table DDL matching CustomerGroup.kt (name, description TEXT) with OwnableBaseDomain
 - [x] **T029** [US1] Add `customer_type` table DDL matching CustomerType.kt (name, description TEXT) with OwnableBaseDomain
@@ -126,7 +126,7 @@
 
 ### Migration V4_6: Invoice Module
 
-- [x] **T064** [P] [US1] Create migration file `ampairs-backend/invoice/src/main/resources/db/migration/mysql/V4_6__create_invoice_module_tables.sql`
+- [x] **T064** [P] [US1] Create migration file `ampairs-backend/invoice/src/main/resources/db/migration/mysql/V1.0.0__create_invoice_module_tables.sql`
 - [x] **T065** [US1] Add migration header with version 4.6, description "Create invoice module tables", author, date, dependencies (requires V4_3 customer, V4_4 product, V4_5 order)
 - [x] **T066** [US1] Add `invoice` table DDL matching Invoice.kt (analyze entity for fields: invoice_number, order_ref_id, from_customer_id, to_customer_id, invoice_date TIMESTAMP, due_date TIMESTAMP, subtotal DOUBLE, tax_amount DOUBLE, total_amount DOUBLE, paid_amount DOUBLE, status, notes TEXT) with OwnableBaseDomain
 - [x] **T067** [US1] Add indexes for invoice (uk_invoice_number unique, idx_invoice_customer on to_customer_id)
@@ -137,7 +137,7 @@
 
 ### Migration V4_7: Form Module (Optional)
 
-- [x] **T072** [P] [US1] Create migration file `ampairs-backend/form/src/main/resources/db/migration/mysql/V4_7__create_form_module_tables.sql` (if needed)
+- [x] **T072** [P] [US1] Create migration file `ampairs-backend/form/src/main/resources/db/migration/mysql/V1.0.0__create_form_module_tables.sql` (if needed)
 - [x] **T073** [US1] Add migration header with version 4.7, description "Create form module tables", author, date, dependencies (requires V4_1)
 - [x] **T074** [US1] Add `attribute_definition` table DDL matching AttributeDefinition.kt (analyze entity for fields) with OwnableBaseDomain
 - [x] **T075** [US1] Add `field_config` table DDL matching FieldConfig.kt (analyze entity for fields: field_name, field_type, validation_rules JSON) with OwnableBaseDomain
@@ -145,15 +145,29 @@
 
 ### Migration V4_8: Auth Module
 
-- [x] **T076a** [P] [US1] Create migration file `ampairs-backend/auth/src/main/resources/db/migration/mysql/V4_8__create_auth_module_tables.sql`
-- [x] **T076b** [US1] Create PostgreSQL equivalent `V4_8__create_auth_module_tables.sql` under `db/migration/postgresql/`
+- [x] **T076a** [P] [US1] Create migration file `ampairs-backend/auth/src/main/resources/db/migration/mysql/V1.0.1__create_auth_module_tables.sql`
+- [x] **T076b** [US1] Create PostgreSQL equivalent `V1.0.1__create_auth_module_tables.sql` under `db/migration/postgresql/`
 - [x] **T076c** [US1] Add `device_session`, `login_session`, and `auth_token` table DDL matching auth entities with BaseDomain fields and required indexes
 - [ ] **T076d** [US1] Verify V4_8 migration syntax with `./gradlew :ampairs_service:flywayValidate`
+
+### Migration V4_9: Workspace Module
+
+- [x] **T076e** [P] [US1] Create migration file `ampairs-backend/workspace/src/main/resources/db/migration/mysql/V4_9__create_workspace_module_tables.sql`
+- [x] **T076f** [US1] Create PostgreSQL equivalent `V4_9__create_workspace_module_tables.sql`
+- [x] **T076g** [US1] Add workspace table DDLs (workspaces, workspace_members, workspace_invitations, workspace_teams, master_modules, workspace_modules, workspace_settings, workspace_activities)
+- [ ] **T076h** [US1] Verify V4_9 migration syntax with `./gradlew :ampairs_service:flywayValidate`
+
+### Migration V4_10: Notification Module
+
+- [x] **T076i** [P] [US1] Create migration file `ampairs-backend/notification/src/main/resources/db/migration/mysql/V4_10__create_notification_module_tables.sql`
+- [x] **T076j** [US1] Create PostgreSQL equivalent `V4_10__create_notification_module_tables.sql`
+- [x] **T076k** [US1] Add `notification_queue` table DDL matching NotificationQueue entity (status/retry indices, JSON/text columns)
+- [ ] **T076l** [US1] Verify V4_10 migration syntax with `./gradlew :ampairs_service:flywayValidate`
 
 ### Integration Testing for User Story 1
 
 - [x] **T077** [US1] Create `ampairs-backend/ampairs_service/src/test/kotlin/com/ampairs/FlywayMigrationTest.kt` with Testcontainers setup (MySQLContainer)
-- [x] **T078** [US1] Add test: `should successfully execute all migrations` - verify Flyway runs migrations V4_1 through V4_8 on fresh MySQL 8.0 container
+- [x] **T078** [US1] Add test: `should successfully execute all migrations` - verify Flyway runs migrations V4_1 through V4_10 on fresh MySQL 8.0 container
 - [x] **T079** [US1] Add test: `should validate JPA entities match database schema` - verify ddl-auto:validate passes with EntityManager metamodel checks
 - [x] **T080** [US1] Add test: `should verify foreign key constraints exist` - query information_schema.KEY_COLUMN_USAGE to verify all FK relationships
 - [x] **T081** [US1] Add test: `should verify indexes exist on foreign keys` - query information_schema.STATISTICS to check indexes

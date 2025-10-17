@@ -16,7 +16,6 @@ import kotlinx.coroutines.launch
 
 class WorkspaceCreateViewModel(
     private val workspaceRepository: WorkspaceRepository,
-    private val tokenRepository: TokenRepository,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(WorkspaceCreateState())

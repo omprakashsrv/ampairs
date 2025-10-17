@@ -128,80 +128,68 @@ specs/005-ampairs-backend-ampairs/
 ```
 ampairs-backend/
 ├── ampairs_service/
-│   └── src/main/resources/
-│       ├── application.yml                    # Contains ddl-auto: validate config
-│       └── db/migration/                      # Aggregated documentation (no module SQL)
-│           ├── MIGRATION_BASELINE.md
-│           └── README.md
+│   └── src/main/resources/db/migration/
+│       ├── MIGRATION_BASELINE.md
+│       └── README.md
 │
 ├── auth/src/main/resources/db/migration/
 │   ├── mysql/V4_8__create_auth_module_tables.sql
 │   └── postgresql/V4_8__create_auth_module_tables.sql
 │
-├── core/src/main/resources/db/migration/mysql/
-│   └── V4_1__create_core_tables.sql
+├── core/src/main/resources/db/migration/
+│   ├── mysql/V1.0.0__create_core_tables.sql
+│   └── postgresql/V1.0.0__create_core_tables.sql
 │
-├── unit/src/main/resources/db/migration/mysql/
-│   └── V4_2__create_unit_module_tables.sql
+├── unit/src/main/resources/db/migration/
+│   ├── mysql/V4_2__create_unit_module_tables.sql
+│   └── postgresql/V4_2__create_unit_module_tables.sql
 │
-├── customer/src/main/resources/db/migration/mysql/
-│   └── V4_3__create_customer_module_tables.sql
+├── customer/src/main/resources/db/migration/
+│   ├── mysql/V4_3__create_customer_module_tables.sql
+│   └── postgresql/V4_3__create_customer_module_tables.sql
 │
-├── product/src/main/resources/db/migration/mysql/
-│   └── V4_4__create_product_module_tables.sql
+├── product/src/main/resources/db/migration/
+│   ├── mysql/V4_4__create_product_module_tables.sql
+│   └── postgresql/V4_4__create_product_module_tables.sql
 │
-├── order/src/main/resources/db/migration/mysql/
-│   └── V4_5__create_order_module_tables.sql
+├── order/src/main/resources/db/migration/
+│   ├── mysql/V4_5__create_order_module_tables.sql
+│   └── postgresql/V4_5__create_order_module_tables.sql
 │
-├── invoice/src/main/resources/db/migration/mysql/
-│   └── V4_6__create_invoice_module_tables.sql
+├── invoice/src/main/resources/db/migration/
+│   ├── mysql/V4_6__create_invoice_module_tables.sql
+│   └── postgresql/V4_6__create_invoice_module_tables.sql
 │
-├── unit/src/main/kotlin/com/ampairs/unit/domain/model/
-│   ├── Unit.kt                                # 2 entities requiring migrations
-│   └── UnitConversion.kt
+├── form/src/main/resources/db/migration/
+│   ├── mysql/V4_7__create_form_module_tables.sql
+│   └── postgresql/V4_7__create_form_module_tables.sql
 │
-├── form/src/main/resources/db/migration/mysql/
-│   └── V4_7__create_form_module_tables.sql
+├── workspace/src/main/resources/db/migration/
+│   ├── mysql/V4_9__create_workspace_module_tables.sql
+│   └── postgresql/V4_9__create_workspace_module_tables.sql
 │
-└── form/src/main/kotlin/com/ampairs/form/domain/model/
+├── notification/src/main/resources/db/migration/
+│   ├── mysql/V4_10__create_notification_module_tables.sql
+│   └── postgresql/V4_10__create_notification_module_tables.sql
 │
-├── core/src/main/kotlin/com/ampairs/core/domain/model/
-│   ├── BaseDomain.kt                          # Base entity (id, uid, createdAt, updatedAt)
-│   ├── OwnableBaseDomain.kt                   # Tenant-scoped base (+ workspaceId, ownerId)
-│   ├── File.kt                                # File entity
-│   ├── Address.kt                             # Address entity
-│   └── AbstractIdVerification.kt              # Verification entity
-│
-├── customer/src/main/kotlin/com/ampairs/customer/domain/model/
-│   ├── Customer.kt                            # 6 entities requiring migrations
-│   ├── CustomerGroup.kt
-│   ├── CustomerType.kt
-│   ├── CustomerImage.kt
-│   ├── State.kt
-│   └── MasterState.kt
-│
-├── product/src/main/kotlin/com/ampairs/product/domain/model/
-│   ├── Product.kt                             # 10 entities requiring migrations
-│   ├── ProductImage.kt
-│   ├── ProductPrice.kt
-│   └── [7 more entities including ProductGroup, ProductCategory, etc.]
-│
-├── product/src/main/kotlin/com/ampairs/inventory/domain/model/
-│   ├── Inventory.kt
-│   ├── InventoryTransaction.kt
-│   └── InventoryUnitConversion.kt
-│
-├── order/src/main/kotlin/com/ampairs/order/domain/model/
-│   ├── Order.kt                               # 2 entities requiring migrations
-│   └── OrderItem.kt
-│
-├── invoice/src/main/kotlin/com/ampairs/invoice/domain/model/
-│   ├── Invoice.kt                             # 2 entities requiring migrations
-│   └── InvoiceItem.kt
-│
-└── form/src/main/kotlin/com/ampairs/form/domain/model/
-    ├── AttributeDefinition.kt                 # 2 entities requiring migrations
-    └── FieldConfig.kt
+└── tax/src/main/resources/db/migration/
+    ├── mysql/V3_1__create_tax_module_tables.sql
+    └── postgresql/V3_1__create_tax_module_tables.sql
+```
+
+Key entity packages include:
+
+```
+core/src/main/kotlin/com/ampairs/core/domain/model/
+customer/src/main/kotlin/com/ampairs/customer/domain/model/
+product/src/main/kotlin/com/ampairs/product/domain/model/
+product/src/main/kotlin/com/ampairs/inventory/domain/model/
+order/src/main/kotlin/com/ampairs/order/domain/model/
+invoice/src/main/kotlin/com/ampairs/invoice/domain/model/
+unit/src/main/kotlin/com/ampairs/unit/domain/model/
+form/src/main/kotlin/com/ampairs/form/domain/model/
+workspace/src/main/kotlin/com/ampairs/workspace/model/
+notification/src/main/kotlin/com/ampairs/notification/model/
 ```
 
 **Structure Decision**: Ampairs follows a multi-module monorepo structure where each domain (auth, core, customer, product, order, invoice, unit, form, tax, event) is a separate Gradle module with its own JPA entities. The main application module (`ampairs_service`) aggregates all domain modules and loads their resources from the classpath. Migrations now live alongside their owning module (`{module}/src/main/resources/db/migration/mysql/`), mirroring the patterns used by `business` and `workspace`.

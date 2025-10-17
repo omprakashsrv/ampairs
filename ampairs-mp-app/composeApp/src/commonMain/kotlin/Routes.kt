@@ -9,9 +9,6 @@ sealed interface Route {
     data object Workspace : Route
     
     @Serializable
-    data object Home : Route
-    
-    @Serializable
     data object Customer : Route
     
     @Serializable

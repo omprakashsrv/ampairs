@@ -448,12 +448,50 @@ ref_id VARCHAR(255)               -- External system reference
 
 
 
+
+## Migration V4_9: Workspace Module
+
+## Migration V4_10: Notification Module
+
+### Notification Queue Table
+**Entity**: `com.ampairs.notification.model.NotificationQueue`
+**Table**: `notification_queue`
+**Extends**: OwnableBaseDomain
+
+| Column | Type | Nullable | Notes |
+|--------|------|----------|-------|
+| owner_id | VARCHAR(200) | NOT NULL | Tenant identifier
+| ref_id | VARCHAR(255) | NULL | External reference
+| recipient | VARCHAR(255) | NOT NULL | Destination (phone/email/device)
+| message | TEXT | NOT NULL | Message payload
+| channel | VARCHAR(50) | NOT NULL | `NotificationChannel` enum
+| status | VARCHAR(50) | NOT NULL | `NotificationStatus` enum
+| retry_count | INT | NOT NULL | Attempts made
+| max_retries | INT | NOT NULL | Configured limit
+| scheduled_at | TIMESTAMP | NOT NULL | Next schedule
+| last_attempt_at | TIMESTAMP | NULL | Last attempt timestamp
+| provider_used | VARCHAR(50) | NULL | Provider code
+| provider_message_id | VARCHAR(255) | NULL | Provider-supplied ID
+| error_message | TEXT | NULL | Last error (if any)
+| provider_response | TEXT | NULL | Raw provider response
+
+Key tables created:
+
+- `workspaces`: core tenant metadata (slug, subscription, locale, feature flags).
+- `workspace_members`: membership records with roles, permissions JSON, team references.
+- `workspace_invitations`: pending invitations with tokens, expiry, team assignments.
+- `workspace_teams`: team definitions per workspace with permission sets.
+- `master_modules`: global module catalog including configuration JSON.
+- `workspace_modules`: installed modules per workspace with settings/usage JSON.
+- `workspace_settings`: branding/theme/business configuration blobs.
+- `workspace_activities`: audit trail of workspace-level actions.
+
 ---
 
 ## Summary Statistics
 
 **Total Entities**: 22
-**Migrations Required**: 8 (V4_1 through V4_8)
+**Migrations Required**: 10 (V4_1 through V4_10)
 **Total Tables**: 22+
 **Foreign Key Relationships**: ~15
 **Multi-Tenant Tables**: All (via OwnableBaseDomain)

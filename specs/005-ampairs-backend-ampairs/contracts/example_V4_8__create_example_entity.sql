@@ -3,7 +3,7 @@
 -- Description: Demonstrates common patterns for Flyway migrations
 -- Author: Template Bot
 -- Date: 2025-10-12
--- Dependencies: V4_7__create_form_module_tables.sql
+-- Dependencies: V1.0.0__create_form_module_tables.sql
 
 -- =====================================================
 -- Example Parent Table
