@@ -6,6 +6,7 @@ import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.workspace.api.model.AvailableModule
 import com.ampairs.workspace.api.model.ModuleInstallationResponse
 import com.ampairs.workspace.api.model.ModuleUninstallationResponse
+import com.ampairs.workspace.api.model.ModuleDetailResponse
 import com.ampairs.workspace.db.WorkspaceModuleRepository
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.GlobalNavigationManager
@@ -63,7 +64,11 @@ class WorkspaceModulesViewModel(
      * Load installed modules - exact StateListViewModel pattern
      */
     fun loadInstalledModules() {
-        val wsId = workspaceId ?: return
+        val wsId = workspaceId ?: run {
+            println("WorkspaceModulesViewModel: loadInstalledModules - workspaceId is null!")
+            return
+        }
+        println("WorkspaceModulesViewModel: loadInstalledModules called for workspaceId: $wsId")
         viewModelScope.launch {
             _isLoading.value = true
             _errorMessage.value = null
@@ -72,11 +77,14 @@ class WorkspaceModulesViewModel(
 
             try {
                 val key = InstalledModuleKey.refresh(wsId)
+                println("WorkspaceModulesViewModel: Streaming from moduleStore with key: $key")
                 moduleRepository.moduleStore
                     .stream(StoreReadRequest.cached(key, refresh = true))
                     .collect { response ->
+                        println("WorkspaceModulesViewModel: Store response type: ${response::class.simpleName}")
                         when (response) {
                             is StoreReadResponse.Data -> {
+                                println("WorkspaceModulesViewModel: Received ${response.value.size} installed modules")
                                 _installedModules.value = response.value
                                 _isLoading.value = false
                                 _errorMessage.value = null
@@ -85,10 +93,13 @@ class WorkspaceModulesViewModel(
                             }
 
                             is StoreReadResponse.Loading -> {
+                                println("WorkspaceModulesViewModel: Loading...")
                                 _isLoading.value = true
                             }
 
                             is StoreReadResponse.Error.Exception -> {
+                                println("WorkspaceModulesViewModel: Error.Exception: ${response.error.message}")
+                                response.error.printStackTrace()
                                 _isLoading.value = false
                                 _errorMessage.value = response.error.message ?: "Failed to load modules"
                                 // Set error in global navigation manager
@@ -96,6 +107,7 @@ class WorkspaceModulesViewModel(
                             }
 
                             is StoreReadResponse.Error.Message -> {
+                                println("WorkspaceModulesViewModel: Error.Message: ${response.message}")
                                 _isLoading.value = false
                                 _errorMessage.value = response.message
                                 // Set error in global navigation manager
@@ -103,11 +115,14 @@ class WorkspaceModulesViewModel(
                             }
 
                             else -> {
+                                println("WorkspaceModulesViewModel: Other response type: ${response::class.simpleName}")
                                 // Handle other response types if needed
                             }
                         }
                     }
             } catch (e: Exception) {
+                println("WorkspaceModulesViewModel: Exception in loadInstalledModules: ${e.message}")
+                e.printStackTrace()
                 _isLoading.value = false
                 _errorMessage.value = e.message ?: "Failed to load modules"
                 // Set error in global navigation manager
@@ -125,25 +140,32 @@ class WorkspaceModulesViewModel(
         featured: Boolean = false,
         refresh: Boolean = false
     ) {
+        println("WorkspaceModulesViewModel: loadAvailableModules called - category=$category, featured=$featured, refresh=$refresh")
         viewModelScope.launch {
             try {
                 _isLoading.value = true
                 _errorMessage.value = null
 
+                println("WorkspaceModulesViewModel: Calling repository.getAvailableModules...")
                 // Call actual API through repository (Store5 handles caching automatically)
                 val modules = moduleRepository.getAvailableModules(category, featured, refresh)
+                println("WorkspaceModulesViewModel: Received ${modules.size} available modules from repository")
                 _availableModules.value = modules
 
             } catch (e: Exception) {
+                println("WorkspaceModulesViewModel: Exception loading available modules: ${e.message}")
+                e.printStackTrace()
                 // Check if we have existing cached data
                 val currentModules = _availableModules.value
                 if (currentModules.isEmpty()) {
                     // No cached data available, use mock data as fallback
+                    println("WorkspaceModulesViewModel: Using mock data as fallback")
                     val mockModules = createMockAvailableModules()
                     _availableModules.value = mockModules
                     _errorMessage.value = "Using sample data - connection unavailable"
                 } else {
                     // We have cached data, show subtle connectivity warning
+                    println("WorkspaceModulesViewModel: Using cached data")
                     _errorMessage.value = "Using offline data - connection unavailable"
                 }
             } finally {
@@ -329,6 +351,35 @@ class WorkspaceModulesViewModel(
     suspend fun getModuleByCode(moduleCode: String): InstalledModule? {
         val wsId = workspaceId ?: return null
         return moduleRepository.getModuleByCode(wsId, moduleCode)
+    }
+
+    /**
+     * Get module details - matches backend: GET /workspace/v1/modules/{moduleId}
+     */
+    fun getModuleDetails(moduleId: String, onResult: (ModuleDetailResponse?) -> Unit) {
+        val wsId = workspaceId ?: run {
+            onResult(null)
+            return
+        }
+
+        viewModelScope.launch {
+            try {
+                _errorMessage.value = null
+
+                val result = moduleRepository.getModuleDetails(wsId, moduleId)
+                if (result.isSuccess) {
+                    onResult(result.getOrThrow())
+                } else {
+                    val error = result.exceptionOrNull()?.message ?: "Failed to load module details"
+                    _errorMessage.value = error
+                    onResult(null)
+                }
+            } catch (e: Exception) {
+                val error = e.message ?: "Failed to load module details"
+                _errorMessage.value = error
+                onResult(null)
+            }
+        }
     }
 
     /**

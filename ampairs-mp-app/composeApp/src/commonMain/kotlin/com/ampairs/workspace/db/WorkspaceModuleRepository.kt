@@ -5,6 +5,7 @@ import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.workspace.api.model.AvailableModule
 import com.ampairs.workspace.api.model.ModuleInstallationResponse
 import com.ampairs.workspace.api.model.ModuleUninstallationResponse
+import com.ampairs.workspace.api.model.ModuleDetailResponse
 import com.ampairs.workspace.db.dao.WorkspaceModuleDao
 import com.ampairs.workspace.db.entity.AvailableModuleEntity
 import com.ampairs.workspace.db.entity.InstalledModuleEntity
@@ -15,6 +16,7 @@ import com.ampairs.workspace.store.AvailableModuleKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.filterNotNull
 import org.mobilenativefoundation.store.core5.ExperimentalStoreApi
 import org.mobilenativefoundation.store.store5.StoreReadRequest
 import org.mobilenativefoundation.store.store5.StoreReadResponse
@@ -85,30 +87,53 @@ class WorkspaceModuleRepository(
         featured: Boolean = false,
         refresh: Boolean = false
     ): List<AvailableModule> {
+        println("WorkspaceModuleRepository: getAvailableModules - category=$category, featured=$featured, refresh=$refresh")
         val key = when {
             featured -> AvailableModuleKey.featured()
             category != null -> AvailableModuleKey.category(category)
             else -> AvailableModuleKey.all()
         }
+        println("WorkspaceModuleRepository: Using key: $key")
 
         val request = if (refresh) {
+            println("WorkspaceModuleRepository: Creating FRESH request")
             StoreReadRequest.fresh(key)
         } else {
+            println("WorkspaceModuleRepository: Creating CACHED request")
             StoreReadRequest.cached(key, refresh = false)
         }
 
-        // Get first valid response from Store5
+        // Wait for first Data or Error response from Store5 (skip Loading/Initial states)
         return availableModuleStore.stream(request)
             .map { response ->
+                println("WorkspaceModuleRepository: Store response type: ${response::class.simpleName}")
                 when (response) {
-                    is StoreReadResponse.Data -> response.value
-                    is StoreReadResponse.Loading -> response.dataOrNull() ?: emptyList()
-                    is StoreReadResponse.Error -> response.dataOrNull() ?: emptyList()
-                    is StoreReadResponse.NoNewData -> response.dataOrNull() ?: emptyList()
-                    is StoreReadResponse.Initial -> emptyList()
+                    is StoreReadResponse.Data -> {
+                        println("WorkspaceModuleRepository: Data received with ${response.value.size} modules")
+                        response.value
+                    }
+                    is StoreReadResponse.Loading -> {
+                        println("WorkspaceModuleRepository: Loading... continuing to wait")
+                        null // Return null to skip this emission
+                    }
+                    is StoreReadResponse.Error -> {
+                        val data: List<AvailableModule>? = response.dataOrNull()
+                        println("WorkspaceModuleRepository: Error response - returning ${data?.size ?: 0} modules")
+                        data ?: emptyList() // Return empty on error
+                    }
+                    is StoreReadResponse.NoNewData -> {
+                        val data: List<AvailableModule>? = response.dataOrNull()
+                        println("WorkspaceModuleRepository: NoNewData - returning ${data?.size ?: 0} modules")
+                        data ?: emptyList()
+                    }
+                    is StoreReadResponse.Initial -> {
+                        println("WorkspaceModuleRepository: Initial... continuing to wait")
+                        null // Return null to skip this emission
+                    }
                 }
             }
-            .first() // Get first response regardless of content for offline support
+            .filterNotNull() // Skip null values (Loading and Initial states)
+            .first() // Get first non-null response (Data, Error, or NoNewData)
     }
 
     /**
@@ -190,6 +215,22 @@ class WorkspaceModuleRepository(
         return moduleDao.getInstalledModulesWithMenuItems(workspaceId)
             .filter { it.module.status != "ACTIVE" || !it.module.enabled }
             .map { it.toApiModel() }
+    }
+
+    /**
+     * Get detailed information about a specific module
+     * Matches backend: GET /workspace/v1/modules/{moduleId}
+     * Note: Module details are not cached as they contain real-time analytics
+     */
+    suspend fun getModuleDetails(
+        workspaceId: String,
+        moduleId: String
+    ): Result<ModuleDetailResponse> {
+        return try {
+            moduleApi.getModuleDetails(workspaceId, moduleId)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     /**
