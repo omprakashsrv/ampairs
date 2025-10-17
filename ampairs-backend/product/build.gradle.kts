@@ -36,6 +36,7 @@ repositories {
 
 dependencies {
     api(project(mapOf("path" to ":core")))
+    api(project(mapOf("path" to ":file")))
     api(project(mapOf("path" to ":event")))
     api(project(mapOf("path" to ":unit")))
     compileOnly("org.springframework.boot:spring-boot-starter-data-rest")

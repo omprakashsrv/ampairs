@@ -64,16 +64,14 @@ class CustomerService @Autowired constructor(
                 customer.createdAt = existingCustomer?.createdAt ?: Instant.now()
                 customer.updatedAt = existingCustomer?.updatedAt ?: Instant.now()
             }
-            customer.lastUpdated = System.currentTimeMillis()
             customerRepository.save(customer)
         }
         return customers
     }
 
-    fun getCustomers(lastUpdate: Long?): List<Customer> {
+    fun getCustomers(): List<Customer> {
         val customers =
-            customerPagingRepository.findAllByLastUpdatedGreaterThanEqual(
-                lastUpdate ?: 0, PageRequest.of(0, 1000, Sort.by("lastUpdated").ascending())
+            customerPagingRepository.findAllByUpdatedAtGreaterThanEqual(Instant.MIN ,PageRequest.of(0, 1000, Sort.by("lastUpdated").ascending())
             )
         return customers
     }
@@ -121,7 +119,6 @@ class CustomerService @Autowired constructor(
         }
 
         customer.status = "ACTIVE"
-        customer.lastUpdated = System.currentTimeMillis()
         val savedCustomer = customerRepository.save(customer)
 
         // Publish CustomerCreatedEvent
@@ -186,7 +183,6 @@ class CustomerService @Autowired constructor(
             throw IllegalArgumentException("Invalid GST number format: ${updates.gstNumber}")
         }
 
-        existingCustomer.lastUpdated = System.currentTimeMillis()
         val savedCustomer = customerRepository.save(existingCustomer)
 
         // Publish CustomerUpdatedEvent only if there were changes
@@ -246,7 +242,6 @@ class CustomerService @Autowired constructor(
             customer.addToOutstanding(amount)
         }
         
-        customer.lastUpdated = System.currentTimeMillis()
         return customerRepository.save(customer)
     }
 

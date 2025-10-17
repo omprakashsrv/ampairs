@@ -51,14 +51,6 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
 
-    // Spring Cloud AWS - Auto-configuration for AWS services
-    implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.3.0"))
-    implementation("io.awspring.cloud:spring-cloud-aws-starter-s3")
-    implementation("io.awspring.cloud:spring-cloud-aws-starter-sns")
-
-    // MinIO Java SDK for object storage
-    implementation("io.minio:minio:8.5.17")
-
     // Database
     runtimeOnly("com.mysql:mysql-connector-j")
 

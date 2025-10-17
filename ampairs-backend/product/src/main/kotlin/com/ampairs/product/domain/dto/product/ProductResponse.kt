@@ -1,7 +1,7 @@
 package com.ampairs.product.domain.dto.product
 
-import com.ampairs.core.domain.dto.FileResponse
-import com.ampairs.core.domain.dto.toFileResponse
+import com.ampairs.file.domain.dto.FileResponse
+import com.ampairs.file.domain.dto.toFileResponse
 import com.ampairs.inventory.domain.dto.InventoryResponse
 import com.ampairs.inventory.domain.dto.asResponse
 import com.ampairs.unit.domain.dto.UnitConversionResponse
@@ -32,7 +32,6 @@ data class ProductResponse(
     val dp: Double,
     val sellingPrice: Double,
     val unitConversions: List<UnitConversionResponse>,
-    val lastUpdated: Long?,
     val createdAt: Instant?,
     val updatedAt: Instant?,
     val baseUnit: UnitResponse?,
@@ -63,7 +62,6 @@ fun List<Product>.asResponse(): List<ProductResponse> {
             categoryId = it.categoryId ?: "",
             subCategoryId = it.subCategoryId ?: "",
             brandId = it.brandId ?: "",
-            lastUpdated = it.lastUpdated,
             createdAt = it.createdAt,
             updatedAt = it.updatedAt,
             unitConversions = it.unitConversions.asUnitConversionResponses(),
@@ -100,7 +98,6 @@ fun Product.asResponse(): ProductResponse {
         categoryId = categoryId ?: "",
         subCategoryId = subCategoryId ?: "",
         brandId = brandId ?: "",
-        lastUpdated = lastUpdated,
         createdAt = createdAt,
         updatedAt = updatedAt,
         unitConversions = unitConversions.asUnitConversionResponses(),

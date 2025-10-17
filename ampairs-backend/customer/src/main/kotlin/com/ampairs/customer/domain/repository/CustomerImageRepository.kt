@@ -36,7 +36,10 @@ interface CustomerImageRepository : JpaRepository<CustomerImage, Long> {
      * Find image by UID for a specific customer
      */
     @Query("SELECT ci FROM customer_image ci WHERE ci.uid = :imageUid AND ci.customerUid = :customerUid")
-    fun findByUidAndCustomerUid(@Param("imageUid") imageUid: String, @Param("customerUid") customerUid: String): CustomerImage?
+    fun findByUidAndCustomerUid(
+        @Param("imageUid") imageUid: String,
+        @Param("customerUid") customerUid: String
+    ): CustomerImage?
 
     /**
      * Find image by storage path
@@ -97,59 +100,10 @@ interface CustomerImageRepository : JpaRepository<CustomerImage, Long> {
     fun updateDisplayOrder(@Param("imageUid") imageUid: String, @Param("displayOrder") displayOrder: Int)
 
     /**
-     * Find images that need cleanup (inactive for more than specified days)
-     */
-    @Query("""
-        SELECT ci FROM customer_image ci
-        WHERE ci.active = false
-        AND ci.updatedAt < :cutoffDate
-        ORDER BY ci.updatedAt ASC
-    """)
-    fun findInactiveImagesOlderThan(@Param("cutoffDate") cutoffDate: java.time.LocalDateTime): List<CustomerImage>
-
-    /**
-     * Get storage statistics for workspace
-     */
-    @Query("""
-        SELECT
-            COUNT(ci) as totalImages,
-            COALESCE(SUM(ci.fileSize), 0) as totalSize,
-            COUNT(CASE WHEN ci.isPrimary = true THEN 1 END) as primaryImages
-        FROM customer_image ci
-        WHERE ci.workspaceSlug = :workspaceSlug
-        AND ci.active = true
-    """)
-    fun getStorageStats(@Param("workspaceSlug") workspaceSlug: String): StorageStats
-
-    /**
-     * Find images by content type
-     */
-    @Query("SELECT ci FROM customer_image ci WHERE ci.contentType = :contentType AND ci.active = true")
-    fun findByContentTypeAndActiveTrue(@Param("contentType") contentType: String): List<CustomerImage>
-
-    /**
-     * Find large images (size greater than specified bytes)
-     */
-    @Query("SELECT ci FROM customer_image ci WHERE ci.fileSize > :sizeBytes AND ci.active = true ORDER BY ci.fileSize DESC")
-    fun findLargeImages(@Param("sizeBytes") sizeBytes: Long): List<CustomerImage>
-
-    /**
-     * Find images without dimensions (for processing)
-     */
-    @Query("SELECT ci FROM customer_image ci WHERE (ci.width IS NULL OR ci.height IS NULL) AND ci.active = true")
-    fun findImagesWithoutDimensions(): List<CustomerImage>
-
-    /**
      * Get next display order for customer images
      */
     @Query("SELECT COALESCE(MAX(ci.displayOrder), -1) + 1 FROM customer_image ci WHERE ci.customerUid = :customerUid AND ci.active = true")
     fun getNextDisplayOrder(@Param("customerUid") customerUid: String): Int
-
-    /**
-     * Check if customer has any images
-     */
-    @Query("SELECT CASE WHEN COUNT(ci) > 0 THEN true ELSE false END FROM customer_image ci WHERE ci.customerUid = :customerUid AND ci.active = true")
-    fun existsByCustomerUidAndActiveTrue(@Param("customerUid") customerUid: String): Boolean
 
     /**
      * Find all active images across all workspaces

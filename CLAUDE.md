@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 Ampairs is a comprehensive business management system with **three integrated applications**:
 
 ### Flyway Migration Baseline
-- Backend schema is version-controlled via Flyway migrations stored in each domain module under `src/main/resources/db/migration/mysql/` (e.g., `ampairs-backend/customer/src/main/resources/db/migration/mysql/V4_3__create_customer_module_tables.sql`).
+- Backend schema is version-controlled via Flyway migrations stored in each domain module under `src/main/resources/db/migration/mysql/` (e.g., `ampairs-backend/customer/src/main/resources/db/migration/mysql/V1.0.0__create_customer_module_tables.sql`).
 - Aggregated documentation lives in `ampairs-backend/ampairs_service/src/main/resources/db/migration/` (`README.md`, `MIGRATION_BASELINE.md`).
 - Integration tests for migrations live in `ampairs-backend/ampairs_service/src/test/kotlin/com/ampairs/FlywayMigrationTest.kt` (requires Docker/Testcontainers).
 

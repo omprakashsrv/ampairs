@@ -20,6 +20,7 @@ import org.springframework.data.domain.Sort
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 import kotlin.jvm.optionals.getOrDefault
 
 @Service
@@ -113,10 +114,10 @@ class InvoiceService @Autowired constructor(
     }
 
     @Transactional(readOnly = true)
-    fun getInvoices(lastUpdated: Long): List<Invoice> {
+    fun getInvoices(lastUpdated: Instant?): List<Invoice> {
         val invoices =
-            invoicePagingRepository.findAllByLastUpdatedGreaterThanEqual(
-                lastUpdated, PageRequest.of(0, 50, Sort.by("lastUpdated").ascending())
+            invoicePagingRepository.findAllByUpdatedAtGreaterThanEqual(
+                lastUpdated ?: Instant.MIN, PageRequest.of(0, 50, Sort.by("lastUpdated").ascending())
             )
         return invoices
     }

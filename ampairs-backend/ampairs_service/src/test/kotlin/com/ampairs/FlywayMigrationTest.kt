@@ -58,7 +58,7 @@ class FlywayMigrationTest {
         val appliedVersions = flyway.info().applied().mapNotNull { it.version?.canonical }
 
         assertThat(appliedVersions)
-            .contains("3.1", "3.2", "4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7", "4.8")
+            .contains("3.1", "3.2", "4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7", "4.8", "4.9", "4.10")
         assertThat(flyway.info().pending()).isEmpty()
     }
 
@@ -88,7 +88,16 @@ class FlywayMigrationTest {
                 "field_config",
                 "device_session",
                 "login_session",
-                "auth_token"
+                "auth_token",
+                "workspaces",
+                "workspace_members",
+                "workspace_invitations",
+                "workspace_teams",
+                "workspace_modules",
+                "workspace_settings",
+                "workspace_activities",
+                "master_modules",
+                "notification_queue"
             )
     }
 

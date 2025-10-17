@@ -15,7 +15,6 @@ data class InventoryResponse(
     val stock: Double,
     val sellingPrice: Double,
     val buyingPrice: Double,
-    val lastUpdated: Long?,
     val createdAt: Instant?,
     val updatedAt: Instant?,
 )
@@ -37,7 +36,6 @@ fun Inventory.asResponse(): InventoryResponse {
         stock = this.stock,
         sellingPrice = this.sellingPrice,
         buyingPrice = this.buyingPrice,
-        lastUpdated = this.lastUpdated,
         createdAt = this.createdAt,
         updatedAt = this.updatedAt,
         unitId = this.unitId,

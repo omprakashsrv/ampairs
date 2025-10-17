@@ -4,7 +4,6 @@ import com.ampairs.core.multitenancy.DeviceContextHolder
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.core.security.AuthenticationHelper
 import com.ampairs.event.domain.events.ProductCreatedEvent
-import com.ampairs.event.domain.events.ProductDeletedEvent
 import com.ampairs.event.domain.events.ProductUpdatedEvent
 import com.ampairs.product.domain.model.Product
 import com.ampairs.product.domain.model.group.ProductBrand
@@ -21,7 +20,7 @@ import org.springframework.data.domain.Sort
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.util.*
+import java.time.Instant
 
 @Service
 class ProductService(
@@ -48,9 +47,9 @@ class ProductService(
     private fun getDeviceId(): String = DeviceContextHolder.getCurrentDevice() ?: ""
 
 
-    fun getProducts(lastUpdated: Long?): List<Product> {
-        return productPagingRepository.findAllByLastUpdatedGreaterThanEqual(
-            lastUpdated ?: 0,
+    fun getProducts(updatedAt: Instant?): List<Product> {
+        return productPagingRepository.findAllByUpdatedAtGreaterThanEqual(
+            updatedAt ?: Instant.MIN,
             PageRequest.of(0, 1000, Sort.by("lastUpdated").ascending())
         )
     }
@@ -106,7 +105,6 @@ class ProductService(
                 it.id = group?.id ?: 0
                 it.uid = group?.uid ?: ""
             }
-            it.lastUpdated = System.currentTimeMillis()
             productBrandRepository.save(it)
         }
         return brands
@@ -224,7 +222,8 @@ class ProductService(
             existingProduct.name = updates.name
         }
         if (updates.description != null && updates.description != existingProduct.description) {
-            fieldChanges["description"] = mapOf("old" to (existingProduct.description ?: ""), "new" to updates.description)
+            fieldChanges["description"] =
+                mapOf("old" to (existingProduct.description ?: ""), "new" to updates.description)
             existingProduct.description = updates.description
         }
         if (updates.basePrice > 0 && updates.basePrice != existingProduct.basePrice) {
@@ -263,16 +262,19 @@ class ProductService(
         return savedProduct
     }
 
-    fun searchProducts(searchTerm: String?, category: String?, brand: String?, 
-                      minPrice: Double?, maxPrice: Double?, pageable: Pageable): Page<Product> {
+    fun searchProducts(
+        searchTerm: String?, category: String?, brand: String?,
+        minPrice: Double?, maxPrice: Double?, pageable: Pageable
+    ): Page<Product> {
         return when {
             !searchTerm.isNullOrBlank() -> productRepository.searchProducts(searchTerm, pageable)
             !category.isNullOrBlank() -> productRepository.findActiveProductsByCategory(category, pageable)
             !brand.isNullOrBlank() -> productRepository.findActiveProductsByBrand(brand, pageable)
-            minPrice != null && maxPrice != null -> 
+            minPrice != null && maxPrice != null ->
                 productRepository.findActiveProductsByPriceRange(minPrice, maxPrice, pageable)
-            else -> productRepository.findByStatus("ACTIVE").let { 
-                org.springframework.data.domain.PageImpl(it, pageable, it.size.toLong()) 
+
+            else -> productRepository.findByStatus("ACTIVE").let {
+                org.springframework.data.domain.PageImpl(it, pageable, it.size.toLong())
             }
         }
     }

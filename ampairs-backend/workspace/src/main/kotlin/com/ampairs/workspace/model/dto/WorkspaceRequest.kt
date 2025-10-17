@@ -12,7 +12,7 @@ import jakarta.validation.constraints.Size
 data class CreateWorkspaceRequest(
     @field:NotBlank(message = "Workspace name is required")
     @field:Size(min = 2, max = 100, message = "Workspace name must be between 2 and 100 characters")
-    val name: String,
+    val name: String = "",
 
     @field:Pattern(
         regexp = "^[a-z0-9-]+$",

@@ -1,6 +1,6 @@
 package com.ampairs.customer.controller
 
-import com.ampairs.core.config.StorageProperties
+import com.ampairs.file.config.StorageProperties
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.customer.domain.dto.*
@@ -57,9 +57,6 @@ class CustomerImageController(
         @Parameter(description = "Image UID (optional, generated if not provided)")
         @RequestParam("uid", required = false) uid: String?,
 
-        @Parameter(description = "Alt text for accessibility")
-        @RequestParam("altText", required = false) altText: String?,
-
         @Parameter(description = "Image description")
         @RequestParam("description", required = false) description: String?,
 
@@ -80,7 +77,6 @@ class CustomerImageController(
             val uploadRequest = CustomerImageUploadRequest(
                 customerUid = customerUid,
                 uid = uid,
-                altText = altText,
                 description = description,
                 isPrimary = isPrimary,
                 displayOrder = displayOrder
@@ -187,25 +183,25 @@ class CustomerImageController(
                 .mustRevalidate()
 
             val headers = HttpHeaders().apply {
-                contentType = MediaType.parseMediaType(image.contentType)
-                contentLength = image.fileSize
-                setContentDispositionFormData("inline", image.originalFilename)
+//                contentType = MediaType.parseMediaType(image.contentType)
+//                contentLength = image.fileSize
+//                setContentDispositionFormData("inline", image.originalFilename)
                 setCacheControl(cacheControl)
 
-                // Set ETag for cache validation
-                image.etag?.let { eTag = "\"$it\"" }
-
-                // Set Last-Modified header
-                image.lastModified?.let {
-                    lastModified = it.toEpochMilli()
-                }
+//                // Set ETag for cache validation
+//                image.etag?.let { eTag = "\"$it\"" }
+//
+//                // Set Last-Modified header
+//                image.lastModified?.let {
+//                    lastModified = it.toEpochMilli()
+//                }
 
                 // Additional headers for image optimization
                 set("X-Content-Type-Options", "nosniff")
                 set("X-Frame-Options", "SAMEORIGIN")
             }
 
-            logger.debug("Image downloaded: customer={}, image={}, size={}", customerUid, imageUid, image.fileSize)
+//            logger.debug("Image downloaded: customer={}, image={}, size={}", customerUid, imageUid, image.fileSize)
 
             ResponseEntity.ok()
                 .headers(headers)
@@ -449,7 +445,7 @@ class CustomerImageController(
 
             val headers = HttpHeaders().apply {
                 contentType = MediaType.parseMediaType("image/$format")
-                setContentDispositionFormData("inline", "thumbnail_${size}_${image.originalFilename}")
+//                setContentDispositionFormData("inline", "thumbnail_${size}_${image.originalFilename}")
                 setCacheControl(cacheControl)
 
                 // Additional headers for thumbnails

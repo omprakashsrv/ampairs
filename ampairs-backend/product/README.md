@@ -20,7 +20,7 @@ com.ampairs.product/
 - **Catalog sync** – `updateProducts`, `updateGroups`, `updateCategories`, etc. upsert lists of records while preserving IDs/UIDs for offline clients.
 - **Taxonomy management** – expose groups, categories, brands, and subcategories; maintain display order metadata.
 - **Unit management** – provide reference data for units of measure and accept bulk updates.
-- **Media upload** – proxy product image uploads through `FileService` to the configured storage backend.
+- **Media upload** – proxy product image uploads through the shared `file` module’s `FileService`.
 - **Retail helpers** – additional endpoints for creating/updating a single product, search with pagination, and SKU lookups.
 - **Event emission** – fire `ProductCreatedEvent`/`ProductUpdatedEvent`/`ProductDeletedEvent` for real-time consumers.
 
@@ -48,7 +48,8 @@ com.ampairs.product/
 All endpoints respond with `ApiResponse<T>`; paginated data includes a `pagination` block or uses `PageResponse<T>` when applicable.
 
 ## Integration Points
-- **Core** – Provides API envelopes, storage (`FileService`), tenant context helpers, and authentication utilities.
+- **Core** – Provides API envelopes, tenant context helpers, and authentication utilities.
+- **File** – Supplies storage (`FileService`), validation, and thumbnail helpers for media assets.
 - **Event** – Receives product lifecycle events for WebSocket streaming and audit feeds.
 - **Workspace** – Supplies tenant headers; products inherit workspace ownership for security checks.
 - **Tax/Order/Invoice** – Consume product metadata (SKU, units, prices) during pricing and document generation.

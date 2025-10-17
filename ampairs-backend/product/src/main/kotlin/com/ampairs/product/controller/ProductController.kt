@@ -1,9 +1,9 @@
 package com.ampairs.product.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
-import com.ampairs.core.domain.dto.FileResponse
-import com.ampairs.core.domain.dto.toFileResponse
-import com.ampairs.core.domain.service.FileService
+import com.ampairs.file.domain.dto.FileResponse
+import com.ampairs.file.domain.dto.toFileResponse
+import com.ampairs.file.domain.service.FileService
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.product.domain.model.Product
 import com.ampairs.product.domain.dto.group.*
@@ -17,6 +17,7 @@ import org.springframework.data.domain.Sort
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
+import java.time.Instant
 
 @RestController
 @RequestMapping("/product/v1")
@@ -27,7 +28,7 @@ class ProductController(
 
     @GetMapping("")
     fun getProducts(
-        @RequestParam("last_updated") lastUpdated: Long?,
+        @RequestParam("last_updated") lastUpdated: Instant?,
         @RequestParam("group_id") groupId: String?,
     ): ApiResponse<List<ProductResponse>> {
         if (!groupId.isNullOrEmpty()) {

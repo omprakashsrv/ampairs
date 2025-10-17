@@ -53,18 +53,6 @@ abstract class BaseDomain {
     )
     var updatedAt: Instant? = null
 
-    /**
-     * Unix timestamp (milliseconds) of last update.
-     *
-     * Redundant with updatedAt but kept for backward compatibility.
-     * Consider removing in future version.
-     */
-    @Column(
-        name = "last_updated",
-        nullable = false
-    )
-    var lastUpdated: Long = 0
-
     abstract fun obtainSeqIdPrefix(): String
 
     @PrePersist
@@ -78,7 +66,6 @@ abstract class BaseDomain {
             createdAt = now
         }
         updatedAt = now
-        lastUpdated = now.toEpochMilli()
     }
 
     @PreUpdate
@@ -86,6 +73,5 @@ abstract class BaseDomain {
         // Always use UTC - Instant.now() is always UTC-based
         val now = Instant.now()
         updatedAt = now
-        lastUpdated = now.toEpochMilli()
     }
 }

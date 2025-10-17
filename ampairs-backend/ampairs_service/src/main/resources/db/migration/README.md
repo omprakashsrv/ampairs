@@ -5,20 +5,22 @@ This project stores relational schema changes in the **owning Gradle module** un
 | Module | Migration Directory | Example |
 | --- | --- | --- |
 | `tax` | `ampairs-backend/tax/src/main/resources/db/migration/mysql/` | `V3_1__create_tax_module_tables.sql` |
-| `event` | `ampairs-backend/event/src/main/resources/db/migration/mysql/` | `V3_2__create_event_system_tables.sql` |
-| `core` | `ampairs-backend/core/src/main/resources/db/migration/mysql/` | `V4_1__create_core_tables.sql` |
-| `auth` | `ampairs-backend/auth/src/main/resources/db/migration/mysql/` | `V4_8__create_auth_module_tables.sql` |
-| `unit` | `ampairs-backend/unit/src/main/resources/db/migration/mysql/` | `V4_2__create_unit_module_tables.sql` |
-| `customer` | `ampairs-backend/customer/src/main/resources/db/migration/mysql/` | `V4_3__create_customer_module_tables.sql` |
-| `product` (includes inventory) | `ampairs-backend/product/src/main/resources/db/migration/mysql/` | `V4_4__create_product_module_tables.sql` |
-| `order` | `ampairs-backend/order/src/main/resources/db/migration/mysql/` | `V4_5__create_order_module_tables.sql` |
-| `invoice` | `ampairs-backend/invoice/src/main/resources/db/migration/mysql/` | `V4_6__create_invoice_module_tables.sql` |
-| `form` | `ampairs-backend/form/src/main/resources/db/migration/mysql/` | `V4_7__create_form_module_tables.sql` |
+| `event` | `ampairs-backend/event/src/main/resources/db/migration/mysql/` | `V1.0.0__create_event_system_tables.sql` |
+| `core` | `ampairs-backend/core/src/main/resources/db/migration/mysql/` | `V1.0.0__create_core_tables.sql` |
+| `auth` | `ampairs-backend/auth/src/main/resources/db/migration/mysql/` | `V1.0.1__create_auth_module_tables.sql` |
+| `unit` | `ampairs-backend/unit/src/main/resources/db/migration/mysql/` | `V1.0.0__create_unit_module_tables.sql` |
+| `customer` | `ampairs-backend/customer/src/main/resources/db/migration/mysql/` | `V1.0.0__create_customer_module_tables.sql` |
+| `product` (includes inventory) | `ampairs-backend/product/src/main/resources/db/migration/mysql/` | `V1.0.0__create_product_module_tables.sql` |
+| `order` | `ampairs-backend/order/src/main/resources/db/migration/mysql/` | `V1.0.0__create_order_module_tables.sql` |
+| `invoice` | `ampairs-backend/invoice/src/main/resources/db/migration/mysql/` | `V1.0.0__create_invoice_module_tables.sql` |
+| `form` | `ampairs-backend/form/src/main/resources/db/migration/mysql/` | `V1.0.0__create_form_module_tables.sql` |
+| `workspace` | `ampairs-backend/workspace/src/main/resources/db/migration/mysql/` | `V1.0.0__create_workspace_module_tables.sql` |
+| `notification` | `ampairs-backend/notification/src/main/resources/db/migration/mysql/` | `V1.0.0__create_notification_module_tables.sql` |
 
 Legacy migrations that apply to the aggregated service (e.g., tax/event) remain in `ampairs-backend/ampairs_service/src/main/resources/db/migration/mysql/`.
 
 ## Versioning Scheme
-- Format: `V{major}_{minor}__{description}.sql` (e.g. `V4_3__create_customer_module_tables.sql`)
+- Format: `V{major}_{minor}__{description}.sql` (e.g. `V1.0.0__create_customer_module_tables.sql`)
 - Major version increments for large feature sets or production milestones.
 - Minor version increments sequentially per feature branch; do not reuse or reorder numbers once merged.
 - Existing history: `V3_1` (tax module), `V3_2` (event system). Retail management baseline begins at `V4_1`.
