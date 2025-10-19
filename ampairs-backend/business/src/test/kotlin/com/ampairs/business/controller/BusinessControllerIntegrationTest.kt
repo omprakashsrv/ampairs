@@ -59,7 +59,7 @@ class BusinessControllerIntegrationTest {
         businessRepository.findByOwnerId(testWorkspaceId)?.let {
             businessRepository.delete(it)
         }
-        TenantContextHolder.clear()
+        TenantContextHolder.clearTenantContext()
     }
 
     @Test

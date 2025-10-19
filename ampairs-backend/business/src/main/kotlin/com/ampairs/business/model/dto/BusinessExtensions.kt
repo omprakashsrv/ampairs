@@ -93,7 +93,7 @@ fun BusinessCreateRequest.toBusiness(ownerId: String, createdBy: String? = null)
     return Business().apply {
         this.ownerId = ownerId
         this.name = this@toBusiness.name
-        this.businessType = this@toBusiness.businessType
+        this.businessType = com.ampairs.business.model.enums.BusinessType.fromString(this@toBusiness.businessType)
         this.description = this@toBusiness.description
         this.ownerName = this@toBusiness.ownerName
 
@@ -196,5 +196,147 @@ fun Business.applyUpdate(request: BusinessUpdateRequest, updatedBy: String? = nu
 
     // updatedAt is auto-set by @PreUpdate in OwnableBaseDomain
 
+    return this
+}
+
+// ==================== Specific Response DTOs ====================
+
+/**
+ * Convert Business entity to BusinessOverviewResponse DTO.
+ * Contains summary information for dashboard display.
+ */
+fun Business.asBusinessOverviewResponse(): BusinessOverviewResponse {
+    return BusinessOverviewResponse(
+        uid = this.uid,
+        name = this.name,
+        businessType = this.businessType.name,
+        currency = this.currency,
+        timezone = this.timezone,
+        email = this.email,
+        phone = this.phone,
+        address = this.getFullAddress(),
+        active = this.active,
+        createdAt = this.createdAt ?: Instant.now(),
+        updatedAt = this.updatedAt ?: Instant.now()
+    )
+}
+
+/**
+ * Convert Business entity to BusinessProfileResponse DTO.
+ * Contains detailed profile and registration information.
+ */
+fun Business.asBusinessProfileResponse(): BusinessProfileResponse {
+    return BusinessProfileResponse(
+        uid = this.uid,
+        name = this.name,
+        businessType = this.businessType.name,
+        description = this.description,
+        ownerName = this.ownerName,
+        addressLine1 = this.addressLine1,
+        addressLine2 = this.addressLine2,
+        city = this.city,
+        state = this.state,
+        postalCode = this.postalCode,
+        country = this.country,
+        latitude = this.latitude,
+        longitude = this.longitude,
+        phone = this.phone,
+        email = this.email,
+        website = this.website,
+        taxId = this.taxId,
+        registrationNumber = this.registrationNumber,
+        active = this.active,
+        createdAt = this.createdAt ?: Instant.now(),
+        updatedAt = this.updatedAt ?: Instant.now()
+    )
+}
+
+/**
+ * Convert Business entity to BusinessOperationsResponse DTO.
+ * Contains operational configuration settings.
+ */
+fun Business.asBusinessOperationsResponse(): BusinessOperationsResponse {
+    return BusinessOperationsResponse(
+        uid = this.uid,
+        timezone = this.timezone,
+        currency = this.currency,
+        language = this.language,
+        dateFormat = this.dateFormat,
+        timeFormat = this.timeFormat,
+        openingHours = this.openingHours,
+        closingHours = this.closingHours,
+        operatingDays = this.operatingDays,
+        updatedAt = this.updatedAt ?: Instant.now()
+    )
+}
+
+/**
+ * Convert Business entity to TaxConfigurationResponse DTO.
+ * Contains tax-related configuration.
+ */
+fun Business.asTaxConfigurationResponse(): TaxConfigurationResponse {
+    return TaxConfigurationResponse(
+        uid = this.uid,
+        taxId = this.taxId,
+        registrationNumber = this.registrationNumber,
+        taxSettings = this.taxSettings,
+        country = this.country,
+        state = this.state,
+        updatedAt = this.updatedAt ?: Instant.now()
+    )
+}
+
+// ==================== Apply Specific Updates ====================
+
+/**
+ * Apply BusinessProfileUpdateRequest to existing Business entity.
+ */
+fun Business.applyProfileUpdate(request: BusinessProfileUpdateRequest, updatedBy: String? = null): Business {
+    this.name = request.name
+    this.businessType = request.businessType
+    this.description = request.description
+    this.ownerName = request.ownerName
+    this.addressLine1 = request.addressLine1
+    this.addressLine2 = request.addressLine2
+    this.city = request.city
+    this.state = request.state
+    this.postalCode = request.postalCode
+    this.country = request.country
+    this.latitude = request.latitude
+    this.longitude = request.longitude
+    this.phone = request.phone
+    this.email = request.email
+    this.website = request.website
+    this.taxId = request.taxId
+    this.registrationNumber = request.registrationNumber
+    this.active = request.active
+    this.updatedBy = updatedBy
+    return this
+}
+
+/**
+ * Apply BusinessOperationsUpdateRequest to existing Business entity.
+ */
+fun Business.applyOperationsUpdate(request: BusinessOperationsUpdateRequest, updatedBy: String? = null): Business {
+    this.timezone = request.timezone
+    this.currency = request.currency
+    this.language = request.language
+    this.dateFormat = request.dateFormat
+    this.timeFormat = request.timeFormat
+    this.openingHours = request.openingHours
+    this.closingHours = request.closingHours
+    this.operatingDays = request.operatingDays
+    this.updatedBy = updatedBy
+    return this
+}
+
+/**
+ * Apply TaxConfigurationUpdateRequest to existing Business entity.
+ */
+fun Business.applyTaxConfigUpdate(request: TaxConfigurationUpdateRequest, updatedBy: String? = null): Business {
+    request.taxId?.let { this.taxId = it }
+    request.registrationNumber?.let { this.registrationNumber = it }
+    request.taxSettings?.let { this.taxSettings = it }
+    this.updatedBy = updatedBy
     return this
 }

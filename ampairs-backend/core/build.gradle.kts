@@ -46,6 +46,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
 
+    // Jackson Kotlin support for data class deserialization
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+
     // JWT
     implementation("io.jsonwebtoken:jjwt-api:0.11.5")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
