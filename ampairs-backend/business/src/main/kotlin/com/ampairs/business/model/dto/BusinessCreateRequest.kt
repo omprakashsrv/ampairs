@@ -20,8 +20,8 @@ data class BusinessCreateRequest(
     @field:Size(min = 2, max = 255, message = "Business name must be 2-255 characters")
     val name: String,
 
-    @field:NotNull(message = "Business type is required")
-    val businessType: BusinessType,
+    @field:NotBlank(message = "Business type is required")
+    val businessType: String,
 
     @field:Size(max = 1000, message = "Description cannot exceed 1000 characters")
     val description: String? = null,

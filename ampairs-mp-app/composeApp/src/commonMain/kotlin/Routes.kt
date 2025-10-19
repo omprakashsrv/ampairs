@@ -219,11 +219,14 @@ sealed interface InvoiceRoute {
 @Serializable
 sealed interface BusinessRoute {
     @Serializable
+    data object Overview : BusinessRoute
+
+    @Serializable
     data object Profile : BusinessRoute
 
     @Serializable
-    data object Settings : BusinessRoute
+    data object Operations : BusinessRoute
 
     @Serializable
-    data object Branding : BusinessRoute
+    data object TaxConfig : BusinessRoute
 }

@@ -188,6 +188,7 @@ fun AppNavigation(
 fun navigateToMenuItem(navController: androidx.navigation.NavHostController, route: String) {
     when {
         // Handle legacy module codes first (backward compatibility)
+        route == "business" -> navController.navigate(BusinessRoute.Profile)
         route == "customer" -> navController.navigate(Route.Customer)
         route == "product" -> navController.navigate(Route.Product)
         route == "order" -> navController.navigate(Route.Order)
@@ -243,6 +244,16 @@ fun navigateToMenuItem(navController: androidx.navigation.NavHostController, rou
 
         route.startsWith("/tax") -> {
             navController.navigate(Route.Tax)
+        }
+
+        route.startsWith("/business") -> {
+            when (route) {
+                "/business/overview", "/business" -> navController.navigate(BusinessRoute.Overview)
+                "/business/profile" -> navController.navigate(BusinessRoute.Profile)
+                "/business/operations" -> navController.navigate(BusinessRoute.Operations)
+                "/business/tax" -> navController.navigate(BusinessRoute.TaxConfig)
+                else -> navController.navigate(BusinessRoute.Overview)
+            }
         }
 
         route.startsWith("/form-config") -> {

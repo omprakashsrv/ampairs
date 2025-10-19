@@ -51,6 +51,17 @@ class BusinessRepository(
         businessDao.clearAll()
     }
 
+    suspend fun checkBusinessExists(): Result<Boolean> {
+        return businessApi.checkBusinessExists()
+    }
+
+    suspend fun createBusinessProfile(request: com.ampairs.business.domain.BusinessCreateRequest): Result<com.ampairs.business.domain.BusinessProfile> {
+        val workspaceId = workspaceContextManager.getCurrentWorkspaceId()
+            ?: return Result.failure(IllegalStateException("Workspace not selected"))
+
+        return businessApi.createBusinessProfile(request)
+    }
+
     suspend fun fetchFromRemote(): Result<Business> {
         val workspaceId = workspaceContextManager.getCurrentWorkspaceId()
             ?: return Result.failure(IllegalStateException("Workspace not selected"))
@@ -122,5 +133,62 @@ class BusinessRepository(
         }
         val generatedId = UidGenerator.generateUid(BusinessConstants.UID_PREFIX)
         return copy(id = generatedId)
+    }
+
+    // ==================== Specific Section Methods ====================
+
+    /**
+     * Get business overview from remote.
+     */
+    suspend fun fetchBusinessOverview(): Result<com.ampairs.business.domain.BusinessOverview> {
+        return businessApi.getBusinessOverview()
+    }
+
+    /**
+     * Get business profile from remote.
+     */
+    suspend fun fetchBusinessProfile(): Result<com.ampairs.business.domain.BusinessProfile> {
+        return businessApi.getBusinessProfile()
+    }
+
+    /**
+     * Update business profile.
+     */
+    suspend fun updateBusinessProfile(
+        request: com.ampairs.business.domain.BusinessProfileUpdateRequest
+    ): Result<com.ampairs.business.domain.BusinessProfile> {
+        return businessApi.updateBusinessProfile(request)
+    }
+
+    /**
+     * Get business operations from remote.
+     */
+    suspend fun fetchBusinessOperations(): Result<com.ampairs.business.domain.BusinessOperations> {
+        return businessApi.getBusinessOperations()
+    }
+
+    /**
+     * Update business operations.
+     */
+    suspend fun updateBusinessOperations(
+        request: com.ampairs.business.domain.BusinessOperationsUpdateRequest
+    ): Result<com.ampairs.business.domain.BusinessOperations> {
+        return businessApi.updateBusinessOperations(request)
+    }
+
+    /**
+     * Get tax configuration from remote.
+     */
+    suspend fun fetchTaxConfiguration(): Result<com.ampairs.business.domain.TaxConfiguration> {
+        return businessApi.getTaxConfiguration()
+    }
+
+    /**
+     * Update tax configuration.
+     */
+    suspend fun updateTaxConfiguration(
+        request: com.ampairs.business.domain.TaxConfigurationUpdateRequest
+    ): Result<com.ampairs.business.domain.TaxConfiguration> {
+        return businessApi.updateTaxConfiguration(request)
     }
 }

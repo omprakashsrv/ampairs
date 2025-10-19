@@ -10,61 +10,73 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import com.ampairs.common.ui.AppScreenWithHeader
-import com.ampairs.business.ui.BusinessProfileScreen
-import com.ampairs.business.ui.BusinessSettingsScreen
-import com.ampairs.business.ui.BusinessBrandingScreen
 
 /**
- * Business module navigation graph.
+ * Business Management Module Navigation.
+ *
  * Maps backend routes to mobile screens:
- * - /business/profile → BusinessRoute.Profile (default)
- * - /business/settings → BusinessRoute.Settings
- * - /business/branding → BusinessRoute.Branding
+ * - /business/overview → BusinessRoute.Overview (default dashboard)
+ * - /business/profile → BusinessRoute.Profile (profile & registration)
+ * - /business/operations → BusinessRoute.Operations (operational settings)
+ * - /business/tax → BusinessRoute.TaxConfig (tax configuration)
  */
 fun NavGraphBuilder.businessNavigation(
     navController: NavHostController
 ) {
-    navigation<Route.Business>(startDestination = BusinessRoute.Profile) {
-        // Main Business Profile Screen (default view)
+    navigation<Route.Business>(startDestination = BusinessRoute.Overview) {
+
+        // Overview Screen (Default - Dashboard)
+        composable<BusinessRoute.Overview> {
+            AppScreenWithHeader(
+                navController = navController,
+                isWorkspaceSelection = false
+            ) { paddingValues ->
+                com.ampairs.business.ui.BusinessOverviewScreen(
+                    onNavigateToProfile = {
+                        navController.navigate(BusinessRoute.Profile)
+                    },
+                    onNavigateToOperations = {
+                        navController.navigate(BusinessRoute.Operations)
+                    },
+                    onNavigateToTax = {
+                        navController.navigate(BusinessRoute.TaxConfig)
+                    },
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
+        }
+
+        // Profile & Registration Screen
         composable<BusinessRoute.Profile> {
             AppScreenWithHeader(
                 navController = navController,
                 isWorkspaceSelection = false
             ) { paddingValues ->
-                BusinessProfileScreen(
-                    onNavigateToSettings = {
-                        navController.navigate(BusinessRoute.Settings)
-                    },
-                    onNavigateToBranding = {
-                        navController.navigate(BusinessRoute.Branding)
-                    },
-                    onNavigateToEdit = {
-                        navController.navigate(BusinessRoute.Settings)
-                    },
+                com.ampairs.business.ui.BusinessProfileFormScreen(
                     modifier = Modifier.padding(paddingValues)
                 )
             }
         }
 
-        // Business Settings Screen
-        composable<BusinessRoute.Settings> {
+        // Operations Settings Screen
+        composable<BusinessRoute.Operations> {
             AppScreenWithHeader(
                 navController = navController,
                 isWorkspaceSelection = false
             ) { paddingValues ->
-                BusinessSettingsScreen(
+                com.ampairs.business.ui.BusinessOperationsScreen(
                     modifier = Modifier.padding(paddingValues)
                 )
             }
         }
 
-        // Business Branding Screen
-        composable<BusinessRoute.Branding> {
+        // Tax Configuration Screen
+        composable<BusinessRoute.TaxConfig> {
             AppScreenWithHeader(
                 navController = navController,
                 isWorkspaceSelection = false
             ) { paddingValues ->
-                BusinessBrandingScreen(
+                com.ampairs.business.ui.BusinessTaxConfigScreen(
                     modifier = Modifier.padding(paddingValues)
                 )
             }
