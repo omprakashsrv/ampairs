@@ -67,6 +67,7 @@ class MasterModuleSeederService(
     
     private fun getSystemModules(): List<MasterModule> {
         return listOf(
+            createBusinessModule(),
             createCustomerModule(),
             createProductModule(),
             createOrderModule(),
@@ -79,7 +80,51 @@ class MasterModuleSeederService(
             createDashboardModule()
         )
     }
-    
+
+    private fun createBusinessModule() = MasterModule().apply {
+        moduleCode = "business-profile"
+        name = "Business Profile"
+        description = "Core business profile management with company information, branding, operational settings, and multi-timezone support for comprehensive business configuration"
+        tagline = "Configure your business identity and operations"
+        category = ModuleCategory.ADMINISTRATION
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.FREE
+        requiredRole = UserRole.EMPLOYEE
+        complexity = ModuleComplexity.ESSENTIAL
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 10, true, "Essential for setting up store identity and operational parameters"),
+            createBusinessRelevance(BusinessType.WHOLESALE, 10, true, "Critical for B2B business identity and regulatory compliance"),
+            createBusinessRelevance(BusinessType.MANUFACTURING, 10, true, "Mandatory for factory settings and business operations configuration")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = listOf("BUSINESS_READ", "BUSINESS_WRITE"),
+            optionalPermissions = listOf("BUSINESS_ADMIN", "BUSINESS_SETTINGS"),
+            defaultEnabled = true
+        )
+        uiMetadata = createUIMetadata(
+            icon = "store",
+            primaryColor = "#673AB7",
+            tags = listOf("Business Setup", "Profile", "Configuration", "Branding", "Operations")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/business",
+            displayName = "Business",
+            iconName = "store",
+            menuItems = listOf(
+                createMenuItem("business-profile", "Business Profile", "/business/profile", "store", 1, true),
+                createMenuItem("business-settings", "Settings", "/business/settings", "settings", 2),
+                createMenuItem("business-branding", "Branding", "/business/branding", "palette", 3)
+            )
+        )
+        navigationIndex = 5
+        provider = "Ampairs"
+        sizeMb = 3
+        featured = true
+        displayOrder = 5
+        active = true
+    }
+
     private fun createCustomerModule() = MasterModule().apply {
         moduleCode = "customer-management"
         name = "Customer Management"
