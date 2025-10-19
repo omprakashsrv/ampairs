@@ -22,6 +22,7 @@ import com.ampairs.workspace.ui.WorkspaceInvitationsScreen
 import com.ampairs.workspace.ui.WorkspaceListScreen
 import com.ampairs.workspace.ui.WorkspaceMembersScreen
 import com.ampairs.workspace.ui.WorkspaceModulesScreen
+import com.ampairs.workspace.ui.ModuleStoreScreen
 
 fun NavGraphBuilder.workspaceNavigation(
     navController: NavHostController,
@@ -180,7 +181,21 @@ fun NavGraphBuilder.workspaceNavigation(
                     },
                     onNavigationServiceReady = onNavigationServiceReady,
                     workspaceId = modulesRoute.workspaceId,
-                    showStoreByDefault = modulesRoute.showStoreByDefault,
+                    paddingValues = paddingValues
+                )
+            }
+        }
+
+        // Module Store screen with Marketplace and Installed tabs
+        composable<WorkspaceRoute.ModuleStore> { backStackEntry ->
+            val moduleStoreRoute = backStackEntry.toRoute<WorkspaceRoute.ModuleStore>()
+            AppScreenWithHeader(
+                navController = navController,
+                isWorkspaceSelection = false
+            ) { paddingValues ->
+                ModuleStoreScreen(
+                    navController = navController,
+                    workspaceId = moduleStoreRoute.workspaceId,
                     paddingValues = paddingValues
                 )
             }

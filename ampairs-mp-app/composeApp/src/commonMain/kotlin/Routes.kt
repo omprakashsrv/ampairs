@@ -101,8 +101,12 @@ sealed interface WorkspaceRoute {
 
     @Serializable
     data class Modules(
-        val workspaceId: String = "",
-        val showStoreByDefault: Boolean = false // For "Manage Modules" to show install screen directly
+        val workspaceId: String = ""
+    ) : WorkspaceRoute
+
+    @Serializable
+    data class ModuleStore(
+        val workspaceId: String = ""
     ) : WorkspaceRoute
 }
 

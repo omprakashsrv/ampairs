@@ -4,6 +4,7 @@ import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.workspace.api.model.AvailableModule
 import com.ampairs.workspace.api.model.ModuleInstallationResponse
 import com.ampairs.workspace.api.model.ModuleUninstallationResponse
+import com.ampairs.workspace.api.model.ModuleDetailResponse
 
 /**
  * Workspace Module API that exactly matches the web service calls
@@ -41,8 +42,16 @@ interface WorkspaceModuleApi {
     /**
      * Uninstall a module from the current workspace
      * DELETE /workspace/v1/modules/{moduleId}
-     * 
+     *
      * Matches: async uninstallModule(moduleId: string): Promise<ModuleUninstallationResponse>
      */
     suspend fun uninstallModule(workspaceId: String, moduleId: String): Result<ModuleUninstallationResponse>
+
+    /**
+     * Get detailed information about a specific module
+     * GET /workspace/v1/modules/{moduleId}
+     *
+     * Returns comprehensive module details including configuration, analytics, and permissions
+     */
+    suspend fun getModuleDetails(workspaceId: String, moduleId: String): Result<ModuleDetailResponse>
 }
