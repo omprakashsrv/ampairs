@@ -124,11 +124,13 @@ fun NavGraphBuilder.productNavigation(
 fun ProductScreen(
     onProductClick: (String) -> Unit,
     onCreateProduct: () -> Unit,
+    onFormConfig: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     ProductsListScreen(
         onProductClick = onProductClick,
         onCreateProduct = onCreateProduct,
+        onFormConfig = onFormConfig,
         modifier = modifier
     )
 }

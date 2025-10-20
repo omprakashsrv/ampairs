@@ -178,11 +178,13 @@ fun NavGraphBuilder.customerNavigation(navController: NavHostController) {
 fun CustomerScreen(
     onCustomerClick: (String) -> Unit,
     onCreateCustomer: () -> Unit,
+    onFormConfig: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     CustomersListScreen(
         onCustomerClick = onCustomerClick,
         onCreateCustomer = onCreateCustomer,
+        onFormConfig = onFormConfig,
         modifier = modifier
     )
 }

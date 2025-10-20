@@ -117,6 +117,10 @@ fun AppNavigation(
                     onCreateCustomer = {
                         navController.navigate(CustomerCreateRoute())
                     },
+                    onFormConfig = {
+                        println("AppNavigation Route.Customer: Navigating to FormConfig")
+                        navController.navigate(Route.FormConfig("customer"))
+                    },
                     modifier = Modifier.padding(paddingValues)
                 )
             }
@@ -134,6 +138,10 @@ fun AppNavigation(
                     },
                     onCreateProduct = {
                         navController.navigate(ProductRoute.ProductForm())
+                    },
+                    onFormConfig = {
+                        println("AppNavigation Route.Product: Navigating to FormConfig")
+                        navController.navigate(Route.FormConfig("product"))
                     },
                     modifier = Modifier.padding(paddingValues)
                 )

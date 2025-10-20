@@ -1,0 +1,52 @@
+{
+  "commands": [
+    {
+      "name": "speckit.analyze",
+      "label": "Speckit Analyze",
+      "description": "Analyze tasks with the Speckit template",
+      "prompt_path": "prompts/speckit.analyze.md"
+    },
+    {
+      "name": "speckit.checklist",
+      "label": "Speckit Checklist",
+      "description": "Generate a Speckit checklist for task tracking",
+      "prompt_path": "prompts/speckit.checklist.md"
+    },
+    {
+      "name": "speckit.clarify",
+      "label": "Speckit Clarify",
+      "description": "Draft clarification questions using the Speckit template",
+      "prompt_path": "prompts/speckit.clarify.md"
+    },
+    {
+      "name": "speckit.constitution",
+      "label": "Speckit Constitution",
+      "description": "Review the Speckit constitution guidance",
+      "prompt_path": "prompts/speckit.constitution.md"
+    },
+    {
+      "name": "speckit.implement",
+      "label": "Speckit Implement",
+      "description": "Outline implementation steps with the Speckit template",
+      "prompt_path": "prompts/speckit.implement.md"
+    },
+    {
+      "name": "speckit.plan",
+      "label": "Speckit Plan",
+      "description": "Create a Speckit plan for assigned work",
+      "prompt_path": "prompts/speckit.plan.md"
+    },
+    {
+      "name": "speckit.specify",
+      "label": "Speckit Specify",
+      "description": "Capture specifications using the Speckit template",
+      "prompt_path": "prompts/speckit.specify.md"
+    },
+    {
+      "name": "speckit.tasks",
+      "label": "Speckit Tasks",
+      "description": "List tasks with the Speckit task template",
+      "prompt_path": "prompts/speckit.tasks.md"
+    }
+  ]
+}
