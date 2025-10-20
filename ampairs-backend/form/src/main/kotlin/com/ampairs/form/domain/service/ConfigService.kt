@@ -223,37 +223,99 @@ class ConfigService(
      */
     private fun seedCustomerDefaults() {
         val fields = listOf(
-            createFieldConfig("customer", "name", "Customer Name", 1, visible = true, mandatory = true),
-            createFieldConfig("customer", "phone", "Phone Number", 2, visible = true, mandatory = true, validationType = "PHONE"),
-            createFieldConfig("customer", "email", "Email Address", 3, visible = true, mandatory = false, validationType = "EMAIL"),
-            createFieldConfig("customer", "gstNumber", "GST Number", 4, visible = true, mandatory = false,
-                placeholder = "Enter 15-digit GST number", helpText = "GST number format: 22AAAAA0000A1Z5"),
-            createFieldConfig("customer", "customerType", "Customer Type", 5, visible = true, mandatory = false),
-            createFieldConfig("customer", "customerGroup", "Customer Group", 6, visible = true, mandatory = false),
-            createFieldConfig("customer", "address", "Address", 7, visible = true, mandatory = false),
-            createFieldConfig("customer", "city", "City", 8, visible = true, mandatory = false),
-            createFieldConfig("customer", "state", "State", 9, visible = true, mandatory = false),
-            createFieldConfig("customer", "pincode", "Pincode", 10, visible = true, mandatory = false, validationType = "NUMBER"),
-            createFieldConfig("customer", "creditLimit", "Credit Limit", 11, visible = true, mandatory = false, validationType = "NUMBER",
-                placeholder = "0.00", helpText = "Maximum credit limit for this customer"),
-            createFieldConfig("customer", "creditDays", "Credit Days", 12, visible = true, mandatory = false, validationType = "NUMBER",
-                placeholder = "0", helpText = "Number of days credit allowed"),
+            // === Basic Information Section ===
+            createFieldConfig("customer", "name", "Customer Name", 1, visible = true, mandatory = true,
+                placeholder = "Enter customer name", helpText = "Full name of the customer"),
+            createFieldConfig("customer", "email", "Email", 2, visible = true, mandatory = false, validationType = "EMAIL",
+                placeholder = "customer@example.com"),
+            createFieldConfig("customer", "customerType", "Customer Type", 3, visible = true, mandatory = false,
+                helpText = "Type of customer (Retail, Wholesale, etc.)"),
+            createFieldConfig("customer", "customerGroup", "Customer Group", 4, visible = true, mandatory = false,
+                helpText = "Group classification for customer"),
+            createFieldConfig("customer", "countryCode", "Country Code", 5, visible = true, mandatory = false, validationType = "NUMBER",
+                placeholder = "91", defaultValue = "91", helpText = "International dialing code (e.g., 91 for India, 1 for USA)"),
+            createFieldConfig("customer", "phone", "Phone Number", 6, visible = true, mandatory = true, validationType = "PHONE",
+                placeholder = "Enter phone number"),
+            createFieldConfig("customer", "landline", "Landline", 7, visible = true, mandatory = false,
+                placeholder = "Enter landline number", helpText = "Landline number with area code"),
+
+            // === Business Information Section ===
+            createFieldConfig("customer", "gstNumber", "GST Number", 8, visible = true, mandatory = false, validationType = "GSTIN",
+                placeholder = "Enter 15-digit GST number", helpText = "Goods and Services Tax Identification Number"),
+            createFieldConfig("customer", "panNumber", "PAN Number", 9, visible = true, mandatory = false, validationType = "PAN",
+                placeholder = "Enter 10-digit PAN", helpText = "Permanent Account Number for tax purposes"),
+
+            // === Credit Management Section ===
+            createFieldConfig("customer", "creditLimit", "Credit Limit", 10, visible = true, mandatory = false, validationType = "NUMBER",
+                placeholder = "0.00", helpText = "Maximum credit amount allowed"),
+            createFieldConfig("customer", "creditDays", "Credit Days", 11, visible = true, mandatory = false, validationType = "NUMBER",
+                placeholder = "0", helpText = "Number of days for credit payment"),
+
+            // === Main Address Section ===
+            createFieldConfig("customer", "address", "Address", 12, visible = true, mandatory = false,
+                placeholder = "Enter address"),
+            createFieldConfig("customer", "street", "Street", 13, visible = true, mandatory = false,
+                placeholder = "Enter street name"),
+            createFieldConfig("customer", "street2", "Street 2", 14, visible = true, mandatory = false,
+                placeholder = "Additional street information"),
+            createFieldConfig("customer", "city", "City", 15, visible = true, mandatory = false,
+                placeholder = "Enter city"),
+            createFieldConfig("customer", "pincode", "PIN Code", 16, visible = true, mandatory = false,
+                placeholder = "Enter PIN code"),
+            createFieldConfig("customer", "state", "State", 17, visible = true, mandatory = false,
+                placeholder = "Select state"),
+            createFieldConfig("customer", "country", "Country", 18, visible = true, mandatory = false,
+                placeholder = "India", defaultValue = "India"),
+
+            // === Location Section ===
+            createFieldConfig("customer", "latitude", "Latitude", 19, visible = true, mandatory = false, validationType = "NUMBER",
+                helpText = "GPS latitude coordinate"),
+            createFieldConfig("customer", "longitude", "Longitude", 20, visible = true, mandatory = false, validationType = "NUMBER",
+                helpText = "GPS longitude coordinate"),
+
+            // === Billing Address Section ===
+            createFieldConfig("customer", "billingStreet", "Billing Street", 21, visible = true, mandatory = false,
+                placeholder = "Enter billing street"),
+            createFieldConfig("customer", "billingCity", "Billing City", 22, visible = true, mandatory = false,
+                placeholder = "Enter billing city"),
+            createFieldConfig("customer", "billingPincode", "Billing PIN Code", 23, visible = true, mandatory = false,
+                placeholder = "Enter billing PIN"),
+            createFieldConfig("customer", "billingState", "Billing State", 24, visible = true, mandatory = false,
+                placeholder = "Select billing state"),
+            createFieldConfig("customer", "billingCountry", "Billing Country", 25, visible = true, mandatory = false,
+                placeholder = "India", defaultValue = "India"),
+
+            // === Shipping Address Section ===
+            createFieldConfig("customer", "shippingStreet", "Shipping Street", 26, visible = true, mandatory = false,
+                placeholder = "Enter shipping street"),
+            createFieldConfig("customer", "shippingCity", "Shipping City", 27, visible = true, mandatory = false,
+                placeholder = "Enter shipping city"),
+            createFieldConfig("customer", "shippingPincode", "Shipping PIN Code", 28, visible = true, mandatory = false,
+                placeholder = "Enter shipping PIN"),
+            createFieldConfig("customer", "shippingState", "Shipping State", 29, visible = true, mandatory = false,
+                placeholder = "Select shipping state"),
+            createFieldConfig("customer", "shippingCountry", "Shipping Country", 30, visible = true, mandatory = false,
+                placeholder = "India", defaultValue = "India"),
+
+            // === Status Section ===
+            createFieldConfig("customer", "status", "Status", 31, visible = true, mandatory = false,
+                defaultValue = "ACTIVE", helpText = "Customer status (Active, Inactive, Suspended)"),
         )
 
         fieldConfigRepository.saveAll(fields)
         logger.info("Seeded {} customer field configurations", fields.size)
 
-        val attributes = listOf(
-            createAttributeDefinition("customer", "industry", "Industry", "STRING", 1,
-                helpText = "Customer's business industry"),
-            createAttributeDefinition("customer", "company_size", "Company Size", "STRING", 2,
-                helpText = "Size of customer's organization"),
-            createAttributeDefinition("customer", "preferred_payment_method", "Preferred Payment Method", "STRING", 3,
-                helpText = "Customer's preferred payment method"),
-        )
+//        val attributes = listOf(
+//            createAttributeDefinition("customer", "industry", "Industry", "STRING", 1,
+//                helpText = "Customer's business industry"),
+//            createAttributeDefinition("customer", "company_size", "Company Size", "STRING", 2,
+//                helpText = "Size of customer's organization"),
+//            createAttributeDefinition("customer", "preferred_payment_method", "Preferred Payment Method", "STRING", 3,
+//                helpText = "Customer's preferred payment method"),
+//        )
 
-        attributeDefinitionRepository.saveAll(attributes)
-        logger.info("Seeded {} customer attribute definitions", attributes.size)
+//        attributeDefinitionRepository.saveAll(attributes)
+//        logger.info("Seeded {} customer attribute definitions", attributes.size)
     }
 
     /**
