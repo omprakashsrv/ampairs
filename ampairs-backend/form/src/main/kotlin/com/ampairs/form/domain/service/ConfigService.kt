@@ -157,6 +157,8 @@ class ConfigService(
     /**
      * Bulk save entity configuration schema (field configs + attribute definitions)
      * Used for initializing defaults or bulk updates from frontend
+     *
+     * IMPORTANT: This performs a full sync - deletes attributes not in the request
      */
     @Transactional
     fun saveConfigSchema(request: EntityConfigSchemaRequest): EntityConfigSchemaResponse {
@@ -172,7 +174,25 @@ class ConfigService(
             saveFieldConfig(fieldConfigRequest)
         }
 
-        // Save all attribute definitions
+        // Handle attribute definitions with delete sync
+        // 1. Get all existing attribute definitions for this entity type
+        val existingAttributeDefinitions = attributeDefinitionRepository.findByEntityTypeOrderByDisplayOrderAsc(entityType)
+        val existingKeys = existingAttributeDefinitions.map { it.attributeKey }.toSet()
+
+        // 2. Get attribute keys from the request
+        val requestKeys = request.attributeDefinitions.map { it.attributeKey }.toSet()
+
+        // 3. Find attributes that need to be deleted (exist in DB but not in request)
+        val keysToDelete = existingKeys - requestKeys
+        if (keysToDelete.isNotEmpty()) {
+            logger.info("Deleting {} attribute definitions for entity type: {} - keys: {}",
+                keysToDelete.size, entityType, keysToDelete)
+            keysToDelete.forEach { attributeKey ->
+                deleteAttributeDefinition(entityType, attributeKey)
+            }
+        }
+
+        // 4. Save all attribute definitions from request
         val savedAttributeDefinitions = request.attributeDefinitions.map { attributeRequest ->
             saveAttributeDefinition(attributeRequest)
         }
