@@ -7,6 +7,8 @@ import com.ampairs.product.domain.model.group.ProductBrand
 import com.ampairs.product.domain.model.group.ProductCategory
 import com.ampairs.product.domain.model.group.ProductGroup
 import com.ampairs.product.domain.model.group.ProductSubCategory
+import com.ampairs.unit.domain.model.Unit
+import com.ampairs.unit.domain.model.UnitConversion
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes

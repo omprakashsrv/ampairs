@@ -15,7 +15,7 @@ data class ModuleMenuItem(
     @SerialName("route_path") val routePath: String,
     @SerialName("icon") val icon: String,
     @SerialName("order") val order: Int,
-    @SerialName("is_default") val isDefault: Boolean
+    @SerialName("is_default") val isDefault: Boolean = false // Optional with default value
 )
 
 @Serializable
@@ -80,4 +80,49 @@ data class ModuleUninstallationResponse(
     @SerialName("workspace_id") val workspaceId: String,
     @SerialName("message") val message: String,
     @SerialName("uninstalled_at") val uninstalledAt: String,
+)
+
+@Serializable
+data class ModuleDetailResponse(
+    @SerialName("module_id") val moduleId: String,
+    @SerialName("workspace_id") val workspaceId: String,
+    @SerialName("module_info") val moduleInfo: ModuleInfoResponse,
+    @SerialName("configuration") val configuration: ModuleConfigurationResponse,
+    @SerialName("analytics") val analytics: ModuleAnalyticsResponse,
+    @SerialName("permissions") val permissions: ModulePermissionsResponse,
+    @SerialName("health_score") val healthScore: Double,
+    @SerialName("needs_attention") val needsAttention: Boolean,
+)
+
+@Serializable
+data class ModuleInfoResponse(
+    @SerialName("name") val name: String,
+    @SerialName("category") val category: String,
+    @SerialName("description") val description: String,
+    @SerialName("version") val version: String,
+    @SerialName("status") val status: String,
+    @SerialName("enabled") val enabled: Boolean,
+    @SerialName("installed_at") val installedAt: String,
+    @SerialName("last_updated") val lastUpdated: String? = null,
+)
+
+@Serializable
+data class ModuleConfigurationResponse(
+    @SerialName("auto_sync") val autoSync: Boolean,
+    @SerialName("notifications_enabled") val notificationsEnabled: Boolean,
+    @SerialName("custom_fields") val customFields: List<String> = emptyList(),
+)
+
+@Serializable
+data class ModuleAnalyticsResponse(
+    @SerialName("daily_active_users") val dailyActiveUsers: Int,
+    @SerialName("monthly_access") val monthlyAccess: Int,
+    @SerialName("average_session_duration") val averageSessionDuration: String,
+)
+
+@Serializable
+data class ModulePermissionsResponse(
+    @SerialName("can_configure") val canConfigure: Boolean,
+    @SerialName("can_uninstall") val canUninstall: Boolean,
+    @SerialName("can_view_analytics") val canViewAnalytics: Boolean,
 )

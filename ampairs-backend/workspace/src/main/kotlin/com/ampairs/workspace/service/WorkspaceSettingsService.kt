@@ -36,8 +36,6 @@ class WorkspaceSettingsService(
         val defaultSettings = WorkspaceSettings().apply {
             this.workspaceId = workspaceId
             this.logoUrl = null
-            // Use default JSON values already defined in entity
-            this.lastModifiedAt = Instant.now()
         }
 
         val savedSettings = settingsRepository.save(defaultSettings)

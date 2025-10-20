@@ -102,7 +102,7 @@ class CustomerController @Autowired constructor(
 
     @GetMapping("/{customerId}")
     fun getCustomer(@PathVariable customerId: String): ApiResponse<CustomerResponse> {
-        val customer = customerService.getCustomers(null).find { it.uid == customerId }
+        val customer = customerService.getCustomers().find { it.uid == customerId }
             ?: return ApiResponse.error("Customer not found", "CUSTOMER_NOT_FOUND")
 
         return ApiResponse.success(customer.asCustomerResponse())

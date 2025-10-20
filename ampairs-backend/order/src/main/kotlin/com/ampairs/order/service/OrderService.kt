@@ -23,6 +23,7 @@ import org.springframework.data.domain.Sort
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 import kotlin.jvm.optionals.getOrDefault
 import kotlin.jvm.optionals.getOrNull
 
@@ -143,10 +144,10 @@ class OrderService @Autowired constructor(
         return savedOrder.toResponse(orderItems)
     }
 
-    fun getOrders(lastUpdated: Long): List<Order> {
+    fun getOrders(lastUpdated: Instant?): List<Order> {
         val orders =
-            orderPagingRepository.findAllByLastUpdatedGreaterThanEqual(
-                lastUpdated, PageRequest.of(0, 50, Sort.by("lastUpdated").ascending())
+            orderPagingRepository.findAllByUpdatedAtGreaterThanEqual(
+                lastUpdated ?: Instant.MIN, PageRequest.of(0, 50, Sort.by("lastUpdated").ascending())
             )
         return orders
     }

@@ -1,7 +1,8 @@
 package com.ampairs.customer.service
 
-import com.ampairs.core.config.StorageProperties
-import com.ampairs.core.service.ThumbnailCacheService
+import com.ampairs.file.config.StorageProperties
+import com.ampairs.file.service.ImageResizingService
+import com.ampairs.file.service.ThumbnailCacheService
 import com.ampairs.customer.domain.model.CustomerImage
 import com.ampairs.customer.domain.repository.CustomerImageRepository
 import org.slf4j.LoggerFactory
@@ -234,7 +235,7 @@ class ThumbnailMaintenanceService(
         return try {
             val standardSizes = listOf(150, 300, 500)
             standardSizes.any { size ->
-                val thumbnailSize = com.ampairs.core.service.ImageResizingService.ThumbnailSize.fromPixels(size)
+                val thumbnailSize = ImageResizingService.ThumbnailSize.fromPixels(size)
                 thumbnailSize?.let {
                     thumbnailCacheService.thumbnailExists(storageProperties.defaultBucket, storagePath, it)
                 } ?: false

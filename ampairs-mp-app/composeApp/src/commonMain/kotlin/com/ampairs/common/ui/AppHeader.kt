@@ -253,7 +253,7 @@ private fun WorkspaceSelector(
                     text = "Manage Modules",
                     onClick = {
                         expanded = false
-                        navController.navigate(WorkspaceRoute.Modules(workspaceId = workspaceId, showStoreByDefault = true))
+                        navController.navigate(WorkspaceRoute.ModuleStore(workspaceId = workspaceId))
                     }
                 )
 

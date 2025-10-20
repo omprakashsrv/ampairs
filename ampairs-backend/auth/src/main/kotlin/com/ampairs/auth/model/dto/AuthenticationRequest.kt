@@ -12,12 +12,12 @@ data class AuthenticationRequest(
     @field:NotBlank(message = "Session ID cannot be blank")
     @field:SafeString(maxLength = 50, message = "Session ID contains invalid characters")
     @field:Size(min = 10, max = 50, message = "Session ID must be between 10 and 50 characters")
-    var sessionId: String,
+    var sessionId: String = "",
 
     @field:NotNull(message = "OTP is required")
     @field:NotBlank(message = "OTP cannot be blank")
     @field:Pattern(regexp = "^[0-9]{4,8}$", message = "OTP must be 4-8 digits")
-    var otp: String,
+    var otp: String = "",
 
     @field:NotNull(message = "Auth mode is required")
     val authMode: AuthMode = AuthMode.OTP,

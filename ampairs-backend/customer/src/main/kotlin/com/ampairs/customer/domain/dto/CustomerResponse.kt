@@ -31,7 +31,6 @@ data class CustomerResponse(
     var attributes: Map<String, Any>?,
     val latitude: Double?,
     val longitude: Double?,
-    var lastUpdated: Long?,
     var createdAt: Instant?,
     var updatedAt: Instant?,
 )
@@ -72,7 +71,6 @@ fun Customer.asCustomerResponse(): CustomerResponse {
         // Spring Data Point: x=longitude, y=latitude - fix coordinate mapping
         latitude = this.location?.y,
         longitude = this.location?.x,
-        lastUpdated = this.lastUpdated,
         createdAt = this.createdAt,
         updatedAt = this.updatedAt,
     )

@@ -6,6 +6,7 @@ import com.ampairs.invoice.service.InvoiceService
 import jakarta.validation.Valid
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
+import java.time.Instant
 
 @RestController
 @RequestMapping("/invoice/v1")
@@ -22,8 +23,8 @@ class InvoiceController @Autowired constructor(
     }
 
     @GetMapping("")
-    fun getInvoices(@RequestParam("last_updated") lastUpdated: Long?): ApiResponse<List<InvoiceResponse>> {
-        val result = invoiceService.getInvoices(lastUpdated ?: 0).toResponse()
+    fun getInvoices(@RequestParam("last_updated") lastUpdated: Instant?): ApiResponse<List<InvoiceResponse>> {
+        val result = invoiceService.getInvoices(lastUpdated).toResponse()
         return ApiResponse.success(result)
     }
 

@@ -4,15 +4,14 @@ import com.ampairs.core.multitenancy.DeviceContextHolder
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.core.security.AuthenticationHelper
 import com.ampairs.event.domain.events.ProductCreatedEvent
-import com.ampairs.event.domain.events.ProductDeletedEvent
 import com.ampairs.event.domain.events.ProductUpdatedEvent
 import com.ampairs.product.domain.model.Product
-import com.ampairs.product.domain.model.Unit
 import com.ampairs.product.domain.model.group.ProductBrand
 import com.ampairs.product.domain.model.group.ProductCategory
 import com.ampairs.product.domain.model.group.ProductGroup
 import com.ampairs.product.domain.model.group.ProductSubCategory
 import com.ampairs.product.repository.*
+import com.ampairs.unit.service.UnitService
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
@@ -21,12 +20,12 @@ import org.springframework.data.domain.Sort
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.util.*
+import java.time.Instant
 
 @Service
 class ProductService(
     val productPagingRepository: ProductPagingRepository,
-    val unitRepository: UnitRepository,
+    private val unitService: UnitService,
     val productGroupRepository: ProductGroupRepository,
     val productBrandRepository: ProductBrandRepository,
     val productCategoryRepository: ProductCategoryRepository,
@@ -48,9 +47,9 @@ class ProductService(
     private fun getDeviceId(): String = DeviceContextHolder.getCurrentDevice() ?: ""
 
 
-    fun getProducts(lastUpdated: Long?): List<Product> {
-        return productPagingRepository.findAllByLastUpdatedGreaterThanEqual(
-            lastUpdated ?: 0,
+    fun getProducts(updatedAt: Instant?): List<Product> {
+        return productPagingRepository.findAllByUpdatedAtGreaterThanEqual(
+            updatedAt ?: Instant.MIN,
             PageRequest.of(0, 1000, Sort.by("lastUpdated").ascending())
         )
     }
@@ -58,6 +57,10 @@ class ProductService(
     @Transactional
     fun updateProducts(products: List<Product>): List<Product> {
         products.forEach {
+            it.unitId?.takeIf { unitId -> unitId.isNotBlank() }?.let { unitId ->
+                unitService.findByUid(unitId)
+                    ?: throw IllegalArgumentException("Unit not found for id: $unitId")
+            }
             if (it.uid.isNotEmpty()) {
                 val group = productRepository.findByUid(it.uid)
                 it.id = group?.id ?: 0
@@ -72,23 +75,6 @@ class ProductService(
         return products
     }
 
-
-    @Transactional
-    fun updateUnits(units: List<Unit>): List<Unit> {
-        units.forEach {
-            if (it.uid.isNotEmpty()) {
-                val unit = unitRepository.findByUid(it.uid)
-                it.id = unit?.id ?: 0
-                it.refId = unit?.refId ?: ""
-            } else if (it.refId?.isNotEmpty() == true) {
-                val unit = unitRepository.findByRefId(it.refId)
-                it.id = unit?.id ?: 0
-                it.uid = unit?.uid ?: ""
-            }
-            unitRepository.save(it)
-        }
-        return units
-    }
 
     @Transactional
     fun updateProductGroups(groups: List<ProductGroup>): List<ProductGroup> {
@@ -119,7 +105,6 @@ class ProductService(
                 it.id = group?.id ?: 0
                 it.uid = group?.uid ?: ""
             }
-            it.lastUpdated = System.currentTimeMillis()
             productBrandRepository.save(it)
         }
         return brands
@@ -165,10 +150,6 @@ class ProductService(
         return productGroupRepository.findAll().toList()
     }
 
-    fun getUnits(): List<Unit> {
-        return unitRepository.findAll().toList()
-    }
-
     fun getBrands(): List<ProductBrand> {
         return productBrandRepository.findAll().toList()
     }
@@ -195,6 +176,10 @@ class ProductService(
 
     @Transactional
     fun createProduct(product: Product): Product {
+        product.unitId?.takeIf { it.isNotBlank() }?.let { unitId ->
+            unitService.findByUid(unitId)
+                ?: throw IllegalArgumentException("Unit not found for id: $unitId")
+        }
         // Generate SKU if not provided
         if (product.sku.isBlank()) {
             product.sku = generateSku(product.name, product.categoryId)
@@ -237,7 +222,8 @@ class ProductService(
             existingProduct.name = updates.name
         }
         if (updates.description != null && updates.description != existingProduct.description) {
-            fieldChanges["description"] = mapOf("old" to (existingProduct.description ?: ""), "new" to updates.description)
+            fieldChanges["description"] =
+                mapOf("old" to (existingProduct.description ?: ""), "new" to updates.description)
             existingProduct.description = updates.description
         }
         if (updates.basePrice > 0 && updates.basePrice != existingProduct.basePrice) {
@@ -276,16 +262,19 @@ class ProductService(
         return savedProduct
     }
 
-    fun searchProducts(searchTerm: String?, category: String?, brand: String?, 
-                      minPrice: Double?, maxPrice: Double?, pageable: Pageable): Page<Product> {
+    fun searchProducts(
+        searchTerm: String?, category: String?, brand: String?,
+        minPrice: Double?, maxPrice: Double?, pageable: Pageable
+    ): Page<Product> {
         return when {
             !searchTerm.isNullOrBlank() -> productRepository.searchProducts(searchTerm, pageable)
             !category.isNullOrBlank() -> productRepository.findActiveProductsByCategory(category, pageable)
             !brand.isNullOrBlank() -> productRepository.findActiveProductsByBrand(brand, pageable)
-            minPrice != null && maxPrice != null -> 
+            minPrice != null && maxPrice != null ->
                 productRepository.findActiveProductsByPriceRange(minPrice, maxPrice, pageable)
-            else -> productRepository.findByStatus("ACTIVE").let { 
-                org.springframework.data.domain.PageImpl(it, pageable, it.size.toLong()) 
+
+            else -> productRepository.findByStatus("ACTIVE").let {
+                org.springframework.data.domain.PageImpl(it, pageable, it.size.toLong())
             }
         }
     }

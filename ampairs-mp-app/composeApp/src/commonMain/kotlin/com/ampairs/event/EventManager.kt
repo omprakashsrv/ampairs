@@ -158,12 +158,13 @@ class EventManager(
             }
 
             // Connect with JWT token in query parameter (backend supports this)
+            // Note: JWT tokens are already base64url-encoded and URL-safe, so no encoding needed
             val urlWithToken = buildString {
                 append(wsUrl)
                 append("?token=")
-                append(token.encodeURLParameter())
+                append(token) // JWT tokens are already URL-safe, don't encode
                 append("&workspaceId=")
-                append(workspaceId.encodeURLParameter())
+                append(workspaceId.encodeURLParameter()) // Workspace ID should still be encoded
             }
             EventLogger.d("EventManager", "Connecting to: $wsUrl")
 

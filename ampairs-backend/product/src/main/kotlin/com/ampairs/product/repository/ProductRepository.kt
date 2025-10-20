@@ -15,6 +15,8 @@ interface ProductRepository : CrudRepository<Product, Long>, PagingAndSortingRep
     fun findByStatus(status: String): List<Product>
     fun findByNameContainingIgnoreCase(name: String, pageable: Pageable): Page<Product>
 
+    fun findAllByUnitId(unitId: String): List<Product>
+
     @Query("SELECT p FROM product p WHERE p.groupId IN (:ids)")
     fun getProduct(ids: String): List<Product>
 

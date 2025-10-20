@@ -1,9 +1,9 @@
 package com.ampairs.product.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
-import com.ampairs.core.domain.dto.FileResponse
-import com.ampairs.core.domain.dto.toFileResponse
-import com.ampairs.core.domain.service.FileService
+import com.ampairs.file.domain.dto.FileResponse
+import com.ampairs.file.domain.dto.toFileResponse
+import com.ampairs.file.domain.service.FileService
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.product.domain.model.Product
 import com.ampairs.product.domain.dto.group.*
@@ -11,24 +11,24 @@ import com.ampairs.product.domain.dto.product.ProductRequest
 import com.ampairs.product.domain.dto.product.ProductResponse
 import com.ampairs.product.domain.dto.product.asDatabaseModel
 import com.ampairs.product.domain.dto.product.asResponse
-import com.ampairs.product.domain.dto.unit.UnitRequest
-import com.ampairs.product.domain.dto.unit.UnitResponse
-import com.ampairs.product.domain.dto.unit.asDatabaseModel
-import com.ampairs.product.domain.dto.unit.asResponse
 import com.ampairs.product.service.ProductService
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
+import java.time.Instant
 
 @RestController
 @RequestMapping("/product/v1")
-class ProductController(val productService: ProductService, val fileService: FileService) {
+class ProductController(
+    val productService: ProductService,
+    val fileService: FileService
+) {
 
     @GetMapping("")
     fun getProducts(
-        @RequestParam("last_updated") lastUpdated: Long?,
+        @RequestParam("last_updated") lastUpdated: Instant?,
         @RequestParam("group_id") groupId: String?,
     ): ApiResponse<List<ProductResponse>> {
         if (!groupId.isNullOrEmpty()) {
@@ -53,19 +53,6 @@ class ProductController(val productService: ProductService, val fileService: Fil
         val result = productService.updateProducts(products.asDatabaseModel()).asResponse()
         return ApiResponse.success(result)
     }
-
-    @PostMapping("/units")
-    fun updateUnits(@RequestBody units: List<UnitRequest>): ApiResponse<List<UnitResponse>> {
-        val units = productService.updateUnits(units.asDatabaseModel())
-        return ApiResponse.success(units.asResponse())
-    }
-
-    @GetMapping("/units")
-    fun getUnits(): ApiResponse<List<UnitResponse>> {
-        val units = productService.getUnits()
-        return ApiResponse.success(units.asResponse())
-    }
-
 
     @GetMapping("/groups")
     fun getGroups(): ApiResponse<List<ProductGroupResponse>> {

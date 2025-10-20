@@ -264,21 +264,11 @@ class Workspace : BaseDomain() {
     @JsonIgnore
     var invitations: MutableSet<WorkspaceInvitation> = mutableSetOf()
 
-    /**
-     * Workspace settings (using JoinColumn instead of mappedBy to avoid entity conflicts)
-     */
-    @OneToOne(cascade = [CascadeType.ALL], fetch = FetchType.LAZY)
-    @JoinColumn(name = "workspace_id", referencedColumnName = "uid")
-    @JsonIgnore
-    var workspaceSettings: WorkspaceSettings? = null
-
-    /**
-     * Workspace activities (using JoinColumn instead of mappedBy to avoid entity conflicts)
-     */
-    @OneToMany(cascade = [CascadeType.ALL], fetch = FetchType.LAZY)
-    @JoinColumn(name = "workspace_id", referencedColumnName = "uid")
-    @JsonIgnore
-    var activities: MutableSet<WorkspaceActivity> = mutableSetOf()
+    // Note: WorkspaceSettings and WorkspaceActivity use String-based workspaceId foreign keys
+    // instead of entity relationships to avoid circular dependencies and mapping conflicts.
+    // Use repository methods to fetch these entities when needed:
+    //   - workspaceSettingsRepository.findByWorkspaceId(workspace.uid)
+    //   - workspaceActivityRepository.findByWorkspaceId(workspace.uid)
 
     override fun obtainSeqIdPrefix(): String {
         return Constants.WORKSPACE_PREFIX
