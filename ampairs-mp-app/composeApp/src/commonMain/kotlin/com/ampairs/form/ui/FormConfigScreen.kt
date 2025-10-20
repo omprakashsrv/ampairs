@@ -250,6 +250,23 @@ private fun FieldConfigCard(
                 modifier = Modifier.fillMaxWidth()
             )
 
+            OutlinedTextField(
+                value = fieldConfig.defaultValue ?: "",
+                onValueChange = { onUpdate(fieldConfig.copy(defaultValue = it.takeIf { it.isNotBlank() })) },
+                label = { Text("Default Value") },
+                supportingText = { Text("Pre-filled value when creating new records") },
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            OutlinedTextField(
+                value = fieldConfig.helpText ?: "",
+                onValueChange = { onUpdate(fieldConfig.copy(helpText = it.takeIf { it.isNotBlank() })) },
+                label = { Text("Help Text") },
+                supportingText = { Text("Additional information shown below the field") },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 2
+            )
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(16.dp)
