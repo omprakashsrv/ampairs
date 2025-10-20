@@ -8,6 +8,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +24,7 @@ import com.ampairs.customer.util.CustomerConstants.TITLE_CUSTOMERS
 fun CustomersListScreen(
     onCustomerClick: (String) -> Unit,
     onCreateCustomer: () -> Unit,
+    onFormConfig: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: CustomersListViewModel = koinViewModel()
 ) {
@@ -38,6 +40,9 @@ fun CustomersListScreen(
         TopAppBar(
             title = { Text(TITLE_CUSTOMERS) },
             actions = {
+                IconButton(onClick = onFormConfig) {
+                    Icon(Icons.Default.Settings, contentDescription = "Form Settings")
+                }
                 IconButton(
                     onClick = viewModel::syncCustomers,
                     enabled = !uiState.isRefreshing

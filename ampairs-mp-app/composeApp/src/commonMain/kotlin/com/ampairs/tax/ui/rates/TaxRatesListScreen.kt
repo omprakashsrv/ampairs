@@ -7,6 +7,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +24,7 @@ import kotlin.time.Clock
 fun TaxRatesListScreen(
     onTaxRateClick: (String) -> Unit,
     onCreateTaxRate: () -> Unit,
+    onFormConfig: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: TaxRatesListViewModel = koinViewModel()
 ) {
@@ -41,6 +43,9 @@ fun TaxRatesListScreen(
         TopAppBar(
             title = { Text("Tax Rates") },
             actions = {
+                IconButton(onClick = onFormConfig) {
+                    Icon(Icons.Default.Settings, contentDescription = "Form Settings")
+                }
                 IconButton(onClick = { showSearchBar = !showSearchBar }) {
                     Icon(Icons.Default.Search, contentDescription = "Search")
                 }

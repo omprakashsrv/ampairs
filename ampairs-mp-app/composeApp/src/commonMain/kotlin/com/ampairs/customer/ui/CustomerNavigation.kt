@@ -7,6 +7,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import Route
 import com.ampairs.common.ui.AppScreenWithHeader
 import com.ampairs.customer.ui.create.CustomerFormScreen
 import com.ampairs.customer.ui.customergroup.CustomerGroupFormScreen
@@ -55,6 +56,9 @@ fun NavGraphBuilder.customerNavigation(navController: NavHostController) {
                 },
                 onCreateCustomer = {
                     navController.navigate(CustomerCreateRoute())
+                },
+                onFormConfig = {
+                    navController.navigate(Route.FormConfig("customer"))
                 },
                 modifier = Modifier.padding(paddingValues)
             )

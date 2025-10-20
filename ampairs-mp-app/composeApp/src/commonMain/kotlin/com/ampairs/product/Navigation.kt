@@ -32,6 +32,9 @@ fun NavGraphBuilder.productNavigation(
                     onCreateProduct = {
                         navController.navigate(ProductRoute.ProductForm())
                     },
+                    onFormConfig = {
+                        navController.navigate(Route.FormConfig("product"))
+                    },
                     modifier = Modifier.padding(paddingValues)
                 )
             }

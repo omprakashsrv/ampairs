@@ -41,6 +41,9 @@ fun NavGraphBuilder.businessNavigation(
                     onNavigateToTax = {
                         navController.navigate(BusinessRoute.TaxConfig)
                     },
+                    onNavigateToFormConfig = {
+                        navController.navigate(Route.FormConfig("business"))
+                    },
                     modifier = Modifier.padding(paddingValues)
                 )
             }
