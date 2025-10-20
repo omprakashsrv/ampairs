@@ -15,12 +15,18 @@ package com.ampairs.form.domain
  *
  * This prevents duplicate configurations when multiple users access
  * the system for the first time.
+ *
+ * NOTE: Functions in this object are intentionally unused in mobile code.
+ * They exist purely as reference documentation for backend implementation.
  */
+@Suppress("unused")
 object DefaultFormConfigs {
 
     /**
      * Default customer form field configurations
      * Matches the static fields in CustomerFormScreen
+     *
+     * BACKEND REFERENCE: Use this structure when seeding customer form config
      */
     fun getDefaultCustomerFieldConfigs(): List<EntityFieldConfig> = listOf(
         // === Basic Information Section ===
@@ -73,6 +79,20 @@ object DefaultFormConfigs {
             helpText = "Group classification for customer"
         ),
         EntityFieldConfig(
+            uid = "customer-field-countryCode",
+            entityType = "customer",
+            fieldName = "countryCode",
+            displayName = "Country Code",
+            visible = true,
+            mandatory = false,
+            enabled = true,
+            displayOrder = 5,
+            validationType = "number",
+            defaultValue = "91",
+            placeholder = "91",
+            helpText = "International dialing code (e.g., 91 for India, 1 for USA)"
+        ),
+        EntityFieldConfig(
             uid = "customer-field-phone",
             entityType = "customer",
             fieldName = "phone",
@@ -80,7 +100,7 @@ object DefaultFormConfigs {
             visible = true,
             mandatory = true,
             enabled = true,
-            displayOrder = 5,
+            displayOrder = 6,
             validationType = "phone",
             placeholder = "Enter phone number"
         ),
@@ -92,8 +112,9 @@ object DefaultFormConfigs {
             visible = true,
             mandatory = false,
             enabled = true,
-            displayOrder = 6,
-            placeholder = "Enter landline number"
+            displayOrder = 7,
+            placeholder = "Enter landline number",
+            helpText = "Landline number with area code"
         ),
 
         // === Business Information Section ===
@@ -105,9 +126,10 @@ object DefaultFormConfigs {
             visible = true,
             mandatory = false,
             enabled = true,
-            displayOrder = 7,
+            displayOrder = 8,
             validationType = "gstin",
-            placeholder = "Enter 15-digit GST number"
+            placeholder = "Enter 15-digit GST number",
+            helpText = "Goods and Services Tax Identification Number"
         ),
         EntityFieldConfig(
             uid = "customer-field-panNumber",
@@ -117,9 +139,10 @@ object DefaultFormConfigs {
             visible = true,
             mandatory = false,
             enabled = true,
-            displayOrder = 8,
+            displayOrder = 9,
             validationType = "pan",
-            placeholder = "Enter 10-digit PAN"
+            placeholder = "Enter 10-digit PAN",
+            helpText = "Permanent Account Number for tax purposes"
         ),
 
         // === Credit Management Section ===
@@ -131,7 +154,7 @@ object DefaultFormConfigs {
             visible = true,
             mandatory = false,
             enabled = true,
-            displayOrder = 9,
+            displayOrder = 10,
             validationType = "number",
             placeholder = "0.00",
             helpText = "Maximum credit amount allowed"
@@ -144,7 +167,7 @@ object DefaultFormConfigs {
             visible = true,
             mandatory = false,
             enabled = true,
-            displayOrder = 10,
+            displayOrder = 11,
             validationType = "number",
             placeholder = "0",
             helpText = "Number of days for credit payment"
@@ -396,6 +419,8 @@ object DefaultFormConfigs {
      * - Admin defines attribute keys in backend configuration
      * - Users can only fill values for predefined attributes
      * - No "Add Attribute" button for random attributes
+     *
+     * BACKEND REFERENCE: Use this structure when seeding customer attribute definitions
      */
     fun getDefaultCustomerAttributeDefinitions(): List<EntityAttributeDefinition> = listOf(
         // Example: Industry attribute
@@ -489,21 +514,4 @@ object DefaultFormConfigs {
             helpText = "Additional remarks about the customer"
         )
     )
-
-    /**
-     * Get default config schema for any entity type
-     */
-    fun getDefaultConfigSchema(entityType: String): EntityConfigSchema {
-        return when (entityType.lowercase()) {
-            "customer" -> EntityConfigSchema(
-                fieldConfigs = getDefaultCustomerFieldConfigs(),
-                attributeDefinitions = getDefaultCustomerAttributeDefinitions()
-            )
-            // Add other entity types as needed
-            else -> EntityConfigSchema(
-                fieldConfigs = emptyList(),
-                attributeDefinitions = emptyList()
-            )
-        }
-    }
 }
