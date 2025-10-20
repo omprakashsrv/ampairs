@@ -58,6 +58,7 @@ fun NavGraphBuilder.customerNavigation(navController: NavHostController) {
                     navController.navigate(CustomerCreateRoute())
                 },
                 onFormConfig = {
+                    println("CustomerNavigation: Navigating to FormConfig for customer")
                     navController.navigate(Route.FormConfig("customer"))
                 },
                 modifier = Modifier.padding(paddingValues)
