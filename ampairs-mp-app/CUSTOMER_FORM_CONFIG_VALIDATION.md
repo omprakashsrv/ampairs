@@ -16,10 +16,11 @@ This document validates the field mapping between the Customer Form UI and the F
 |------------|-------------------|---------------|-------|
 | Name | `name` | - | ✓ Mandatory field |
 | Email | `email` | - | ✓ Email validation |
-| Phone | `phone` | - | ✓ Phone validation |
-| Landline | `landline` | - | ✓ Optional |
 | Customer Type | `customerType` | - | ✓ Dropdown select |
 | Customer Group | `customerGroup` | - | ✓ Dropdown select |
+| Country Code | `countryCode` | **91** | ✓ Number validation, default India code |
+| Phone | `phone` | - | ✓ Phone validation |
+| Landline | `landline` | - | ✓ Optional, with help text |
 
 ### ✅ Business Information Section
 
@@ -100,15 +101,16 @@ The configuration supports 6 predefined custom attributes:
 ## Validation Summary
 
 ### ✅ All Fields Mapped
-**Total Fields**: 31 standard fields + 6 custom attributes = **37 configurable fields**
+**Total Fields**: 32 standard fields + 6 custom attributes = **38 configurable fields**
 
 ### ✅ Default Values Configured
 
 The following fields have default values:
-1. **country** → "India"
-2. **billingCountry** → "India"
-3. **shippingCountry** → "India"
-4. **status** → "ACTIVE"
+1. **countryCode** → "91" (India dialing code)
+2. **country** → "India"
+3. **billingCountry** → "India"
+4. **shippingCountry** → "India"
+5. **status** → "ACTIVE"
 
 ### ✅ Field Name Consistency
 
@@ -121,7 +123,7 @@ All field names use **camelCase** naming:
 
 | Category | Fields Configured | Fields in Form | Coverage |
 |----------|-------------------|----------------|----------|
-| Basic Info | 6 | 6 | 100% ✓ |
+| Basic Info | 7 | 7 | 100% ✓ |
 | Business Info | 2 | 2 | 100% ✓ |
 | Credit | 2 | 2 | 100% ✓ |
 | Main Address | 7 | 7 | 100% ✓ |
@@ -217,17 +219,43 @@ All field names use **camelCase** naming:
 
 ---
 
+## Customer Images Management
+
+**Note**: Customer images are **NOT** included in form field configuration because they require specialized handling:
+
+### Architecture
+- **Separate Component**: `CustomerImageManagementScreen`
+- **Dedicated API**: `CustomerImageApi` with upload/download endpoints
+- **Database**: `CustomerImageEntity` with Room persistence
+- **UI Location**: Separate tab/card in customer details view
+
+### Why Not a Form Field?
+- Images require file picker UI
+- Upload progress tracking needed
+- Preview/gallery functionality
+- Multiple images per customer
+- Separate CRUD operations from customer entity
+
+### Implementation Files
+- `CustomerImageManagementScreen.kt` - Image gallery and upload UI
+- `CustomerImageViewModel.kt` - Image state management
+- `CustomerImageRepository.kt` - Image data operations
+- `CustomerImageDao.kt` - Room database access
+
+---
+
 ## Conclusion
 
 **Status**: ✅ **PRODUCTION READY**
 
 The Customer Form Configuration system is fully functional with:
-- 100% field coverage
-- Default value support
-- Help text support
-- Custom attribute support
+- 100% field coverage (32 standard fields)
+- Default value support (5 fields with defaults)
+- Help text support (all fields)
+- Custom attribute support (6 predefined attributes)
 - Backend integration
 - Multi-tenant isolation
+- Customer images handled via dedicated management system
 
 All customer form fields can be configured through the Settings UI.
 
