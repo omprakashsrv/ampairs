@@ -20,6 +20,7 @@ import org.koin.core.parameter.parametersOf
 fun CustomerImageManagementScreen(
     customerId: String,
     modifier: Modifier = Modifier,
+    readOnly: Boolean = false,
     viewModel: CustomerImageViewModel = koinViewModel { parametersOf(customerId) }
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -53,21 +54,21 @@ fun CustomerImageManagementScreen(
 
             uiState.images.isEmpty() -> {
                 EmptyStateContent(
-                    onAddImage = viewModel::pickSingleImage
+                    onAddImage = if (readOnly) null else viewModel::pickSingleImage
                 )
             }
 
             else -> {
                 CustomerImageGrid(
                     images = uiState.images,
-                    onAddImage = viewModel::pickSingleImage,
+                    onAddImage = if (readOnly) null else viewModel::pickSingleImage,
                     onImageClick = { image ->
                         viewModel.showImageViewer(image.uid)
                     },
-                    onDeleteImage = { image ->
+                    onDeleteImage = if (readOnly) null else { image ->
                         viewModel.deleteImage(image.uid)
                     },
-                    onSetPrimary = { image ->
+                    onSetPrimary = if (readOnly) null else { image ->
                         viewModel.setPrimaryImage(image.uid)
                     },
                     modifier = Modifier.fillMaxWidth()
@@ -257,7 +258,7 @@ private fun LoadingContent(
 
 @Composable
 private fun EmptyStateContent(
-    onAddImage: () -> Unit,
+    onAddImage: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -281,21 +282,25 @@ private fun EmptyStateContent(
             )
 
             Text(
-                text = "No images yet",
+                text = if (onAddImage == null) "No images" else "No images yet",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Text(
-                text = "Upload customer images to help identify and personalize their profile",
+                text = if (onAddImage == null)
+                    "Customer images are configured as read-only"
+                else
+                    "Upload customer images to help identify and personalize their profile",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
-            Button(
-                onClick = onAddImage,
-                modifier = Modifier.padding(top = 8.dp)
+            if (onAddImage != null) {
+                Button(
+                    onClick = onAddImage,
+                    modifier = Modifier.padding(top = 8.dp)
             ) {
                 Icon(
                     Icons.Default.CloudUpload,

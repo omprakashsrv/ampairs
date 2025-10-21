@@ -81,6 +81,17 @@ This document validates the field mapping between the Customer Form UI and the F
 |------------|-------------------|---------------|-------|
 | Status | `status` | **ACTIVE** | ✓ Dropdown select |
 
+### ✅ Customer Images Section
+
+| Form Field | Config Field Name | Default Value | Notes |
+|------------|-------------------|---------------|-------|
+| Customer Images Tab | `customerImages` | - | ✓ Controls tab visibility and read-only mode |
+
+**Special Behavior**:
+- **visible = false**: Hides the Images tab completely from customer details screen
+- **enabled = false**: Shows Images tab in read-only mode (no upload/delete/set primary actions)
+- **enabled = true**: Full image management functionality (upload, delete, set primary)
+
 ---
 
 ## Custom Attributes
@@ -101,7 +112,7 @@ The configuration supports 6 predefined custom attributes:
 ## Validation Summary
 
 ### ✅ All Fields Mapped
-**Total Fields**: 32 standard fields + 6 custom attributes = **38 configurable fields**
+**Total Fields**: 33 standard fields + 6 custom attributes = **39 configurable fields**
 
 ### ✅ Default Values Configured
 
@@ -131,6 +142,7 @@ All field names use **camelCase** naming:
 | Billing Address | 5 | 5 | 100% ✓ |
 | Shipping Address | 5 | 5 | 100% ✓ |
 | Status | 1 | 1 | 100% ✓ |
+| Customer Images | 1 | 1 | 100% ✓ |
 | Attributes | 6 | ∞ | Dynamic ✓ |
 
 ---
@@ -191,7 +203,7 @@ All field names use **camelCase** naming:
 
 ## Testing Checklist
 
-- [x] All 31 standard fields present in configuration
+- [x] All 33 standard fields present in configuration
 - [x] Field names match exactly between form and config
 - [x] Default values applied to new records
 - [x] Help text displayed below configured fields
@@ -200,6 +212,8 @@ All field names use **camelCase** naming:
 - [x] Custom attributes render in form
 - [x] Configuration persists after save
 - [x] Multi-workspace isolation works
+- [ ] Customer Images tab visibility controlled by configuration
+- [ ] Customer Images read-only mode works correctly
 
 ---
 
@@ -221,23 +235,41 @@ All field names use **camelCase** naming:
 
 ## Customer Images Management
 
-**Note**: Customer images are **NOT** included in form field configuration because they require specialized handling:
+**Status**: ✅ **NOW CONFIGURABLE** (January 2025 Update)
+
+Customer images are **NOW included** in form field configuration with the `customerImages` field:
+
+### Configuration Options
+
+| Setting | Effect |
+|---------|--------|
+| `visible = true` | Images tab appears in customer details (default) |
+| `visible = false` | Images tab completely hidden from UI |
+| `enabled = true` | Full image management (upload, delete, set primary) |
+| `enabled = false` | Read-only mode (view only, no edits) |
+| `mandatory = true` | Require at least one image (future enhancement) |
 
 ### Architecture
-- **Separate Component**: `CustomerImageManagementScreen`
+- **UI Component**: `CustomerImageManagementScreen` with `readOnly` parameter
 - **Dedicated API**: `CustomerImageApi` with upload/download endpoints
 - **Database**: `CustomerImageEntity` with Room persistence
-- **UI Location**: Separate tab/card in customer details view
+- **UI Location**: Configurable tab in customer details view
+- **Form Integration**: `customerImages` field in FormConfigScreen
 
-### Why Not a Form Field?
+### Why Special Configuration?
+While images are part of form configuration, they still require specialized handling:
 - Images require file picker UI
 - Upload progress tracking needed
 - Preview/gallery functionality
 - Multiple images per customer
 - Separate CRUD operations from customer entity
 
+The configuration controls **access and behavior**, not the complex image handling logic.
+
 ### Implementation Files
-- `CustomerImageManagementScreen.kt` - Image gallery and upload UI
+- `CustomerImageManagementScreen.kt` - Image gallery with readOnly support
+- `CustomerDetailsScreen.kt` - Tab visibility based on configuration
+- `CustomerImageGrid.kt` - Action buttons controlled by readOnly mode
 - `CustomerImageViewModel.kt` - Image state management
 - `CustomerImageRepository.kt` - Image data operations
 - `CustomerImageDao.kt` - Room database access
@@ -249,15 +281,16 @@ All field names use **camelCase** naming:
 **Status**: ✅ **PRODUCTION READY**
 
 The Customer Form Configuration system is fully functional with:
-- 100% field coverage (32 standard fields)
+- 100% field coverage (33 standard fields including customer images)
 - Default value support (5 fields with defaults)
 - Help text support (all fields)
 - Custom attribute support (6 predefined attributes)
-- Backend integration
+- **Customer images tab configurability** (visibility and read-only mode)
+- Backend integration with incremental seeding
 - Multi-tenant isolation
-- Customer images handled via dedicated management system
+- Offline-first architecture
 
-All customer form fields can be configured through the Settings UI.
+All customer form fields and features can be configured through the Settings UI.
 
 ---
 

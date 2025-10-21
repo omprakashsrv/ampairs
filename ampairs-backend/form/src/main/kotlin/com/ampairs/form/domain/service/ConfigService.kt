@@ -365,6 +365,10 @@ class ConfigService(
             // === Status Section ===
             createFieldConfig("customer", "status", "Status", 31, visible = true, mandatory = false,
                 defaultValue = "ACTIVE", helpText = "Customer status (Active, Inactive, Suspended)"),
+
+            // === Customer Images Section ===
+            createFieldConfig("customer", "customerImages", "Customer Images", 32, visible = true, mandatory = false,
+                enabled = true, helpText = "Photo gallery for customer documentation (storefront, documents, etc.)"),
         )
 
         return fields

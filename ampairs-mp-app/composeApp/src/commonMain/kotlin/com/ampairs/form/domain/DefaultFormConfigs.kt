@@ -407,6 +407,19 @@ object DefaultFormConfigs {
             validationType = "select",
             defaultValue = "ACTIVE",
             helpText = "Customer status (Active, Inactive, Suspended)"
+        ),
+
+        // === Customer Images Section ===
+        EntityFieldConfig(
+            uid = "customer-field-customerImages",
+            entityType = "customer",
+            fieldName = "customerImages",
+            displayName = "Customer Images",
+            visible = true,
+            mandatory = false,
+            enabled = true,
+            displayOrder = 31,
+            helpText = "Photo gallery for customer documentation (storefront, documents, etc.)"
         )
     )
 
