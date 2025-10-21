@@ -68,6 +68,9 @@ import com.ampairs.customer.ui.components.location.LocationPickerDialog
 import com.ampairs.customer.ui.components.location.LocationData
 import com.ampairs.customer.ui.components.location.AddressData
 import com.ampairs.customer.domain.State
+import com.ampairs.form.data.repository.ConfigRepository
+import kotlinx.coroutines.flow.first
+import org.koin.compose.koinInject
 import com.ampairs.customer.util.CustomerConstants.LABEL_CUSTOMER_TYPE
 import com.ampairs.customer.util.CustomerConstants.LABEL_CUSTOMER_GROUP
 import com.ampairs.customer.util.CustomerConstants.LABEL_STATUS
@@ -261,8 +264,24 @@ private fun CustomerFormTabLayout(
     entityConfig: com.ampairs.form.domain.EntityConfigSchema?,
     modifier: Modifier = Modifier
 ) {
+    val configRepository: ConfigRepository = koinInject()
     var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabs = listOf("Details", "Images")
+
+    // Load form config for customerImages field
+    var imagesFieldConfig by remember { mutableStateOf<com.ampairs.form.domain.EntityFieldConfig?>(null) }
+
+    LaunchedEffect(Unit) {
+        val config = configRepository.observeConfigSchema("customer").first()
+        imagesFieldConfig = config?.fieldConfigs?.find { it.fieldName == "customerImages" }
+    }
+
+    // Filter tabs based on visibility configuration
+    val tabs = buildList {
+        add("Details")
+        if (imagesFieldConfig?.visible != false && customerId.isNotBlank()) {
+            add("Images")
+        }
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
         TabRow(selectedTabIndex = selectedTabIndex) {
@@ -295,12 +314,15 @@ private fun CustomerFormTabLayout(
                 entityConfig = entityConfig,
                 modifier = Modifier.fillMaxSize()
             )
-            1 -> CustomerImageManagementScreen(
-                customerId = customerId,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-            )
+            1 -> if (tabs.getOrNull(1) == "Images") {
+                CustomerImageManagementScreen(
+                    customerId = customerId,
+                    readOnly = imagesFieldConfig?.enabled == false,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                )
+            }
         }
     }
 }
@@ -325,16 +347,26 @@ private fun CustomerFormSideBySideLayout(
     entityConfig: com.ampairs.form.domain.EntityConfigSchema?,
     modifier: Modifier = Modifier
 ) {
+    val configRepository: ConfigRepository = koinInject()
+
+    // Load form config for customerImages field
+    var imagesFieldConfig by remember { mutableStateOf<com.ampairs.form.domain.EntityFieldConfig?>(null) }
+
+    LaunchedEffect(Unit) {
+        val config = configRepository.observeConfigSchema("customer").first()
+        imagesFieldConfig = config?.fieldConfigs?.find { it.fieldName == "customerImages" }
+    }
+
     Row(
         modifier = modifier
             .fillMaxSize()
             .padding(16.dp),
         horizontalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Left side: Customer Form (60% width)
+        // Left side: Customer Form (60% width or full if images hidden)
         Card(
             modifier = Modifier
-                .weight(0.6f)
+                .weight(if (imagesFieldConfig?.visible == false || customerId.isBlank()) 1f else 0.6f)
                 .fillMaxHeight()
         ) {
             CustomerFormFields(
@@ -358,18 +390,21 @@ private fun CustomerFormSideBySideLayout(
             )
         }
 
-        // Right side: Customer Images (40% width)
-        Card(
-            modifier = Modifier
-                .weight(0.4f)
-                .fillMaxHeight()
-        ) {
-            CustomerImageManagementScreen(
-                customerId = customerId,
+        // Right side: Customer Images (40% width) - if visible and editing existing customer
+        if (imagesFieldConfig?.visible != false && customerId.isNotBlank()) {
+            Card(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-            )
+                    .weight(0.4f)
+                    .fillMaxHeight()
+            ) {
+                CustomerImageManagementScreen(
+                    customerId = customerId,
+                    readOnly = imagesFieldConfig?.enabled == false,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                )
+            }
         }
     }
 }
