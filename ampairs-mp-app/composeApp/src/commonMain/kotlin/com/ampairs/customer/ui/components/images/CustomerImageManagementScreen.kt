@@ -311,6 +311,7 @@ private fun EmptyStateContent(
                     Text("Upload First Image")
                 }
             }
+        }
     }
 }
 

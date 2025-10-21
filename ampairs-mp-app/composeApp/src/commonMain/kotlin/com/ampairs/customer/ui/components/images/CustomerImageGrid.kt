@@ -335,6 +335,7 @@ private fun CustomerImageCard(
                                 )
                             }
                         }
+                    }
                 }
             }
         }
