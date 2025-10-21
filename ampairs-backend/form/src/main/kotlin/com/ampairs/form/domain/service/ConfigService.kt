@@ -24,6 +24,7 @@ class ConfigService(
     /**
      * Get complete configuration schema for an entity type
      * Auto-seeds default configuration on first access if none exists
+     * Incrementally adds missing fields when new defaults are introduced
      */
     @Transactional
     fun getConfigSchema(entityType: String): EntityConfigSchemaResponse {
@@ -33,12 +34,11 @@ class ConfigService(
         var attributeDefinitions = attributeDefinitionRepository
             .findByEntityTypeOrderByDisplayOrderAsc(entityType)
 
-        // Auto-seed if empty (first time access for this entity type in this workspace)
-        if (fieldConfigs.isEmpty() && attributeDefinitions.isEmpty()) {
-            logger.info("No configuration found for entity type: {}, seeding defaults...", entityType)
-            seedDefaultConfig(entityType)
+        // Incremental seeding: Add missing fields from defaults
+        val seededNewFields = seedMissingFields(entityType, fieldConfigs)
 
-            // Fetch again after seeding
+        if (seededNewFields) {
+            // Fetch again after seeding new fields
             fieldConfigs = fieldConfigRepository.findByEntityTypeOrderByDisplayOrderAsc(entityType)
             attributeDefinitions = attributeDefinitionRepository.findByEntityTypeOrderByDisplayOrderAsc(entityType)
         }
@@ -224,7 +224,51 @@ class ConfigService(
     }
 
     /**
+     * Incrementally seed missing fields from defaults
+     * Returns true if any new fields were added
+     */
+    private fun seedMissingFields(entityType: String, existingFieldConfigs: List<FieldConfig>): Boolean {
+        // Get default field configs for this entity type
+        val defaultFields = when (entityType.lowercase()) {
+            "customer" -> getDefaultCustomerFieldConfigs()
+            "product" -> getDefaultProductFieldConfigs()
+            "order" -> getDefaultOrderFieldConfigs()
+            "invoice" -> getDefaultInvoiceFieldConfigs()
+            else -> {
+                logger.debug("No default fields defined for entity type: {}", entityType)
+                return false
+            }
+        }
+
+        // If no existing configs, seed all defaults
+        if (existingFieldConfigs.isEmpty()) {
+            logger.info("No configuration found for entity type: {}, seeding all {} defaults...",
+                entityType, defaultFields.size)
+            fieldConfigRepository.saveAll(defaultFields)
+            logger.info("Seeded {} field configurations for entity type: {}", defaultFields.size, entityType)
+            return true
+        }
+
+        // Find missing fields by comparing field names
+        val existingFieldNames = existingFieldConfigs.map { it.fieldName }.toSet()
+        val missingFields = defaultFields.filter { it.fieldName !in existingFieldNames }
+
+        if (missingFields.isNotEmpty()) {
+            logger.info("Found {} new fields for entity type: {} - adding: {}",
+                missingFields.size, entityType, missingFields.map { it.fieldName })
+            fieldConfigRepository.saveAll(missingFields)
+            logger.info("Successfully added {} new field configurations for entity type: {}",
+                missingFields.size, entityType)
+            return true
+        }
+
+        logger.debug("No missing fields for entity type: {}", entityType)
+        return false
+    }
+
+    /**
      * Seed default configuration for an entity type
+     * DEPRECATED: Use seedMissingFields instead for incremental seeding
      */
     private fun seedDefaultConfig(entityType: String) {
         when (entityType.lowercase()) {
@@ -239,9 +283,10 @@ class ConfigService(
     }
 
     /**
-     * Seed default customer form configuration
+     * Get default customer field configurations
+     * Returns list of default FieldConfig entities
      */
-    private fun seedCustomerDefaults() {
+    private fun getDefaultCustomerFieldConfigs(): List<FieldConfig> {
         val fields = listOf(
             // === Basic Information Section ===
             createFieldConfig("customer", "name", "Customer Name", 1, visible = true, mandatory = true,
@@ -322,27 +367,24 @@ class ConfigService(
                 defaultValue = "ACTIVE", helpText = "Customer status (Active, Inactive, Suspended)"),
         )
 
-        fieldConfigRepository.saveAll(fields)
-        logger.info("Seeded {} customer field configurations", fields.size)
-
-//        val attributes = listOf(
-//            createAttributeDefinition("customer", "industry", "Industry", "STRING", 1,
-//                helpText = "Customer's business industry"),
-//            createAttributeDefinition("customer", "company_size", "Company Size", "STRING", 2,
-//                helpText = "Size of customer's organization"),
-//            createAttributeDefinition("customer", "preferred_payment_method", "Preferred Payment Method", "STRING", 3,
-//                helpText = "Customer's preferred payment method"),
-//        )
-
-//        attributeDefinitionRepository.saveAll(attributes)
-//        logger.info("Seeded {} customer attribute definitions", attributes.size)
+        return fields
     }
 
     /**
-     * Seed default product form configuration
+     * Seed default customer form configuration
+     * Legacy method - calls getDefaultCustomerFieldConfigs() and saves
      */
-    private fun seedProductDefaults() {
-        val fields = listOf(
+    private fun seedCustomerDefaults() {
+        val fields = getDefaultCustomerFieldConfigs()
+        fieldConfigRepository.saveAll(fields)
+        logger.info("Seeded {} customer field configurations", fields.size)
+    }
+
+    /**
+     * Get default product field configurations
+     */
+    private fun getDefaultProductFieldConfigs(): List<FieldConfig> {
+        return listOf(
             createFieldConfig("product", "name", "Product Name", 1, visible = true, mandatory = true),
             createFieldConfig("product", "sku", "SKU", 2, visible = true, mandatory = false),
             createFieldConfig("product", "description", "Description", 3, visible = true, mandatory = false),
@@ -351,39 +393,57 @@ class ConfigService(
             createFieldConfig("product", "taxCode", "Tax Code", 6, visible = true, mandatory = false),
             createFieldConfig("product", "unit", "Unit", 7, visible = true, mandatory = false),
         )
+    }
 
+    /**
+     * Seed default product form configuration
+     */
+    private fun seedProductDefaults() {
+        val fields = getDefaultProductFieldConfigs()
         fieldConfigRepository.saveAll(fields)
         logger.info("Seeded {} product field configurations", fields.size)
     }
 
     /**
-     * Seed default order form configuration
+     * Get default order field configurations
      */
-    private fun seedOrderDefaults() {
-        val fields = listOf(
+    private fun getDefaultOrderFieldConfigs(): List<FieldConfig> {
+        return listOf(
             createFieldConfig("order", "customer", "Customer", 1, visible = true, mandatory = true),
             createFieldConfig("order", "orderDate", "Order Date", 2, visible = true, mandatory = true),
             createFieldConfig("order", "deliveryDate", "Delivery Date", 3, visible = true, mandatory = false),
             createFieldConfig("order", "status", "Status", 4, visible = true, mandatory = false),
             createFieldConfig("order", "notes", "Notes", 5, visible = true, mandatory = false),
         )
+    }
 
+    /**
+     * Seed default order form configuration
+     */
+    private fun seedOrderDefaults() {
+        val fields = getDefaultOrderFieldConfigs()
         fieldConfigRepository.saveAll(fields)
         logger.info("Seeded {} order field configurations", fields.size)
     }
 
     /**
-     * Seed default invoice form configuration
+     * Get default invoice field configurations
      */
-    private fun seedInvoiceDefaults() {
-        val fields = listOf(
+    private fun getDefaultInvoiceFieldConfigs(): List<FieldConfig> {
+        return listOf(
             createFieldConfig("invoice", "customer", "Customer", 1, visible = true, mandatory = true),
             createFieldConfig("invoice", "invoiceDate", "Invoice Date", 2, visible = true, mandatory = true),
             createFieldConfig("invoice", "dueDate", "Due Date", 3, visible = true, mandatory = false),
             createFieldConfig("invoice", "status", "Status", 4, visible = true, mandatory = false),
             createFieldConfig("invoice", "notes", "Notes", 5, visible = true, mandatory = false),
         )
+    }
 
+    /**
+     * Seed default invoice form configuration
+     */
+    private fun seedInvoiceDefaults() {
+        val fields = getDefaultInvoiceFieldConfigs()
         fieldConfigRepository.saveAll(fields)
         logger.info("Seeded {} invoice field configurations", fields.size)
     }
