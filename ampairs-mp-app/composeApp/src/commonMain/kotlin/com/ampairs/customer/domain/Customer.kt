@@ -65,13 +65,15 @@ data class CustomerListItem(
     val name: String,
     val phone: String?,
     val email: String?,
-    val city: String?
+    val city: String?,
+    val primaryThumbnailUrl: String? = null
 )
 
-fun Customer.toListItem(): CustomerListItem = CustomerListItem(
+fun Customer.toListItem(primaryThumbnailUrl: String? = null): CustomerListItem = CustomerListItem(
     id = uid,
     name = name,
     phone = phone,
     email = email,
-    city = city
+    city = city,
+    primaryThumbnailUrl = primaryThumbnailUrl
 )
