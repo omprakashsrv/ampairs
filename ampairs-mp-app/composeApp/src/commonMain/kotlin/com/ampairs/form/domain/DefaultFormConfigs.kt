@@ -19,7 +19,6 @@ package com.ampairs.form.domain
  * NOTE: Functions in this object are intentionally unused in mobile code.
  * They exist purely as reference documentation for backend implementation.
  */
-@Suppress("unused")
 object DefaultFormConfigs {
 
     /**
