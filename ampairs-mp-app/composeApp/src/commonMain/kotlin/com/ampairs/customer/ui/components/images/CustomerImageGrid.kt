@@ -326,15 +326,15 @@ private fun CustomerImageCard(
                                 onClick = {
                                     onDelete()
                                     showActions = false
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Delete",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
                             }
-                        ) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = "Delete",
-                                tint = MaterialTheme.colorScheme.error
-                            )
                         }
-                    }
                 }
             }
         }

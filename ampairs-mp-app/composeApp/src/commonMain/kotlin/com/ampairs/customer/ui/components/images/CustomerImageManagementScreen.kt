@@ -76,8 +76,8 @@ fun CustomerImageManagementScreen(
             }
         }
 
-        // Upload Instructions
-        if (uiState.images.size < 10) {
+        // Upload Instructions (only show if not read-only)
+        if (uiState.images.size < 10 && !readOnly) {
             UploadInstructionsCard()
         }
     }
@@ -301,16 +301,16 @@ private fun EmptyStateContent(
                 Button(
                     onClick = onAddImage,
                     modifier = Modifier.padding(top = 8.dp)
-            ) {
-                Icon(
-                    Icons.Default.CloudUpload,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Upload First Image")
+                ) {
+                    Icon(
+                        Icons.Default.CloudUpload,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Upload First Image")
+                }
             }
-        }
     }
 }
 
