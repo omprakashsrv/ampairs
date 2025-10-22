@@ -6,6 +6,7 @@ import com.ampairs.event.domain.WebSocketSession
 import com.ampairs.event.domain.DeviceStatus
 import com.ampairs.event.domain.dto.UserStatusEvent
 import com.ampairs.event.repository.WebSocketSessionRepository
+import com.ampairs.event.service.WebSocketSessionRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.messaging.simp.SimpMessagingTemplate
@@ -19,7 +20,8 @@ import java.time.LocalDateTime
 @Component
 class WebSocketEventListener(
     private val webSocketSessionRepository: WebSocketSessionRepository,
-    private val messagingTemplate: SimpMessagingTemplate
+    private val messagingTemplate: SimpMessagingTemplate,
+    private val sessionRegistry: WebSocketSessionRegistry
 ) {
 
     private val logger = LoggerFactory.getLogger(WebSocketEventListener::class.java)
@@ -66,6 +68,14 @@ class WebSocketEventListener(
         )
 
         TenantContextHolder.setCurrentTenant(workspaceId)
+        sessionRegistry.register(
+            sessionId,
+            WebSocketSessionRegistry.SessionMetadata(
+                workspaceId = workspaceId,
+                userId = userId,
+                deviceId = deviceId
+            )
+        )
         var registeredDeviceName: String? = null
         try {
             // Check if session already exists (reconnection)
@@ -117,6 +127,7 @@ class WebSocketEventListener(
     fun handleWebSocketDisconnectEvent(event: SessionDisconnectEvent) {
         val accessor = StompHeaderAccessor.wrap(event.message)
         val sessionId = event.sessionId
+        val sessionMetadata = sessionRegistry.get(sessionId)
 
         logger.info(
             "WebSocket DISCONNECT: session={}, closeStatus={}",
@@ -124,29 +135,36 @@ class WebSocketEventListener(
             event.closeStatus?.code
         )
 
-        // Find and update session
-        val session = webSocketSessionRepository.findBySessionId(sessionId)
-        if (session != null) {
-            TenantContextHolder.setCurrentTenant(session.workspaceId)
-            try {
-                session.markOffline()
-                webSocketSessionRepository.save(session)
-            } finally {
-                TenantContextHolder.clearTenantContext()
+        val tenantId = sessionMetadata?.workspaceId
+        try {
+            if (!tenantId.isNullOrBlank()) {
+                TenantContextHolder.setCurrentTenant(tenantId)
             }
 
-            // Broadcast status change to workspace
-            broadcastStatusChange(
-                workspaceId = session.workspaceId,
-                userId = session.userId,
-                deviceId = session.deviceId,
-                status = DeviceStatus.OFFLINE,
-                deviceName = session.deviceName
-            )
+            // Find and update session
+            val session = webSocketSessionRepository.findBySessionId(sessionId)
+            if (session != null) {
+                session.markOffline()
+                webSocketSessionRepository.save(session)
 
-            logger.debug("Device session marked offline: {}", session.uid)
-        } else {
-            logger.warn("No device session found for disconnecting session: {}", sessionId)
+                // Broadcast status change to workspace
+                broadcastStatusChange(
+                    workspaceId = session.workspaceId,
+                    userId = session.userId,
+                    deviceId = session.deviceId,
+                    status = DeviceStatus.OFFLINE,
+                    deviceName = session.deviceName
+                )
+
+                logger.debug("Device session marked offline: {}", session.uid)
+            } else {
+                logger.warn("No device session found for disconnecting session: {}", sessionId)
+            }
+        } finally {
+            if (!tenantId.isNullOrBlank()) {
+                TenantContextHolder.clearTenantContext()
+            }
+            sessionRegistry.remove(sessionId)
         }
     }
 

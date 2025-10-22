@@ -3,6 +3,7 @@ package com.ampairs.event.controller
 import com.ampairs.core.multitenancy.DeviceContextHolder
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.event.service.DeviceStatusService
+import com.ampairs.event.service.WebSocketSessionRegistry
 import org.slf4j.LoggerFactory
 import org.springframework.messaging.handler.annotation.MessageMapping
 import org.springframework.messaging.simp.SimpMessageHeaderAccessor
@@ -10,7 +11,8 @@ import org.springframework.stereotype.Controller
 
 @Controller
 class HeartbeatController(
-    private val deviceStatusService: DeviceStatusService
+    private val deviceStatusService: DeviceStatusService,
+    private val sessionRegistry: WebSocketSessionRegistry
 ) {
 
     private val logger = LoggerFactory.getLogger(HeartbeatController::class.java)
@@ -31,14 +33,23 @@ class HeartbeatController(
         val tenantAttr = sessionAttributes["tenantId"] as? String
         val workspaceAttr = sessionAttributes["workspaceId"] as? String
         val deviceAttr = sessionAttributes["deviceId"] as? String
-        val effectiveTenant = tenantAttr?.takeIf { it.isNotBlank() } ?: workspaceAttr
+        val registryMetadata = sessionRegistry.get(sessionId)
+        val effectiveTenant = tenantAttr?.takeIf { it.isNotBlank() }
+            ?: workspaceAttr
+            ?: registryMetadata?.workspaceId
+        val effectiveDevice = deviceAttr ?: registryMetadata?.deviceId
 
         try {
             effectiveTenant?.let { TenantContextHolder.setCurrentTenant(it) }
-            deviceAttr?.let { DeviceContextHolder.setCurrentDevice(it) }
+            effectiveDevice?.let { DeviceContextHolder.setCurrentDevice(it) }
 
             if (deviceStatusService.updateHeartbeat(sessionId)) {
-                logger.debug("Heartbeat received: session={}, tenant={}, device={}", sessionId, effectiveTenant, deviceAttr)
+                logger.debug(
+                    "Heartbeat received: session={}, tenant={}, device={}",
+                    sessionId,
+                    effectiveTenant,
+                    effectiveDevice
+                )
             } else {
                 logger.warn("Heartbeat received for unknown session: {}", sessionId)
             }
