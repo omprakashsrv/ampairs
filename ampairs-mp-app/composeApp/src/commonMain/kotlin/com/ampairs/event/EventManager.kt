@@ -24,6 +24,7 @@ import kotlinx.serialization.json.Json
 import org.hildan.krossbow.stomp.StompClient
 import org.hildan.krossbow.stomp.StompSession
 import org.hildan.krossbow.stomp.config.HeartBeat
+import org.hildan.krossbow.stomp.config.HeartBeatTolerance
 import org.hildan.krossbow.stomp.frame.FrameBody
 import org.hildan.krossbow.stomp.headers.StompSendHeaders
 import org.hildan.krossbow.stomp.headers.StompSubscribeHeaders
@@ -38,8 +39,7 @@ import kotlin.time.Duration.Companion.seconds
  * Features:
  * - Single STOMP connection per workspace
  * - Automatic event subscription to workspace topic
- * - Application-level heartbeat mechanism (15s interval) via /app/heartbeat
- * - STOMP protocol heartbeats disabled (SimpleBroker limitation)
+ * - Heartbeat mechanism to maintain connection (30s interval)
  * - Event filtering (skips own device events)
  * - Reactive connection state
  * - Infinite automatic reconnection while user is in workspace
@@ -98,10 +98,12 @@ class EventManager(
     private val heartbeatIntervalMillis = 15_000L
 
     // Krossbow STOMP client with Ktor WebSocket transport
-    // IMPORTANT: STOMP heartbeats disabled (0, 0) because SimpleBroker has poor heartbeat support
-    // We rely on application-level heartbeats via /app/heartbeat instead
     private val stompClient = StompClient(KtorWebSocketClient(httpClient)) {
-        heartBeat = HeartBeat(0.seconds, 0.seconds)  // Disable STOMP protocol heartbeats
+        heartBeat = HeartBeat(15.seconds, 15.seconds)
+        heartBeatTolerance = HeartBeatTolerance(
+            outgoingMargin = 3.seconds,
+            incomingMargin = 5.seconds
+        )
         connectionTimeout = 30.seconds
     }
 
