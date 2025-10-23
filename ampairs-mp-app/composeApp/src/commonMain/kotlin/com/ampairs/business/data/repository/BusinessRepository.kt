@@ -59,7 +59,56 @@ class BusinessRepository(
         val workspaceId = workspaceContextManager.getCurrentWorkspaceId()
             ?: return Result.failure(IllegalStateException("Workspace not selected"))
 
-        return businessApi.createBusinessProfile(request)
+        // Convert BusinessCreateRequest to BusinessPayload for unified endpoint
+        val payload = com.ampairs.business.domain.BusinessPayload(
+            name = request.name,
+            businessType = com.ampairs.business.domain.BusinessType.valueOf(request.businessType),
+            description = request.description,
+            ownerName = request.ownerName,
+            addressLine1 = request.addressLine1,
+            addressLine2 = request.addressLine2,
+            city = request.city,
+            state = request.state,
+            postalCode = request.postalCode,
+            country = request.country,
+            latitude = request.latitude,
+            longitude = request.longitude,
+            phone = request.phone,
+            email = request.email,
+            website = request.website,
+            taxId = request.taxId,
+            registrationNumber = request.registrationNumber,
+            active = true,
+            customAttributes = null
+        )
+
+        return businessApi.createBusiness(payload).map { business ->
+            com.ampairs.business.domain.BusinessProfile(
+                uid = business.id,
+                seqId = business.seqId ?: "",
+                name = business.name,
+                businessType = business.businessType.name,
+                description = business.description,
+                ownerName = business.ownerName,
+                addressLine1 = business.addressLine1,
+                addressLine2 = business.addressLine2,
+                city = business.city,
+                state = business.state,
+                postalCode = business.postalCode,
+                country = business.country,
+                latitude = business.latitude,
+                longitude = business.longitude,
+                phone = business.phone,
+                email = business.email,
+                website = business.website,
+                taxId = business.taxId,
+                registrationNumber = business.registrationNumber,
+                active = business.active,
+                customAttributes = business.customAttributes,
+                createdAt = business.createdAt,
+                updatedAt = business.updatedAt
+            )
+        }
     }
 
     suspend fun fetchFromRemote(): Result<Business> {
