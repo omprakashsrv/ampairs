@@ -234,6 +234,7 @@ class ConfigService(
             "product" -> getDefaultProductFieldConfigs()
             "order" -> getDefaultOrderFieldConfigs()
             "invoice" -> getDefaultInvoiceFieldConfigs()
+            "business" -> getDefaultBusinessFieldConfigs()
             else -> {
                 logger.debug("No default fields defined for entity type: {}", entityType)
                 return false
@@ -276,6 +277,7 @@ class ConfigService(
             "product" -> seedProductDefaults()
             "order" -> seedOrderDefaults()
             "invoice" -> seedInvoiceDefaults()
+            "business" -> seedBusinessDefaults()
             else -> {
                 logger.warn("No default configuration defined for entity type: {}", entityType)
             }
@@ -450,6 +452,98 @@ class ConfigService(
         val fields = getDefaultInvoiceFieldConfigs()
         fieldConfigRepository.saveAll(fields)
         logger.info("Seeded {} invoice field configurations", fields.size)
+    }
+
+    /**
+     * Get default business field configurations
+     * Returns list of default FieldConfig entities for business profile
+     */
+    private fun getDefaultBusinessFieldConfigs(): List<FieldConfig> {
+        val fields = listOf(
+            // === Basic Information Section ===
+            createFieldConfig("business", "name", "Business Name", 1, visible = true, mandatory = true,
+                placeholder = "Enter business name", helpText = "Official name of the business"),
+            createFieldConfig("business", "businessType", "Business Type", 2, visible = true, mandatory = true,
+                placeholder = "Select business type", helpText = "Type of business (Retail, Wholesale, Service, etc.)"),
+            createFieldConfig("business", "description", "Description", 3, visible = true, mandatory = false,
+                placeholder = "Enter business description", helpText = "Brief description of the business"),
+            createFieldConfig("business", "ownerName", "Owner Name", 4, visible = true, mandatory = false,
+                placeholder = "Enter owner name", helpText = "Name of the business owner"),
+
+            // === Address Section ===
+            createFieldConfig("business", "addressLine1", "Address Line 1", 5, visible = true, mandatory = false,
+                placeholder = "Enter address line 1"),
+            createFieldConfig("business", "addressLine2", "Address Line 2", 6, visible = true, mandatory = false,
+                placeholder = "Enter address line 2"),
+            createFieldConfig("business", "city", "City", 7, visible = true, mandatory = false,
+                placeholder = "Enter city"),
+            createFieldConfig("business", "state", "State", 8, visible = true, mandatory = false,
+                placeholder = "Select state"),
+            createFieldConfig("business", "postalCode", "Postal Code", 9, visible = true, mandatory = false,
+                placeholder = "Enter postal code"),
+            createFieldConfig("business", "country", "Country", 10, visible = true, mandatory = false,
+                placeholder = "India", defaultValue = "India"),
+
+            // === Location Section ===
+            createFieldConfig("business", "latitude", "Latitude", 11, visible = true, mandatory = false, validationType = "NUMBER",
+                helpText = "GPS latitude coordinate"),
+            createFieldConfig("business", "longitude", "Longitude", 12, visible = true, mandatory = false, validationType = "NUMBER",
+                helpText = "GPS longitude coordinate"),
+
+            // === Contact Section ===
+            createFieldConfig("business", "phone", "Phone Number", 13, visible = true, mandatory = false, validationType = "PHONE",
+                placeholder = "Enter phone number"),
+            createFieldConfig("business", "email", "Email", 14, visible = true, mandatory = false, validationType = "EMAIL",
+                placeholder = "business@example.com"),
+            createFieldConfig("business", "website", "Website", 15, visible = true, mandatory = false,
+                placeholder = "https://example.com", helpText = "Business website URL"),
+
+            // === Tax/Regulatory Section ===
+            createFieldConfig("business", "taxId", "Tax ID", 16, visible = true, mandatory = false,
+                placeholder = "Enter tax identification number", helpText = "Government tax identification number"),
+            createFieldConfig("business", "registrationNumber", "Registration Number", 17, visible = true, mandatory = false,
+                placeholder = "Enter registration number", helpText = "Business registration number"),
+
+            // === Operational Config Section ===
+            createFieldConfig("business", "timezone", "Timezone", 18, visible = true, mandatory = true,
+                placeholder = "Asia/Kolkata", defaultValue = "Asia/Kolkata", helpText = "Business operating timezone"),
+            createFieldConfig("business", "currency", "Currency", 19, visible = true, mandatory = true,
+                placeholder = "INR", defaultValue = "INR", helpText = "Default currency for transactions"),
+            createFieldConfig("business", "language", "Language", 20, visible = true, mandatory = true,
+                placeholder = "en", defaultValue = "en", helpText = "Default language (ISO 639-1 code)"),
+            createFieldConfig("business", "dateFormat", "Date Format", 21, visible = true, mandatory = true,
+                placeholder = "dd/MM/yyyy", defaultValue = "dd/MM/yyyy", helpText = "Date display format"),
+            createFieldConfig("business", "timeFormat", "Time Format", 22, visible = true, mandatory = true,
+                placeholder = "HH:mm", defaultValue = "HH:mm", helpText = "Time display format (12h or 24h)"),
+
+            // === Business Hours Section ===
+            createFieldConfig("business", "openingHours", "Opening Hours", 23, visible = true, mandatory = false,
+                placeholder = "09:00", helpText = "Daily opening time"),
+            createFieldConfig("business", "closingHours", "Closing Hours", 24, visible = true, mandatory = false,
+                placeholder = "18:00", helpText = "Daily closing time"),
+            createFieldConfig("business", "operatingDays", "Operating Days", 25, visible = true, mandatory = false,
+                helpText = "Days of the week business is open"),
+
+            // === Status Section ===
+            createFieldConfig("business", "active", "Active", 26, visible = true, mandatory = false,
+                defaultValue = "true", helpText = "Business status (active/inactive)"),
+
+            // === Custom Attributes Section ===
+            createFieldConfig("business", "customAttributes", "Custom Attributes", 27, visible = true, mandatory = false,
+                helpText = "Custom fields for business-specific data")
+        )
+
+        return fields
+    }
+
+    /**
+     * Seed default business form configuration
+     * Legacy method - calls getDefaultBusinessFieldConfigs() and saves to repository
+     */
+    private fun seedBusinessDefaults() {
+        val fields = getDefaultBusinessFieldConfigs()
+        fieldConfigRepository.saveAll(fields)
+        logger.info("Seeded {} business field configurations", fields.size)
     }
 
     /**

@@ -52,6 +52,9 @@ fun Business.asBusinessResponse(): BusinessResponse {
         taxId = this.taxId,
         registrationNumber = this.registrationNumber,
 
+        // Custom Attributes
+        customAttributes = this.customAttributes,
+
         // Operational Config
         timezone = this.timezone,
         currency = this.currency,
@@ -118,6 +121,9 @@ fun BusinessCreateRequest.toBusiness(ownerId: String, createdBy: String? = null)
         this.taxId = this@toBusiness.taxId
         this.registrationNumber = this@toBusiness.registrationNumber
 
+        // Custom Attributes
+        this.customAttributes = this@toBusiness.customAttributes
+
         // Operational Config
         this.timezone = this@toBusiness.timezone
         this.currency = this@toBusiness.currency
@@ -176,6 +182,9 @@ fun Business.applyUpdate(request: BusinessUpdateRequest, updatedBy: String? = nu
     request.taxId?.let { this.taxId = it }
     request.registrationNumber?.let { this.registrationNumber = it }
 
+    // Custom Attributes
+    request.customAttributes?.let { this.customAttributes = it }
+
     // Operational Config
     request.timezone?.let { this.timezone = it }
     request.currency?.let { this.currency = it }
@@ -215,6 +224,7 @@ fun Business.asBusinessOverviewResponse(): BusinessOverviewResponse {
         email = this.email,
         phone = this.phone,
         address = this.getFullAddress(),
+        customAttributes = this.customAttributes,
         active = this.active,
         createdAt = this.createdAt ?: Instant.now(),
         updatedAt = this.updatedAt ?: Instant.now()
@@ -245,6 +255,7 @@ fun Business.asBusinessProfileResponse(): BusinessProfileResponse {
         website = this.website,
         taxId = this.taxId,
         registrationNumber = this.registrationNumber,
+        customAttributes = this.customAttributes,
         active = this.active,
         createdAt = this.createdAt ?: Instant.now(),
         updatedAt = this.updatedAt ?: Instant.now()
@@ -309,6 +320,7 @@ fun Business.applyProfileUpdate(request: BusinessProfileUpdateRequest, updatedBy
     this.website = request.website
     this.taxId = request.taxId
     this.registrationNumber = request.registrationNumber
+    this.customAttributes = request.customAttributes
     this.active = request.active
     this.updatedBy = updatedBy
     return this

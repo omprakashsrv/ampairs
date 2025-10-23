@@ -229,4 +229,7 @@ sealed interface BusinessRoute {
 
     @Serializable
     data object TaxConfig : BusinessRoute
+
+    @Serializable
+    data object CustomAttributes : BusinessRoute
 }

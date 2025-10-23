@@ -15,6 +15,7 @@ data class BusinessOverviewResponse(
     val email: String?,
     val phone: String?,
     val address: String,
+    val customAttributes: Map<String, Any>?,
     val active: Boolean,
     val createdAt: Instant,
     val updatedAt: Instant

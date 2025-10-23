@@ -37,6 +37,8 @@ data class BusinessProfile(
     @SerialName("registration_number")
     val registrationNumber: String? = null,
     val active: Boolean = true,
+    @SerialName("custom_attributes")
+    val customAttributes: Map<String, String>? = null,
     @SerialName("created_at")
     val createdAt: String? = null,
     @SerialName("updated_at")
@@ -72,5 +74,7 @@ data class BusinessProfileUpdateRequest(
     val taxId: String? = null,
     @SerialName("registration_number")
     val registrationNumber: String? = null,
-    val active: Boolean = true
+    val active: Boolean = true,
+    @SerialName("custom_attributes")
+    val customAttributes: Map<String, String>? = null
 )
