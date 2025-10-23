@@ -35,7 +35,7 @@ class BusinessApiImpl(
         }
     }
 
-    override suspend fun updateBusiness(request: BusinessUpdateRequest): Result<Business> {
+    override suspend fun updateBusiness(request: BusinessPayload): Result<Business> {
         return try {
             val response: Response<Business> = put(
                 client,
@@ -48,7 +48,7 @@ class BusinessApiImpl(
         }
     }
 
-    override suspend fun createBusiness(request: BusinessCreateRequest): Result<Business> {
+    override suspend fun createBusiness(request: BusinessPayload): Result<Business> {
         return try {
             val response: Response<Business> = post(
                 client,
@@ -70,6 +70,100 @@ class BusinessApiImpl(
                 ApiUrlBuilder.businessUrl("overview")
             )
             handleResponse(response, "Failed to fetch business overview")
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ==================== Profile Section ====================
+
+    override suspend fun createBusinessProfile(request: BusinessCreateRequest): Result<BusinessProfile> {
+        return try {
+            val response: Response<BusinessProfile> = post(
+                client,
+                ApiUrlBuilder.businessUrl("profile"),
+                request
+            )
+            handleResponse(response, "Failed to create business profile")
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getBusinessProfile(): Result<BusinessProfile> {
+        return try {
+            val response: Response<BusinessProfile> = get(
+                client,
+                ApiUrlBuilder.businessUrl("profile")
+            )
+            handleResponse(response, "Failed to fetch business profile")
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateBusinessProfile(request: BusinessProfileUpdateRequest): Result<BusinessProfile> {
+        return try {
+            val response: Response<BusinessProfile> = put(
+                client,
+                ApiUrlBuilder.businessUrl("profile"),
+                request
+            )
+            handleResponse(response, "Failed to update business profile")
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ==================== Operations Section ====================
+
+    override suspend fun getBusinessOperations(): Result<BusinessOperations> {
+        return try {
+            val response: Response<BusinessOperations> = get(
+                client,
+                ApiUrlBuilder.businessUrl("operations")
+            )
+            handleResponse(response, "Failed to fetch business operations")
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateBusinessOperations(request: BusinessOperationsUpdateRequest): Result<BusinessOperations> {
+        return try {
+            val response: Response<BusinessOperations> = put(
+                client,
+                ApiUrlBuilder.businessUrl("operations"),
+                request
+            )
+            handleResponse(response, "Failed to update business operations")
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ==================== Tax Configuration Section ====================
+
+    override suspend fun getTaxConfiguration(): Result<TaxConfiguration> {
+        return try {
+            val response: Response<TaxConfiguration> = get(
+                client,
+                ApiUrlBuilder.businessUrl("tax-config")
+            )
+            handleResponse(response, "Failed to fetch tax configuration")
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun updateTaxConfiguration(request: TaxConfigurationUpdateRequest): Result<TaxConfiguration> {
+        return try {
+            val response: Response<TaxConfiguration> = put(
+                client,
+                ApiUrlBuilder.businessUrl("tax-config"),
+                request
+            )
+            handleResponse(response, "Failed to update tax configuration")
         } catch (e: Exception) {
             Result.failure(e)
         }
