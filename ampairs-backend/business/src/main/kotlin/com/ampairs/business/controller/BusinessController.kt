@@ -37,38 +37,65 @@ class BusinessController @Autowired constructor(
     private val businessService: BusinessService
 ) {
 
-    // ==================== Legacy Endpoint (Backward Compatibility) ====================
+    // ==================== Main Business Endpoints ====================
 
     /**
-     * Get complete business profile (legacy endpoint).
+     * Get complete business profile.
      *
      * **Route**: GET /api/v1/business
-     * **Returns**: Complete business profile
-     * **Note**: Kept for backward compatibility. New code should use specific endpoints.
+     * **Returns**: Complete business profile including all settings
      */
     @GetMapping
     @Operation(
-        summary = "Get complete business profile",
-        description = "Retrieve complete business profile (legacy endpoint)"
+        summary = "Get business profile",
+        description = "Retrieve complete business profile with all configuration"
     )
-    fun getCompleteBusiness(): ApiResponse<BusinessResponse> {
+    @ApiResponses(
+        value = [
+            io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "Business profile retrieved successfully"
+            ),
+            io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "404",
+                description = "Business profile not found"
+            )
+        ]
+    )
+    fun getBusiness(): ApiResponse<BusinessResponse> {
         val business = businessService.getBusinessProfile()
         return ApiResponse.success(business.asBusinessResponse())
     }
 
     /**
-     * Update complete business profile (legacy endpoint).
+     * Update business profile.
      *
      * **Route**: PUT /api/v1/business
      * **Returns**: Updated business profile
-     * **Note**: Kept for backward compatibility. New code should use specific endpoints.
+     * **Note**: Supports partial updates - only provided fields are updated
      */
     @PutMapping
     @Operation(
-        summary = "Update complete business profile",
-        description = "Update complete business profile (legacy endpoint)"
+        summary = "Update business profile",
+        description = "Update business profile (supports partial updates)"
     )
-    fun updateCompleteBusiness(
+    @ApiResponses(
+        value = [
+            io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "Business profile updated successfully"
+            ),
+            io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "404",
+                description = "Business profile not found"
+            ),
+            io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "Invalid business data"
+            )
+        ]
+    )
+    fun updateBusiness(
         @Valid @RequestBody request: BusinessUpdateRequest
     ): ApiResponse<BusinessResponse> {
         val business = businessService.updateBusinessProfile(request)
@@ -105,197 +132,6 @@ class BusinessController @Autowired constructor(
         return ApiResponse.success(business.asBusinessOverviewResponse())
     }
 
-    // ==================== Profile Endpoints ====================
-
-    /**
-     * Get business profile and registration details.
-     *
-     * **Route**: GET /api/v1/business/profile
-     * **Returns**: Detailed company profile and registration information
-     */
-    @GetMapping("/profile")
-    @Operation(
-        summary = "Get business profile",
-        description = "Retrieve detailed business profile and registration information"
-    )
-    @ApiResponses(
-        value = [
-            io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "200",
-                description = "Business profile retrieved successfully"
-            ),
-            io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "404",
-                description = "Business profile not found"
-            )
-        ]
-    )
-    fun getBusinessProfile(): ApiResponse<BusinessProfileResponse> {
-        val business = businessService.getBusinessProfileDetails()
-        return ApiResponse.success(business.asBusinessProfileResponse())
-    }
-
-    /**
-     * Update business profile and registration details.
-     *
-     * **Route**: PUT /api/v1/business/profile
-     * **Returns**: Updated business profile
-     */
-    @PutMapping("/profile")
-    @Operation(
-        summary = "Update business profile",
-        description = "Update business profile and registration information"
-    )
-    @ApiResponses(
-        value = [
-            io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "200",
-                description = "Business profile updated successfully"
-            ),
-            io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "404",
-                description = "Business profile not found"
-            ),
-            io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "400",
-                description = "Invalid business data"
-            )
-        ]
-    )
-    fun updateBusinessProfile(
-        @Valid @RequestBody request: BusinessProfileUpdateRequest
-    ): ApiResponse<BusinessProfileResponse> {
-        val business = businessService.updateBusinessProfileDetails(request)
-        return ApiResponse.success(business.asBusinessProfileResponse())
-    }
-
-    // ==================== Operations Endpoints ====================
-
-    /**
-     * Get business operational settings.
-     *
-     * **Route**: GET /api/v1/business/operations
-     * **Returns**: Operational configuration (timezone, currency, hours, etc.)
-     */
-    @GetMapping("/operations")
-    @Operation(
-        summary = "Get operational settings",
-        description = "Retrieve business operational configuration"
-    )
-    @ApiResponses(
-        value = [
-            io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "200",
-                description = "Operational settings retrieved successfully"
-            ),
-            io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "404",
-                description = "Business profile not found"
-            )
-        ]
-    )
-    fun getBusinessOperations(): ApiResponse<BusinessOperationsResponse> {
-        val business = businessService.getBusinessOperations()
-        return ApiResponse.success(business.asBusinessOperationsResponse())
-    }
-
-    /**
-     * Update business operational settings.
-     *
-     * **Route**: PUT /api/v1/business/operations
-     * **Returns**: Updated operational settings
-     */
-    @PutMapping("/operations")
-    @Operation(
-        summary = "Update operational settings",
-        description = "Update business operational configuration"
-    )
-    @ApiResponses(
-        value = [
-            io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "200",
-                description = "Operational settings updated successfully"
-            ),
-            io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "404",
-                description = "Business profile not found"
-            ),
-            io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "400",
-                description = "Invalid operational settings"
-            )
-        ]
-    )
-    fun updateBusinessOperations(
-        @Valid @RequestBody request: BusinessOperationsUpdateRequest
-    ): ApiResponse<BusinessOperationsResponse> {
-        val business = businessService.updateBusinessOperations(request)
-        return ApiResponse.success(business.asBusinessOperationsResponse())
-    }
-
-    // ==================== Tax Configuration Endpoints ====================
-
-    /**
-     * Get tax configuration settings.
-     *
-     * **Route**: GET /api/v1/business/tax-config
-     * **Returns**: Tax and compliance configuration
-     */
-    @GetMapping("/tax-config")
-    @Operation(
-        summary = "Get tax configuration",
-        description = "Retrieve tax and compliance configuration settings"
-    )
-    @ApiResponses(
-        value = [
-            io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "200",
-                description = "Tax configuration retrieved successfully"
-            ),
-            io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "404",
-                description = "Business profile not found"
-            )
-        ]
-    )
-    fun getTaxConfiguration(): ApiResponse<TaxConfigurationResponse> {
-        val business = businessService.getTaxConfiguration()
-        return ApiResponse.success(business.asTaxConfigurationResponse())
-    }
-
-    /**
-     * Update tax configuration settings.
-     *
-     * **Route**: PUT /api/v1/business/tax-config
-     * **Returns**: Updated tax configuration
-     */
-    @PutMapping("/tax-config")
-    @Operation(
-        summary = "Update tax configuration",
-        description = "Update tax and compliance configuration settings"
-    )
-    @ApiResponses(
-        value = [
-            io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "200",
-                description = "Tax configuration updated successfully"
-            ),
-            io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "404",
-                description = "Business profile not found"
-            ),
-            io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "400",
-                description = "Invalid tax configuration"
-            )
-        ]
-    )
-    fun updateTaxConfiguration(
-        @Valid @RequestBody request: TaxConfigurationUpdateRequest
-    ): ApiResponse<TaxConfigurationResponse> {
-        val business = businessService.updateTaxConfiguration(request)
-        return ApiResponse.success(business.asTaxConfigurationResponse())
-    }
 
     // ==================== Initial Setup Endpoints ====================
 
@@ -330,9 +166,9 @@ class BusinessController @Autowired constructor(
     )
     fun createBusinessProfile(
         @Valid @RequestBody request: BusinessCreateRequest
-    ): ApiResponse<BusinessProfileResponse> {
+    ): ApiResponse<BusinessResponse> {
         val business = businessService.createBusinessProfile(request)
-        return ApiResponse.success(business.asBusinessProfileResponse())
+        return ApiResponse.success(business.asBusinessResponse())
     }
 
     /**
