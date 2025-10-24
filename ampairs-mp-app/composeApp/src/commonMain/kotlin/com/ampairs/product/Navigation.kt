@@ -32,6 +32,10 @@ fun NavGraphBuilder.productNavigation(
                     onCreateProduct = {
                         navController.navigate(ProductRoute.ProductForm())
                     },
+                    onFormConfig = {
+                        println("ProductNavigation: Navigating to FormConfig for product")
+                        navController.navigate(Route.FormConfig("product"))
+                    },
                     modifier = Modifier.padding(paddingValues)
                 )
             }
@@ -120,11 +124,13 @@ fun NavGraphBuilder.productNavigation(
 fun ProductScreen(
     onProductClick: (String) -> Unit,
     onCreateProduct: () -> Unit,
+    onFormConfig: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     ProductsListScreen(
         onProductClick = onProductClick,
         onCreateProduct = onCreateProduct,
+        onFormConfig = onFormConfig,
         modifier = modifier
     )
 }

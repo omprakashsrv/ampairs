@@ -26,8 +26,6 @@ data class SettingsResponse(
 
         val lastModifiedBy: String?,
 
-        val lastModifiedAt: Instant,
-
         val createdAt: Instant,
 
         val updatedAt: Instant,
@@ -111,7 +109,6 @@ fun WorkspaceSettings.toResponse(): SettingsResponse {
         materialTypography = this.materialTypography,
         businessSettings = this.businessSettings,
         lastModifiedBy = this.lastModifiedBy,
-        lastModifiedAt = this.lastModifiedAt,
         createdAt = this.createdAt ?: Instant.now(),
         updatedAt = this.updatedAt ?: Instant.now(),
     )

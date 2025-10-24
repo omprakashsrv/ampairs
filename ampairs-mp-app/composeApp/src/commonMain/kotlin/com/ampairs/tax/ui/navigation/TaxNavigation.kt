@@ -146,6 +146,9 @@ fun NavGraphBuilder.taxNavigation(
                     onCreateTaxRate = {
                         navController.navigate(TaxRateFormRoute())
                     },
+                    onFormConfig = {
+                        navController.navigate(Route.FormConfig("tax_rate"))
+                    },
                     modifier = Modifier.padding(paddingValues)
                 )
             }

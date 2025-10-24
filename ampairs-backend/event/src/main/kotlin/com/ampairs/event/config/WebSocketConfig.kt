@@ -4,6 +4,7 @@ import com.ampairs.auth.service.JwtService
 import com.ampairs.core.multitenancy.DeviceContextHolder
 import com.ampairs.core.multitenancy.TenantContextHolder
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
@@ -16,11 +17,14 @@ import org.springframework.messaging.simp.stomp.StompCommand
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor
 import org.springframework.messaging.support.ChannelInterceptor
 import org.springframework.messaging.support.MessageHeaderAccessor
+import org.springframework.scheduling.TaskScheduler
+import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.socket.WebSocketHandler
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer
+import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration
 import org.springframework.web.socket.server.HandshakeInterceptor
 import java.net.InetSocketAddress
 import java.net.Socket
@@ -29,33 +33,83 @@ import java.security.Principal
 @Configuration
 @EnableWebSocketMessageBroker
 class WebSocketConfig(
-    private val jwtService: JwtService
+    private val jwtService: JwtService,
+    private val webSocketConfigProperties: WebSocketConfigProperties
 ) : WebSocketMessageBrokerConfigurer {
 
     private val logger = LoggerFactory.getLogger(WebSocketConfig::class.java)
 
+    /**
+     * TaskScheduler bean for SimpleBroker heartbeats.
+     * Required to keep WebSocket connections alive when using in-memory broker.
+     *
+     * Note: Named uniquely to avoid conflict with Spring's default messageBrokerTaskScheduler
+     */
+    @Bean
+    fun simpleBrokerHeartbeatScheduler(): TaskScheduler {
+        val scheduler = ThreadPoolTaskScheduler()
+        scheduler.poolSize = 1
+        scheduler.threadNamePrefix = "websocket-heartbeat-"
+        scheduler.initialize()
+        return scheduler
+    }
+
     override fun configureMessageBroker(registry: MessageBrokerRegistry) {
-        val relayHost = System.getenv("RABBITMQ_HOST") ?: "localhost"
-        val relayPort = (System.getenv("RABBITMQ_STOMP_PORT") ?: "61613").toInt()
-        val useSimpleBroker = System.getenv("WEBSOCKET_SIMPLE_BROKER")?.toBooleanStrictOrNull()
-            ?: !isBrokerAvailable(relayHost, relayPort)
+        val brokerType = webSocketConfigProperties.type
+        val rabbitmqConfig = webSocketConfigProperties.rabbitmq
+
+        val useSimpleBroker = when (brokerType) {
+            WebSocketConfigProperties.MessageBrokerType.SIMPLE -> {
+                logger.info("Using in-memory SimpleBroker (configured)")
+                true
+            }
+            WebSocketConfigProperties.MessageBrokerType.RABBITMQ -> {
+                logger.info("Using RabbitMQ STOMP relay at {}:{} (configured)", rabbitmqConfig.host, rabbitmqConfig.port)
+                false
+            }
+            WebSocketConfigProperties.MessageBrokerType.AUTO -> {
+                val available = isBrokerAvailable(rabbitmqConfig.host, rabbitmqConfig.port, rabbitmqConfig.connectionTimeout)
+                if (!available) {
+                    logger.warn(
+                        "RabbitMQ STOMP relay at {}:{} unavailable. Falling back to SimpleBroker.",
+                        rabbitmqConfig.host, rabbitmqConfig.port
+                    )
+                } else {
+                    logger.info("Using RabbitMQ STOMP relay at {}:{} (auto-detected)", rabbitmqConfig.host, rabbitmqConfig.port)
+                }
+                !available
+            }
+        }
 
         if (useSimpleBroker) {
-            logger.warn(
-                "STOMP broker relay at {}:{} unavailable or disabled. Falling back to simple broker.",
-                relayHost, relayPort
-            )
-            registry.enableSimpleBroker("/topic", "/queue")
+            // SimpleBroker with heartbeat configuration
+            // IMPORTANT: SimpleBroker has poor STOMP heartbeat support.
+            // We disable STOMP heartbeats ([0,0]) and rely on application-level
+            // heartbeats via /app/heartbeat for session tracking instead.
+            val heartbeat = webSocketConfigProperties.heartbeatInterval
+
+            val brokerConfig = registry.enableSimpleBroker("/topic", "/queue")
+
+            if (heartbeat > 0) {
+                // Enable STOMP heartbeats (not recommended for SimpleBroker)
+                brokerConfig.setHeartbeatValue(longArrayOf(0, 0))
+                brokerConfig.setTaskScheduler(simpleBrokerHeartbeatScheduler())
+                logger.info("SimpleBroker STOMP heartbeat enabled: {}ms (not recommended)", heartbeat)
+            } else {
+                // CRITICAL: Explicitly set heartbeat to [0, 0] to disable STOMP heartbeats
+                // If we don't set this, SimpleBroker uses default values which cause issues
+                brokerConfig.setHeartbeatValue(longArrayOf(0, 0))
+                logger.info("SimpleBroker STOMP heartbeat disabled (using application-level heartbeats)")
+            }
         } else {
-            logger.info("Using STOMP broker relay at {}:{}", relayHost, relayPort)
             registry.enableStompBrokerRelay("/topic", "/queue")
-                .setRelayHost(relayHost)
-                .setRelayPort(relayPort)
-                .setClientLogin("${System.getenv("RABBITMQ_USER") ?: "guest"}")
-                .setClientPasscode("${System.getenv("RABBITMQ_PASSWORD") ?: "guest"}")
-                .setSystemLogin("${System.getenv("RABBITMQ_USER") ?: "guest"}")
-                .setSystemPasscode("${System.getenv("RABBITMQ_PASSWORD") ?: "guest"}")
-                .setVirtualHost("${System.getenv("RABBITMQ_VHOST") ?: "/"}")
+                .setRelayHost(rabbitmqConfig.host)
+                .setRelayPort(rabbitmqConfig.port)
+                .setClientLogin(rabbitmqConfig.username)
+                .setClientPasscode(rabbitmqConfig.password)
+                .setSystemLogin(rabbitmqConfig.username)
+                .setSystemPasscode(rabbitmqConfig.password)
+                .setVirtualHost(rabbitmqConfig.virtualHost)
         }
 
         registry.setApplicationDestinationPrefixes("/app")
@@ -78,10 +132,22 @@ class WebSocketConfig(
         registration.interceptors(WebSocketChannelInterceptor(jwtService))
     }
 
-    private fun isBrokerAvailable(host: String, port: Int): Boolean {
+    override fun configureWebSocketTransport(registry: WebSocketTransportRegistration) {
+        // Configure transport-level settings for SimpleBroker
+        val heartbeat = webSocketConfigProperties.heartbeatInterval
+        logger.info("WebSocket transport configured with heartbeat tolerance: {}ms", heartbeat)
+
+        // Increase timeouts to be more tolerant with heartbeats
+        registry.setTimeToFirstMessage(60000)  // 60 seconds before closing if no message received
+        registry.setSendTimeLimit(60000)       // 60 seconds send timeout
+        registry.setSendBufferSizeLimit(512 * 1024)  // 512KB send buffer
+        registry.setMessageSizeLimit(128 * 1024)     // 128KB message size limit
+    }
+
+    private fun isBrokerAvailable(host: String, port: Int, timeout: Int): Boolean {
         return runCatching {
             Socket().use { socket ->
-                socket.connect(InetSocketAddress(host, port), 500)
+                socket.connect(InetSocketAddress(host, port), timeout)
             }
         }.onFailure {
             logger.debug("STOMP broker probe failed for {}:{} -> {}", host, port, it.message)

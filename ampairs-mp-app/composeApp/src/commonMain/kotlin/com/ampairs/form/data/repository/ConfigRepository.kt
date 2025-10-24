@@ -274,15 +274,23 @@ class ConfigRepository(
 
             val savedSchema = api.saveConfigSchema(entityType, schema)
 
-            // Save to local database
+            // CRITICAL: Full sync - delete all existing configs for this entity type
+            // then insert only what's in the backend response
+            println("🗑️ Clearing existing configs for $entityType from local database")
+            fieldConfigDao.deleteFieldConfigsByEntityType(entityType)
+            attributeDefinitionDao.deleteAttributeDefinitionsByEntityType(entityType)
+
+            // Save to local database - only what backend returned
             if (savedSchema.fieldConfigs.isNotEmpty()) {
                 val fieldConfigEntities = savedSchema.fieldConfigs.map { it.toEntity() }
                 fieldConfigDao.insertFieldConfigs(fieldConfigEntities)
+                println("💾 Saved ${fieldConfigEntities.size} field configs to local database")
             }
 
             if (savedSchema.attributeDefinitions.isNotEmpty()) {
                 val attributeDefinitionEntities = savedSchema.attributeDefinitions.map { it.toEntity() }
                 attributeDefinitionDao.insertAttributeDefinitions(attributeDefinitionEntities)
+                println("💾 Saved ${attributeDefinitionEntities.size} attribute definitions to local database")
             }
 
             updateCache(entityType, savedSchema)

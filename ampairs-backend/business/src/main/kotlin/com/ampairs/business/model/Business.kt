@@ -141,6 +141,15 @@ class Business : OwnableBaseDomain() {
     @Column(name = "tax_settings", columnDefinition = "JSON")
     var taxSettings: Map<String, Any>? = null
 
+    /**
+     * Custom attributes for flexible data storage (JSON)
+     * Allows storing arbitrary key-value pairs without schema changes
+     * Example: {"loyalty_program": "enabled", "custom_field_1": "value"}
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "custom_attributes", columnDefinition = "JSON")
+    var customAttributes: Map<String, Any>? = null
+
     // ==================== Operational Configuration ====================
 
     /**

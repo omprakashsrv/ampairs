@@ -1,6 +1,6 @@
 package com.ampairs.product.domain.model.group
 
-import com.ampairs.core.domain.model.File
+import com.ampairs.file.domain.model.File
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.product.config.Constants
 import jakarta.persistence.*

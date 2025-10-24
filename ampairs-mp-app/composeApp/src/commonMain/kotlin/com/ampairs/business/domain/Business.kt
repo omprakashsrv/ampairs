@@ -54,6 +54,8 @@ data class Business(
     @SerialName("operating_days")
     val operatingDays: List<String> = emptyList(),
     val active: Boolean = true,
+    @SerialName("custom_attributes")
+    val customAttributes: Map<String, String>? = null,
     @SerialName("created_at")
     val createdAt: String? = null,
     @SerialName("updated_at")
@@ -109,7 +111,9 @@ data class BusinessPayload(
     val closingHours: String? = null,
     @SerialName("operating_days")
     val operatingDays: List<String> = emptyList(),
-    val active: Boolean = true
+    val active: Boolean = true,
+    @SerialName("custom_attributes")
+    val customAttributes: Map<String, String>? = null
 )
 
 /**
@@ -142,5 +146,6 @@ fun Business.toPayload(): BusinessPayload = BusinessPayload(
     openingHours = openingHours,
     closingHours = closingHours,
     operatingDays = operatingDays,
-    active = active
+    active = active,
+    customAttributes = customAttributes
 )

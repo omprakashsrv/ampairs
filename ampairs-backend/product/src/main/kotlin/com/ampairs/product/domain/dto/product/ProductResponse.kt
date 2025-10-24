@@ -1,13 +1,13 @@
 package com.ampairs.product.domain.dto.product
 
-import com.ampairs.core.domain.dto.FileResponse
-import com.ampairs.core.domain.dto.toFileResponse
+import com.ampairs.file.domain.dto.FileResponse
+import com.ampairs.file.domain.dto.toFileResponse
 import com.ampairs.inventory.domain.dto.InventoryResponse
 import com.ampairs.inventory.domain.dto.asResponse
-import com.ampairs.product.domain.dto.unit.UnitConversionResponse
-import com.ampairs.product.domain.dto.unit.UnitResponse
-import com.ampairs.product.domain.dto.unit.asResponse
-import com.ampairs.product.domain.dto.unit.asUnitConversionResponse
+import com.ampairs.unit.domain.dto.UnitConversionResponse
+import com.ampairs.unit.domain.dto.UnitResponse
+import com.ampairs.unit.domain.dto.asUnitConversionResponses
+import com.ampairs.unit.domain.dto.asUnitResponse
 import com.ampairs.product.domain.model.Product
 import java.time.Instant
 
@@ -32,7 +32,6 @@ data class ProductResponse(
     val dp: Double,
     val sellingPrice: Double,
     val unitConversions: List<UnitConversionResponse>,
-    val lastUpdated: Long?,
     val createdAt: Instant?,
     val updatedAt: Instant?,
     val baseUnit: UnitResponse?,
@@ -63,11 +62,10 @@ fun List<Product>.asResponse(): List<ProductResponse> {
             categoryId = it.categoryId ?: "",
             subCategoryId = it.subCategoryId ?: "",
             brandId = it.brandId ?: "",
-            lastUpdated = it.lastUpdated,
             createdAt = it.createdAt,
             updatedAt = it.updatedAt,
-            unitConversions = it.unitConversions.asUnitConversionResponse(),
-            baseUnit = it.baseUnit?.asResponse(),
+            unitConversions = it.unitConversions.asUnitConversionResponses(),
+            baseUnit = it.baseUnit?.asUnitResponse(),
             images = it.images.map { productImage ->
                 val fileResponse = productImage.image?.toFileResponse() ?: FileResponse()
                 fileResponse.refId = productImage.uid
@@ -100,11 +98,10 @@ fun Product.asResponse(): ProductResponse {
         categoryId = categoryId ?: "",
         subCategoryId = subCategoryId ?: "",
         brandId = brandId ?: "",
-        lastUpdated = lastUpdated,
         createdAt = createdAt,
         updatedAt = updatedAt,
-        unitConversions = unitConversions.asUnitConversionResponse(),
-        baseUnit = baseUnit?.asResponse(),
+        unitConversions = unitConversions.asUnitConversionResponses(),
+        baseUnit = baseUnit?.asUnitResponse(),
         images = images.map { productImage ->
             val fileResponse = productImage.image?.toFileResponse() ?: FileResponse()
             fileResponse.refId = productImage.uid

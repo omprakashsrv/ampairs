@@ -9,9 +9,6 @@ sealed interface Route {
     data object Workspace : Route
     
     @Serializable
-    data object Home : Route
-    
-    @Serializable
     data object Customer : Route
     
     @Serializable
@@ -104,8 +101,12 @@ sealed interface WorkspaceRoute {
 
     @Serializable
     data class Modules(
-        val workspaceId: String = "",
-        val showStoreByDefault: Boolean = false // For "Manage Modules" to show install screen directly
+        val workspaceId: String = ""
+    ) : WorkspaceRoute
+
+    @Serializable
+    data class ModuleStore(
+        val workspaceId: String = ""
     ) : WorkspaceRoute
 }
 
@@ -218,11 +219,17 @@ sealed interface InvoiceRoute {
 @Serializable
 sealed interface BusinessRoute {
     @Serializable
+    data object Overview : BusinessRoute
+
+    @Serializable
     data object Profile : BusinessRoute
 
     @Serializable
-    data object Settings : BusinessRoute
+    data object Operations : BusinessRoute
 
     @Serializable
-    data object Branding : BusinessRoute
+    data object TaxConfig : BusinessRoute
+
+    @Serializable
+    data object CustomAttributes : BusinessRoute
 }

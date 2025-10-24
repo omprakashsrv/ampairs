@@ -47,6 +47,31 @@ springdoc:
         - '/order/v1/**'
         - '/invoice/v1/**'
 
+# WebSocket & Real-time Messaging Configuration
+websocket:
+  message-broker:
+    # Message Broker Type:
+    # - SIMPLE: In-memory broker (single instance, no external dependencies)
+    # - RABBITMQ: External RabbitMQ STOMP relay (multi-instance, production)
+    # - AUTO: Auto-detect RabbitMQ, fallback to SIMPLE if unavailable (recommended)
+    type: ${WEBSOCKET_BROKER_TYPE:RABBITMQ}
+
+    # Heartbeat interval for SimpleBroker STOMP protocol heartbeats (milliseconds)
+    # IMPORTANT: SimpleBroker has limited STOMP heartbeat support - set to 0 to disable
+    # We rely on application-level heartbeats via /app/heartbeat instead
+    # RabbitMQ broker properly supports STOMP heartbeats and will use this value
+    # Default: 0 (disabled for SimpleBroker, works with RabbitMQ)
+    heartbeat-interval: ${WEBSOCKET_HEARTBEAT_INTERVAL:15000}
+
+    # RabbitMQ STOMP Relay Configuration (only used when type=RABBITMQ or AUTO)
+    rabbitmq:
+      host: ${RABBITMQ_HOST:localhost}
+      port: ${RABBITMQ_STOMP_PORT:61613}  # STOMP port, not AMQP port (5672)
+      username: ${RABBITMQ_USER:guest}
+      password: ${RABBITMQ_PASSWORD:guest}
+      virtual-host: ${RABBITMQ_VHOST:/}
+      connection-timeout: ${RABBITMQ_CONNECTION_TIMEOUT:500}  # milliseconds for availability probe
+
 server:
   compression:
     enabled: true
@@ -110,7 +135,7 @@ spring:
     cache-specs:
       userDetails: maximumSize=1000,expireAfterWrite=${CACHE_USER_DETAILS_EXPIRE:300s},recordStats
   datasource:
-    url: ${DB_URL:jdbc:mysql://localhost:3306/munsi_app?serverTimezone=UTC}
+    url: ${DB_URL:jdbc:mysql://localhost:3306/ampairs_app?serverTimezone=UTC}
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:om711590}
     driver-class-name: ${DB_DRIVER:com.mysql.cj.jdbc.Driver}
@@ -123,18 +148,6 @@ spring:
       max-lifetime: 300000
       validation-timeout: 5000
       leak-detection-threshold: 300000
-  # RabbitMQ Configuration for distributed WebSocket with STOMP
-  rabbitmq:
-    host: ${RABBITMQ_HOST:localhost}
-    port: ${RABBITMQ_PORT:5672}
-    username: ${RABBITMQ_USER:guest}
-    password: ${RABBITMQ_PASSWORD:guest}
-    virtual-host: ${RABBITMQ_VHOST:/}
-    # STOMP configuration
-    stomp:
-      port: ${RABBITMQ_STOMP_PORT:61613}
-      login: ${RABBITMQ_USER:guest}
-      passcode: ${RABBITMQ_PASSWORD:guest}
   servlet:
     multipart:
       enabled: true
@@ -158,8 +171,9 @@ spring:
   # Flyway Database Migration Configuration
   flyway:
     enabled: ${FLYWAY_ENABLED:true}
+    default-schema: ${FLYWAY_DEFAULT_SCHEMA:ampairs_app}
     baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE:true}
-    baseline-version: ${FLYWAY_BASELINE_VERSION:0}
+    baseline-version: ${FLYWAY_BASELINE_VERSION:1}
     validate-on-migrate: ${FLYWAY_VALIDATE_ON_MIGRATE:true}
     out-of-order: ${FLYWAY_OUT_OF_ORDER:false}
     # Vendor-specific locations: {vendor} is replaced with mysql or postgresql automatically

@@ -20,7 +20,12 @@ val businessModule: Module = module {
     factory { BusinessRepository(get(), get(), get()) }
     factory { BusinessStore(get()) }
 
-    viewModel { BusinessProfileViewModel(get(), get()) }
+    // ViewModels for business management screens
+    viewModel { com.ampairs.business.ui.BusinessOverviewViewModel(get()) }
+    viewModel { com.ampairs.business.ui.BusinessProfileViewModel(get()) }
+    viewModel { com.ampairs.business.ui.BusinessOperationsViewModel(get()) }
+    viewModel { com.ampairs.business.ui.BusinessTaxConfigViewModel(get()) }
+    viewModel { com.ampairs.business.ui.BusinessCustomAttributesViewModel(get(), get()) }
 }
 
 fun businessModule(): Module = businessModule

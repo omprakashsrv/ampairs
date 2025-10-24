@@ -15,9 +15,6 @@ data class CustomerImageUploadRequest(
     @field:Size(min = 1, max = 36, message = "Image UID must be between 1 and 36 characters")
     val uid: String? = null,
 
-    @field:Size(max = 255, message = "Alt text cannot exceed 255 characters")
-    val altText: String? = null,
-
     @field:Size(max = 500, message = "Description cannot exceed 500 characters")
     val description: String? = null,
 
@@ -45,7 +42,6 @@ data class CustomerImageResponse(
     val thumbnailUrl: String,
     val isPrimary: Boolean,
     val displayOrder: Int,
-    val altText: String?,
     val description: String?,
     val width: Int?,
     val height: Int?,
@@ -61,8 +57,6 @@ data class CustomerImageResponse(
  * Request DTO for updating customer image metadata
  */
 data class CustomerImageUpdateRequest(
-    @field:Size(max = 255, message = "Alt text cannot exceed 255 characters")
-    val altText: String? = null,
 
     @field:Size(max = 500, message = "Description cannot exceed 500 characters")
     val description: String? = null,
@@ -181,14 +175,13 @@ fun CustomerImage.asCustomerImageResponse(): CustomerImageResponse = CustomerIma
     thumbnailUrl = "/customer/v1/images/$customerUid/$uid/thumbnail",
     isPrimary = isPrimary,
     displayOrder = displayOrder,
-    altText = altText,
     description = description,
-    width = width,
-    height = height,
+    width = metadata.width,
+    height = metadata.height,
     uploadedAt = uploadedAt,
     active = active,
-    etag = etag,
-    lastModified = lastModified,
+    etag = metadata.etag,
+    lastModified = metadata.lastModified,
     createdAt = createdAt ?: Instant.now(),
     updatedAt = updatedAt ?: Instant.now()
 )

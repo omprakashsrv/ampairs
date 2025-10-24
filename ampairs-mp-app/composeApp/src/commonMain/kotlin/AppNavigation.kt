@@ -6,10 +6,6 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -18,15 +14,11 @@ import androidx.navigation.navOptions
 import androidx.navigation.toRoute
 import com.ampairs.auth.authNavigation
 import com.ampairs.business.businessNavigation
-import com.ampairs.common.ui.AppScreenWithHeader
 import com.ampairs.common.UnauthenticatedHandler
-import com.ampairs.customer.ui.customerNavigation
-import com.ampairs.customer.ui.StateListRoute
+import com.ampairs.common.ui.AppScreenWithHeader
 import com.ampairs.customer.ui.CustomerCreateRoute
-// Temporarily commented out pending customer integration updates
-// import com.ampairs.inventory.inventoryNavigation
-// import com.ampairs.invoice.invoiceNavigation
-// import com.ampairs.order.orderNavigation
+import com.ampairs.customer.ui.StateListRoute
+import com.ampairs.customer.ui.customerNavigation
 import com.ampairs.product.productNavigation
 import com.ampairs.tax.ui.navigation.taxNavigation
 import com.ampairs.workspace.context.WorkspaceContextManager
@@ -76,7 +68,7 @@ fun AppNavigation(
             // Clear navigationService when not in workspace modules or customer modules
             val isInWorkspaceModules = currentRoute?.contains("workspace/modules") == true
             val isInCustomerModule = currentRoute?.contains("Route.Customer") == true ||
-                                   currentRoute?.contains("com.ampairs.customer") == true
+                    currentRoute?.contains("com.ampairs.customer") == true
 
             if (currentRoute != null && !isInWorkspaceModules && !isInCustomerModule) {
                 println("AppNavigation: Clearing navigationService - not in workspace/customer modules")
@@ -107,9 +99,7 @@ fun AppNavigation(
                 navOptions = options
             )
         }
-        workspaceNavigation(navController, onNavigationServiceReady) {
-            navController.navigate(Route.Home)
-        }
+        workspaceNavigation(navController, onNavigationServiceReady)
         // Customer module navigation
         composable<Route.Customer> {
             AppScreenWithHeader(
@@ -118,10 +108,18 @@ fun AppNavigation(
             ) { paddingValues ->
                 com.ampairs.customer.ui.CustomerScreen(
                     onCustomerClick = { customerId ->
-                        navController.navigate(com.ampairs.customer.ui.CustomerDetailsRoute(customerId))
+                        navController.navigate(
+                            com.ampairs.customer.ui.CustomerDetailsRoute(
+                                customerId
+                            )
+                        )
                     },
                     onCreateCustomer = {
                         navController.navigate(CustomerCreateRoute())
+                    },
+                    onFormConfig = {
+                        println("AppNavigation Route.Customer: Navigating to FormConfig")
+                        navController.navigate(Route.FormConfig("customer"))
                     },
                     modifier = Modifier.padding(paddingValues)
                 )
@@ -140,6 +138,10 @@ fun AppNavigation(
                     },
                     onCreateProduct = {
                         navController.navigate(ProductRoute.ProductForm())
+                    },
+                    onFormConfig = {
+                        println("AppNavigation Route.Product: Navigating to FormConfig")
+                        navController.navigate(Route.FormConfig("product"))
                     },
                     modifier = Modifier.padding(paddingValues)
                 )
@@ -194,6 +196,7 @@ fun AppNavigation(
 fun navigateToMenuItem(navController: androidx.navigation.NavHostController, route: String) {
     when {
         // Handle legacy module codes first (backward compatibility)
+        route == "business" -> navController.navigate(BusinessRoute.Profile)
         route == "customer" -> navController.navigate(Route.Customer)
         route == "product" -> navController.navigate(Route.Product)
         route == "order" -> navController.navigate(Route.Order)
@@ -249,6 +252,16 @@ fun navigateToMenuItem(navController: androidx.navigation.NavHostController, rou
 
         route.startsWith("/tax") -> {
             navController.navigate(Route.Tax)
+        }
+
+        route.startsWith("/business") -> {
+            when (route) {
+                "/business/overview", "/business" -> navController.navigate(BusinessRoute.Overview)
+                "/business/profile" -> navController.navigate(BusinessRoute.Profile)
+                "/business/operations" -> navController.navigate(BusinessRoute.Operations)
+                "/business/tax" -> navController.navigate(BusinessRoute.TaxConfig)
+                else -> navController.navigate(BusinessRoute.Overview)
+            }
         }
 
         route.startsWith("/form-config") -> {

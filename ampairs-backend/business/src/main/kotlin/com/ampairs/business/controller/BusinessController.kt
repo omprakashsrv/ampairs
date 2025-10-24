@@ -1,9 +1,6 @@
 package com.ampairs.business.controller
 
-import com.ampairs.business.model.dto.BusinessCreateRequest
-import com.ampairs.business.model.dto.BusinessResponse
-import com.ampairs.business.model.dto.BusinessUpdateRequest
-import com.ampairs.business.model.dto.asBusinessResponse
+import com.ampairs.business.model.dto.*
 import com.ampairs.business.service.BusinessService
 import com.ampairs.core.domain.dto.ApiResponse
 import io.swagger.v3.oas.annotations.Operation
@@ -15,18 +12,19 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 
 /**
- * REST controller for Business profile management.
+ * REST controller for Business Management.
  *
  * **Base Path**: `/api/v1/business`
  *
- * **Endpoints**:
- * - GET /api/v1/business - Get business profile for current workspace
- * - POST /api/v1/business - Create new business profile
- * - PUT /api/v1/business - Update business profile
+ * **Module Structure**:
+ * 1. Overview - Dashboard summary
+ * 2. Profile - Company profile and registration
+ * 3. Operations - Operational settings
+ * 4. Tax Configuration - Tax and compliance settings
  *
  * **Multi-Tenancy**:
  * - All operations scoped to current workspace (from X-Workspace-ID header)
- * - Service layer uses TenantContextHolder to get workspace ID
+ * - Service layer uses TenantContextHolder
  *
  * **Error Handling**:
  * - Exceptions handled by BusinessExceptionHandler
@@ -34,22 +32,23 @@ import org.springframework.web.bind.annotation.*
  */
 @RestController
 @RequestMapping("/api/v1/business")
-@Tag(name = "Business Profile", description = "Business profile management for workspace")
+@Tag(name = "Business Management", description = "Complete business configuration and management")
 class BusinessController @Autowired constructor(
     private val businessService: BusinessService
 ) {
 
+    // ==================== Main Business Endpoints ====================
+
     /**
-     * Get business profile for current workspace.
+     * Get complete business profile.
      *
-     * **Returns**: 200 OK with business profile
-     * **Errors**:
-     * - 404 NOT_FOUND if no business profile exists
+     * **Route**: GET /api/v1/business
+     * **Returns**: Complete business profile including all settings
      */
     @GetMapping
     @Operation(
         summary = "Get business profile",
-        description = "Retrieve business profile for the current workspace"
+        description = "Retrieve complete business profile with all configuration"
     )
     @ApiResponses(
         value = [
@@ -63,24 +62,91 @@ class BusinessController @Autowired constructor(
             )
         ]
     )
-    fun getBusinessProfile(): ApiResponse<BusinessResponse> {
+    fun getBusiness(): ApiResponse<BusinessResponse> {
         val business = businessService.getBusinessProfile()
         return ApiResponse.success(business.asBusinessResponse())
     }
 
     /**
-     * Create business profile for current workspace.
+     * Update business profile.
      *
-     * **Returns**: 201 CREATED with created business profile
-     * **Errors**:
-     * - 409 CONFLICT if business already exists
-     * - 400 BAD_REQUEST for validation errors
+     * **Route**: PUT /api/v1/business
+     * **Returns**: Updated business profile
+     * **Note**: Supports partial updates - only provided fields are updated
+     */
+    @PutMapping
+    @Operation(
+        summary = "Update business profile",
+        description = "Update business profile (supports partial updates)"
+    )
+    @ApiResponses(
+        value = [
+            io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "Business profile updated successfully"
+            ),
+            io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "404",
+                description = "Business profile not found"
+            ),
+            io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "400",
+                description = "Invalid business data"
+            )
+        ]
+    )
+    fun updateBusiness(
+        @Valid @RequestBody request: BusinessUpdateRequest
+    ): ApiResponse<BusinessResponse> {
+        val business = businessService.updateBusinessProfile(request)
+        return ApiResponse.success(business.asBusinessResponse())
+    }
+
+    // ==================== Overview Endpoints ====================
+
+    /**
+     * Get business overview for dashboard.
+     *
+     * **Route**: GET /api/v1/business/overview
+     * **Returns**: Summary information for dashboard display
+     */
+    @GetMapping("/overview")
+    @Operation(
+        summary = "Get business overview",
+        description = "Retrieve business overview summary for dashboard display"
+    )
+    @ApiResponses(
+        value = [
+            io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "200",
+                description = "Business overview retrieved successfully"
+            ),
+            io.swagger.v3.oas.annotations.responses.ApiResponse(
+                responseCode = "404",
+                description = "Business profile not found"
+            )
+        ]
+    )
+    fun getBusinessOverview(): ApiResponse<BusinessOverviewResponse> {
+        val business = businessService.getBusinessOverview()
+        return ApiResponse.success(business.asBusinessOverviewResponse())
+    }
+
+
+    // ==================== Initial Setup Endpoints ====================
+
+    /**
+     * Create business profile for workspace (initial setup).
+     *
+     * **Route**: POST /api/v1/business
+     * **Returns**: Created business profile
+     * **Note**: Only called during initial workspace setup
      */
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(
         summary = "Create business profile",
-        description = "Create a new business profile for the current workspace. Only one business profile allowed per workspace."
+        description = "Create initial business profile for workspace (one-time setup)"
     )
     @ApiResponses(
         value = [
@@ -106,45 +172,10 @@ class BusinessController @Autowired constructor(
     }
 
     /**
-     * Update business profile for current workspace.
+     * Check if business profile exists for workspace.
      *
-     * **Returns**: 200 OK with updated business profile
-     * **Errors**:
-     * - 404 NOT_FOUND if business doesn't exist
-     * - 400 BAD_REQUEST for validation errors
-     */
-    @PutMapping
-    @Operation(
-        summary = "Update business profile",
-        description = "Update existing business profile for the current workspace. Supports partial updates."
-    )
-    @ApiResponses(
-        value = [
-            io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "200",
-                description = "Business profile updated successfully"
-            ),
-            io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "404",
-                description = "Business profile not found"
-            ),
-            io.swagger.v3.oas.annotations.responses.ApiResponse(
-                responseCode = "400",
-                description = "Invalid business data"
-            )
-        ]
-    )
-    fun updateBusinessProfile(
-        @Valid @RequestBody request: BusinessUpdateRequest
-    ): ApiResponse<BusinessResponse> {
-        val business = businessService.updateBusinessProfile(request)
-        return ApiResponse.success(business.asBusinessResponse())
-    }
-
-    /**
-     * Check if business profile exists for current workspace.
-     *
-     * **Returns**: 200 OK with exists flag
+     * **Route**: GET /api/v1/business/exists
+     * **Returns**: Boolean flag
      */
     @GetMapping("/exists")
     @Operation(
@@ -154,22 +185,5 @@ class BusinessController @Autowired constructor(
     fun checkBusinessExists(): ApiResponse<Map<String, Boolean>> {
         val exists = businessService.businessProfileExists()
         return ApiResponse.success(mapOf("exists" to exists))
-    }
-
-    /**
-     * Get full formatted address for current business.
-     *
-     * **Returns**: 200 OK with formatted address
-     * **Errors**:
-     * - 404 NOT_FOUND if business doesn't exist
-     */
-    @GetMapping("/address")
-    @Operation(
-        summary = "Get formatted address",
-        description = "Get full formatted address for the business profile"
-    )
-    fun getFullAddress(): ApiResponse<Map<String, String>> {
-        val address = businessService.getFullAddress()
-        return ApiResponse.success(mapOf("address" to address))
     }
 }
