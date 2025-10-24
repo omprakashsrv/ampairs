@@ -57,8 +57,26 @@ class FlywayMigrationTest {
     fun shouldSuccessfullyExecuteAllMigrations() {
         val appliedVersions = flyway.info().applied().mapNotNull { it.version?.canonical }
 
+        // Module-scoped migrations V1.0.x and workspace retail modules V2.0.0
         assertThat(appliedVersions)
-            .contains("3.1", "3.2", "4.1", "4.2", "4.3", "4.4", "4.5", "4.6", "4.7", "4.8", "4.9", "4.10")
+            .contains(
+                "1.0.0",   // order module
+                "1.0.1",   // auth module
+                "1.0.2",   // core module
+                "1.0.3",   // event module
+                "1.0.4",   // notification module
+                "1.0.5",   // workspace module
+                "1.0.6",   // customer module
+                "1.0.7",   // form module
+                "1.0.8",   // product module
+                "1.0.9",   // tax module
+                "1.0.10",  // unit module
+                "1.0.11",  // invoice module
+                "1.0.12",  // business module
+                "1.0.13",  // auth app_user table
+                "1.0.14",  // business custom_attributes
+                "2.0.0"    // workspace retail modules
+            )
         assertThat(flyway.info().pending()).isEmpty()
     }
 
@@ -84,11 +102,13 @@ class FlywayMigrationTest {
                 "inventory",
                 "customer_order",
                 "invoice",
+                "businesses",
                 "attribute_definition",
                 "field_config",
                 "device_session",
                 "login_session",
                 "auth_token",
+                "app_user",
                 "workspaces",
                 "workspace_members",
                 "workspace_invitations",
@@ -143,6 +163,7 @@ class FlywayMigrationTest {
                 "customer.billing_address",
                 "customer.shipping_address",
                 "customer.attributes",
+                "businesses.custom_attributes",
                 "order_item.tax_info",
                 "order_item.attributes",
                 "invoice.tax_info",
@@ -171,7 +192,9 @@ class FlywayMigrationTest {
                 "product.created_at",
                 "product.updated_at",
                 "inventory.created_at",
-                "inventory.updated_at"
+                "inventory.updated_at",
+                "businesses.created_at",
+                "businesses.updated_at"
             )
     }
 
