@@ -168,13 +168,29 @@ actual class FirebaseAuthProvider {
     ) {
         firebaseAuth.signInWithCredential(credential)
             .addOnSuccessListener { authResult ->
-                val userId = authResult.user?.uid
-                if (userId != null) {
-                    _verificationState.value = PhoneVerificationState.VerificationCompleted(userId)
-                    onComplete(FirebaseAuthResult.Success(userId))
+                val user = authResult.user
+                if (user != null) {
+                    // Get the ID token (JWT) instead of just the UID
+                    user.getIdToken(false)
+                        .addOnSuccessListener { tokenResult ->
+                            val idToken = tokenResult.token
+                            if (idToken != null) {
+                                _verificationState.value = PhoneVerificationState.VerificationCompleted(user.uid)
+                                onComplete(FirebaseAuthResult.Success(idToken))
+                            } else {
+                                _verificationState.value = PhoneVerificationState.VerificationFailed("No ID token returned")
+                                onComplete(FirebaseAuthResult.Error("Authentication succeeded but no ID token returned"))
+                            }
+                        }
+                        .addOnFailureListener { tokenException ->
+                            _verificationState.value = PhoneVerificationState.VerificationFailed(
+                                "Failed to get ID token: ${tokenException.message}"
+                            )
+                            onComplete(FirebaseAuthResult.Error("Failed to get ID token: ${tokenException.message}", tokenException))
+                        }
                 } else {
-                    _verificationState.value = PhoneVerificationState.VerificationFailed("No user ID returned")
-                    onComplete(FirebaseAuthResult.Error("Authentication succeeded but no user ID returned"))
+                    _verificationState.value = PhoneVerificationState.VerificationFailed("No user returned")
+                    onComplete(FirebaseAuthResult.Error("Authentication succeeded but no user returned"))
                 }
             }
             .addOnFailureListener { exception ->
