@@ -419,6 +419,11 @@ google:
       ipAddresses: ${RECAPTCHA_WHITELIST_IPS:127.0.0.1,::1,192.168.1.*,10.0.0.*}
       validateWithGoogle: ${RECAPTCHA_WHITELIST_VALIDATE_WITH_GOOGLE:false}
 
+# Firebase Configuration
+firebase:
+  enabled: ${FIREBASE_ENABLED:true}
+  service-account-key-path: ${FIREBASE_SERVICE_ACCOUNT_KEY_PATH:./keys/ampairs-service-account-key.json}
+
 # Notification Configuration
 notification:
   # Batch processing settings

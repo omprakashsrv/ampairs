@@ -52,5 +52,10 @@ logs/
 secrets/
 credentials/
 
+### Firebase - Exclude service account keys ###
+**/keys/*service-account*.json
+ampairs-service-account-key.json
+*firebase-adminsdk*.json
+
 ### Storage ###
 storage/
