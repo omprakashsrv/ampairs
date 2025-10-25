@@ -10,8 +10,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.progressSemantics
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -30,6 +34,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.launch
+import com.ampairs.auth.domain.AuthMethod
 import com.ampairs.auth.viewmodel.LoginViewModel
 import com.ampairs.ui.components.Phone
 import com.ampairs.ui.theme.AmpairsTheme
@@ -41,7 +46,7 @@ import org.koin.compose.koinInject
 @Composable
 fun PhoneScreen(
     viewModel: LoginViewModel = koinInject<LoginViewModel>(),
-    onAuthSuccess: (String) -> Unit,
+    onAuthSuccess: (sessionId: String, verificationId: String) -> Unit,
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -81,6 +86,46 @@ fun PhoneScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+                // Authentication method selector (only if Firebase is supported)
+                if (viewModel.isFirebaseSupported) {
+                    Text(
+                        text = "Login Method",
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        FilterChip(
+                            selected = viewModel.authMethod == AuthMethod.BACKEND_API,
+                            onClick = { viewModel.authMethod = AuthMethod.BACKEND_API },
+                            label = { Text("Backend API") },
+                            enabled = !viewModel.loading,
+                            modifier = Modifier.weight(1f)
+                        )
+                        FilterChip(
+                            selected = viewModel.authMethod == AuthMethod.FIREBASE,
+                            onClick = { viewModel.authMethod = AuthMethod.FIREBASE },
+                            label = {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.Security,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Text("Firebase")
+                                }
+                            },
+                            enabled = !viewModel.loading,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+
                 Phone(
                     countryCode = 91,
                     readOnly = viewModel.loading,
@@ -89,13 +134,13 @@ fun PhoneScreen(
                     onValidChange = { viewModel.validPhoneNumber = it }
                 )
 
-                // Show reCAPTCHA status message
+                // Show progress message
                 if (viewModel.progressMessage.isNotEmpty()) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (viewModel.recaptchaLoading) {
+                        if (viewModel.recaptchaLoading || viewModel.loading) {
                             CircularProgressIndicator(
                                 modifier = Modifier.size(16.dp),
                                 strokeWidth = 2.dp
@@ -120,7 +165,20 @@ fun PhoneScreen(
             contentAlignment = Alignment.BottomCenter
         ) {
             Button(
-                onClick = { viewModel.authenticate(onAuthSuccess) },
+                onClick = {
+                    when (viewModel.authMethod) {
+                        AuthMethod.BACKEND_API -> {
+                            viewModel.authenticate { sessionId ->
+                                onAuthSuccess(sessionId, "") // Backend API: sessionId populated, verificationId empty
+                            }
+                        }
+                        AuthMethod.FIREBASE -> {
+                            viewModel.authenticateWithFirebase { verificationId ->
+                                onAuthSuccess("", verificationId) // Firebase: verificationId populated, sessionId empty
+                            }
+                        }
+                    }
+                },
                 modifier = Modifier
                     .widthIn(min = 280.dp, max = 400.dp)
                     .fillMaxWidth(),

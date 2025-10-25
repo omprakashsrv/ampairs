@@ -20,6 +20,17 @@ class FirebaseAuthRepository(
     val verificationState: StateFlow<PhoneVerificationState> = firebaseAuthProvider.verificationState
 
     /**
+     * Last verified phone number (without country code)
+     * Stored when OTP is sent successfully
+     */
+    private var lastPhoneNumber: String = ""
+
+    /**
+     * Get the last phone number used for verification
+     */
+    fun getLastPhoneNumber(): String = lastPhoneNumber
+
+    /**
      * Check if Firebase Auth is supported on current platform
      */
     fun isSupported(): Boolean = firebaseAuthProvider.isSupported()
@@ -50,7 +61,14 @@ class FirebaseAuthRepository(
             return FirebaseAuthResult.Error("Invalid phone number format")
         }
 
-        return firebaseAuthProvider.sendVerificationCode(fullPhoneNumber)
+        val result = firebaseAuthProvider.sendVerificationCode(fullPhoneNumber)
+
+        // Store phone number if OTP sent successfully
+        if (result is FirebaseAuthResult.Success) {
+            lastPhoneNumber = phoneNumber
+        }
+
+        return result
     }
 
     /**

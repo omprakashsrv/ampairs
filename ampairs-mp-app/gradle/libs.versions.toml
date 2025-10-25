@@ -50,7 +50,9 @@ maps-compose = "6.12.0"
 accompanist-permissions = "0.37.3"
 play-services-coroutines = "1.10.2"
 krossbow = "9.3.0"
-
+firebase-bom = "33.7.0"
+firebase-auth = "23.1.0"
+google-services = "4.4.2"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
@@ -139,6 +141,10 @@ play-services-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-
 maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = "maps-compose" }
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist-permissions" }
 
+# Native Firebase for Android
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
+firebase-auth = { module = "com.google.firebase:firebase-auth", version.ref = "firebase-auth" }
+
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
@@ -149,6 +155,7 @@ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 room = { id = "androidx.room", version.ref = "androidx-room" }
 wire = { id = "com.squareup.wire", version.ref = "wire" }
+googleServices = { id = "com.google.gms.google-services", version.ref = "google-services" }
 
 [bundles]
 ktor-common = ["ktor-client-core", "ktor-client-logging", "ktor-client-serialization", "ktor-client-contentNegotiation", "ktor-client-auth", "ktor-client-cio", "ktor-client-websockets"]

@@ -48,7 +48,10 @@ sealed interface AuthRoute {
     data object Phone : AuthRoute
     
     @Serializable
-    data class Otp(val sessionId: String) : AuthRoute
+    data class Otp(
+        val sessionId: String,
+        val verificationId: String = "" // Firebase verification ID (empty for backend API auth)
+    ) : AuthRoute
     
     @Serializable
     data object UserUpdate : AuthRoute

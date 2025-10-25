@@ -285,9 +285,12 @@ class LoginViewModel(
                 is FirebaseAuthResult.Success -> {
                     val firebaseIdToken = result.data
 
+                    // Get the phone number that was used for Firebase verification
+                    val verifiedPhoneNumber = firebaseAuthRepository.getLastPhoneNumber()
+
                     // After Firebase auth succeeds, verify with backend and get JWT tokens
                     viewModelScope.launch(DispatcherProvider.io) {
-                        userRepository.verifyFirebaseAuth(firebaseIdToken, phoneNumber).onSuccess {
+                        userRepository.verifyFirebaseAuth(firebaseIdToken, verifiedPhoneNumber).onSuccess {
                             // Store tokens to dummy session (now getCurrentUserId() will work)
                             tokenRepository.updateToken(this.accessToken, this.refreshToken)
 

@@ -1,10 +1,8 @@
 package com.ampairs.auth.firebase
 
-import android.app.Activity
-import android.content.Context
-import androidx.activity.ComponentActivity
 import com.ampairs.auth.domain.FirebaseAuthResult
 import com.ampairs.auth.domain.PhoneVerificationState
+import com.ampairs.common.ActivityProvider
 import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.PhoneAuthCredential
@@ -14,8 +12,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
-import org.koin.core.component.KoinComponent
-import org.koin.core.component.inject
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -25,19 +21,19 @@ import kotlin.coroutines.resumeWithException
  *
  * Uses official Firebase Android SDK for phone authentication
  * Requires:
- * - google-services.json in composeApp/
- * - Activity context for reCAPTCHA verification
+ * - google-services.json in composeApp/ (automatically processed by Google Services plugin)
+ * - Activity context for reCAPTCHA verification (provided via ActivityProvider)
  * - Firebase project with Phone Auth enabled
+ *
+ * Firebase is automatically initialized by the Google Services Gradle plugin
+ * which processes google-services.json at build time.
+ *
+ * Activity context is obtained from ActivityProvider which is registered in MainActivity.
  */
-actual class FirebaseAuthProvider : KoinComponent {
+actual class FirebaseAuthProvider {
 
+    // Firebase Auth instance (automatically initialized by Google Services plugin)
     private val firebaseAuth: FirebaseAuth = FirebaseAuth.getInstance()
-    private val context: Context by inject() // Get context from Koin
-
-    // Get activity from context
-    private val activity: Activity
-        get() = context as? ComponentActivity
-            ?: throw IllegalStateException("Firebase Phone Auth requires Activity context")
 
     private val _verificationState = MutableStateFlow<PhoneVerificationState>(PhoneVerificationState.Idle)
     actual val verificationState: StateFlow<PhoneVerificationState> = _verificationState.asStateFlow()
@@ -47,7 +43,8 @@ actual class FirebaseAuthProvider : KoinComponent {
 
     actual suspend fun initialize(): FirebaseAuthResult<Unit> {
         return try {
-            // Firebase is auto-initialized via google-services.json
+            // Firebase is automatically initialized by Google Services plugin
+            // This method exists for consistency with the expect interface
             FirebaseAuthResult.Success(Unit)
         } catch (e: Exception) {
             FirebaseAuthResult.Error("Firebase initialization failed: ${e.message}", e)
@@ -57,6 +54,19 @@ actual class FirebaseAuthProvider : KoinComponent {
     actual suspend fun sendVerificationCode(phoneNumber: String): FirebaseAuthResult<String> {
         return suspendCancellableCoroutine { continuation ->
             try {
+                val activity = ActivityProvider.getActivity()
+                if (activity == null) {
+                    _verificationState.value = PhoneVerificationState.VerificationFailed(
+                        "Activity not available. Please ensure the app is in foreground."
+                    )
+                    if (continuation.isActive) {
+                        continuation.resume(
+                            FirebaseAuthResult.Error("Activity context not available for Firebase Phone Auth")
+                        )
+                    }
+                    return@suspendCancellableCoroutine
+                }
+
                 _verificationState.value = PhoneVerificationState.Idle
 
                 val formattedPhone = if (phoneNumber.startsWith("+")) phoneNumber else "+$phoneNumber"
@@ -178,6 +188,19 @@ actual class FirebaseAuthProvider : KoinComponent {
     actual suspend fun resendVerificationCode(phoneNumber: String): FirebaseAuthResult<String> {
         return suspendCancellableCoroutine { continuation ->
             try {
+                val activity = ActivityProvider.getActivity()
+                if (activity == null) {
+                    _verificationState.value = PhoneVerificationState.VerificationFailed(
+                        "Activity not available. Please ensure the app is in foreground."
+                    )
+                    if (continuation.isActive) {
+                        continuation.resume(
+                            FirebaseAuthResult.Error("Activity context not available for Firebase Phone Auth")
+                        )
+                    }
+                    return@suspendCancellableCoroutine
+                }
+
                 val formattedPhone = if (phoneNumber.startsWith("+")) phoneNumber else "+$phoneNumber"
 
                 val optionsBuilder = PhoneAuthOptions.newBuilder(firebaseAuth)

@@ -8,6 +8,7 @@ plugins {
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
+    alias(libs.plugins.googleServices) // Firebase Google Services plugin
 }
 
 configurations.all {
@@ -47,6 +48,9 @@ kotlin {
                 implementation(libs.play.services.coroutines)
                 implementation(libs.maps.compose)
                 implementation(libs.accompanist.permissions)
+
+                // Firebase - Native Android SDK
+                implementation(libs.firebase.auth)
             }
         }
 

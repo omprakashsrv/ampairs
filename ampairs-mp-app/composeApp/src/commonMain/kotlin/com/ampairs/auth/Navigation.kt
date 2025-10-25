@@ -101,14 +101,18 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
             }
         }
         composable<AuthRoute.Phone> {
-            PhoneScreen { sessionId ->
-                navigator.navigate(AuthRoute.Otp(sessionId))
+            PhoneScreen { sessionId, verificationId ->
+                navigator.navigate(AuthRoute.Otp(
+                    sessionId = sessionId,
+                    verificationId = verificationId
+                ))
             }
         }
         composable<AuthRoute.Otp> { backStackEntry ->
             val otp = backStackEntry.toRoute<AuthRoute.Otp>()
             OtpScreen(
                 sessionId = otp.sessionId,
+                verificationId = otp.verificationId,
                 onAuthSuccess = {
                     navigator.navigate(AuthRoute.UserUpdate)
                 }
