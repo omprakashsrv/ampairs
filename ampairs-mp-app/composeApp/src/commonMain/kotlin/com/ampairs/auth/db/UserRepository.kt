@@ -138,7 +138,7 @@ class UserRepository(
     suspend fun resendOtp(phoneNumber: String): Response<AuthInitResponse> {
         val deviceInfo = deviceService.getDeviceInfo()
         val recaptchaToken = recaptchaService.executeResendOtp()
-        
+
         return authApi.initAuth(
             AuthInit(
                 countryCode = 91,
@@ -152,6 +152,10 @@ class UserRepository(
                 os = deviceInfo.os
             )
         )
+    }
+
+    suspend fun findExistingUser(countryCode: Long, phone: String): UserEntity? {
+        return userDao.findByCountryCodeAndPhone(countryCode, phone)
     }
 
 }

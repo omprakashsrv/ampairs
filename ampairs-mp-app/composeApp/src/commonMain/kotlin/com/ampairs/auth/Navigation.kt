@@ -101,12 +101,36 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
             }
         }
         composable<AuthRoute.Phone> {
-            PhoneScreen { sessionId, verificationId ->
-                navigator.navigate(AuthRoute.Otp(
-                    sessionId = sessionId,
-                    verificationId = verificationId
-                ))
-            }
+            val tokenRepository = koinInject<TokenRepository>()
+            val userWorkspaceRepository = koinInject<UserWorkspaceRepository>()
+
+            PhoneScreen(
+                onAuthSuccess = { sessionId, verificationId ->
+                    navigator.navigate(AuthRoute.Otp(
+                        sessionId = sessionId,
+                        verificationId = verificationId
+                    ))
+                },
+                onExistingUserSelected = {
+                    // When existing user is selected, check their workspace status
+                    kotlinx.coroutines.runBlocking {
+                        val currentUserId = tokenRepository.getCurrentUserId()
+                        if (currentUserId != null) {
+                            val hasSelectedWorkspace =
+                                userWorkspaceRepository.getWorkspaceIdForUser(currentUserId).isNotBlank()
+                            if (hasSelectedWorkspace) {
+                                // User has selected workspace, go to main app
+                                onLoginSuccess()
+                            } else {
+                                // User needs to select workspace, go to workspace selection
+                                navigator.navigate(Route.Workspace) {
+                                    popUpTo(Route.Login) { inclusive = true }
+                                }
+                            }
+                        }
+                    }
+                }
+            )
         }
         composable<AuthRoute.Otp> { backStackEntry ->
             val otp = backStackEntry.toRoute<AuthRoute.Otp>()

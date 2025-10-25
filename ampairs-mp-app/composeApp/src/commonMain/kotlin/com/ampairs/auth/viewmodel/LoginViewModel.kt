@@ -49,6 +49,9 @@ class LoginViewModel(
     // Check if Firebase is supported on this platform
     val isFirebaseSupported: Boolean = firebaseAuthRepository.isSupported()
 
+    // Existing user state
+    var existingUser by mutableStateOf<UserEntity?>(null)
+
     fun checkUserLogin(onLoginStatus: (LoginStatus, userEntity: UserEntity?) -> Unit) {
         viewModelScope.launch(DispatcherProvider.io) {
             val token = userRepository.getToken()
@@ -109,6 +112,30 @@ class LoginViewModel(
         }
     }
 
+    fun checkExistingUser(onExistingUserFound: (UserEntity) -> Unit, onNoExistingUser: () -> Unit) {
+        viewModelScope.launch(DispatcherProvider.io) {
+            val user = userRepository.findExistingUser(countryCode = 91, phone = phoneNumber)
+            viewModelScope.launch(Dispatchers.Main) {
+                if (user != null) {
+                    existingUser = user
+                    onExistingUserFound(user)
+                } else {
+                    existingUser = null
+                    onNoExistingUser()
+                }
+            }
+        }
+    }
+
+    fun selectExistingUser(userId: String, onUserSelected: () -> Unit) {
+        viewModelScope.launch(DispatcherProvider.io) {
+            tokenRepository.setCurrentUser(userId)
+            viewModelScope.launch(Dispatchers.Main) {
+                onUserSelected()
+            }
+        }
+    }
+
     fun authenticate(onAuthSuccess: (String) -> Unit) {
         loading = true
         recaptchaLoading = true
@@ -117,7 +144,7 @@ class LoginViewModel(
         viewModelScope.launch(DispatcherProvider.io) {
             // Create dummy user session for token operations during auth flow
             tokenRepository.createDummyUserSession()
-            
+
             userRepository.initAuth(phoneNumber).onSuccess {
                 viewModelScope.launch(Dispatchers.Main) {
                     loading = false
