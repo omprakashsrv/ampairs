@@ -8,7 +8,10 @@ import androidx.lifecycle.viewModelScope
 import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.db.UserRepository
 import com.ampairs.auth.db.entity.UserEntity
+import com.ampairs.auth.domain.AuthMethod
+import com.ampairs.auth.domain.FirebaseAuthResult
 import com.ampairs.auth.domain.LoginStatus
+import com.ampairs.auth.firebase.FirebaseAuthRepository
 import com.ampairs.common.DeviceService
 import com.ampairs.common.coroutines.DispatcherProvider
 import com.ampairs.common.model.onError
@@ -21,6 +24,7 @@ class LoginViewModel(
     private val userRepository: UserRepository,
     private val tokenRepository: TokenRepository,
     private val deviceService: DeviceService,
+    private val firebaseAuthRepository: FirebaseAuthRepository,
 ) : ViewModel() {
     var phoneNumber by mutableStateOf("")
     var otp by mutableStateOf("")
@@ -33,6 +37,17 @@ class LoginViewModel(
     var loginStatus by mutableStateOf(
         LoginStatus.INIT
     )
+
+    // Firebase-specific state
+    var firebaseVerificationId by mutableStateOf("")
+
+    // Authentication method selection
+    var authMethod by mutableStateOf(
+        if (firebaseAuthRepository.isSupported()) AuthMethod.FIREBASE else AuthMethod.BACKEND_API
+    )
+
+    // Check if Firebase is supported on this platform
+    val isFirebaseSupported: Boolean = firebaseAuthRepository.isSupported()
 
     fun checkUserLogin(onLoginStatus: (LoginStatus, userEntity: UserEntity?) -> Unit) {
         viewModelScope.launch(DispatcherProvider.io) {
@@ -219,5 +234,153 @@ class LoginViewModel(
         }
     }
 
+    // ========== Firebase Authentication Methods ==========
+
+    /**
+     * Send OTP via Firebase
+     */
+    fun authenticateWithFirebase(onAuthSuccess: (String) -> Unit) {
+        loading = true
+        progressMessage = "Sending verification code..."
+
+        viewModelScope.launch(DispatcherProvider.io) {
+            // Extract country code (assuming 91 for now, can be made dynamic)
+            val countryCode = "91"
+
+            when (val result = firebaseAuthRepository.sendOtp(countryCode, phoneNumber)) {
+                is FirebaseAuthResult.Success -> {
+                    firebaseVerificationId = result.data
+                    viewModelScope.launch(Dispatchers.Main) {
+                        loading = false
+                        progressMessage = ""
+                        onAuthSuccess(result.data)
+                    }
+                }
+                is FirebaseAuthResult.Error -> {
+                    viewModelScope.launch(Dispatchers.Main) {
+                        loading = false
+                        progressMessage = ""
+                        displayMessage = result.message
+                    }
+                }
+                FirebaseAuthResult.Loading -> {
+                    // Already in loading state
+                }
+            }
+        }
+    }
+
+    /**
+     * Verify Firebase OTP and complete authentication
+     */
+    fun completeFirebaseAuthentication(onAuthComplete: () -> Unit) {
+        loading = true
+        progressMessage = "Verifying code..."
+
+        viewModelScope.launch(DispatcherProvider.io) {
+            // Create dummy user session for token operations during auth flow
+            tokenRepository.createDummyUserSession()
+
+            when (val result = firebaseAuthRepository.verifyOtp(firebaseVerificationId, otp)) {
+                is FirebaseAuthResult.Success -> {
+                    val firebaseIdToken = result.data
+
+                    // After Firebase auth succeeds, verify with backend and get JWT tokens
+                    viewModelScope.launch(DispatcherProvider.io) {
+                        userRepository.verifyFirebaseAuth(firebaseIdToken, phoneNumber).onSuccess {
+                            // Store tokens to dummy session (now getCurrentUserId() will work)
+                            tokenRepository.updateToken(this.accessToken, this.refreshToken)
+
+                            // Store the token response for later use
+                            val authResponse = this
+
+                            // Now fetch user information (API call will work because dummy session has tokens)
+                            viewModelScope.launch(DispatcherProvider.io) {
+                                val userApiResponse = userRepository.getUserApi()
+                                userApiResponse.onSuccess {
+                                    val userData = this
+                                    viewModelScope.launch(DispatcherProvider.io) {
+                                        // Save user to database
+                                        userRepository.saveUser(userData)
+
+                                        // Replace dummy session with real user session and tokens
+                                        tokenRepository.updateDummySessionWithRealUser(
+                                            userData.id,
+                                            authResponse.accessToken, authResponse.refreshToken
+                                        )
+
+                                        viewModelScope.launch(Dispatchers.Main) {
+                                            delay(1000)
+                                            onAuthComplete()
+                                            loading = false
+                                            progressMessage = ""
+                                        }
+                                    }
+                                }.onError {
+                                    // Even if user fetch fails, continue with authentication complete
+                                    // The user will be fetched later in checkUserLogin()
+                                    viewModelScope.launch(Dispatchers.Main) {
+                                        delay(1000)
+                                        onAuthComplete()
+                                        loading = false
+                                        progressMessage = ""
+                                    }
+                                }
+                            }
+                        }.onError {
+                            displayMessage = this@onError.message
+                            viewModelScope.launch(Dispatchers.Main) {
+                                loading = false
+                                progressMessage = ""
+                            }
+                        }
+                    }
+                }
+                is FirebaseAuthResult.Error -> {
+                    viewModelScope.launch(Dispatchers.Main) {
+                        loading = false
+                        progressMessage = ""
+                        displayMessage = result.message
+                    }
+                }
+                FirebaseAuthResult.Loading -> {
+                    // Already in loading state
+                }
+            }
+        }
+    }
+
+    /**
+     * Resend OTP via Firebase
+     */
+    fun resendFirebaseOtp(onResendSuccess: (String) -> Unit) {
+        loading = true
+        progressMessage = "Resending verification code..."
+
+        viewModelScope.launch(DispatcherProvider.io) {
+            val countryCode = "91"
+
+            when (val result = firebaseAuthRepository.resendOtp(countryCode, phoneNumber)) {
+                is FirebaseAuthResult.Success -> {
+                    firebaseVerificationId = result.data
+                    viewModelScope.launch(Dispatchers.Main) {
+                        loading = false
+                        progressMessage = ""
+                        onResendSuccess(result.data)
+                    }
+                }
+                is FirebaseAuthResult.Error -> {
+                    viewModelScope.launch(Dispatchers.Main) {
+                        loading = false
+                        progressMessage = ""
+                        displayMessage = result.message
+                    }
+                }
+                FirebaseAuthResult.Loading -> {
+                    // Already in loading state
+                }
+            }
+        }
+    }
 
 }

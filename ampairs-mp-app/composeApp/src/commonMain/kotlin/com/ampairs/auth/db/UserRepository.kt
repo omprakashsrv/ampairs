@@ -5,6 +5,7 @@ import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.model.AuthComplete
 import com.ampairs.auth.api.model.AuthInit
 import com.ampairs.auth.api.model.AuthInitResponse
+import com.ampairs.auth.api.model.FirebaseAuthRequest
 import com.ampairs.auth.api.model.Token
 import com.ampairs.auth.api.model.UserApiModel
 import com.ampairs.auth.db.dao.UserDao
@@ -49,7 +50,7 @@ class UserRepository(
     suspend fun completeAuth(sessionId: String, otp: String): Response<Token> {
         val deviceInfo = deviceService.getDeviceInfo()
         val recaptchaToken = recaptchaService.executeVerifyOtp()
-        
+
         val completeAuth = authApi.completeAuth(
             AuthComplete(
                 sessionId = sessionId,
@@ -62,6 +63,24 @@ class UserRepository(
         )
         authApi.clearToken()
         return completeAuth
+    }
+
+    suspend fun verifyFirebaseAuth(firebaseIdToken: String, phoneNumber: String): Response<Token> {
+        val deviceInfo = deviceService.getDeviceInfo()
+        val recaptchaToken = recaptchaService.executeFirebaseVerify()
+
+        val firebaseAuth = authApi.verifyFirebaseAuth(
+            FirebaseAuthRequest(
+                firebaseIdToken = firebaseIdToken,
+                phone = phoneNumber,
+                countryCode = 91,
+                recaptchaToken = recaptchaToken,
+                deviceId = deviceInfo.deviceId,
+                deviceName = deviceInfo.deviceName,
+            )
+        )
+        authApi.clearToken()
+        return firebaseAuth
     }
 
     suspend fun getUserApi(): Response<UserApiModel> {
