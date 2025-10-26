@@ -29,8 +29,10 @@ import kotlin.coroutines.resume
 @OptIn(ExperimentalForeignApi::class)
 actual class FirebaseAuthProvider {
 
-    private val _verificationState = MutableStateFlow<PhoneVerificationState>(PhoneVerificationState.Idle)
-    actual val verificationState: StateFlow<PhoneVerificationState> = _verificationState.asStateFlow()
+    private val _verificationState =
+        MutableStateFlow<PhoneVerificationState>(PhoneVerificationState.Idle)
+    actual val verificationState: StateFlow<PhoneVerificationState> =
+        _verificationState.asStateFlow()
 
     private var storedVerificationId: String? = null
 
@@ -42,7 +44,8 @@ actual class FirebaseAuthProvider {
      */
     private fun getRootViewController(): FIRAuthUIDelegateProtocol? {
         return try {
-            UIApplication.sharedApplication.keyWindow?.rootViewController
+            // Cast UIViewController to FIRAuthUIDelegateProtocol
+            UIApplication.sharedApplication.keyWindow?.rootViewController as? FIRAuthUIDelegateProtocol
         } catch (e: Exception) {
             println("Failed to get root view controller: ${e.message}")
             null
@@ -51,9 +54,13 @@ actual class FirebaseAuthProvider {
 
     actual suspend fun initialize(): FirebaseAuthResult<Unit> {
         return try {
-            // Configure Firebase if not already configured
+            // Firebase is now initialized in AppDelegate.swift on app launch
+            // This check ensures we don't double-initialize
             if (FIRApp.defaultApp() == null) {
+                println("FirebaseAuthProvider: Firebase not initialized, configuring now")
                 FIRApp.configure()
+            } else {
+                println("FirebaseAuthProvider: Firebase already initialized by AppDelegate")
             }
             FirebaseAuthResult.Success(Unit)
         } catch (e: Exception) {
@@ -66,7 +73,8 @@ actual class FirebaseAuthProvider {
             try {
                 _verificationState.value = PhoneVerificationState.Idle
 
-                val formattedPhone = if (phoneNumber.startsWith("+")) phoneNumber else "+$phoneNumber"
+                val formattedPhone =
+                    if (phoneNumber.startsWith("+")) phoneNumber else "+$phoneNumber"
                 val uiDelegate = getRootViewController()
 
                 FIRPhoneAuthProvider.provider().verifyPhoneNumber(
@@ -75,18 +83,22 @@ actual class FirebaseAuthProvider {
                 ) { verificationID, error ->
                     if (error != null) {
                         val errorMessage = error.localizedDescription ?: "Verification failed"
-                        _verificationState.value = PhoneVerificationState.VerificationFailed(errorMessage)
+                        _verificationState.value =
+                            PhoneVerificationState.VerificationFailed(errorMessage)
                         continuation.resume(FirebaseAuthResult.Error(errorMessage))
                     } else if (verificationID != null) {
                         storedVerificationId = verificationID
                         _verificationState.value = PhoneVerificationState.CodeSent
                         continuation.resume(FirebaseAuthResult.Success(verificationID))
                     } else {
-                        _verificationState.value = PhoneVerificationState.VerificationFailed("No verification ID")
+                        _verificationState.value =
+                            PhoneVerificationState.VerificationFailed("No verification ID")
                         continuation.resume(FirebaseAuthResult.Error("No verification ID returned"))
                     }
+                    println("error : $error")
                 }
             } catch (e: Exception) {
+                println("exception: $e")
                 _verificationState.value = PhoneVerificationState.VerificationFailed(
                     e.message ?: "Failed to send verification code"
                 )
@@ -97,7 +109,10 @@ actual class FirebaseAuthProvider {
         }
     }
 
-    actual suspend fun verifyCode(verificationId: String, code: String): FirebaseAuthResult<String> {
+    actual suspend fun verifyCode(
+        verificationId: String,
+        code: String
+    ): FirebaseAuthResult<String> {
         return suspendCancellableCoroutine { continuation ->
             try {
                 val credential = FIRPhoneAuthProvider.provider().credentialWithVerificationID(
@@ -108,7 +123,8 @@ actual class FirebaseAuthProvider {
                 FIRAuth.auth().signInWithCredential(credential) { authResult, error ->
                     if (error != null) {
                         val errorMessage = error.localizedDescription ?: "Verification failed"
-                        _verificationState.value = PhoneVerificationState.VerificationFailed(errorMessage)
+                        _verificationState.value =
+                            PhoneVerificationState.VerificationFailed(errorMessage)
                         continuation.resume(FirebaseAuthResult.Error(errorMessage))
                     } else if (authResult?.user() != null) {
                         val user = authResult.user()!!
@@ -116,10 +132,12 @@ actual class FirebaseAuthProvider {
                         // Get ID token (JWT)
                         user.getIDTokenWithCompletion { idToken, tokenError ->
                             if (tokenError != null) {
-                                val errorMessage = tokenError.localizedDescription ?: "Failed to get token"
+                                val errorMessage =
+                                    tokenError.localizedDescription ?: "Failed to get token"
                                 continuation.resume(FirebaseAuthResult.Error(errorMessage))
                             } else if (idToken != null) {
-                                _verificationState.value = PhoneVerificationState.VerificationCompleted(user.uid())
+                                _verificationState.value =
+                                    PhoneVerificationState.VerificationCompleted(user.uid())
                                 continuation.resume(FirebaseAuthResult.Success(idToken))
                             } else {
                                 continuation.resume(FirebaseAuthResult.Error("No ID token returned"))

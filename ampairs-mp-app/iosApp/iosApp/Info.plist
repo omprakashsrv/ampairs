@@ -1,8 +1,81 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
-<dict>
-	<key>CADisableMinimumFrameDurationOnPhone</key>
-	<true/>
-</dict>
+    <dict>
+        <!-- App Display Configuration -->
+        <key>CFBundleDisplayName</key>
+        <string>Ampairs</string>
+        <key>CFBundleName</key>
+        <string>$(PRODUCT_NAME)</string>
+        <key>CFBundleIdentifier</key>
+        <string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+        <key>CFBundleVersion</key>
+        <string>1</string>
+        <key>CFBundleShortVersionString</key>
+        <string>1.0</string>
+        <key>CFBundlePackageType</key>
+        <string>APPL</string>
+        <key>CFBundleExecutable</key>
+        <string>$(EXECUTABLE_NAME)</string>
+        <key>CFBundleInfoDictionaryVersion</key>
+        <string>6.0</string>
+
+        <!-- Performance -->
+        <key>CADisableMinimumFrameDurationOnPhone</key>
+        <true />
+
+        <!-- Firebase Configuration -->
+        <!-- Disable automatic swizzling - we handle notifications manually -->
+        <key>FirebaseAppDelegateProxyEnabled</key>
+        <false />
+
+        <!-- Firebase OAuth URL Scheme - CRITICAL FOR PHONE AUTH -->
+        <!-- This MUST match the REVERSED_CLIENT_ID from GoogleService-Info.plist -->
+        <!-- TODO: Replace this placeholder with actual REVERSED_CLIENT_ID from Firebase Console -->
+        <key>CFBundleURLTypes</key>
+        <array>
+            <dict>
+                <key>CFBundleTypeRole</key>
+                <string>Editor</string>
+                <key>CFBundleURLSchemes</key>
+                <array>
+                    <!-- Placeholder - Download complete GoogleService-Info.plist from Firebase Console -->
+                    <!-- to get the actual REVERSED_CLIENT_ID value -->
+                    <string>app-1-682032206651-ios-d4ddd669b68a2e38a55d1e</string>
+                </array>
+                <key>CFBundleURLName</key>
+                <string>FirebaseAuth</string>
+            </dict>
+        </array>
+
+        <!-- Scene Configuration for SwiftUI -->
+        <key>UIApplicationSceneManifest</key>
+        <dict>
+            <key>UIApplicationSupportsMultipleScenes</key>
+            <true />
+        </dict>
+
+        <!-- Supported Interface Orientations -->
+        <key>UISupportedInterfaceOrientations</key>
+        <array>
+            <string>UIInterfaceOrientationPortrait</string>
+            <string>UIInterfaceOrientationLandscapeLeft</string>
+            <string>UIInterfaceOrientationLandscapeRight</string>
+        </array>
+
+        <key>UISupportedInterfaceOrientations~ipad</key>
+        <array>
+            <string>UIInterfaceOrientationPortrait</string>
+            <string>UIInterfaceOrientationPortraitUpsideDown</string>
+            <string>UIInterfaceOrientationLandscapeLeft</string>
+            <string>UIInterfaceOrientationLandscapeRight</string>
+        </array>
+
+        <!-- App Transport Security -->
+        <key>NSAppTransportSecurity</key>
+        <dict>
+            <key>NSAllowsArbitraryLoads</key>
+            <false />
+        </dict>
+    </dict>
 </plist>
