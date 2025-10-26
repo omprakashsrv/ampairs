@@ -7,17 +7,13 @@ struct ComposeView: UIViewControllerRepresentable {
         MainViewControllerKt.MainViewController()
     }
 
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {}
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+    }
 }
 
 struct ContentView: View {
     var body: some View {
-        ZStack {
-            ComposeView()
-                .ignoresSafeArea(.keyboard) // Compose has own keyboard handler
-
-            // Firebase Crashlytics test crash button (DEBUG only)
-            CrashTestView()
-        }
+        ComposeView()
+            .ignoresSafeArea(.keyboard) // Compose has own keyboard handler
     }
 }
