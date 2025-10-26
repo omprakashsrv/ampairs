@@ -3,17 +3,17 @@
 <plist version="1.0">
 <dict>
 	<key>API_KEY</key>
-	<string>AIzaSyBj9I3zCyWrrwQlM0PC5EcUwZGu8m_oczI</string>
+	<string>AIzaSyDx-OVcVc6wUTFwRCQAITkek6s-alNgkL0</string>
 	<key>GCM_SENDER_ID</key>
-	<string>682032206651</string>
+	<string>412192596698</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.ampairs.app</string>
+	<string>com.medium.authtutorial</string>
 	<key>PROJECT_ID</key>
-	<string>ampairs</string>
+	<string>authtutorialmedium-prod</string>
 	<key>STORAGE_BUCKET</key>
-	<string>ampairs.firebasestorage.app</string>
+	<string>authtutorialmedium-prod.firebasestorage.app</string>
 	<key>IS_ADS_ENABLED</key>
 	<false></false>
 	<key>IS_ANALYTICS_ENABLED</key>
@@ -25,8 +25,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:682032206651:ios:d4ddd669b68a2e38a55d1e</string>
-	<key>DATABASE_URL</key>
-	<string>https://ampairs-default-rtdb.asia-southeast1.firebasedatabase.app</string>
+	<string>1:412192596698:ios:ef307fe84800fe757c7be3</string>
 </dict>
 </plist>
