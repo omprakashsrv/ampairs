@@ -9,7 +9,6 @@ import UIKit
 import ComposeApp
 import FirebaseCore
 import FirebaseAuth
-import FirebaseCrashlytics
 
 class AppDelegate: NSObject, UIApplicationDelegate {
 
