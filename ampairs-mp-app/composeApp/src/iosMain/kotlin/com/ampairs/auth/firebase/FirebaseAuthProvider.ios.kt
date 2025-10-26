@@ -10,7 +10,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.suspendCancellableCoroutine
 import platform.Foundation.NSError
-import platform.posix.log
+import platform.UIKit.UIApplication
+import platform.darwin.NSObject
 import kotlin.coroutines.resume
 
 /**
@@ -33,6 +34,21 @@ actual class FirebaseAuthProvider {
 
     private var storedVerificationId: String? = null
 
+    /**
+     * Get the root view controller to use as UIDelegate for Firebase Phone Auth
+     * Firebase requires a view controller for presenting reCAPTCHA
+     *
+     * Note: UIViewController conforms to FIRAuthUIDelegate protocol automatically
+     */
+    private fun getRootViewController(): FIRAuthUIDelegateProtocol? {
+        return try {
+            UIApplication.sharedApplication.keyWindow?.rootViewController
+        } catch (e: Exception) {
+            println("Failed to get root view controller: ${e.message}")
+            null
+        }
+    }
+
     actual suspend fun initialize(): FirebaseAuthResult<Unit> {
         return try {
             // Configure Firebase if not already configured
@@ -51,10 +67,11 @@ actual class FirebaseAuthProvider {
                 _verificationState.value = PhoneVerificationState.Idle
 
                 val formattedPhone = if (phoneNumber.startsWith("+")) phoneNumber else "+$phoneNumber"
+                val uiDelegate = getRootViewController()
 
                 FIRPhoneAuthProvider.provider().verifyPhoneNumber(
                     phoneNumber = formattedPhone,
-                    UIDelegate = null
+                    UIDelegate = uiDelegate
                 ) { verificationID, error ->
                     if (error != null) {
                         val errorMessage = error.localizedDescription ?: "Verification failed"
