@@ -209,6 +209,9 @@ class LoginViewModel(
                                 authResponse.accessToken, authResponse.refreshToken
                             )
 
+                            // Set Firebase Analytics user ID
+                            analytics.setUserId(userData.id)
+
                             // Log analytics event
                             if (isNewUser) {
                                 analytics.logEvent(AnalyticsEvents.SIGN_UP, mapOf(
@@ -361,6 +364,9 @@ class LoginViewModel(
                                             userData.id,
                                             authResponse.accessToken, authResponse.refreshToken
                                         )
+
+                                        // Set Firebase Analytics user ID
+                                        analytics.setUserId(userData.id)
 
                                         // Log analytics event
                                         if (isNewUser) {

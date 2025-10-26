@@ -251,16 +251,53 @@ fun MyScreen() {
 }
 ```
 
-#### Authentication Events
+#### Authentication Events & User ID Tracking
 
-Login, logout, and sign-up events are automatically tracked in `LoginViewModel` and `AppScreenWithHeader`:
+Login, logout, sign-up events and user IDs are automatically tracked throughout the app:
 
+**LoginViewModel (After Authentication):**
 ```kotlin
-// Automatic tracking on successful authentication
-AnalyticsEvents.LOGIN  // method: "backend_api" or "firebase_phone"
-AnalyticsEvents.SIGN_UP  // method: "backend_api" or "firebase_phone"
-AnalyticsEvents.LOGOUT  // triggered on user logout
+// After successful login/signup:
+analytics.setUserId(userData.id)  // Set user ID for session tracking
+
+if (isNewUser) {
+    analytics.logEvent(AnalyticsEvents.SIGN_UP, mapOf(
+        AnalyticsParams.METHOD to "backend_api" or "firebase_phone"
+    ))
+} else {
+    analytics.logEvent(AnalyticsEvents.LOGIN, mapOf(
+        AnalyticsParams.METHOD to "backend_api" or "firebase_phone"
+    ))
+}
 ```
+
+**UserSelectionViewModel (User Switching):**
+```kotlin
+// When user selects different account:
+analytics.setUserId(selectedUserId)  // Update to new user
+
+// When removing user:
+analytics.setUserId(null)  // Clear if current user
+```
+
+**AppScreenWithHeader (Session Management):**
+```kotlin
+// On app start (if user already logged in):
+analytics.setUserId(userEntity.id)
+
+// On logout:
+analytics.logEvent(AnalyticsEvents.LOGOUT)
+analytics.setUserId(null)  // Clear user ID
+
+// On user switch:
+analytics.setUserId(null)  // Clear before switching
+```
+
+**User ID Lifecycle:**
+1. **Login/Signup** → User ID set immediately after authentication
+2. **App Start** → User ID restored from saved session
+3. **User Switch** → Old ID cleared, new ID set on selection
+4. **Logout** → User ID cleared completely
 
 ### Crashlytics
 

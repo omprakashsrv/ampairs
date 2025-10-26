@@ -53,6 +53,9 @@ fun AppScreenWithHeader(
                     hasSelectedWorkspace = true
                 )
                 headerStateManager.updateUser(userInfo)
+
+                // Set Firebase Analytics user ID
+                analytics.setUserId(userEntity.id)
             }
 
             // Load currently selected workspace
@@ -138,6 +141,9 @@ fun AppScreenWithHeader(
             // Log analytics event
             analytics.logEvent(AnalyticsEvents.LOGOUT)
 
+            // Clear Firebase Analytics user ID
+            analytics.setUserId(null)
+
             // Clear workspace context and modules before logout
             WorkspaceContextIntegration.clearWorkspaceContext()
             // Clear user data and navigate to login
@@ -147,6 +153,9 @@ fun AppScreenWithHeader(
             }
         },
         onSwitchUser = {
+            // Clear Firebase Analytics user ID before switching
+            analytics.setUserId(null)
+
             // Use a coroutine to clear current user before navigation
             kotlinx.coroutines.runBlocking {
                 // Clear the current user so they stay on user selection screen
