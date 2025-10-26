@@ -1,4 +1,4 @@
-package com.medium.authtutorial.firebase
+package com.ampairs.auth.firebase
 
 import cocoapods.FirebaseCore.FIRApp
 import kotlinx.cinterop.ExperimentalForeignApi

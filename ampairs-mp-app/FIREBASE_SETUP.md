@@ -2,51 +2,55 @@
 
 This guide explains the Firebase Authentication integration for the Ampairs Mobile Application.
 
-## ⚠️ Current Status: Stub Implementation
+## ✅ Current Status: Production Ready
 
-**Firebase Phone Authentication is currently NOT ENABLED.**
+**Firebase Phone Authentication Status:**
 
-The app has a **stub implementation** of Firebase Authentication. All platforms currently use **Backend API Authentication only**. Firebase integration is planned for a future release when the GitLive Firebase KMP SDK's phone auth APIs are fully integrated.
+- ✅ **Android**: Fully functional with native Firebase Android SDK
+- ✅ **iOS**: Fully functional with native Firebase iOS SDK via CocoaPods
+- ⏳ **Desktop**: Not supported by Firebase (uses Backend API)
 
 ## Overview
 
-The app supports **Backend API Authentication**:
+The app supports **two authentication methods**:
 
 1. **Backend API Authentication** ✅ **ACTIVE** - Phone + OTP via Spring Boot backend server
-2. **Firebase Authentication** ⏳ **PLANNED** - Phone + OTP via Firebase SDK (architecture in place, not yet functional)
+2. **Firebase Authentication** ✅ **ACTIVE** - Phone + OTP via native Firebase SDKs (Android & iOS)
 
 ### Platform Support
 
 | Platform | Backend API | Firebase Phone Auth | Status |
 |----------|-------------|---------------------|--------|
-| Android  | ✅ Active | ⏳ Stub (Not Functional) | Backend API Only |
-| iOS      | ✅ Active | ⏳ Stub (Not Functional) | Backend API Only |
-| Desktop  | ✅ Active | ⏳ Stub (Not Functional) | Backend API Only |
+| Android  | ✅ Active | ✅ **ACTIVE** (Native SDK) | Both Methods Available |
+| iOS      | ✅ Active | ✅ **ACTIVE** (Native SDK via CocoaPods) | Both Methods Available |
+| Desktop  | ✅ Active | ⏳ Not Supported | Backend API Only |
 
-## Why Stub Implementation?
+**Note:** Both Android and iOS now have full Firebase Phone Authentication support using native SDKs. iOS implementation uses CocoaPods for Firebase integration.
 
-The GitLive Firebase Kotlin SDK has different APIs than native Firebase SDKs:
+## Implementation Architecture
 
-- **Phone Authentication requires:**
-  - Android: Activity context for reCAPTCHA verification
-  - iOS: APNs configuration and proper lifecycle integration
-  - Platform-specific callbacks and verification flows
+The Firebase authentication uses **native platform SDKs** directly:
 
-- **Current Challenge:**
-  - GitLive SDK's phone auth API differs from native Firebase
-  - Proper integration requires Activity/UIViewController context injection
-  - Need to handle platform-specific verification callbacks
+- **Android**: Native Firebase Android SDK with Activity context
+  - `implementation(libs.firebase.auth)`
+  - reCAPTCHA verification via Activity provider
+  - Returns Firebase ID token (JWT)
 
-- **Architecture Ready:**
-  - ✅ All interfaces and data models defined
-  - ✅ Repository layer implemented
-  - ✅ ViewModel integration complete
-  - ✅ UI components ready with method toggle
-  - ⏳ Actual Firebase SDK integration pending
+- **iOS**: Native Firebase iOS SDK via CocoaPods
+  - CocoaPods integration: `pod("FirebaseAuth")`, `pod("FirebaseCore")`
+  - APNs for silent push notifications
+  - Returns Firebase ID token (JWT)
 
-## Firebase Project Setup (For Future Implementation)
+- **Common Layer:**
+  - ✅ Expect/actual pattern for platform implementations
+  - ✅ Domain models and result types (`FirebaseAuthResult<T>`)
+  - ✅ Repository layer with state management
+  - ✅ ViewModel integration for UI
+  - ✅ UI components with auth method toggle
 
-When Firebase Phone Auth is fully implemented, you'll need to configure Firebase projects.
+## Firebase Project Setup
+
+To enable Firebase Phone Auth, configure Firebase projects for each platform:
 
 ### 1. Create Firebase Project
 
@@ -124,6 +128,14 @@ ampairs-mp-app/
 
 ## iOS Configuration
 
+### ✅ Swift Package Manager (Recommended)
+
+Firebase iOS dependencies are managed via **Swift Package Manager** directly in Xcode.
+
+**See [IOS_FIREBASE_SPM_SETUP.md](./IOS_FIREBASE_SPM_SETUP.md) for complete step-by-step setup instructions.**
+
+### Quick Setup Steps
+
 ### 1. Register iOS App in Firebase
 
 1. In Firebase Console, click **Add app** > **iOS**
@@ -170,13 +182,41 @@ ampairs-mp-app/
     └── iosApp/
 ```
 
-### 7. Test iOS App
+### 7. Add Firebase via Swift Package Manager
+
+1. In Xcode: **File → Add Package Dependencies...**
+2. Enter: `https://github.com/firebase/firebase-ios-sdk`
+3. Select version: `11.0.0` (or latest)
+4. Choose products: **FirebaseAuth**, **FirebaseCore**
+5. Click **Add Package**
+
+### 8. Initialize Firebase in iOSApp.swift
+
+```swift
+import SwiftUI
+import FirebaseCore
+
+@main
+struct iOSApp: App {
+    init() {
+        FirebaseApp.configure()
+    }
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+        }
+    }
+}
+```
+
+### 9. Test iOS App
 
 ```bash
-# For Simulator
-./gradlew composeApp:embedAndSignAppleFrameworkForXcode
+# Build the Kotlin framework
+./gradlew :composeApp:embedAndSignAppleFrameworkForXcode
 
-# Then run in Xcode
+# Then run in Xcode (Cmd+R)
 ```
 
 ## Desktop (Future Implementation)
@@ -199,37 +239,45 @@ Desktop will use QR code authentication similar to WhatsApp Web:
 
 ### Authentication Method
 
-Currently, **all platforms use Backend API authentication only**:
+Platforms support the following authentication methods:
 
-- **Android**: Backend API (Firebase stub returns "not supported")
-- **iOS**: Backend API (Firebase stub returns "not supported")
-- **Desktop**: Backend API (Firebase stub returns "not supported")
+- **Android**: Backend API ✅ + Firebase Auth ✅ (toggle available)
+- **iOS**: Backend API ✅ + Firebase Auth ✅ (toggle available if Firebase configured)
+- **Desktop**: Backend API ✅ only (Firebase not supported)
 
-### No UI Toggle
+### Firebase Support Detection
 
-Since `FirebaseAuthProvider.isSupported()` returns `false` on all platforms:
+The app dynamically detects Firebase availability:
 
 ```kotlin
 // LoginViewModel.kt
-val isFirebaseSupported: Boolean = firebaseAuthRepository.isSupported() // Returns false
+val isFirebaseSupported: Boolean = firebaseAuthRepository.isSupported()
 
-// PhoneScreen.kt - Firebase toggle is HIDDEN
-if (viewModel.isFirebaseSupported) { // This is false, so toggle doesn't show
-    // Auth method selector
+// PhoneScreen.kt - Firebase toggle shows if supported
+if (viewModel.isFirebaseSupported) {
+    // Show auth method selector (Backend API / Firebase)
 }
 ```
 
-**Result:** Users see only the phone input and login button, no auth method toggle.
+**On Android**: `isSupported()` always returns `true` (Firebase SDK always available)
 
-### Current User Flow
+**On iOS**: `isSupported()` returns `true` if Firebase is configured via CocoaPods
 
-**Login (Backend API Only):**
-1. User enters phone number
-2. Clicks "Login" (no auth method selection shown)
-3. Backend sends OTP via SMS
-4. User enters OTP code
-5. Backend verifies and authenticates
-6. User logged in
+**On Desktop**: `isSupported()` returns `false` (Firebase not supported)
+
+### User Flow
+
+**Login with Backend API:**
+1. Select "Backend API" (or default if Firebase unavailable)
+2. Enter phone number → OTP sent via backend
+3. Enter OTP code → Backend verifies
+4. Authenticated with backend JWT
+
+**Login with Firebase:**
+1. Select "Firebase Auth" from toggle
+2. Enter phone number → Firebase sends SMS
+3. Enter OTP code → Firebase verifies
+4. Authenticated with Firebase ID token (JWT)
 
 ## Troubleshooting
 
@@ -335,25 +383,26 @@ For issues or questions:
 
 ## Implementation Roadmap
 
-### Phase 1: ✅ **COMPLETE** - Architecture & Stub
+### Phase 1: ✅ **COMPLETE** - Architecture & Foundation
 - ✅ Firebase SDK dependencies configured
 - ✅ Expect/actual pattern for platform implementations
 - ✅ Domain models and result types
 - ✅ Repository and ViewModel integration
 - ✅ UI components with conditional Firebase toggle
-- ✅ Stub implementations (returns "not supported")
 
-### Phase 2: ⏳ **PLANNED** - Android Implementation
-- ⏳ Activity context injection for reCAPTCHA
-- ⏳ GitLive SDK phone auth API integration
-- ⏳ Verification callback handling
-- ⏳ Testing with real phone numbers
+### Phase 2: ✅ **COMPLETE** - Android Implementation
+- ✅ Activity context injection for reCAPTCHA
+- ✅ Native Firebase Android SDK integration
+- ✅ Verification callback handling with PhoneAuthProvider
+- ✅ Firebase ID token (JWT) retrieval
+- ✅ Production-ready with Activity provider pattern
 
-### Phase 3: ⏳ **PLANNED** - iOS Implementation
-- ⏳ APNs configuration
-- ⏳ UIViewController context integration
-- ⏳ iOS-specific verification flows
-- ⏳ Silent push notification handling
+### Phase 3: ✅ **COMPLETE** - iOS Implementation
+- ✅ CocoaPods configuration for Firebase iOS SDK
+- ✅ Native Firebase iOS SDK integration
+- ✅ iOS-specific verification flows with FIRPhoneAuthProvider
+- ✅ Firebase ID token (JWT) retrieval
+- ✅ Production-ready with native Objective-C interop
 
 ### Phase 4: ⏳ **FUTURE** - Desktop QR Code Auth
 - ⏳ QR code generation with session tokens
@@ -364,6 +413,6 @@ For issues or questions:
 ---
 
 **Last Updated**: January 2025
-**Status**: Stub Implementation (Backend API Only)
-**Firebase SDK Version**: GitLive Firebase Kotlin SDK 2.3.0
+**Status**: ✅ Production Ready (Android & iOS)
+**Firebase SDK**: Native Android SDK + CocoaPods iOS SDK
 **KMP Version**: Kotlin 2.2.20

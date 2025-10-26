@@ -8,8 +8,9 @@ Pod::Spec.new do |spec|
     spec.summary                  = 'Ampairs Compose Multiplatform App'
     spec.vendored_frameworks      = 'build/cocoapods/framework/ComposeApp.framework'
     spec.libraries                = 'c++'
-    spec.ios.deployment_target    = '14.1'
-                
+    spec.ios.deployment_target    = '16.0'
+    spec.dependency 'FirebaseAuth', '~> 11.13'
+    spec.dependency 'FirebaseCore', '~> 11.13'
                 
     if !Dir.exist?('build/cocoapods/framework/ComposeApp.framework') || Dir.empty?('build/cocoapods/framework/ComposeApp.framework')
         raise "

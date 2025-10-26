@@ -9,6 +9,7 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
     alias(libs.plugins.googleServices) // Firebase Google Services plugin
+    alias(libs.plugins.kotlinCocoapods)
 }
 
 configurations.all {
@@ -21,15 +22,30 @@ kotlin {
 
     jvm("desktop")
 
-    // iOS targets
-    listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
+
+    cocoapods {
+        summary = "Ampairs Compose Multiplatform App"
+        version = "1.0.0" // 👈 Podspec version
+        homepage = "https://ampairs.in"
+
+        ios.deploymentTarget = "16.0"
+        framework {
             baseName = "ComposeApp"
             isStatic = true
+        }
+//        podfile = project.file("../iosApp/Podfile")
+
+        pod("FirebaseCore") {
+            version = "~> 11.13"
+            extraOpts += listOf("-compiler-option", "-fmodules")
+        }
+
+        pod("FirebaseAuth") {
+            version = "~> 11.13"
+            extraOpts += listOf("-compiler-option", "-fmodules")
         }
     }
 
@@ -177,7 +193,7 @@ android {
         versionName = "1.0"
 
         // Environment configuration
-        buildConfigField("String", "API_BASE_URL", "\"http://192.168.1.6:8080\"")
+        buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.5:8080\"")
         buildConfigField("String", "ENVIRONMENT", "\"dev\"")
     }
 
@@ -191,7 +207,7 @@ android {
     }
     buildTypes {
         val debug by getting {
-            buildConfigField("String", "API_BASE_URL", "\"http://192.168.1.6:8080\"")
+            buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.5:8080\"")
             buildConfigField("String", "ENVIRONMENT", "\"dev\"")
             signingConfig = signingConfigs["release"]
         }
