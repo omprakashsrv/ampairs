@@ -9,6 +9,8 @@ plugins {
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
     alias(libs.plugins.googleServices) // Firebase Google Services plugin
+    alias(libs.plugins.firebaseCrashlytics) // Firebase Crashlytics plugin
+    alias(libs.plugins.firebasePerf) // Firebase Performance Monitoring plugin
     alias(libs.plugins.kotlinCocoapods)
 }
 
@@ -47,6 +49,26 @@ kotlin {
             version = "~> 11.13"
             extraOpts += listOf("-compiler-option", "-fmodules")
         }
+
+        pod("FirebaseAnalytics") {
+            version = "~> 11.13"
+            extraOpts += listOf("-compiler-option", "-fmodules")
+        }
+
+        pod("FirebaseCrashlytics") {
+            version = "~> 11.13"
+            extraOpts += listOf("-compiler-option", "-fmodules")
+        }
+
+        pod("FirebasePerformance") {
+            version = "~> 11.13"
+            extraOpts += listOf("-compiler-option", "-fmodules")
+        }
+
+        pod("FirebaseMessaging") {
+            version = "~> 11.13"
+            extraOpts += listOf("-compiler-option", "-fmodules")
+        }
     }
 
     sourceSets {
@@ -67,6 +89,10 @@ kotlin {
 
                 // Firebase - Native Android SDK
                 implementation(libs.firebase.auth)
+                implementation(libs.google.firebase.analytics)
+                implementation(libs.google.firebase.crashlytics)
+                implementation(libs.google.firebase.perf)
+                implementation(libs.google.firebase.messaging)
             }
         }
 
