@@ -12,7 +12,12 @@ struct ComposeView: UIViewControllerRepresentable {
 
 struct ContentView: View {
     var body: some View {
-        ComposeView()
+        ZStack {
+            ComposeView()
                 .ignoresSafeArea(.keyboard) // Compose has own keyboard handler
+
+            // Firebase Crashlytics test crash button (DEBUG only)
+            CrashTestView()
+        }
     }
 }
