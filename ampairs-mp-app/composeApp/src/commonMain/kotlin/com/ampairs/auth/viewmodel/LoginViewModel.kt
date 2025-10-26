@@ -14,6 +14,9 @@ import com.ampairs.auth.domain.LoginStatus
 import com.ampairs.auth.firebase.FirebaseAuthRepository
 import com.ampairs.common.DeviceService
 import com.ampairs.common.coroutines.DispatcherProvider
+import com.ampairs.common.firebase.analytics.AnalyticsEvents
+import com.ampairs.common.firebase.analytics.AnalyticsParams
+import com.ampairs.common.firebase.analytics.FirebaseAnalytics
 import com.ampairs.common.model.onError
 import com.ampairs.common.model.onSuccess
 import kotlinx.coroutines.Dispatchers
@@ -25,6 +28,7 @@ class LoginViewModel(
     private val tokenRepository: TokenRepository,
     private val deviceService: DeviceService,
     private val firebaseAuthRepository: FirebaseAuthRepository,
+    private val analytics: FirebaseAnalytics,
 ) : ViewModel() {
     var phoneNumber by mutableStateOf("")
     var otp by mutableStateOf("")
@@ -192,6 +196,10 @@ class LoginViewModel(
                     userApiResponse.onSuccess {
                         val userData = this
                         viewModelScope.launch(DispatcherProvider.io) {
+                            // Check if user already exists (login) or is new (sign up)
+                            val existingUser = userRepository.getUserById(userData.id)
+                            val isNewUser = existingUser == null
+
                             // Save user to database
                             userRepository.saveUser(userData)
 
@@ -200,6 +208,17 @@ class LoginViewModel(
                                 userData.id,
                                 authResponse.accessToken, authResponse.refreshToken
                             )
+
+                            // Log analytics event
+                            if (isNewUser) {
+                                analytics.logEvent(AnalyticsEvents.SIGN_UP, mapOf(
+                                    AnalyticsParams.METHOD to "backend_api"
+                                ))
+                            } else {
+                                analytics.logEvent(AnalyticsEvents.LOGIN, mapOf(
+                                    AnalyticsParams.METHOD to "backend_api"
+                                ))
+                            }
 
                             viewModelScope.launch(Dispatchers.Main) {
                                 delay(1000)
@@ -330,6 +349,10 @@ class LoginViewModel(
                                 userApiResponse.onSuccess {
                                     val userData = this
                                     viewModelScope.launch(DispatcherProvider.io) {
+                                        // Check if user already exists (login) or is new (sign up)
+                                        val existingUser = userRepository.getUserById(userData.id)
+                                        val isNewUser = existingUser == null
+
                                         // Save user to database
                                         userRepository.saveUser(userData)
 
@@ -338,6 +361,17 @@ class LoginViewModel(
                                             userData.id,
                                             authResponse.accessToken, authResponse.refreshToken
                                         )
+
+                                        // Log analytics event
+                                        if (isNewUser) {
+                                            analytics.logEvent(AnalyticsEvents.SIGN_UP, mapOf(
+                                                AnalyticsParams.METHOD to "firebase_phone"
+                                            ))
+                                        } else {
+                                            analytics.logEvent(AnalyticsEvents.LOGIN, mapOf(
+                                                AnalyticsParams.METHOD to "firebase_phone"
+                                            ))
+                                        }
 
                                         viewModelScope.launch(Dispatchers.Main) {
                                             delay(1000)

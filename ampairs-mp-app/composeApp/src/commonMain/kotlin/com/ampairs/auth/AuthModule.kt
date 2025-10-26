@@ -40,7 +40,7 @@ val authModule: Module = module {
     viewModelOf(::UserSelectionViewModel)
 
     scope<LoginScope> {
-        scoped { LoginViewModel(get(), get(), get(), get()) }
+        scoped { LoginViewModel(get(), get(), get(), get(), get()) }
     }
 }
 

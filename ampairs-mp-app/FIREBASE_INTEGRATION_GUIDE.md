@@ -142,6 +142,44 @@ fun initKoin(koinApplication: KoinApplication): KoinApplication {
 }
 ```
 
+### Navigation Integration (Automatic Screen Tracking)
+
+**File**: `composeApp/src/commonMain/kotlin/AppNavigation.kt`
+
+Firebase Analytics is integrated with Compose Navigation to automatically track screen views:
+
+```kotlin
+@Composable
+fun AppNavigation() {
+    val navController = rememberNavController()
+    val analytics: FirebaseAnalytics = koinInject()
+
+    // Track screen views with Firebase Analytics
+    LaunchedEffect(navController) {
+        navController.currentBackStackEntryFlow.collectLatest { backStackEntry ->
+            val route = backStackEntry.destination.route
+            if (route != null) {
+                // Extract screen name from route
+                val screenName = extractScreenName(route)
+                val screenClass = route.substringBefore("?").substringBefore("/")
+
+                // Log screen view to Firebase Analytics
+                analytics.setCurrentScreen(screenName, screenClass)
+            }
+        }
+    }
+
+    // ... NavHost setup
+}
+```
+
+**Benefits:**
+- ✅ **Zero boilerplate** - No manual tracking code in each screen
+- ✅ **Consistent naming** - All screens follow same naming convention
+- ✅ **Automatic updates** - New screens tracked automatically
+- ✅ **Type-safe routes** - Uses Kotlin serialization routes
+- ✅ **Parameter handling** - Automatically strips route parameters
+
 ## 🚀 Initialization
 
 ### Android
@@ -167,6 +205,25 @@ fun MainViewController() = ComposeUIViewController {
 
 ### Analytics
 
+#### Automatic Screen Tracking
+
+**Screen views are automatically tracked** via Compose Navigation integration in `AppNavigation.kt`:
+
+```kotlin
+// Automatic tracking - no manual code required!
+// When navigating: navController.navigate(Route.Customer)
+// Analytics logs: Screen: "Customer", Class: "Route.Customer"
+```
+
+**Tracked automatically for all routes:**
+- Main routes: `Route.Login` → "Login"
+- Auth routes: `AuthRoute.Phone` → "Phone"
+- Workspace routes: `WorkspaceRoute.Members` → "Workspace_Members"
+- Customer routes: `CustomerRoute.List` → "Customer_List"
+- Product routes: `ProductRoute.ProductForm` → "Product_ProductForm"
+
+#### Manual Event Tracking
+
 ```kotlin
 import com.ampairs.common.firebase.analytics.FirebaseAnalytics
 import com.ampairs.common.firebase.analytics.AnalyticsEvents
@@ -178,7 +235,7 @@ fun MyScreen() {
     val analytics: FirebaseAnalytics = koinInject()
 
     LaunchedEffect(Unit) {
-        // Log screen view
+        // Manual screen tracking (only if needed - automatic tracking covers most cases)
         analytics.setCurrentScreen("MyScreen", "MyScreenClass")
 
         // Log custom event
@@ -192,6 +249,17 @@ fun MyScreen() {
         analytics.setUserId("user123")
     }
 }
+```
+
+#### Authentication Events
+
+Login, logout, and sign-up events are automatically tracked in `LoginViewModel` and `AppScreenWithHeader`:
+
+```kotlin
+// Automatic tracking on successful authentication
+AnalyticsEvents.LOGIN  // method: "backend_api" or "firebase_phone"
+AnalyticsEvents.SIGN_UP  // method: "backend_api" or "firebase_phone"
+AnalyticsEvents.LOGOUT  // triggered on user logout
 ```
 
 ### Crashlytics
@@ -225,58 +293,67 @@ fun MyViewModel() {
 
 ### Performance Monitoring
 
+#### Automatic Screen Load Tracking
+
+**Screen load times are automatically tracked** via Compose Navigation integration in `AppNavigation.kt`:
+
+```kotlin
+// Automatic tracking - no manual code required!
+// When navigating: navController.navigate(Route.Customer)
+// Performance trace: "screen_load"
+// Attributes: { screen_name: "Customer", screen_class: "Route.Customer" }
+// Auto-stops after 3 seconds or on next navigation
+```
+
+**Console Output:**
+```
+Performance: Screen load trace started - Customer
+Performance: Screen load trace auto-stopped - Customer
+```
+
+#### Manual Performance Tracking
+
+Use helper functions for API and database operations:
+
 ```kotlin
 import com.ampairs.common.firebase.performance.FirebasePerformance
-import com.ampairs.common.firebase.performance.PerformanceTraces
-import com.ampairs.common.firebase.performance.PerformanceAttributes
-import org.koin.compose.koinInject
+import com.ampairs.common.firebase.performance.trackApiPerformance
+import com.ampairs.common.firebase.performance.trackPerformance
 
-@Composable
-fun DataLoadingScreen() {
-    val performance: FirebasePerformance = koinInject()
+class CustomerRepository(
+    private val customerApi: CustomerApi,
+    private val customerDao: CustomerDao,
+    private val performance: FirebasePerformance,
+) {
+    // Track API request performance automatically
+    suspend fun getCustomers(): Response<List<Customer>> {
+        return trackApiPerformance(
+            performance = performance,
+            endpoint = "/api/v1/customers",
+            method = "GET"
+        ) {
+            customerApi.getCustomers()
+        }
+    }
 
-    LaunchedEffect(Unit) {
-        // Create and start a trace
-        val trace = performance.newTrace(PerformanceTraces.SCREEN_LOAD)
-        trace.putAttribute(PerformanceAttributes.SCREEN_NAME, "DataLoading")
-        trace.start()
-
-        try {
-            // Load data
-            val data = loadData()
-            trace.putMetric("items_loaded", data.size.toLong())
-            trace.putAttribute(PerformanceAttributes.SUCCESS, "true")
-        } catch (e: Exception) {
-            trace.putAttribute(PerformanceAttributes.SUCCESS, "false")
-            throw e
-        } finally {
-            // Stop the trace
-            trace.stop()
+    // Track database operations
+    suspend fun saveCustomers(customers: List<Customer>) {
+        trackPerformance(
+            performance = performance,
+            traceName = PerformanceTraces.DATABASE_WRITE,
+            attributes = mapOf(
+                PerformanceAttributes.OPERATION_TYPE to "batch_insert",
+                PerformanceAttributes.ENTITY_NAME to "Customer",
+                "count" to customers.size.toString()
+            )
+        ) {
+            customerDao.insertAll(customers.map { it.toEntity() })
         }
     }
 }
-
-// API Request tracing
-suspend fun fetchCustomers(): List<Customer> {
-    val performance: FirebasePerformance = koinInject()
-    val trace = performance.newTrace(PerformanceTraces.API_REQUEST)
-    trace.putAttribute(PerformanceAttributes.API_ENDPOINT, "/api/v1/customers")
-    trace.putAttribute(PerformanceAttributes.HTTP_METHOD, "GET")
-    trace.start()
-
-    return try {
-        val response = api.getCustomers()
-        trace.putMetric(PerformanceMetrics.ITEMS_COUNT, response.size.toLong())
-        trace.putAttribute(PerformanceAttributes.STATUS_CODE, "200")
-        response
-    } catch (e: Exception) {
-        trace.putAttribute(PerformanceAttributes.STATUS_CODE, "error")
-        throw e
-    } finally {
-        trace.stop()
-    }
-}
 ```
+
+**📖 For complete performance tracking guide, see [FIREBASE_PERFORMANCE_GUIDE.md](./FIREBASE_PERFORMANCE_GUIDE.md)**
 
 ### Firebase Cloud Messaging (FCM)
 

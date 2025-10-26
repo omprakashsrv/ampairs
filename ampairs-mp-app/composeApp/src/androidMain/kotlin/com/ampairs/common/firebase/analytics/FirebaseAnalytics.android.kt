@@ -36,10 +36,10 @@ actual class FirebaseAnalytics {
 
     actual fun setCurrentScreen(screenName: String, screenClass: String?) {
         val params = mapOf(
-            com.google.firebase.analytics.FirebaseAnalytics.Param.SCREEN_NAME to screenName,
-            com.google.firebase.analytics.FirebaseAnalytics.Param.SCREEN_CLASS to (screenClass ?: screenName)
+            AnalyticsParams.SCREEN_NAME to screenName,
+            AnalyticsParams.SCREEN_CLASS to (screenClass ?: screenName)
         )
-        logEvent(com.google.firebase.analytics.FirebaseAnalytics.Event.SCREEN_VIEW, params)
+        logEvent(AnalyticsEvents.SCREEN_VIEW, params)
     }
 
     actual fun setAnalyticsCollectionEnabled(enabled: Boolean) {

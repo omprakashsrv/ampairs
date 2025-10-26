@@ -10,6 +10,8 @@ import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.UserRepository
 import com.ampairs.auth.domain.UserInfo
+import com.ampairs.common.firebase.analytics.AnalyticsEvents
+import com.ampairs.common.firebase.analytics.FirebaseAnalytics
 import com.ampairs.common.navigation.BackNavigationHandler
 import com.ampairs.common.state.AppHeaderStateManager
 import com.ampairs.workspace.db.WorkspaceRepository
@@ -29,6 +31,7 @@ fun AppScreenWithHeader(
     val workspaceRepository: WorkspaceRepository = koinInject()
     val userWorkspaceRepository: UserWorkspaceRepository = koinInject()
     val tokenRepository: TokenRepository = koinInject()
+    val analytics: FirebaseAnalytics = koinInject()
     val headerStateManager = remember { AppHeaderStateManager.instance }
     val headerState by headerStateManager.headerState.collectAsState()
 
@@ -132,6 +135,9 @@ fun AppScreenWithHeader(
             navController.navigate(AuthRoute.UserUpdate)
         },
         onLogout = {
+            // Log analytics event
+            analytics.logEvent(AnalyticsEvents.LOGOUT)
+
             // Clear workspace context and modules before logout
             WorkspaceContextIntegration.clearWorkspaceContext()
             // Clear user data and navigate to login
