@@ -113,7 +113,7 @@ export class FirebaseAuthComponent implements OnInit, OnDestroy {
       const deviceInfo = await this.deviceService.getDeviceInfo();
 
       const authResponse = await this.authService.authenticateWithFirebase({
-        firebase_token: firebaseToken,
+        firebase_id_token: firebaseToken,
         country_code: countryCode,
         phone: phone,
         device_id: deviceInfo.device_id,
@@ -125,11 +125,10 @@ export class FirebaseAuthComponent implements OnInit, OnDestroy {
         user_agent: deviceInfo.user_agent
       });
 
-      // Step 3: Generate deep link with tokens
-      this.redirectToDesktopApp(authResponse.access_token, authResponse.refresh_token);
-
+      // Step 3: Redirect based on platform
       this.step.set('success');
-      this.showMessage('Authentication successful! Redirecting to desktop app...');
+      this.showMessage('Authentication successful!');
+      this.redirectToDesktopApp(authResponse.access_token, authResponse.refresh_token);
     } catch (error: any) {
       this.showMessage(error.message || 'Invalid OTP code', 'error');
     }
@@ -156,13 +155,40 @@ export class FirebaseAuthComponent implements OnInit, OnDestroy {
   }
 
   private redirectToDesktopApp(accessToken: string, refreshToken: string): void {
-    const { scheme, host } = environment.deepLink;
+    // Check if we're in a desktop app context or web browser
+    const isDesktopApp = this.isRunningInDesktopApp();
 
-    // Construct deep link: ampairs://auth?access_token=xxx&refresh_token=yyy
-    const deepLink = `${scheme}://${host}?access_token=${encodeURIComponent(accessToken)}&refresh_token=${encodeURIComponent(refreshToken)}`;
+    if (isDesktopApp) {
+      // Try deep link for desktop app
+      const { scheme, host } = environment.deepLink;
+      const deepLink = `${scheme}://${host}?access_token=${encodeURIComponent(accessToken)}&refresh_token=${encodeURIComponent(refreshToken)}`;
 
-    // Redirect to deep link
-    window.location.href = deepLink;
+      try {
+        window.location.href = deepLink;
+      } catch (error) {
+        console.error('Failed to open deep link:', error);
+        this.redirectToWorkspaces();
+      }
+    } else {
+      // For web browsers, redirect to workspaces page
+      // Tokens are already stored by authService
+      this.redirectToWorkspaces();
+    }
+  }
+
+  private isRunningInDesktopApp(): boolean {
+    // Check if running in Electron or other desktop wrapper
+    const userAgent = navigator.userAgent.toLowerCase();
+    return userAgent.includes('electron') ||
+           userAgent.includes('ampairs-desktop') ||
+           (window as any).isDesktopApp === true;
+  }
+
+  private redirectToWorkspaces(): void {
+    // Use Angular router for navigation
+    setTimeout(() => {
+      window.location.href = '/workspaces';
+    }, 1500);
   }
 
   private maskPhoneNumber(phone: string): string {

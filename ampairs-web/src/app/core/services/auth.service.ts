@@ -44,16 +44,17 @@ export interface AuthResponse {
 }
 
 export interface FirebaseAuthRequest {
-  firebase_token: string;
+  firebase_id_token: string;
   country_code: number;
   phone: string;
-  device_id: string;
-  device_name: string;
-  device_type: string;
-  platform: string;
-  browser: string;
-  os: string;
-  user_agent: string;
+  recaptcha_token?: string | null;
+  device_id?: string;
+  device_name?: string;
+  device_type?: string;
+  platform?: string;
+  browser?: string;
+  os?: string;
+  user_agent?: string;
 }
 
 export interface User {
@@ -233,7 +234,7 @@ export class AuthService {
 
     try {
       const response = await firstValueFrom(
-        this.http.post<AuthResponse>(`${this.AUTH_API_URL}/firebase`, request)
+        this.http.post<AuthResponse>(`${this.AUTH_API_URL}/verify/firebase`, request)
           .pipe(catchError(this.handleError))
       );
 
