@@ -22,12 +22,12 @@ Desktop App → Opens Browser → Web Authentication → Deep Link with Tokens �
 └────────┬────────┘
          │
          │ Opens browser to:
-         │ https://app.ampairs.com/firebase-auth
+         │ https://app.ampairs.com/login
          │
          ▼
 ┌─────────────────────────┐
 │  Web Browser            │
-│  /firebase-auth         │
+│  /login         │
 │                         │
 │  2. Enter Phone Number  │
 │  3. Verify reCAPTCHA    │
@@ -55,7 +55,7 @@ Desktop App → Opens Browser → Web Authentication → Deep Link with Tokens �
          ▼
 ┌─────────────────────────────────────┐
 │  Deep Link                          │
-│  ampairs://auth?                    │
+│  ampairs:/auth?                    │
 │    access_token=xxx&                │
 │    refresh_token=yyy                │
 └────────┬────────────────────────────┘
@@ -80,7 +80,7 @@ Desktop App → Opens Browser → Web Authentication → Deep Link with Tokens �
 
 #### `FirebaseAuthComponent`
 - **Location**: `/src/app/auth/firebase-auth/firebase-auth.component.ts`
-- **Route**: `/firebase-auth`
+- **Route**: `/login`
 - **Purpose**: Handles browser-based Firebase phone authentication for desktop and web apps
 - **Features**:
   - Phone number input with country code selection
@@ -295,7 +295,7 @@ npm start
 
 2. **Navigate to Firebase Auth**:
 ```
-http://localhost:4200/firebase-auth
+http://localhost:4200/login
 ```
 
 3. **Test Flow**:
