@@ -304,7 +304,7 @@ class AuthController @Autowired constructor(
         logger.info("Firebase auth verification request for phone: {}", firebaseAuthRequest.phone)
 
         // Validate reCAPTCHA if token is provided
-        validateRecaptcha(firebaseAuthRequest.recaptchaToken, "firebase_verify", getClientIp(request))
+//        validateRecaptcha(firebaseAuthRequest.recaptchaToken, "firebase_verify", getClientIp(request))
 
         return ApiResponse.success(authService.authenticateWithFirebase(firebaseAuthRequest, request))
     }

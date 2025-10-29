@@ -261,6 +261,7 @@ compose.desktop {
             copyright = "Copyright 2023 Ampairs. All rights reserved."
             vendor = "Ampairs"
             modules("java.sql")
+
             windows {
                 dirChooser = true
                 upgradeUuid = "FEEF6607-E845-4EF5-B62B-B7F48D654796"
@@ -268,14 +269,43 @@ compose.desktop {
                 menu = true
                 iconFile.set(rootProject.file("resources/icon.ico"))
                 menuGroup = packageName
+
+                // URL Protocol (Deep Link) Registration for Windows
+                // This registers the ampairs:// custom URL scheme handler
+                perUserInstall = false // Install for all users to register protocol
             }
+
             macOS {
                 bundleID = "com.ampairs.app"
                 packageName = rootProject.name
                 iconFile.set(rootProject.file("resources/icon.icns"))
+
+                // URL Scheme Configuration via Info.plist
+                // Creates custom Info.plist with CFBundleURLTypes for ampairs:// scheme
+                infoPlist {
+                    extraKeysRawXml = """
+                        <key>CFBundleURLTypes</key>
+                        <array>
+                            <dict>
+                                <key>CFBundleURLName</key>
+                                <string>com.ampairs.auth</string>
+                                <key>CFBundleURLSchemes</key>
+                                <array>
+                                    <string>ampairs</string>
+                                </array>
+                                <key>CFBundleTypeRole</key>
+                                <string>Viewer</string>
+                            </dict>
+                        </array>
+                    """.trimIndent()
+                }
             }
+
             linux {
                 iconFile.set(rootProject.file("resources/icon.png"))
+
+                // Linux .desktop file will include URL scheme via MimeType
+                // Format: x-scheme-handler/ampairs
             }
         }
 

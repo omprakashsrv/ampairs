@@ -2,6 +2,7 @@ package com.ampairs.auth
 
 import AuthRoute
 import Route
+import androidx.compose.runtime.Composable
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
@@ -16,6 +17,7 @@ import com.ampairs.auth.ui.PhoneScreen
 import com.ampairs.auth.ui.UserSelectionScreen
 import com.ampairs.auth.ui.UserUpdateScreen
 import org.koin.compose.koinInject
+import getPlatformName
 
 fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () -> Unit) {
 
@@ -44,8 +46,9 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
                     }
                 },
                 onAddNewUser = {
-                    // Navigate directly to phone screen to add new user
-                    navigator.navigate(AuthRoute.Phone)
+                    // Navigate to appropriate auth screen based on platform
+                    val authRoute = getAuthRouteForPlatform()
+                    navigator.navigate(authRoute)
                 },
                 onNoUsers = {
                     // If no users, go directly to login
@@ -96,10 +99,39 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
                         }
                     }
                 } else {
-                    navigator.navigate(AuthRoute.Phone)
+                    // Navigate to appropriate auth screen based on platform
+                    val authRoute = getAuthRouteForPlatform()
+                    navigator.navigate(authRoute)
                 }
             }
         }
+
+        // Desktop Browser Authentication Route
+        composable<AuthRoute.DesktopBrowserAuth> {
+            val tokenRepository = koinInject<TokenRepository>()
+            val userWorkspaceRepository = koinInject<UserWorkspaceRepository>()
+
+            DesktopBrowserAuthScreen {
+                // After successful browser authentication, check workspace status
+                kotlinx.coroutines.runBlocking {
+                    val currentUserId = tokenRepository.getCurrentUserId()
+                    if (currentUserId != null) {
+                        val hasSelectedWorkspace =
+                            userWorkspaceRepository.getWorkspaceIdForUser(currentUserId).isNotBlank()
+                        if (hasSelectedWorkspace) {
+                            // User has selected workspace, go to main app
+                            onLoginSuccess()
+                        } else {
+                            // User needs to select workspace, go to workspace selection
+                            navigator.navigate(Route.Workspace) {
+                                popUpTo(Route.Login) { inclusive = true }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         composable<AuthRoute.Phone> {
             val tokenRepository = koinInject<TokenRepository>()
             val userWorkspaceRepository = koinInject<UserWorkspaceRepository>()
@@ -182,3 +214,21 @@ fun NavGraphBuilder.authNavigation(navigator: NavController, onLoginSuccess: () 
         }
     }
 }
+
+/**
+ * Get the appropriate authentication route for the current platform
+ * Desktop uses browser-based authentication, mobile uses phone authentication
+ */
+private fun getAuthRouteForPlatform(): AuthRoute {
+    return when (getPlatformName()) {
+        "Desktop" -> AuthRoute.DesktopBrowserAuth
+        else -> AuthRoute.Phone
+    }
+}
+
+/**
+ * Desktop Browser Authentication Screen - expect/actual pattern
+ * This allows the common code to reference it, but only desktop provides implementation
+ */
+@Composable
+expect fun DesktopBrowserAuthScreen(onAuthSuccess: () -> Unit)

@@ -5,12 +5,14 @@ export const environment = {
     siteKey: 'YOUR_PRODUCTION_RECAPTCHA_SITE_KEY' // Replace with your production site key
   },
   firebase: {
-    apiKey: 'YOUR_PROD_FIREBASE_API_KEY',
-    authDomain: 'YOUR_PROD_PROJECT.firebaseapp.com',
-    projectId: 'YOUR_PROD_PROJECT_ID',
-    storageBucket: 'YOUR_PROD_PROJECT.appspot.com',
-    messagingSenderId: 'YOUR_PROD_SENDER_ID',
-    appId: 'YOUR_PROD_APP_ID'
+    apiKey: "AIzaSyARVXwwTDBi9XRf1bsCQVVVr2qRWwbL46Q",
+    authDomain: "ampairs.firebaseapp.com",
+    databaseURL: "https://ampairs-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "ampairs",
+    storageBucket: "ampairs.firebasestorage.app",
+    messagingSenderId: "682032206651",
+    appId: "1:682032206651:web:176f7967f3515d2aa55d1e",
+    measurementId: "G-LZ0PZSNL9H"
   },
   deepLink: {
     scheme: 'ampairs',

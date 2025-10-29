@@ -41,14 +41,14 @@ Desktop App → Opens Browser → Web Authentication → Deep Link with Tokens �
          │ for Backend JWT Tokens
          │
          ▼
-┌─────────────────────────┐
-│  Backend API            │
-│  POST /auth/v1/firebase │
-│                         │
-│  Returns:               │
-│  - access_token         │
-│  - refresh_token        │
-└────────┬────────────────┘
+┌───────────────────────────────┐
+│  Backend API                  │
+│  POST /auth/v1/verify/firebase│
+│                               │
+│  Returns:                     │
+│  - access_token               │
+│  - refresh_token              │
+└────────┬──────────────────────┘
          │
          │ Redirect with tokens
          │
@@ -101,16 +101,16 @@ Desktop App → Opens Browser → Web Authentication → Deep Link with Tokens �
 #### `AuthService.authenticateWithFirebase()`
 - **Location**: `/src/app/core/services/auth.service.ts`
 - **Purpose**: Exchange Firebase token for backend JWT tokens
-- **Endpoint**: `POST /auth/v1/firebase`
+- **Endpoint**: `POST /auth/v1/verify/firebase`
 
 ### 2. Backend API Endpoint (To Be Implemented)
 
-**Endpoint**: `POST /auth/v1/firebase`
+**Endpoint**: `POST /auth/v1/verify/firebase`
 
 **Request Body**:
 ```json
 {
-  "firebase_token": "eyJhbGc...",
+  "firebase_id_token": "eyJhbGc...",
   "country_code": 91,
   "phone": "9876543210",
   "device_id": "DESKTOP_ABC123",
@@ -146,10 +146,10 @@ Desktop App → Opens Browser → Web Authentication → Deep Link with Tokens �
 
 **Example Backend Implementation (Kotlin/Spring Boot)**:
 ```kotlin
-@PostMapping("/firebase")
+@PostMapping("/verify/firebase")
 fun authenticateWithFirebase(@RequestBody request: FirebaseAuthRequest): ApiResponse<AuthResponse> {
     // 1. Verify Firebase token
-    val firebaseToken = FirebaseAuth.getInstance().verifyIdToken(request.firebase_token)
+    val firebaseToken = FirebaseAuth.getInstance().verifyIdToken(request.firebase_id_token)
     val phoneNumber = firebaseToken.phoneNumber
 
     // 2. Find or create user
@@ -353,7 +353,7 @@ ampairs://auth?access_token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...&refresh_toke
 - Test deep link manually in browser
 
 #### 3. Token Exchange Fails
-- Verify backend endpoint `/auth/v1/firebase` is implemented
+- Verify backend endpoint `/auth/v1/verify/firebase` is implemented
 - Check Firebase token is valid
 - Verify device information is being sent correctly
 

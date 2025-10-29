@@ -453,4 +453,84 @@ class LoginViewModel(
         }
     }
 
+    // ========== Desktop Browser Authentication Methods ==========
+
+    /**
+     * Handle authentication tokens received from browser deep link
+     * This is called when the desktop app receives tokens via ampairs://auth deep link
+     */
+    fun handleBrowserAuthTokens(
+        accessToken: String,
+        refreshToken: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        loading = true
+        progressMessage = "Completing authentication..."
+
+        viewModelScope.launch(DispatcherProvider.io) {
+            try {
+                // Create dummy user session for token operations
+                tokenRepository.createDummyUserSession()
+
+                // Store tokens to dummy session
+                tokenRepository.updateToken(accessToken, refreshToken)
+
+                // Fetch user information using the tokens
+                val userApiResponse = userRepository.getUserApi()
+                userApiResponse.onSuccess {
+                    val userData = this
+                    viewModelScope.launch(DispatcherProvider.io) {
+                        // Check if user already exists (login) or is new (sign up)
+                        val existingUser = userRepository.getUserById(userData.id)
+                        val isNewUser = existingUser == null
+
+                        // Save user to database
+                        userRepository.saveUser(userData)
+
+                        // Replace dummy session with real user session and tokens
+                        tokenRepository.updateDummySessionWithRealUser(
+                            userData.id,
+                            accessToken,
+                            refreshToken
+                        )
+
+                        // Set Firebase Analytics user ID
+                        analytics.setUserId(userData.id)
+
+                        // Log analytics event
+                        if (isNewUser) {
+                            analytics.logEvent(AnalyticsEvents.SIGN_UP, mapOf(
+                                AnalyticsParams.METHOD to "desktop_browser"
+                            ))
+                        } else {
+                            analytics.logEvent(AnalyticsEvents.LOGIN, mapOf(
+                                AnalyticsParams.METHOD to "desktop_browser"
+                            ))
+                        }
+
+                        viewModelScope.launch(Dispatchers.Main) {
+                            loading = false
+                            progressMessage = ""
+                            delay(500) // Small delay for better UX
+                            onSuccess()
+                        }
+                    }
+                }.onError {
+                    viewModelScope.launch(Dispatchers.Main) {
+                        loading = false
+                        progressMessage = ""
+                        onError("Failed to fetch user information: ${this@onError.message}")
+                    }
+                }
+            } catch (e: Exception) {
+                viewModelScope.launch(Dispatchers.Main) {
+                    loading = false
+                    progressMessage = ""
+                    onError("Authentication error: ${e.message}")
+                }
+            }
+        }
+    }
+
 }
