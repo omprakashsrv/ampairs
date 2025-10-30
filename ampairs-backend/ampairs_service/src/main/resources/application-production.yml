@@ -170,8 +170,8 @@ application:
 google:
   recaptcha:
     enabled: ${RECAPTCHA_ENABLED:true}
-    secret-key: ${RECAPTCHA_SECRET_KEY}
-    site-key: ${RECAPTCHA_SITE_KEY}
+    secret-key: ${RECAPTCHA_SECRET_KEY:6LdcbvwrAAAAAJdaTJTrgDoUpvs5QKL0mDUpxK_y}
+    site-key: ${RECAPTCHA_SITE_KEY:6LdcbvwrAAAAAIOZ2tSGVBeX3FuW3nsmm4zF9MBn}
     min-score: ${RECAPTCHA_MIN_SCORE:0.7}
     timeout-ms: ${RECAPTCHA_TIMEOUT:5000}
     verify-url: ${RECAPTCHA_VERIFY_URL:https://www.google.com/recaptcha/api/siteverify}

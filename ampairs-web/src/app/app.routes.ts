@@ -10,10 +10,10 @@ export const routes: Routes = [
     pathMatch: 'full'
   },
   // Authentication routes (without main layout)
-  {
-    path: 'login',
-    loadComponent: () => import('./auth/login/login.component').then(m => m.LoginComponent)
-  },
+  // {
+  //   path: 'login',
+  //   loadComponent: () => import('./auth/login/login.component').then(m => m.LoginComponent)
+  // },
   {
     path: 'verify-otp',
     loadComponent: () => import('./auth/verify-otp/verify-otp.component').then(m => m.VerifyOtpComponent)
@@ -21,6 +21,10 @@ export const routes: Routes = [
   {
     path: 'accept-invitation/:token',
     loadComponent: () => import('./pages/accept-invitation/accept-invitation.component').then(m => m.AcceptInvitationComponent)
+  },
+  {
+    path: 'login',
+    loadComponent: () => import('./auth/firebase-auth/firebase-auth.component').then(m => m.FirebaseAuthComponent)
   },
   // Authenticated routes (with main layout)
   {

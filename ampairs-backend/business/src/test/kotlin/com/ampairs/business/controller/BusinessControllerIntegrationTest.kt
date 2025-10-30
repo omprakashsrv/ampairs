@@ -66,7 +66,7 @@ class BusinessControllerIntegrationTest {
     fun `should create business profile successfully`() {
         val request = BusinessCreateRequest(
             name = "Tech Solutions Pvt Ltd",
-            businessType = BusinessType.RETAIL,
+            businessType = BusinessType.RETAIL.name,
             email = "contact@techsolutions.com",
             phone = "+911234567890",
             timezone = "Asia/Kolkata",
@@ -90,7 +90,7 @@ class BusinessControllerIntegrationTest {
         // Create business first
         val request = BusinessCreateRequest(
             name = "Retail Store",
-            businessType = BusinessType.RETAIL
+            businessType = BusinessType.RETAIL.name
         )
 
         mockMvc.perform(
@@ -118,7 +118,7 @@ class BusinessControllerIntegrationTest {
     fun `should return 409 when creating duplicate business`() {
         val request = BusinessCreateRequest(
             name = "First Business",
-            businessType = BusinessType.RETAIL
+            businessType = BusinessType.RETAIL.name
         )
 
         // Create first business
@@ -150,7 +150,7 @@ class BusinessControllerIntegrationTest {
         // Create business
         val request = BusinessCreateRequest(
             name = "Test Business",
-            businessType = BusinessType.RETAIL
+            businessType = BusinessType.RETAIL.name
         )
 
         mockMvc.perform(

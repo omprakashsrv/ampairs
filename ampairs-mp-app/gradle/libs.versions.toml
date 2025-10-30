@@ -7,10 +7,10 @@ androidx-activity = "1.11.0"
 androidx-core = "1.17.0"
 
 compose-tooling = "1.7.6"
-compose-plugin = "1.9.0"
-kotlin = "2.2.20"
+compose-plugin = "1.9.1"
+kotlin = "2.2.21"
 ksp = "2.2.20-2.0.3"
-androidx-room = "2.8.1"
+androidx-room = "2.8.3"
 androidx-sqlite-bundled = "2.6.1"
 wire = "5.4.0"
 coil = "3.3.0"
@@ -19,7 +19,7 @@ haze = "1.6.10"
 kotlinx-dateTime = "0.7.1"
 kotlinx = "1.10.2"
 
-ktor = "3.3.0"
+ktor = "3.3.1"
 koin = "4.1.1"
 koin-compose = "4.1.1"
 paging-common = "3.3.6"
@@ -30,27 +30,32 @@ splash-screen = "1.2.0-rc01"
 uuid = "0.8.4"
 adaptive = "1.1.2"
 kermit = "2.0.8"
-navigation-compose = "2.9.0"
-lifecycle-viewmodel = "2.9.4"
-savedstate = "1.3.4"
+navigation-compose = "2.9.1"
+lifecycle-viewmodel = "2.9.5"
+savedstate = "1.3.5"
 kotlin-inject = "0.8.0"
 crashkios = "0.9.0"
-firebase-crashlytics = "19.4.4"
-firebase-analytics = "23.0.0"
-firebase-perf = "22.0.2"
+firebase-crashlytics = "19.2.1"
+firebase-analytics = "22.1.2"
+firebase-perf = "21.0.2"
+firebase-messaging = "24.1.0"
 moko-permissions = "0.20.1"
 datastore = "1.1.7"
 material-kolor = "3.0.1"
 androidx-work-runtime = "2.10.5"
 store5 = "5.1.0-alpha07"
 jmapviewer = "2.24"
-filekit = "0.11.0"
+filekit = "0.12.0"
 play-services-location = "21.3.0"
-maps-compose = "6.12.0"
+maps-compose = "6.12.1"
 accompanist-permissions = "0.37.3"
 play-services-coroutines = "1.10.2"
 krossbow = "9.3.0"
-
+firebase-bom = "34.4.0"
+firebase-auth = "24.0.1"
+google-services = "4.4.4"
+firebase-crashlytics-gradle = "3.0.2"
+firebase-perf-gradle = "1.4.2"
 
 [libraries]
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
@@ -96,8 +101,9 @@ kermit = { group = "co.touchlab", name = "kermit", version.ref = "kermit" }
 kotlin-inject-runtime = { group = "me.tatarka.inject", name = "kotlin-inject-runtime", version.ref = "kotlin-inject" }
 crashkios-crashlytics = { group = "co.touchlab.crashkios", name = "crashlytics", version.ref = "crashkios" }
 google-firebase-crashlytics = { group = "com.google.firebase", name = "firebase-crashlytics-ktx", version.ref = "firebase-crashlytics" }
-google-firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics", version.ref = "firebase-analytics" }
-google-firebase-perf = { group = "com.google.firebase", name = "firebase-perf", version.ref = "firebase-perf" }
+google-firebase-analytics = { group = "com.google.firebase", name = "firebase-analytics-ktx", version.ref = "firebase-analytics" }
+google-firebase-perf = { group = "com.google.firebase", name = "firebase-perf-ktx", version.ref = "firebase-perf" }
+google-firebase-messaging = { group = "com.google.firebase", name = "firebase-messaging-ktx", version.ref = "firebase-messaging" }
 
 moko-permissions-core = { module = "dev.icerock.moko:permissions", version.ref = "moko-permissions" }
 moko-permissions-compose = { module = "dev.icerock.moko:permissions-compose", version.ref = "moko-permissions" }
@@ -139,6 +145,10 @@ play-services-coroutines = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-
 maps-compose = { module = "com.google.maps.android:maps-compose", version.ref = "maps-compose" }
 accompanist-permissions = { module = "com.google.accompanist:accompanist-permissions", version.ref = "accompanist-permissions" }
 
+# Native Firebase for Android
+firebase-bom = { module = "com.google.firebase:firebase-bom", version.ref = "firebase-bom" }
+firebase-auth = { module = "com.google.firebase:firebase-auth", version.ref = "firebase-auth" }
+
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
 androidLibrary = { id = "com.android.library", version.ref = "agp" }
@@ -149,6 +159,10 @@ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 room = { id = "androidx.room", version.ref = "androidx-room" }
 wire = { id = "com.squareup.wire", version.ref = "wire" }
+googleServices = { id = "com.google.gms.google-services", version.ref = "google-services" }
+firebaseCrashlytics = { id = "com.google.firebase.crashlytics", version.ref = "firebase-crashlytics-gradle" }
+firebasePerf = { id = "com.google.firebase.firebase-perf", version.ref = "firebase-perf-gradle" }
+kotlinCocoapods = { id = "org.jetbrains.kotlin.native.cocoapods", version.ref = "kotlin" }
 
 [bundles]
 ktor-common = ["ktor-client-core", "ktor-client-logging", "ktor-client-serialization", "ktor-client-contentNegotiation", "ktor-client-auth", "ktor-client-cio", "ktor-client-websockets"]

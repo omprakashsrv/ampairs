@@ -37,6 +37,9 @@ class User : BaseDomain(), UserDetails, CoreUser {
     @Column(name = "active", nullable = false)
     var active: Boolean = true
 
+    @Column(name = "firebase_uid", length = 128)
+    var firebaseUid: String? = null
+
     // Core User interface implementation
     override val isActive: Boolean
         get() = active

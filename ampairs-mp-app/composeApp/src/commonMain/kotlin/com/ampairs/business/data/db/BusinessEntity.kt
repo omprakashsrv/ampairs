@@ -79,6 +79,8 @@ data class BusinessEntity(
     val createdBy: String?,
     @ColumnInfo(name = "updated_by")
     val updatedBy: String?,
+    @ColumnInfo(name = "custom_attributes_json")
+    val customAttributesJson: String?,
     val synced: Boolean,
     @ColumnInfo(name = "last_sync_epoch")
     val lastSyncEpoch: Long,
@@ -139,6 +141,8 @@ fun Business.toEntity(
         updatedAt = updatedAt,
         createdBy = createdBy,
         updatedBy = updatedBy,
+        customAttributesJson = customAttributes?.takeIf { it.isNotEmpty() }
+            ?.let { jsonFormatter.encodeToString(mapSerializer, it) },
         synced = markSynced,
         lastSyncEpoch = if (markSynced) nowEpochMillis else 0L,
         localCreatedAt = nowEpochMillis,
@@ -152,6 +156,10 @@ fun BusinessEntity.toDomain(): Business {
     } ?: emptyList()
 
     val taxSettings = taxSettingsJson?.let {
+        runCatching { jsonFormatter.decodeFromString(mapSerializer, it) }.getOrNull()
+    }
+
+    val customAttributes = customAttributesJson?.let {
         runCatching { jsonFormatter.decodeFromString(mapSerializer, it) }.getOrNull()
     }
 
@@ -190,6 +198,7 @@ fun BusinessEntity.toDomain(): Business {
         createdAt = createdAt,
         updatedAt = updatedAt,
         createdBy = createdBy,
-        updatedBy = updatedBy
+        updatedBy = updatedBy,
+        customAttributes = customAttributes
     )
 }

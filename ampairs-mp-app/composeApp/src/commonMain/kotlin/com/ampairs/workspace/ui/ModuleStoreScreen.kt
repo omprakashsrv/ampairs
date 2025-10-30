@@ -190,12 +190,12 @@ fun ModuleStoreScreen(
                     1 -> InstalledTab(
                         modules = filteredInstalledModules,
                         onModuleClick = { module ->
-                            selectedModuleId = module.id
+                            selectedModuleId = module.moduleCode
                             showModuleDetails = true
                         },
-                        onUninstall = { moduleId ->
+                        onUninstall = { moduleCode ->
                             viewModel.clearError()
-                            viewModel.uninstallModule(moduleId) { response ->
+                            viewModel.uninstallModule(moduleCode) { response ->
                                 if (response != null && response.success) {
                                     // Refresh lists after uninstallation
                                     viewModel.loadInstalledModules()
@@ -319,7 +319,7 @@ private fun InstalledTab(
                 InstalledModuleCard(
                     module = module,
                     onClick = { onModuleClick(module) },
-                    onUninstall = { onUninstall(module.id) },
+                    onUninstall = { onUninstall(module.moduleCode) },
                     onNavigate = { onNavigate(module.moduleCode) }
                 )
             }

@@ -3,6 +3,7 @@ package com.ampairs.auth
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.ampairs.auth.db.AuthRoomDatabase
+import com.ampairs.auth.firebase.FirebaseAuthProvider
 import com.ampairs.auth.service.RecaptchaConfig
 import com.ampairs.auth.service.RecaptchaService
 import com.ampairs.common.coroutines.DispatcherProvider
@@ -30,6 +31,9 @@ val authPlatformModule: Module = module {
             )
         )
     }
+
+    // Firebase authentication provider
+    single { FirebaseAuthProvider() }
 
     // TODO: Add iOS-specific certificate pinning and security components when needed
     // For now, providing minimal implementation to get compilation working

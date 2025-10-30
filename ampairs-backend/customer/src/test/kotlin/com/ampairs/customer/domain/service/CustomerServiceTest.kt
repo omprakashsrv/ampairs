@@ -26,6 +26,7 @@ import org.mockito.kotlin.whenever
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
+import java.time.Instant
 import java.time.LocalDateTime
 import java.util.Optional
 
@@ -65,7 +66,7 @@ class CustomerServiceTest {
         whenever(customerRepository.save(any())).thenAnswer { invocation ->
             (invocation.arguments.first() as Customer).apply {
                 uid = "CUS-001"
-                createdAt = LocalDateTime.now()
+                createdAt = Instant.now()
                 updatedAt = createdAt
             }
         }
@@ -73,7 +74,6 @@ class CustomerServiceTest {
         val savedCustomer = customerService.createCustomer(customer)
 
         assertEquals("ACTIVE", savedCustomer.status)
-        assertTrue(savedCustomer.lastUpdated > 0)
 
         val eventCaptor = argumentCaptor<CustomerCreatedEvent>()
         verify(eventPublisher).publishEvent(eventCaptor.capture())

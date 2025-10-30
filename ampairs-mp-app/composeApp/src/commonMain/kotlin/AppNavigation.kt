@@ -15,6 +15,11 @@ import androidx.navigation.toRoute
 import com.ampairs.auth.authNavigation
 import com.ampairs.business.businessNavigation
 import com.ampairs.common.UnauthenticatedHandler
+import com.ampairs.common.firebase.analytics.FirebaseAnalytics
+import com.ampairs.common.firebase.performance.FirebasePerformance
+import com.ampairs.common.firebase.performance.PerformanceAttributes
+import com.ampairs.common.firebase.performance.PerformanceTraces
+import com.ampairs.common.firebase.performance.Trace
 import com.ampairs.common.ui.AppScreenWithHeader
 import com.ampairs.customer.ui.CustomerCreateRoute
 import com.ampairs.customer.ui.StateListRoute
@@ -27,6 +32,7 @@ import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.GlobalNavigationManager
 import com.ampairs.workspace.workspaceNavigation
 import kotlinx.coroutines.flow.collectLatest
+import org.koin.compose.koinInject
 
 @Composable
 fun AppNavigation(
@@ -35,7 +41,50 @@ fun AppNavigation(
 ) {
     val navController = rememberNavController()
     val workspaceManager = WorkspaceContextManager.getInstance()
+    val analytics: FirebaseAnalytics = koinInject()
+    val performance: FirebasePerformance = koinInject()
 
+    // Track active performance traces
+    var activeScreenTrace: Trace? = null
+
+    // Track screen views with Firebase Analytics and Performance
+    LaunchedEffect(navController) {
+        navController.currentBackStackEntryFlow.collectLatest { backStackEntry ->
+            val route = backStackEntry.destination.route
+            if (route != null) {
+                // Stop previous screen trace
+                activeScreenTrace?.let { trace ->
+                    trace.stop()
+                    println("Performance: Screen load trace stopped")
+                }
+
+                // Extract screen name from route
+                val screenName = extractScreenName(route)
+                val screenClass = route.substringBefore("?").substringBefore("/")
+
+                // Log screen view to Firebase Analytics
+                analytics.setCurrentScreen(screenName, screenClass)
+                println("Analytics: Screen view tracked - $screenName")
+
+                // Start new screen load performance trace
+                activeScreenTrace = performance.newTrace(PerformanceTraces.SCREEN_LOAD).apply {
+                    putAttribute(PerformanceAttributes.SCREEN_NAME, screenName)
+                    putAttribute(PerformanceAttributes.SCREEN_CLASS, screenClass)
+                    start()
+                    println("Performance: Screen load trace started - $screenName")
+                }
+
+                // Auto-stop trace after 3 seconds (screens should load faster than this)
+                kotlinx.coroutines.delay(3000)
+                activeScreenTrace?.let { trace ->
+                    trace.putAttribute(PerformanceAttributes.SUCCESS, "true")
+                    trace.stop()
+                    activeScreenTrace = null
+                    println("Performance: Screen load trace auto-stopped - $screenName")
+                }
+            }
+        }
+    }
 
     // Set up navigation callback for desktop menu integration
     LaunchedEffect(navController) {
@@ -117,6 +166,10 @@ fun AppNavigation(
                     onCreateCustomer = {
                         navController.navigate(CustomerCreateRoute())
                     },
+                    onFormConfig = {
+                        println("AppNavigation Route.Customer: Navigating to FormConfig")
+                        navController.navigate(Route.FormConfig("customer"))
+                    },
                     modifier = Modifier.padding(paddingValues)
                 )
             }
@@ -134,6 +187,10 @@ fun AppNavigation(
                     },
                     onCreateProduct = {
                         navController.navigate(ProductRoute.ProductForm())
+                    },
+                    onFormConfig = {
+                        println("AppNavigation Route.Product: Navigating to FormConfig")
+                        navController.navigate(Route.FormConfig("product"))
                     },
                     modifier = Modifier.padding(paddingValues)
                 )
@@ -178,6 +235,74 @@ fun AppNavigation(
         // inventoryNavigation(navController) { }
         // orderNavigation(navController) { }
         // invoiceNavigation(navController) { }
+    }
+}
+
+/**
+ * Extract a human-readable screen name from a navigation route
+ * Examples:
+ * - "Route.Login" → "Login"
+ * - "AuthRoute.Phone" → "Phone"
+ * - "WorkspaceRoute.Members/{workspaceId}" → "Workspace_Members"
+ * - "com.ampairs.customer.ui.CustomerDetailRoute/{customerId}" → "Customer_Detail"
+ */
+private fun extractScreenName(route: String): String {
+    // Remove path parameters and query parameters
+    val cleanRoute = route
+        .substringBefore("?")
+        .substringBefore("/{")
+        .substringBefore("/{")
+
+    return when {
+        // Handle main routes (Route.*)
+        cleanRoute.startsWith("Route.") -> {
+            cleanRoute.substringAfter("Route.")
+        }
+        // Handle auth routes (AuthRoute.*)
+        cleanRoute.startsWith("AuthRoute.") -> {
+            cleanRoute.substringAfter("AuthRoute.")
+        }
+        // Handle workspace routes (WorkspaceRoute.*)
+        cleanRoute.startsWith("WorkspaceRoute.") -> {
+            "Workspace_" + cleanRoute.substringAfter("WorkspaceRoute.")
+        }
+        // Handle business routes (BusinessRoute.*)
+        cleanRoute.startsWith("BusinessRoute.") -> {
+            "Business_" + cleanRoute.substringAfter("BusinessRoute.")
+        }
+        // Handle customer routes (CustomerRoute.* or com.ampairs.customer.ui.*)
+        cleanRoute.startsWith("CustomerRoute.") -> {
+            "Customer_" + cleanRoute.substringAfter("CustomerRoute.")
+        }
+        cleanRoute.contains("com.ampairs.customer.ui.") -> {
+            val screenName = cleanRoute.substringAfterLast(".")
+                .replace("Route", "")
+            "Customer_$screenName"
+        }
+        // Handle product routes
+        cleanRoute.startsWith("ProductRoute.") -> {
+            "Product_" + cleanRoute.substringAfter("ProductRoute.")
+        }
+        cleanRoute.contains("com.ampairs.product.") -> {
+            val screenName = cleanRoute.substringAfterLast(".")
+                .replace("Route", "")
+            "Product_$screenName"
+        }
+        // Handle tax routes
+        cleanRoute.startsWith("TaxRoute.") -> {
+            "Tax_" + cleanRoute.substringAfter("TaxRoute.")
+        }
+        cleanRoute.contains("com.ampairs.tax.") -> {
+            val screenName = cleanRoute.substringAfterLast(".")
+                .replace("Route", "")
+            "Tax_$screenName"
+        }
+        // Default: use the last part of the route
+        else -> {
+            cleanRoute.substringAfterLast(".")
+                .replace("Route", "")
+                .ifEmpty { cleanRoute }
+        }
     }
 }
 

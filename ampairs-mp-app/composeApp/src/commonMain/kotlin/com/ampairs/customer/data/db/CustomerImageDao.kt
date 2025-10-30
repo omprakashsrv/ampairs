@@ -49,6 +49,12 @@ interface CustomerImageDao {
     @Query("SELECT * FROM customer_images WHERE customer_id = :customerId AND is_primary = 1 LIMIT 1")
     fun observePrimaryCustomerImage(customerId: String): Flow<CustomerImageEntity?>
 
+    @Query("SELECT * FROM customer_images WHERE is_primary = 1")
+    suspend fun getAllPrimaryImages(): List<CustomerImageEntity>
+
+    @Query("SELECT * FROM customer_images WHERE is_primary = 1 AND customer_id IN (:customerIds)")
+    suspend fun getPrimaryImagesForCustomers(customerIds: List<String>): List<CustomerImageEntity>
+
     // Sync-related queries
 
     @Query("SELECT * FROM customer_images WHERE synced = 0 ORDER BY local_created_at ASC")

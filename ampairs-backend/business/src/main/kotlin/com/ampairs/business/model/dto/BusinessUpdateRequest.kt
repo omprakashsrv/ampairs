@@ -78,6 +78,9 @@ data class BusinessUpdateRequest(
     @field:Size(max = 100, message = "Registration number cannot exceed 100 characters")
     val registrationNumber: String? = null,
 
+    // Custom Attributes
+    val customAttributes: Map<String, Any>? = null,
+
     // Operational Config
     @field:Size(max = 50, message = "Timezone cannot exceed 50 characters")
     val timezone: String? = null,

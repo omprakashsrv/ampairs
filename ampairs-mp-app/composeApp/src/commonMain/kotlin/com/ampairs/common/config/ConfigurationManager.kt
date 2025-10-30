@@ -52,6 +52,12 @@ object ConfigurationManager {
         get() = current.environment == Environment.PRODUCTION
 
     /**
+     * Web authentication URL for desktop browser-based authentication
+     */
+    val webAuthUrl: String
+        get() = current.webAuthUrl
+
+    /**
      * Build complete API URL
      */
     fun getApiUrl(path: String): String = current.getApiUrl(path)
@@ -65,6 +71,7 @@ object ConfigurationManager {
             appendLine("Environment: ${current.environment}")
             appendLine("API Base URL: ${current.apiBaseUrl}")
             appendLine("WebSocket URL: ${current.wsBaseUrl}")
+            appendLine("Web Auth URL: ${current.webAuthUrl}")
             appendLine("Debug Mode: ${current.isDebug}")
             appendLine("============================")
         }

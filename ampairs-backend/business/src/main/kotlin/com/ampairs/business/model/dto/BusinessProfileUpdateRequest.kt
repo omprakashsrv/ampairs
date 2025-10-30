@@ -58,5 +58,7 @@ data class BusinessProfileUpdateRequest(
     @field:Size(max = 100, message = "Registration number must not exceed 100 characters")
     val registrationNumber: String? = null,
 
+    val customAttributes: Map<String, Any>? = null,
+
     val active: Boolean = true
 )

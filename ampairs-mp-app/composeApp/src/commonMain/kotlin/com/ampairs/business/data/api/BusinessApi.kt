@@ -4,30 +4,19 @@ import com.ampairs.business.domain.*
 
 /**
  * Business Management API interface.
- * Provides access to business configuration endpoints.
+ * Maps to backend endpoints at /api/v1/business
+ *
+ * Backend uses unified endpoint - all updates go through single PUT endpoint
  */
 interface BusinessApi {
-    // Creation
-    suspend fun createBusinessProfile(request: BusinessCreateRequest): Result<BusinessProfile>
-    suspend fun checkBusinessExists(): Result<Boolean>
+    // Main unified endpoints (matches backend BusinessController)
+    suspend fun getBusiness(): Result<Business>
+    suspend fun updateBusiness(request: BusinessPayload): Result<Business>
+    suspend fun createBusiness(request: BusinessPayload): Result<Business>
 
-    // Overview
+    // Dashboard overview (optimized for performance)
     suspend fun getBusinessOverview(): Result<BusinessOverview>
 
-    // Profile & Registration
-    suspend fun getBusinessProfile(): Result<BusinessProfile>
-    suspend fun updateBusinessProfile(request: BusinessProfileUpdateRequest): Result<BusinessProfile>
-
-    // Operations
-    suspend fun getBusinessOperations(): Result<BusinessOperations>
-    suspend fun updateBusinessOperations(request: BusinessOperationsUpdateRequest): Result<BusinessOperations>
-
-    // Tax Configuration
-    suspend fun getTaxConfiguration(): Result<TaxConfiguration>
-    suspend fun updateTaxConfiguration(request: TaxConfigurationUpdateRequest): Result<TaxConfiguration>
-
-    // Legacy methods (kept for backward compatibility with existing repository)
-    suspend fun getBusiness(): Result<Business>
-    suspend fun createBusiness(payload: BusinessPayload): Result<Business>
-    suspend fun updateBusiness(payload: BusinessPayload): Result<Business>
+    // Utility
+    suspend fun checkBusinessExists(): Result<Boolean>
 }

@@ -43,6 +43,20 @@ export interface AuthResponse {
   refresh_token_expires_at?: string;
 }
 
+export interface FirebaseAuthRequest {
+  firebase_id_token: string;
+  country_code: number;
+  phone: string;
+  recaptcha_token?: string | null;
+  device_id?: string;
+  device_name?: string;
+  device_type?: string;
+  platform?: string;
+  browser?: string;
+  os?: string;
+  user_agent?: string;
+}
+
 export interface User {
   id: string;
   first_name: string;
@@ -205,6 +219,42 @@ export class AuthService {
       return response;
     } catch (error: any) {
       this._error.set(error.message || 'OTP verification failed');
+      throw error;
+    } finally {
+      this._loading.set(false);
+    }
+  }
+
+  /**
+   * Authenticate with Firebase token (for desktop app authentication)
+   */
+  async authenticateWithFirebase(request: FirebaseAuthRequest): Promise<AuthResponse> {
+    this._loading.set(true);
+    this._error.set(null);
+
+    try {
+      const response = await firstValueFrom(
+        this.http.post<AuthResponse>(`${this.AUTH_API_URL}/verify/firebase`, request)
+          .pipe(catchError(this.handleError))
+      );
+
+      if (response.access_token && response.refresh_token) {
+        this.setAuthTokens(response.access_token, response.refresh_token,
+          response.access_token_expires_at, response.refresh_token_expires_at);
+        this._isAuthenticated.set(true);
+
+        // Get user profile after successful authentication
+        try {
+          const user = await this.getUserProfile();
+          this._currentUser.set(user);
+        } catch (error) {
+          console.error('Failed to get user profile:', error);
+        }
+      }
+
+      return response;
+    } catch (error: any) {
+      this._error.set(error.message || 'Firebase authentication failed');
       throw error;
     } finally {
       this._loading.set(false);

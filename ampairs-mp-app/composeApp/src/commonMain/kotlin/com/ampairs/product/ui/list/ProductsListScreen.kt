@@ -10,6 +10,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -28,6 +29,7 @@ import org.koin.compose.viewmodel.koinViewModel
 fun ProductsListScreen(
     onProductClick: (String) -> Unit,
     onCreateProduct: () -> Unit,
+    onFormConfig: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: ProductsListViewModel = koinViewModel()
 ) {
@@ -42,6 +44,9 @@ fun ProductsListScreen(
         TopAppBar(
             title = { Text("Products") },
             actions = {
+                IconButton(onClick = onFormConfig) {
+                    Icon(Icons.Default.Settings, contentDescription = "Form Settings")
+                }
                 IconButton(
                     onClick = viewModel::syncProducts,
                     enabled = !uiState.isRefreshing

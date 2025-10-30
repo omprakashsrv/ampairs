@@ -40,18 +40,24 @@ sealed interface Route {
 sealed interface AuthRoute {
     @Serializable
     data object LoginRoot : AuthRoute
-    
+
     @Serializable
     data object UserSelection : AuthRoute
-    
+
     @Serializable
     data object Phone : AuthRoute
-    
+
     @Serializable
-    data class Otp(val sessionId: String) : AuthRoute
-    
+    data class Otp(
+        val sessionId: String,
+        val verificationId: String = "" // Firebase verification ID (empty for backend API auth)
+    ) : AuthRoute
+
     @Serializable
     data object UserUpdate : AuthRoute
+
+    @Serializable
+    data object DesktopBrowserAuth : AuthRoute  // Desktop browser-based authentication
 }
 
 // Workspace routes
@@ -229,4 +235,7 @@ sealed interface BusinessRoute {
 
     @Serializable
     data object TaxConfig : BusinessRoute
+
+    @Serializable
+    data object CustomAttributes : BusinessRoute
 }

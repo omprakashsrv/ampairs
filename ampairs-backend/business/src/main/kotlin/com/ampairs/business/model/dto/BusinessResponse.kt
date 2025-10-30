@@ -43,6 +43,9 @@ data class BusinessResponse(
     val taxId: String?,
     val registrationNumber: String?,
 
+    // Custom Attributes
+    val customAttributes: Map<String, Any>?,
+
     // Operational Config
     val timezone: String,
     val currency: String,

@@ -3,7 +3,6 @@ package com.ampairs.business
 import BusinessRoute
 import Route
 import androidx.compose.foundation.layout.padding
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.NavGraphBuilder
@@ -41,6 +40,12 @@ fun NavGraphBuilder.businessNavigation(
                     onNavigateToTax = {
                         navController.navigate(BusinessRoute.TaxConfig)
                     },
+                    onNavigateToCustomAttributes = {
+                        navController.navigate(BusinessRoute.CustomAttributes)
+                    },
+                    onNavigateToFormConfig = {
+                        navController.navigate(Route.FormConfig("business"))
+                    },
                     modifier = Modifier.padding(paddingValues)
                 )
             }
@@ -77,6 +82,18 @@ fun NavGraphBuilder.businessNavigation(
                 isWorkspaceSelection = false
             ) { paddingValues ->
                 com.ampairs.business.ui.BusinessTaxConfigScreen(
+                    modifier = Modifier.padding(paddingValues)
+                )
+            }
+        }
+
+        // Custom Attributes Screen
+        composable<BusinessRoute.CustomAttributes> {
+            AppScreenWithHeader(
+                navController = navController,
+                isWorkspaceSelection = false
+            ) { paddingValues ->
+                com.ampairs.business.ui.BusinessCustomAttributesScreen(
                     modifier = Modifier.padding(paddingValues)
                 )
             }

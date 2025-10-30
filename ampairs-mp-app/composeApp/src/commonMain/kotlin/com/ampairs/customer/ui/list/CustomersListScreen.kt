@@ -1,19 +1,26 @@
 package com.ampairs.customer.ui.list
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import coil3.compose.AsyncImage
+import com.ampairs.common.ApiUrlBuilder
 import com.ampairs.customer.domain.CustomerListItem
 import org.koin.compose.viewmodel.koinViewModel
 import com.ampairs.customer.util.CustomerConstants.TITLE_CUSTOMERS
@@ -23,6 +30,7 @@ import com.ampairs.customer.util.CustomerConstants.TITLE_CUSTOMERS
 fun CustomersListScreen(
     onCustomerClick: (String) -> Unit,
     onCreateCustomer: () -> Unit,
+    onFormConfig: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: CustomersListViewModel = koinViewModel()
 ) {
@@ -38,6 +46,9 @@ fun CustomersListScreen(
         TopAppBar(
             title = { Text(TITLE_CUSTOMERS) },
             actions = {
+                IconButton(onClick = onFormConfig) {
+                    Icon(Icons.Default.Settings, contentDescription = "Form Settings")
+                }
                 IconButton(
                     onClick = viewModel::syncCustomers,
                     enabled = !uiState.isRefreshing
@@ -187,12 +198,30 @@ private fun CustomerCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                Icons.Default.Person,
-                contentDescription = null,
-                modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.primary
-            )
+            // Customer image or default icon
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest),
+                contentAlignment = Alignment.Center
+            ) {
+                if (!customer.primaryThumbnailUrl.isNullOrBlank()) {
+                    AsyncImage(
+                        model = ApiUrlBuilder.buildCompleteUrl(customer.primaryThumbnailUrl),
+                        contentDescription = "Customer image",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = null,
+                        modifier = Modifier.size(28.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.width(16.dp))
 

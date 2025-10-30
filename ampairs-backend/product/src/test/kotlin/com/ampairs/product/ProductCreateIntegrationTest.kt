@@ -22,6 +22,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import java.time.Instant
 import java.time.LocalDateTime
 
 /**
@@ -69,8 +70,8 @@ class ProductCreateIntegrationTest {
             basePrice = 450.00
             costPrice = 300.00
             status = "ACTIVE"
-            createdAt = LocalDateTime.now()
-            updatedAt = LocalDateTime.now()
+            createdAt = Instant.now()
+            updatedAt = Instant.now()
         }
 
         whenever(productService.createProduct(any<Product>()))
@@ -131,8 +132,8 @@ class ProductCreateIntegrationTest {
                 "stoneWeightCarats" to 0.25,
                 "certification" to "BIS_HALLMARK"
             )
-            createdAt = LocalDateTime.now()
-            updatedAt = LocalDateTime.now()
+            createdAt = Instant.now()
+            updatedAt = Instant.now()
         }
 
         whenever(productService.createProduct(any<Product>()))
@@ -239,8 +240,8 @@ class ProductCreateIntegrationTest {
                 "expiryMonths" to 12,
                 "brand" to "Premium Select"
             )
-            createdAt = LocalDateTime.now()
-            updatedAt = LocalDateTime.now()
+            createdAt = Instant.now()
+            updatedAt = Instant.now()
         }
 
         whenever(productService.createProduct(any<Product>()))

@@ -22,6 +22,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
+import java.time.Instant
 import java.time.LocalDateTime
 
 /**
@@ -76,9 +77,9 @@ class WorkspaceRetailModulesIntegrationTest {
             timezone = "Asia/Kolkata",
             language = "en",
             createdBy = "USR_KUMAR_123",
-            createdAt = LocalDateTime.now(),
-            updatedAt = LocalDateTime.now(),
-            lastActivityAt = LocalDateTime.now(),
+            createdAt = Instant.now(),
+            updatedAt = Instant.now(),
+            lastActivityAt = Instant.now(),
             trialExpiresAt = null,
             currency = "INR",
             addressLine1 = "123 Main Street",
@@ -138,9 +139,9 @@ class WorkspaceRetailModulesIntegrationTest {
             timezone = "Asia/Kolkata",
             language = "en",
             createdBy = "USR_JEWELRY_456",
-            createdAt = LocalDateTime.now(),
-            updatedAt = LocalDateTime.now(),
-            lastActivityAt = LocalDateTime.now(),
+            createdAt = Instant.now(),
+            updatedAt = Instant.now(),
+            lastActivityAt = Instant.now(),
             trialExpiresAt = null,
             currency = "INR",
             addressLine1 = "456 Commercial Street",
@@ -197,9 +198,9 @@ class WorkspaceRetailModulesIntegrationTest {
             timezone = "Asia/Kolkata",
             language = "en",
             createdBy = "USR_KIRANA_789",
-            createdAt = LocalDateTime.now(),
-            updatedAt = LocalDateTime.now(),
-            lastActivityAt = LocalDateTime.now(),
+            createdAt = Instant.now(),
+            updatedAt = Instant.now(),
+            lastActivityAt = Instant.now(),
             trialExpiresAt = null,
             currency = "INR",
             addressLine1 = "789 Residential Area",

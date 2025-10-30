@@ -4,8 +4,10 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Business
+import androidx.compose.material.icons.filled.Extension
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
@@ -13,6 +15,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.ampairs.form.data.repository.ConfigRepository
+import com.ampairs.form.domain.EntityType
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import org.koin.compose.koinInject
 
 /**
@@ -24,12 +30,26 @@ fun BusinessOverviewScreen(
     onNavigateToProfile: () -> Unit = {},
     onNavigateToOperations: () -> Unit = {},
     onNavigateToTax: () -> Unit = {},
+    onNavigateToCustomAttributes: () -> Unit = {},
+    onNavigateToFormConfig: () -> Unit = {},
     modifier: Modifier = Modifier,
-    viewModel: BusinessOverviewViewModel = koinInject()
+    viewModel: BusinessOverviewViewModel = koinInject(),
+    configRepository: ConfigRepository = koinInject()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val pullRefreshState = rememberPullToRefreshState()
     var isRefreshing by remember { mutableStateOf(false) }
+
+    // Check if custom attributes exist for business entity
+    var hasCustomAttributes by remember { mutableStateOf(false) }
+    val coroutineScope = rememberCoroutineScope()
+
+    LaunchedEffect(Unit) {
+        coroutineScope.launch {
+            val config = configRepository.observeConfigSchema(EntityType.BUSINESS).first()
+            hasCustomAttributes = config?.attributeDefinitions?.any { it.visible } ?: false
+        }
+    }
 
     LaunchedEffect(uiState.isLoading) {
         if (!uiState.isLoading) {
@@ -196,6 +216,37 @@ fun BusinessOverviewScreen(
                             Column {
                                 Text("Tax Configuration", style = MaterialTheme.typography.titleMedium)
                                 Text("GST/VAT and tax compliance", style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                    }
+
+                    // Custom Attributes Section - Only show if custom attributes are defined
+                    if (hasCustomAttributes) {
+                        OutlinedCard(modifier = Modifier.fillMaxWidth(), onClick = onNavigateToCustomAttributes) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.Extension, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                Column {
+                                    Text("Custom Attributes", style = MaterialTheme.typography.titleMedium)
+                                    Text("Additional business information and custom fields", style = MaterialTheme.typography.bodySmall)
+                                }
+                            }
+                        }
+                    }
+
+                    OutlinedCard(modifier = Modifier.fillMaxWidth(), onClick = onNavigateToFormConfig) {
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            horizontalArrangement = Arrangement.spacedBy(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(Icons.Default.Tune, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Column {
+                                Text("Form Configuration", style = MaterialTheme.typography.titleMedium)
+                                Text("Customize business form fields and attributes", style = MaterialTheme.typography.bodySmall)
                             }
                         }
                     }

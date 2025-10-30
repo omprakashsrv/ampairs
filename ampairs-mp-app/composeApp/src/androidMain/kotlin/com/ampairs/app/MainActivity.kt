@@ -13,6 +13,7 @@ import coil3.network.ktor3.KtorNetworkFetcherFactory
 import coil3.request.crossfade
 import coil3.util.DebugLogger
 import com.ampairs.auth.api.TokenRepository
+import com.ampairs.common.ActivityProvider
 import com.ampairs.common.ImageCacheKeyer
 import com.ampairs.common.httpClient
 import io.github.vinceglb.filekit.FileKit
@@ -25,6 +26,9 @@ import org.koin.android.ext.android.get
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Register activity for Firebase Phone Auth
+        ActivityProvider.setActivity(this)
 
         // Enable modern edge-to-edge (Android 15+ compatible)
         enableEdgeToEdge()
@@ -67,6 +71,12 @@ class MainActivity : ComponentActivity() {
             .crossfade(true)
             .logger(DebugLogger())
             .build()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Clear activity reference to avoid memory leaks
+        ActivityProvider.clearActivity()
     }
 }
 
