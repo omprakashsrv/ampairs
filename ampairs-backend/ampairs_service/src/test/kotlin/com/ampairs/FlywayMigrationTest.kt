@@ -55,7 +55,7 @@ class FlywayMigrationTest {
     @Test
     @DisplayName("All migrations execute without pending scripts")
     fun shouldSuccessfullyExecuteAllMigrations() {
-        val appliedVersions = flyway.info().applied().mapNotNull { it.version?.canonical }
+        val appliedVersions = flyway.info().applied().mapNotNull { it.version?.version }
 
         // Module-scoped migrations V1.0.x and workspace retail modules V2.0.0
         assertThat(appliedVersions)
