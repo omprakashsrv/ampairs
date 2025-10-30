@@ -29,6 +29,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 import java.time.LocalDateTime
 
 @Suppress("DEPRECATION")
@@ -116,8 +117,7 @@ class CustomerListIntegrationTest {
             this.state = "Karnataka"
             this.country = "India"
             this.status = "ACTIVE"
-            this.lastUpdated = System.currentTimeMillis()
-            this.createdAt = LocalDateTime.now()
+            this.createdAt = Instant.now()
             this.updatedAt = createdAt
         }
     }

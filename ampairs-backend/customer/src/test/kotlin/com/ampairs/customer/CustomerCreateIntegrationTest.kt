@@ -23,6 +23,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.*
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 import java.time.LocalDateTime
 
 /**
@@ -233,9 +234,8 @@ class CustomerCreateIntegrationTest {
             state = "Karnataka"
             country = "India"
             status = "ACTIVE"
-            createdAt = LocalDateTime.now()
+            createdAt = Instant.now()
             updatedAt = createdAt
-            lastUpdated = System.currentTimeMillis()
             attributes = emptyMap()
         }
     }

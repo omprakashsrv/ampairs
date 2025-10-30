@@ -30,6 +30,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 import java.time.LocalDateTime
 
 @Suppress("DEPRECATION")
@@ -126,7 +127,7 @@ class CustomerControllerIntegrationTest {
     @DisplayName("GET /customer/v1/{id} - Finds customer by id")
     @WithMockUser(username = "testuser", roles = ["USER"])
     fun `should return customer by id`() {
-        whenever(customerService.getCustomers(null)).thenReturn(
+        whenever(customerService.getCustomers()).thenReturn(
             listOf(buildCustomer(uid = "cust-1", name = "Lookup Customer"))
         )
 
@@ -137,14 +138,14 @@ class CustomerControllerIntegrationTest {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
 
-        verify(customerService).getCustomers(null)
+        verify(customerService).getCustomers()
     }
 
     @Test
     @DisplayName("GET /customer/v1/{id} - Returns error when customer missing")
     @WithMockUser(username = "testuser", roles = ["USER"])
     fun `should return error when customer not found`() {
-        whenever(customerService.getCustomers(null)).thenReturn(emptyList())
+        whenever(customerService.getCustomers()).thenReturn(emptyList())
 
         mockMvc.perform(
             get("/customer/v1/missing-id")
@@ -153,7 +154,7 @@ class CustomerControllerIntegrationTest {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(false))
 
-        verify(customerService).getCustomers(null)
+        verify(customerService).getCustomers()
     }
 
     @Test
@@ -335,8 +336,7 @@ class CustomerControllerIntegrationTest {
                 pincode = "560001"
             )
             this.shippingAddress = this.billingAddress
-            this.lastUpdated = System.currentTimeMillis()
-            this.createdAt = LocalDateTime.now()
+            this.createdAt = Instant.now()
             this.updatedAt = createdAt
         }
     }
