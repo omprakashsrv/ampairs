@@ -33,10 +33,10 @@ import com.ampairs.customer.util.CustomerLogger
 @Composable
 fun CustomerImageGrid(
     images: List<CustomerImageListItem>,
-    onAddImage: () -> Unit,
+    onAddImage: (() -> Unit)?,
     onImageClick: (CustomerImageListItem) -> Unit,
-    onDeleteImage: (CustomerImageListItem) -> Unit,
-    onSetPrimary: (CustomerImageListItem) -> Unit,
+    onDeleteImage: ((CustomerImageListItem) -> Unit)?,
+    onSetPrimary: ((CustomerImageListItem) -> Unit)?,
     modifier: Modifier = Modifier,
     maxImages: Int = 10
 ) {
@@ -51,7 +51,7 @@ fun CustomerImageGrid(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Customer Images",
+                text = "Customer Images" + if (onAddImage == null) " (Read-Only)" else "",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.primary
@@ -71,8 +71,8 @@ fun CustomerImageGrid(
             verticalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.heightIn(max = 400.dp)
         ) {
-            // Add Image Card (if under limit)
-            if (images.size < maxImages) {
+            // Add Image Card (if under limit and not read-only)
+            if (images.size < maxImages && onAddImage != null) {
                 item {
                     AddImageCard(
                         onClick = onAddImage,
@@ -86,8 +86,12 @@ fun CustomerImageGrid(
                 CustomerImageCard(
                     image = image,
                     onClick = { onImageClick(image) },
-                    onDelete = { onDeleteImage(image) },
-                    onSetPrimary = { onSetPrimary(image) },
+                    onDelete = if (onDeleteImage != null) {
+                        { onDeleteImage(image) }
+                    } else null,
+                    onSetPrimary = if (onSetPrimary != null) {
+                        { onSetPrimary(image) }
+                    } else null,
                     modifier = Modifier.aspectRatio(1f)
                 )
             }
@@ -141,8 +145,8 @@ private fun AddImageCard(
 private fun CustomerImageCard(
     image: CustomerImageListItem,
     onClick: () -> Unit,
-    onDelete: () -> Unit,
-    onSetPrimary: () -> Unit,
+    onDelete: (() -> Unit)?,
+    onSetPrimary: (() -> Unit)?,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -284,11 +288,12 @@ private fun CustomerImageCard(
                 }
             }
 
-            // Action Buttons (shown on long press or context menu)
+            // Action Buttons (shown on long press or context menu) - only if not read-only
+            val hasActions = onDelete != null || onSetPrimary != null
             var showActions by remember { mutableStateOf(false) }
 
             // Actions Overlay
-            if (showActions) {
+            if (showActions && hasActions) {
                 Surface(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
@@ -300,31 +305,35 @@ private fun CustomerImageCard(
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         // Set Primary/Unset Primary
-                        IconButton(
-                            onClick = {
-                                onSetPrimary()
-                                showActions = false
+                        if (onSetPrimary != null) {
+                            IconButton(
+                                onClick = {
+                                    onSetPrimary()
+                                    showActions = false
+                                }
+                            ) {
+                                Icon(
+                                    if (image.isPrimary) Icons.Default.StarBorder else Icons.Default.Star,
+                                    contentDescription = if (image.isPrimary) "Remove primary" else "Set primary",
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
                             }
-                        ) {
-                            Icon(
-                                if (image.isPrimary) Icons.Default.StarBorder else Icons.Default.Star,
-                                contentDescription = if (image.isPrimary) "Remove primary" else "Set primary",
-                                tint = MaterialTheme.colorScheme.primary
-                            )
                         }
 
                         // Delete
-                        IconButton(
-                            onClick = {
-                                onDelete()
-                                showActions = false
+                        if (onDelete != null) {
+                            IconButton(
+                                onClick = {
+                                    onDelete()
+                                    showActions = false
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Delete",
+                                    tint = MaterialTheme.colorScheme.error
+                                )
                             }
-                        ) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = "Delete",
-                                tint = MaterialTheme.colorScheme.error
-                            )
                         }
                     }
                 }

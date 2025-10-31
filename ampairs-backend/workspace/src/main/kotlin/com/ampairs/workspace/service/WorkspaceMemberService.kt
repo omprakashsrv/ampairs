@@ -12,7 +12,9 @@ import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 import java.time.LocalDateTime
 
 /**
@@ -33,6 +35,7 @@ class WorkspaceMemberService(
     /**
      * Add member as owner (used during workspace creation)
      */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun addMemberAsOwner(workspaceId: String, userId: String): WorkspaceMember {
         // Check if member already exists
         val existingMember = memberRepository.findByWorkspaceIdAndUserId(workspaceId, userId)
@@ -44,7 +47,7 @@ class WorkspaceMemberService(
             if (member.role != WorkspaceRole.OWNER) {
                 member.role = WorkspaceRole.OWNER
                 member.isActive = true
-                member.joinedAt = member.joinedAt ?: LocalDateTime.now()
+                member.joinedAt = member.joinedAt ?: Instant.now()
                 return memberRepository.save(member)
             }
 
@@ -52,11 +55,11 @@ class WorkspaceMemberService(
         }
 
         val member = WorkspaceMember().apply {
-            // workspaceId will be automatically populated by @TenantId from current tenant context
+            this.workspaceId = workspaceId  // Explicitly set workspaceId to match tenant context
             this.userId = userId
             this.role = WorkspaceRole.OWNER
             this.isActive = true
-            this.joinedAt = LocalDateTime.now()
+            this.joinedAt = Instant.now()
         }
 
         val savedMember = memberRepository.save(member)
@@ -75,11 +78,11 @@ class WorkspaceMemberService(
         }
 
         val member = WorkspaceMember().apply {
-            // workspaceId will be automatically populated by @TenantId from current tenant context
+            this.workspaceId = workspaceId  // Explicitly set workspaceId to match tenant context
             this.userId = userId
             this.role = role
             this.isActive = true
-            this.joinedAt = LocalDateTime.now()
+            this.joinedAt = Instant.now()
         }
 
         val savedMember = memberRepository.save(member)
@@ -295,7 +298,7 @@ class WorkspaceMemberService(
                 .orElse(null) ?: return false
 
             // Standardized permission mapping with clear, consistent naming
-           return when (permission) {
+            return when (permission) {
                 // Workspace management permissions (consolidated)
                 WorkspacePermission.WORKSPACE_MANAGE ->
                     member.role in listOf(WorkspaceRole.OWNER, WorkspaceRole.ADMIN)
@@ -558,7 +561,7 @@ class WorkspaceMemberService(
         val role = request["role"] as? String
         val status = request["status"] as? String
         request["notify_members"] as? Boolean ?: false
-        
+
         val members = memberRepository.findByUidIn(memberIds)
         var updatedCount = 0
         val failedUpdates = mutableListOf<Map<String, String>>()
@@ -620,7 +623,7 @@ class WorkspaceMemberService(
     fun bulkRemoveMembers(workspaceId: String, request: Map<String, Any>): Map<String, Any> {
         val memberIds = request["member_ids"] as? List<String> ?: emptyList()
         request["reason"] as? String
-        
+
         val members = memberRepository.findByUidIn(memberIds)
         var removedCount = 0
         val failedRemovals = mutableListOf<Map<String, String>>()

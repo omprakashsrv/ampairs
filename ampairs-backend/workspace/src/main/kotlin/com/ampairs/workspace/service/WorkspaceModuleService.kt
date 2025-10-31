@@ -11,6 +11,7 @@ import com.ampairs.workspace.repository.MasterModuleRepository
 import com.ampairs.workspace.repository.WorkspaceModuleRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 import java.time.LocalDateTime
 
 /**
@@ -55,41 +56,51 @@ class WorkspaceModuleService(
     }
 
     /**
-     * Get detailed information about a specific module
+     * Get detailed information about a specific module from master catalog
      */
-    fun getModuleInfo(moduleId: String): ModuleDetailResponse? {
+    fun getModuleInfo(moduleCode: String): ModuleDetailResponse? {
         val workspaceId = TenantContextHolder.getCurrentTenant() ?: return null
 
-        // Try to find by UID first, then by module code
-        val workspaceModule = workspaceModuleRepository.findById(moduleId).orElse(null)
-            ?: workspaceModuleRepository.findByWorkspaceIdAndMasterModuleModuleCode(workspaceId, moduleId)
+        // Find master module by module code
+        val masterModule = masterModuleRepository.findByModuleCode(moduleCode)
             ?: return null
 
-        workspaceModule.masterModule
-        val analytics = buildModuleAnalytics(workspaceModule)
-        val permissions = buildModulePermissions(workspaceModule)
-        val configuration = buildModuleConfiguration(workspaceModule)
+        // Check if module is installed in workspace
+        val workspaceModule = workspaceModuleRepository.findByWorkspaceIdAndMasterModuleModuleCode(workspaceId, moduleCode)
 
         val moduleInfo = ModuleInfoResponse(
-            name = workspaceModule.getEffectiveName(),
-            category = workspaceModule.getEffectiveCategory(),
-            description = workspaceModule.getEffectiveDescription(),
-            version = workspaceModule.installedVersion,
-            status = workspaceModule.status.displayName,
-            enabled = workspaceModule.enabled,
-            installedAt = workspaceModule.installedAt,
-            lastUpdated = workspaceModule.lastUpdatedAt
+            name = masterModule.name,
+            category = masterModule.category.displayName,
+            description = masterModule.description ?: "",
+            version = workspaceModule?.installedVersion ?: masterModule.version,
+            status = workspaceModule?.status?.displayName ?: "NOT_INSTALLED",
+            enabled = workspaceModule?.enabled ?: false,
+            installedAt = workspaceModule?.installedAt ?: Instant.now(),
+            lastUpdated = workspaceModule?.lastUpdatedAt
         )
 
+        val configuration = workspaceModule?.let { buildModuleConfiguration(it) }
+            ?: ModuleConfigurationResponse()
+
+        val analytics = workspaceModule?.let { buildModuleAnalytics(it) }
+            ?: ModuleAnalyticsResponse()
+
+        val permissions = workspaceModule?.let { buildModulePermissions(it) }
+            ?: ModulePermissionsResponse(
+                canConfigure = false,
+                canUninstall = false,
+                canViewAnalytics = false
+            )
+
         return ModuleDetailResponse(
-            moduleId = workspaceModule.uid,
+            moduleId = workspaceModule?.uid ?: masterModule.uid,
             workspaceId = workspaceId,
             moduleInfo = moduleInfo,
             configuration = configuration,
             analytics = analytics,
             permissions = permissions,
-            healthScore = workspaceModule.getHealthScore(),
-            needsAttention = workspaceModule.needsAttention()
+            healthScore = workspaceModule?.getHealthScore() ?: 0.0,
+            needsAttention = workspaceModule?.needsAttention() ?: false
         )
     }
 
@@ -119,7 +130,7 @@ class WorkspaceModuleService(
                 moduleCode = moduleCode,
                 workspaceId = workspaceId,
                 message = "Module $moduleCode is already installed in this workspace",
-                installedAt = existingModule?.installedAt ?: LocalDateTime.now()
+                installedAt = existingModule?.installedAt ?: Instant.now()
             )
         }
 
@@ -170,7 +181,7 @@ class WorkspaceModuleService(
             this.status = WorkspaceModuleStatus.INSTALLING
             this.enabled = true
             this.installedVersion = masterModule.version
-            this.installedAt = LocalDateTime.now()
+            this.installedAt = Instant.now()
             this.installedBy = installedBy
             this.installedByName = installedByName
             this.displayOrder = getNextDisplayOrder(workspaceId)
@@ -198,19 +209,19 @@ class WorkspaceModuleService(
     /**
      * Uninstall a module from the workspace
      */
-    fun uninstallModule(moduleId: String): ModuleUninstallationResponse {
+    fun uninstallModule(moduleCode: String): ModuleUninstallationResponse {
         val workspaceId = TenantContextHolder.getCurrentTenant()
             ?: return ModuleUninstallationResponse(
                 success = false,
-                moduleId = moduleId,
+                moduleId = moduleCode,
                 workspaceId = "",
                 message = "No workspace context available"
             )
 
-        val workspaceModule = findWorkspaceModule(workspaceId, moduleId)
+        val workspaceModule = workspaceModuleRepository.findByWorkspaceIdAndMasterModuleModuleCode(workspaceId, moduleCode)
             ?: return ModuleUninstallationResponse(
                 success = false,
-                moduleId = moduleId,
+                moduleId = moduleCode,
                 workspaceId = workspaceId,
                 message = "Module not found in workspace"
             )
@@ -221,7 +232,7 @@ class WorkspaceModuleService(
             val dependentNames = dependentModules.map { it.getEffectiveName() }
             return ModuleUninstallationResponse(
                 success = false,
-                moduleId = moduleId,
+                moduleId = moduleCode,
                 workspaceId = workspaceId,
                 message = "Cannot uninstall ${workspaceModule.getEffectiveName()}. Required by: ${
                     dependentNames.joinToString(
@@ -242,7 +253,7 @@ class WorkspaceModuleService(
 
         return ModuleUninstallationResponse(
             success = true,
-            moduleId = moduleId,
+            moduleId = moduleCode,
             workspaceId = workspaceId,
             message = "Module $moduleName uninstalled successfully",
             uninstalledAt = LocalDateTime.now()
@@ -579,11 +590,6 @@ class WorkspaceModuleService(
             notificationsEnabled = settings.notificationsEnabled,
             customFields = customFields
         )
-    }
-
-    private fun findWorkspaceModule(workspaceId: String, moduleId: String): WorkspaceModule? {
-        return workspaceModuleRepository.findById(moduleId).orElse(null)?.takeIf { it.workspaceId == workspaceId }
-            ?: workspaceModuleRepository.findByWorkspaceIdAndMasterModuleModuleCode(workspaceId, moduleId)
     }
 
     private fun checkMissingDependencies(workspaceId: String, masterModule: MasterModule): List<String> {

@@ -6,6 +6,7 @@ import com.ampairs.order.service.OrderService
 import jakarta.validation.Valid
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
+import java.time.Instant
 
 @RestController
 @RequestMapping("/order/v1")
@@ -30,8 +31,8 @@ class OrderController @Autowired constructor(
     }
 
     @GetMapping("")
-    fun getOrders(@RequestParam("last_updated") lastUpdated: Long?): ApiResponse<List<OrderResponse>> {
-        val result = orderService.getOrders(lastUpdated ?: 0).toResponse()
+    fun getOrders(@RequestParam("last_updated") lastUpdated: Instant?): ApiResponse<List<OrderResponse>> {
+        val result = orderService.getOrders(lastUpdated).toResponse()
         return ApiResponse.success(result)
     }
 

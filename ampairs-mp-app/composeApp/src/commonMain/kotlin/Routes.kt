@@ -9,9 +9,6 @@ sealed interface Route {
     data object Workspace : Route
     
     @Serializable
-    data object Home : Route
-    
-    @Serializable
     data object Customer : Route
     
     @Serializable
@@ -30,6 +27,9 @@ sealed interface Route {
     data object Tax : Route
 
     @Serializable
+    data object Business : Route
+
+    @Serializable
     data class FormConfig(
         val entityType: String = ""
     ) : Route
@@ -40,18 +40,24 @@ sealed interface Route {
 sealed interface AuthRoute {
     @Serializable
     data object LoginRoot : AuthRoute
-    
+
     @Serializable
     data object UserSelection : AuthRoute
-    
+
     @Serializable
     data object Phone : AuthRoute
-    
+
     @Serializable
-    data class Otp(val sessionId: String) : AuthRoute
-    
+    data class Otp(
+        val sessionId: String,
+        val verificationId: String = "" // Firebase verification ID (empty for backend API auth)
+    ) : AuthRoute
+
     @Serializable
     data object UserUpdate : AuthRoute
+
+    @Serializable
+    data object DesktopBrowserAuth : AuthRoute  // Desktop browser-based authentication
 }
 
 // Workspace routes
@@ -101,8 +107,12 @@ sealed interface WorkspaceRoute {
 
     @Serializable
     data class Modules(
-        val workspaceId: String = "",
-        val showStoreByDefault: Boolean = false // For "Manage Modules" to show install screen directly
+        val workspaceId: String = ""
+    ) : WorkspaceRoute
+
+    @Serializable
+    data class ModuleStore(
+        val workspaceId: String = ""
     ) : WorkspaceRoute
 }
 
@@ -201,12 +211,31 @@ sealed interface InvoiceRoute {
         val toCustomer: String = "",
         val id: String = ""
     ) : InvoiceRoute
-    
+
     @Serializable
     data class InvoiceView(
         val id: String = ""
     ) : InvoiceRoute
-    
+
     @Serializable
     data object Invoices : InvoiceRoute
+}
+
+// Business routes
+@Serializable
+sealed interface BusinessRoute {
+    @Serializable
+    data object Overview : BusinessRoute
+
+    @Serializable
+    data object Profile : BusinessRoute
+
+    @Serializable
+    data object Operations : BusinessRoute
+
+    @Serializable
+    data object TaxConfig : BusinessRoute
+
+    @Serializable
+    data object CustomAttributes : BusinessRoute
 }

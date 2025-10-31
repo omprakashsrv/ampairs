@@ -8,14 +8,14 @@ plugins {
 
 group = "com.ampairs"
 version = ""
-java.sourceCompatibility = JavaVersion.VERSION_25
+java.sourceCompatibility = JavaVersion.VERSION_21
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(25))
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
 kotlin {
-    jvmToolchain(25)
+    jvmToolchain(21)
 }
 
 configurations {
@@ -55,6 +55,9 @@ dependencies {
     implementation("no.digipost.jaxb:jaxb2-jackson-helper:1.0.1")
 
     implementation("io.awspring.cloud:spring-cloud-aws-starter-sns")
+
+    // Firebase Admin SDK for authentication verification
+    implementation("com.google.firebase:firebase-admin:9.4.2")
 
     // OpenAPI/Swagger Documentation
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")

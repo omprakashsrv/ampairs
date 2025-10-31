@@ -6,6 +6,7 @@ import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.UserRepository
 import com.ampairs.auth.domain.UserInfo
+import com.ampairs.common.firebase.analytics.FirebaseAnalytics
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -21,6 +22,7 @@ class UserSelectionViewModel(
     private val userRepository: UserRepository,
     private val tokenRepository: TokenRepository,
     private val userWorkspaceRepository: UserWorkspaceRepository,
+    private val analytics: FirebaseAnalytics,
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(UserSelectionState())
@@ -73,6 +75,9 @@ class UserSelectionViewModel(
         viewModelScope.launch {
             try {
                 tokenRepository.setCurrentUser(userId)
+
+                // Set Firebase Analytics user ID
+                analytics.setUserId(userId)
             } catch (e: Exception) {
                 _state.value = _state.value.copy(
                     error = e.message ?: "Failed to select user"
@@ -86,7 +91,13 @@ class UserSelectionViewModel(
             try {
                 tokenRepository.logoutUser(userId)
                 userRepository.deleteUser(userId)
-                
+
+                // Clear Firebase Analytics user ID if removing current user
+                val currentUserId = tokenRepository.getCurrentUserId()
+                if (currentUserId == userId) {
+                    analytics.setUserId(null)
+                }
+
                 // Reload the user list
                 loadUsers()
             } catch (e: Exception) {

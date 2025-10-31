@@ -10,6 +10,8 @@ import com.ampairs.auth.api.TokenRepository
 import com.ampairs.auth.api.UserWorkspaceRepository
 import com.ampairs.auth.db.UserRepository
 import com.ampairs.auth.domain.UserInfo
+import com.ampairs.common.firebase.analytics.AnalyticsEvents
+import com.ampairs.common.firebase.analytics.FirebaseAnalytics
 import com.ampairs.common.navigation.BackNavigationHandler
 import com.ampairs.common.state.AppHeaderStateManager
 import com.ampairs.workspace.db.WorkspaceRepository
@@ -29,6 +31,7 @@ fun AppScreenWithHeader(
     val workspaceRepository: WorkspaceRepository = koinInject()
     val userWorkspaceRepository: UserWorkspaceRepository = koinInject()
     val tokenRepository: TokenRepository = koinInject()
+    val analytics: FirebaseAnalytics = koinInject()
     val headerStateManager = remember { AppHeaderStateManager.instance }
     val headerState by headerStateManager.headerState.collectAsState()
 
@@ -50,6 +53,9 @@ fun AppScreenWithHeader(
                     hasSelectedWorkspace = true
                 )
                 headerStateManager.updateUser(userInfo)
+
+                // Set Firebase Analytics user ID
+                analytics.setUserId(userEntity.id)
             }
 
             // Load currently selected workspace
@@ -103,7 +109,7 @@ fun AppScreenWithHeader(
     BackNavigationHandler(
         navController = navController,
         enabled = true,
-        fallbackRoute = if (isWorkspaceSelection) Route.Login else Route.Home
+        fallbackRoute = if (isWorkspaceSelection) Route.Login else Route.Workspace
     )
 
     AppScreenLayout(
@@ -132,6 +138,12 @@ fun AppScreenWithHeader(
             navController.navigate(AuthRoute.UserUpdate)
         },
         onLogout = {
+            // Log analytics event
+            analytics.logEvent(AnalyticsEvents.LOGOUT)
+
+            // Clear Firebase Analytics user ID
+            analytics.setUserId(null)
+
             // Clear workspace context and modules before logout
             WorkspaceContextIntegration.clearWorkspaceContext()
             // Clear user data and navigate to login
@@ -141,6 +153,9 @@ fun AppScreenWithHeader(
             }
         },
         onSwitchUser = {
+            // Clear Firebase Analytics user ID before switching
+            analytics.setUserId(null)
+
             // Use a coroutine to clear current user before navigation
             kotlinx.coroutines.runBlocking {
                 // Clear the current user so they stay on user selection screen

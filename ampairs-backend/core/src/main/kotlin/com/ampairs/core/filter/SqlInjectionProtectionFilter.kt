@@ -35,7 +35,8 @@ class SqlInjectionProtectionFilter(
             "/static/",
             "/css/",
             "/js/",
-            "/images/"
+            "/images/",
+            "/ws"  // WebSocket endpoint - JWT token in query params must not be sanitized
         )
     }
 

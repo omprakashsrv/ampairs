@@ -8,14 +8,14 @@ plugins {
 
 group = "com.ampairs"
 version = ""
-java.sourceCompatibility = JavaVersion.VERSION_25
+java.sourceCompatibility = JavaVersion.VERSION_21
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(25))
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
 kotlin {
-    jvmToolchain(25)
+    jvmToolchain(21)
 }
 
 
@@ -34,9 +34,12 @@ dependencies {
     implementation(project(mapOf("path" to ":notification")))
     implementation(project(mapOf("path" to ":auth")))
     implementation(project(mapOf("path" to ":workspace")))
+    implementation(project(mapOf("path" to ":business")))
     implementation(project(mapOf("path" to ":form")))
     implementation(project(mapOf("path" to ":event")))
     implementation(project(mapOf("path" to ":customer")))
+    implementation(project(mapOf("path" to ":file")))
+    implementation(project(mapOf("path" to ":unit")))
     implementation(project(mapOf("path" to ":product")))
     implementation(project(mapOf("path" to ":order")))
     implementation(project(mapOf("path" to ":invoice")))
@@ -75,9 +78,11 @@ dependencies {
 
     // Rate limiting - using custom comprehensive rate limiting service from core module
 
-    // Database
+    // Database & Migrations
     runtimeOnly("com.mysql:mysql-connector-j")
     runtimeOnly("org.postgresql:postgresql")
+    implementation("org.flywaydb:flyway-mysql")
+    implementation("org.flywaydb:flyway-database-postgresql")
 
     // Spring Cloud AWS - Auto-configuration for AWS services
     implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.3.0"))

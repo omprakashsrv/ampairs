@@ -6,6 +6,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Ampairs is a comprehensive business management system with **three integrated applications**:
 
+### Flyway Migration Baseline
+- Backend schema is version-controlled via Flyway migrations stored in each domain module under `src/main/resources/db/migration/mysql/` (e.g., `ampairs-backend/customer/src/main/resources/db/migration/mysql/V1.0.0__create_customer_module_tables.sql`).
+- Aggregated documentation lives in `ampairs-backend/ampairs_service/src/main/resources/db/migration/` (`README.md`, `MIGRATION_BASELINE.md`).
+- Integration tests for migrations live in `ampairs-backend/ampairs_service/src/test/kotlin/com/ampairs/FlywayMigrationTest.kt` (requires Docker/Testcontainers).
+
 ### **System Architecture**
 
 1. **Backend (Spring Boot + Kotlin)** - `/ampairs_service` + domain modules
@@ -54,6 +59,67 @@ data class AuthInitRequest(
 1. **Never add @JsonProperty for standard camelCase to snake_case conversions**
 2. **Let the global Jackson configuration handle naming automatically**
 3. **Only use @JsonProperty for special cases that don't follow the standard pattern**
+
+### **Date/Time Handling (CRITICAL)**
+
+**ALWAYS use `java.time.Instant` for timestamps - NEVER use `LocalDateTime`**
+
+| Type | Timezone Info | Use Case | Status |
+|------|---------------|----------|--------|
+| `Instant` | UTC (implicit) | Timestamps, historical events, API responses | ✅ **USE THIS** |
+| `LocalDateTime` | None (ambiguous) | ❌ **DEPRECATED** - causes timezone bugs | ❌ DO NOT USE |
+
+**Why `Instant`?**
+- Represents a specific point in time on the UTC timeline
+- No ambiguity - always means the same moment globally
+- Serializes as ISO-8601 with Z suffix: `"2025-01-09T14:30:00Z"`
+- Prevents timezone-related bugs during DST transitions
+- Industry standard (AWS, Google, GitHub, Stripe)
+
+**Correct Entity Pattern:**
+```kotlin
+@Entity
+class MyEntity : BaseDomain() {
+    // ✅ CORRECT
+    @Column(name = "created_at")
+    var createdAt: Instant = Instant.now()
+
+    @Column(name = "updated_at")
+    var updatedAt: Instant = Instant.now()
+
+    // ❌ WRONG - DO NOT USE
+    // var createdAt: LocalDateTime = LocalDateTime.now()
+}
+```
+
+**Correct DTO Pattern:**
+```kotlin
+data class EntityResponse(
+    val uid: String,
+    val name: String,
+    val createdAt: Instant,    // ✅ Serializes to "2025-01-09T14:30:00Z"
+    val updatedAt: Instant     // ✅ UTC timezone explicit
+)
+```
+
+**Database:**
+- Use `TIMESTAMP` columns (not `DATETIME`)
+- Connection string must include: `?serverTimezone=UTC`
+- Hibernate maps `Instant` to `TIMESTAMP` automatically
+
+**Frontend (Angular/TypeScript):**
+```typescript
+// Parse API response (already in UTC)
+const date = new Date(response.created_at); // "2025-01-09T14:30:00Z"
+
+// Display in user's local timezone
+{{ date | date:'medium' }} // Automatic browser timezone conversion
+```
+
+**Migration Note:**
+- Legacy code may use `LocalDateTime` - this is being migrated to `Instant`
+- For new features, ALWAYS use `Instant`
+- Reference: `/specs/002-timezone-support/research.md`
 
 ### **Angular Web Application Design System**
 
@@ -186,35 +252,32 @@ fun create(@Valid request: EntityCreateRequest): ApiResponse<EntityResponse> {
 **Application**: ampairs_service (main aggregator)
 
 ## Recent Changes
+- 005-ampairs-backend-ampairs: Added Kotlin 2.2.20, Java 25 + Spring Boot 3.5.6, JPA/Hibernate 6.2, Flyway (already configured), MySQL JDBC Driver
+- 004-create-separate-unit: Added Kotlin 2.2.20 / Java 25 + Spring Boot 3.5.6, Spring Data JPA, Hibernate 6.2, MySQL Connector
+
+### **Multi-Timezone Support Migration (2025-01-09)**
+
+#### **Critical Change: LocalDateTime → Instant**
+- **Breaking Change**: All timestamp fields migrated from `LocalDateTime` to `java.time.Instant`
+  * All new entities MUST use `Instant` for timestamps
+  * All new DTOs MUST use `Instant` for date/time fields
+  * Legacy `LocalDateTime` code is being phased out
+
+#### **Base Domain Classes Updated**
+
+#### **Frontend Impact**
 
 ### **Workspace Controller Refactoring (2025-01-15)**
 
 #### **@TenantId Integration & Simplification**
-- Eliminated dual security (workspaceId params + @TenantId filtering)
-- Controllers use `TenantContextHolder.getCurrentTenant()` from X-Workspace-ID header
-- Added `@TenantId` to `WorkspaceMember.workspaceId` for automatic filtering
-- Endpoint paths simplified: `/workspace/v1/member` (no workspaceId params)
 
 #### **Critical Fix: @TenantId Validation Error**
-- **Issue**: `assigned tenant id differs from current tenant id` during invitation acceptance
-- **Root Cause**: Tenant context set in service layer, but @TenantId validation happens at repository injection
-- **Solution**: Move tenant context to controller level before any repository operations
-- **Pattern**: Controller sets tenant → Service operates → Controller restores tenant
 
 #### **Repository Patterns**
-- **Tenant-Aware**: Methods automatically filtered by @TenantId annotation
-- **Cross-Tenant**: Use native SQL queries to bypass @TenantId filtering
-- **Column Mapping**: JPA properties → database columns (createdAt → created_at)
 
 ### **Retail Management Platform (2025-01-06)**
 
 ### **New API Contracts**
-- **Workspace Management**: `/workspace/v1` - Multi-tenant business environments with role-based access
-- **Product Catalog**: `/product/v1` - Product management with inventory tracking and tax codes
-- **Order Processing**: `/order/v1` - Sales transactions with status workflow (DRAFT→CONFIRMED→FULFILLED)
-- **Customer Management**: `/customer/v1` - Business contacts with GST compliance and credit limits
-- **Invoice Generation**: `/invoice/v1` - Billing with tax calculations, payment tracking, and PDF export
-- **Tax Code Management**: `/tax-code/v1` - GST compliance with component breakdown (SGST/CGST/IGST)
 
 ### **Key Entity Patterns**
 ```kotlin
@@ -222,8 +285,8 @@ fun create(@Valid request: EntityCreateRequest): ApiResponse<EntityResponse> {
 abstract class OwnableBaseDomain {
     val workspaceId: String     // Tenant isolation
     val ownerId: String         // Tenant context
-    val createdAt: LocalDateTime
-    val updatedAt: LocalDateTime
+    val createdAt: Instant      // ✅ UTC timestamps (migrated from LocalDateTime)
+    val updatedAt: Instant      // ✅ ISO-8601 with Z suffix
 }
 
 // Standard API response wrapper
@@ -231,18 +294,13 @@ data class ApiResponse<T>(
     val success: Boolean,
     val data: T?,
     val error: ErrorDetails?,
-    val timestamp: LocalDateTime,
+    val timestamp: Instant,     // ✅ UTC timestamp
     val path: String?,
     val traceId: String?
 )
 ```
 
 ### **Business Rules**
-- **Order Status Flow**: DRAFT → CONFIRMED → PROCESSING → FULFILLED (with CANCELLED/RETURNED branches)
-- **Invoice Status Flow**: DRAFT → SENT → PARTIAL_PAID → PAID (with OVERDUE/CANCELLED)
-- **Inventory Reservations**: Stock reserved on CONFIRMED orders, consumed on FULFILLED
-- **GST Compliance**: Tax codes support SGST+CGST (intrastate) or IGST (interstate) calculations
-- **Multi-tenant Data**: All operations filtered by workspace context automatically
 
 ## Build Commands
 
@@ -259,12 +317,13 @@ data class ApiResponse<T>(
 
 ## Key Rules Summary
 
-1. **Use global snake_case configuration** - no redundant @JsonProperty annotations
-2. **Angular M3 components only** - no other UI frameworks
-3. **@EntityGraph for efficient loading** - avoid N+1 queries
-4. **Follow existing patterns** - maintain consistency across modules
-5. **Multi-tenant aware** - all data operations include tenant context
-6. **@TenantId at controller level** - set tenant context before repository injection
-7. **Native SQL for cross-tenant** - bypass @TenantId filtering when needed
-8. **Single security approach** - use either @TenantId OR workspaceId parameters, not both
-9. **DTO pattern required** - never expose JPA entities in controllers, always use proper DTOs
+1. **Use `Instant` for all timestamps** - NEVER use `LocalDateTime` (causes timezone bugs)
+2. **Use global snake_case configuration** - no redundant @JsonProperty annotations
+3. **Angular M3 components only** - no other UI frameworks
+4. **@EntityGraph for efficient loading** - avoid N+1 queries
+5. **Follow existing patterns** - maintain consistency across modules
+6. **Multi-tenant aware** - all data operations include tenant context
+7. **@TenantId at controller level** - set tenant context before repository injection
+8. **Native SQL for cross-tenant** - bypass @TenantId filtering when needed
+9. **Single security approach** - use either @TenantId OR workspaceId parameters, not both
+10. **DTO pattern required** - never expose JPA entities in controllers, always use proper DTOs

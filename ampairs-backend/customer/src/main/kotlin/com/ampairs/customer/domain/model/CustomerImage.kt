@@ -2,8 +2,13 @@ package com.ampairs.customer.domain.model
 
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.customer.config.Constants
-import jakarta.persistence.*
-import java.time.LocalDateTime
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.Index
+import jakarta.persistence.Table
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
+import java.time.Instant
 
 /**
  * Customer image entity representing uploaded images for customers.
@@ -12,7 +17,7 @@ import java.time.LocalDateTime
  */
 @Entity(name = "customer_image")
 @Table(
-    name = "customer_images",
+    name = "customer_image",
     indexes = [
         Index(name = "idx_customer_image_customer_uid", columnList = "customer_uid"),
         Index(name = "idx_customer_image_workspace", columnList = "owner_id"),
@@ -29,27 +34,27 @@ class CustomerImage : OwnableBaseDomain() {
     var customerUid: String = ""
 
     /**
-     * Workspace slug for object storage path construction
+     * Workspace slug for this image
      */
-    @Column(name = "workspace_slug", nullable = false, length = 50)
+    @Column(name = "workspace_slug", length = 100)
     var workspaceSlug: String = ""
 
     /**
-     * Original filename of the uploaded image
+     * Original filename
      */
-    @Column(name = "original_filename", nullable = false, length = 255)
+    @Column(name = "original_filename", length = 500)
     var originalFilename: String = ""
 
     /**
-     * File extension (jpg, png, etc.)
+     * File extension (e.g., jpg, png)
      */
-    @Column(name = "file_extension", nullable = false, length = 10)
+    @Column(name = "file_extension", length = 20)
     var fileExtension: String = ""
 
     /**
-     * Content type (MIME type) of the image
+     * Content type/MIME type
      */
-    @Column(name = "content_type", nullable = false, length = 50)
+    @Column(name = "content_type", length = 100)
     var contentType: String = ""
 
     /**
@@ -59,10 +64,9 @@ class CustomerImage : OwnableBaseDomain() {
     var fileSize: Long = 0
 
     /**
-     * Object storage path
-     * Format: {workspace-slug}/customer/{customer-uid}/{image-uid}.{extension}
+     * Object storage path (relative path in bucket)
      */
-    @Column(name = "storage_path", nullable = false, length = 500)
+    @Column(name = "storage_path", length = 1000)
     var storagePath: String = ""
 
     /**
@@ -70,6 +74,13 @@ class CustomerImage : OwnableBaseDomain() {
      */
     @Column(name = "storage_url", length = 1000)
     var storageUrl: String? = null
+
+    /**
+     * Image metadata stored as JSON
+     */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "metadata", columnDefinition = "json")
+    var metadata: ImageMetadata = ImageMetadata()
 
     /**
      * Whether this is the primary image for the customer
@@ -84,34 +95,16 @@ class CustomerImage : OwnableBaseDomain() {
     var displayOrder: Int = 0
 
     /**
-     * Alt text for accessibility
-     */
-    @Column(name = "alt_text", length = 255)
-    var altText: String? = null
-
-    /**
      * Image description/caption
      */
     @Column(name = "description", length = 500)
     var description: String? = null
 
     /**
-     * Image width in pixels (for optimization)
-     */
-    @Column(name = "width")
-    var width: Int? = null
-
-    /**
-     * Image height in pixels (for optimization)
-     */
-    @Column(name = "height")
-    var height: Int? = null
-
-    /**
      * Upload timestamp
      */
     @Column(name = "uploaded_at", nullable = false)
-    var uploadedAt: LocalDateTime = LocalDateTime.now()
+    var uploadedAt: Instant = Instant.now()
 
     /**
      * Whether the image is active/visible
@@ -119,54 +112,8 @@ class CustomerImage : OwnableBaseDomain() {
     @Column(name = "active", nullable = false)
     var active: Boolean = true
 
-    /**
-     * ETag from object storage (for caching)
-     */
-    @Column(name = "etag", length = 100)
-    var etag: String? = null
-
-    /**
-     * Last modified timestamp from object storage
-     */
-    @Column(name = "last_modified")
-    var lastModified: LocalDateTime? = null
-
     override fun obtainSeqIdPrefix(): String {
         return Constants.CUSTOMER_IMAGE_PREFIX
-    }
-
-    /**
-     * Generate storage path for this image
-     * Format: {workspace-slug}/customer/{customer-uid}/{image-uid}.{extension}
-     */
-    fun generateStoragePath(): String {
-        return "${workspaceSlug}/customer/${customerUid}/${uid}.${fileExtension}"
-    }
-
-    /**
-     * Get file name for object storage
-     */
-    fun getStorageFileName(): String {
-        return "${uid}.${fileExtension}"
-    }
-
-    /**
-     * Check if this is an image file based on content type
-     */
-    fun isImageFile(): Boolean {
-        return contentType.startsWith("image/")
-    }
-
-    /**
-     * Get human-readable file size
-     */
-    fun getFormattedFileSize(): String {
-        return when {
-            fileSize < 1024 -> "${fileSize} B"
-            fileSize < 1024 * 1024 -> "${fileSize / 1024} KB"
-            fileSize < 1024 * 1024 * 1024 -> "${fileSize / (1024 * 1024)} MB"
-            else -> "${fileSize / (1024 * 1024 * 1024)} GB"
-        }
     }
 
     /**
@@ -193,19 +140,58 @@ class CustomerImage : OwnableBaseDomain() {
     }
 
     /**
-     * Update storage metadata
+     * Update storage metadata after upload
      */
-    fun updateStorageMetadata(url: String?, etag: String?, lastModified: LocalDateTime?) {
+    fun updateStorageMetadata(url: String?, etag: String?, lastModified: Instant?) {
         this.storageUrl = url
-        this.etag = etag
-        this.lastModified = lastModified
+        this.metadata = this.metadata.copy(
+            etag = etag,
+            lastModified = lastModified
+        )
     }
 
     /**
      * Update image dimensions
      */
-    fun updateDimensions(width: Int?, height: Int?) {
-        this.width = width
-        this.height = height
+    fun updateDimensions(width: Int, height: Int) {
+        this.metadata = this.metadata.copy(
+            width = width,
+            height = height
+        )
+    }
+
+    /**
+     * Generate storage path for this image
+     */
+    fun generateStoragePath(workspaceSlug: String, customerUid: String): String {
+        return "$workspaceSlug/customer/$customerUid/${this.uid}.${this.fileExtension}"
+    }
+
+    /**
+     * Get formatted file size (e.g., "1.5 MB")
+     */
+    fun getFormattedFileSize(): String {
+        val kb = 1024.0
+        val mb = kb * 1024
+        val gb = mb * 1024
+
+        return when {
+            fileSize >= gb -> "%.2f GB".format(fileSize / gb)
+            fileSize >= mb -> "%.2f MB".format(fileSize / mb)
+            fileSize >= kb -> "%.2f KB".format(fileSize / kb)
+            else -> "$fileSize bytes"
+        }
     }
 }
+
+/**
+ * Image metadata stored as JSON
+ */
+data class ImageMetadata(
+    val etag: String? = null,
+    val lastModified: Instant? = null,
+    val width: Int? = null,
+    val height: Int? = null,
+    val thumbnailsGenerated: Boolean = false,
+    val additionalProperties: Map<String, String> = emptyMap()
+)

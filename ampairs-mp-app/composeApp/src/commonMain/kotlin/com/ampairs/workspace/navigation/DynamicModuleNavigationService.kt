@@ -118,8 +118,8 @@ class DynamicModuleNavigationService {
         return try {
             // Check if the module has a registered navigation provider
             when (moduleCode) {
-                "customer-management", "product-management",
-                "order-management", "invoice-management", "tax-management" -> true
+                "business-profile", "customer-management", "product-management",
+                "order-management", "invoice-management", "tax-code-management" -> true
                 "inventory-management" -> false // Not implemented yet
                 else -> false
             }

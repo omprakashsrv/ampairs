@@ -8,14 +8,14 @@ plugins {
 
 group = "com.ampairs"
 version = "0.0.1-SNAPSHOT"
-java.sourceCompatibility = JavaVersion.VERSION_25
+java.sourceCompatibility = JavaVersion.VERSION_21
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(25))
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
 kotlin {
-    jvmToolchain(25)
+    jvmToolchain(21)
 }
 
 configurations {
@@ -46,18 +46,13 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
 
+    // Jackson Kotlin support for data class deserialization
+    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+
     // JWT
     implementation("io.jsonwebtoken:jjwt-api:0.11.5")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.11.5")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.11.5")
-
-    // Spring Cloud AWS - Auto-configuration for AWS services
-    implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.3.0"))
-    implementation("io.awspring.cloud:spring-cloud-aws-starter-s3")
-    implementation("io.awspring.cloud:spring-cloud-aws-starter-sns")
-
-    // MinIO Java SDK for object storage
-    implementation("io.minio:minio:8.5.17")
 
     // Database
     runtimeOnly("com.mysql:mysql-connector-j")

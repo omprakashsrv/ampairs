@@ -2,7 +2,7 @@ package com.ampairs.customer.domain.dto
 
 import com.ampairs.core.domain.model.Address
 import com.ampairs.customer.domain.model.Customer
-import java.time.LocalDateTime
+import java.time.Instant
 
 data class CustomerResponse(
     var uid: String,
@@ -31,9 +31,8 @@ data class CustomerResponse(
     var attributes: Map<String, Any>?,
     val latitude: Double?,
     val longitude: Double?,
-    var lastUpdated: Long?,
-    var createdAt: LocalDateTime?,
-    var updatedAt: LocalDateTime?,
+    var createdAt: Instant?,
+    var updatedAt: Instant?,
 )
 
 
@@ -72,7 +71,6 @@ fun Customer.asCustomerResponse(): CustomerResponse {
         // Spring Data Point: x=longitude, y=latitude - fix coordinate mapping
         latitude = this.location?.y,
         longitude = this.location?.x,
-        lastUpdated = this.lastUpdated,
         createdAt = this.createdAt,
         updatedAt = this.updatedAt,
     )

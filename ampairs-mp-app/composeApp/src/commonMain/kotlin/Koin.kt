@@ -1,4 +1,6 @@
 import com.ampairs.auth.authModule
+import com.ampairs.business.businessModule
+import com.ampairs.common.firebase.di.firebaseModule
 import com.ampairs.common.theme.themeModule
 import com.ampairs.customer.di.customerModule
 import com.ampairs.customer.ui.components.location.locationServiceModule
@@ -16,6 +18,7 @@ fun initKoin(koinApplication: KoinApplication): KoinApplication {
     koinApplication.modules(
         listOf(
             themeModule,
+            firebaseModule,
             platformModule,
             awsModule,
             // Platform-specific Room database modules
@@ -23,6 +26,7 @@ fun initKoin(koinApplication: KoinApplication): KoinApplication {
             workspacePlatformModule,
             customerPlatformModule,
             productPlatformModule,
+            businessPlatformModule,
             taxPlatformModule,
             authModule(),
             workspaceModule(),
@@ -31,6 +35,7 @@ fun initKoin(koinApplication: KoinApplication): KoinApplication {
             customerModule,
             locationServiceModule,
             productModule(),
+            businessModule(),
             taxModule,
         )
     )
@@ -43,5 +48,5 @@ expect val authPlatformModule: Module
 expect val workspacePlatformModule: Module
 expect val customerPlatformModule: Module
 expect val productPlatformModule: Module
+expect val businessPlatformModule: Module
 expect val taxPlatformModule: Module
-

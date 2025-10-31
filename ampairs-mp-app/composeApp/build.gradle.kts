@@ -8,6 +8,10 @@ plugins {
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.ksp)
     alias(libs.plugins.room)
+    alias(libs.plugins.googleServices) // Firebase Google Services plugin
+    alias(libs.plugins.firebaseCrashlytics) // Firebase Crashlytics plugin
+    alias(libs.plugins.firebasePerf) // Firebase Performance Monitoring plugin
+    alias(libs.plugins.kotlinCocoapods)
 }
 
 configurations.all {
@@ -20,15 +24,50 @@ kotlin {
 
     jvm("desktop")
 
-    // iOS targets
-    listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach { iosTarget ->
-        iosTarget.binaries.framework {
+    iosX64()
+    iosArm64()
+    iosSimulatorArm64()
+
+    cocoapods {
+        summary = "Ampairs Compose Multiplatform App"
+        version = "1.0.0" // 👈 Podspec version
+        homepage = "https://ampairs.in"
+
+        ios.deploymentTarget = "16.0"
+        framework {
             baseName = "ComposeApp"
             isStatic = true
+        }
+//        podfile = project.file("../iosApp/Podfile")
+
+        pod("FirebaseCore") {
+            version = "~> 11.13"
+            extraOpts += listOf("-compiler-option", "-fmodules")
+        }
+
+        pod("FirebaseAuth") {
+            version = "~> 11.13"
+            extraOpts += listOf("-compiler-option", "-fmodules")
+        }
+
+        pod("FirebaseAnalytics") {
+            version = "~> 11.13"
+            extraOpts += listOf("-compiler-option", "-fmodules")
+        }
+
+        pod("FirebaseCrashlytics") {
+            version = "~> 11.13"
+            extraOpts += listOf("-compiler-option", "-fmodules")
+        }
+
+        pod("FirebasePerformance") {
+            version = "~> 11.13"
+            extraOpts += listOf("-compiler-option", "-fmodules")
+        }
+
+        pod("FirebaseMessaging") {
+            version = "~> 11.13"
+            extraOpts += listOf("-compiler-option", "-fmodules")
         }
     }
 
@@ -47,6 +86,13 @@ kotlin {
                 implementation(libs.play.services.coroutines)
                 implementation(libs.maps.compose)
                 implementation(libs.accompanist.permissions)
+
+                // Firebase - Native Android SDK
+                implementation(libs.firebase.auth)
+                implementation(libs.google.firebase.analytics)
+                implementation(libs.google.firebase.crashlytics)
+                implementation(libs.google.firebase.perf)
+                implementation(libs.google.firebase.messaging)
             }
         }
 
@@ -173,7 +219,7 @@ android {
         versionName = "1.0"
 
         // Environment configuration
-        buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.6:8080\"")
+        buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.5:8080\"")
         buildConfigField("String", "ENVIRONMENT", "\"dev\"")
     }
 
@@ -187,7 +233,7 @@ android {
     }
     buildTypes {
         val debug by getting {
-            buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.6:8080\"")
+            buildConfigField("String", "API_BASE_URL", "\"http://10.50.51.5:8080\"")
             buildConfigField("String", "ENVIRONMENT", "\"dev\"")
             signingConfig = signingConfigs["release"]
         }
@@ -215,6 +261,7 @@ compose.desktop {
             copyright = "Copyright 2023 Ampairs. All rights reserved."
             vendor = "Ampairs"
             modules("java.sql")
+
             windows {
                 dirChooser = true
                 upgradeUuid = "FEEF6607-E845-4EF5-B62B-B7F48D654796"
@@ -222,14 +269,43 @@ compose.desktop {
                 menu = true
                 iconFile.set(rootProject.file("resources/icon.ico"))
                 menuGroup = packageName
+
+                // URL Protocol (Deep Link) Registration for Windows
+                // This registers the ampairs:// custom URL scheme handler
+                perUserInstall = false // Install for all users to register protocol
             }
+
             macOS {
                 bundleID = "com.ampairs.app"
                 packageName = rootProject.name
                 iconFile.set(rootProject.file("resources/icon.icns"))
+
+                // URL Scheme Configuration via Info.plist
+                // Creates custom Info.plist with CFBundleURLTypes for ampairs:// scheme
+                infoPlist {
+                    extraKeysRawXml = """
+                        <key>CFBundleURLTypes</key>
+                        <array>
+                            <dict>
+                                <key>CFBundleURLName</key>
+                                <string>com.ampairs.auth</string>
+                                <key>CFBundleURLSchemes</key>
+                                <array>
+                                    <string>ampairs</string>
+                                </array>
+                                <key>CFBundleTypeRole</key>
+                                <string>Viewer</string>
+                            </dict>
+                        </array>
+                    """.trimIndent()
+                }
             }
+
             linux {
                 iconFile.set(rootProject.file("resources/icon.png"))
+
+                // Linux .desktop file will include URL scheme via MimeType
+                // Format: x-scheme-handler/ampairs
             }
         }
 

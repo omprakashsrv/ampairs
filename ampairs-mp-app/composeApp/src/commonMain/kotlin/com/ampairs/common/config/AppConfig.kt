@@ -24,12 +24,22 @@ data class AppConfig(
     val wsBaseUrl: String
         get() = apiBaseUrl.replace("http://", "ws://").replace("https://", "wss://")
 
+    /**
+     * Web authentication URL for desktop browser-based authentication
+     * Maps to the web application's login page
+     */
+    val webAuthUrl: String
+        get() = when (environment) {
+            Environment.DEV -> "http://localhost:4200/login"
+            Environment.PRODUCTION -> "https://app.ampairs.com/login"
+        }
+
     companion object {
         /**
          * Get IP address for mobile platforms (Android/iOS)
          * This should be your development machine's IP address
          */
-        const val DEV_MOBILE_IP = "10.50.51.6" // Change this to your actual IP
+        const val DEV_MOBILE_IP = "10.50.51.5" // Change this to your actual IP
 
         /**
          * Default ports for different environments

@@ -46,7 +46,6 @@ com.ampairs.core/
 #### Core Models
 
 - **`Address.kt`** - Common address model used across modules
-- **`File.kt`** - File metadata entity for AWS S3 integration
 
 ### Multi-tenancy Support
 
@@ -56,7 +55,7 @@ com.ampairs.core/
 
 ### Services
 
-- **`FileService.kt`** - AWS S3 integration service with error handling and metadata tracking
+- **`ValidationService.kt`** - Central validation helpers for request payloads
 
 ### Exception Handling
 
@@ -135,16 +134,9 @@ class MyEntity : OwnableBaseDomain() {
 
 ### File Service Usage
 
-```kotlin
-@Autowired
-private lateinit var fileService: FileService
-
-// Upload file to S3
-val fileResponse = fileService.uploadFile(multipartFile, "folder/")
-
-// Download file from S3
-val fileContent = fileService.downloadFile(fileId)
-```
+File storage responsibilities now live in the dedicated `file` module.
+Import `com.ampairs.file.domain.service.FileService` in feature modules that need to
+upload or manage binary assets.
 
 ### Configuration Usage
 

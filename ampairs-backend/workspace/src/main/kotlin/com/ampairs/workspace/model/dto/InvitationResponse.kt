@@ -3,7 +3,7 @@ package com.ampairs.workspace.model.dto
 import com.ampairs.workspace.model.WorkspaceInvitation
 import com.ampairs.workspace.model.enums.InvitationStatus
 import com.ampairs.workspace.model.enums.WorkspaceRole
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * Response DTO for workspace invitation information
@@ -33,13 +33,13 @@ data class InvitationResponse(
 
     val inviterName: String? = null,
 
-    val expiresAt: LocalDateTime,
+    val expiresAt: Instant,
 
-    val acceptedAt: LocalDateTime?,
+    val acceptedAt: Instant?,
 
-    val rejectedAt: LocalDateTime?,
+    val rejectedAt: Instant?,
 
-    val cancelledAt: LocalDateTime?,
+    val cancelledAt: Instant?,
 
     val cancelledBy: String?,
 
@@ -47,11 +47,11 @@ data class InvitationResponse(
 
     val sendCount: Int,
 
-    val lastSentAt: LocalDateTime?,
+    val lastSentAt: Instant?,
 
-    val createdAt: LocalDateTime,
+    val createdAt: Instant,
 
-    val updatedAt: LocalDateTime,
+    val updatedAt: Instant,
 
     val isExpired: Boolean,
 
@@ -80,19 +80,19 @@ data class InvitationListResponse(
 
     val inviterName: String? = null,
 
-    val expiresAt: LocalDateTime,
+    val expiresAt: Instant,
 
-    val invitedAt: LocalDateTime,
+    val invitedAt: Instant,
 
-    val acceptedAt: LocalDateTime? = null,
+    val acceptedAt: Instant? = null,
 
     val sendCount: Int = 0,
 
-    val lastSentAt: LocalDateTime? = null,
+    val lastSentAt: Instant? = null,
 
     val message: String? = null,
 
-    val createdAt: LocalDateTime,
+    val createdAt: Instant,
 
     val isExpired: Boolean,
 )
@@ -130,7 +130,7 @@ data class PublicInvitationResponse(
 
     val role: WorkspaceRole,
 
-    val expiresAt: LocalDateTime,
+    val expiresAt: Instant,
 
     val isExpired: Boolean,
 
@@ -162,11 +162,11 @@ fun WorkspaceInvitation.toResponse(): InvitationResponse {
         cancellationReason = this.cancellationReason,
         sendCount = this.sendCount,
         lastSentAt = this.lastSentAt,
-        createdAt = this.createdAt ?: LocalDateTime.now(),
-        updatedAt = this.updatedAt ?: LocalDateTime.now(),
-        isExpired = LocalDateTime.now().isAfter(this.expiresAt),
-        daysUntilExpiry = if (LocalDateTime.now().isBefore(this.expiresAt)) {
-            java.time.Duration.between(LocalDateTime.now(), this.expiresAt).toDays()
+        createdAt = this.createdAt ?: Instant.now(),
+        updatedAt = this.updatedAt ?: Instant.now(),
+        isExpired = Instant.now().isAfter(this.expiresAt),
+        daysUntilExpiry = if (Instant.now().isBefore(this.expiresAt)) {
+            java.time.Duration.between(Instant.now(), this.expiresAt).toDays()
         } else null
     )
 }
@@ -186,12 +186,12 @@ fun WorkspaceInvitation.toListResponse(): InvitationListResponse {
         invitedBy = this.invitedBy,
         inviterName = null, // Will be populated from User entity if needed
         expiresAt = this.expiresAt,
-        invitedAt = this.createdAt ?: LocalDateTime.now(),
+        invitedAt = this.createdAt ?: Instant.now(),
         acceptedAt = this.acceptedAt,
         sendCount = this.sendCount,
         lastSentAt = this.lastSentAt,
         message = this.message,
-        createdAt = this.createdAt ?: LocalDateTime.now(),
-        isExpired = LocalDateTime.now().isAfter(this.expiresAt)
+        createdAt = this.createdAt ?: Instant.now(),
+        isExpired = Instant.now().isAfter(this.expiresAt)
     )
 }

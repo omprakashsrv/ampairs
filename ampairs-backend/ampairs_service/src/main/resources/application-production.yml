@@ -26,7 +26,7 @@ spring:
     hibernate:
       naming:
         physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
-      ddl-auto: validate  # Never auto-create in production
+      ddl-auto: validate  # CRITICAL: Never use 'update' or 'create' in production - Flyway manages all DDL
     show-sql: false
     properties:
       hibernate:
@@ -38,12 +38,21 @@ spring:
         order_updates: true
         connection:
           provider_disables_autocommit: true
-          
-  # Liquibase for production schema management
-  liquibase:
+
+  # Flyway for production schema management
+  # CRITICAL: Database user must have DDL permissions (CREATE, ALTER, DROP, etc.)
+  flyway:
     enabled: true
-    change-log: classpath:db/changelog/db.changelog-master.xml
-    contexts: production
+    baseline-on-migrate: false  # Set to true only for existing databases
+    validate-on-migrate: true
+    out-of-order: false
+    locations: classpath:db/migration
+    user: ${FLYWAY_USER:${spring.datasource.username}}
+    password: ${FLYWAY_PASSWORD:${spring.datasource.password}}
+    # Production-specific settings
+    placeholder-replacement: true
+    placeholders:
+      environment: production
     
   # Production Cache Configuration
   cache:
@@ -161,8 +170,8 @@ application:
 google:
   recaptcha:
     enabled: ${RECAPTCHA_ENABLED:true}
-    secret-key: ${RECAPTCHA_SECRET_KEY}
-    site-key: ${RECAPTCHA_SITE_KEY}
+    secret-key: ${RECAPTCHA_SECRET_KEY:6LdcbvwrAAAAAJdaTJTrgDoUpvs5QKL0mDUpxK_y}
+    site-key: ${RECAPTCHA_SITE_KEY:6LdcbvwrAAAAAIOZ2tSGVBeX3FuW3nsmm4zF9MBn}
     min-score: ${RECAPTCHA_MIN_SCORE:0.7}
     timeout-ms: ${RECAPTCHA_TIMEOUT:5000}
     verify-url: ${RECAPTCHA_VERIFY_URL:https://www.google.com/recaptcha/api/siteverify}

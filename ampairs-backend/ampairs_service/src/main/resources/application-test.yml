@@ -19,12 +19,16 @@ spring:
     hibernate:
       naming:
         physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
-      ddl-auto: create-drop  # Drop and recreate schema for each test run
+      ddl-auto: create-drop  # Drop and recreate schema for each test run (OK for tests only)
     show-sql: true
     properties:
       hibernate:
         format_sql: true
         use_sql_comments: true
+
+  # Flyway - DISABLED for tests (using Hibernate ddl-auto instead)
+  flyway:
+    enabled: false  # Let Hibernate manage schema in tests
 
   # Test caching settings
   cache:

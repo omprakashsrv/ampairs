@@ -24,6 +24,7 @@ class ConfigService(
     /**
      * Get complete configuration schema for an entity type
      * Auto-seeds default configuration on first access if none exists
+     * Incrementally adds missing fields when new defaults are introduced
      */
     @Transactional
     fun getConfigSchema(entityType: String): EntityConfigSchemaResponse {
@@ -33,12 +34,11 @@ class ConfigService(
         var attributeDefinitions = attributeDefinitionRepository
             .findByEntityTypeOrderByDisplayOrderAsc(entityType)
 
-        // Auto-seed if empty (first time access for this entity type in this workspace)
-        if (fieldConfigs.isEmpty() && attributeDefinitions.isEmpty()) {
-            logger.info("No configuration found for entity type: {}, seeding defaults...", entityType)
-            seedDefaultConfig(entityType)
+        // Incremental seeding: Add missing fields from defaults
+        val seededNewFields = seedMissingFields(entityType, fieldConfigs)
 
-            // Fetch again after seeding
+        if (seededNewFields) {
+            // Fetch again after seeding new fields
             fieldConfigs = fieldConfigRepository.findByEntityTypeOrderByDisplayOrderAsc(entityType)
             attributeDefinitions = attributeDefinitionRepository.findByEntityTypeOrderByDisplayOrderAsc(entityType)
         }
@@ -157,6 +157,8 @@ class ConfigService(
     /**
      * Bulk save entity configuration schema (field configs + attribute definitions)
      * Used for initializing defaults or bulk updates from frontend
+     *
+     * IMPORTANT: This performs a full sync - deletes attributes not in the request
      */
     @Transactional
     fun saveConfigSchema(request: EntityConfigSchemaRequest): EntityConfigSchemaResponse {
@@ -172,7 +174,25 @@ class ConfigService(
             saveFieldConfig(fieldConfigRequest)
         }
 
-        // Save all attribute definitions
+        // Handle attribute definitions with delete sync
+        // 1. Get all existing attribute definitions for this entity type
+        val existingAttributeDefinitions = attributeDefinitionRepository.findByEntityTypeOrderByDisplayOrderAsc(entityType)
+        val existingKeys = existingAttributeDefinitions.map { it.attributeKey }.toSet()
+
+        // 2. Get attribute keys from the request
+        val requestKeys = request.attributeDefinitions.map { it.attributeKey }.toSet()
+
+        // 3. Find attributes that need to be deleted (exist in DB but not in request)
+        val keysToDelete = existingKeys - requestKeys
+        if (keysToDelete.isNotEmpty()) {
+            logger.info("Deleting {} attribute definitions for entity type: {} - keys: {}",
+                keysToDelete.size, entityType, keysToDelete)
+            keysToDelete.forEach { attributeKey ->
+                deleteAttributeDefinition(entityType, attributeKey)
+            }
+        }
+
+        // 4. Save all attribute definitions from request
         val savedAttributeDefinitions = request.attributeDefinitions.map { attributeRequest ->
             saveAttributeDefinition(attributeRequest)
         }
@@ -204,7 +224,52 @@ class ConfigService(
     }
 
     /**
+     * Incrementally seed missing fields from defaults
+     * Returns true if any new fields were added
+     */
+    private fun seedMissingFields(entityType: String, existingFieldConfigs: List<FieldConfig>): Boolean {
+        // Get default field configs for this entity type
+        val defaultFields = when (entityType.lowercase()) {
+            "customer" -> getDefaultCustomerFieldConfigs()
+            "product" -> getDefaultProductFieldConfigs()
+            "order" -> getDefaultOrderFieldConfigs()
+            "invoice" -> getDefaultInvoiceFieldConfigs()
+            "business" -> getDefaultBusinessFieldConfigs()
+            else -> {
+                logger.debug("No default fields defined for entity type: {}", entityType)
+                return false
+            }
+        }
+
+        // If no existing configs, seed all defaults
+        if (existingFieldConfigs.isEmpty()) {
+            logger.info("No configuration found for entity type: {}, seeding all {} defaults...",
+                entityType, defaultFields.size)
+            fieldConfigRepository.saveAll(defaultFields)
+            logger.info("Seeded {} field configurations for entity type: {}", defaultFields.size, entityType)
+            return true
+        }
+
+        // Find missing fields by comparing field names
+        val existingFieldNames = existingFieldConfigs.map { it.fieldName }.toSet()
+        val missingFields = defaultFields.filter { it.fieldName !in existingFieldNames }
+
+        if (missingFields.isNotEmpty()) {
+            logger.info("Found {} new fields for entity type: {} - adding: {}",
+                missingFields.size, entityType, missingFields.map { it.fieldName })
+            fieldConfigRepository.saveAll(missingFields)
+            logger.info("Successfully added {} new field configurations for entity type: {}",
+                missingFields.size, entityType)
+            return true
+        }
+
+        logger.debug("No missing fields for entity type: {}", entityType)
+        return false
+    }
+
+    /**
      * Seed default configuration for an entity type
+     * DEPRECATED: Use seedMissingFields instead for incremental seeding
      */
     private fun seedDefaultConfig(entityType: String) {
         when (entityType.lowercase()) {
@@ -212,6 +277,7 @@ class ConfigService(
             "product" -> seedProductDefaults()
             "order" -> seedOrderDefaults()
             "invoice" -> seedInvoiceDefaults()
+            "business" -> seedBusinessDefaults()
             else -> {
                 logger.warn("No default configuration defined for entity type: {}", entityType)
             }
@@ -219,48 +285,112 @@ class ConfigService(
     }
 
     /**
-     * Seed default customer form configuration
+     * Get default customer field configurations
+     * Returns list of default FieldConfig entities
      */
-    private fun seedCustomerDefaults() {
+    private fun getDefaultCustomerFieldConfigs(): List<FieldConfig> {
         val fields = listOf(
-            createFieldConfig("customer", "name", "Customer Name", 1, visible = true, mandatory = true),
-            createFieldConfig("customer", "phone", "Phone Number", 2, visible = true, mandatory = true, validationType = "PHONE"),
-            createFieldConfig("customer", "email", "Email Address", 3, visible = true, mandatory = false, validationType = "EMAIL"),
-            createFieldConfig("customer", "gstNumber", "GST Number", 4, visible = true, mandatory = false,
-                placeholder = "Enter 15-digit GST number", helpText = "GST number format: 22AAAAA0000A1Z5"),
-            createFieldConfig("customer", "customerType", "Customer Type", 5, visible = true, mandatory = false),
-            createFieldConfig("customer", "customerGroup", "Customer Group", 6, visible = true, mandatory = false),
-            createFieldConfig("customer", "address", "Address", 7, visible = true, mandatory = false),
-            createFieldConfig("customer", "city", "City", 8, visible = true, mandatory = false),
-            createFieldConfig("customer", "state", "State", 9, visible = true, mandatory = false),
-            createFieldConfig("customer", "pincode", "Pincode", 10, visible = true, mandatory = false, validationType = "NUMBER"),
-            createFieldConfig("customer", "creditLimit", "Credit Limit", 11, visible = true, mandatory = false, validationType = "NUMBER",
-                placeholder = "0.00", helpText = "Maximum credit limit for this customer"),
-            createFieldConfig("customer", "creditDays", "Credit Days", 12, visible = true, mandatory = false, validationType = "NUMBER",
-                placeholder = "0", helpText = "Number of days credit allowed"),
+            // === Basic Information Section ===
+            createFieldConfig("customer", "name", "Customer Name", 1, visible = true, mandatory = true,
+                placeholder = "Enter customer name", helpText = "Full name of the customer"),
+            createFieldConfig("customer", "email", "Email", 2, visible = true, mandatory = false, validationType = "EMAIL",
+                placeholder = "customer@example.com"),
+            createFieldConfig("customer", "customerType", "Customer Type", 3, visible = true, mandatory = false,
+                helpText = "Type of customer (Retail, Wholesale, etc.)"),
+            createFieldConfig("customer", "customerGroup", "Customer Group", 4, visible = true, mandatory = false,
+                helpText = "Group classification for customer"),
+            createFieldConfig("customer", "countryCode", "Country Code", 5, visible = true, mandatory = false, validationType = "NUMBER",
+                placeholder = "91", defaultValue = "91", helpText = "International dialing code (e.g., 91 for India, 1 for USA)"),
+            createFieldConfig("customer", "phone", "Phone Number", 6, visible = true, mandatory = true, validationType = "PHONE",
+                placeholder = "Enter phone number"),
+            createFieldConfig("customer", "landline", "Landline", 7, visible = true, mandatory = false,
+                placeholder = "Enter landline number", helpText = "Landline number with area code"),
+
+            // === Business Information Section ===
+            createFieldConfig("customer", "gstNumber", "GST Number", 8, visible = true, mandatory = false, validationType = "GSTIN",
+                placeholder = "Enter 15-digit GST number", helpText = "Goods and Services Tax Identification Number"),
+            createFieldConfig("customer", "panNumber", "PAN Number", 9, visible = true, mandatory = false, validationType = "PAN",
+                placeholder = "Enter 10-digit PAN", helpText = "Permanent Account Number for tax purposes"),
+
+            // === Credit Management Section ===
+            createFieldConfig("customer", "creditLimit", "Credit Limit", 10, visible = true, mandatory = false, validationType = "NUMBER",
+                placeholder = "0.00", helpText = "Maximum credit amount allowed"),
+            createFieldConfig("customer", "creditDays", "Credit Days", 11, visible = true, mandatory = false, validationType = "NUMBER",
+                placeholder = "0", helpText = "Number of days for credit payment"),
+
+            // === Main Address Section ===
+            createFieldConfig("customer", "address", "Address", 12, visible = true, mandatory = false,
+                placeholder = "Enter address"),
+            createFieldConfig("customer", "street", "Street", 13, visible = true, mandatory = false,
+                placeholder = "Enter street name"),
+            createFieldConfig("customer", "street2", "Street 2", 14, visible = true, mandatory = false,
+                placeholder = "Additional street information"),
+            createFieldConfig("customer", "city", "City", 15, visible = true, mandatory = false,
+                placeholder = "Enter city"),
+            createFieldConfig("customer", "pincode", "PIN Code", 16, visible = true, mandatory = false,
+                placeholder = "Enter PIN code"),
+            createFieldConfig("customer", "state", "State", 17, visible = true, mandatory = false,
+                placeholder = "Select state"),
+            createFieldConfig("customer", "country", "Country", 18, visible = true, mandatory = false,
+                placeholder = "India", defaultValue = "India"),
+
+            // === Location Section ===
+            createFieldConfig("customer", "latitude", "Latitude", 19, visible = true, mandatory = false, validationType = "NUMBER",
+                helpText = "GPS latitude coordinate"),
+            createFieldConfig("customer", "longitude", "Longitude", 20, visible = true, mandatory = false, validationType = "NUMBER",
+                helpText = "GPS longitude coordinate"),
+
+            // === Billing Address Section ===
+            createFieldConfig("customer", "billingStreet", "Billing Street", 21, visible = true, mandatory = false,
+                placeholder = "Enter billing street"),
+            createFieldConfig("customer", "billingCity", "Billing City", 22, visible = true, mandatory = false,
+                placeholder = "Enter billing city"),
+            createFieldConfig("customer", "billingPincode", "Billing PIN Code", 23, visible = true, mandatory = false,
+                placeholder = "Enter billing PIN"),
+            createFieldConfig("customer", "billingState", "Billing State", 24, visible = true, mandatory = false,
+                placeholder = "Select billing state"),
+            createFieldConfig("customer", "billingCountry", "Billing Country", 25, visible = true, mandatory = false,
+                placeholder = "India", defaultValue = "India"),
+
+            // === Shipping Address Section ===
+            createFieldConfig("customer", "shippingStreet", "Shipping Street", 26, visible = true, mandatory = false,
+                placeholder = "Enter shipping street"),
+            createFieldConfig("customer", "shippingCity", "Shipping City", 27, visible = true, mandatory = false,
+                placeholder = "Enter shipping city"),
+            createFieldConfig("customer", "shippingPincode", "Shipping PIN Code", 28, visible = true, mandatory = false,
+                placeholder = "Enter shipping PIN"),
+            createFieldConfig("customer", "shippingState", "Shipping State", 29, visible = true, mandatory = false,
+                placeholder = "Select shipping state"),
+            createFieldConfig("customer", "shippingCountry", "Shipping Country", 30, visible = true, mandatory = false,
+                placeholder = "India", defaultValue = "India"),
+
+            // === Status Section ===
+            createFieldConfig("customer", "status", "Status", 31, visible = true, mandatory = false,
+                defaultValue = "ACTIVE", helpText = "Customer status (Active, Inactive, Suspended)"),
+
+            // === Customer Images Section ===
+            createFieldConfig("customer", "customerImages", "Customer Images", 32, visible = true, mandatory = false,
+                enabled = true, helpText = "Photo gallery for customer documentation (storefront, documents, etc.)"),
         )
 
-        fieldConfigRepository.saveAll(fields)
-        logger.info("Seeded {} customer field configurations", fields.size)
-
-        val attributes = listOf(
-            createAttributeDefinition("customer", "industry", "Industry", "STRING", 1,
-                helpText = "Customer's business industry"),
-            createAttributeDefinition("customer", "company_size", "Company Size", "STRING", 2,
-                helpText = "Size of customer's organization"),
-            createAttributeDefinition("customer", "preferred_payment_method", "Preferred Payment Method", "STRING", 3,
-                helpText = "Customer's preferred payment method"),
-        )
-
-        attributeDefinitionRepository.saveAll(attributes)
-        logger.info("Seeded {} customer attribute definitions", attributes.size)
+        return fields
     }
 
     /**
-     * Seed default product form configuration
+     * Seed default customer form configuration
+     * Legacy method - calls getDefaultCustomerFieldConfigs() and saves
      */
-    private fun seedProductDefaults() {
-        val fields = listOf(
+    private fun seedCustomerDefaults() {
+        val fields = getDefaultCustomerFieldConfigs()
+        fieldConfigRepository.saveAll(fields)
+        logger.info("Seeded {} customer field configurations", fields.size)
+    }
+
+    /**
+     * Get default product field configurations
+     */
+    private fun getDefaultProductFieldConfigs(): List<FieldConfig> {
+        return listOf(
             createFieldConfig("product", "name", "Product Name", 1, visible = true, mandatory = true),
             createFieldConfig("product", "sku", "SKU", 2, visible = true, mandatory = false),
             createFieldConfig("product", "description", "Description", 3, visible = true, mandatory = false),
@@ -269,41 +399,151 @@ class ConfigService(
             createFieldConfig("product", "taxCode", "Tax Code", 6, visible = true, mandatory = false),
             createFieldConfig("product", "unit", "Unit", 7, visible = true, mandatory = false),
         )
+    }
 
+    /**
+     * Seed default product form configuration
+     */
+    private fun seedProductDefaults() {
+        val fields = getDefaultProductFieldConfigs()
         fieldConfigRepository.saveAll(fields)
         logger.info("Seeded {} product field configurations", fields.size)
     }
 
     /**
-     * Seed default order form configuration
+     * Get default order field configurations
      */
-    private fun seedOrderDefaults() {
-        val fields = listOf(
+    private fun getDefaultOrderFieldConfigs(): List<FieldConfig> {
+        return listOf(
             createFieldConfig("order", "customer", "Customer", 1, visible = true, mandatory = true),
             createFieldConfig("order", "orderDate", "Order Date", 2, visible = true, mandatory = true),
             createFieldConfig("order", "deliveryDate", "Delivery Date", 3, visible = true, mandatory = false),
             createFieldConfig("order", "status", "Status", 4, visible = true, mandatory = false),
             createFieldConfig("order", "notes", "Notes", 5, visible = true, mandatory = false),
         )
+    }
 
+    /**
+     * Seed default order form configuration
+     */
+    private fun seedOrderDefaults() {
+        val fields = getDefaultOrderFieldConfigs()
         fieldConfigRepository.saveAll(fields)
         logger.info("Seeded {} order field configurations", fields.size)
     }
 
     /**
-     * Seed default invoice form configuration
+     * Get default invoice field configurations
      */
-    private fun seedInvoiceDefaults() {
-        val fields = listOf(
+    private fun getDefaultInvoiceFieldConfigs(): List<FieldConfig> {
+        return listOf(
             createFieldConfig("invoice", "customer", "Customer", 1, visible = true, mandatory = true),
             createFieldConfig("invoice", "invoiceDate", "Invoice Date", 2, visible = true, mandatory = true),
             createFieldConfig("invoice", "dueDate", "Due Date", 3, visible = true, mandatory = false),
             createFieldConfig("invoice", "status", "Status", 4, visible = true, mandatory = false),
             createFieldConfig("invoice", "notes", "Notes", 5, visible = true, mandatory = false),
         )
+    }
 
+    /**
+     * Seed default invoice form configuration
+     */
+    private fun seedInvoiceDefaults() {
+        val fields = getDefaultInvoiceFieldConfigs()
         fieldConfigRepository.saveAll(fields)
         logger.info("Seeded {} invoice field configurations", fields.size)
+    }
+
+    /**
+     * Get default business field configurations
+     * Returns list of default FieldConfig entities for business profile
+     */
+    private fun getDefaultBusinessFieldConfigs(): List<FieldConfig> {
+        val fields = listOf(
+            // === Basic Information Section ===
+            createFieldConfig("business", "name", "Business Name", 1, visible = true, mandatory = true,
+                placeholder = "Enter business name", helpText = "Official name of the business"),
+            createFieldConfig("business", "businessType", "Business Type", 2, visible = true, mandatory = true,
+                placeholder = "Select business type", helpText = "Type of business (Retail, Wholesale, Service, etc.)"),
+            createFieldConfig("business", "description", "Description", 3, visible = true, mandatory = false,
+                placeholder = "Enter business description", helpText = "Brief description of the business"),
+            createFieldConfig("business", "ownerName", "Owner Name", 4, visible = true, mandatory = false,
+                placeholder = "Enter owner name", helpText = "Name of the business owner"),
+
+            // === Address Section ===
+            createFieldConfig("business", "addressLine1", "Address Line 1", 5, visible = true, mandatory = false,
+                placeholder = "Enter address line 1"),
+            createFieldConfig("business", "addressLine2", "Address Line 2", 6, visible = true, mandatory = false,
+                placeholder = "Enter address line 2"),
+            createFieldConfig("business", "city", "City", 7, visible = true, mandatory = false,
+                placeholder = "Enter city"),
+            createFieldConfig("business", "state", "State", 8, visible = true, mandatory = false,
+                placeholder = "Select state"),
+            createFieldConfig("business", "postalCode", "Postal Code", 9, visible = true, mandatory = false,
+                placeholder = "Enter postal code"),
+            createFieldConfig("business", "country", "Country", 10, visible = true, mandatory = false,
+                placeholder = "India", defaultValue = "India"),
+
+            // === Location Section ===
+            createFieldConfig("business", "latitude", "Latitude", 11, visible = true, mandatory = false, validationType = "NUMBER",
+                helpText = "GPS latitude coordinate"),
+            createFieldConfig("business", "longitude", "Longitude", 12, visible = true, mandatory = false, validationType = "NUMBER",
+                helpText = "GPS longitude coordinate"),
+
+            // === Contact Section ===
+            createFieldConfig("business", "phone", "Phone Number", 13, visible = true, mandatory = false, validationType = "PHONE",
+                placeholder = "Enter phone number"),
+            createFieldConfig("business", "email", "Email", 14, visible = true, mandatory = false, validationType = "EMAIL",
+                placeholder = "business@example.com"),
+            createFieldConfig("business", "website", "Website", 15, visible = true, mandatory = false,
+                placeholder = "https://example.com", helpText = "Business website URL"),
+
+            // === Tax/Regulatory Section ===
+            createFieldConfig("business", "taxId", "Tax ID", 16, visible = true, mandatory = false,
+                placeholder = "Enter tax identification number", helpText = "Government tax identification number"),
+            createFieldConfig("business", "registrationNumber", "Registration Number", 17, visible = true, mandatory = false,
+                placeholder = "Enter registration number", helpText = "Business registration number"),
+
+            // === Operational Config Section ===
+            createFieldConfig("business", "timezone", "Timezone", 18, visible = true, mandatory = true,
+                placeholder = "Asia/Kolkata", defaultValue = "Asia/Kolkata", helpText = "Business operating timezone"),
+            createFieldConfig("business", "currency", "Currency", 19, visible = true, mandatory = true,
+                placeholder = "INR", defaultValue = "INR", helpText = "Default currency for transactions"),
+            createFieldConfig("business", "language", "Language", 20, visible = true, mandatory = true,
+                placeholder = "en", defaultValue = "en", helpText = "Default language (ISO 639-1 code)"),
+            createFieldConfig("business", "dateFormat", "Date Format", 21, visible = true, mandatory = true,
+                placeholder = "dd/MM/yyyy", defaultValue = "dd/MM/yyyy", helpText = "Date display format"),
+            createFieldConfig("business", "timeFormat", "Time Format", 22, visible = true, mandatory = true,
+                placeholder = "HH:mm", defaultValue = "HH:mm", helpText = "Time display format (12h or 24h)"),
+
+            // === Business Hours Section ===
+            createFieldConfig("business", "openingHours", "Opening Hours", 23, visible = true, mandatory = false,
+                placeholder = "09:00", helpText = "Daily opening time"),
+            createFieldConfig("business", "closingHours", "Closing Hours", 24, visible = true, mandatory = false,
+                placeholder = "18:00", helpText = "Daily closing time"),
+            createFieldConfig("business", "operatingDays", "Operating Days", 25, visible = true, mandatory = false,
+                helpText = "Days of the week business is open"),
+
+            // === Status Section ===
+            createFieldConfig("business", "active", "Active", 26, visible = true, mandatory = false,
+                defaultValue = "true", helpText = "Business status (active/inactive)"),
+
+            // === Custom Attributes Section ===
+            createFieldConfig("business", "customAttributes", "Custom Attributes", 27, visible = true, mandatory = false,
+                helpText = "Custom fields for business-specific data")
+        )
+
+        return fields
+    }
+
+    /**
+     * Seed default business form configuration
+     * Legacy method - calls getDefaultBusinessFieldConfigs() and saves to repository
+     */
+    private fun seedBusinessDefaults() {
+        val fields = getDefaultBusinessFieldConfigs()
+        fieldConfigRepository.saveAll(fields)
+        logger.info("Seeded {} business field configurations", fields.size)
     }
 
     /**

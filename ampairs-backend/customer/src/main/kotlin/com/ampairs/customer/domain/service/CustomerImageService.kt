@@ -1,8 +1,11 @@
 package com.ampairs.customer.domain.service
 
-import com.ampairs.core.config.StorageProperties
+import com.ampairs.file.config.StorageProperties
 import com.ampairs.core.multitenancy.TenantContextHolder
-import com.ampairs.core.service.*
+import com.ampairs.file.service.ImageResizingService
+import com.ampairs.file.service.ThumbnailCacheService
+import com.ampairs.file.storage.ObjectNotFoundException
+import com.ampairs.file.storage.ObjectStorageService
 import com.ampairs.customer.domain.dto.*
 import com.ampairs.customer.domain.model.CustomerImage
 import com.ampairs.customer.domain.repository.CustomerImageRepository
@@ -13,7 +16,7 @@ import org.springframework.web.multipart.MultipartFile
 import java.awt.image.BufferedImage
 import java.io.ByteArrayInputStream
 import java.io.InputStream
-import java.time.LocalDateTime
+import java.time.Instant
 import javax.imageio.ImageIO
 
 /**
@@ -151,7 +154,6 @@ class CustomerImageService(
         }
 
         // Update fields
-        request.altText?.let { image.altText = it }
         request.description?.let { image.description = it }
         request.displayOrder?.let { image.displayOrder = it }
 
@@ -357,8 +359,8 @@ class CustomerImageService(
             if (thumbnailMetadata != null) {
                 availableThumbnails.add(ThumbnailResponse(
                     size = size.pixels,
-                    width = calculateThumbnailDimension(image.width ?: 0, image.height ?: 0, size.pixels).first,
-                    height = calculateThumbnailDimension(image.width ?: 0, image.height ?: 0, size.pixels).second,
+                    width = calculateThumbnailDimension(image.metadata.width ?: 0, image.metadata.height ?: 0, size.pixels).first,
+                    height = calculateThumbnailDimension(image.metadata.width ?: 0, image.metadata.height ?: 0, size.pixels).second,
                     format = storageProperties.image.thumbnails.format,
                     contentType = thumbnailMetadata.contentType,
                     contentLength = thumbnailMetadata.contentLength,
@@ -398,15 +400,15 @@ class CustomerImageService(
         val thumbnailResponses = results.filter { it.success }.map { result ->
             ThumbnailResponse(
                 size = result.size.pixels,
-                width = calculateThumbnailDimension(image.width ?: 0, image.height ?: 0, result.size.pixels).first,
-                height = calculateThumbnailDimension(image.width ?: 0, image.height ?: 0, result.size.pixels).second,
+                width = calculateThumbnailDimension(image.metadata.width ?: 0, image.metadata.height ?: 0, result.size.pixels).first,
+                height = calculateThumbnailDimension(image.metadata.width ?: 0, image.metadata.height ?: 0, result.size.pixels).second,
                 format = storageProperties.image.thumbnails.format,
                 contentType = "image/${storageProperties.image.thumbnails.format}",
                 contentLength = 0, // Would need to be calculated
                 formattedFileSize = "Unknown",
                 url = null,
                 cached = true,
-                lastModified = LocalDateTime.now(),
+                lastModified = Instant.now(),
                 etag = null
             )
         }
@@ -532,12 +534,11 @@ class CustomerImageService(
             this.fileExtension = fileExtension
             contentType = file.contentType ?: "application/octet-stream"
             fileSize = file.size
-            storagePath = generateStoragePath()
+            storagePath = generateStoragePath(workspaceSlug, request.customerUid)
             isPrimary = request.isPrimary
             displayOrder = request.displayOrder ?: 0
-            altText = request.altText
             description = request.description
-            uploadedAt = LocalDateTime.now()
+            uploadedAt = Instant.now()
             active = true
             // ownerId will be set by @TenantId
         }
@@ -610,6 +611,7 @@ class CustomerImageService(
             else -> "${bytes / (1024 * 1024 * 1024)} GB"
         }
     }
+
 }
 
 /**

@@ -6,8 +6,8 @@ import com.ampairs.tax.domain.enums.TaxComponentType
 import com.ampairs.tax.domain.model.TaxRate
 import jakarta.validation.constraints.*
 import java.math.BigDecimal
+import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalDateTime
 
 data class TaxRateRequestDto(
     val uid: String? = null, // Optional UID for UPSERT operations
@@ -121,8 +121,8 @@ data class TaxRateResponseDto(
     val isCompositionSchemeApplicable: Boolean,
     val description: String?,
     val sourceReference: String?,
-    val createdAt: LocalDateTime?,
-    val updatedAt: LocalDateTime?,
+    val createdAt: Instant?,
+    val updatedAt: Instant?,
     val lastUpdatedBy: String?,
     val isValidForToday: Boolean,
     val daysUntilExpiry: Long?

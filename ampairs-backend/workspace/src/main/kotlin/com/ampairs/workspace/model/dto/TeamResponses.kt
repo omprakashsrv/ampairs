@@ -2,7 +2,7 @@ package com.ampairs.workspace.model.dto
 
 import com.ampairs.workspace.model.WorkspaceTeam
 import com.ampairs.workspace.security.WorkspacePermission
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * Detailed team response with all team information
@@ -30,9 +30,9 @@ data class TeamResponse(
 
         val memberCount: Int,
 
-        val createdAt: LocalDateTime,
+        val createdAt: Instant,
 
-        val updatedAt: LocalDateTime
+        val updatedAt: Instant
 )
 
 /**
@@ -91,8 +91,8 @@ fun WorkspaceTeam.toResponse(
     isActive = this.isActive,
     maxMembers = this.maxMembers,
     memberCount = memberCount,
-    createdAt = this.createdAt ?: LocalDateTime.now(),
-    updatedAt = this.updatedAt ?: LocalDateTime.now()
+    createdAt = this.createdAt ?: Instant.now(),
+    updatedAt = this.updatedAt ?: Instant.now()
 )
 
 /**

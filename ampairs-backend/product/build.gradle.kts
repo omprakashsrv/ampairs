@@ -8,14 +8,14 @@ plugins {
 
 group = "com.ampairs"
 version = ""
-java.sourceCompatibility = JavaVersion.VERSION_25
+java.sourceCompatibility = JavaVersion.VERSION_21
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(25))
+        languageVersion.set(JavaLanguageVersion.of(21))
     }
 }
 kotlin {
-    jvmToolchain(25)
+    jvmToolchain(21)
 }
 
 configurations {
@@ -36,7 +36,9 @@ repositories {
 
 dependencies {
     api(project(mapOf("path" to ":core")))
+    api(project(mapOf("path" to ":file")))
     api(project(mapOf("path" to ":event")))
+    api(project(mapOf("path" to ":unit")))
     compileOnly("org.springframework.boot:spring-boot-starter-data-rest")
     compileOnly("org.springframework.data:spring-data-rest-webmvc")
     implementation("org.jetbrains.kotlin:kotlin-reflect")

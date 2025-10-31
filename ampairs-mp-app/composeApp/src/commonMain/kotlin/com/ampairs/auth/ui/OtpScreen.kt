@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.ampairs.auth.domain.AuthMethod
 import com.ampairs.auth.viewmodel.LoginViewModel
 import com.ampairs.ui.components.Otp
 import org.jetbrains.compose.resources.stringResource
@@ -41,13 +42,15 @@ import org.koin.compose.koinInject
 @Composable
 fun OtpScreen(
     sessionId: String,
+    verificationId: String = "", // Firebase verification ID (empty for backend auth)
     onAuthSuccess: () -> Unit,
 ) {
     val viewModel = koinInject<LoginViewModel>()
-    
-    // Set the sessionId from navigation parameter
-    LaunchedEffect(sessionId) {
+
+    // Set the sessionId and verificationId from navigation parameters
+    LaunchedEffect(sessionId, verificationId) {
         viewModel.sessionId = sessionId
+        viewModel.firebaseVerificationId = verificationId
     }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -126,7 +129,12 @@ fun OtpScreen(
                 }
                 Column(modifier = Modifier.padding(vertical = 16.dp)) {
                     Button(
-                        onClick = { viewModel.completeAuthentication(onAuthSuccess) },
+                        onClick = {
+                            when (viewModel.authMethod) {
+                                AuthMethod.BACKEND_API -> viewModel.completeAuthentication(onAuthSuccess)
+                                AuthMethod.FIREBASE -> viewModel.completeFirebaseAuthentication(onAuthSuccess)
+                            }
+                        },
                         modifier = Modifier.fillMaxWidth(),
                         enabled = viewModel.validPhoneNumber && !viewModel.loading
                     ) {
@@ -140,13 +148,22 @@ fun OtpScreen(
                             Text(stringResource(Res.string.verify_otp))
                         }
                     }
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     OutlinedButton(
-                        onClick = { 
-                            viewModel.resendOtp { sessionId ->
-                                viewModel.sessionId = sessionId
+                        onClick = {
+                            when (viewModel.authMethod) {
+                                AuthMethod.BACKEND_API -> {
+                                    viewModel.resendOtp { sessionId ->
+                                        viewModel.sessionId = sessionId
+                                    }
+                                }
+                                AuthMethod.FIREBASE -> {
+                                    viewModel.resendFirebaseOtp { verificationId ->
+                                        viewModel.firebaseVerificationId = verificationId
+                                    }
+                                }
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),

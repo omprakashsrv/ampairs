@@ -17,6 +17,7 @@ import androidx.compose.ui.window.WindowPlacement
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 // import com.ampairs.tally.TallyApp
+import com.ampairs.auth.deeplink.DeepLinkHandler
 import com.ampairs.workspace.navigation.DynamicModuleNavigationService
 import com.ampairs.workspace.navigation.DynamicModulesMenu
 import coil3.compose.LocalPlatformContext
@@ -33,6 +34,14 @@ fun main() = application {
         val koinApplication = startKoin {}
         initKoin(koinApplication)
     }
+
+    // Setup deep link handler for desktop authentication
+    LaunchedEffect(Unit) {
+        println("Main: Initializing deep link handler...")
+        DeepLinkHandler.setupDeepLinkHandler()
+        println("Main: Deep link handler initialized")
+    }
+
     val applicationState = remember { ApplicationState() }
     applicationState.windows
     setSingletonImageLoaderFactory { context ->

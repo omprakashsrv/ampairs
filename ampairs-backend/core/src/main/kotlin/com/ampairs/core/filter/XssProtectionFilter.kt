@@ -35,7 +35,8 @@ class XssProtectionFilter(
             "/static/",
             "/css/",
             "/js/",
-            "/images/"
+            "/images/",
+            "/ws"  // WebSocket endpoint - JWT token in query params must not be sanitized
         )
 
         // Content types that should be checked for XSS

@@ -17,6 +17,9 @@ import androidx.compose.ui.unit.dp
 import androidx.window.core.layout.WindowWidthSizeClass
 import com.ampairs.customer.domain.Customer
 import com.ampairs.customer.ui.components.images.CustomerImageManagementScreen
+import com.ampairs.form.data.repository.ConfigRepository
+import kotlinx.coroutines.flow.first
+import org.koin.compose.koinInject
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import com.ampairs.customer.util.CustomerConstants.TITLE_CUSTOMER_DETAILS
@@ -128,8 +131,24 @@ private fun CustomerDetailsTabLayout(
     customer: Customer,
     modifier: Modifier = Modifier
 ) {
+    val configRepository: ConfigRepository = koinInject()
     var selectedTabIndex by remember { mutableStateOf(0) }
-    val tabs = listOf("Details", "Images")
+
+    // Load form config for customerImages field
+    var imagesFieldConfig by remember { mutableStateOf<com.ampairs.form.domain.EntityFieldConfig?>(null) }
+
+    LaunchedEffect(Unit) {
+        val config = configRepository.observeConfigSchema("customer").first()
+        imagesFieldConfig = config?.fieldConfigs?.find { it.fieldName == "customerImages" }
+    }
+
+    // Filter tabs based on visibility configuration
+    val tabs = buildList {
+        add("Details")
+        if (imagesFieldConfig?.visible != false) {
+            add("Images")
+        }
+    }
 
     Column(modifier = modifier.fillMaxSize()) {
         TabRow(selectedTabIndex = selectedTabIndex) {
@@ -144,7 +163,13 @@ private fun CustomerDetailsTabLayout(
 
         when (selectedTabIndex) {
             0 -> CustomerDetailsTab(customer = customer, modifier = Modifier.fillMaxSize())
-            1 -> CustomerImagesTab(customer = customer, modifier = Modifier.fillMaxSize())
+            1 -> if (tabs.getOrNull(1) == "Images") {
+                CustomerImagesTab(
+                    customer = customer,
+                    readOnly = imagesFieldConfig?.enabled == false,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
         }
     }
 }
@@ -154,6 +179,16 @@ private fun CustomerDetailsSideBySideLayout(
     customer: Customer,
     modifier: Modifier = Modifier
 ) {
+    val configRepository: ConfigRepository = koinInject()
+
+    // Load form config for customerImages field
+    var imagesFieldConfig by remember { mutableStateOf<com.ampairs.form.domain.EntityFieldConfig?>(null) }
+
+    LaunchedEffect(Unit) {
+        val config = configRepository.observeConfigSchema("customer").first()
+        imagesFieldConfig = config?.fieldConfigs?.find { it.fieldName == "customerImages" }
+    }
+
     Row(
         modifier = modifier
             .fillMaxSize()
@@ -172,18 +207,21 @@ private fun CustomerDetailsSideBySideLayout(
             )
         }
 
-        // Right side: Customer Images (40% width)
-        Card(
-            modifier = Modifier
-                .weight(0.4f)
-                .fillMaxHeight()
-        ) {
-            CustomerImageManagementScreen(
-                customerId = customer.uid,
+        // Right side: Customer Images (40% width) - if visible
+        if (imagesFieldConfig?.visible != false) {
+            Card(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp)
-            )
+                    .weight(0.4f)
+                    .fillMaxHeight()
+            ) {
+                CustomerImageManagementScreen(
+                    customerId = customer.uid,
+                    readOnly = imagesFieldConfig?.enabled == false,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                )
+            }
         }
     }
 }
@@ -191,10 +229,12 @@ private fun CustomerDetailsSideBySideLayout(
 @Composable
 private fun CustomerImagesTab(
     customer: Customer,
+    readOnly: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     CustomerImageManagementScreen(
         customerId = customer.uid,
+        readOnly = readOnly,
         modifier = modifier.padding(16.dp)
     )
 }

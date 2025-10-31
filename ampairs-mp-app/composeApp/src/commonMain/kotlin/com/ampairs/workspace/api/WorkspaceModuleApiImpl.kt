@@ -11,6 +11,7 @@ import com.ampairs.workspace.api.model.InstalledModule
 import com.ampairs.workspace.api.model.AvailableModule
 import com.ampairs.workspace.api.model.ModuleInstallationResponse
 import com.ampairs.workspace.api.model.ModuleUninstallationResponse
+import com.ampairs.workspace.api.model.ModuleDetailResponse
 import io.ktor.client.engine.HttpClientEngine
 
 /**
@@ -88,6 +89,22 @@ class WorkspaceModuleApiImpl(
                 client,
                 ApiUrlBuilder.workspaceUrl("$BASE_URL/$moduleId"),
                 null // No body needed, workspace context sent via X-Workspace-ID header
+            )
+            response.data?.let { Result.success(it) }
+                ?: Result.failure(Exception(response.error?.message ?: "Unknown error"))
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun getModuleDetails(
+        workspaceId: String,
+        moduleId: String
+    ): Result<ModuleDetailResponse> {
+        return try {
+            val response: Response<ModuleDetailResponse> = get(
+                client,
+                ApiUrlBuilder.workspaceUrl("$BASE_URL/$moduleId")
             )
             response.data?.let { Result.success(it) }
                 ?: Result.failure(Exception(response.error?.message ?: "Unknown error"))

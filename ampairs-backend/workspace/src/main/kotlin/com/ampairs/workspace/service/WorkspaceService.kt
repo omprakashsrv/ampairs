@@ -2,6 +2,7 @@ package com.ampairs.workspace.service
 
 import com.ampairs.core.exception.BusinessException
 import com.ampairs.core.exception.NotFoundException
+import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.workspace.model.Workspace
 import com.ampairs.workspace.model.dto.*
 import com.ampairs.workspace.model.enums.SubscriptionPlan
@@ -15,6 +16,7 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 import java.time.LocalDateTime
 import java.util.*
 
@@ -60,7 +62,7 @@ class WorkspaceService(
             this.status = WorkspaceStatus.ACTIVE
             this.subscriptionPlan = SubscriptionPlan.FREE
             this.active = true
-            this.lastActivityAt = LocalDateTime.now()
+            this.lastActivityAt = Instant.now()
 
             // Business address details
             this.addressLine1 = request.addressLine1
@@ -89,14 +91,20 @@ class WorkspaceService(
 
         val savedWorkspace = workspaceRepository.save(workspace)
 
-        // Add creator as owner
-        memberService.addMemberAsOwner(savedWorkspace.uid, createdBy)
+        // Add creator as owner - switch to new workspace tenant context for @TenantId validation
+        TenantContextHolder.withTenant(savedWorkspace.uid) {
+            memberService.addMemberAsOwner(savedWorkspace.uid, createdBy)
+        }
 
-        // Initialize workspace settings
-        settingsService.initializeDefaultSettings(savedWorkspace.uid)
+        // Initialize workspace settings - also requires tenant context
+        TenantContextHolder.withTenant(savedWorkspace.uid) {
+            settingsService.initializeDefaultSettings(savedWorkspace.uid)
+        }
 
-        // Log activity
-        activityService.logWorkspaceCreated(savedWorkspace.uid, createdBy, "Unknown User")
+        // Log activity - also requires tenant context
+        TenantContextHolder.withTenant(savedWorkspace.uid) {
+            activityService.logWorkspaceCreated(savedWorkspace.uid, createdBy, "Unknown User")
+        }
 
         logger.info("Successfully created workspace: ${savedWorkspace.uid}")
         return savedWorkspace.toResponse(memberCount = 1)
@@ -176,7 +184,7 @@ class WorkspaceService(
         request.businessHoursStart?.let { workspace.businessHoursStart = it }
         request.businessHoursEnd?.let { workspace.businessHoursEnd = it }
 
-        workspace.lastActivityAt = LocalDateTime.now()
+        workspace.lastActivityAt = Instant.now()
 
         val updatedWorkspace = workspaceRepository.save(workspace)
 

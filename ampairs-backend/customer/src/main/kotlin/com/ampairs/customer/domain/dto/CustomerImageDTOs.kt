@@ -2,7 +2,7 @@ package com.ampairs.customer.domain.dto
 
 import com.ampairs.customer.domain.model.CustomerImage
 import jakarta.validation.constraints.*
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * Request DTO for uploading customer image
@@ -14,9 +14,6 @@ data class CustomerImageUploadRequest(
 
     @field:Size(min = 1, max = 36, message = "Image UID must be between 1 and 36 characters")
     val uid: String? = null,
-
-    @field:Size(max = 255, message = "Alt text cannot exceed 255 characters")
-    val altText: String? = null,
 
     @field:Size(max = 500, message = "Description cannot exceed 500 characters")
     val description: String? = null,
@@ -45,24 +42,21 @@ data class CustomerImageResponse(
     val thumbnailUrl: String,
     val isPrimary: Boolean,
     val displayOrder: Int,
-    val altText: String?,
     val description: String?,
     val width: Int?,
     val height: Int?,
-    val uploadedAt: LocalDateTime,
+    val uploadedAt: Instant,
     val active: Boolean,
     val etag: String?,
-    val lastModified: LocalDateTime?,
-    val createdAt: LocalDateTime,
-    val updatedAt: LocalDateTime
+    val lastModified: Instant?,
+    val createdAt: Instant,
+    val updatedAt: Instant
 )
 
 /**
  * Request DTO for updating customer image metadata
  */
 data class CustomerImageUpdateRequest(
-    @field:Size(max = 255, message = "Alt text cannot exceed 255 characters")
-    val altText: String? = null,
 
     @field:Size(max = 500, message = "Description cannot exceed 500 characters")
     val description: String? = null,
@@ -103,7 +97,7 @@ data class CustomerImageReorderRequest(
  */
 data class CustomerImageUploadResponse(
     val image: CustomerImageResponse,
-    val uploadedAt: LocalDateTime,
+    val uploadedAt: Instant,
     val processingTime: Long // in milliseconds
 )
 
@@ -181,16 +175,15 @@ fun CustomerImage.asCustomerImageResponse(): CustomerImageResponse = CustomerIma
     thumbnailUrl = "/customer/v1/images/$customerUid/$uid/thumbnail",
     isPrimary = isPrimary,
     displayOrder = displayOrder,
-    altText = altText,
     description = description,
-    width = width,
-    height = height,
+    width = metadata.width,
+    height = metadata.height,
     uploadedAt = uploadedAt,
     active = active,
-    etag = etag,
-    lastModified = lastModified,
-    createdAt = createdAt ?: LocalDateTime.now(),
-    updatedAt = updatedAt ?: LocalDateTime.now()
+    etag = metadata.etag,
+    lastModified = metadata.lastModified,
+    createdAt = createdAt ?: Instant.now(),
+    updatedAt = updatedAt ?: Instant.now()
 )
 
 fun List<CustomerImage>.asCustomerImageResponses(): List<CustomerImageResponse> =
@@ -238,7 +231,7 @@ data class ThumbnailResponse(
     val formattedFileSize: String,
     val url: String?,
     val cached: Boolean,
-    val lastModified: LocalDateTime?,
+    val lastModified: Instant?,
     val etag: String?
 )
 

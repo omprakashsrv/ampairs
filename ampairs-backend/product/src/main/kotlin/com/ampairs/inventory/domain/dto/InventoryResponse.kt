@@ -1,7 +1,7 @@
 package com.ampairs.inventory.domain.dto
 
 import com.ampairs.inventory.domain.model.Inventory
-import java.time.LocalDateTime
+import java.time.Instant
 
 
 data class InventoryResponse(
@@ -15,9 +15,8 @@ data class InventoryResponse(
     val stock: Double,
     val sellingPrice: Double,
     val buyingPrice: Double,
-    val lastUpdated: Long?,
-    val createdAt: LocalDateTime?,
-    val updatedAt: LocalDateTime?,
+    val createdAt: Instant?,
+    val updatedAt: Instant?,
 )
 
 fun List<Inventory>.asResponse(): List<InventoryResponse> {
@@ -37,7 +36,6 @@ fun Inventory.asResponse(): InventoryResponse {
         stock = this.stock,
         sellingPrice = this.sellingPrice,
         buyingPrice = this.buyingPrice,
-        lastUpdated = this.lastUpdated,
         createdAt = this.createdAt,
         updatedAt = this.updatedAt,
         unitId = this.unitId,

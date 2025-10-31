@@ -8,7 +8,6 @@ import jakarta.persistence.Index
 import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
-import java.time.LocalDateTime
 
 /**
  * Material Design 3 theme configuration
@@ -170,12 +169,6 @@ class WorkspaceSettings : BaseDomain() {
     )
 
     /**
-     * When settings were last modified
-     */
-    @Column(name = "last_modified_at")
-    var lastModifiedAt: LocalDateTime = LocalDateTime.now()
-
-    /**
      * ID of user who last modified settings
      */
     @Column(name = "last_modified_by", length = 36)
@@ -202,7 +195,6 @@ class WorkspaceSettings : BaseDomain() {
      * Update modification tracking
      */
     fun updateModification(modifiedBy: String?, modifiedByName: String? = null) {
-        lastModifiedAt = LocalDateTime.now()
         lastModifiedBy = modifiedBy
         lastModifiedByName = modifiedByName
     }

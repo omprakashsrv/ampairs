@@ -4,7 +4,7 @@ import com.ampairs.workspace.model.MaterialColors
 import com.ampairs.workspace.model.MaterialTheme
 import com.ampairs.workspace.model.MaterialTypography
 import com.ampairs.workspace.model.WorkspaceSettings
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * Response DTO for workspace settings
@@ -26,11 +26,9 @@ data class SettingsResponse(
 
         val lastModifiedBy: String?,
 
-        val lastModifiedAt: LocalDateTime,
+        val createdAt: Instant,
 
-        val createdAt: LocalDateTime,
-
-        val updatedAt: LocalDateTime,
+        val updatedAt: Instant,
 )
 
 /**
@@ -111,8 +109,7 @@ fun WorkspaceSettings.toResponse(): SettingsResponse {
         materialTypography = this.materialTypography,
         businessSettings = this.businessSettings,
         lastModifiedBy = this.lastModifiedBy,
-        lastModifiedAt = this.lastModifiedAt,
-        createdAt = this.createdAt ?: LocalDateTime.now(),
-        updatedAt = this.updatedAt ?: LocalDateTime.now(),
+        createdAt = this.createdAt ?: Instant.now(),
+        updatedAt = this.updatedAt ?: Instant.now(),
     )
 }

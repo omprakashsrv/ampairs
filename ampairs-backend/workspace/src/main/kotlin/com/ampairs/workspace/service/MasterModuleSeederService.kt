@@ -67,6 +67,7 @@ class MasterModuleSeederService(
     
     private fun getSystemModules(): List<MasterModule> {
         return listOf(
+            createBusinessModule(),
             createCustomerModule(),
             createProductModule(),
             createOrderModule(),
@@ -79,7 +80,52 @@ class MasterModuleSeederService(
             createDashboardModule()
         )
     }
-    
+
+    private fun createBusinessModule() = MasterModule().apply {
+        moduleCode = "business-profile"
+        name = "Business Management"
+        description = "Comprehensive business configuration and management with company profile, registration details, operational settings, and tax compliance for complete business control"
+        tagline = "Configure and manage your business operations"
+        category = ModuleCategory.ADMINISTRATION
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.FREE
+        requiredRole = UserRole.EMPLOYEE
+        complexity = ModuleComplexity.ESSENTIAL
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 10, true, "Essential for managing store profile, operations, and tax compliance"),
+            createBusinessRelevance(BusinessType.WHOLESALE, 10, true, "Critical for B2B business configuration and regulatory compliance"),
+            createBusinessRelevance(BusinessType.MANUFACTURING, 10, true, "Mandatory for factory operations and business configuration")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = listOf("BUSINESS_READ", "BUSINESS_WRITE"),
+            optionalPermissions = listOf("BUSINESS_ADMIN", "TAX_CONFIG"),
+            defaultEnabled = true
+        )
+        uiMetadata = createUIMetadata(
+            icon = "business",
+            primaryColor = "#673AB7",
+            tags = listOf("Business Configuration", "Profile", "Operations", "Tax Compliance", "Settings")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/business",
+            displayName = "Business",
+            iconName = "business",
+            menuItems = listOf(
+                createMenuItem("business-overview", "Overview", "/business/overview", "dashboard", 1, true),
+                createMenuItem("business-profile", "Profile & Registration", "/business/profile", "business", 2),
+                createMenuItem("business-operations", "Operations", "/business/operations", "settings", 3),
+                createMenuItem("business-tax", "Tax Configuration", "/business/tax", "receipt_long", 4)
+            )
+        )
+        navigationIndex = 5
+        provider = "Ampairs"
+        sizeMb = 3
+        featured = true
+        displayOrder = 5
+        active = true
+    }
+
     private fun createCustomerModule() = MasterModule().apply {
         moduleCode = "customer-management"
         name = "Customer Management"

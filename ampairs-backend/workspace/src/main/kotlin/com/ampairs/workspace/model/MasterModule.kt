@@ -6,7 +6,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * Module configuration metadata
@@ -268,7 +268,7 @@ class MasterModule : BaseDomain() {
      * Last update timestamp
      */
     @Column(name = "last_updated_at")
-    var lastUpdatedAt: LocalDateTime? = null
+    var lastUpdatedAt: Instant? = null
 
     // JPA Relationships
 
