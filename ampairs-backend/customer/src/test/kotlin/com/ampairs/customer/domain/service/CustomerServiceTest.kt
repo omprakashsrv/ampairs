@@ -173,7 +173,7 @@ class CustomerServiceTest {
         whenever(customerRepository.findCustomersUpdatedAfter(any(), any()))
             .thenReturn(PageImpl(listOf(sampleCustomer), pageable, 1))
 
-        val page = customerService.getCustomersAfterSync("2024-05-01T10:15:30", pageable)
+        val page = customerService.getCustomersAfterSync("2024-05-01T10:15:30Z", pageable)
 
         assertEquals(1, page.totalElements)
         verify(customerRepository).findCustomersUpdatedAfter(any(), any())
