@@ -89,15 +89,15 @@ class TaxConfiguration : OwnableBaseDomain() {
     var compositionRate: BigDecimal? = null
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "special_conditions", columnDefinition = "JSON")
+    @Column(name = "special_conditions")
     var specialConditions: Map<String, Any> = emptyMap()
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "exemption_criteria", columnDefinition = "JSON")
+    @Column(name = "exemption_criteria")
     var exemptionCriteria: Map<String, Any> = emptyMap()
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "threshold_limits", columnDefinition = "JSON")
+    @Column(name = "threshold_limits")
     var thresholdLimits: Map<String, Any> = emptyMap()
 
     @Column(name = "description", columnDefinition = "TEXT")

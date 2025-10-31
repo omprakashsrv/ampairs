@@ -59,11 +59,11 @@ class HsnCode : OwnableBaseDomain() {
     var active: Boolean = true
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "business_category_rules", columnDefinition = "JSON")
+    @Column(name = "business_category_rules")
     var businessCategoryRules: Map<String, Any> = emptyMap()
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "attributes", columnDefinition = "JSON")
+    @Column(name = "attributes")
     var attributes: Map<String, Any> = emptyMap()
 
     @OneToMany(mappedBy = "hsnCode", fetch = FetchType.LAZY, cascade = [CascadeType.ALL])

@@ -52,11 +52,11 @@ class InvoiceItem : OwnableBaseDomain() {
     var totalTax: Double = 0.0
 
     @Type(JsonType::class)
-    @Column(name = "tax_info", length = 255, columnDefinition = "json")
+    @Column(name = "tax_info", length = 255)
     var taxInfos: List<TaxInfo> = listOf()
 
     @Type(JsonType::class)
-    @Column(name = "discount", nullable = true, columnDefinition = "json")
+    @Column(name = "discount", nullable = true)
     var discount: List<Discount>? = null
 
     override fun obtainSeqIdPrefix(): String {

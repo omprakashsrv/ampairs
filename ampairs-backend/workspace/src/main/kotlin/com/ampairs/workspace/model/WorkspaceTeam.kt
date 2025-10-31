@@ -39,7 +39,7 @@ class WorkspaceTeam : BaseDomain() {
     var department: String? = null
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "permissions", columnDefinition = "JSON")
+    @Column(name = "permissions")
     var permissions: Set<WorkspacePermission> = setOf()
 
     @Column(name = "team_lead_id", length = 36)

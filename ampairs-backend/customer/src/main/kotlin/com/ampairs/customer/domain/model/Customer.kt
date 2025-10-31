@@ -73,15 +73,16 @@ class Customer : OwnableBaseDomain() {
     @Column(name = "country", length = 20, nullable = false)
     var country: String = "India"
 
-    @Column(name = "location")
+    @JdbcTypeCode(SqlTypes.OTHER)
+    @Column(name = "location", columnDefinition = "point")
     var location: Point? = null
 
     @Type(JsonType::class)
-    @Column(name = "billing_address", nullable = false, columnDefinition = "json")
+    @Column(name = "billing_address", nullable = false)
     var billingAddress: Address = Address()
 
     @Type(JsonType::class)
-    @Column(name = "shipping_address", nullable = false, columnDefinition = "json")
+    @Column(name = "shipping_address", nullable = false)
     var shippingAddress: Address = Address()
 
     /**
@@ -92,7 +93,7 @@ class Customer : OwnableBaseDomain() {
      * - HARDWARE: project_types, contractor_license, preferred_brands
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "attributes", columnDefinition = "JSON")
+    @Column(name = "attributes")
     var attributes: Map<String, Any>? = null
 
     /**

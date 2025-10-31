@@ -39,11 +39,11 @@ class BusinessTypeEntity : OwnableBaseDomain() {
     var turnoverThreshold: java.math.BigDecimal? = null
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "special_rules", columnDefinition = "JSON")
+    @Column(name = "special_rules")
     var specialRules: Map<String, Any> = emptyMap()
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "compliance_requirements", columnDefinition = "JSON")
+    @Column(name = "compliance_requirements")
     var complianceRequirements: Map<String, Any> = emptyMap()
 
     @OneToMany(mappedBy = "businessTypeEntity", fetch = FetchType.LAZY)

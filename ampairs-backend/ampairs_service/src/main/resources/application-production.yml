@@ -135,9 +135,9 @@ spring:
     cache-specs:
       userDetails: maximumSize=1000,expireAfterWrite=${CACHE_USER_DETAILS_EXPIRE:300s},recordStats
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/ampairs_prod}
-    username: ${DB_USERNAME:admin}
-    password: ${DB_PASSWORD:secret}
+    url: ${DB_URL:jdbc:postgresql://10.0.0.12:5432/ampairs_prod}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:d8jpkwZ3AdXmHjnG}
     driver-class-name: org.postgresql.Driver
     hikari:
       pool-name: main-db-pool
@@ -166,6 +166,7 @@ spring:
     open-in-view: false
     properties:
       hibernate:
+        default_schema: ${HIBERNATE_DEFAULT_SCHEMA:ampairs_app}
         format_sql: ${JPA_FORMAT_SQL:true}
         use_sql_comments: ${JPA_USE_SQL_COMMENTS:true}
   # Flyway Database Migration Configuration
@@ -175,7 +176,7 @@ spring:
     baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE:true}
     baseline-version: ${FLYWAY_BASELINE_VERSION:1}
     validate-on-migrate: ${FLYWAY_VALIDATE_ON_MIGRATE:true}
-    out-of-order: ${FLYWAY_OUT_OF_ORDER:false}
+    out-of-order: ${FLYWAY_OUT_OF_ORDER:true}
     # Vendor-specific locations: {vendor} is replaced with mysql or postgresql automatically
     locations: ${FLYWAY_LOCATIONS:classpath:db/migration/{vendor}}
     # User Configuration

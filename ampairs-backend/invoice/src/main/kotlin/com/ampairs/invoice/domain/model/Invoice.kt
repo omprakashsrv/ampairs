@@ -72,19 +72,19 @@ class Invoice : OwnableBaseDomain() {
     var totalQuantity: Double = 0.0
 
     @Type(JsonType::class)
-    @Column(name = "billing_address", nullable = false, columnDefinition = "json")
+    @Column(name = "billing_address", nullable = false)
     var billingAddress: Address = Address()
 
     @Type(JsonType::class)
-    @Column(name = "shipping_address", nullable = false, columnDefinition = "json")
+    @Column(name = "shipping_address", nullable = false)
     var shippingAddress: Address = Address()
 
     @Type(JsonType::class)
-    @Column(name = "discount", nullable = true, columnDefinition = "json")
+    @Column(name = "discount", nullable = true)
     var discount: List<Discount>? = null
 
     @Type(JsonType::class)
-    @Column(name = "tax_info", length = 255, columnDefinition = "json")
+    @Column(name = "tax_info", length = 255)
     var taxInfos: List<TaxInfo> = listOf()
 
     @OneToMany()
