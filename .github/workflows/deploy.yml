@@ -80,7 +80,7 @@ jobs:
   build:
     name: Build for Deployment
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    if: github.event_name != 'pull_request'
 
     steps:
     - name: Checkout code
@@ -446,7 +446,7 @@ jobs:
     name: Send Notification
     needs: [build, deploy-sandbox, deploy-production]
     runs-on: ubuntu-latest
-    if: always()
+    if: always() && github.event_name != 'pull_request'
 
     steps:
     - name: Notify deployment status
