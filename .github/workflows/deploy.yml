@@ -122,6 +122,10 @@ jobs:
         echo "Found JAR file: $JAR_FILE"
         echo "File size: $(ls -lh $JAR_FILE | awk '{print $5}')"
 
+        # Remove any existing files/directories on server
+        echo "Cleaning up old files on server..."
+        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} 'rm -rf ~/ampairs-service.jar ~/ampairs-sandbox.service'
+
         # Copy JAR to server
         echo "Copying JAR to server..."
         scp -v "$JAR_FILE" ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-service.jar
@@ -266,6 +270,10 @@ jobs:
 
         echo "Found JAR file: $JAR_FILE"
         echo "File size: $(ls -lh $JAR_FILE | awk '{print $5}')"
+
+        # Remove any existing files/directories on server
+        echo "Cleaning up old files on server..."
+        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} 'rm -rf ~/ampairs-service.jar ~/ampairs-production.service'
 
         # Copy JAR to server
         echo "Copying JAR to server..."
