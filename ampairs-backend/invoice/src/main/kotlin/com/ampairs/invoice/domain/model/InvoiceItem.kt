@@ -4,10 +4,10 @@ import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.invoice.config.Constants
 import com.ampairs.invoice.domain.dto.Discount
 import com.ampairs.invoice.domain.dto.TaxInfo
-import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
-import org.hibernate.annotations.Type
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 
 @Entity(name = "invoice_item")
 class InvoiceItem : OwnableBaseDomain() {
@@ -51,12 +51,12 @@ class InvoiceItem : OwnableBaseDomain() {
     @Column(name = "total_tax", nullable = false)
     var totalTax: Double = 0.0
 
-    @Type(JsonType::class)
-    @Column(name = "tax_info", length = 255, columnDefinition = "json")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "tax_info", length = 255)
     var taxInfos: List<TaxInfo> = listOf()
 
-    @Type(JsonType::class)
-    @Column(name = "discount", nullable = true, columnDefinition = "json")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "discount", nullable = true)
     var discount: List<Discount>? = null
 
     override fun obtainSeqIdPrefix(): String {

@@ -138,7 +138,7 @@ class Business : OwnableBaseDomain() {
      * Example: {"default_tax_code": "GST-18", "interstate_tax": "IGST"}
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "tax_settings", columnDefinition = "JSON")
+    @Column(name = "tax_settings")
     var taxSettings: Map<String, Any>? = null
 
     /**
@@ -147,7 +147,7 @@ class Business : OwnableBaseDomain() {
      * Example: {"loyalty_program": "enabled", "custom_field_1": "value"}
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "custom_attributes", columnDefinition = "JSON")
+    @Column(name = "custom_attributes")
     var customAttributes: Map<String, Any>? = null
 
     // ==================== Operational Configuration ====================
@@ -201,7 +201,7 @@ class Business : OwnableBaseDomain() {
      * Example: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"]
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "operating_days", columnDefinition = "JSON", nullable = false)
+    @Column(name = "operating_days", nullable = false)
     var operatingDays: List<String> = listOf("Monday", "Tuesday", "Wednesday", "Thursday", "Friday")
 
     // ==================== Status ====================

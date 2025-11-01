@@ -258,7 +258,7 @@ compose.desktop {
             packageName = "Ampairs"
             packageVersion = "1.0.0"
             description = "Empowering Retail, One byte at a time"
-            copyright = "Copyright 2023 Ampairs. All rights reserved."
+            copyright = "Copyright 2025 Ampairs. All rights reserved."
             vendor = "Ampairs"
             modules("java.sql")
 

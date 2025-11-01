@@ -127,21 +127,21 @@ class WorkspaceSettings : BaseDomain() {
      * Material Design 3 theme configuration (JSON)
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "material_theme", columnDefinition = "JSON")
+    @Column(name = "material_theme")
     var materialTheme: MaterialTheme = MaterialTheme()
 
     /**
      * Material Design 3 color palette (JSON)
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "material_colors", columnDefinition = "JSON")
+    @Column(name = "material_colors")
     var materialColors: MaterialColors = MaterialColors()
 
     /**
      * Material Design 3 typography configuration (JSON)
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "material_typography", columnDefinition = "JSON")
+    @Column(name = "material_typography")
     var materialTypography: MaterialTypography = MaterialTypography()
 
     // Business Settings
@@ -151,7 +151,7 @@ class WorkspaceSettings : BaseDomain() {
      * Contains: working hours, document prefixes, auto-generation settings
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "business_settings", columnDefinition = "JSON")
+    @Column(name = "business_settings")
     var businessSettings: Map<String, Any> = mapOf(
         "workingHours" to mapOf(
             "start" to "09:00",

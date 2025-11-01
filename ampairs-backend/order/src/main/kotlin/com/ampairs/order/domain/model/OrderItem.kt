@@ -4,11 +4,9 @@ import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.order.config.Constants
 import com.ampairs.order.domain.dto.Discount
 import com.ampairs.order.domain.dto.TaxInfo
-import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import org.hibernate.annotations.JdbcTypeCode
-import org.hibernate.annotations.Type
 import org.hibernate.type.SqlTypes
 
 @Entity(name = "order_item")
@@ -62,12 +60,12 @@ class OrderItem : OwnableBaseDomain() {
     @Column(name = "total_tax", nullable = false)
     var totalTax: Double = 0.0
 
-    @Type(JsonType::class)
-    @Column(name = "tax_info", length = 255, columnDefinition = "json")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "tax_info", length = 255)
     var taxInfos: List<TaxInfo> = listOf()
 
-    @Type(JsonType::class)
-    @Column(name = "discount", nullable = true, columnDefinition = "json")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "discount", nullable = true)
     var discount: List<Discount>? = null
 
     /**
@@ -78,7 +76,7 @@ class OrderItem : OwnableBaseDomain() {
      * - HARDWARE: material_specifications, warranty_info, installation_notes
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "attributes", columnDefinition = "JSON")
+    @Column(name = "attributes")
     var attributes: Map<String, Any> = emptyMap()
 
     override fun obtainSeqIdPrefix(): String {

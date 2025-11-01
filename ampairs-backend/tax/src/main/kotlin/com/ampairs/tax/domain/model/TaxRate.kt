@@ -85,11 +85,11 @@ class TaxRate : OwnableBaseDomain() {
     var notificationDate: LocalDate? = null
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "conditions", columnDefinition = "JSON")
+    @Column(name = "conditions")
     var conditions: Map<String, Any> = emptyMap()
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "exemption_rules", columnDefinition = "JSON")
+    @Column(name = "exemption_rules")
     var exemptionRules: Map<String, Any> = emptyMap()
 
     @Column(name = "is_reverse_charge_applicable", nullable = false)

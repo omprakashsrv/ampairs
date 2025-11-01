@@ -156,28 +156,28 @@ class MasterModule : BaseDomain() {
      * Business relevance for different business types (JSON)
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "business_relevance", columnDefinition = "JSON")
+    @Column(name = "business_relevance")
     var businessRelevance: List<BusinessRelevance> = emptyList()
 
     /**
      * Module configuration and metadata (JSON)
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "configuration", columnDefinition = "JSON")
+    @Column(name = "configuration")
     var configuration: ModuleConfiguration = ModuleConfiguration()
 
     /**
      * UI presentation metadata (JSON)
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "ui_metadata", columnDefinition = "JSON")
+    @Column(name = "ui_metadata")
     var uiMetadata: ModuleUIMetadata = ModuleUIMetadata()
 
     /**
      * Route and navigation information (JSON)
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "route_info", columnDefinition = "JSON")
+    @Column(name = "route_info")
     var routeInfo: ModuleRouteInfo = ModuleRouteInfo()
 
     /**

@@ -67,7 +67,7 @@ class WorkspaceMember : BaseDomain() {
      * Used for fine-grained permission overrides beyond role defaults
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "permissions", columnDefinition = "JSON")
+    @Column(name = "permissions")
     var permissions: Set<WorkspacePermission> = setOf()
 
     /**
@@ -160,7 +160,7 @@ class WorkspaceMember : BaseDomain() {
      * Stores a user's membership in multiple teams as a JSON array in the database.
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "team_ids", columnDefinition = "JSON")
+    @Column(name = "team_ids")
     var teamIds: Set<String> = setOf()
 
     /**

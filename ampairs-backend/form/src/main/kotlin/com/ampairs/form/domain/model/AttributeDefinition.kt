@@ -3,6 +3,8 @@ package com.ampairs.form.domain.model
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.fasterxml.jackson.annotation.JsonProperty
 import jakarta.persistence.*
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 
 /**
  * Generic attribute definition entity for any entity type
@@ -53,11 +55,13 @@ class AttributeDefinition : OwnableBaseDomain() {
     @Column(name = "validation_type", length = 50)
     var validationType: String? = null
 
-    @Column(name = "validation_params", columnDefinition = "JSON")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "validation_params")
     @JsonProperty("validation_params")
     var validationParams: String? = null
 
-    @Column(name = "enum_values", columnDefinition = "JSON")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "enum_values")
     @JsonProperty("enum_values")
     var enumValues: String? = null
 
