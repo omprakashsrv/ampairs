@@ -162,23 +162,30 @@ jobs:
         path: ./artifacts
 
     - name: Prepare Firebase service account key
+      env:
+        FIREBASE_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
       run: |
-        # Check if secret is set
-        if [ -z "${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" ]; then
+        # Check if secret is set (using environment variable to avoid bash issues)
+        if [ -z "$FIREBASE_KEY" ]; then
           echo "❌ ERROR: FIREBASE_SERVICE_ACCOUNT_KEY secret is not set"
           echo ""
           echo "To fix this:"
           echo "1. Go to: https://github.com/${{ github.repository }}/settings/secrets/actions"
           echo "2. Click 'New repository secret'"
           echo "3. Name: FIREBASE_SERVICE_ACCOUNT_KEY"
-          echo "4. Value: Paste your Firebase service account JSON content"
+          echo "4. Value: Paste ONLY the JSON content (no extra quotes or formatting)"
+          echo ""
+          echo "Example format:"
+          echo '{"type":"service_account","project_id":"...",...}'
           echo ""
           exit 1
         fi
 
         # Create directory and write key file
         mkdir -p ./firebase-key
-        echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" > ./firebase-key/ampairs-firebase-adminsdk.json
+
+        # Write to file using environment variable (preserves formatting)
+        printf '%s' "$FIREBASE_KEY" > ./firebase-key/ampairs-firebase-adminsdk.json
 
         # Verify key was written and not empty
         if [ ! -f ./firebase-key/ampairs-firebase-adminsdk.json ]; then
@@ -192,18 +199,29 @@ jobs:
           exit 1
         fi
 
+        # Debug: Show file size and first character
+        FILE_SIZE=$(wc -c < ./firebase-key/ampairs-firebase-adminsdk.json)
+        FIRST_CHAR=$(head -c 1 ./firebase-key/ampairs-firebase-adminsdk.json)
+        echo "Debug: File size: $FILE_SIZE bytes"
+        echo "Debug: First character: '$FIRST_CHAR' (should be '{')"
+
         # Verify it's valid JSON
         if ! jq empty ./firebase-key/ampairs-firebase-adminsdk.json 2>/dev/null; then
           echo "❌ ERROR: Firebase key is not valid JSON"
-          echo "Current content preview (first 100 chars):"
-          head -c 100 ./firebase-key/ampairs-firebase-adminsdk.json || true
           echo ""
-          echo "Please check FIREBASE_SERVICE_ACCOUNT_KEY secret contains valid JSON"
+          echo "Common issues:"
+          echo "1. Secret has extra quotes around the JSON (remove them)"
+          echo "2. Secret was pasted with formatting issues"
+          echo "3. Secret contains literal newline characters instead of \\n"
+          echo ""
+          echo "The secret value should be the raw JSON, starting with {"
+          echo "Do NOT wrap it in additional quotes."
+          echo ""
           exit 1
         fi
 
         echo "✅ Firebase service account key prepared successfully"
-        echo "Key file size: $(wc -c < ./firebase-key/ampairs-firebase-adminsdk.json) bytes"
+        echo "Key file size: $FILE_SIZE bytes"
 
     - name: Setup SSH
       run: |
@@ -408,23 +426,30 @@ jobs:
         path: ./artifacts
 
     - name: Prepare Firebase service account key
+      env:
+        FIREBASE_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
       run: |
-        # Check if secret is set
-        if [ -z "${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" ]; then
+        # Check if secret is set (using environment variable to avoid bash issues)
+        if [ -z "$FIREBASE_KEY" ]; then
           echo "❌ ERROR: FIREBASE_SERVICE_ACCOUNT_KEY secret is not set"
           echo ""
           echo "To fix this:"
           echo "1. Go to: https://github.com/${{ github.repository }}/settings/secrets/actions"
           echo "2. Click 'New repository secret'"
           echo "3. Name: FIREBASE_SERVICE_ACCOUNT_KEY"
-          echo "4. Value: Paste your Firebase service account JSON content"
+          echo "4. Value: Paste ONLY the JSON content (no extra quotes or formatting)"
+          echo ""
+          echo "Example format:"
+          echo '{"type":"service_account","project_id":"...",...}'
           echo ""
           exit 1
         fi
 
         # Create directory and write key file
         mkdir -p ./firebase-key
-        echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" > ./firebase-key/ampairs-firebase-adminsdk.json
+
+        # Write to file using environment variable (preserves formatting)
+        printf '%s' "$FIREBASE_KEY" > ./firebase-key/ampairs-firebase-adminsdk.json
 
         # Verify key was written and not empty
         if [ ! -f ./firebase-key/ampairs-firebase-adminsdk.json ]; then
@@ -438,18 +463,29 @@ jobs:
           exit 1
         fi
 
+        # Debug: Show file size and first character
+        FILE_SIZE=$(wc -c < ./firebase-key/ampairs-firebase-adminsdk.json)
+        FIRST_CHAR=$(head -c 1 ./firebase-key/ampairs-firebase-adminsdk.json)
+        echo "Debug: File size: $FILE_SIZE bytes"
+        echo "Debug: First character: '$FIRST_CHAR' (should be '{')"
+
         # Verify it's valid JSON
         if ! jq empty ./firebase-key/ampairs-firebase-adminsdk.json 2>/dev/null; then
           echo "❌ ERROR: Firebase key is not valid JSON"
-          echo "Current content preview (first 100 chars):"
-          head -c 100 ./firebase-key/ampairs-firebase-adminsdk.json || true
           echo ""
-          echo "Please check FIREBASE_SERVICE_ACCOUNT_KEY secret contains valid JSON"
+          echo "Common issues:"
+          echo "1. Secret has extra quotes around the JSON (remove them)"
+          echo "2. Secret was pasted with formatting issues"
+          echo "3. Secret contains literal newline characters instead of \\n"
+          echo ""
+          echo "The secret value should be the raw JSON, starting with {"
+          echo "Do NOT wrap it in additional quotes."
+          echo ""
           exit 1
         fi
 
         echo "✅ Firebase service account key prepared successfully"
-        echo "Key file size: $(wc -c < ./firebase-key/ampairs-firebase-adminsdk.json) bytes"
+        echo "Key file size: $FILE_SIZE bytes"
 
     - name: Setup SSH
       run: |
