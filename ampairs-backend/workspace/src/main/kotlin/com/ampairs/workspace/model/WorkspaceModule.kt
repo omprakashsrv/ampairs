@@ -161,28 +161,28 @@ class WorkspaceModule : BaseDomain() {
      * Workspace-specific module settings and customizations (JSON)
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "settings", columnDefinition = "JSON")
+    @Column(name = "settings")
     var settings: ModuleSettings = ModuleSettings()
 
     /**
      * Usage metrics and analytics (JSON)
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "usage_metrics", columnDefinition = "JSON")
+    @Column(name = "usage_metrics")
     var usageMetrics: ModuleUsageMetrics = ModuleUsageMetrics()
 
     /**
      * User-specific preferences and permissions (JSON)
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "user_preferences", columnDefinition = "JSON")
+    @Column(name = "user_preferences")
     var userPreferences: List<UserModulePreferences> = emptyList()
 
     /**
      * Module-specific data and configuration (JSON)
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "module_data", columnDefinition = "JSON")
+    @Column(name = "module_data")
     var moduleData: Map<String, Any> = emptyMap()
 
     /**

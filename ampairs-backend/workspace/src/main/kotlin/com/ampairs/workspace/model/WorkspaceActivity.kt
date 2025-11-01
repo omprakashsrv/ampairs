@@ -4,6 +4,8 @@ import com.ampairs.core.domain.model.BaseDomain
 import com.ampairs.workspace.model.enums.WorkspaceActivityType
 import com.fasterxml.jackson.annotation.JsonProperty
 import jakarta.persistence.*
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 
 /**
  * Central workspace activity logging entity
@@ -68,7 +70,8 @@ data class WorkspaceActivity(
      * Additional context data in JSON format
      * Contains information like old values, new values, counts, etc.
      */
-    @Column(name = "context_data", columnDefinition = "JSON")
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "context_data")
     var contextData: String? = null,
 
     /**

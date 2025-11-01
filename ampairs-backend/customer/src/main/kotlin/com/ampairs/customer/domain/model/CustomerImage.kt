@@ -79,7 +79,7 @@ class CustomerImage : OwnableBaseDomain() {
      * Image metadata stored as JSON
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "metadata", columnDefinition = "json")
+    @Column(name = "metadata")
     var metadata: ImageMetadata = ImageMetadata()
 
     /**

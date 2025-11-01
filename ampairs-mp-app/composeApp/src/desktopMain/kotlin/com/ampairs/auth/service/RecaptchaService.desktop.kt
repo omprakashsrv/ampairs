@@ -44,7 +44,18 @@ actual class RecaptchaService(
             executeRecaptcha("resend_otp", onProgress)
         }
     }
-    
+
+    actual suspend fun executeFirebaseVerify(onProgress: ((String) -> Unit)?): String? {
+        onProgress?.invoke("Verifying Firebase authentication...")
+        return if (isDevelopment) {
+            delay(800) // Simulate processing time
+            onProgress?.invoke("reCAPTCHA verification complete")
+            "dev-dummy-token-firebase-verify-${System.currentTimeMillis()}"
+        } else {
+            executeRecaptcha("firebase_verify", onProgress)
+        }
+    }
+
     actual fun isEnabled(): Boolean {
         return config.enabled
     }

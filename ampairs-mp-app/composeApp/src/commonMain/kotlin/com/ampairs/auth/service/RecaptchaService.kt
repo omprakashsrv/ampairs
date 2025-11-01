@@ -26,7 +26,14 @@ expect class RecaptchaService {
      * @return reCAPTCHA token or null if reCAPTCHA is disabled/failed
      */
     suspend fun executeResendOtp(onProgress: ((String) -> Unit)? = null): String?
-    
+
+    /**
+     * Execute reCAPTCHA for Firebase verification action
+     * @param onProgress Callback to update UI with progress messages
+     * @return reCAPTCHA token or null if reCAPTCHA is disabled/failed
+     */
+    suspend fun executeFirebaseVerify(onProgress: ((String) -> Unit)? = null): String?
+
     /**
      * Check if reCAPTCHA is enabled for the current environment
      * @return true if reCAPTCHA is enabled, false otherwise

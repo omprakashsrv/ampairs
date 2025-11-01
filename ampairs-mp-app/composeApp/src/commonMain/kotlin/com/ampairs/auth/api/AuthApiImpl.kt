@@ -3,6 +3,7 @@ package com.ampairs.auth.api
 import com.ampairs.auth.api.model.AuthComplete
 import com.ampairs.auth.api.model.AuthInit
 import com.ampairs.auth.api.model.AuthInitResponse
+import com.ampairs.auth.api.model.FirebaseAuthRequest
 import com.ampairs.auth.api.model.RefreshToken
 import com.ampairs.auth.api.model.Token
 import com.ampairs.auth.api.model.UserApiModel
@@ -35,6 +36,14 @@ class AuthApiImpl(engine: HttpClientEngine, private val tokenRepository: TokenRe
             client,
             ApiUrlBuilder.authUrl("auth/v1/verify"),
             authComplete
+        )
+    }
+
+    override suspend fun verifyFirebaseAuth(firebaseAuthRequest: FirebaseAuthRequest): Response<Token> {
+        return post(
+            client,
+            ApiUrlBuilder.authUrl("auth/v1/verify/firebase"),
+            firebaseAuthRequest
         )
     }
 

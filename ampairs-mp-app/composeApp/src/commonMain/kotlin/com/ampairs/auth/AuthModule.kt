@@ -8,6 +8,7 @@ import com.ampairs.auth.db.AuthRoomDatabase
 import com.ampairs.auth.db.TokenRepositoryImpl
 import com.ampairs.auth.db.UserRepository
 import com.ampairs.auth.db.UserWorkspaceRepositoryImpl
+import com.ampairs.auth.firebase.FirebaseAuthRepository
 import com.ampairs.auth.ui.LoginScope
 import com.ampairs.auth.viewmodel.DeviceManagementViewModel
 import com.ampairs.auth.viewmodel.LoginViewModel
@@ -29,6 +30,9 @@ val authModule: Module = module {
     // DeviceService and RecaptchaService are provided by platform-specific modules
     single { UserRepository(get(), get(), get(), get(), get(), get()) }
 
+    // Firebase authentication repository (FirebaseAuthProvider provided by platform modules)
+    single { FirebaseAuthRepository(get()) }
+
     // Direct ViewModel injection
     viewModelOf(::LoginViewModel)
     viewModelOf(::DeviceManagementViewModel)
@@ -36,7 +40,7 @@ val authModule: Module = module {
     viewModelOf(::UserSelectionViewModel)
 
     scope<LoginScope> {
-        scoped { LoginViewModel(get(), get(), get()) }
+        scoped { LoginViewModel(get(), get(), get(), get(), get()) }
     }
 }
 

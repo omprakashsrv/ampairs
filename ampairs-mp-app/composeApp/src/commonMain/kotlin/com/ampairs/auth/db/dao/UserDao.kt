@@ -20,4 +20,7 @@ interface UserDao {
     
     @Query("DELETE FROM userEntity WHERE id = :id")
     suspend fun deleteById(id: String)
+
+    @Query("SELECT * FROM userEntity WHERE country_code = :countryCode AND phone = :phone")
+    suspend fun findByCountryCodeAndPhone(countryCode: Long, phone: String): UserEntity?
 }

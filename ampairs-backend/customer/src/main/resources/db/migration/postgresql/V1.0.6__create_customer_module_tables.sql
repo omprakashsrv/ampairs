@@ -163,7 +163,7 @@ CREATE TABLE customer
     shipping_address   JSONB NULL,
     attributes         JSONB,
     created_at         TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at         TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at         TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE INDEX idx_customer_owner_name ON customer (owner_id, name);

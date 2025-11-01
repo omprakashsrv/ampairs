@@ -244,6 +244,71 @@ class AuthController @Autowired constructor(
         return ApiResponse.success(authService.authenticate(authenticationRequest, request))
     }
 
+    @PostMapping("/verify/firebase")
+    @Operation(
+        summary = "Verify Firebase authentication and get tokens",
+        description = "Verify Firebase ID token and return JWT access and refresh tokens. This endpoint is used for Firebase-based phone authentication."
+    )
+    @ApiResponses(
+        value = [
+            SwaggerApiResponse(
+                responseCode = "200",
+                description = "Firebase authentication successful",
+                content = [Content(
+                    mediaType = "application/json",
+                    examples = [ExampleObject(
+                        name = "Success Response",
+                        value = """{
+                            "success": true,
+                            "data": {
+                                "access_token": "eyJhbGciOiJIUzI1NiJ9...",
+                                "refresh_token": "def456-ghi789-jkl012",
+                                "access_token_expires_at": "2025-01-04T11:04:56Z",
+                                "refresh_token_expires_at": "2025-01-11T10:04:56Z"
+                            },
+                            "timestamp": "2025-01-04T10:04:56Z"
+                        }"""
+                    )]
+                )]
+            ),
+            SwaggerApiResponse(
+                responseCode = "400",
+                description = "Invalid Firebase token or request data"
+            ),
+            SwaggerApiResponse(
+                responseCode = "401",
+                description = "Firebase authentication failed"
+            )
+        ]
+    )
+    fun verifyFirebase(
+        @Parameter(
+            description = "Firebase authentication request",
+            content = [Content(
+                examples = [ExampleObject(
+                    name = "Firebase Verify Request",
+                    value = """{
+                        "firebase_id_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6...",
+                        "phone": "9591781662",
+                        "country_code": 91,
+                        "device_id": "MOBILE_ABC123_DEVICE_FINGERPRINT",
+                        "device_name": "John's iPhone 15",
+                        "recaptcha_token": "your_recaptcha_token"
+                    }"""
+                )]
+            )]
+        )
+        @RequestBody @Valid firebaseAuthRequest: FirebaseAuthRequest,
+        request: HttpServletRequest,
+    ): ApiResponse<AuthenticationResponse> {
+        logger.info("Firebase auth verification request for phone: {}", firebaseAuthRequest.phone)
+
+        // Validate reCAPTCHA if token is provided
+//        validateRecaptcha(firebaseAuthRequest.recaptchaToken, "firebase_verify", getClientIp(request))
+
+        return ApiResponse.success(authService.authenticateWithFirebase(firebaseAuthRequest, request))
+    }
+
     @PostMapping("/refresh_token")
     @Operation(
         summary = "Refresh access token",

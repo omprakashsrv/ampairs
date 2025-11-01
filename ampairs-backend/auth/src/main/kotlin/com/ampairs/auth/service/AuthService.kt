@@ -18,6 +18,7 @@ import com.ampairs.user.model.User
 import com.ampairs.user.repository.UserRepository
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.transaction.Transactional
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Service
@@ -42,7 +43,10 @@ class AuthService @Autowired constructor(
     val securityAuditService: SecurityAuditService,
     val sessionManagementService: SessionManagementService,
     val accountLockoutService: AccountLockoutService,
+    val firebaseAuthService: FirebaseAuthService,
 ) {
+    private val logger = LoggerFactory.getLogger(AuthService::class.java)
+
     @Transactional
     fun init(authInitRequest: AuthInitRequest, httpRequest: HttpServletRequest): AuthInitResponse {
         // Check if account is locked before generating OTP
@@ -499,5 +503,133 @@ class AuthService @Autowired constructor(
         return genericSuccessResponse
     }
 
+    /**
+     * Authenticate user with Firebase ID token
+     * Verifies the Firebase token, creates or retrieves user, and generates JWT tokens
+     */
+    @Transactional
+    fun authenticateWithFirebase(request: FirebaseAuthRequest, httpRequest: HttpServletRequest): AuthenticationResponse {
+        val clientIp = getClientIp(httpRequest)
+
+        // Verify Firebase ID token
+        val firebaseToken = firebaseAuthService.verifyIdToken(request.firebaseIdToken)
+            ?: run {
+                // Record failure for invalid Firebase token
+                rateLimitingService.recordAuthFailure(clientIp, "firebase_verify", "Invalid Firebase token")
+
+                // Log authentication failure
+                securityAuditService.logAuthenticationAttempt(
+                    phone = request.phone,
+                    countryCode = request.countryCode,
+                    success = false,
+                    reason = "Invalid Firebase token",
+                    request = httpRequest,
+                    sessionId = null
+                )
+
+                throw Exception("Invalid Firebase authentication token")
+            }
+
+        // Extract phone number from Firebase token
+        val tokenPhoneNumber = firebaseAuthService.extractPhoneNumber(firebaseToken)
+        val fullPhone = "+${request.countryCode}${request.phone}"
+
+        // Verify the phone number matches
+        if (tokenPhoneNumber != null && tokenPhoneNumber != fullPhone &&
+            tokenPhoneNumber != "${request.countryCode}${request.phone}") {
+            logger.debug("Phone mismatch - Token: $tokenPhoneNumber, Request: $fullPhone")
+
+            rateLimitingService.recordAuthFailure(clientIp, "firebase_verify", "Phone number mismatch")
+            securityAuditService.logAuthenticationAttempt(
+                phone = request.phone,
+                countryCode = request.countryCode,
+                success = false,
+                reason = "Phone number mismatch with Firebase token",
+                request = httpRequest,
+                sessionId = null
+            )
+
+            throw Exception("Phone number does not match Firebase authentication")
+        }
+
+        // Create username from phone number
+        val userName = "${request.countryCode}${request.phone}"
+
+        // Get or create user
+        val user: User = userRepository.findByUserName(userName)
+            .orElseGet {
+                // Create new user if doesn't exist
+                val newUser = User()
+                newUser.userName = userName
+                newUser.countryCode = request.countryCode
+                newUser.phone = request.phone
+                newUser.active = true
+                // Optionally store Firebase UID for future reference
+                newUser.firebaseUid = firebaseAuthService.getFirebaseUid(firebaseToken)
+                userRepository.save(newUser)
+            }
+
+        // Update Firebase UID if not set
+        if (user.firebaseUid.isNullOrBlank()) {
+            user.firebaseUid = firebaseAuthService.getFirebaseUid(firebaseToken)
+            userRepository.save(user)
+        }
+
+        // Extract device information
+        val deviceInfo = deviceInfoExtractor.extractDeviceInfo(
+            httpRequest,
+            request.deviceId,
+            request.deviceName
+        )
+
+        // Enforce concurrent session limits before creating new session
+        sessionManagementService.enforceConcurrentSessionLimits(user.uid)
+
+        // Create or update device session
+        val deviceSession = createOrUpdateDeviceSession(user, deviceInfo)
+
+        // Generate tokens with device information
+        val jwtToken: String = jwtService.generateTokenWithDevice(user, deviceSession.deviceId)
+        val refreshToken: String = jwtService.generateRefreshTokenWithDevice(user, deviceSession.deviceId)
+
+        // Update device session with refresh token hash
+        deviceSession.refreshTokenHash = hashToken(refreshToken)
+        deviceSessionRepository.save(deviceSession)
+
+        // Record successful authentication
+        rateLimitingService.recordAuthSuccess(clientIp, "firebase_verify")
+
+        // Log successful authentication
+        securityAuditService.logAuthenticationAttempt(
+            phone = user.phone,
+            countryCode = user.countryCode,
+            success = true,
+            reason = "Firebase authentication",
+            request = httpRequest,
+            sessionId = null,
+            deviceInfo = mapOf(
+                "device_id" to deviceSession.deviceId,
+                "device_name" to (deviceSession.deviceName ?: "Unknown"),
+                "platform" to (deviceSession.platform ?: "Unknown"),
+                "browser" to (deviceSession.browser ?: "Unknown"),
+                "firebase_uid" to firebaseAuthService.getFirebaseUid(firebaseToken)
+            )
+        )
+
+        // Log JWT token generation
+        securityAuditService.logTokenEvent(
+            eventType = SecurityAuditService.TokenEventType.GENERATED,
+            userId = user.id!!.toString(),
+            deviceId = deviceSession.deviceId,
+            request = httpRequest
+        )
+
+        val authResponse = AuthenticationResponse()
+        authResponse.accessToken = jwtToken
+        authResponse.refreshToken = refreshToken
+        authResponse.accessTokenExpiresAt = jwtService.extractExpirationAsLocalDateTime(jwtToken)
+        authResponse.refreshTokenExpiresAt = jwtService.extractExpirationAsLocalDateTime(refreshToken)
+        return authResponse
+    }
 
 }

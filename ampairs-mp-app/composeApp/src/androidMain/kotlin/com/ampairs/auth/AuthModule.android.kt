@@ -3,6 +3,7 @@ package com.ampairs.auth
 import androidx.room.Room
 import androidx.sqlite.driver.bundled.BundledSQLiteDriver
 import com.ampairs.auth.db.AuthRoomDatabase
+import com.ampairs.auth.firebase.FirebaseAuthProvider
 import com.ampairs.auth.service.RecaptchaConfig
 import com.ampairs.auth.service.RecaptchaService
 import com.ampairs.network.security.AndroidAppUpdateEnforcer
@@ -34,16 +35,19 @@ val authPlatformModule: Module = module {
             .build()
     }
     
-    single { 
+    single {
         RecaptchaService(
             androidContext(),
             RecaptchaConfig(
                 siteKey = "6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI", // Test key
                 enabled = false // Disabled for development
             )
-        ) 
+        )
     }
-    
+
+    // Firebase authentication provider
+    single { FirebaseAuthProvider() }
+
     // Certificate pinning components
     single<CertificateStorage> { 
         AndroidCertificateStorage(androidContext()) 
