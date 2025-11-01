@@ -92,7 +92,7 @@ server:
       min-spare: 10
     accept-count: 50
     connection-timeout: 30000
-  port: 8181
+  port: 8081
 logging:
   logback:
     rollingpolicy:
