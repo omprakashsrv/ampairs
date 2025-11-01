@@ -264,6 +264,9 @@ jobs:
 
     - name: Copy files to server
       run: |
+        # SSH options for all connections
+        SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=10"
+
         # Verify JAR file exists locally
         echo "Checking for JAR files in artifacts directory..."
         ls -lh ./artifacts/
@@ -285,34 +288,46 @@ jobs:
         fi
         echo "Firebase key verified"
 
+        # Test SSH connection first
+        echo "Testing SSH connection to ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}..."
+        if ! ssh $SSH_OPTS ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} 'echo "SSH connection successful"'; then
+          echo "ERROR: SSH connection failed"
+          echo "Please check:"
+          echo "1. SSH_PRIVATE_KEY secret is correct"
+          echo "2. Server ${{ vars.SERVER_HOST }} is reachable"
+          echo "3. User ${{ vars.SSH_USER }} has SSH access"
+          exit 1
+        fi
+
         # Remove any existing files/directories on server
         echo "Cleaning up old files on server..."
-        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} 'rm -rf ~/ampairs-service.jar ~/ampairs-sandbox.service ~/ampairs-firebase-key.json'
+        ssh $SSH_OPTS ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} 'rm -rf ~/ampairs-service.jar ~/ampairs-sandbox.service ~/ampairs-firebase-key.json'
 
         # Copy JAR to server
         echo "Copying JAR to server..."
-        scp -v "$JAR_FILE" ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-service.jar
+        scp $SSH_OPTS "$JAR_FILE" ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-service.jar
 
         # Copy service file to server
         echo "Copying service file to server..."
-        scp -v ./scripts/ampairs-sandbox.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-sandbox.service
+        scp $SSH_OPTS ./scripts/ampairs-sandbox.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-sandbox.service
 
         # Copy Firebase key to server
         echo "Copying Firebase service account key to server..."
-        scp -v ./firebase-key/ampairs-firebase-adminsdk.json ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-firebase-key.json
+        scp $SSH_OPTS ./firebase-key/ampairs-firebase-adminsdk.json ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-firebase-key.json
 
         echo "Files copied successfully!"
 
         # Verify files were uploaded
         echo "Verifying files on server..."
-        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'VERIFY_EOF'
+        ssh $SSH_OPTS ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'VERIFY_EOF'
           echo "Files in home directory:"
           ls -lh ~/ampairs* 2>/dev/null || echo "ERROR: No ampairs files found after upload!"
         VERIFY_EOF
 
     - name: Deploy application
       run: |
-        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
+        SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=10"
+        ssh $SSH_OPTS ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
           # Debug: Show what files are in home directory
           echo "=== Files in home directory ==="
           ls -lha ~/
@@ -390,7 +405,8 @@ jobs:
 
     - name: Health check
       run: |
-        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
+        SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=10"
+        ssh $SSH_OPTS ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
           echo "Waiting for application to start..."
           sleep 30
 
@@ -549,34 +565,49 @@ jobs:
         fi
         echo "Firebase key verified"
 
+        # SSH options for all connections
+        SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=10"
+
+        # Test SSH connection first
+        echo "Testing SSH connection to ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}..."
+        if ! ssh $SSH_OPTS ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} 'echo "SSH connection successful"'; then
+          echo "ERROR: SSH connection failed"
+          echo "Please check:"
+          echo "1. SSH_PRIVATE_KEY secret is correct"
+          echo "2. Server ${{ vars.SERVER_HOST }} is reachable"
+          echo "3. User ${{ vars.SSH_USER }} has SSH access"
+          exit 1
+        fi
+
         # Remove any existing files/directories on server
         echo "Cleaning up old files on server..."
-        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} 'rm -rf ~/ampairs-service.jar ~/ampairs-production.service ~/ampairs-firebase-key.json'
+        ssh $SSH_OPTS ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} 'rm -rf ~/ampairs-service.jar ~/ampairs-production.service ~/ampairs-firebase-key.json'
 
         # Copy JAR to server
         echo "Copying JAR to server..."
-        scp -v "$JAR_FILE" ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-service.jar
+        scp $SSH_OPTS "$JAR_FILE" ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-service.jar
 
         # Copy service file to server
         echo "Copying service file to server..."
-        scp -v ./scripts/ampairs-production.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-production.service
+        scp $SSH_OPTS ./scripts/ampairs-production.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-production.service
 
         # Copy Firebase key to server
         echo "Copying Firebase service account key to server..."
-        scp -v ./firebase-key/ampairs-firebase-adminsdk.json ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-firebase-key.json
+        scp $SSH_OPTS ./firebase-key/ampairs-firebase-adminsdk.json ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-firebase-key.json
 
         echo "Files copied successfully!"
 
         # Verify files were uploaded
         echo "Verifying files on server..."
-        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'VERIFY_EOF'
+        ssh $SSH_OPTS ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'VERIFY_EOF'
           echo "Files in home directory:"
           ls -lh ~/ampairs* 2>/dev/null || echo "ERROR: No ampairs files found after upload!"
         VERIFY_EOF
 
     - name: Deploy application
       run: |
-        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
+        SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=10"
+        ssh $SSH_OPTS ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
           # Debug: Show what files are in home directory
           echo "=== Files in home directory ==="
           ls -lha ~/
@@ -654,7 +685,8 @@ jobs:
 
     - name: Health check
       run: |
-        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
+        SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=10"
+        ssh $SSH_OPTS ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
           echo "Waiting for application to start..."
           sleep 30
 
