@@ -22,9 +22,9 @@ Environment="SPRING_PROFILES_ACTIVE=production"
 Environment="SERVER_PORT=8080"
 
 # Database Configuration (override in /etc/environment or use secrets)
-Environment="SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/ampairs_prod"
-Environment="SPRING_DATASOURCE_USERNAME=ampairs_user"
-Environment="SPRING_DATASOURCE_PASSWORD=your_secure_password_here"
+# Environment="SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/ampairs_prod"
+# Environment="SPRING_DATASOURCE_USERNAME=ampairs_user"
+# Environment="SPRING_DATASOURCE_PASSWORD=your_secure_password_here"
 
 # JWT Configuration
 Environment="JWT_SECRET=your_jwt_secret_here_change_in_production"
