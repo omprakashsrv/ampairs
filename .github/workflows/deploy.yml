@@ -114,21 +114,23 @@ jobs:
 
     - name: Health check
       run: |
-        echo "Waiting for application to start..."
-        sleep 30
+        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
+          echo "Waiting for application to start..."
+          sleep 30
 
-        # Check if application is responding (sandbox runs on port 8081)
-        for i in {1..10}; do
-          if curl -f http://${{ vars.SERVER_HOST }}:8081/actuator/health; then
-            echo "✅ Sandbox application is healthy!"
-            exit 0
-          fi
-          echo "⏳ Attempt $i/10: Waiting for application..."
-          sleep 10
-        done
+          # Check if application is responding (sandbox runs on port 8081)
+          for i in {1..10}; do
+            if curl -f http://localhost:8081/actuator/health; then
+              echo "✅ Sandbox application is healthy!"
+              exit 0
+            fi
+            echo "⏳ Attempt $i/10: Waiting for application..."
+            sleep 10
+          done
 
-        echo "❌ Application health check failed"
-        exit 1
+          echo "❌ Application health check failed"
+          exit 1
+        EOF
 
   deploy-production:
     name: Deploy to Production
@@ -196,21 +198,23 @@ jobs:
 
     - name: Health check
       run: |
-        echo "Waiting for application to start..."
-        sleep 30
+        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
+          echo "Waiting for application to start..."
+          sleep 30
 
-        # Check if application is responding (production runs on port 8080)
-        for i in {1..10}; do
-          if curl -f http://${{ vars.SERVER_HOST }}:8080/actuator/health; then
-            echo "✅ Production application is healthy!"
-            exit 0
-          fi
-          echo "⏳ Attempt $i/10: Waiting for application..."
-          sleep 10
-        done
+          # Check if application is responding (production runs on port 8080)
+          for i in {1..10}; do
+            if curl -f http://localhost:8080/actuator/health; then
+              echo "✅ Production application is healthy!"
+              exit 0
+            fi
+            echo "⏳ Attempt $i/10: Waiting for application..."
+            sleep 10
+          done
 
-        echo "❌ Application health check failed"
-        exit 1
+          echo "❌ Application health check failed"
+          exit 1
+        EOF
 
   notification:
     name: Send Notification
