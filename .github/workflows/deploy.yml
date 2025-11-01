@@ -72,20 +72,26 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H ${{ vars.SERVER_HOST }} >> ~/.ssh/known_hosts
 
-    - name: Copy JAR to server
+    - name: Copy files to server
       run: |
-        scp ./artifacts/*.jar ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:/opt/ampairs/
-
-    - name: Copy deployment scripts
-      run: |
-        scp ./scripts/deploy.sh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:/opt/ampairs/
-        scp ./scripts/ampairs.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:/tmp/
+        scp ./artifacts/*.jar ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/
+        scp ./scripts/deploy.sh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/
+        scp ./scripts/ampairs.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/
 
     - name: Deploy application
       run: |
         ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
+          # Create deployment directory if it doesn't exist
+          sudo mkdir -p /opt/ampairs
+
+          # Move files to deployment directory
+          sudo mv ~/*.jar /opt/ampairs/
+          sudo mv ~/deploy.sh /opt/ampairs/
+          sudo mv ~/ampairs.service /tmp/
+
+          # Set permissions and run deployment
           cd /opt/ampairs
-          chmod +x deploy.sh
+          sudo chmod +x deploy.sh
           sudo ./deploy.sh
         EOF
 
@@ -131,20 +137,26 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H ${{ vars.SERVER_HOST }} >> ~/.ssh/known_hosts
 
-    - name: Copy JAR to server
+    - name: Copy files to server
       run: |
-        scp ./artifacts/*.jar ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:/opt/ampairs/
-
-    - name: Copy deployment scripts
-      run: |
-        scp ./scripts/deploy.sh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:/opt/ampairs/
-        scp ./scripts/ampairs.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:/tmp/
+        scp ./artifacts/*.jar ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/
+        scp ./scripts/deploy.sh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/
+        scp ./scripts/ampairs.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/
 
     - name: Deploy application
       run: |
         ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
+          # Create deployment directory if it doesn't exist
+          sudo mkdir -p /opt/ampairs
+
+          # Move files to deployment directory
+          sudo mv ~/*.jar /opt/ampairs/
+          sudo mv ~/deploy.sh /opt/ampairs/
+          sudo mv ~/ampairs.service /tmp/
+
+          # Set permissions and run deployment
           cd /opt/ampairs
-          chmod +x deploy.sh
+          sudo chmod +x deploy.sh
           sudo ./deploy.sh
         EOF
 
