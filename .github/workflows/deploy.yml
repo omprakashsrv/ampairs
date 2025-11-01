@@ -75,19 +75,33 @@ jobs:
     - name: Copy files to server
       run: |
         scp ./artifacts/*.jar ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-service.jar
-        scp ./scripts/deploy.sh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/deploy.sh
-        scp ./scripts/ampairs-sandbox.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs.service
+        scp ./scripts/ampairs-sandbox.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-sandbox.service
 
     - name: Deploy application
       run: |
         ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
-          # Create deployment directory if it doesn't exist
+          # Create ampairs user if it doesn't exist
+          if ! id ampairs &>/dev/null; then
+            sudo useradd -r -s /bin/false ampairs
+          fi
+
+          # Create deployment directories
           sudo mkdir -p /opt/ampairs/sandbox
           sudo mkdir -p /var/log/ampairs
 
+          # Backup existing JAR if present
+          if [ -f /opt/ampairs/sandbox/ampairs-service.jar ]; then
+            sudo cp /opt/ampairs/sandbox/ampairs-service.jar /opt/ampairs/sandbox/ampairs-service.jar.bak
+          fi
+
           # Move files to deployment directory
           sudo mv ~/ampairs-service.jar /opt/ampairs/sandbox/
-          sudo mv ~/ampairs.service /etc/systemd/system/ampairs-sandbox.service
+          sudo mv ~/ampairs-sandbox.service /etc/systemd/system/
+
+          # Set ownership and permissions
+          sudo chown -R ampairs:ampairs /opt/ampairs/sandbox
+          sudo chown -R ampairs:ampairs /var/log/ampairs
+          sudo chmod 644 /etc/systemd/system/ampairs-sandbox.service
 
           # Reload systemd and restart service
           sudo systemctl daemon-reload
@@ -95,7 +109,7 @@ jobs:
           sudo systemctl restart ampairs-sandbox
 
           # Show service status
-          sudo systemctl status ampairs-sandbox --no-pager
+          sudo systemctl status ampairs-sandbox --no-pager || true
         EOF
 
     - name: Health check
@@ -143,19 +157,33 @@ jobs:
     - name: Copy files to server
       run: |
         scp ./artifacts/*.jar ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-service.jar
-        scp ./scripts/deploy.sh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/deploy.sh
-        scp ./scripts/ampairs-production.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs.service
+        scp ./scripts/ampairs-production.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-production.service
 
     - name: Deploy application
       run: |
         ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
-          # Create deployment directory if it doesn't exist
+          # Create ampairs user if it doesn't exist
+          if ! id ampairs &>/dev/null; then
+            sudo useradd -r -s /bin/false ampairs
+          fi
+
+          # Create deployment directories
           sudo mkdir -p /opt/ampairs/production
           sudo mkdir -p /var/log/ampairs
 
+          # Backup existing JAR if present
+          if [ -f /opt/ampairs/production/ampairs-service.jar ]; then
+            sudo cp /opt/ampairs/production/ampairs-service.jar /opt/ampairs/production/ampairs-service.jar.bak
+          fi
+
           # Move files to deployment directory
           sudo mv ~/ampairs-service.jar /opt/ampairs/production/
-          sudo mv ~/ampairs.service /etc/systemd/system/ampairs-production.service
+          sudo mv ~/ampairs-production.service /etc/systemd/system/
+
+          # Set ownership and permissions
+          sudo chown -R ampairs:ampairs /opt/ampairs/production
+          sudo chown -R ampairs:ampairs /var/log/ampairs
+          sudo chmod 644 /etc/systemd/system/ampairs-production.service
 
           # Reload systemd and restart service
           sudo systemctl daemon-reload
@@ -163,7 +191,7 @@ jobs:
           sudo systemctl restart ampairs-production
 
           # Show service status
-          sudo systemctl status ampairs-production --no-pager
+          sudo systemctl status ampairs-production --no-pager || true
         EOF
 
     - name: Health check
