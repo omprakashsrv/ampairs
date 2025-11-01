@@ -21,6 +21,9 @@ Environment="JAVA_OPTS=-Xmx512m -Xms256m"
 Environment="SPRING_PROFILES_ACTIVE=sandbox"
 Environment="SERVER_PORT=8081"
 
+# Firebase Configuration
+Environment="FIREBASE_SERVICE_ACCOUNT_KEY_PATH=/opt/ampairs/sandbox/keys/ampairs-firebase-adminsdk.json"
+
 # Database Configuration (override in /etc/environment or use secrets)
 # Environment="SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/ampairs_sandbox"
 # Environment="SPRING_DATASOURCE_USERNAME=ampairs_user"
@@ -47,7 +50,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectHome=true
 ProtectSystem=strict
-ReadWritePaths=/opt/ampairs/sandbox /var/log/ampairs /tmp
+ReadWritePaths=/opt/ampairs/sandbox /opt/ampairs/sandbox/keys /var/log/ampairs /tmp
 
 # Resource limits
 LimitNOFILE=65536
