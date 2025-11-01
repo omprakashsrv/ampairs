@@ -163,23 +163,47 @@ jobs:
 
     - name: Prepare Firebase service account key
       run: |
+        # Check if secret is set
+        if [ -z "${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" ]; then
+          echo "❌ ERROR: FIREBASE_SERVICE_ACCOUNT_KEY secret is not set"
+          echo ""
+          echo "To fix this:"
+          echo "1. Go to: https://github.com/${{ github.repository }}/settings/secrets/actions"
+          echo "2. Click 'New repository secret'"
+          echo "3. Name: FIREBASE_SERVICE_ACCOUNT_KEY"
+          echo "4. Value: Paste your Firebase service account JSON content"
+          echo ""
+          exit 1
+        fi
+
+        # Create directory and write key file
         mkdir -p ./firebase-key
         echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" > ./firebase-key/ampairs-firebase-adminsdk.json
 
-        # Verify key was written
+        # Verify key was written and not empty
         if [ ! -f ./firebase-key/ampairs-firebase-adminsdk.json ]; then
-          echo "ERROR: Failed to create Firebase key file"
+          echo "❌ ERROR: Failed to create Firebase key file"
+          exit 1
+        fi
+
+        if [ ! -s ./firebase-key/ampairs-firebase-adminsdk.json ]; then
+          echo "❌ ERROR: Firebase key file is empty"
+          echo "Please check that FIREBASE_SERVICE_ACCOUNT_KEY secret contains valid content"
           exit 1
         fi
 
         # Verify it's valid JSON
         if ! jq empty ./firebase-key/ampairs-firebase-adminsdk.json 2>/dev/null; then
-          echo "ERROR: Firebase key is not valid JSON"
-          echo "Please check FIREBASE_SERVICE_ACCOUNT_KEY secret"
+          echo "❌ ERROR: Firebase key is not valid JSON"
+          echo "Current content preview (first 100 chars):"
+          head -c 100 ./firebase-key/ampairs-firebase-adminsdk.json || true
+          echo ""
+          echo "Please check FIREBASE_SERVICE_ACCOUNT_KEY secret contains valid JSON"
           exit 1
         fi
 
-        echo "Firebase service account key prepared successfully"
+        echo "✅ Firebase service account key prepared successfully"
+        echo "Key file size: $(wc -c < ./firebase-key/ampairs-firebase-adminsdk.json) bytes"
 
     - name: Setup SSH
       run: |
@@ -385,23 +409,47 @@ jobs:
 
     - name: Prepare Firebase service account key
       run: |
+        # Check if secret is set
+        if [ -z "${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" ]; then
+          echo "❌ ERROR: FIREBASE_SERVICE_ACCOUNT_KEY secret is not set"
+          echo ""
+          echo "To fix this:"
+          echo "1. Go to: https://github.com/${{ github.repository }}/settings/secrets/actions"
+          echo "2. Click 'New repository secret'"
+          echo "3. Name: FIREBASE_SERVICE_ACCOUNT_KEY"
+          echo "4. Value: Paste your Firebase service account JSON content"
+          echo ""
+          exit 1
+        fi
+
+        # Create directory and write key file
         mkdir -p ./firebase-key
         echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" > ./firebase-key/ampairs-firebase-adminsdk.json
 
-        # Verify key was written
+        # Verify key was written and not empty
         if [ ! -f ./firebase-key/ampairs-firebase-adminsdk.json ]; then
-          echo "ERROR: Failed to create Firebase key file"
+          echo "❌ ERROR: Failed to create Firebase key file"
+          exit 1
+        fi
+
+        if [ ! -s ./firebase-key/ampairs-firebase-adminsdk.json ]; then
+          echo "❌ ERROR: Firebase key file is empty"
+          echo "Please check that FIREBASE_SERVICE_ACCOUNT_KEY secret contains valid content"
           exit 1
         fi
 
         # Verify it's valid JSON
         if ! jq empty ./firebase-key/ampairs-firebase-adminsdk.json 2>/dev/null; then
-          echo "ERROR: Firebase key is not valid JSON"
-          echo "Please check FIREBASE_SERVICE_ACCOUNT_KEY secret"
+          echo "❌ ERROR: Firebase key is not valid JSON"
+          echo "Current content preview (first 100 chars):"
+          head -c 100 ./firebase-key/ampairs-firebase-adminsdk.json || true
+          echo ""
+          echo "Please check FIREBASE_SERVICE_ACCOUNT_KEY secret contains valid JSON"
           exit 1
         fi
 
-        echo "Firebase service account key prepared successfully"
+        echo "✅ Firebase service account key prepared successfully"
+        echo "Key file size: $(wc -c < ./firebase-key/ampairs-firebase-adminsdk.json) bytes"
 
     - name: Setup SSH
       run: |
