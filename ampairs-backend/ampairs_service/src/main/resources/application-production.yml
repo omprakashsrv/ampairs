@@ -67,8 +67,8 @@ websocket:
     rabbitmq:
       host: ${RABBITMQ_HOST:localhost}
       port: ${RABBITMQ_STOMP_PORT:61613}  # STOMP port, not AMQP port (5672)
-      username: ${RABBITMQ_USER:guest}
-      password: ${RABBITMQ_PASSWORD:guest}
+      username: ${RABBITMQ_USER:admin}
+      password: ${RABBITMQ_PASSWORD:Om@711590}
       virtual-host: ${RABBITMQ_VHOST:/}
       connection-timeout: ${RABBITMQ_CONNECTION_TIMEOUT:500}  # milliseconds for availability probe
 
