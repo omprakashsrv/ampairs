@@ -99,8 +99,8 @@ logging:
       max-history: 7
       max-file-size: 1000MB
   file:
-    path: logs/
-    name: ${logging.file.path}application.log
+    path: /var/log/ampairs/
+    name: ${logging.file.path}production.log
   level:
     com.ampairs: ${LOG_LEVEL_AMPAIRS:INFO}
     org.springframework.web: ${LOG_LEVEL_SPRING_WEB:INFO}

@@ -99,8 +99,8 @@ logging:
       max-history: 7
       max-file-size: 1000MB
   file:
-    path: logs/
-    name: ${logging.file.path}application.log
+    path: /var/log/ampairs/
+    name: ${logging.file.path}sandbox.log
   level:
     com.ampairs: ${LOG_LEVEL_AMPAIRS:INFO}
     org.springframework.web: ${LOG_LEVEL_SPRING_WEB:INFO}
@@ -166,13 +166,13 @@ spring:
     open-in-view: false
     properties:
       hibernate:
-        default_schema: ${HIBERNATE_DEFAULT_SCHEMA:ampairs_app}
+        default_schema: ${HIBERNATE_DEFAULT_SCHEMA:ampairs_sandbox}
         format_sql: ${JPA_FORMAT_SQL:true}
         use_sql_comments: ${JPA_USE_SQL_COMMENTS:true}
   # Flyway Database Migration Configuration
   flyway:
     enabled: ${FLYWAY_ENABLED:true}
-    default-schema: ${FLYWAY_DEFAULT_SCHEMA:ampairs_app}
+    default-schema: ${FLYWAY_DEFAULT_SCHEMA:ampairs_sandbox}
     baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE:true}
     baseline-version: ${FLYWAY_BASELINE_VERSION:1}
     validate-on-migrate: ${FLYWAY_VALIDATE_ON_MIGRATE:true}
