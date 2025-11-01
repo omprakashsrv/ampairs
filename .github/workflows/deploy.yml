@@ -132,9 +132,23 @@ jobs:
 
         echo "Files copied successfully!"
 
+        # Verify files were uploaded
+        echo "Verifying files on server..."
+        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'VERIFY_EOF'
+          echo "Files in home directory:"
+          ls -lh ~/ampairs* 2>/dev/null || echo "ERROR: No ampairs files found after upload!"
+        VERIFY_EOF
+
     - name: Deploy application
       run: |
         ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
+          # Debug: Show what files are in home directory
+          echo "=== Files in home directory ==="
+          ls -lha ~/
+          echo "=== Looking for ampairs files ==="
+          ls -lh ~/ampairs* 2>/dev/null || echo "No ampairs files found"
+          echo "================================"
+
           # Create ampairs user if it doesn't exist
           if ! id ampairs &>/dev/null; then
             sudo useradd -r -s /bin/false ampairs
@@ -147,6 +161,9 @@ jobs:
           # Verify JAR file was uploaded correctly
           if [ ! -f ~/ampairs-service.jar ]; then
             echo "ERROR: JAR file not found in home directory"
+            echo "Current directory: $(pwd)"
+            echo "Files in current directory:"
+            ls -la
             exit 1
           fi
 
