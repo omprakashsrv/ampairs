@@ -163,10 +163,42 @@ jobs:
 
     - name: Setup SSH
       run: |
+        set -e  # Exit on any error
+
+        # Create SSH directory
         mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+
+        # Write SSH private key (ensure it ends with newline)
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        echo "" >> ~/.ssh/id_rsa  # Ensure trailing newline
         chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ vars.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+        # Verify key format
+        if ! grep -q "BEGIN.*PRIVATE KEY" ~/.ssh/id_rsa; then
+          echo "ERROR: SSH private key does not appear to be valid"
+          echo "Key should start with '-----BEGIN ... PRIVATE KEY-----'"
+          exit 1
+        fi
+
+        # Test SSH key format
+        if ! ssh-keygen -y -f ~/.ssh/id_rsa > /dev/null 2>&1; then
+          echo "ERROR: SSH private key format is invalid"
+          echo "Please check that SSH_PRIVATE_KEY secret contains a valid private key"
+          exit 1
+        fi
+
+        echo "SSH key validated successfully"
+
+        # Add server to known_hosts with timeout
+        echo "Scanning SSH host keys for ${{ vars.SERVER_HOST }}..."
+        if ! timeout 10 ssh-keyscan -H ${{ vars.SERVER_HOST }} >> ~/.ssh/known_hosts 2>&1; then
+          echo "WARNING: ssh-keyscan failed or timed out"
+          echo "Attempting connection anyway (may prompt for host verification)"
+        fi
+
+        chmod 600 ~/.ssh/known_hosts
+        echo "SSH setup completed"
 
     - name: Copy files to server
       run: |
@@ -333,10 +365,42 @@ jobs:
 
     - name: Setup SSH
       run: |
+        set -e  # Exit on any error
+
+        # Create SSH directory
         mkdir -p ~/.ssh
+        chmod 700 ~/.ssh
+
+        # Write SSH private key (ensure it ends with newline)
         echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        echo "" >> ~/.ssh/id_rsa  # Ensure trailing newline
         chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan -H ${{ vars.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+        # Verify key format
+        if ! grep -q "BEGIN.*PRIVATE KEY" ~/.ssh/id_rsa; then
+          echo "ERROR: SSH private key does not appear to be valid"
+          echo "Key should start with '-----BEGIN ... PRIVATE KEY-----'"
+          exit 1
+        fi
+
+        # Test SSH key format
+        if ! ssh-keygen -y -f ~/.ssh/id_rsa > /dev/null 2>&1; then
+          echo "ERROR: SSH private key format is invalid"
+          echo "Please check that SSH_PRIVATE_KEY secret contains a valid private key"
+          exit 1
+        fi
+
+        echo "SSH key validated successfully"
+
+        # Add server to known_hosts with timeout
+        echo "Scanning SSH host keys for ${{ vars.SERVER_HOST }}..."
+        if ! timeout 10 ssh-keyscan -H ${{ vars.SERVER_HOST }} >> ~/.ssh/known_hosts 2>&1; then
+          echo "WARNING: ssh-keyscan failed or timed out"
+          echo "Attempting connection anyway (may prompt for host verification)"
+        fi
+
+        chmod 600 ~/.ssh/known_hosts
+        echo "SSH setup completed"
 
     - name: Copy files to server
       run: |
