@@ -15,7 +15,7 @@ ExecStart=/usr/bin/java $JAVA_OPTS -jar /opt/ampairs/sandbox/ampairs-service.jar
 ExecReload=/bin/kill -HUP $MAINPID
 
 # JVM Configuration
-Environment="JAVA_OPTS=-Xmx100m -Xms100m -XX:+UseG1GC -XX:+UseStringDeduplication"
+Environment="JAVA_OPTS=-Xmx100m -Xms100m"
 
 # Spring Boot Configuration
 Environment="SPRING_PROFILES_ACTIVE=sandbox"
