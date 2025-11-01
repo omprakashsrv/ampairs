@@ -161,6 +161,26 @@ jobs:
         name: ampairs-service-jar
         path: ./artifacts
 
+    - name: Prepare Firebase service account key
+      run: |
+        mkdir -p ./firebase-key
+        echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" > ./firebase-key/ampairs-firebase-adminsdk.json
+
+        # Verify key was written
+        if [ ! -f ./firebase-key/ampairs-firebase-adminsdk.json ]; then
+          echo "ERROR: Failed to create Firebase key file"
+          exit 1
+        fi
+
+        # Verify it's valid JSON
+        if ! jq empty ./firebase-key/ampairs-firebase-adminsdk.json 2>/dev/null; then
+          echo "ERROR: Firebase key is not valid JSON"
+          echo "Please check FIREBASE_SERVICE_ACCOUNT_KEY secret"
+          exit 1
+        fi
+
+        echo "Firebase service account key prepared successfully"
+
     - name: Setup SSH
       run: |
         set -e  # Exit on any error
@@ -217,7 +237,7 @@ jobs:
         echo "File size: $(ls -lh $JAR_FILE | awk '{print $5}')"
 
         # Verify Firebase key exists locally
-        if [ ! -f ./ampairs-backend/ampairs_service/keys/ampairs-firebase-adminsdk.json ]; then
+        if [ ! -f ./firebase-key/ampairs-firebase-adminsdk.json ]; then
           echo "ERROR: Firebase service account key not found"
           exit 1
         fi
@@ -237,7 +257,7 @@ jobs:
 
         # Copy Firebase key to server
         echo "Copying Firebase service account key to server..."
-        scp -v ./ampairs-backend/ampairs_service/keys/ampairs-firebase-adminsdk.json ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-firebase-key.json
+        scp -v ./firebase-key/ampairs-firebase-adminsdk.json ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-firebase-key.json
 
         echo "Files copied successfully!"
 
@@ -363,6 +383,26 @@ jobs:
         name: ampairs-service-jar
         path: ./artifacts
 
+    - name: Prepare Firebase service account key
+      run: |
+        mkdir -p ./firebase-key
+        echo "${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}" > ./firebase-key/ampairs-firebase-adminsdk.json
+
+        # Verify key was written
+        if [ ! -f ./firebase-key/ampairs-firebase-adminsdk.json ]; then
+          echo "ERROR: Failed to create Firebase key file"
+          exit 1
+        fi
+
+        # Verify it's valid JSON
+        if ! jq empty ./firebase-key/ampairs-firebase-adminsdk.json 2>/dev/null; then
+          echo "ERROR: Firebase key is not valid JSON"
+          echo "Please check FIREBASE_SERVICE_ACCOUNT_KEY secret"
+          exit 1
+        fi
+
+        echo "Firebase service account key prepared successfully"
+
     - name: Setup SSH
       run: |
         set -e  # Exit on any error
@@ -419,7 +459,7 @@ jobs:
         echo "File size: $(ls -lh $JAR_FILE | awk '{print $5}')"
 
         # Verify Firebase key exists locally
-        if [ ! -f ./ampairs-backend/ampairs_service/keys/ampairs-firebase-adminsdk.json ]; then
+        if [ ! -f ./firebase-key/ampairs-firebase-adminsdk.json ]; then
           echo "ERROR: Firebase service account key not found"
           exit 1
         fi
@@ -439,7 +479,7 @@ jobs:
 
         # Copy Firebase key to server
         echo "Copying Firebase service account key to server..."
-        scp -v ./ampairs-backend/ampairs_service/keys/ampairs-firebase-adminsdk.json ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-firebase-key.json
+        scp -v ./firebase-key/ampairs-firebase-adminsdk.json ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-firebase-key.json
 
         echo "Files copied successfully!"
 
