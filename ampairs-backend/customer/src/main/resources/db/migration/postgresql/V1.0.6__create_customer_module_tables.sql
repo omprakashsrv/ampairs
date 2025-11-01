@@ -6,6 +6,11 @@
 -- Dependencies: V4_2__create_unit_module_tables.sql
 
 -- =====================================================
+-- Enable PostGIS Extension
+-- =====================================================
+CREATE EXTENSION IF NOT EXISTS postgis;
+
+-- =====================================================
 -- Customer Groups
 -- =====================================================
 CREATE TABLE customer_groups
@@ -158,7 +163,7 @@ CREATE TABLE customer
     pincode            VARCHAR(10) NULL,
     state              VARCHAR(20) NULL,
     country            VARCHAR(20) NULL,
-    location           POINT,
+    location           GEOMETRY(Point, 4326),
     billing_address    JSONB NULL,
     shipping_address   JSONB NULL,
     attributes         JSONB,

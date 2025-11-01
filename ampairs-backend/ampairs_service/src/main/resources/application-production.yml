@@ -161,8 +161,7 @@ spring:
         physical-strategy: org.hibernate.boot.model.naming.CamelCaseToUnderscoresNamingStrategy
       # IMPORTANT: Never use 'update' in production. Use Flyway for all DDL changes.
       # Options: validate (recommended for production), none (if you want to disable validation)
-      # Set to 'none' when using custom types (PostGIS, etc.) that Hibernate doesn't recognize
-      ddl-auto: ${JPA_DDL_AUTO:none}
+      ddl-auto: ${JPA_DDL_AUTO:validate}
     show-sql: ${JPA_SHOW_SQL:false}
     open-in-view: false
     properties:
@@ -173,7 +172,7 @@ spring:
   # Flyway Database Migration Configuration
   flyway:
     enabled: ${FLYWAY_ENABLED:true}
-    default-schema: ${FLYWAY_DEFAULT_SCHEMA:ampairs_app}
+    default-schema: ${FLYWAY_DEFAULT_SCHEMA:public}
     baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE:true}
     baseline-version: ${FLYWAY_BASELINE_VERSION:1}
     validate-on-migrate: ${FLYWAY_VALIDATE_ON_MIGRATE:true}

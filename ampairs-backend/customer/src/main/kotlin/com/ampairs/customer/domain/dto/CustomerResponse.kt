@@ -68,7 +68,7 @@ fun Customer.asCustomerResponse(): CustomerResponse {
         billingAddress = this.billingAddress,
         shippingAddress = this.shippingAddress,
         attributes = this.attributes,
-        // Spring Data Point: x=longitude, y=latitude - fix coordinate mapping
+        // JTS Point: x=longitude, y=latitude (standard GIS coordinate mapping)
         latitude = this.location?.y,
         longitude = this.location?.x,
         createdAt = this.createdAt,
