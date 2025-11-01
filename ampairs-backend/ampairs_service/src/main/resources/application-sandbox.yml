@@ -26,22 +26,22 @@ springdoc:
   group-configs:
     - group: 'public'
       displayName: 'Public APIs'
-      pathsToMatch: 
+      pathsToMatch:
         - '/auth/v1/**'
         - '/workspace/v1'
         - '/workspace/v1/check-slug/**'
         - '/workspace/v1/search/**'
     - group: 'workspace'
       displayName: 'Workspace Management'
-      pathsToMatch: 
+      pathsToMatch:
         - '/workspace/v1/**'
     - group: 'modules'
       displayName: 'Module Management'
-      pathsToMatch: 
+      pathsToMatch:
         - '/workspace/v1/modules/**'
     - group: 'business'
       displayName: 'Business Operations'
-      pathsToMatch: 
+      pathsToMatch:
         - '/customer/v1/**'
         - '/product/v1/**'
         - '/order/v1/**'
@@ -67,8 +67,8 @@ websocket:
     rabbitmq:
       host: ${RABBITMQ_HOST:localhost}
       port: ${RABBITMQ_STOMP_PORT:61613}  # STOMP port, not AMQP port (5672)
-      username: ${RABBITMQ_USER:guest}
-      password: ${RABBITMQ_PASSWORD:guest}
+      username: ${RABBITMQ_USER:admin}
+      password: ${RABBITMQ_PASSWORD:Om@711590}
       virtual-host: ${RABBITMQ_VHOST:/}
       connection-timeout: ${RABBITMQ_CONNECTION_TIMEOUT:500}  # milliseconds for availability probe
 
@@ -92,15 +92,15 @@ server:
       min-spare: 10
     accept-count: 50
     connection-timeout: 30000
-  port: 8080
+  port: 8081
 logging:
   logback:
     rollingpolicy:
       max-history: 7
       max-file-size: 1000MB
   file:
-    path: logs/
-    name: ${logging.file.path}application.log
+    path: /var/log/ampairs/
+    name: ${logging.file.path}sandbox.log
   level:
     com.ampairs: ${LOG_LEVEL_AMPAIRS:INFO}
     org.springframework.web: ${LOG_LEVEL_SPRING_WEB:INFO}
@@ -135,9 +135,9 @@ spring:
     cache-specs:
       userDetails: maximumSize=1000,expireAfterWrite=${CACHE_USER_DETAILS_EXPIRE:300s},recordStats
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/ampairs_prod}
-    username: ${DB_USERNAME:admin}
-    password: ${DB_PASSWORD:secret}
+    url: ${DB_URL:jdbc:postgresql://10.0.0.12:5432/ampairs_sandbox}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:d8jpkwZ3AdXmHjnG}
     driver-class-name: org.postgresql.Driver
     hikari:
       pool-name: main-db-pool
@@ -166,6 +166,7 @@ spring:
     open-in-view: false
     properties:
       hibernate:
+        default_schema: ${HIBERNATE_DEFAULT_SCHEMA:public}
         format_sql: ${JPA_FORMAT_SQL:true}
         use_sql_comments: ${JPA_USE_SQL_COMMENTS:true}
   # Flyway Database Migration Configuration
@@ -175,7 +176,7 @@ spring:
     baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE:true}
     baseline-version: ${FLYWAY_BASELINE_VERSION:1}
     validate-on-migrate: ${FLYWAY_VALIDATE_ON_MIGRATE:true}
-    out-of-order: ${FLYWAY_OUT_OF_ORDER:false}
+    out-of-order: ${FLYWAY_OUT_OF_ORDER:true}
     # Vendor-specific locations: {vendor} is replaced with mysql or postgresql automatically
     locations: ${FLYWAY_LOCATIONS:classpath:db/migration/{vendor}}
     # User Configuration
@@ -403,7 +404,7 @@ google:
     secret-key: ${RECAPTCHA_SECRET_KEY:6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe}  # Test secret key for development
     site-key: ${RECAPTCHA_SITE_KEY:6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI}    # Reference only - used by frontend
     verify-url: ${RECAPTCHA_VERIFY_URL:https://www.google.com/recaptcha/api/siteverify}
-    min-score: ${RECAPTCHA_MIN_SCORE:0.5}
+    min-score: ${RECAPTCHA_MIN_SCORE:0.7}
     timeout-ms: ${RECAPTCHA_TIMEOUT_MS:5000}
     actions:
       login: ${RECAPTCHA_ACTION_LOGIN:login}

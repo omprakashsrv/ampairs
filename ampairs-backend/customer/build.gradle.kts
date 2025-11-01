@@ -43,6 +43,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
 
+    // PostGIS/Spatial support
+    implementation("org.locationtech.jts:jts-core:1.20.0")
+
     // OpenAPI/Swagger Documentation
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")
 

@@ -2,16 +2,18 @@ name: Ampairs Service CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, sandbox ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, sandbox ]
   workflow_dispatch:
     inputs:
-      deploy:
-        description: 'Deploy to server'
-        required: false
-        default: false
-        type: boolean
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        type: choice
+        options:
+          - sandbox
+          - production
 
 jobs:
   test:
@@ -40,85 +42,358 @@ jobs:
       env:
         SPRING_PROFILES_ACTIVE: ${{ vars.SPRING_PROFILES_ACTIVE || 'production' }}
 
+    - name: Verify build output
+      run: |
+        echo "Checking build output..."
+        ls -lh ampairs-backend/ampairs_service/build/libs/
+
+        # Find the JAR file (exclude -plain.jar files)
+        JAR_FILE=$(ls ampairs-backend/ampairs_service/build/libs/*.jar 2>/dev/null | grep -v '\-plain\.jar$' | head -1)
+
+        if [ -z "$JAR_FILE" ]; then
+          echo "ERROR: No JAR file was built!"
+          exit 1
+        fi
+
+        JAR_SIZE=$(stat -f%z "$JAR_FILE" 2>/dev/null || stat -c%s "$JAR_FILE" 2>/dev/null)
+        echo "JAR file: $JAR_FILE"
+        echo "JAR size: $JAR_SIZE bytes ($(($JAR_SIZE / 1024 / 1024)) MB)"
+
+        # Verify JAR is at least 10MB (Spring Boot apps are typically 50MB+)
+        if [ "$JAR_SIZE" -lt 10485760 ]; then
+          echo "ERROR: JAR file is too small ($JAR_SIZE bytes). Build likely failed."
+          echo "Expected at least 10MB for a Spring Boot application."
+          exit 1
+        fi
+
+        # Verify JAR integrity
+        if ! unzip -t "$JAR_FILE" > /dev/null 2>&1; then
+          echo "ERROR: JAR file is corrupted or invalid"
+          exit 1
+        fi
+
+        echo "✅ JAR file is valid and ready for deployment"
+
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: ampairs-service-jar
-        path: ampairs-backend/ampairs_service/build/libs/*.jar
+        path: |
+          ampairs-backend/ampairs_service/build/libs/*.jar
+          !ampairs-backend/ampairs_service/build/libs/*-plain.jar
 
-  deploy:
-    name: Deploy to Server
+  deploy-sandbox:
+    name: Deploy to Sandbox
     needs: test
     runs-on: ubuntu-latest
-    if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
-    
+    environment: sandbox
+    if: (github.ref == 'refs/heads/sandbox' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.environment == 'sandbox')
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
         name: ampairs-service-jar
         path: ./artifacts
 
-    - name: Setup SSH Key
-      uses: webfactory/ssh-agent@v0.8.0
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-        ssh-passphrase: ${{ secrets.SSH_PASSPHRASE }}
-
-    - name: Add server to known hosts
+    - name: Setup SSH
       run: |
         mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
         ssh-keyscan -H ${{ vars.SERVER_HOST }} >> ~/.ssh/known_hosts
 
-    - name: Copy JAR to server
+    - name: Copy files to server
       run: |
-        scp ./artifacts/*.jar ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:/opt/ampairs/
+        # Verify JAR file exists locally
+        echo "Checking for JAR files in artifacts directory..."
+        ls -lh ./artifacts/
 
-    - name: Copy deployment scripts
-      run: |
-        scp ./scripts/deploy.sh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:/opt/ampairs/
-        scp ./scripts/ampairs.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:/tmp/
+        # Find the JAR file (exclude -plain.jar files)
+        JAR_FILE=$(ls ./artifacts/*.jar | grep -v '\-plain\.jar$' | head -1)
+        if [ -z "$JAR_FILE" ]; then
+          echo "ERROR: No JAR file found in artifacts directory"
+          exit 1
+        fi
+
+        echo "Found JAR file: $JAR_FILE"
+        echo "File size: $(ls -lh $JAR_FILE | awk '{print $5}')"
+
+        # Remove any existing files/directories on server
+        echo "Cleaning up old files on server..."
+        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} 'rm -rf ~/ampairs-service.jar ~/ampairs-sandbox.service'
+
+        # Copy JAR to server
+        echo "Copying JAR to server..."
+        scp -v "$JAR_FILE" ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-service.jar
+
+        # Copy service file to server
+        echo "Copying service file to server..."
+        scp -v ./scripts/ampairs-sandbox.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-sandbox.service
+
+        echo "Files copied successfully!"
+
+        # Verify files were uploaded
+        echo "Verifying files on server..."
+        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'VERIFY_EOF'
+          echo "Files in home directory:"
+          ls -lh ~/ampairs* 2>/dev/null || echo "ERROR: No ampairs files found after upload!"
+        VERIFY_EOF
 
     - name: Deploy application
       run: |
         ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
-          cd /opt/ampairs
-          chmod +x deploy.sh
-          sudo ./deploy.sh
+          # Debug: Show what files are in home directory
+          echo "=== Files in home directory ==="
+          ls -lha ~/
+          echo "=== Looking for ampairs files ==="
+          ls -lh ~/ampairs* 2>/dev/null || echo "No ampairs files found"
+          echo "================================"
+
+          # Create ampairs user if it doesn't exist
+          if ! id ampairs &>/dev/null; then
+            sudo useradd -r -s /bin/false ampairs
+          fi
+
+          # Create deployment directories
+          sudo mkdir -p /opt/ampairs/sandbox
+          sudo mkdir -p /var/log/ampairs
+
+          # Verify JAR file was uploaded correctly
+          if [ ! -f ~/ampairs-service.jar ]; then
+            echo "ERROR: JAR file not found in home directory"
+            echo "Current directory: $(pwd)"
+            echo "Files in current directory:"
+            ls -la
+            exit 1
+          fi
+
+          echo "JAR file size: $(ls -lh ~/ampairs-service.jar | awk '{print $5}')"
+
+          # Stop service before updating JAR
+          sudo systemctl stop ampairs-sandbox || true
+
+          # Remove old JAR file (handle both file and directory cases)
+          sudo rm -rf /opt/ampairs/sandbox/ampairs-service.jar
+
+          # Copy new JAR to deployment directory
+          sudo cp ~/ampairs-service.jar /opt/ampairs/sandbox/ampairs-service.jar
+
+          # Verify JAR file integrity
+          if ! unzip -t /opt/ampairs/sandbox/ampairs-service.jar > /dev/null 2>&1; then
+            echo "ERROR: JAR file is corrupted"
+            exit 1
+          fi
+
+          # Update systemd service file
+          sudo cp ~/ampairs-sandbox.service /etc/systemd/system/ampairs-sandbox.service
+
+          # Set ownership and permissions
+          sudo chown -R ampairs:ampairs /opt/ampairs/sandbox
+          sudo chown -R ampairs:ampairs /var/log/ampairs
+          sudo chmod 644 /etc/systemd/system/ampairs-sandbox.service
+
+          # Clean up uploaded files
+          rm ~/ampairs-service.jar ~/ampairs-sandbox.service
+
+          # Reload systemd and restart service
+          sudo systemctl daemon-reload
+          sudo systemctl enable ampairs-sandbox
+          sudo systemctl restart ampairs-sandbox
+
+          # Wait for service to stabilize
+          sleep 5
+
+          # Show service status
+          sudo systemctl status ampairs-sandbox --no-pager || true
         EOF
 
     - name: Health check
       run: |
-        echo "Waiting for application to start..."
-        sleep 30
-        
-        # Check if application is responding
-        for i in {1..10}; do
-          if curl -f http://${{ vars.SERVER_HOST }}:${{ vars.APP_PORT }}/actuator/health; then
-            echo "✅ Application is healthy!"
-            exit 0
+        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
+          echo "Waiting for application to start..."
+          sleep 30
+
+          # Check if application is responding (sandbox runs on port 8081)
+          for i in {1..10}; do
+            if curl -f http://localhost:8081/actuator/health; then
+              echo "✅ Sandbox application is healthy!"
+              exit 0
+            fi
+            echo "⏳ Attempt $i/10: Waiting for application..."
+            sleep 10
+          done
+
+          echo "❌ Application health check failed"
+          exit 1
+        EOF
+
+  deploy-production:
+    name: Deploy to Production
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production
+    if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.environment == 'production')
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: ampairs-service-jar
+        path: ./artifacts
+
+    - name: Setup SSH
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan -H ${{ vars.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Copy files to server
+      run: |
+        # Verify JAR file exists locally
+        echo "Checking for JAR files in artifacts directory..."
+        ls -lh ./artifacts/
+
+        # Find the JAR file (exclude -plain.jar files)
+        JAR_FILE=$(ls ./artifacts/*.jar | grep -v '\-plain\.jar$' | head -1)
+        if [ -z "$JAR_FILE" ]; then
+          echo "ERROR: No JAR file found in artifacts directory"
+          exit 1
+        fi
+
+        echo "Found JAR file: $JAR_FILE"
+        echo "File size: $(ls -lh $JAR_FILE | awk '{print $5}')"
+
+        # Remove any existing files/directories on server
+        echo "Cleaning up old files on server..."
+        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} 'rm -rf ~/ampairs-service.jar ~/ampairs-production.service'
+
+        # Copy JAR to server
+        echo "Copying JAR to server..."
+        scp -v "$JAR_FILE" ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-service.jar
+
+        # Copy service file to server
+        echo "Copying service file to server..."
+        scp -v ./scripts/ampairs-production.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-production.service
+
+        echo "Files copied successfully!"
+
+        # Verify files were uploaded
+        echo "Verifying files on server..."
+        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'VERIFY_EOF'
+          echo "Files in home directory:"
+          ls -lh ~/ampairs* 2>/dev/null || echo "ERROR: No ampairs files found after upload!"
+        VERIFY_EOF
+
+    - name: Deploy application
+      run: |
+        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
+          # Debug: Show what files are in home directory
+          echo "=== Files in home directory ==="
+          ls -lha ~/
+          echo "=== Looking for ampairs files ==="
+          ls -lh ~/ampairs* 2>/dev/null || echo "No ampairs files found"
+          echo "================================"
+
+          # Create ampairs user if it doesn't exist
+          if ! id ampairs &>/dev/null; then
+            sudo useradd -r -s /bin/false ampairs
           fi
-          echo "⏳ Attempt $i/10: Waiting for application..."
-          sleep 10
-        done
-        
-        echo "❌ Application health check failed"
-        exit 1
+
+          # Create deployment directories
+          sudo mkdir -p /opt/ampairs/production
+          sudo mkdir -p /var/log/ampairs
+
+          # Verify JAR file was uploaded correctly
+          if [ ! -f ~/ampairs-service.jar ]; then
+            echo "ERROR: JAR file not found in home directory"
+            echo "Current directory: $(pwd)"
+            echo "Files in current directory:"
+            ls -la
+            exit 1
+          fi
+
+          echo "JAR file size: $(ls -lh ~/ampairs-service.jar | awk '{print $5}')"
+
+          # Stop service before updating JAR
+          sudo systemctl stop ampairs-production || true
+
+          # Remove old JAR file (handle both file and directory cases)
+          sudo rm -rf /opt/ampairs/production/ampairs-service.jar
+
+          # Copy new JAR to deployment directory
+          sudo cp ~/ampairs-service.jar /opt/ampairs/production/ampairs-service.jar
+
+          # Verify JAR file integrity
+          if ! unzip -t /opt/ampairs/production/ampairs-service.jar > /dev/null 2>&1; then
+            echo "ERROR: JAR file is corrupted"
+            exit 1
+          fi
+
+          # Update systemd service file
+          sudo cp ~/ampairs-production.service /etc/systemd/system/ampairs-production.service
+
+          # Set ownership and permissions
+          sudo chown -R ampairs:ampairs /opt/ampairs/production
+          sudo chown -R ampairs:ampairs /var/log/ampairs
+          sudo chmod 644 /etc/systemd/system/ampairs-production.service
+
+          # Clean up uploaded files
+          rm ~/ampairs-service.jar ~/ampairs-production.service
+
+          # Reload systemd and restart service
+          sudo systemctl daemon-reload
+          sudo systemctl enable ampairs-production
+          sudo systemctl restart ampairs-production
+
+          # Wait for service to stabilize
+          sleep 5
+
+          # Show service status
+          sudo systemctl status ampairs-production --no-pager || true
+        EOF
+
+    - name: Health check
+      run: |
+        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
+          echo "Waiting for application to start..."
+          sleep 30
+
+          # Check if application is responding (production runs on port 8080)
+          for i in {1..10}; do
+            if curl -f http://localhost:8080/actuator/health; then
+              echo "✅ Production application is healthy!"
+              exit 0
+            fi
+            echo "⏳ Attempt $i/10: Waiting for application..."
+            sleep 10
+          done
+
+          echo "❌ Application health check failed"
+          exit 1
+        EOF
 
   notification:
     name: Send Notification
-    needs: [test, deploy]
+    needs: [test, deploy-sandbox, deploy-production]
     runs-on: ubuntu-latest
     if: always()
-    
+
     steps:
     - name: Notify deployment status
       run: |
-        if [ "${{ needs.deploy.result }}" == "success" ]; then
-          echo "🎉 Deployment successful!"
+        if [ "${{ needs.deploy-sandbox.result }}" == "success" ]; then
+          echo "🎉 Sandbox deployment successful!"
+          echo "✅ Ampairs service deployed to sandbox"
+        elif [ "${{ needs.deploy-production.result }}" == "success" ]; then
+          echo "🎉 Production deployment successful!"
           echo "✅ Ampairs service deployed to production"
         else
           echo "❌ Deployment failed!"

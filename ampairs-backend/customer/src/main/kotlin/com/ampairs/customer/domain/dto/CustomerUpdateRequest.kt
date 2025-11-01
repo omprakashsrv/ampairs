@@ -4,7 +4,9 @@ import com.ampairs.core.domain.model.Address
 import com.ampairs.core.validation.*
 import com.ampairs.customer.domain.model.Customer
 import jakarta.validation.constraints.*
-import org.springframework.data.geo.Point
+import org.locationtech.jts.geom.Coordinate
+import org.locationtech.jts.geom.GeometryFactory
+import org.locationtech.jts.geom.PrecisionModel
 
 data class CustomerUpdateRequest(
     @field:SafeString(maxLength = 50, message = "ID contains invalid characters")
@@ -127,8 +129,9 @@ fun CustomerUpdateRequest.toCustomer(): Customer {
     customer.billingAddress = this.billingAddress ?: Address()
     customer.shippingAddress = this.shippingAddress ?: Address()
     customer.location = if (this.latitude != null && this.longitude != null) {
-        // Spring Data Point expects (longitude, latitude) as (X, Y) coordinates
-        Point(this.longitude, this.latitude)
+        // JTS Point creation using GeometryFactory with SRID 4326 (WGS84 for GPS coordinates)
+        val geometryFactory = GeometryFactory(PrecisionModel(), 4326)
+        geometryFactory.createPoint(Coordinate(this.longitude, this.latitude))
     } else null
     customer.status = this.status ?: "ACTIVE"
     customer.attributes = this.attributes

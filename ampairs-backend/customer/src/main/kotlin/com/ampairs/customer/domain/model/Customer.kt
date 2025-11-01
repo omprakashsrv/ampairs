@@ -6,7 +6,7 @@ import com.ampairs.customer.config.Constants
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
-import org.springframework.data.geo.Point
+import org.locationtech.jts.geom.Point
 
 @Entity(name = "customer")
 class Customer : OwnableBaseDomain() {
