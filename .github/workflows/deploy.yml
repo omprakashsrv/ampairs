@@ -89,24 +89,47 @@ jobs:
           sudo mkdir -p /opt/ampairs/sandbox
           sudo mkdir -p /var/log/ampairs
 
-          # Backup existing JAR if present
-          if [ -f /opt/ampairs/sandbox/ampairs-service.jar ]; then
-            sudo cp /opt/ampairs/sandbox/ampairs-service.jar /opt/ampairs/sandbox/ampairs-service.jar.bak
+          # Verify JAR file was uploaded correctly
+          if [ ! -f ~/ampairs-service.jar ]; then
+            echo "ERROR: JAR file not found in home directory"
+            exit 1
           fi
 
-          # Move files to deployment directory
-          sudo mv ~/ampairs-service.jar /opt/ampairs/sandbox/
-          sudo mv ~/ampairs-sandbox.service /etc/systemd/system/
+          echo "JAR file size: $(ls -lh ~/ampairs-service.jar | awk '{print $5}')"
+
+          # Stop service before updating JAR
+          sudo systemctl stop ampairs-sandbox || true
+
+          # Remove old JAR file (handle both file and directory cases)
+          sudo rm -rf /opt/ampairs/sandbox/ampairs-service.jar
+
+          # Copy new JAR to deployment directory
+          sudo cp ~/ampairs-service.jar /opt/ampairs/sandbox/ampairs-service.jar
+
+          # Verify JAR file integrity
+          if ! unzip -t /opt/ampairs/sandbox/ampairs-service.jar > /dev/null 2>&1; then
+            echo "ERROR: JAR file is corrupted"
+            exit 1
+          fi
+
+          # Update systemd service file
+          sudo cp ~/ampairs-sandbox.service /etc/systemd/system/ampairs-sandbox.service
 
           # Set ownership and permissions
           sudo chown -R ampairs:ampairs /opt/ampairs/sandbox
           sudo chown -R ampairs:ampairs /var/log/ampairs
           sudo chmod 644 /etc/systemd/system/ampairs-sandbox.service
 
+          # Clean up uploaded files
+          rm ~/ampairs-service.jar ~/ampairs-sandbox.service
+
           # Reload systemd and restart service
           sudo systemctl daemon-reload
           sudo systemctl enable ampairs-sandbox
           sudo systemctl restart ampairs-sandbox
+
+          # Wait for service to stabilize
+          sleep 5
 
           # Show service status
           sudo systemctl status ampairs-sandbox --no-pager || true
@@ -173,24 +196,47 @@ jobs:
           sudo mkdir -p /opt/ampairs/production
           sudo mkdir -p /var/log/ampairs
 
-          # Backup existing JAR if present
-          if [ -f /opt/ampairs/production/ampairs-service.jar ]; then
-            sudo cp /opt/ampairs/production/ampairs-service.jar /opt/ampairs/production/ampairs-service.jar.bak
+          # Verify JAR file was uploaded correctly
+          if [ ! -f ~/ampairs-service.jar ]; then
+            echo "ERROR: JAR file not found in home directory"
+            exit 1
           fi
 
-          # Move files to deployment directory
-          sudo mv ~/ampairs-service.jar /opt/ampairs/production/
-          sudo mv ~/ampairs-production.service /etc/systemd/system/
+          echo "JAR file size: $(ls -lh ~/ampairs-service.jar | awk '{print $5}')"
+
+          # Stop service before updating JAR
+          sudo systemctl stop ampairs-production || true
+
+          # Remove old JAR file (handle both file and directory cases)
+          sudo rm -rf /opt/ampairs/production/ampairs-service.jar
+
+          # Copy new JAR to deployment directory
+          sudo cp ~/ampairs-service.jar /opt/ampairs/production/ampairs-service.jar
+
+          # Verify JAR file integrity
+          if ! unzip -t /opt/ampairs/production/ampairs-service.jar > /dev/null 2>&1; then
+            echo "ERROR: JAR file is corrupted"
+            exit 1
+          fi
+
+          # Update systemd service file
+          sudo cp ~/ampairs-production.service /etc/systemd/system/ampairs-production.service
 
           # Set ownership and permissions
           sudo chown -R ampairs:ampairs /opt/ampairs/production
           sudo chown -R ampairs:ampairs /var/log/ampairs
           sudo chmod 644 /etc/systemd/system/ampairs-production.service
 
+          # Clean up uploaded files
+          rm ~/ampairs-service.jar ~/ampairs-production.service
+
           # Reload systemd and restart service
           sudo systemctl daemon-reload
           sudo systemctl enable ampairs-production
           sudo systemctl restart ampairs-production
+
+          # Wait for service to stabilize
+          sleep 5
 
           # Show service status
           sudo systemctl status ampairs-production --no-pager || true
