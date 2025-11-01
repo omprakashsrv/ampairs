@@ -2,16 +2,18 @@ name: Ampairs Service CI/CD Pipeline
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [ main, sandbox ]
   pull_request:
-    branches: [ main, master ]
+    branches: [ main, sandbox ]
   workflow_dispatch:
     inputs:
-      deploy:
-        description: 'Deploy to server'
-        required: false
-        default: false
-        type: boolean
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        type: choice
+        options:
+          - sandbox
+          - production
 
 jobs:
   test:
@@ -46,16 +48,17 @@ jobs:
         name: ampairs-service-jar
         path: ampairs-backend/ampairs_service/build/libs/*.jar
 
-  deploy:
-    name: Deploy to Server
+  deploy-sandbox:
+    name: Deploy to Sandbox
     needs: test
     runs-on: ubuntu-latest
-    if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
-    
+    environment: sandbox
+    if: (github.ref == 'refs/heads/sandbox' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.environment == 'sandbox')
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
@@ -66,7 +69,6 @@ jobs:
       uses: webfactory/ssh-agent@v0.8.0
       with:
         ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-        ssh-passphrase: ${{ secrets.SSH_PASSPHRASE }}
 
     - name: Add server to known hosts
       run: |
@@ -94,7 +96,7 @@ jobs:
       run: |
         echo "Waiting for application to start..."
         sleep 30
-        
+
         # Check if application is responding
         for i in {1..10}; do
           if curl -f http://${{ vars.SERVER_HOST }}:${{ vars.APP_PORT }}/actuator/health; then
@@ -104,21 +106,86 @@ jobs:
           echo "⏳ Attempt $i/10: Waiting for application..."
           sleep 10
         done
-        
+
+        echo "❌ Application health check failed"
+        exit 1
+
+  deploy-production:
+    name: Deploy to Production
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production
+    if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.environment == 'production')
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: ampairs-service-jar
+        path: ./artifacts
+
+    - name: Setup SSH Key
+      uses: webfactory/ssh-agent@v0.8.0
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+    - name: Add server to known hosts
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan -H ${{ vars.SERVER_HOST }} >> ~/.ssh/known_hosts
+
+    - name: Copy JAR to server
+      run: |
+        scp ./artifacts/*.jar ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:/opt/ampairs/
+
+    - name: Copy deployment scripts
+      run: |
+        scp ./scripts/deploy.sh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:/opt/ampairs/
+        scp ./scripts/ampairs.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:/tmp/
+
+    - name: Deploy application
+      run: |
+        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
+          cd /opt/ampairs
+          chmod +x deploy.sh
+          sudo ./deploy.sh
+        EOF
+
+    - name: Health check
+      run: |
+        echo "Waiting for application to start..."
+        sleep 30
+
+        # Check if application is responding
+        for i in {1..10}; do
+          if curl -f http://${{ vars.SERVER_HOST }}:${{ vars.APP_PORT }}/actuator/health; then
+            echo "✅ Application is healthy!"
+            exit 0
+          fi
+          echo "⏳ Attempt $i/10: Waiting for application..."
+          sleep 10
+        done
+
         echo "❌ Application health check failed"
         exit 1
 
   notification:
     name: Send Notification
-    needs: [test, deploy]
+    needs: [test, deploy-sandbox, deploy-production]
     runs-on: ubuntu-latest
     if: always()
-    
+
     steps:
     - name: Notify deployment status
       run: |
-        if [ "${{ needs.deploy.result }}" == "success" ]; then
-          echo "🎉 Deployment successful!"
+        if [ "${{ needs.deploy-sandbox.result }}" == "success" ]; then
+          echo "🎉 Sandbox deployment successful!"
+          echo "✅ Ampairs service deployed to sandbox"
+        elif [ "${{ needs.deploy-production.result }}" == "success" ]; then
+          echo "🎉 Production deployment successful!"
           echo "✅ Ampairs service deployed to production"
         else
           echo "❌ Deployment failed!"
