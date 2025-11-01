@@ -166,7 +166,7 @@ spring:
     open-in-view: false
     properties:
       hibernate:
-        default_schema: ${HIBERNATE_DEFAULT_SCHEMA:ampairs_sandbox}
+        default_schema: ${HIBERNATE_DEFAULT_SCHEMA:public}
         format_sql: ${JPA_FORMAT_SQL:true}
         use_sql_comments: ${JPA_USE_SQL_COMMENTS:true}
   # Flyway Database Migration Configuration
