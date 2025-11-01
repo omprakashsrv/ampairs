@@ -74,8 +74,29 @@ jobs:
 
     - name: Copy files to server
       run: |
-        scp ./artifacts/*.jar ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-service.jar
-        scp ./scripts/ampairs-sandbox.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-sandbox.service
+        # Verify JAR file exists locally
+        echo "Checking for JAR files in artifacts directory..."
+        ls -lh ./artifacts/
+
+        # Find the JAR file
+        JAR_FILE=$(ls ./artifacts/*.jar | head -1)
+        if [ -z "$JAR_FILE" ]; then
+          echo "ERROR: No JAR file found in artifacts directory"
+          exit 1
+        fi
+
+        echo "Found JAR file: $JAR_FILE"
+        echo "File size: $(ls -lh $JAR_FILE | awk '{print $5}')"
+
+        # Copy JAR to server
+        echo "Copying JAR to server..."
+        scp -v "$JAR_FILE" ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-service.jar
+
+        # Copy service file to server
+        echo "Copying service file to server..."
+        scp -v ./scripts/ampairs-sandbox.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-sandbox.service
+
+        echo "Files copied successfully!"
 
     - name: Deploy application
       run: |
@@ -181,8 +202,29 @@ jobs:
 
     - name: Copy files to server
       run: |
-        scp ./artifacts/*.jar ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-service.jar
-        scp ./scripts/ampairs-production.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-production.service
+        # Verify JAR file exists locally
+        echo "Checking for JAR files in artifacts directory..."
+        ls -lh ./artifacts/
+
+        # Find the JAR file
+        JAR_FILE=$(ls ./artifacts/*.jar | head -1)
+        if [ -z "$JAR_FILE" ]; then
+          echo "ERROR: No JAR file found in artifacts directory"
+          exit 1
+        fi
+
+        echo "Found JAR file: $JAR_FILE"
+        echo "File size: $(ls -lh $JAR_FILE | awk '{print $5}')"
+
+        # Copy JAR to server
+        echo "Copying JAR to server..."
+        scp -v "$JAR_FILE" ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-service.jar
+
+        # Copy service file to server
+        echo "Copying service file to server..."
+        scp -v ./scripts/ampairs-production.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-production.service
+
+        echo "Files copied successfully!"
 
     - name: Deploy application
       run: |
