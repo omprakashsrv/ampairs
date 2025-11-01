@@ -74,25 +74,28 @@ jobs:
 
     - name: Copy files to server
       run: |
-        scp ./artifacts/*.jar ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/
-        scp ./scripts/deploy.sh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/
-        scp ./scripts/ampairs.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/
+        scp ./artifacts/*.jar ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-service.jar
+        scp ./scripts/deploy.sh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/deploy.sh
+        scp ./scripts/ampairs-sandbox.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs.service
 
     - name: Deploy application
       run: |
         ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
           # Create deployment directory if it doesn't exist
-          sudo mkdir -p /opt/ampairs
+          sudo mkdir -p /opt/ampairs/sandbox
+          sudo mkdir -p /var/log/ampairs
 
           # Move files to deployment directory
-          sudo mv ~/*.jar /opt/ampairs/
-          sudo mv ~/deploy.sh /opt/ampairs/
-          sudo mv ~/ampairs.service /tmp/
+          sudo mv ~/ampairs-service.jar /opt/ampairs/sandbox/
+          sudo mv ~/ampairs.service /etc/systemd/system/ampairs-sandbox.service
 
-          # Set permissions and run deployment
-          cd /opt/ampairs
-          sudo chmod +x deploy.sh
-          sudo ./deploy.sh
+          # Reload systemd and restart service
+          sudo systemctl daemon-reload
+          sudo systemctl enable ampairs-sandbox
+          sudo systemctl restart ampairs-sandbox
+
+          # Show service status
+          sudo systemctl status ampairs-sandbox --no-pager
         EOF
 
     - name: Health check
@@ -100,10 +103,10 @@ jobs:
         echo "Waiting for application to start..."
         sleep 30
 
-        # Check if application is responding
+        # Check if application is responding (sandbox runs on port 8081)
         for i in {1..10}; do
-          if curl -f http://${{ vars.SERVER_HOST }}:${{ vars.APP_PORT }}/actuator/health; then
-            echo "✅ Application is healthy!"
+          if curl -f http://${{ vars.SERVER_HOST }}:8081/actuator/health; then
+            echo "✅ Sandbox application is healthy!"
             exit 0
           fi
           echo "⏳ Attempt $i/10: Waiting for application..."
@@ -139,25 +142,28 @@ jobs:
 
     - name: Copy files to server
       run: |
-        scp ./artifacts/*.jar ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/
-        scp ./scripts/deploy.sh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/
-        scp ./scripts/ampairs.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/
+        scp ./artifacts/*.jar ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-service.jar
+        scp ./scripts/deploy.sh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/deploy.sh
+        scp ./scripts/ampairs-production.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs.service
 
     - name: Deploy application
       run: |
         ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
           # Create deployment directory if it doesn't exist
-          sudo mkdir -p /opt/ampairs
+          sudo mkdir -p /opt/ampairs/production
+          sudo mkdir -p /var/log/ampairs
 
           # Move files to deployment directory
-          sudo mv ~/*.jar /opt/ampairs/
-          sudo mv ~/deploy.sh /opt/ampairs/
-          sudo mv ~/ampairs.service /tmp/
+          sudo mv ~/ampairs-service.jar /opt/ampairs/production/
+          sudo mv ~/ampairs.service /etc/systemd/system/ampairs-production.service
 
-          # Set permissions and run deployment
-          cd /opt/ampairs
-          sudo chmod +x deploy.sh
-          sudo ./deploy.sh
+          # Reload systemd and restart service
+          sudo systemctl daemon-reload
+          sudo systemctl enable ampairs-production
+          sudo systemctl restart ampairs-production
+
+          # Show service status
+          sudo systemctl status ampairs-production --no-pager
         EOF
 
     - name: Health check
@@ -165,10 +171,10 @@ jobs:
         echo "Waiting for application to start..."
         sleep 30
 
-        # Check if application is responding
+        # Check if application is responding (production runs on port 8080)
         for i in {1..10}; do
-          if curl -f http://${{ vars.SERVER_HOST }}:${{ vars.APP_PORT }}/actuator/health; then
-            echo "✅ Application is healthy!"
+          if curl -f http://${{ vars.SERVER_HOST }}:8080/actuator/health; then
+            echo "✅ Production application is healthy!"
             exit 0
           fi
           echo "⏳ Attempt $i/10: Waiting for application..."
