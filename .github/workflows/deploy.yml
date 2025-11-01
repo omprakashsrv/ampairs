@@ -47,8 +47,8 @@ jobs:
         echo "Checking build output..."
         ls -lh ampairs-backend/ampairs_service/build/libs/
 
-        # Find the JAR file
-        JAR_FILE=$(ls ampairs-backend/ampairs_service/build/libs/*.jar 2>/dev/null | head -1)
+        # Find the JAR file (exclude -plain.jar files)
+        JAR_FILE=$(ls ampairs-backend/ampairs_service/build/libs/*.jar 2>/dev/null | grep -v '\-plain\.jar$' | head -1)
 
         if [ -z "$JAR_FILE" ]; then
           echo "ERROR: No JAR file was built!"
@@ -78,7 +78,9 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ampairs-service-jar
-        path: ampairs-backend/ampairs_service/build/libs/*.jar
+        path: |
+          ampairs-backend/ampairs_service/build/libs/*.jar
+          !ampairs-backend/ampairs_service/build/libs/*-plain.jar
 
   deploy-sandbox:
     name: Deploy to Sandbox
@@ -110,8 +112,8 @@ jobs:
         echo "Checking for JAR files in artifacts directory..."
         ls -lh ./artifacts/
 
-        # Find the JAR file
-        JAR_FILE=$(ls ./artifacts/*.jar | head -1)
+        # Find the JAR file (exclude -plain.jar files)
+        JAR_FILE=$(ls ./artifacts/*.jar | grep -v '\-plain\.jar$' | head -1)
         if [ -z "$JAR_FILE" ]; then
           echo "ERROR: No JAR file found in artifacts directory"
           exit 1
@@ -238,8 +240,8 @@ jobs:
         echo "Checking for JAR files in artifacts directory..."
         ls -lh ./artifacts/
 
-        # Find the JAR file
-        JAR_FILE=$(ls ./artifacts/*.jar | head -1)
+        # Find the JAR file (exclude -plain.jar files)
+        JAR_FILE=$(ls ./artifacts/*.jar | grep -v '\-plain\.jar$' | head -1)
         if [ -z "$JAR_FILE" ]; then
           echo "ERROR: No JAR file found in artifacts directory"
           exit 1
