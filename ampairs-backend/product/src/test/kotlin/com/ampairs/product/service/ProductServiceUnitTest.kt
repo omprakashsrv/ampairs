@@ -89,7 +89,6 @@ class ProductServiceUnitTest {
         }
 
         whenever(unitService.findByUid("UNIT-MISSING")).thenReturn(null)
-        whenever(productRepository.findBySku("SKU-456")).thenReturn(Optional.empty())
 
         assertThrows<IllegalArgumentException> {
             productService.createProduct(product)

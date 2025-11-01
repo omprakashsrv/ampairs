@@ -105,7 +105,7 @@ class WorkspaceInvitation : BaseDomain() {
      * Team assignments for this invitation (JSON array)
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "team_ids", columnDefinition = "JSON")
+    @Column(name = "team_ids")
     var teamIds: Set<String> = setOf()
 
     /**
@@ -124,7 +124,7 @@ class WorkspaceInvitation : BaseDomain() {
      * Additional metadata for the invitation (JSON)
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "metadata", columnDefinition = "JSON")
+    @Column(name = "metadata")
     var metadata: Map<String, Any> = mapOf()
 
     /**

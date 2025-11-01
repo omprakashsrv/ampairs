@@ -106,7 +106,7 @@ class Product : OwnableBaseDomain() {
      * - HARDWARE: material, dimensions, warranty_months, safety_rating
      */
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "attributes", columnDefinition = "JSON")
+    @Column(name = "attributes")
     var attributes: Map<String, Any> = emptyMap()
 
     @OneToMany()
