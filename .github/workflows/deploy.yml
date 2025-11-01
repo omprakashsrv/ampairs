@@ -42,6 +42,38 @@ jobs:
       env:
         SPRING_PROFILES_ACTIVE: ${{ vars.SPRING_PROFILES_ACTIVE || 'production' }}
 
+    - name: Verify build output
+      run: |
+        echo "Checking build output..."
+        ls -lh ampairs-backend/ampairs_service/build/libs/
+
+        # Find the JAR file
+        JAR_FILE=$(ls ampairs-backend/ampairs_service/build/libs/*.jar 2>/dev/null | head -1)
+
+        if [ -z "$JAR_FILE" ]; then
+          echo "ERROR: No JAR file was built!"
+          exit 1
+        fi
+
+        JAR_SIZE=$(stat -f%z "$JAR_FILE" 2>/dev/null || stat -c%s "$JAR_FILE" 2>/dev/null)
+        echo "JAR file: $JAR_FILE"
+        echo "JAR size: $JAR_SIZE bytes ($(($JAR_SIZE / 1024 / 1024)) MB)"
+
+        # Verify JAR is at least 10MB (Spring Boot apps are typically 50MB+)
+        if [ "$JAR_SIZE" -lt 10485760 ]; then
+          echo "ERROR: JAR file is too small ($JAR_SIZE bytes). Build likely failed."
+          echo "Expected at least 10MB for a Spring Boot application."
+          exit 1
+        fi
+
+        # Verify JAR integrity
+        if ! unzip -t "$JAR_FILE" > /dev/null 2>&1; then
+          echo "ERROR: JAR file is corrupted or invalid"
+          exit 1
+        fi
+
+        echo "✅ JAR file is valid and ready for deployment"
+
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
