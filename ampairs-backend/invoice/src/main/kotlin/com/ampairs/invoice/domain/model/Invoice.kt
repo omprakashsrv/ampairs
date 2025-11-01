@@ -1,14 +1,14 @@
 package com.ampairs.invoice.domain.model
 
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 import com.ampairs.core.domain.model.Address
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.invoice.config.Constants
 import com.ampairs.invoice.domain.dto.Discount
 import com.ampairs.invoice.domain.dto.TaxInfo
 import com.ampairs.invoice.domain.enums.InvoiceStatus
-import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.*
-import org.hibernate.annotations.Type
 import java.util.*
 
 
@@ -71,19 +71,19 @@ class Invoice : OwnableBaseDomain() {
     @Column(name = "total_quantity", nullable = false)
     var totalQuantity: Double = 0.0
 
-    @Type(JsonType::class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "billing_address", nullable = false)
     var billingAddress: Address = Address()
 
-    @Type(JsonType::class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "shipping_address", nullable = false)
     var shippingAddress: Address = Address()
 
-    @Type(JsonType::class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "discount", nullable = true)
     var discount: List<Discount>? = null
 
-    @Type(JsonType::class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "tax_info", length = 255)
     var taxInfos: List<TaxInfo> = listOf()
 

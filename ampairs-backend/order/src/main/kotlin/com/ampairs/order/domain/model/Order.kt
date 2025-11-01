@@ -6,10 +6,8 @@ import com.ampairs.order.config.Constants
 import com.ampairs.order.domain.dto.Discount
 import com.ampairs.order.domain.dto.TaxInfo
 import com.ampairs.order.domain.enums.OrderStatus
-import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
-import org.hibernate.annotations.Type
 import org.hibernate.type.SqlTypes
 import java.time.LocalDateTime
 import java.util.*
@@ -113,19 +111,19 @@ class Order : OwnableBaseDomain() {
     @Column(name = "total_quantity", nullable = false)
     var totalQuantity: Double = 0.0
 
-    @Type(JsonType::class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "billing_address", nullable = false)
     var billingAddress: Address = Address()
 
-    @Type(JsonType::class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "shipping_address", nullable = false)
     var shippingAddress: Address = Address()
 
-    @Type(JsonType::class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "discount", nullable = true)
     var discount: List<Discount>? = null
 
-    @Type(JsonType::class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "tax_info", length = 255)
     var taxInfos: List<TaxInfo> = listOf()
 

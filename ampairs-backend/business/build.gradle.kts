@@ -43,7 +43,6 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation("io.hypersistence:hypersistence-utils-hibernate-62:3.5.2")
 
     // Database
     implementation("org.flywaydb:flyway-core")

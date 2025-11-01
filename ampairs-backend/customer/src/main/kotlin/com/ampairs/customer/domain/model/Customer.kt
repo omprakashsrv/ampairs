@@ -3,10 +3,8 @@ package com.ampairs.customer.domain.model
 import com.ampairs.core.domain.model.Address
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.customer.config.Constants
-import io.hypersistence.utils.hibernate.type.json.JsonType
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
-import org.hibernate.annotations.Type
 import org.hibernate.type.SqlTypes
 import org.springframework.data.geo.Point
 
@@ -73,15 +71,14 @@ class Customer : OwnableBaseDomain() {
     @Column(name = "country", length = 20, nullable = false)
     var country: String = "India"
 
-    @JdbcTypeCode(SqlTypes.OTHER)
-    @Column(name = "location", columnDefinition = "point")
+    @Column(name = "location")
     var location: Point? = null
 
-    @Type(JsonType::class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "billing_address", nullable = false)
     var billingAddress: Address = Address()
 
-    @Type(JsonType::class)
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "shipping_address", nullable = false)
     var shippingAddress: Address = Address()
 
