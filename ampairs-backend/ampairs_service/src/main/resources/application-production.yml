@@ -285,7 +285,7 @@ application:
         scheduled-rotation: ${JWT_SCHEDULED_ROTATION:true}
         rotation-cron: ${JWT_ROTATION_CRON:0 0 2 1 * ?} # Monthly at 2 AM on 1st day
     cors:
-      allowed-origins: ${CORS_ALLOWED_ORIGINS:https://app.ampairs.in,https://www.ampairs.in,http://localhost:4200,http://localhost:3000,http://127.0.0.1:4200,http://127.0.0.1:3000}
+      allowed-origins: ${CORS_ALLOWED_ORIGINS:https://app.ampairs.in}
       allowed-methods: ${CORS_ALLOWED_METHODS:GET,POST,PUT,DELETE,OPTIONS,PATCH}
       allowed-headers: ${CORS_ALLOWED_HEADERS:*}
       allow-credentials: ${CORS_ALLOW_CREDENTIALS:true}
