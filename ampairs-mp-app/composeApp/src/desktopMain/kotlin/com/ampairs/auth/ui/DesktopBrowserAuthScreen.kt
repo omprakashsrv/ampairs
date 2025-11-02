@@ -2,12 +2,15 @@ package com.ampairs.auth.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.OpenInBrowser
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.ampairs.auth.deeplink.DeepLinkEvent
@@ -39,6 +42,9 @@ fun DesktopBrowserAuthScreen(
     val scope = rememberCoroutineScope()
     var isWaitingForAuth by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
+    var showManualPaste by remember { mutableStateOf(false) }
+    var manualTokenJson by remember { mutableStateOf("") }
+    var pasteError by remember { mutableStateOf<String?>(null) }
 
     // Listen for deep link events
     LaunchedEffect(Unit) {
@@ -148,38 +154,172 @@ fun DesktopBrowserAuthScreen(
                             .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(48.dp)
-                        )
+                        if (!showManualPaste) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(48.dp)
+                            )
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
 
-                        Text(
-                            text = "Waiting for authentication...",
-                            style = MaterialTheme.typography.titleMedium,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                            Text(
+                                text = "Waiting for authentication...",
+                                style = MaterialTheme.typography.titleMedium,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
 
-                        Spacer(modifier = Modifier.height(8.dp))
+                            Spacer(modifier = Modifier.height(8.dp))
 
-                        Text(
-                            text = "Complete the authentication in your browser.\nThis window will automatically update when done.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            textAlign = TextAlign.Center,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                            Text(
+                                text = "Complete the authentication in your browser.\nThis window will automatically update when done.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                                modifier = Modifier.fillMaxWidth()
+                            )
 
-                        Spacer(modifier = Modifier.height(16.dp))
+                            Spacer(modifier = Modifier.height(16.dp))
 
-                        TextButton(
-                            onClick = {
-                                isWaitingForAuth = false
-                                errorMessage = null
+                            // Option to paste tokens manually
+                            OutlinedButton(
+                                onClick = { showManualPaste = true },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.ContentPaste,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Browser doesn't support deep links? Paste tokens here")
                             }
-                        ) {
-                            Text("Cancel")
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            TextButton(
+                                onClick = {
+                                    isWaitingForAuth = false
+                                    errorMessage = null
+                                    showManualPaste = false
+                                    manualTokenJson = ""
+                                    pasteError = null
+                                }
+                            ) {
+                                Text("Cancel")
+                            }
+                        } else {
+                            // Manual token paste UI
+                            Text(
+                                text = "Paste Authentication Tokens",
+                                style = MaterialTheme.typography.titleMedium,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            Text(
+                                text = "After completing authentication in your browser, copy the JSON tokens and paste them below.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                textAlign = TextAlign.Center,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            OutlinedTextField(
+                                value = manualTokenJson,
+                                onValueChange = {
+                                    manualTokenJson = it
+                                    pasteError = null
+                                },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(120.dp),
+                                label = { Text("JSON Tokens") },
+                                placeholder = {
+                                    Text(
+                                        """{"access_token": "...", "refresh_token": "..."}""",
+                                        style = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
+                                    )
+                                },
+                                supportingText = {
+                                    Text("Paste the entire JSON object from the browser")
+                                },
+                                isError = pasteError != null,
+                                textStyle = MaterialTheme.typography.bodySmall.copy(fontFamily = FontFamily.Monospace)
+                            )
+
+                            pasteError?.let { error ->
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    text = error,
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.height(16.dp))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = {
+                                        showManualPaste = false
+                                        manualTokenJson = ""
+                                        pasteError = null
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text("Back")
+                                }
+
+                                Button(
+                                    onClick = {
+                                        scope.launch {
+                                            val result = DeepLinkHandler.processManualTokens(manualTokenJson)
+                                            if (result.isSuccess) {
+                                                // Token processing will trigger deep link event
+                                                // UI will automatically update via the flow collector
+                                                pasteError = null
+                                                println("DesktopBrowserAuthScreen: Manual tokens processed successfully")
+                                            } else {
+                                                pasteError = result.exceptionOrNull()?.message ?: "Failed to process tokens"
+                                                println("DesktopBrowserAuthScreen: Manual token processing failed: $pasteError")
+                                            }
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    enabled = manualTokenJson.isNotBlank()
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.ContentPaste,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text("Sign In")
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.height(8.dp))
+
+                            TextButton(
+                                onClick = {
+                                    isWaitingForAuth = false
+                                    errorMessage = null
+                                    showManualPaste = false
+                                    manualTokenJson = ""
+                                    pasteError = null
+                                }
+                            ) {
+                                Text("Cancel")
+                            }
                         }
                     }
                 }

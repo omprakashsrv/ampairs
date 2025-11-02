@@ -85,6 +85,73 @@ object DeepLinkHandler {
     }
 
     /**
+     * Process manually pasted JSON tokens from browser
+     * Expected JSON format: {"access_token": "xxx", "refresh_token": "yyy"}
+     *
+     * This is a fallback method for browsers that don't support deep linking.
+     * Users can copy the JSON from the browser and paste it here.
+     *
+     * @param jsonString The JSON string containing tokens
+     * @return Result with success/error message
+     */
+    suspend fun processManualTokens(jsonString: String): Result<Pair<String, String>> {
+        return try {
+            println("DeepLinkHandler: Processing manual tokens")
+
+            // Basic JSON parsing (simple approach without external library)
+            val trimmed = jsonString.trim()
+
+            // Validate JSON structure
+            if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) {
+                return Result.failure(Exception("Invalid JSON format. Expected format: {\"access_token\": \"xxx\", \"refresh_token\": \"yyy\"}"))
+            }
+
+            // Extract tokens using regex
+            val accessTokenRegex = """"access_token"\s*:\s*"([^"]+)"""".toRegex()
+            val refreshTokenRegex = """"refresh_token"\s*:\s*"([^"]+)"""".toRegex()
+
+            val accessTokenMatch = accessTokenRegex.find(trimmed)
+            val refreshTokenMatch = refreshTokenRegex.find(trimmed)
+
+            val accessToken = accessTokenMatch?.groupValues?.get(1)
+            val refreshToken = refreshTokenMatch?.groupValues?.get(1)
+
+            if (accessToken.isNullOrBlank() || refreshToken.isNullOrBlank()) {
+                println("DeepLinkHandler: Missing tokens in JSON")
+                println("DeepLinkHandler: Access token present: ${!accessToken.isNullOrBlank()}")
+                println("DeepLinkHandler: Refresh token present: ${!refreshToken.isNullOrBlank()}")
+                return Result.failure(Exception("Missing access_token or refresh_token in JSON"))
+            }
+
+            // Validate token format (should be non-empty and reasonable length)
+            if (accessToken.length < 10 || refreshToken.length < 10) {
+                return Result.failure(Exception("Invalid token format. Tokens seem too short."))
+            }
+
+            println("DeepLinkHandler: Successfully parsed manual tokens")
+            println("DeepLinkHandler: Access token length: ${accessToken.length}")
+            println("DeepLinkHandler: Refresh token length: ${refreshToken.length}")
+
+            // Emit authentication event (no longer using runBlocking - this is a suspend function)
+            _deepLinkEvents.emit(
+                DeepLinkEvent.AuthCallback(
+                    accessToken = accessToken,
+                    refreshToken = refreshToken
+                )
+            )
+
+            println("DeepLinkHandler: Successfully emitted auth callback event")
+
+            Result.success(Pair(accessToken, refreshToken))
+
+        } catch (e: Exception) {
+            println("DeepLinkHandler: Error processing manual tokens: ${e.message}")
+            e.printStackTrace()
+            Result.failure(Exception("Failed to process tokens: ${e.message}"))
+        }
+    }
+
+    /**
      * Internal handler for processing deep link URIs
      */
     private fun handleDeepLink(uri: URI) {
@@ -184,8 +251,11 @@ object DeepLinkHandler {
     /**
      * Open browser to authentication URL
      * URL is determined by current environment configuration:
-     * - DEV: http://localhost:4200/login
-     * - PRODUCTION: https://app.ampairs.com/login
+     * - DEV: http://localhost:4200/login?client=desktop
+     * - PRODUCTION: https://app.ampairs.com/login?client=desktop
+     *
+     * Query parameters added:
+     * - client=desktop: Indicates this is a desktop client authentication
      *
      * Can be overridden via:
      * - System property: -Dampairs.web.authUrl=<url>
@@ -199,15 +269,22 @@ object DeepLinkHandler {
                 ?: System.getenv("AMPAIRS_ENVIRONMENT")
                 ?: "dev"
 
-            val defaultUrl = when (envProperty.lowercase()) {
+            val defaultBaseUrl = when (envProperty.lowercase()) {
                 "production", "prod", "release" -> "https://app.ampairs.com/login"
                 else -> "http://localhost:4200/login"
             }
 
-            val finalUrl = authUrl
+            val baseUrl = authUrl
                 ?: System.getProperty("ampairs.web.authUrl")
                 ?: System.getenv("AMPAIRS_WEB_AUTH_URL")
-                ?: defaultUrl
+                ?: defaultBaseUrl
+
+            // Add query params to indicate desktop client
+            val finalUrl = if (baseUrl.contains("?")) {
+                "$baseUrl&client=desktop"
+            } else {
+                "$baseUrl?client=desktop"
+            }
 
             if (Desktop.isDesktopSupported()) {
                 val desktop = Desktop.getDesktop()
