@@ -192,13 +192,13 @@ spring:
         static: ${AWS_REGION:ap-south-1}
         auto: ${AWS_AUTO_REGION:true}
       credentials:
-        access-key: ${AWS_ACCESS_KEY:test}
-        secret-key: ${AWS_SECRET_KEY:test}
+        access-key: ${AWS_ACCESS_KEY:AKIAVYWGJ7XHE7XMT34K}
+        secret-key: ${AWS_SECRET_KEY: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}
         instance-profile: ${AWS_USE_IAM_ROLE:false}
         profile-name: ${AWS_PROFILE_NAME:}
         profile-path: ${AWS_PROFILE_PATH:}
       s3:
-        region: ${AWS_S3_REGION:}
+        region: ${AWS_S3_REGION:ap-south-1}
         endpoint: ${AWS_S3_ENDPOINT:}
         path-style-access-enabled: ${AWS_S3_PATH_STYLE:false}
         checksum-validation-enabled: ${AWS_S3_CHECKSUM_VALIDATION:true}
@@ -217,8 +217,8 @@ ampairs:
   # Object Storage Configuration
   storage:
     # Storage provider: LOCAL, S3, or MINIO
-    provider: ${STORAGE_PROVIDER:LOCAL}
-    default-bucket: ${STORAGE_BUCKET:ampairs-files}
+    provider: ${STORAGE_PROVIDER:S3}
+    default-bucket: ${STORAGE_BUCKET:ampairs-test}
     max-file-size: ${STORAGE_MAX_FILE_SIZE:10MB}
     allowed-content-types: ${STORAGE_ALLOWED_CONTENT_TYPES:image/jpeg,image/png,image/gif,image/webp,image/bmp,image/tiff}
     # Image-specific settings
@@ -249,7 +249,7 @@ ampairs:
       sms-type: ${AWS_SNS_SMS_TYPE:Transactional}
   # Local Filesystem Configuration (for development/testing)
   local:
-    enabled: ${LOCAL_STORAGE_ENABLED:true}
+    enabled: ${LOCAL_STORAGE_ENABLED:false}
     base-path: ${LOCAL_STORAGE_PATH:./storage}
     create-directories: ${LOCAL_STORAGE_CREATE_DIRS:true}
     url-base: ${LOCAL_STORAGE_URL_BASE:http://localhost:8080/files}

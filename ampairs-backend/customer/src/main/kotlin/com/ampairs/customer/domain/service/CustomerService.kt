@@ -71,7 +71,7 @@ class CustomerService @Autowired constructor(
 
     fun getCustomers(): List<Customer> {
         val customers =
-            customerPagingRepository.findAllByUpdatedAtGreaterThanEqual(Instant.MIN ,PageRequest.of(0, 1000, Sort.by("lastUpdated").ascending())
+            customerPagingRepository.findAllByUpdatedAtGreaterThanEqual(Instant.MIN ,PageRequest.of(0, 1000, Sort.by("updatedAt").ascending())
             )
         return customers
     }
