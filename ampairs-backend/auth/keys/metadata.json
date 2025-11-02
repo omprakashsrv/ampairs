@@ -1,9 +1,0 @@
-{
-    "keyId": "e0ddd424",
-    "algorithm": "RS256",
-    "createdAt": "2025-10-31T04:28:36.740853Z",
-    "expiresAt": "2026-01-29T04:28:36.740846Z",
-    "isActive": true,
-    "privateKeyPath": "keys/private.pem",
-    "publicKeyPath": "keys/public.pem"
-}

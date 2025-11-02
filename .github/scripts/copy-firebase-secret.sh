@@ -4,7 +4,7 @@
 
 set -e
 
-FIREBASE_KEY_PATH="ampairs-backend/ampairs_service/keys/ampairs-firebase-adminsdk.json"
+FIREBASE_KEY_PATH="ampairs_service/keys/ampairs-firebase-adminsdk.json"
 
 echo "=================================================="
 echo "Firebase Service Account Key - GitHub Secret Setup"
