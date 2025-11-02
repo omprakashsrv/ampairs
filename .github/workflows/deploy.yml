@@ -33,23 +33,23 @@ jobs:
         cache: gradle
 
     - name: Grant execute permission for gradlew
-      run: chmod +x ampairs-backend/gradlew
+      run: chmod +x gradlew
 
     - name: Run tests
-      run: cd ampairs-backend && ./gradlew test
+      run: ./gradlew test
 
     - name: Build application
-      run: cd ampairs-backend && ./gradlew :ampairs_service:bootJar
+      run: ./gradlew :ampairs_service:bootJar
       env:
         SPRING_PROFILES_ACTIVE: ${{ vars.SPRING_PROFILES_ACTIVE || 'production' }}
 
     - name: Verify build output
       run: |
         echo "Checking build output..."
-        ls -lh ampairs-backend/ampairs_service/build/libs/
+        ls -lh ampairs_service/build/libs/
 
         # Find the JAR file (exclude -plain.jar files)
-        JAR_FILE=$(ls ampairs-backend/ampairs_service/build/libs/*.jar 2>/dev/null | grep -v '\-plain\.jar$' | head -1)
+        JAR_FILE=$(ls ampairs_service/build/libs/*.jar 2>/dev/null | grep -v '\-plain\.jar$' | head -1)
 
         if [ -z "$JAR_FILE" ]; then
           echo "ERROR: No JAR file was built!"
@@ -93,23 +93,23 @@ jobs:
         cache: gradle
 
     - name: Grant execute permission for gradlew
-      run: chmod +x ampairs-backend/gradlew
+      run: chmod +x gradlew
 
     - name: Run tests
-      run: cd ampairs-backend && ./gradlew test
+      run: ./gradlew test
 
     - name: Build application
-      run: cd ampairs-backend && ./gradlew :ampairs_service:bootJar
+      run: ./gradlew :ampairs_service:bootJar
       env:
         SPRING_PROFILES_ACTIVE: ${{ vars.SPRING_PROFILES_ACTIVE || 'production' }}
 
     - name: Verify build output
       run: |
         echo "Checking build output..."
-        ls -lh ampairs-backend/ampairs_service/build/libs/
+        ls -lh ampairs_service/build/libs/
 
         # Find the JAR file (exclude -plain.jar files)
-        JAR_FILE=$(ls ampairs-backend/ampairs_service/build/libs/*.jar 2>/dev/null | grep -v '\-plain\.jar$' | head -1)
+        JAR_FILE=$(ls ampairs_service/build/libs/*.jar 2>/dev/null | grep -v '\-plain\.jar$' | head -1)
 
         if [ -z "$JAR_FILE" ]; then
           echo "ERROR: No JAR file was built!"
@@ -140,8 +140,8 @@ jobs:
       with:
         name: ampairs-service-jar
         path: |
-          ampairs-backend/ampairs_service/build/libs/*.jar
-          !ampairs-backend/ampairs_service/build/libs/*-plain.jar
+          ampairs_service/build/libs/*.jar
+          !ampairs_service/build/libs/*-plain.jar
 
   deploy-production:
     name: Deploy to Production
