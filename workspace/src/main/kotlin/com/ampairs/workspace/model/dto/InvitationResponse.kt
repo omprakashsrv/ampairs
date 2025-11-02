@@ -1,0 +1,197 @@
+package com.ampairs.workspace.model.dto
+
+import com.ampairs.workspace.model.WorkspaceInvitation
+import com.ampairs.workspace.model.enums.InvitationStatus
+import com.ampairs.workspace.model.enums.WorkspaceRole
+import java.time.Instant
+
+/**
+ * Response DTO for workspace invitation information
+ */
+data class InvitationResponse(
+    val id: String,
+
+    val workspaceId: String,
+
+    val workspaceName: String? = null,
+
+    val email: String?,
+
+    val phone: String?,
+
+    val countryCode: Int?,
+
+    val role: WorkspaceRole,
+
+    val status: InvitationStatus,
+
+    val token: String,
+
+    val message: String?,
+
+    val invitedBy: String?,
+
+    val inviterName: String? = null,
+
+    val expiresAt: Instant,
+
+    val acceptedAt: Instant?,
+
+    val rejectedAt: Instant?,
+
+    val cancelledAt: Instant?,
+
+    val cancelledBy: String?,
+
+    val cancellationReason: String?,
+
+    val sendCount: Int,
+
+    val lastSentAt: Instant?,
+
+    val createdAt: Instant,
+
+    val updatedAt: Instant,
+
+    val isExpired: Boolean,
+
+    val daysUntilExpiry: Long?,
+)
+
+/**
+ * Simplified invitation response for lists
+ */
+data class InvitationListResponse(
+    val id: String,
+
+    val workspaceId: String,
+
+    val email: String?,
+
+    val phone: String?,
+
+    val countryCode: Int?,
+
+    val role: WorkspaceRole,
+
+    val status: InvitationStatus,
+
+    val invitedBy: String?,
+
+    val inviterName: String? = null,
+
+    val expiresAt: Instant,
+
+    val invitedAt: Instant,
+
+    val acceptedAt: Instant? = null,
+
+    val sendCount: Int = 0,
+
+    val lastSentAt: Instant? = null,
+
+    val message: String? = null,
+
+    val createdAt: Instant,
+
+    val isExpired: Boolean,
+)
+
+/**
+ * Response DTO for invitation statistics
+ */
+data class InvitationStatsResponse(
+    val totalInvitations: Long,
+
+    val pendingInvitations: Long,
+
+    val acceptedInvitations: Long,
+
+    val declinedInvitations: Long,
+
+    val expiredInvitations: Long,
+
+    val cancelledInvitations: Long,
+
+    val recentInvitations: Long,
+)
+
+/**
+ * Response DTO for public invitation details (used for invitation preview)
+ */
+data class PublicInvitationResponse(
+    val workspaceName: String,
+
+    val workspaceDescription: String?,
+
+    val workspaceAvatarUrl: String?,
+
+    val inviterName: String,
+
+    val role: WorkspaceRole,
+
+    val expiresAt: Instant,
+
+    val isExpired: Boolean,
+
+    val isValid: Boolean,
+)
+
+/**
+ * Extension function to convert WorkspaceInvitation entity to InvitationResponse
+ */
+fun WorkspaceInvitation.toResponse(): InvitationResponse {
+    return InvitationResponse(
+        id = this.uid, // Use uid instead of id
+        workspaceId = this.workspaceId,
+        workspaceName = null, // Will be populated from Workspace entity if needed
+        email = this.email,
+        phone = this.phone,
+        countryCode = this.countryCode,
+        role = this.role,
+        status = this.status,
+        token = this.token,
+        message = this.message,
+        invitedBy = this.invitedBy,
+        inviterName = null, // Will be populated from User entity if needed
+        expiresAt = this.expiresAt,
+        acceptedAt = this.acceptedAt,
+        rejectedAt = this.rejectedAt,
+        cancelledAt = this.cancelledAt,
+        cancelledBy = this.cancelledBy,
+        cancellationReason = this.cancellationReason,
+        sendCount = this.sendCount,
+        lastSentAt = this.lastSentAt,
+        createdAt = this.createdAt ?: Instant.now(),
+        updatedAt = this.updatedAt ?: Instant.now(),
+        isExpired = Instant.now().isAfter(this.expiresAt),
+        daysUntilExpiry = if (Instant.now().isBefore(this.expiresAt)) {
+            java.time.Duration.between(Instant.now(), this.expiresAt).toDays()
+        } else null
+    )
+}
+
+/**
+ * Extension function to convert WorkspaceInvitation entity to InvitationListResponse
+ */
+fun WorkspaceInvitation.toListResponse(): InvitationListResponse {
+    return InvitationListResponse(
+        id = this.uid, // Use uid instead of id
+        workspaceId = this.workspaceId,
+        email = this.email,
+        phone = this.phone,
+        countryCode = this.countryCode,
+        role = this.role,
+        status = this.status,
+        invitedBy = this.invitedBy,
+        inviterName = null, // Will be populated from User entity if needed
+        expiresAt = this.expiresAt,
+        invitedAt = this.createdAt ?: Instant.now(),
+        acceptedAt = this.acceptedAt,
+        sendCount = this.sendCount,
+        lastSentAt = this.lastSentAt,
+        message = this.message,
+        createdAt = this.createdAt ?: Instant.now(),
+        isExpired = Instant.now().isAfter(this.expiresAt)
+    )
+}

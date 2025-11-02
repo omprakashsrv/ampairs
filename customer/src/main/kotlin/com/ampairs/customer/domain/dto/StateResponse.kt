@@ -1,0 +1,17 @@
+package com.ampairs.customer.domain.dto
+
+import com.ampairs.customer.domain.model.State
+
+data class StateResponse(
+    var id: String,
+    var name: String,
+)
+
+fun List<State>.asStatesResponse(): List<StateResponse> {
+    return map {
+        StateResponse(
+            id = it.uid,
+            name = it.name,
+        )
+    }
+}

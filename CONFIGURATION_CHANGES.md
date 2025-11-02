@@ -136,7 +136,7 @@ CREATE USER ampairs_flyway WITH PASSWORD 'secure_password';
 GRANT ALL PRIVILEGES ON DATABASE ampairs_db TO ampairs_flyway;
 ```
 
-See [DATABASE_MIGRATION_GUIDE.md](./DATABASE_MIGRATION_GUIDE.md) for detailed permission setup.
+See [DATABASE_MIGRATION_GUIDE.md](DATABASE_MIGRATION_GUIDE.md) for detailed permission setup.
 
 ## Environment Variables
 
@@ -298,7 +298,7 @@ spring:
 
 ## References
 
-- [DATABASE_MIGRATION_GUIDE.md](./DATABASE_MIGRATION_GUIDE.md) - Complete Flyway setup guide
+- [DATABASE_MIGRATION_GUIDE.md](DATABASE_MIGRATION_GUIDE.md) - Complete Flyway setup guide
 - [Flyway Documentation](https://documentation.red-gate.com/fd)
 - [Spring Boot Flyway](https://docs.spring.io/spring-boot/reference/data/sql.html#data.sql.flyway)
 
