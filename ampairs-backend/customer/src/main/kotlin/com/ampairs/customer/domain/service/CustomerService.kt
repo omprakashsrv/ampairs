@@ -256,6 +256,8 @@ class CustomerService @Autowired constructor(
             val existingCustomer = customerRepository.findByUid(customer.uid)
             if (existingCustomer != null) {
                 // Customer exists, update it
+                customer.id = existingCustomer.id
+                customer.images = existingCustomer.images
                 updateCustomer(customer)
             } else {
                 // Customer doesn't exist, create new one

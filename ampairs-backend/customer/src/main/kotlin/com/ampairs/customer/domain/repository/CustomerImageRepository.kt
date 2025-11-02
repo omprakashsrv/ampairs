@@ -121,7 +121,7 @@ interface CustomerImageRepository : JpaRepository<CustomerImage, Long> {
      * Find images uploaded after a specific date
      */
     @Query("SELECT ci FROM customer_image ci WHERE ci.active = true AND ci.uploadedAt > :uploadedAt ORDER BY ci.uploadedAt DESC")
-    fun findByActiveTrueAndUploadedAtAfter(@Param("uploadedAt") uploadedAt: java.time.LocalDateTime): List<CustomerImage>
+    fun findByActiveTrueAndUploadedAtAfter(@Param("uploadedAt") uploadedAt: java.time.Instant): List<CustomerImage>
 }
 
 /**

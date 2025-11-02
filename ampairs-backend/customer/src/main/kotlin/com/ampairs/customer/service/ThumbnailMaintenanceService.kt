@@ -9,7 +9,8 @@ import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 /**
  * Service for thumbnail maintenance and cleanup operations
@@ -103,7 +104,7 @@ class ThumbnailMaintenanceService(
 
         try {
             val recentImages = customerImageRepository.findImagesWithoutThumbnails(
-                LocalDateTime.now().minusHours(24)
+                Instant.now().minus(24, ChronoUnit.HOURS)
             )
 
             var totalGenerated = 0
@@ -251,7 +252,7 @@ class ThumbnailMaintenanceService(
         return 0
     }
 
-    private fun getLastCleanupTime(): LocalDateTime? {
+    private fun getLastCleanupTime(): Instant? {
         // This could be stored in database or retrieved from logs
         return null
     }
@@ -260,7 +261,7 @@ class ThumbnailMaintenanceService(
 /**
  * Extension function to find images without thumbnails
  */
-fun CustomerImageRepository.findImagesWithoutThumbnails(since: LocalDateTime): List<CustomerImage> =
+fun CustomerImageRepository.findImagesWithoutThumbnails(since: Instant): List<CustomerImage> =
     findByActiveTrueAndUploadedAtAfter(since)
 
 /**
@@ -271,6 +272,6 @@ data class ThumbnailCacheStats(
     val totalCachedThumbnails: Long,
     val expectedThumbnails: Long,
     val cacheHitRate: Int, // Percentage
-    val lastCleanup: LocalDateTime?,
+    val lastCleanup: Instant?,
     val cacheEnabled: Boolean
 )
