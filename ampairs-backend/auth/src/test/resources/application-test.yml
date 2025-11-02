@@ -54,10 +54,19 @@ application:
       refresh-token:
         expiration: P1D # 1 day for tests
     cors:
-      allowed-origins: "*"
-      allowed-methods: GET,POST,PUT,DELETE,OPTIONS
-      allowed-headers: "*"
-      allow-credentials: true
+      allowed-origins:
+        - "http://localhost:4200"
+        - "http://localhost:8080"
+      allowed-methods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+        - OPTIONS
+        - PATCH
+      allowed-headers:
+        - "*"
+      allow-credentials: false  # Set to false for tests to allow wildcard headers
       max-age: PT1H
     rate-limiting:
       enabled: false  # Disabled for testing
