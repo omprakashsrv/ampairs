@@ -195,26 +195,33 @@ idx_app_user_deletion_scheduled
 ### 1. Request Deletion (Immediate Effects)
 - Account marked for deletion (`deleted = true`)
 - 30-day grace period starts
-- **Immediate anonymization:**
-  - Name → "Deleted User"
-  - Email → `null`
-  - Phone → "0000000000"
-  - Username → "deleted_{uid}"
-- All JWT tokens revoked
-- Workspace memberships deactivated (non-owner roles)
+- **Account remains ACTIVE:**
+  - User can still login and use the app
+  - All tokens remain valid
+  - Data is NOT anonymized (happens during permanent deletion)
+  - Workspace memberships remain active
+- **Reason:** User needs authentication to cancel deletion during grace period
 
 ### 2. Grace Period (30 Days)
-- User cannot login (tokens revoked)
-- Data retained but anonymized
-- User can restore account (if they contact support or use restore link)
+- User CAN still login and use the app
+- Data retained with original values (not anonymized)
+- User can cancel deletion via:
+  - API endpoint: `POST /api/v1/account/delete-cancel`
+  - Mobile app settings
+  - Web app settings
 
 ### 3. Permanent Deletion (After 30 Days)
 - **Scheduled Job:** Runs daily at 2 AM
-- **Deleted Data:**
-  - User entity (entire record)
-  - All authentication tokens
-  - All workspace memberships
-  - Session data
+- **Pre-deletion cleanup:**
+  - Data anonymization (name, email, phone, etc.)
+  - Account deactivation (`active = false`)
+  - All tokens revoked and expired
+  - Workspace memberships deactivated
+- **Permanent deletion:**
+  - User entity deleted
+  - All tokens deleted
+  - All workspace memberships deleted
+  - Session data removed
 
 ---
 
