@@ -9,4 +9,6 @@ ALTER TABLE app_user
 
 -- Create index for querying deleted users and scheduled deletions
 CREATE INDEX idx_app_user_deleted ON app_user(deleted);
-CREATE INDEX idx_app_user_deletion_scheduled ON app_user(deletion_scheduled_for) WHERE deletion_scheduled_for IS NOT NULL;
+-- MySQL does not support partial indexes with WHERE clause
+-- Creating standard index (will include NULL values)
+CREATE INDEX idx_app_user_deletion_scheduled ON app_user(deletion_scheduled_for);
