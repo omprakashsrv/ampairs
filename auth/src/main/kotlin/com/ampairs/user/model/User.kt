@@ -8,6 +8,7 @@ import jakarta.persistence.Table
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
 import com.ampairs.core.domain.User as CoreUser
+import java.time.Instant
 
 
 @Entity
@@ -39,6 +40,30 @@ class User : BaseDomain(), UserDetails, CoreUser {
 
     @Column(name = "firebase_uid", length = 128)
     var firebaseUid: String? = null
+
+    /**
+     * Whether this user account has been marked for deletion
+     */
+    @Column(name = "deleted", nullable = false)
+    var deleted: Boolean = false
+
+    /**
+     * When the account deletion was requested
+     */
+    @Column(name = "deleted_at")
+    var deletedAt: Instant? = null
+
+    /**
+     * When the account will be permanently deleted (30 days after deletion request)
+     */
+    @Column(name = "deletion_scheduled_for")
+    var deletionScheduledFor: Instant? = null
+
+    /**
+     * Reason provided for account deletion
+     */
+    @Column(name = "deletion_reason", length = 500)
+    var deletionReason: String? = null
 
     // Core User interface implementation
     override val isActive: Boolean
@@ -103,5 +128,65 @@ class User : BaseDomain(), UserDetails, CoreUser {
 
     override fun obtainSeqIdPrefix(): String {
         return Constants.USER_ID_PREFIX
+    }
+
+    /**
+     * Check if account is marked for deletion
+     */
+    fun isDeleted(): Boolean = deleted
+
+    /**
+     * Check if account is within deletion grace period (can be restored)
+     */
+    fun canRestoreAccount(): Boolean {
+        return deleted && deletionScheduledFor?.isAfter(Instant.now()) == true
+    }
+
+    /**
+     * Check if account is past grace period and ready for permanent deletion
+     */
+    fun isReadyForPermanentDeletion(): Boolean {
+        return deleted && deletionScheduledFor?.isBefore(Instant.now()) == true
+    }
+
+    /**
+     * Mark account for deletion with 30-day grace period
+     * Note: Account remains active during grace period so user can cancel deletion
+     */
+    fun markForDeletion(reason: String? = null) {
+        deleted = true
+        deletedAt = Instant.now()
+        deletionScheduledFor = Instant.now().plusSeconds(30L * 24 * 60 * 60) // 30 days
+        deletionReason = reason
+        // Keep active=true during grace period so user can cancel
+        // Will be set to false during permanent deletion
+    }
+
+    /**
+     * Restore account from deletion (only during grace period)
+     */
+    fun restoreAccount() {
+        if (canRestoreAccount()) {
+            deleted = false
+            deletedAt = null
+            deletionScheduledFor = null
+            deletionReason = null
+            active = true
+        } else {
+            throw IllegalStateException("Account cannot be restored - grace period expired")
+        }
+    }
+
+    /**
+     * Anonymize user data for soft delete
+     */
+    fun anonymize() {
+        firstName = "Deleted"
+        lastName = "User"
+        email = null
+        phone = "0000000000"
+        userName = "deleted_${uid}"
+        userPassword = null
+        firebaseUid = null
     }
 }

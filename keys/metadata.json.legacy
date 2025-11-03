@@ -1,0 +1,14 @@
+{
+    "currentKeyId": "0fd6d1f0",
+    "keys": [
+    {
+    "keyId": "0fd6d1f0",
+    "algorithm": "RS256",
+    "createdAt": "2025-10-25T15:45:08.027291Z",
+    "expiresAt": "2026-02-01T04:16:31.243179Z",
+    "isActive": true,
+    "isCurrent": true,
+    "keyDirectory": "keys/0fd6d1f0_2025-10-25"
+}
+    ]
+}
