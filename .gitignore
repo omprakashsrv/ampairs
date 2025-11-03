@@ -59,3 +59,8 @@ ampairs-service-account-key.json
 
 ### Storage ###
 storage/
+# RSA Keys - Private keys should never be committed
+**/keys/*.pem
+**/keys/*.pem.*
+**/keys/*/
+**/keys/metadata.json
