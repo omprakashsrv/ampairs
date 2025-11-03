@@ -151,13 +151,15 @@ class User : BaseDomain(), UserDetails, CoreUser {
 
     /**
      * Mark account for deletion with 30-day grace period
+     * Note: Account remains active during grace period so user can cancel deletion
      */
     fun markForDeletion(reason: String? = null) {
         deleted = true
         deletedAt = Instant.now()
         deletionScheduledFor = Instant.now().plusSeconds(30L * 24 * 60 * 60) // 30 days
         deletionReason = reason
-        active = false
+        // Keep active=true during grace period so user can cancel
+        // Will be set to false during permanent deletion
     }
 
     /**

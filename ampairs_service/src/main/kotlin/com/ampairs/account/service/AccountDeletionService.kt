@@ -73,16 +73,14 @@ class AccountDeletionService @Autowired constructor(
         // Mark user for deletion
         user.markForDeletion(request.reason)
 
-        // Anonymize user data immediately for privacy
-        user.anonymize()
+        // Note: We do NOT anonymize data or revoke tokens immediately
+        // This allows users to cancel deletion during the 30-day grace period
+        // Data anonymization and token revocation happen during permanent deletion
 
         userRepository.save(user)
 
-        // Revoke all authentication tokens
-        revokeAllUserTokens(user.uid)
-
-        // Deactivate workspace memberships
-        deactivateWorkspaceMemberships(user.uid)
+        // Note: Workspace memberships remain active during grace period
+        // This allows users to continue using the app until permanent deletion
 
         logger.info("Account deletion requested for user ${user.uid}. Permanent deletion scheduled for ${user.deletionScheduledFor}")
 
@@ -162,8 +160,23 @@ class AccountDeletionService @Autowired constructor(
             return
         }
 
-        // Delete all tokens
+        // Anonymize user data before deletion for audit trail
+        user.anonymize()
+        user.active = false
+        userRepository.save(user)
+
+        // Revoke all authentication tokens
         val tokens = tokenRepository.findAllValidTokenByUser(userId)
+        tokens.forEach { token ->
+            token.revoked = true
+            token.expired = true
+        }
+        tokenRepository.saveAll(tokens)
+
+        // Deactivate workspace memberships
+        deactivateWorkspaceMemberships(userId)
+
+        // Delete all tokens
         tokenRepository.deleteAll(tokens)
 
         // Delete workspace memberships
