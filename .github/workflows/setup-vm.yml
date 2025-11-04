@@ -1,0 +1,112 @@
+name: Provision Ampairs VM
+
+on:
+  workflow_dispatch:
+    inputs:
+      host:
+        description: 'Override target host (defaults to repository variable SERVER_HOST)'
+        required: false
+        type: string
+      domain:
+        description: 'Override API domain (defaults to vars.API_DOMAIN or api.ampairs.in)'
+        required: false
+        type: string
+
+jobs:
+  configure:
+    name: Configure remote VM via Ansible
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    environment: production
+    defaults:
+      run:
+        shell: bash
+    env:
+      TARGET_HOST: ${{ inputs.host || vars.SERVER_HOST }}
+      TARGET_USER: ${{ vars.SSH_USER }}
+      TARGET_PORT: ${{ vars.SSH_PORT || '22' }}
+      API_DOMAIN: ${{ inputs.domain || vars.API_DOMAIN || 'api.ampairs.in' }}
+      APP_UPSTREAM: ${{ vars.APP_UPSTREAM || 'http://127.0.0.1:8080' }}
+      LETSENCRYPT_EMAIL: ${{ vars.LETSENCRYPT_EMAIL }}
+      RABBITMQ_ADMIN_USER: ${{ vars.RABBITMQ_ADMIN_USER || 'admin' }}
+
+    steps:
+      - name: Validate required configuration
+        run: |
+          set -euo pipefail
+          if [[ -z "${TARGET_HOST}" ]]; then
+            echo "SERVER_HOST repository variable (or manual host input) is required."
+            exit 1
+          fi
+          if [[ -z "${TARGET_USER}" ]]; then
+            echo "SSH_USER repository variable is required."
+            exit 1
+          fi
+          if [[ -z "${LETSENCRYPT_EMAIL}" ]]; then
+            echo "LETSENCRYPT_EMAIL repository variable is required for certificate requests."
+            exit 1
+          fi
+          if [[ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]]; then
+            echo "SSH_PRIVATE_KEY secret is required."
+            exit 1
+          fi
+          if [[ -z "${{ secrets.RABBITMQ_ADMIN_PASSWORD }}" ]]; then
+            echo "RABBITMQ_ADMIN_PASSWORD secret is required."
+            exit 1
+          fi
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Ansible and collections
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
+          ansible-galaxy collection install community.rabbitmq
+
+      - name: Configure SSH for Ansible
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          cat <<'EOF' > ~/.ssh/id_rsa
+          ${{ secrets.SSH_PRIVATE_KEY }}
+          EOF
+          chmod 600 ~/.ssh/id_rsa
+          touch ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          echo "Scanning host key for ${TARGET_HOST}..."
+          if ! ssh-keyscan -p "${TARGET_PORT}" -H "${TARGET_HOST}" >> ~/.ssh/known_hosts 2>/dev/null; then
+            echo "Warning: ssh-keyscan failed, continuing. Host key will be accepted on first connection."
+          fi
+
+      - name: Create Ansible inventory
+        run: |
+          cat <<EOF > inventory.ini
+[target]
+${TARGET_HOST} ansible_host=${TARGET_HOST} ansible_user=${TARGET_USER} ansible_port=${TARGET_PORT} ansible_ssh_private_key_file=~/.ssh/id_rsa
+EOF
+
+      - name: Run Ansible playbook
+        env:
+          API_DOMAIN: ${{ env.API_DOMAIN }}
+          APP_UPSTREAM: ${{ env.APP_UPSTREAM }}
+          LETSENCRYPT_EMAIL: ${{ env.LETSENCRYPT_EMAIL }}
+          RABBITMQ_ADMIN_USER: ${{ env.RABBITMQ_ADMIN_USER }}
+          RABBITMQ_ADMIN_PASSWORD: ${{ secrets.RABBITMQ_ADMIN_PASSWORD }}
+        run: |
+          export ANSIBLE_HOST_KEY_CHECKING=False
+          ansible-playbook ansible/setup_vm.yml \
+            -i inventory.ini \
+            -l target \
+            -vv
+
+      - name: Summarize final status
+        if: always()
+        run: |
+          echo "Ansible run complete. Review logs above for detailed validation output."
