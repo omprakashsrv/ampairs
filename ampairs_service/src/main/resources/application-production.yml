@@ -137,7 +137,7 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:postgresql://10.0.0.12:5432/ampairs_prod}
     username: ${DB_USERNAME:postgres}
-    password: ${DB_PASSWORD:d8jpkwZ3AdXmHjnG}
+    password: ${DB_PASSWORD:N1GnuPQiRywK9j1q}
     driver-class-name: org.postgresql.Driver
     hikari:
       pool-name: main-db-pool
