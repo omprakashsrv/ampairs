@@ -3,7 +3,7 @@ name: Ampairs Service CI/CD Pipeline
 on:
   # Only run on push to main (i.e., when PR is merged)
   push:
-    branches: [ main, master ]
+    branches: [ main ]
   # Manual deployment trigger
   workflow_dispatch:
     inputs:
@@ -15,7 +15,7 @@ on:
           - production
 
 jobs:
-  # Build Job: Runs on merges to main/master (creates artifacts for deployment)
+  # Build Job: Runs on merges to main (creates artifacts for deployment)
   build:
     name: Build for Deployment
     runs-on: ubuntu-latest
