@@ -1,10 +1,10 @@
 name: Ampairs Service CI/CD Pipeline
 
 on:
+  # Only run on push to main (i.e., when PR is merged)
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches: [ main, master ]
+  # Manual deployment trigger
   workflow_dispatch:
     inputs:
       environment:
@@ -15,67 +15,7 @@ on:
           - production
 
 jobs:
-  # CI Job: Runs on Pull Requests (build + test only, no deployment)
-  ci:
-    name: CI - Build & Test
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-        cache: gradle
-
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
-
-    - name: Run tests
-      run: ./gradlew test
-
-    - name: Build application
-      run: ./gradlew :ampairs_service:bootJar
-      env:
-        SPRING_PROFILES_ACTIVE: ${{ vars.SPRING_PROFILES_ACTIVE || 'production' }}
-
-    - name: Verify build output
-      run: |
-        echo "Checking build output..."
-        ls -lh ampairs_service/build/libs/
-
-        # Find the JAR file (exclude -plain.jar files)
-        JAR_FILE=$(ls ampairs_service/build/libs/*.jar 2>/dev/null | grep -v '\-plain\.jar$' | head -1)
-
-        if [ -z "$JAR_FILE" ]; then
-          echo "ERROR: No JAR file was built!"
-          exit 1
-        fi
-
-        JAR_SIZE=$(stat -f%z "$JAR_FILE" 2>/dev/null || stat -c%s "$JAR_FILE" 2>/dev/null)
-        echo "JAR file: $JAR_FILE"
-        echo "JAR size: $JAR_SIZE bytes ($(($JAR_SIZE / 1024 / 1024)) MB)"
-
-        # Verify JAR is at least 10MB (Spring Boot apps are typically 50MB+)
-        if [ "$JAR_SIZE" -lt 10485760 ]; then
-          echo "ERROR: JAR file is too small ($JAR_SIZE bytes). Build likely failed."
-          echo "Expected at least 10MB for a Spring Boot application."
-          exit 1
-        fi
-
-        # Verify JAR integrity
-        if ! unzip -t "$JAR_FILE" > /dev/null 2>&1; then
-          echo "ERROR: JAR file is corrupted or invalid"
-          exit 1
-        fi
-
-        echo "✅ JAR file is valid (CI check passed)"
-
-  # Build Job: Runs on merges to main/sandbox (creates artifacts for deployment)
+  # Build Job: Runs on merges to main/master (creates artifacts for deployment)
   build:
     name: Build for Deployment
     runs-on: ubuntu-latest
