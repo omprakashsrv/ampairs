@@ -1,7 +1,21 @@
 rootProject.name = "ampairs"
 
-// Include backend Spring Boot modules
-includeBuild("ampairs-backend")
+include("core")
+include("notification")
+include("auth")
+include("workspace")
+include("form")
+include("event")
+include("file")
+include("product")
+include("business")
+include("customer")
+include("order")
+include("invoice")
+include("tax")
+include("unit")
+include("ampairs_service")
+
 
 // Include web frontend (Angular) - if using Gradle for build coordination
 // includeBuild("ampairs-web")

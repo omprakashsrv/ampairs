@@ -1,0 +1,184 @@
+---
+- name: Configure Ampairs production VM
+  hosts: all
+  become: true
+  gather_facts: true
+  collections:
+    - community.rabbitmq
+  vars:
+    domain_name: "{{ lookup('env', 'API_DOMAIN') | default('api.ampairs.in', true) }}"
+    app_upstream: "{{ lookup('env', 'APP_UPSTREAM') | default('http://127.0.0.1:8080', true) }}"
+    letsencrypt_email: "{{ lookup('env', 'LETSENCRYPT_EMAIL') | default('', true) }}"
+    rabbitmq_admin_user: "{{ lookup('env', 'RABBITMQ_ADMIN_USER') | default('admin', true) }}"
+    rabbitmq_admin_password: "{{ lookup('env', 'RABBITMQ_ADMIN_PASSWORD') | default('', true) }}"
+
+  pre_tasks:
+    - name: Fail if Let's Encrypt email is not provided
+      ansible.builtin.fail:
+        msg: "LETSENCRYPT_EMAIL environment variable must be supplied to request certificates."
+      when: letsencrypt_email | length == 0
+
+    - name: Fail if RabbitMQ admin password is not provided
+      ansible.builtin.fail:
+        msg: "RABBITMQ_ADMIN_PASSWORD environment variable must be supplied for RabbitMQ user creation."
+      when: rabbitmq_admin_password | length == 0
+
+  tasks:
+    - name: Ensure APT cache is fresh
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Upgrade system packages
+      ansible.builtin.apt:
+        upgrade: dist
+        autoremove: true
+        autoclean: true
+
+    - name: Install required packages
+      ansible.builtin.apt:
+        name:
+          - openjdk-21-jre
+          - nginx
+          - certbot
+          - python3-certbot-nginx
+          - rabbitmq-server
+          - curl
+        state: present
+
+    - name: Ensure nginx service is enabled and started
+      ansible.builtin.service:
+        name: nginx
+        state: started
+        enabled: true
+
+    - name: Check if nginx site configuration exists
+      ansible.builtin.stat:
+        path: /etc/nginx/sites-available/{{ domain_name }}.conf
+      register: nginx_site_conf
+
+    - name: Create initial nginx site configuration when missing
+      ansible.builtin.template:
+        src: templates/api-ampairs-base.conf.j2
+        dest: /etc/nginx/sites-available/{{ domain_name }}.conf
+        owner: root
+        group: root
+        mode: "0644"
+      when: not nginx_site_conf.stat.exists
+
+    - name: Ensure ampairs proxy location block is present
+      ansible.builtin.blockinfile:
+        path: /etc/nginx/sites-available/{{ domain_name }}.conf
+        marker: "# {mark} ampairs proxy"
+        block: "{{ lookup('template', 'templates/api-ampairs-location.conf.j2') }}"
+        insertafter: 'server_name'
+
+    - name: Enable ampairs nginx site
+      ansible.builtin.file:
+        src: /etc/nginx/sites-available/{{ domain_name }}.conf
+        dest: /etc/nginx/sites-enabled/{{ domain_name }}.conf
+        state: link
+        force: true
+
+    - name: Disable default nginx site if present
+      ansible.builtin.file:
+        path: /etc/nginx/sites-enabled/default
+        state: absent
+
+    - name: Test nginx configuration
+      ansible.builtin.command: nginx -t
+      register: nginx_test
+      changed_when: false
+
+    - name: Reload nginx to apply configuration
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded
+
+    - name: Obtain or renew Let's Encrypt certificate
+      ansible.builtin.command: >
+        certbot --nginx --non-interactive --agree-tos
+        --redirect --email {{ letsencrypt_email }}
+        -d {{ domain_name }}
+      register: certbot_result
+      changed_when: >
+        'Certificate not yet due for renewal' not in
+        ((certbot_result.stdout | default('')) ~ (certbot_result.stderr | default('')))
+
+    - name: Ensure certbot timer is enabled for auto renewals
+      ansible.builtin.systemd:
+        name: certbot.timer
+        state: started
+        enabled: true
+
+    - name: Enable RabbitMQ service
+      ansible.builtin.service:
+        name: rabbitmq-server
+        state: started
+        enabled: true
+
+    - name: Enable RabbitMQ STOMP plugin
+      community.rabbitmq.rabbitmq_plugin:
+        name: rabbitmq_stomp
+        state: enabled
+
+    - name: Ensure RabbitMQ administrator user exists
+      community.rabbitmq.rabbitmq_user:
+        user: "{{ rabbitmq_admin_user }}"
+        password: "{{ rabbitmq_admin_password }}"
+        vhost: /
+        configure_priv: ".*"
+        read_priv: ".*"
+        write_priv: ".*"
+        tags:
+          - administrator
+        state: present
+
+    - name: Validate Java 21 is installed
+      ansible.builtin.command: java -version
+      register: java_version
+      changed_when: false
+
+    - name: Display Java version
+      ansible.builtin.debug:
+        var: java_version.stderr_lines
+
+    - name: Validate nginx service status
+      ansible.builtin.service_facts:
+
+    - name: Assert nginx is running
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.services['nginx.service'].state == 'running'
+        fail_msg: "nginx service is not running."
+        success_msg: "nginx service is running."
+
+    - name: Validate certificate files exist
+      ansible.builtin.stat:
+        path: /etc/letsencrypt/live/{{ domain_name }}/fullchain.pem
+      register: cert_stat
+
+    - name: Assert certificate was created
+      ansible.builtin.assert:
+        that:
+          - cert_stat.stat.exists
+        fail_msg: "Let's Encrypt certificate was not created for {{ domain_name }}."
+        success_msg: "Let's Encrypt certificate is present."
+
+    - name: Validate HTTPS endpoint responds locally
+      ansible.builtin.command: >
+        curl -Ik --resolve {{ domain_name }}:443:127.0.0.1 https://{{ domain_name }}
+      register: https_probe
+      failed_when: https_probe.rc != 0
+      changed_when: false
+
+    - name: Validate RabbitMQ user can authenticate
+      ansible.builtin.command: >
+        rabbitmqctl authenticate_user {{ rabbitmq_admin_user }} {{ rabbitmq_admin_password }}
+      register: rabbitmq_auth
+      failed_when: "'successfully authenticated' not in rabbitmq_auth.stdout"
+      changed_when: false
+
+    - name: Report RabbitMQ authentication output
+      ansible.builtin.debug:
+        var: rabbitmq_auth.stdout

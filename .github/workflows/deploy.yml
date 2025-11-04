@@ -1,22 +1,25 @@
 name: Ampairs Service CI/CD Pipeline
 
 on:
+  # Only run on push to main (i.e., when PR is merged)
   push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+    branches: [ main ]
+  # Manual deployment trigger
   workflow_dispatch:
     inputs:
-      deploy:
-        description: 'Deploy to server'
-        required: false
-        default: false
-        type: boolean
+      environment:
+        description: 'Environment to deploy'
+        required: true
+        type: choice
+        options:
+          - production
 
 jobs:
-  test:
-    name: Test & Build
+  # Build Job: Runs on merges to main (creates artifacts for deployment)
+  build:
+    name: Build for Deployment
     runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
 
     steps:
     - name: Checkout code
@@ -30,95 +33,347 @@ jobs:
         cache: gradle
 
     - name: Grant execute permission for gradlew
-      run: chmod +x ampairs-backend/gradlew
+      run: chmod +x gradlew
 
     - name: Run tests
-      run: cd ampairs-backend && ./gradlew test
+      run: ./gradlew test
 
     - name: Build application
-      run: cd ampairs-backend && ./gradlew :ampairs_service:bootJar
+      run: ./gradlew :ampairs_service:bootJar
       env:
         SPRING_PROFILES_ACTIVE: ${{ vars.SPRING_PROFILES_ACTIVE || 'production' }}
+
+    - name: Verify build output
+      run: |
+        echo "Checking build output..."
+        ls -lh ampairs_service/build/libs/
+
+        # Find the JAR file (exclude -plain.jar files)
+        JAR_FILE=$(ls ampairs_service/build/libs/*.jar 2>/dev/null | grep -v '\-plain\.jar$' | head -1)
+
+        if [ -z "$JAR_FILE" ]; then
+          echo "ERROR: No JAR file was built!"
+          exit 1
+        fi
+
+        JAR_SIZE=$(stat -f%z "$JAR_FILE" 2>/dev/null || stat -c%s "$JAR_FILE" 2>/dev/null)
+        echo "JAR file: $JAR_FILE"
+        echo "JAR size: $JAR_SIZE bytes ($(($JAR_SIZE / 1024 / 1024)) MB)"
+
+        # Verify JAR is at least 10MB (Spring Boot apps are typically 50MB+)
+        if [ "$JAR_SIZE" -lt 10485760 ]; then
+          echo "ERROR: JAR file is too small ($JAR_SIZE bytes). Build likely failed."
+          echo "Expected at least 10MB for a Spring Boot application."
+          exit 1
+        fi
+
+        # Verify JAR integrity
+        if ! unzip -t "$JAR_FILE" > /dev/null 2>&1; then
+          echo "ERROR: JAR file is corrupted or invalid"
+          exit 1
+        fi
+
+        echo "✅ JAR file is valid and ready for deployment"
 
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
       with:
         name: ampairs-service-jar
-        path: ampairs-backend/ampairs_service/build/libs/*.jar
+        path: |
+          ampairs_service/build/libs/*.jar
+          !ampairs_service/build/libs/*-plain.jar
 
-  deploy:
-    name: Deploy to Server
-    needs: test
+  deploy-production:
+    name: Deploy to Production
+    needs: build
     runs-on: ubuntu-latest
-    if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.deploy == true)
-    
+    environment: production
+    if: (github.ref == 'refs/heads/main' && github.event_name == 'push') || (github.event_name == 'workflow_dispatch' && inputs.environment == 'production')
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
-      
+
     - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
         name: ampairs-service-jar
         path: ./artifacts
 
-    - name: Setup SSH Key
-      uses: webfactory/ssh-agent@v0.8.0
-      with:
-        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-        ssh-passphrase: ${{ secrets.SSH_PASSPHRASE }}
-
-    - name: Add server to known hosts
+    - name: Prepare Firebase service account key
+      env:
+        FIREBASE_KEY: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_KEY }}
       run: |
+        # Check if secret is set (using environment variable to avoid bash issues)
+        if [ -z "$FIREBASE_KEY" ]; then
+          echo "❌ ERROR: FIREBASE_SERVICE_ACCOUNT_KEY secret is not set"
+          echo ""
+          echo "To fix this:"
+          echo "1. Go to: https://github.com/${{ github.repository }}/settings/secrets/actions"
+          echo "2. Click 'New repository secret'"
+          echo "3. Name: FIREBASE_SERVICE_ACCOUNT_KEY"
+          echo "4. Value: Paste ONLY the JSON content (no extra quotes or formatting)"
+          echo ""
+          echo "Example format:"
+          echo '{"type":"service_account","project_id":"...",...}'
+          echo ""
+          exit 1
+        fi
+
+        # Create directory and write key file
+        mkdir -p ./firebase-key
+
+        # Write to file using environment variable (preserves formatting)
+        printf '%s' "$FIREBASE_KEY" > ./firebase-key/ampairs-firebase-adminsdk.json
+
+        # Verify key was written and not empty
+        if [ ! -f ./firebase-key/ampairs-firebase-adminsdk.json ]; then
+          echo "❌ ERROR: Failed to create Firebase key file"
+          exit 1
+        fi
+
+        if [ ! -s ./firebase-key/ampairs-firebase-adminsdk.json ]; then
+          echo "❌ ERROR: Firebase key file is empty"
+          echo "Please check that FIREBASE_SERVICE_ACCOUNT_KEY secret contains valid content"
+          exit 1
+        fi
+
+        # Debug: Show file size and first character
+        FILE_SIZE=$(wc -c < ./firebase-key/ampairs-firebase-adminsdk.json)
+        FIRST_CHAR=$(head -c 1 ./firebase-key/ampairs-firebase-adminsdk.json)
+        echo "Debug: File size: $FILE_SIZE bytes"
+        echo "Debug: First character: '$FIRST_CHAR' (should be '{')"
+
+        # Verify it's valid JSON
+        if ! jq empty ./firebase-key/ampairs-firebase-adminsdk.json 2>/dev/null; then
+          echo "❌ ERROR: Firebase key is not valid JSON"
+          echo ""
+          echo "Common issues:"
+          echo "1. Secret has extra quotes around the JSON (remove them)"
+          echo "2. Secret was pasted with formatting issues"
+          echo "3. Secret contains literal newline characters instead of \\n"
+          echo ""
+          echo "The secret value should be the raw JSON, starting with {"
+          echo "Do NOT wrap it in additional quotes."
+          echo ""
+          exit 1
+        fi
+
+        echo "✅ Firebase service account key prepared successfully"
+        echo "Key file size: $FILE_SIZE bytes"
+
+    - name: Setup SSH
+      run: |
+        set -e  # Exit on any error
+
+        # Create SSH directory
         mkdir -p ~/.ssh
-        ssh-keyscan -H ${{ vars.SERVER_HOST }} >> ~/.ssh/known_hosts
+        chmod 700 ~/.ssh
 
-    - name: Copy JAR to server
-      run: |
-        scp ./artifacts/*.jar ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:/opt/ampairs/
+        # Write SSH private key (ensure it ends with newline)
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+        echo "" >> ~/.ssh/id_rsa  # Ensure trailing newline
+        chmod 600 ~/.ssh/id_rsa
 
-    - name: Copy deployment scripts
+        # Verify key format
+        if ! grep -q "BEGIN.*PRIVATE KEY" ~/.ssh/id_rsa; then
+          echo "ERROR: SSH private key does not appear to be valid"
+          echo "Key should start with '-----BEGIN ... PRIVATE KEY-----'"
+          exit 1
+        fi
+
+        # Test SSH key format
+        if ! ssh-keygen -y -f ~/.ssh/id_rsa > /dev/null 2>&1; then
+          echo "ERROR: SSH private key format is invalid"
+          echo "Please check that SSH_PRIVATE_KEY secret contains a valid private key"
+          exit 1
+        fi
+
+        echo "SSH key validated successfully"
+
+        # Add server to known_hosts with timeout
+        echo "Scanning SSH host keys for ${{ vars.SERVER_HOST }}..."
+        if ! timeout 10 ssh-keyscan -H ${{ vars.SERVER_HOST }} >> ~/.ssh/known_hosts 2>&1; then
+          echo "WARNING: ssh-keyscan failed or timed out"
+          echo "Attempting connection anyway (may prompt for host verification)"
+        fi
+
+        chmod 600 ~/.ssh/known_hosts
+        echo "SSH setup completed"
+
+    - name: Copy files to server
       run: |
-        scp ./scripts/deploy.sh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:/opt/ampairs/
-        scp ./scripts/ampairs.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:/tmp/
+        # Verify JAR file exists locally
+        echo "Checking for JAR files in artifacts directory..."
+        ls -lh ./artifacts/
+
+        # Find the JAR file (exclude -plain.jar files)
+        JAR_FILE=$(ls ./artifacts/*.jar | grep -v '\-plain\.jar$' | head -1)
+        if [ -z "$JAR_FILE" ]; then
+          echo "ERROR: No JAR file found in artifacts directory"
+          exit 1
+        fi
+
+        echo "Found JAR file: $JAR_FILE"
+        echo "File size: $(ls -lh $JAR_FILE | awk '{print $5}')"
+
+        # Verify Firebase key exists locally
+        if [ ! -f ./firebase-key/ampairs-firebase-adminsdk.json ]; then
+          echo "ERROR: Firebase service account key not found"
+          exit 1
+        fi
+        echo "Firebase key verified"
+
+        # SSH options for all connections
+        SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=10"
+
+        # Test SSH connection first
+        echo "Testing SSH connection to ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}..."
+        if ! ssh $SSH_OPTS ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} 'echo "SSH connection successful"'; then
+          echo "ERROR: SSH connection failed"
+          echo "Please check:"
+          echo "1. SSH_PRIVATE_KEY secret is correct"
+          echo "2. Server ${{ vars.SERVER_HOST }} is reachable"
+          echo "3. User ${{ vars.SSH_USER }} has SSH access"
+          exit 1
+        fi
+
+        # Remove any existing files/directories on server
+        echo "Cleaning up old files on server..."
+        ssh $SSH_OPTS ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} 'rm -rf ~/ampairs-service.jar ~/ampairs-production.service ~/ampairs-firebase-key.json'
+
+        # Copy JAR to server
+        echo "Copying JAR to server..."
+        scp $SSH_OPTS "$JAR_FILE" ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-service.jar
+
+        # Copy service file to server
+        echo "Copying service file to server..."
+        scp $SSH_OPTS ./scripts/ampairs-production.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-production.service
+
+        # Copy Firebase key to server
+        echo "Copying Firebase service account key to server..."
+        scp $SSH_OPTS ./firebase-key/ampairs-firebase-adminsdk.json ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-firebase-key.json
+
+        echo "Files copied successfully!"
+
+        # Verify files were uploaded
+        echo "Verifying files on server..."
+        ssh $SSH_OPTS ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'VERIFY_EOF'
+          echo "Files in home directory:"
+          ls -lh ~/ampairs* 2>/dev/null || echo "ERROR: No ampairs files found after upload!"
+        VERIFY_EOF
 
     - name: Deploy application
       run: |
-        ssh ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
-          cd /opt/ampairs
-          chmod +x deploy.sh
-          sudo ./deploy.sh
+        SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=10"
+        ssh $SSH_OPTS ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
+          # Debug: Show what files are in home directory
+          echo "=== Files in home directory ==="
+          ls -lha ~/
+          echo "=== Looking for ampairs files ==="
+          ls -lh ~/ampairs* 2>/dev/null || echo "No ampairs files found"
+          echo "================================"
+
+          # Create ampairs user if it doesn't exist
+          if ! id ampairs &>/dev/null; then
+            sudo useradd -r -s /bin/false ampairs
+          fi
+
+          # Create deployment directories
+          sudo mkdir -p /opt/ampairs/production/keys
+          sudo mkdir -p /var/log/ampairs
+
+          # Verify JAR file was uploaded correctly
+          if [ ! -f ~/ampairs-service.jar ]; then
+            echo "ERROR: JAR file not found in home directory"
+            echo "Current directory: $(pwd)"
+            echo "Files in current directory:"
+            ls -la
+            exit 1
+          fi
+
+          # Verify Firebase key was uploaded correctly
+          if [ ! -f ~/ampairs-firebase-key.json ]; then
+            echo "ERROR: Firebase key file not found in home directory"
+            exit 1
+          fi
+
+          echo "JAR file size: $(ls -lh ~/ampairs-service.jar | awk '{print $5}')"
+          echo "Firebase key size: $(ls -lh ~/ampairs-firebase-key.json | awk '{print $5}')"
+
+          # Stop service before updating JAR
+          sudo systemctl stop ampairs-production || true
+
+          # Remove old JAR file (handle both file and directory cases)
+          sudo rm -rf /opt/ampairs/production/ampairs-service.jar
+
+          # Copy new JAR to deployment directory
+          sudo cp ~/ampairs-service.jar /opt/ampairs/production/ampairs-service.jar
+
+          # Copy Firebase key to deployment directory
+          sudo cp ~/ampairs-firebase-key.json /opt/ampairs/production/keys/ampairs-firebase-adminsdk.json
+
+          # Verify JAR file integrity
+          if ! unzip -t /opt/ampairs/production/ampairs-service.jar > /dev/null 2>&1; then
+            echo "ERROR: JAR file is corrupted"
+            exit 1
+          fi
+
+          # Update systemd service file
+          sudo cp ~/ampairs-production.service /etc/systemd/system/ampairs-production.service
+
+          # Set ownership and permissions
+          sudo chown -R ampairs:ampairs /opt/ampairs/production
+          sudo chown -R ampairs:ampairs /var/log/ampairs
+          sudo chmod 644 /etc/systemd/system/ampairs-production.service
+
+          # Clean up uploaded files
+          rm ~/ampairs-service.jar ~/ampairs-production.service ~/ampairs-firebase-key.json
+
+          # Reload systemd and restart service
+          sudo systemctl daemon-reload
+          sudo systemctl enable ampairs-production
+          sudo systemctl restart ampairs-production
+
+          # Wait for service to stabilize
+          sleep 5
+
+          # Show service status
+          sudo systemctl status ampairs-production --no-pager || true
         EOF
 
     - name: Health check
       run: |
-        echo "Waiting for application to start..."
-        sleep 30
-        
-        # Check if application is responding
-        for i in {1..10}; do
-          if curl -f http://${{ vars.SERVER_HOST }}:${{ vars.APP_PORT }}/actuator/health; then
-            echo "✅ Application is healthy!"
-            exit 0
-          fi
-          echo "⏳ Attempt $i/10: Waiting for application..."
-          sleep 10
-        done
-        
-        echo "❌ Application health check failed"
-        exit 1
+        SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=10"
+        ssh $SSH_OPTS ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
+          echo "Waiting for application to start..."
+          sleep 30
+
+          # Check if application is responding (production runs on port 8080)
+          for i in {1..10}; do
+            if curl -f http://localhost:8080/actuator/health; then
+              echo "✅ Production application is healthy!"
+              exit 0
+            fi
+            echo "⏳ Attempt $i/10: Waiting for application..."
+            sleep 10
+          done
+
+          echo "❌ Application health check failed"
+          exit 1
+        EOF
 
   notification:
     name: Send Notification
-    needs: [test, deploy]
+    needs: [build, deploy-production]
     runs-on: ubuntu-latest
-    if: always()
-    
+    if: always() && github.event_name != 'pull_request'
+
     steps:
     - name: Notify deployment status
       run: |
-        if [ "${{ needs.deploy.result }}" == "success" ]; then
-          echo "🎉 Deployment successful!"
+        if [ "${{ needs.deploy-production.result }}" == "success" ]; then
+          echo "🎉 Production deployment successful!"
           echo "✅ Ampairs service deployed to production"
         else
           echo "❌ Deployment failed!"

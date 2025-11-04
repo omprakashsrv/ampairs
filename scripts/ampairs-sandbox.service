@@ -1,0 +1,67 @@
+[Unit]
+Description=Ampairs Business Management Service (Sandbox)
+Documentation=https://github.com/your-org/ampairs
+After=network.target postgresql.service
+Wants=postgresql.service
+
+[Service]
+Type=exec
+User=ampairs
+Group=ampairs
+
+# Application configuration
+WorkingDirectory=/opt/ampairs/sandbox
+ExecStart=/usr/bin/java $JAVA_OPTS -jar /opt/ampairs/sandbox/ampairs-service.jar
+ExecReload=/bin/kill -HUP $MAINPID
+
+# JVM Configuration
+Environment="JAVA_OPTS=-Xmx300m -Xms256m"
+
+# Spring Boot Configuration
+Environment="SPRING_PROFILES_ACTIVE=sandbox"
+Environment="SERVER_PORT=8081"
+
+# Firebase Configuration
+Environment="FIREBASE_SERVICE_ACCOUNT_KEY_PATH=/opt/ampairs/sandbox/keys/ampairs-firebase-adminsdk.json"
+
+# Database Configuration (override in /etc/environment or use secrets)
+# Environment="SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/ampairs_sandbox"
+# Environment="SPRING_DATASOURCE_USERNAME=ampairs_user"
+# Environment="SPRING_DATASOURCE_PASSWORD=your_secure_password_here"
+
+# JWT Configuration
+Environment="JWT_SECRET=your_jwt_secret_here_change_in_production"
+Environment="JWT_EXPIRATION_TIME=86400000"
+
+# AWS Configuration (if using AWS services)
+Environment="AWS_REGION=us-east-1"
+
+# Application specific settings
+Environment="AMPAIRS_UPLOAD_DIR=/opt/ampairs/sandbox/uploads"
+Environment="AMPAIRS_TEMP_DIR=/tmp/ampairs/sandbox"
+
+# Logging
+Environment="LOGGING_LEVEL_ROOT=INFO"
+Environment="LOGGING_LEVEL_COM_AMPAIRS=DEBUG"
+Environment="LOGGING_FILE_NAME=/var/log/ampairs/sandbox.log"
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/opt/ampairs/sandbox /opt/ampairs/sandbox/keys /var/log/ampairs /tmp
+
+# Resource limits
+LimitNOFILE=65536
+LimitNPROC=4096
+
+# Restart configuration
+Restart=always
+RestartSec=10
+KillMode=mixed
+KillSignal=SIGTERM
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target

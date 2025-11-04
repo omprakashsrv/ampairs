@@ -9,25 +9,34 @@ plugins {
 group = "com.ampairs"
 version = "1.0.0"
 
+// Configure all subprojects
+subprojects {
+    group = "com.ampairs"
+    version = "1.0.0"
+}
+
 // Global tasks for the entire project
 tasks.register("buildAll") {
     description = "Build all project components"
     group = "build"
-    
-    dependsOn(gradle.includedBuild("ampairs-backend").task(":ampairs_service:bootJar"))
-    
+
+    dependsOn(":ampairs_service:bootJar")
+
     doLast {
         println("✅ All components built successfully!")
-        println("📦 Backend JAR: ampairs-backend/ampairs_service/build/libs/")
+        println("📦 Backend JAR: ampairs_service/build/libs/")
     }
 }
 
 tasks.register("testAll") {
     description = "Run tests for all project components"
     group = "verification"
-    
-    dependsOn(gradle.includedBuild("ampairs-backend").task(":test"))
-    
+
+    // Test all subprojects
+    subprojects.forEach { project ->
+        dependsOn("${project.path}:test")
+    }
+
     doLast {
         println("✅ All tests completed!")
     }
@@ -36,10 +45,13 @@ tasks.register("testAll") {
 tasks.register("cleanAll") {
     description = "Clean all project components"
     group = "build"
-    
-    dependsOn(gradle.includedBuild("ampairs-backend").task(":clean"))
+
+    // Clean all subprojects
+    subprojects.forEach { project ->
+        dependsOn("${project.path}:clean")
+    }
     dependsOn(tasks.clean)
-    
+
     doLast {
         println("🧹 All components cleaned!")
     }
@@ -49,10 +61,10 @@ tasks.register("cleanAll") {
 tasks.register("ciBuild") {
     description = "Build for CI/CD pipeline"
     group = "build"
-    
+
     dependsOn("testAll")
     dependsOn("buildAll")
-    
+
     // Ensure tests run before build
     tasks.findByName("buildAll")?.mustRunAfter("testAll")
 }
@@ -61,26 +73,37 @@ tasks.register("ciBuild") {
 tasks.register("devSetup") {
     description = "Setup development environment"
     group = "help"
-    
+
     doLast {
         println("""
         🚀 Ampairs Development Setup
         ============================
-        
+
         Project Structure:
-        📁 ampairs-backend/     - Spring Boot backend services
-        📁 ampairs-web/         - Angular web application  
-        📁 ampairs-mp-app/      - Kotlin Multiplatform mobile app
-        
+        📁 Root project modules - Spring Boot backend services
+          ├─ core/              - Core utilities and multi-tenancy
+          ├─ auth/              - Authentication & JWT
+          ├─ workspace/         - Workspace & permissions
+          ├─ business/          - Business management
+          ├─ customer/          - Customer management
+          ├─ product/           - Product & inventory
+          ├─ order/             - Order processing
+          ├─ invoice/           - Invoice generation
+          ├─ unit/              - Unit conversions
+          ├─ tax/               - Tax calculations
+          ├─ form/              - Dynamic forms
+          ├─ event/             - Event system
+          ├─ file/              - File storage
+          ├─ notification/      - Notifications
+          └─ ampairs_service/   - Main application
+
         Available Commands:
-        • ./gradlew buildAll    - Build all components
-        • ./gradlew testAll     - Run all tests
-        • ./gradlew cleanAll    - Clean all components
-        • ./gradlew ciBuild     - CI/CD build with tests
-        
-        Backend Development:
-        • cd ampairs-backend && ./gradlew bootRun
-        
+        • ./gradlew buildAll              - Build all components
+        • ./gradlew testAll               - Run all tests
+        • ./gradlew cleanAll              - Clean all components
+        • ./gradlew ciBuild               - CI/CD build with tests
+        • ./gradlew :ampairs_service:bootRun - Run the application
+
         For detailed setup instructions, see DEPLOYMENT.md
         """.trimIndent())
     }
