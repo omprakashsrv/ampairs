@@ -176,7 +176,9 @@
       ansible.builtin.command: >
         rabbitmqctl authenticate_user {{ rabbitmq_admin_user }} {{ rabbitmq_admin_password }}
       register: rabbitmq_auth
-      failed_when: "'successfully authenticated' not in rabbitmq_auth.stdout"
+      failed_when: >
+        rabbitmq_auth.rc != 0 or
+        ('success' not in (rabbitmq_auth.stdout | lower))
       changed_when: false
 
     - name: Report RabbitMQ authentication output

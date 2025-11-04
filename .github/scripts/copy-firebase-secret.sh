@@ -32,7 +32,6 @@ echo "File location: $FIREBASE_KEY_PATH"
 echo "File size: $(wc -c < "$FIREBASE_KEY_PATH") bytes"
 echo ""
 
-
 # Try to copy to clipboard
 if command -v pbcopy &> /dev/null; then
   # macOS
