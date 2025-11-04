@@ -87,10 +87,8 @@ jobs:
 
       - name: Create Ansible inventory
         run: |
-          cat <<EOF > inventory.ini
-[target]
-${TARGET_HOST} ansible_host=${TARGET_HOST} ansible_user=${TARGET_USER} ansible_port=${TARGET_PORT} ansible_ssh_private_key_file=~/.ssh/id_rsa
-EOF
+          printf "[target]\n%s ansible_host=%s ansible_user=%s ansible_port=%s ansible_ssh_private_key_file=%s\n" \
+            "${TARGET_HOST}" "${TARGET_HOST}" "${TARGET_USER}" "${TARGET_PORT}" "$HOME/.ssh/id_rsa" > inventory.ini
 
       - name: Run Ansible playbook
         env:
