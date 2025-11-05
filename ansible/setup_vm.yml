@@ -11,6 +11,9 @@
     letsencrypt_email: "{{ lookup('env', 'LETSENCRYPT_EMAIL') | default('', true) }}"
     rabbitmq_admin_user: "{{ lookup('env', 'RABBITMQ_ADMIN_USER') | default('admin', true) }}"
     rabbitmq_admin_password: "{{ lookup('env', 'RABBITMQ_ADMIN_PASSWORD') | default('', true) }}"
+    aws_access_key_id: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') | default('', true) }}"
+    aws_secret_access_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') | default('', true) }}"
+    aws_region: "{{ lookup('env', 'AWS_REGION') | default('ap-south-1', true) }}"
 
   pre_tasks:
     - name: Fail if Let's Encrypt email is not provided
@@ -22,6 +25,11 @@
       ansible.builtin.fail:
         msg: "RABBITMQ_ADMIN_PASSWORD environment variable must be supplied for RabbitMQ user creation."
       when: rabbitmq_admin_password | length == 0
+
+    - name: Fail if AWS credentials are not provided
+      ansible.builtin.fail:
+        msg: "AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables must be supplied to configure AWS CLI."
+      when: aws_access_key_id | length == 0 or aws_secret_access_key | length == 0
 
   tasks:
     - name: Ensure APT cache is fresh
@@ -44,6 +52,7 @@
           - python3-certbot-nginx
           - rabbitmq-server
           - curl
+          - awscli
         state: present
 
     - name: Ensure nginx service is enabled and started
@@ -72,6 +81,36 @@
         marker: "# {mark} ampairs proxy"
         block: "{{ lookup('template', 'templates/api-ampairs-location.conf.j2') }}"
         insertafter: 'server_name'
+
+    - name: Ensure AWS CLI configuration directory exists
+      ansible.builtin.file:
+        path: /root/.aws
+        state: directory
+        owner: root
+        group: root
+        mode: "0700"
+
+    - name: Configure AWS CLI credentials for backup profile
+      ansible.builtin.copy:
+        dest: /root/.aws/credentials
+        owner: root
+        group: root
+        mode: "0600"
+        content: |
+          [backup]
+          aws_access_key_id = {{ aws_access_key_id }}
+          aws_secret_access_key = {{ aws_secret_access_key }}
+      no_log: true
+
+    - name: Configure AWS CLI profile settings
+      ansible.builtin.copy:
+        dest: /root/.aws/config
+        owner: root
+        group: root
+        mode: "0600"
+        content: |
+          [profile backup]
+          region = {{ aws_region }}
 
     - name: Enable ampairs nginx site
       ansible.builtin.file:
@@ -184,3 +223,12 @@
     - name: Report RabbitMQ authentication output
       ansible.builtin.debug:
         var: rabbitmq_auth.stdout
+
+    - name: Validate AWS CLI installation
+      ansible.builtin.command: aws --version
+      register: aws_cli_version
+      changed_when: false
+
+    - name: Display AWS CLI version
+      ansible.builtin.debug:
+        msg: "{{ aws_cli_version.stdout | default(aws_cli_version.stderr, true) }}"

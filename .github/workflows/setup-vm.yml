@@ -29,6 +29,11 @@ jobs:
       APP_UPSTREAM: ${{ vars.APP_UPSTREAM || 'http://127.0.0.1:8080' }}
       LETSENCRYPT_EMAIL: ${{ vars.LETSENCRYPT_EMAIL }}
       RABBITMQ_ADMIN_USER: ${{ vars.RABBITMQ_ADMIN_USER || 'admin' }}
+      AWS_REGION: ${{ vars.AWS_REGION || 'ap-south-1' }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      RABBITMQ_ADMIN_PASSWORD: ${{ secrets.RABBITMQ_ADMIN_PASSWORD }}
 
     steps:
       - name: Validate required configuration
@@ -46,12 +51,20 @@ jobs:
             echo "LETSENCRYPT_EMAIL repository variable is required for certificate requests."
             exit 1
           fi
-          if [[ -z "${{ secrets.SSH_PRIVATE_KEY }}" ]]; then
+          if [[ -z "${SSH_PRIVATE_KEY}" ]]; then
             echo "SSH_PRIVATE_KEY secret is required."
             exit 1
           fi
-          if [[ -z "${{ secrets.RABBITMQ_ADMIN_PASSWORD }}" ]]; then
+          if [[ -z "${RABBITMQ_ADMIN_PASSWORD}" ]]; then
             echo "RABBITMQ_ADMIN_PASSWORD secret is required."
+            exit 1
+          fi
+          if [[ -z "${AWS_ACCESS_KEY_ID}" ]]; then
+            echo "AWS_ACCESS_KEY_ID secret is required."
+            exit 1
+          fi
+          if [[ -z "${AWS_SECRET_ACCESS_KEY}" ]]; then
+            echo "AWS_SECRET_ACCESS_KEY secret is required."
             exit 1
           fi
 
@@ -74,9 +87,10 @@ jobs:
           set -euo pipefail
           mkdir -p ~/.ssh
           chmod 700 ~/.ssh
-          cat <<'EOF' > ~/.ssh/id_rsa
-          ${{ secrets.SSH_PRIVATE_KEY }}
-          EOF
+          printf '%s' "${SSH_PRIVATE_KEY}" > ~/.ssh/id_rsa
+          if [[ $(tail -c1 ~/.ssh/id_rsa 2>/dev/null) != $'\n' ]]; then
+            echo >> ~/.ssh/id_rsa
+          fi
           chmod 600 ~/.ssh/id_rsa
           touch ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
@@ -96,7 +110,10 @@ jobs:
           APP_UPSTREAM: ${{ env.APP_UPSTREAM }}
           LETSENCRYPT_EMAIL: ${{ env.LETSENCRYPT_EMAIL }}
           RABBITMQ_ADMIN_USER: ${{ env.RABBITMQ_ADMIN_USER }}
-          RABBITMQ_ADMIN_PASSWORD: ${{ secrets.RABBITMQ_ADMIN_PASSWORD }}
+          RABBITMQ_ADMIN_PASSWORD: ${{ env.RABBITMQ_ADMIN_PASSWORD }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+          AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
         run: |
           export ANSIBLE_HOST_KEY_CHECKING=False
           ansible-playbook ansible/setup_vm.yml \
