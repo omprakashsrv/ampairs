@@ -212,6 +212,14 @@
         group: root
         mode: "0750"
 
+    - name: Ensure restore log directory exists
+      ansible.builtin.file:
+        path: /var/log/ampairs
+        state: directory
+        owner: root
+        group: root
+        mode: "0750"
+
     - name: Deploy database backup systemd service
       ansible.builtin.template:
         src: templates/ampairs-db-backup.service.j2
