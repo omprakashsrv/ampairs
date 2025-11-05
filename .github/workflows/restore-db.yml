@@ -1,0 +1,83 @@
+name: Restore Database Backup
+
+on:
+  workflow_dispatch:
+    inputs:
+      host:
+        description: 'Override target host (defaults to repository variable SERVER_HOST)'
+        required: false
+        type: string
+      snapshot:
+        description: 'S3 object key or full s3://bucket/key to restore'
+        required: true
+        type: string
+      confirm:
+        description: 'Type RESTORE to acknowledge this will overwrite the database'
+        required: true
+        type: string
+
+jobs:
+  restore:
+    name: Restore database on VM
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      TARGET_HOST: ${{ inputs.host || vars.SERVER_HOST }}
+      TARGET_USER: ${{ vars.SSH_USER }}
+      TARGET_PORT: ${{ vars.SSH_PORT || '22' }}
+      SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+      SNAPSHOT_KEY: ${{ inputs.snapshot }}
+      CONFIRM_VALUE: ${{ inputs.confirm }}
+    steps:
+      - name: Validate restore request
+        run: |
+          set -euo pipefail
+          if [[ -z "${TARGET_HOST}" ]]; then
+            echo "SERVER_HOST repository variable (or manual host override) is required."
+            exit 1
+          fi
+          if [[ -z "${TARGET_USER}" ]]; then
+            echo "SSH_USER repository variable is required."
+            exit 1
+          fi
+          if [[ -z "${SSH_PRIVATE_KEY}" ]]; then
+            echo "SSH_PRIVATE_KEY secret is required."
+            exit 1
+          fi
+          if [[ -z "${SNAPSHOT_KEY}" ]]; then
+            echo "Snapshot key or URI must be provided."
+            exit 1
+          fi
+          if [[ "${CONFIRM_VALUE}" != "RESTORE" ]]; then
+            echo "Confirmation mismatch. Type RESTORE to proceed."
+            exit 1
+          fi
+
+      - name: Configure SSH
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+          printf '%s' "${SSH_PRIVATE_KEY}" > ~/.ssh/id_rsa
+          if [[ $(tail -c1 ~/.ssh/id_rsa 2>/dev/null) != $'\n' ]]; then
+            echo >> ~/.ssh/id_rsa
+          fi
+          chmod 600 ~/.ssh/id_rsa
+          touch ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+          echo "Scanning host key for ${TARGET_HOST}..."
+          if ! ssh-keyscan -p "${TARGET_PORT}" -H "${TARGET_HOST}" >> ~/.ssh/known_hosts 2>/dev/null; then
+            echo "Warning: ssh-keyscan failed, continuing. Host key will be accepted on first connection."
+          fi
+
+      - name: Execute database restore
+        run: |
+          set -euo pipefail
+          SNAPSHOT_ESCAPED=$(printf '%q' "${SNAPSHOT_KEY}")
+          SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=10"
+          ssh ${SSH_OPTS} -p "${TARGET_PORT}" "${TARGET_USER}@${TARGET_HOST}" \
+            "sudo /usr/local/bin/ampairs-db-restore.sh --force ${SNAPSHOT_ESCAPED}"
+
+      - name: Restore completed
+        if: always()
+        run: echo "Database restore workflow finished. Review logs to confirm success."
