@@ -24,7 +24,7 @@
     backup_s3_prefix: "{{ lookup('env', 'BACKUP_S3_PREFIX') | default('', true) }}"
     backup_local_dir: "{{ lookup('env', 'BACKUP_LOCAL_DIR') | default('/var/backups/ampairs', true) }}"
     backup_retention_days: "{{ lookup('env', 'BACKUP_RETENTION_DAYS') | default('7', true) }}"
-    backup_on_calendar: "{{ lookup('env', 'BACKUP_ON_CALENDAR') | default('daily', true) }}"
+    backup_on_calendar: "{{ lookup('env', 'BACKUP_ON_CALENDAR') | default('hourly', true) }}"
     postgresql_client_version: "{{ lookup('env', 'BACKUP_PG_VERSION') | default('17', true) }}"
 
   pre_tasks:
