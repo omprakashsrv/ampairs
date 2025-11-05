@@ -1,3 +1,4 @@
+{% raw %}
 #!/usr/bin/env bash
 set -euo pipefail
 umask 0077
@@ -119,3 +120,4 @@ if [[ ${RESTORE_STATUS} -ne 0 ]]; then
 fi
 
 echo "[$(date --iso-8601=seconds)] Database restore completed successfully."
+{% endraw %}
