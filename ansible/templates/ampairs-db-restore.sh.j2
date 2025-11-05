@@ -3,6 +3,12 @@
 set -euo pipefail
 umask 0077
 
+LOG_FILE="/var/log/ampairs/db-restore.log"
+LOG_DIR="$(dirname "${LOG_FILE}")"
+mkdir -p "${LOG_DIR}"
+touch "${LOG_FILE}"
+exec > >(tee -a "${LOG_FILE}") 2>&1
+
 usage() {
   cat <<'USAGE'
 Usage: ampairs-db-restore.sh [--force] <snapshot-key-or-uri>
