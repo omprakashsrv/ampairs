@@ -1,0 +1,9 @@
+[Unit]
+Description=Ampairs database backup schedule
+
+[Timer]
+OnCalendar={{ backup_on_calendar | quote }}
+Persistent=true
+
+[Install]
+WantedBy=timers.target

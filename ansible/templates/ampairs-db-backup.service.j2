@@ -1,0 +1,12 @@
+[Unit]
+Description=Ampairs database backup
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=/etc/ampairs-db-backup.env
+ExecStart=/usr/local/bin/ampairs-db-backup.sh
+
+[Install]
+WantedBy=multi-user.target

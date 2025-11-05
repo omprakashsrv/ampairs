@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+set -euo pipefail
+umask 0077
+
+BACKUP_DB_TYPE="${BACKUP_DB_TYPE:-postgres}"
+BACKUP_DB_NAME="${BACKUP_DB_NAME:?BACKUP_DB_NAME is required}"
+BACKUP_DB_HOST="${BACKUP_DB_HOST:-localhost}"
+BACKUP_DB_PORT="${BACKUP_DB_PORT:-5432}"
+BACKUP_DB_USER="${BACKUP_DB_USER:?BACKUP_DB_USER is required}"
+BACKUP_DB_PASSWORD="${BACKUP_DB_PASSWORD:?BACKUP_DB_PASSWORD is required}"
+BACKUP_S3_BUCKET="${BACKUP_S3_BUCKET:?BACKUP_S3_BUCKET is required}"
+BACKUP_S3_PREFIX="${BACKUP_S3_PREFIX:-}"
+BACKUP_LOCAL_DIR="${BACKUP_LOCAL_DIR:-/var/backups/ampairs}"
+BACKUP_RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-7}"
+AWS_PROFILE="${AWS_PROFILE:-backup}"
+
+mkdir -p "${BACKUP_LOCAL_DIR}"
+
+timestamp="$(date +%Y%m%dT%H%M%S)"
+backup_file="${BACKUP_LOCAL_DIR}/${BACKUP_DB_NAME}_${timestamp}.dump.gz"
+
+if [[ "${BACKUP_DB_TYPE}" != "postgres" ]]; then
+  echo "Unsupported BACKUP_DB_TYPE: ${BACKUP_DB_TYPE}" >&2
+  exit 2
+fi
+
+export PGPASSWORD="${BACKUP_DB_PASSWORD}"
+echo "[$(date --iso-8601=seconds)] Starting PostgreSQL backup for ${BACKUP_DB_NAME}..."
+pg_dump \
+  --format=custom \
+  --blobs \
+  --no-owner \
+  --no-privileges \
+  --host="${BACKUP_DB_HOST}" \
+  --port="${BACKUP_DB_PORT}" \
+  --username="${BACKUP_DB_USER}" \
+  "${BACKUP_DB_NAME}" \
+  | gzip > "${backup_file}"
+
+unset PGPASSWORD
+
+echo "[$(date --iso-8601=seconds)] Backup written to ${backup_file}"
+
+trimmed_prefix="${BACKUP_S3_PREFIX%/}"
+if [[ -n "${trimmed_prefix}" ]]; then
+  s3_key="${trimmed_prefix}/${BACKUP_DB_NAME}/${timestamp}.dump.gz"
+else
+  s3_key="${BACKUP_DB_NAME}/${timestamp}.dump.gz"
+fi
+
+s3_uri="s3://${BACKUP_S3_BUCKET}/${s3_key}"
+echo "[$(date --iso-8601=seconds)] Uploading ${backup_file} to ${s3_uri}..."
+aws --profile "${AWS_PROFILE}" s3 cp "${backup_file}" "${s3_uri}" --sse AES256 --only-show-errors
+
+echo "[$(date --iso-8601=seconds)] Upload complete."
+
+if [[ "${BACKUP_RETENTION_DAYS}" =~ ^[0-9]+$ ]] && (( BACKUP_RETENTION_DAYS > 0 )); then
+  echo "[$(date --iso-8601=seconds)] Pruning local backups older than ${BACKUP_RETENTION_DAYS} days..."
+  find "${BACKUP_LOCAL_DIR}" -type f -name "${BACKUP_DB_NAME}_*.dump.gz" -mtime "+$((BACKUP_RETENTION_DAYS - 1))" -print -delete || true
+fi
+
+echo "[$(date --iso-8601=seconds)] Database backup finished successfully."
