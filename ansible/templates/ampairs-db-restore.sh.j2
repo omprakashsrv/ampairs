@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+set -euo pipefail
+umask 0077
+
+usage() {
+  cat <<'USAGE'
+Usage: ampairs-db-restore.sh [--force] <snapshot-key-or-uri>
+
+Restores the configured database from a backup stored in S3.
+  --force                Required to acknowledge destructive restore.
+  <snapshot-key-or-uri>  Either an S3 object key (relative to configured prefix)
+                         or a full s3://bucket/key URI.
+
+Environment values are loaded from /etc/ampairs-db-backup.env.
+USAGE
+}
+
+FORCE_RESTORE=false
+POSITIONAL=()
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --force)
+      FORCE_RESTORE=true
+      shift
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    -*)
+      echo "Unknown option: $1" >&2
+      usage
+      exit 1
+      ;;
+    *)
+      POSITIONAL+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if [[ "${#POSITIONAL[@]}" -ne 1 ]]; then
+  echo "Snapshot key/URI is required." >&2
+  usage
+  exit 1
+fi
+
+if [[ "${FORCE_RESTORE}" != "true" ]]; then
+  echo "Restore refused. Re-run with --force to confirm you intend to overwrite the database." >&2
+  exit 2
+fi
+
+if [[ ! -f /etc/ampairs-db-backup.env ]]; then
+  echo "/etc/ampairs-db-backup.env not found. Cannot load database backup configuration." >&2
+  exit 3
+fi
+
+# shellcheck disable=SC1091
+source /etc/ampairs-db-backup.env
+
+BACKUP_DB_TYPE="${BACKUP_DB_TYPE:-postgres}"
+BACKUP_DB_NAME="${BACKUP_DB_NAME:?BACKUP_DB_NAME must be set in env file}"
+BACKUP_DB_HOST="${BACKUP_DB_HOST:-localhost}"
+BACKUP_DB_PORT="${BACKUP_DB_PORT:-5432}"
+BACKUP_DB_USER="${BACKUP_DB_USER:?BACKUP_DB_USER must be set in env file}"
+BACKUP_DB_PASSWORD="${BACKUP_DB_PASSWORD:?BACKUP_DB_PASSWORD must be set in env file}"
+BACKUP_S3_BUCKET="${BACKUP_S3_BUCKET:?BACKUP_S3_BUCKET must be set in env file}"
+BACKUP_S3_PREFIX="${BACKUP_S3_PREFIX:-}"
+AWS_PROFILE="${AWS_PROFILE:-backup}"
+
+if [[ "${BACKUP_DB_TYPE}" != "postgres" ]]; then
+  echo "Unsupported database type for restore: ${BACKUP_DB_TYPE}" >&2
+  exit 4
+fi
+
+SNAPSHOT_INPUT="${POSITIONAL[0]}"
+if [[ "${SNAPSHOT_INPUT}" == s3://* ]]; then
+  S3_URI="${SNAPSHOT_INPUT}"
+else
+  PREFIX_TRIMMED="${BACKUP_S3_PREFIX%/}"
+  if [[ -n "${PREFIX_TRIMMED}" ]]; then
+    S3_URI="s3://${BACKUP_S3_BUCKET}/${PREFIX_TRIMMED}/${SNAPSHOT_INPUT}"
+  else
+    S3_URI="s3://${BACKUP_S3_BUCKET}/${SNAPSHOT_INPUT}"
+  fi
+fi
+
+TEMP_FILE="$(mktemp --suffix=.dump.gz ampairs-restore-XXXXXX)"
+cleanup() {
+  rm -f "${TEMP_FILE}"
+}
+trap cleanup EXIT
+
+echo "[$(date --iso-8601=seconds)] Downloading backup from ${S3_URI}..."
+aws --profile "${AWS_PROFILE}" s3 cp "${S3_URI}" "${TEMP_FILE}" --only-show-errors
+
+if [[ ! -s "${TEMP_FILE}" ]]; then
+  echo "Downloaded file is empty. Aborting restore." >&2
+  exit 5
+fi
+
+export PGPASSWORD="${BACKUP_DB_PASSWORD}"
+echo "[$(date --iso-8601=seconds)] Restoring database ${BACKUP_DB_NAME}..."
+gunzip -c "${TEMP_FILE}" | pg_restore \
+  --clean \
+  --if-exists \
+  --no-owner \
+  --no-privileges \
+  --host="${BACKUP_DB_HOST}" \
+  --port="${BACKUP_DB_PORT}" \
+  --username="${BACKUP_DB_USER}" \
+  --dbname="${BACKUP_DB_NAME}"
+RESTORE_STATUS=$?
+unset PGPASSWORD
+
+if [[ ${RESTORE_STATUS} -ne 0 ]]; then
+  echo "Database restore failed with exit code ${RESTORE_STATUS}." >&2
+  exit ${RESTORE_STATUS}
+fi
+
+echo "[$(date --iso-8601=seconds)] Database restore completed successfully."
