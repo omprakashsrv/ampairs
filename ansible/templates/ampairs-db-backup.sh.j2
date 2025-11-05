@@ -18,6 +18,7 @@ mkdir -p "${BACKUP_LOCAL_DIR}"
 
 timestamp="$(date +%Y%m%dT%H%M%S)"
 backup_file="${BACKUP_LOCAL_DIR}/${BACKUP_DB_NAME}_${timestamp}.dump.gz"
+date_prefix="$(date +%Y/%m/%d)"
 
 if [[ "${BACKUP_DB_TYPE}" != "postgres" ]]; then
   echo "Unsupported BACKUP_DB_TYPE: ${BACKUP_DB_TYPE}" >&2
@@ -43,10 +44,13 @@ echo "[$(date --iso-8601=seconds)] Backup written to ${backup_file}"
 
 trimmed_prefix="${BACKUP_S3_PREFIX%/}"
 if [[ -n "${trimmed_prefix}" ]]; then
-  s3_key="${trimmed_prefix}/${BACKUP_DB_NAME}/${timestamp}.dump.gz"
+  base_prefix="${trimmed_prefix}/${BACKUP_DB_NAME}"
 else
-  s3_key="${BACKUP_DB_NAME}/${timestamp}.dump.gz"
+  base_prefix="${BACKUP_DB_NAME}"
 fi
+
+s3_key="${base_prefix}/${date_prefix}/${timestamp}.dump.gz"
+s3_root_prefix="${base_prefix}/"
 
 s3_uri="s3://${BACKUP_S3_BUCKET}/${s3_key}"
 echo "[$(date --iso-8601=seconds)] Uploading ${backup_file} to ${s3_uri}..."
@@ -57,6 +61,25 @@ echo "[$(date --iso-8601=seconds)] Upload complete."
 if [[ "${BACKUP_RETENTION_DAYS}" =~ ^[0-9]+$ ]] && (( BACKUP_RETENTION_DAYS > 0 )); then
   echo "[$(date --iso-8601=seconds)] Pruning local backups older than ${BACKUP_RETENTION_DAYS} days..."
   find "${BACKUP_LOCAL_DIR}" -type f -name "${BACKUP_DB_NAME}_*.dump.gz" -mtime "+$((BACKUP_RETENTION_DAYS - 1))" -print -delete || true
+
+  cutoff_iso=$(date -u -d "${BACKUP_RETENTION_DAYS} days ago" '+%Y-%m-%dT%H:%M:%SZ')
+  echo "[$(date --iso-8601=seconds)] Pruning S3 objects older than ${BACKUP_RETENTION_DAYS} days (cutoff ${cutoff_iso})..."
+  s3_list_prefix="${s3_root_prefix}"
+  old_keys=$(aws --profile "${AWS_PROFILE}" s3api list-objects-v2 \
+    --bucket "${BACKUP_S3_BUCKET}" \
+    --prefix "${s3_list_prefix}" \
+    --query "Contents[?LastModified<\`${cutoff_iso}\`].Key" \
+    --output text 2>/dev/null || true)
+
+  if [[ -n "${old_keys}" && "${old_keys}" != "None" ]]; then
+    printf '%s\n' "${old_keys}" | tr '\t' '\n' | while IFS= read -r key; do
+      [[ -z "${key}" ]] && continue
+      echo "Deleting s3://${BACKUP_S3_BUCKET}/${key}"
+      aws --profile "${AWS_PROFILE}" s3 rm "s3://${BACKUP_S3_BUCKET}/${key}" --only-show-errors || true
+    done
+  else
+    echo "No S3 objects older than retention cutoff found."
+  fi
 fi
 
 echo "[$(date --iso-8601=seconds)] Database backup finished successfully."
