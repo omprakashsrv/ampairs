@@ -68,9 +68,48 @@
           - python3-certbot-nginx
           - rabbitmq-server
           - curl
-          - awscli
           - postgresql-client
+          - unzip
         state: present
+
+    - name: Check current AWS CLI version
+      ansible.builtin.command: aws --version
+      register: aws_cli_version_check
+      changed_when: false
+      failed_when: false
+
+    - name: Determine if AWS CLI install is required
+      ansible.builtin.set_fact:
+        aws_cli_install_needed: "{{ aws_cli_version_check.rc != 0 or 'aws-cli/2.' not in (aws_cli_version_check.stdout | default(aws_cli_version_check.stderr, true)) }}"
+
+    - name: Install or update AWS CLI v2
+      when: aws_cli_install_needed
+      block:
+        - name: Download AWS CLI v2 installer
+          ansible.builtin.get_url:
+            url: https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip
+            dest: /tmp/awscliv2.zip
+            mode: "0644"
+
+        - name: Unpack AWS CLI v2 installer
+          ansible.builtin.unarchive:
+            src: /tmp/awscliv2.zip
+            dest: /tmp
+            remote_src: true
+            creates: /tmp/aws/install
+
+        - name: Run AWS CLI v2 installer
+          ansible.builtin.command: /tmp/aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli --update
+          args:
+            creates: /usr/local/aws-cli/v2/current/bin/aws
+
+        - name: Clean up AWS CLI installer artifacts
+          ansible.builtin.file:
+            path: "{{ item }}"
+            state: absent
+          loop:
+            - /tmp/awscliv2.zip
+            - /tmp/aws
 
     - name: Ensure nginx service is enabled and started
       ansible.builtin.service:
