@@ -76,7 +76,7 @@ jobs:
           SNAPSHOT_ESCAPED=$(printf '%q' "${SNAPSHOT_KEY}")
           SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=10"
           ssh ${SSH_OPTS} -p "${TARGET_PORT}" "${TARGET_USER}@${TARGET_HOST}" \
-            "sudo /usr/local/bin/ampairs-db-restore.sh --force ${SNAPSHOT_ESCAPED}"
+            "sudo bash /usr/local/bin/ampairs-db-restore.sh --force ${SNAPSHOT_ESCAPED}"
 
       - name: Restore completed
         if: always()
