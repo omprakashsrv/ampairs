@@ -267,6 +267,13 @@
         executable: /bin/bash
         creates: /etc/systemd/system/alloy.service
 
+    - name: Remove legacy Grafana Alloy comment block
+      ansible.builtin.replace:
+        path: /etc/alloy/config.alloy
+        regexp: '^# BEGIN ampairs remote write$[\s\S]*?# END ampairs remote write$\n?'
+        replace: ''
+      when: ansible_facts['distribution'] is defined
+
     - name: Ensure Grafana Alloy remote write configuration
       ansible.builtin.blockinfile:
         path: /etc/alloy/config.alloy
@@ -274,6 +281,7 @@
         marker: "// {mark} ampairs remote write"
         block: "{{ lookup('template', 'templates/grafana-alloy-remote-write.hcl.j2') }}"
         insertafter: EOF
+        strip_empty_lines: yes
       notify: Restart Grafana Alloy
 
     - name: Ensure Grafana Alloy service is enabled and running
