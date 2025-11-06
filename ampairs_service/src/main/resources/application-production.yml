@@ -80,13 +80,13 @@ server:
     accesslog:
       enabled: true
       pattern: "%h %l %u %t %r %s %b %D %{Referer}i %{User-Agent}i %{Request-Source}i"
-      prefix: access_log
+      prefix: access
       suffix: .log
       file-date-format: .yyyy-MM-dd
       rotate: true
       renameOnRotate: true
       max-days: 10
-      directory: logs
+      directory: /var/log/ampairs/
     threads:
       max: 50
       min-spare: 10
