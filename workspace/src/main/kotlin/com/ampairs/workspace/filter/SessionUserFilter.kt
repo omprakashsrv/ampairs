@@ -96,6 +96,7 @@ class SessionUserFilter @Autowired constructor(
                 isWorkspaceListEndpoint(requestPath) ||
                 requestPath.contains("/actuator/health") ||
                 requestPath.contains("/actuator/info") ||
+                requestPath.contains("/actuator/prometheus") ||
                 requestPath.contains("/swagger") ||
                 requestPath.contains("/api-docs")
     }

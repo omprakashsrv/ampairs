@@ -9,3 +9,14 @@ prometheus.remote_write "metrics_hosted_prometheus" {
     }
   }
 }
+
+prometheus.scrape "ampairs_spring_boot" {
+  targets = [{
+    __address__ = "{{ app_upstream | regex_replace('^https?://', '') | regex_replace('/.*$', '') }}"
+    job         = "spring-boot"
+  }]
+
+  metrics_path    = "/actuator/prometheus"
+  scrape_interval = "15s"
+  forward_to      = [prometheus.remote_write.metrics_hosted_prometheus.receiver]
+}
