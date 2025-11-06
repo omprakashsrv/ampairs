@@ -34,6 +34,7 @@ jobs:
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
       SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
       RABBITMQ_ADMIN_PASSWORD: ${{ secrets.RABBITMQ_ADMIN_PASSWORD }}
+      GCLOUD_RW_API_KEY: ${{ secrets.GCLOUD_RW_API_KEY }}
       BACKUP_DB_TYPE: ${{ vars.BACKUP_DB_TYPE || 'postgres' }}
       BACKUP_DB_NAME: ${{ vars.BACKUP_DB_NAME }}
       BACKUP_DB_HOST: ${{ vars.BACKUP_DB_HOST || 'localhost' }}
@@ -76,6 +77,10 @@ jobs:
           fi
           if [[ -z "${AWS_SECRET_ACCESS_KEY}" ]]; then
             echo "AWS_SECRET_ACCESS_KEY secret is required."
+            exit 1
+          fi
+          if [[ -z "${GCLOUD_RW_API_KEY}" ]]; then
+            echo "GCLOUD_RW_API_KEY secret is required."
             exit 1
           fi
           if [[ -z "${BACKUP_DB_NAME}" ]]; then
@@ -141,6 +146,7 @@ jobs:
           AWS_REGION: ${{ env.AWS_REGION }}
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
+          GCLOUD_RW_API_KEY: ${{ env.GCLOUD_RW_API_KEY }}
           BACKUP_DB_TYPE: ${{ env.BACKUP_DB_TYPE }}
           BACKUP_DB_NAME: ${{ env.BACKUP_DB_NAME }}
           BACKUP_DB_HOST: ${{ env.BACKUP_DB_HOST }}

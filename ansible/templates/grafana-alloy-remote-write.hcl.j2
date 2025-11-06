@@ -1,0 +1,11 @@
+prometheus.remote_write "metrics_hosted_prometheus" {
+  endpoint {
+    name = "hosted-prometheus"
+    url  = "{{ gcloud_hosted_metrics_url }}"
+
+    basic_auth {
+      username = "{{ gcloud_hosted_metrics_id }}"
+      password = "{{ gcloud_rw_api_key }}"
+    }
+  }
+}

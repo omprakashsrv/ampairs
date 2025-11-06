@@ -14,6 +14,15 @@
     aws_access_key_id: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') | default('', true) }}"
     aws_secret_access_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') | default('', true) }}"
     aws_region: "{{ lookup('env', 'AWS_REGION') | default('ap-south-1', true) }}"
+    gcloud_rw_api_key: "{{ lookup('env', 'GCLOUD_RW_API_KEY') | default('', true) }}"
+    gcloud_hosted_metrics_id: "{{ lookup('env', 'GCLOUD_HOSTED_METRICS_ID') | default('2782251', true) }}"
+    gcloud_hosted_metrics_url: "{{ lookup('env', 'GCLOUD_HOSTED_METRICS_URL') | default('https://prometheus-prod-43-prod-ap-south-1.grafana.net/api/prom/push', true) }}"
+    gcloud_hosted_logs_id: "{{ lookup('env', 'GCLOUD_HOSTED_LOGS_ID') | default('1386802', true) }}"
+    gcloud_hosted_logs_url: "{{ lookup('env', 'GCLOUD_HOSTED_LOGS_URL') | default('https://logs-prod-028.grafana.net/loki/api/v1/push', true) }}"
+    gcloud_fm_url: "{{ lookup('env', 'GCLOUD_FM_URL') | default('https://fleet-management-prod-018.grafana.net', true) }}"
+    gcloud_fm_poll_frequency: "{{ lookup('env', 'GCLOUD_FM_POLL_FREQUENCY') | default('60s', true) }}"
+    gcloud_fm_hosted_id: "{{ lookup('env', 'GCLOUD_FM_HOSTED_ID') | default('1429008', true) }}"
+    gcloud_arch: "{{ lookup('env', 'GCLOUD_ARCH') | default('amd64', true) }}"
     backup_db_type: "{{ lookup('env', 'BACKUP_DB_TYPE') | default('postgres', true) }}"
     backup_db_name: "{{ lookup('env', 'BACKUP_DB_NAME') | default('', true) }}"
     backup_db_host: "{{ lookup('env', 'BACKUP_DB_HOST') | default('localhost', true) }}"
@@ -47,6 +56,11 @@
       ansible.builtin.fail:
         msg: "BACKUP_DB_NAME, BACKUP_DB_USER, BACKUP_DB_PASSWORD, and BACKUP_S3_BUCKET must be supplied for backups."
       when: backup_db_name | length == 0 or backup_db_user | length == 0 or backup_db_password | length == 0 or backup_s3_bucket | length == 0
+
+    - name: Fail if Grafana Alloy API key is not provided
+      ansible.builtin.fail:
+        msg: "GCLOUD_RW_API_KEY environment variable must be supplied to configure Grafana Alloy."
+      when: gcloud_rw_api_key | length == 0
 
   tasks:
     - name: Add PostgreSQL apt repository key
@@ -149,6 +163,14 @@
         block: "{{ lookup('template', 'templates/api-ampairs-location.conf.j2') }}"
         insertafter: 'server_name'
 
+    - name: Deploy nginx rate limiting configuration
+      ansible.builtin.template:
+        src: templates/nginx-rate-limiting.conf.j2
+        dest: /etc/nginx/conf.d/ampairs-rate-limit.conf
+        owner: root
+        group: root
+        mode: "0644"
+
     - name: Ensure AWS CLI configuration directory exists
       ansible.builtin.file:
         path: /root/.aws
@@ -219,6 +241,44 @@
         owner: root
         group: root
         mode: "0750"
+
+    - name: Deploy Grafana Alloy environment file
+      ansible.builtin.template:
+        src: templates/grafana-alloy.env.j2
+        dest: /etc/default/grafana-alloy
+        owner: root
+        group: root
+        mode: "0600"
+      no_log: true
+      notify: Restart Grafana Alloy
+
+    - name: Install Grafana Alloy if missing
+      ansible.builtin.shell: |
+        set -euo pipefail
+        if systemctl list-unit-files | grep -q '^alloy.service'; then
+          exit 0
+        fi
+        . /etc/default/grafana-alloy
+        export GCLOUD_HOSTED_METRICS_ID GCLOUD_HOSTED_METRICS_URL GCLOUD_HOSTED_LOGS_ID \
+          GCLOUD_HOSTED_LOGS_URL GCLOUD_FM_URL GCLOUD_FM_POLL_FREQUENCY GCLOUD_FM_HOSTED_ID \
+          ARCH GCLOUD_RW_API_KEY
+        /bin/sh -c "$(curl -fsSL https://storage.googleapis.com/cloud-onboarding/alloy/scripts/install-linux.sh)"
+      args:
+        creates: /etc/systemd/system/alloy.service
+
+    - name: Ensure Grafana Alloy remote write configuration
+      ansible.builtin.blockinfile:
+        path: /etc/alloy/config.alloy
+        create: true
+        marker: "# {mark} ampairs remote write"
+        block: "{{ lookup('template', 'templates/grafana-alloy-remote-write.hcl.j2') }}"
+      notify: Restart Grafana Alloy
+
+    - name: Ensure Grafana Alloy service is enabled and running
+      ansible.builtin.systemd:
+        name: alloy.service
+        enabled: true
+        state: started
 
     - name: Deploy database backup systemd service
       ansible.builtin.template:
@@ -376,3 +436,9 @@
     - name: Show next database backup run
       ansible.builtin.debug:
         var: backup_timer.stdout_lines
+
+  handlers:
+    - name: Restart Grafana Alloy
+      ansible.builtin.systemd:
+        name: alloy.service
+        state: restarted
