@@ -1,3 +1,4 @@
 location / {
     proxy_pass {{ app_upstream }};
+    limit_req zone=ampairs_per_ip burst=10 nodelay;
 }

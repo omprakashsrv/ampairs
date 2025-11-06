@@ -54,6 +54,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-cache")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
+    implementation("io.micrometer:micrometer-registry-prometheus")
 
     // Spring Retry
     implementation("org.springframework.retry:spring-retry")
