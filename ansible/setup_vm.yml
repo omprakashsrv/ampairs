@@ -271,8 +271,9 @@
       ansible.builtin.blockinfile:
         path: /etc/alloy/config.alloy
         create: true
-        marker: "# {mark} ampairs remote write"
+        marker: "// {mark} ampairs remote write"
         block: "{{ lookup('template', 'templates/grafana-alloy-remote-write.hcl.j2') }}"
+        insertafter: EOF
       notify: Restart Grafana Alloy
 
     - name: Ensure Grafana Alloy service is enabled and running
