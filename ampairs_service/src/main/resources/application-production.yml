@@ -476,11 +476,7 @@ management:
   endpoints:
     web:
       exposure:
-        include: ${MANAGEMENT_ENDPOINTS_INCLUDE:health,info,env,metrics,caches}
-  metrics:
-    export:
-      prometheus:
-        enabled: true
+        include: ${MANAGEMENT_ENDPOINTS_INCLUDE:health,info,env,metrics,caches,prometheus}
   endpoint:
     health:
       show-details: ${MANAGEMENT_HEALTH_SHOW_DETAILS:when_authorized}
