@@ -254,7 +254,7 @@
 
     - name: Install Grafana Alloy if missing
       ansible.builtin.shell: |
-        set -euo pipefail
+        set -eu
         if systemctl list-unit-files | grep -q '^alloy.service'; then
           exit 0
         fi
@@ -264,6 +264,7 @@
           ARCH GCLOUD_RW_API_KEY
         /bin/sh -c "$(curl -fsSL https://storage.googleapis.com/cloud-onboarding/alloy/scripts/install-linux.sh)"
       args:
+        executable: /bin/bash
         creates: /etc/systemd/system/alloy.service
 
     - name: Ensure Grafana Alloy remote write configuration
