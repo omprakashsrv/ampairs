@@ -281,7 +281,6 @@
         marker: "// {mark} ampairs remote write"
         block: "{{ lookup('template', 'templates/grafana-alloy-remote-write.hcl.j2') }}"
         insertafter: EOF
-        strip_empty_lines: yes
       notify: Restart Grafana Alloy
 
     - name: Ensure Grafana Alloy service is enabled and running
