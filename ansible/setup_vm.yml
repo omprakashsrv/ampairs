@@ -8,6 +8,7 @@
   vars:
     domain_name: "{{ lookup('env', 'API_DOMAIN') | default('api.ampairs.in', true) }}"
     app_upstream: "{{ lookup('env', 'APP_UPSTREAM') | default('http://127.0.0.1:8080', true) }}"
+    nginx_max_body_size: "{{ lookup('env', 'NGINX_MAX_BODY_SIZE') | default('20M', true) }}"
     letsencrypt_email: "{{ lookup('env', 'LETSENCRYPT_EMAIL') | default('', true) }}"
     rabbitmq_admin_user: "{{ lookup('env', 'RABBITMQ_ADMIN_USER') | default('admin', true) }}"
     rabbitmq_admin_password: "{{ lookup('env', 'RABBITMQ_ADMIN_PASSWORD') | default('', true) }}"

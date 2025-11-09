@@ -2,6 +2,10 @@ location / {
     proxy_pass {{ app_upstream }};
     limit_req zone=ampairs_per_ip burst=10 nodelay;
 
+    # File upload size limit (must match or exceed Spring Boot max-request-size)
+    # Spring Boot default: max-file-size=10MB, max-request-size=15MB
+    client_max_body_size {{ nginx_max_body_size }};
+
     # WebSocket support
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
