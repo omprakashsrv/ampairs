@@ -4,18 +4,35 @@ Machine-to-machine authentication for CI/CD pipelines and automated systems.
 
 ## Architecture
 
+Uses Spring Security's **AuthenticationManager** with multiple authentication providers.
+
 ```
 ┌─────────────────────────────────────────────┐
-│  GitHub Actions / CI/CD Pipeline           │
-│  (X-API-Key: amp_xxx...)                   │
+│  HTTP Request (X-API-Key: amp_xxx...)      │
 └────────────────┬────────────────────────────┘
-                 │ HTTP Request
+                 │
                  v
 ┌─────────────────────────────────────────────┐
 │  ApiKeyAuthenticationFilter                 │
 │  - Extracts X-API-Key header               │
+│  - Creates ApiKeyAuthenticationToken       │
+│  - Delegates to AuthenticationManager      │
+└────────────────┬────────────────────────────┘
+                 │
+                 v
+┌─────────────────────────────────────────────┐
+│  AuthenticationManager                      │
+│  - Tries each provider in order            │
+│  - ApiKeyAuthenticationProvider            │
+│  - JwtAuthenticationProvider (existing)    │
+└────────────────┬────────────────────────────┘
+                 │
+                 v
+┌─────────────────────────────────────────────┐
+│  ApiKeyAuthenticationProvider               │
+│  - Checks supports(ApiKeyAuthenticationToken)│
 │  - Validates via ApiKeyService             │
-│  - Sets SecurityContext                     │
+│  - Returns authenticated token             │
 └────────────────┬────────────────────────────┘
                  │
                  v
