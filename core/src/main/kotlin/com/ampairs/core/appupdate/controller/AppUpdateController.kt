@@ -106,13 +106,13 @@ class AppUpdateController(
     }
 
     /**
-     * Create new app version (Admin only).
+     * Create new app version (Admin or API Key with APP_UPDATES scope).
      *
      * @param request Version creation request
      * @return Created version response
      */
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMIN') or hasAuthority('API_KEY:APP_UPDATES')")
     fun createVersion(
         @RequestBody request: CreateAppVersionRequest
         // TODO: Get current user from SecurityContext
