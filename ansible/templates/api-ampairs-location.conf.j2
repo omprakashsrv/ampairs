@@ -1,3 +1,20 @@
+# Stricter rate limiting for app download endpoint
+# 1 request per 10 seconds, no burst allowed
+location ~ ^/api/v1/app-updates/download/ {
+    proxy_pass {{ app_upstream }};
+    limit_req zone=ampairs_download nodelay;
+
+    # Standard proxy headers
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+
+    # Standard timeouts
+    proxy_read_timeout 300s;
+    proxy_send_timeout 300s;
+}
+
 location / {
     proxy_pass {{ app_upstream }};
     limit_req zone=ampairs_per_ip burst=10 nodelay;

@@ -236,6 +236,14 @@ ampairs:
         default-size: ${STORAGE_THUMBNAILS_DEFAULT_SIZE:300}
         format: ${STORAGE_THUMBNAILS_FORMAT:jpg}
         auto-generate: ${STORAGE_THUMBNAILS_AUTO_GENERATE:false} # Generate on upload vs on-demand
+  # App Update Configuration (Desktop apps: macOS, Windows, Linux)
+  app-updates:
+    storage:
+      bucket: ${APP_UPDATES_BUCKET:ampairs-app-updates}
+      base-url: ${APP_UPDATES_BASE_URL:https://ampairs-app-updates.s3.amazonaws.com}
+      folder: updates  # S3 prefix for app binaries
+    # File size limits for desktop app binaries (larger than regular uploads)
+    max-file-size: 500MB
   aws:
     s3:
       default-bucket: ${AWS_S3_BUCKET:ampairs-test}

@@ -1,5 +1,9 @@
 # Rate limiting configuration
 limit_req_zone $binary_remote_addr zone=ampairs_per_ip:10m rate=5r/s;
+
+# Stricter rate limit for app download endpoint (1 request per 10 seconds)
+limit_req_zone $binary_remote_addr zone=ampairs_download:10m rate=6r/m;
+
 limit_req_status 429;
 
 # WebSocket upgrade map
