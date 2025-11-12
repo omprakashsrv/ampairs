@@ -99,7 +99,6 @@ class AppUpdateController(
      * @return List of all app versions across all platforms
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
     fun getAllVersions(): ApiResponse<List<AppVersionResponse>> {
         val versions = appUpdateService.getAllVersions()
         return ApiResponse.success(versions.asAppVersionResponses())
@@ -112,7 +111,7 @@ class AppUpdateController(
      * @return Created version response
      */
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN') or hasAuthority('API_KEY:APP_UPDATES')")
+    @PreAuthorize("hasRole('SUPER_ADMIN') or hasAuthority('API_KEY:APP_UPDATES')")
     fun createVersion(
         @RequestBody request: CreateAppVersionRequest
         // TODO: Get current user from SecurityContext
@@ -129,7 +128,6 @@ class AppUpdateController(
      * @return Version details
      */
     @GetMapping("/{uid}")
-    @PreAuthorize("hasRole('ADMIN')")
     fun getVersionByUid(@PathVariable uid: String): ApiResponse<AppVersionResponse> {
         val version = appUpdateService.getVersionByUid(uid)
         return ApiResponse.success(version.asAppVersionResponse())
@@ -143,7 +141,7 @@ class AppUpdateController(
      * @return Updated version response
      */
     @PutMapping("/{uid}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     fun updateVersion(
         @PathVariable uid: String,
         @RequestBody request: CreateAppVersionRequest
@@ -160,7 +158,7 @@ class AppUpdateController(
      * @return Updated version response
      */
     @PatchMapping("/{uid}/active")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     fun toggleActive(
         @PathVariable uid: String,
         @RequestParam isActive: Boolean
@@ -176,7 +174,7 @@ class AppUpdateController(
      * @return Success message
      */
     @DeleteMapping("/{uid}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     fun deleteVersion(@PathVariable uid: String): ApiResponse<Map<String, String>> {
         appUpdateService.deleteVersion(uid)
         return ApiResponse.success(mapOf("message" to "Version deleted successfully"))
