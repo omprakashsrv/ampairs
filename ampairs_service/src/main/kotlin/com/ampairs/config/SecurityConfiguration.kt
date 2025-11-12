@@ -73,6 +73,11 @@ class SecurityConfiguration @Autowired constructor(
                 exception.authenticationEntryPoint(unauthorizedHandler)
             }
             .sessionManagement { session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+            // Add API key authentication filter FIRST (before OAuth2 processing)
+            .addFilterBefore(
+                ApiKeyAuthenticationFilter(apiKeyAuthenticationManager()),
+                UsernamePasswordAuthenticationFilter::class.java
+            )
             .authorizeHttpRequests { requests ->
                 requests
                     .requestMatchers(
@@ -93,8 +98,14 @@ class SecurityConfiguration @Autowired constructor(
                     jwt.decoder(jwtDecoder())
                         .jwtAuthenticationConverter(customJwtAuthenticationConverter)
                 }
+                // Only use entry point if no other authentication exists
                 oauth2.authenticationEntryPoint(unauthorizedHandler)
                 oauth2.bearerTokenResolver { request ->
+                    // Skip OAuth2 if already authenticated (e.g., by API key)
+                    if (org.springframework.security.core.context.SecurityContextHolder.getContext().authentication != null
+                        && org.springframework.security.core.context.SecurityContextHolder.getContext().authentication.isAuthenticated) {
+                        return@bearerTokenResolver null
+                    }
                     // Only resolve bearer tokens for authenticated endpoints
                     val requestURI = request.requestURI
                     if (requestURI.startsWith("/auth/v1/") ||
@@ -121,11 +132,6 @@ class SecurityConfiguration @Autowired constructor(
             .logout { logout ->
                 logout.disable() // Disable Spring Security logout - handled by AuthController
             }
-            // Add API key authentication filter before JWT authentication
-            .addFilterBefore(
-                ApiKeyAuthenticationFilter(apiKeyAuthenticationManager()),
-                UsernamePasswordAuthenticationFilter::class.java
-            )
         return http.build()
     }
 }
