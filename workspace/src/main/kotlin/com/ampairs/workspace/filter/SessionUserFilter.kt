@@ -52,6 +52,15 @@ class SessionUserFilter @Autowired constructor(
                 return
             }
 
+            // Skip workspace check for API key authentication
+            // API keys are workspace-agnostic and have their own scope-based authorization
+            val principal = auth.principal
+            if (principal.toString().startsWith("api-key:")) {
+                log.debug("Skipping workspace check for API key authentication: $principal")
+                chain.doFilter(request, response)
+                return
+            }
+
             val userId = AuthenticationHelper.getCurrentUserId(auth)
             if (userId == null) {
                 log.warn("Could not extract user ID from authentication")
@@ -95,11 +104,18 @@ class SessionUserFilter @Autowired constructor(
                 requestPath.contains("/user/v1") ||
                 requestPath.contains("/api/v1/admin") ||
                 isWorkspaceListEndpoint(requestPath) ||
+                isAppUpdatesPublicEndpoint(requestPath) ||
                 requestPath.contains("/actuator/health") ||
                 requestPath.contains("/actuator/info") ||
                 requestPath.contains("/actuator/prometheus") ||
                 requestPath.contains("/swagger") ||
                 requestPath.contains("/api-docs")
+    }
+
+    private fun isAppUpdatesPublicEndpoint(requestPath: String): Boolean {
+        // Public endpoints that don't require workspace context
+        return requestPath == "/api/v1/app-updates/check" ||
+                requestPath.startsWith("/api/v1/app-updates/download/")
     }
 
     private fun isWorkspaceListEndpoint(requestPath: String): Boolean {
