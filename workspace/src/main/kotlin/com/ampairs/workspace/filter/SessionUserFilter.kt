@@ -37,7 +37,7 @@ class SessionUserFilter @Autowired constructor(
     ) {
         val requestPath = request.requestURI ?: request.servletPath
 
-        // Skip filter for auth, user, public workspace endpoints, and health checks
+        // Skip filter for auth, user, admin, public workspace endpoints, and health checks
         if (shouldSkipFilter(requestPath)) {
             chain.doFilter(request, response)
             return
@@ -93,6 +93,7 @@ class SessionUserFilter @Autowired constructor(
     private fun shouldSkipFilter(requestPath: String): Boolean {
         return requestPath.contains("/auth/v1") ||
                 requestPath.contains("/user/v1") ||
+                requestPath.contains("/api/v1/admin") ||
                 isWorkspaceListEndpoint(requestPath) ||
                 requestPath.contains("/actuator/health") ||
                 requestPath.contains("/actuator/info") ||
@@ -143,7 +144,7 @@ class SessionUserFilter @Autowired constructor(
                         val newAuth = UsernamePasswordAuthenticationToken(
                             authentication.principal,
                             authentication.credentials,
-                            authentication.authorities
+                            authentication.authorities,
                         )
                         newAuth.details = details
                         newAuth

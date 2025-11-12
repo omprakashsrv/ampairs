@@ -1,5 +1,7 @@
 package com.ampairs.user.model
 
+import com.ampairs.auth.service.UserDetailsWithId
+import com.ampairs.auth.service.UserDetailsWithRoles
 import com.ampairs.core.config.Constants
 import com.ampairs.core.domain.model.BaseDomain
 import jakarta.persistence.Column

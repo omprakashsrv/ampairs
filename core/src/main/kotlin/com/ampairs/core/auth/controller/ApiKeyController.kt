@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*
  */
 @RestController
 @RequestMapping("/api/v1/admin/api-keys")
-@PreAuthorize("hasRole('ADMIN')")
+@PreAuthorize("hasRole('SUPER_ADMIN')")
 class ApiKeyController(
     private val apiKeyService: ApiKeyService
 ) {
