@@ -2,12 +2,16 @@ package com.ampairs.config
 
 import com.ampairs.auth.service.JwtService
 import com.ampairs.auth.service.RsaKeyManager
+import com.ampairs.core.auth.filter.ApiKeyAuthenticationFilter
+import com.ampairs.core.auth.provider.ApiKeyAuthenticationProvider
 import com.ampairs.core.config.ApplicationProperties
 import com.ampairs.core.exception.AuthEntryPointJwt
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
+import org.springframework.security.authentication.AuthenticationManager
+import org.springframework.security.authentication.ProviderManager
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
@@ -15,6 +19,7 @@ import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.oauth2.jwt.JwtDecoder
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import org.springframework.security.web.SecurityFilterChain
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import javax.crypto.spec.SecretKeySpec
 
 @Configuration
@@ -27,7 +32,24 @@ class SecurityConfiguration @Autowired constructor(
     val applicationProperties: ApplicationProperties,
     val customJwtAuthenticationConverter: CustomJwtAuthenticationConverter,
     val unauthorizedHandler: AuthEntryPointJwt,
+    val apiKeyAuthenticationProvider: ApiKeyAuthenticationProvider,
 ) {
+
+    /**
+     * AuthenticationManager for API key authentication.
+     */
+    @Bean
+    fun apiKeyAuthenticationManager(): AuthenticationManager {
+        return ProviderManager(apiKeyAuthenticationProvider)
+    }
+
+    /**
+     * API key authentication filter bean.
+     */
+    @Bean
+    fun apiKeyAuthenticationFilter(): ApiKeyAuthenticationFilter {
+        return ApiKeyAuthenticationFilter(apiKeyAuthenticationManager())
+    }
 
     @Bean
     fun jwtDecoder(): JwtDecoder {
@@ -59,6 +81,11 @@ class SecurityConfiguration @Autowired constructor(
                 exception.authenticationEntryPoint(unauthorizedHandler)
             }
             .sessionManagement { session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
+            // Add API key authentication filter FIRST (before OAuth2 processing)
+            .addFilterBefore(
+                apiKeyAuthenticationFilter(),
+                UsernamePasswordAuthenticationFilter::class.java
+            )
             .authorizeHttpRequests { requests ->
                 requests
                     .requestMatchers(
@@ -68,7 +95,9 @@ class SecurityConfiguration @Autowired constructor(
                         "/swagger-ui.html",
                         "/v3/api-docs/**",
                         "/v3/api-docs",
-                        "/swagger-resources/**"
+                        "/swagger-resources/**",
+                        "/api/v1/app-updates/check",
+                        "/api/v1/app-updates/download/**"
                     ).permitAll()
                     .anyRequest().authenticated()
             }
@@ -77,8 +106,14 @@ class SecurityConfiguration @Autowired constructor(
                     jwt.decoder(jwtDecoder())
                         .jwtAuthenticationConverter(customJwtAuthenticationConverter)
                 }
+                // Only use entry point if no other authentication exists
                 oauth2.authenticationEntryPoint(unauthorizedHandler)
                 oauth2.bearerTokenResolver { request ->
+                    // Skip OAuth2 if already authenticated (e.g., by API key)
+                    if (org.springframework.security.core.context.SecurityContextHolder.getContext().authentication != null
+                        && org.springframework.security.core.context.SecurityContextHolder.getContext().authentication.isAuthenticated) {
+                        return@bearerTokenResolver null
+                    }
                     // Only resolve bearer tokens for authenticated endpoints
                     val requestURI = request.requestURI
                     if (requestURI.startsWith("/auth/v1/") ||
@@ -86,7 +121,9 @@ class SecurityConfiguration @Autowired constructor(
                         requestURI.startsWith("/swagger-ui/") ||
                         requestURI == "/swagger-ui.html" ||
                         requestURI.startsWith("/v3/api-docs") ||
-                        requestURI.startsWith("/swagger-resources/")
+                        requestURI.startsWith("/swagger-resources/") ||
+                        requestURI == "/api/v1/app-updates/check" ||
+                        requestURI.startsWith("/api/v1/app-updates/download/")
                     ) {
                         null // Skip JWT processing for public endpoints
                     } else {

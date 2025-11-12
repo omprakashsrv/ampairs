@@ -7,10 +7,14 @@ import java.time.Duration
 
 @ConfigurationProperties(prefix = "application")
 data class ApplicationProperties(
+    val auth: AuthProperties = AuthProperties(),
     val security: SecurityProperties = SecurityProperties(),
     val cache: CacheProperties = CacheProperties(),
     val integration: IntegrationProperties = IntegrationProperties(),
 ) {
+    data class AuthProperties(
+        val adminUserIds: List<String> = emptyList(),
+    )
     data class SecurityProperties(
         val jwt: JwtProperties = JwtProperties(),
         val cors: CorsProperties = CorsProperties(),

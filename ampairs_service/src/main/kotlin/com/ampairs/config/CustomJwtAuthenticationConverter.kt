@@ -3,6 +3,8 @@ package com.ampairs.config
 import com.ampairs.auth.repository.DeviceSessionRepository
 import com.ampairs.auth.repository.TokenRepository
 import com.ampairs.auth.service.SessionManagementService
+import com.ampairs.core.security.AdminService
+import com.ampairs.user.model.User
 import org.springframework.core.convert.converter.Converter
 import org.springframework.security.authentication.AbstractAuthenticationToken
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken
@@ -22,12 +24,13 @@ class CustomJwtAuthenticationConverter(
     private val userDetailsService: UserDetailsService,
     private val deviceSessionRepository: DeviceSessionRepository,
     private val sessionManagementService: SessionManagementService,
+    private val adminService: AdminService,
 ) : Converter<Jwt, AbstractAuthenticationToken> {
 
     override fun convert(jwt: Jwt): AbstractAuthenticationToken {
         // Extract roles from JWT claims (our custom claim name is "roles")
         val roles = jwt.getClaimAsStringList("roles") ?: emptyList()
-        val authorities: Collection<GrantedAuthority> = roles.map { role ->
+        var authorities: Collection<GrantedAuthority> = roles.map { role ->
             SimpleGrantedAuthority("ROLE_$role")
         }
 
@@ -35,7 +38,10 @@ class CustomJwtAuthenticationConverter(
         val username = jwt.subject
 
         // Load user details (consider adding caching layer if performance becomes an issue)
-        val userDetails = userDetailsService.loadUserByUsername(username)
+        val userDetails : User = userDetailsService.loadUserByUsername(username) as User
+        if (adminService.isAdmin(userDetails.uid)) {
+            authorities = authorities.plus(SimpleGrantedAuthority("ROLE_SUPER_ADMIN"));
+        }
 
         // Check token revocation status in database (cached lookup)
         val isTokenRevoked = tokenRepository.findByToken(tokenValue)

@@ -36,6 +36,8 @@ allOpen {
 }
 
 dependencies {
+    implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.3.0"))
+
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework:spring-web")
     implementation("org.springframework:spring-webmvc")
@@ -45,6 +47,9 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
+
+    // AWS S3 for presigned URLs (app update downloads)
+    implementation("io.awspring.cloud:spring-cloud-aws-starter-s3")
 
     // Jackson Kotlin support for data class deserialization
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")

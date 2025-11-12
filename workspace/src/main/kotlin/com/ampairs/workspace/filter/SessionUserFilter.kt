@@ -37,7 +37,7 @@ class SessionUserFilter @Autowired constructor(
     ) {
         val requestPath = request.requestURI ?: request.servletPath
 
-        // Skip filter for auth, user, public workspace endpoints, and health checks
+        // Skip filter for auth, user, admin, public workspace endpoints, and health checks
         if (shouldSkipFilter(requestPath)) {
             chain.doFilter(request, response)
             return
@@ -49,6 +49,15 @@ class SessionUserFilter @Autowired constructor(
             if (auth == null) {
                 log.warn("No authenticated user found for workspace access")
                 sendAccessDeniedResponse(response, request.requestURI, "Authentication required")
+                return
+            }
+
+            // Skip workspace check for API key authentication
+            // API keys are workspace-agnostic and have their own scope-based authorization
+            val principal = auth.principal
+            if (principal.toString().startsWith("api-key:")) {
+                log.debug("Skipping workspace check for API key authentication: $principal")
+                chain.doFilter(request, response)
                 return
             }
 
@@ -93,12 +102,20 @@ class SessionUserFilter @Autowired constructor(
     private fun shouldSkipFilter(requestPath: String): Boolean {
         return requestPath.contains("/auth/v1") ||
                 requestPath.contains("/user/v1") ||
+                requestPath.contains("/api/v1/admin") ||
                 isWorkspaceListEndpoint(requestPath) ||
+                isAppUpdatesPublicEndpoint(requestPath) ||
                 requestPath.contains("/actuator/health") ||
                 requestPath.contains("/actuator/info") ||
                 requestPath.contains("/actuator/prometheus") ||
                 requestPath.contains("/swagger") ||
                 requestPath.contains("/api-docs")
+    }
+
+    private fun isAppUpdatesPublicEndpoint(requestPath: String): Boolean {
+        // Public endpoints that don't require workspace context
+        return requestPath == "/api/v1/app-updates/check" ||
+                requestPath.startsWith("/api/v1/app-updates/download/")
     }
 
     private fun isWorkspaceListEndpoint(requestPath: String): Boolean {
@@ -143,7 +160,7 @@ class SessionUserFilter @Autowired constructor(
                         val newAuth = UsernamePasswordAuthenticationToken(
                             authentication.principal,
                             authentication.credentials,
-                            authentication.authorities
+                            authentication.authorities,
                         )
                         newAuth.details = details
                         newAuth

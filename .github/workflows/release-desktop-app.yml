@@ -1,0 +1,212 @@
+name: Release Desktop App
+
+# Trigger on version tags (e.g., v1.0.0.10)
+on:
+  push:
+    tags:
+      - 'v*.*.*.*'
+
+env:
+  # S3 Configuration
+  AWS_REGION: ap-south-1
+  S3_BUCKET: ampairs-app-updates
+  S3_PREFIX: updates
+
+  # API Configuration
+  API_BASE_URL: https://api.ampairs.in
+
+jobs:
+  build-and-release:
+    name: Build and Release - ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            platform: MACOS
+            artifact: '*.dmg'
+            extension: dmg
+          - os: windows-latest
+            platform: WINDOWS
+            artifact: '*.msi'
+            extension: msi
+          - os: ubuntu-latest
+            platform: LINUX
+            artifact: '*.deb'
+            extension: deb
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+          cache: 'gradle'
+
+      - name: Extract version from tag
+        id: version
+        run: |
+          # Extract version from tag (e.g., v1.0.0.10 -> 1.0.0.10)
+          VERSION=${GITHUB_REF#refs/tags/v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          # Extract version code (last number: 1.0.0.10 -> 10)
+          VERSION_CODE=${VERSION##*.}
+          echo "version_code=$VERSION_CODE" >> $GITHUB_OUTPUT
+
+          echo "Building version: $VERSION (code: $VERSION_CODE)"
+        shell: bash
+
+      - name: Build Desktop App
+        run: |
+          chmod +x gradlew
+          ./gradlew :ampairs-app:packageDistribution${{ matrix.platform }}
+        shell: bash
+
+      - name: Find built artifact
+        id: artifact
+        run: |
+          # Find the built artifact
+          ARTIFACT_PATH=$(find ampairs-app/build/compose/binaries/main -name "${{ matrix.artifact }}" -type f | head -n 1)
+
+          if [ -z "$ARTIFACT_PATH" ]; then
+            echo "Error: Could not find artifact matching ${{ matrix.artifact }}"
+            exit 1
+          fi
+
+          echo "artifact_path=$ARTIFACT_PATH" >> $GITHUB_OUTPUT
+          echo "Found artifact: $ARTIFACT_PATH"
+
+          # Generate filename for S3
+          FILENAME="Ampairs-${{ steps.version.outputs.version }}-${{ matrix.platform }}.${{ matrix.extension }}"
+          echo "filename=$FILENAME" >> $GITHUB_OUTPUT
+
+          # Generate S3 key
+          S3_KEY="${{ env.S3_PREFIX }}/${{ matrix.platform }}-${{ steps.version.outputs.version }}.${{ matrix.extension }}"
+          echo "s3_key=$S3_KEY" >> $GITHUB_OUTPUT
+        shell: bash
+
+      - name: Calculate checksum
+        id: checksum
+        run: |
+          # Calculate SHA-256 checksum
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            CHECKSUM=$(shasum -a 256 "${{ steps.artifact.outputs.artifact_path }}" | awk '{print $1}')
+          else
+            CHECKSUM=$(sha256sum "${{ steps.artifact.outputs.artifact_path }}" | awk '{print $1}')
+          fi
+
+          echo "checksum=$CHECKSUM" >> $GITHUB_OUTPUT
+          echo "Checksum: $CHECKSUM"
+        shell: bash
+
+      - name: Get file size
+        id: filesize
+        run: |
+          # Get file size in MB
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            SIZE_BYTES=$(stat -f%z "${{ steps.artifact.outputs.artifact_path }}")
+          else
+            SIZE_BYTES=$(stat -c%s "${{ steps.artifact.outputs.artifact_path }}")
+          fi
+
+          SIZE_MB=$(echo "scale=2; $SIZE_BYTES / 1024 / 1024" | bc)
+          echo "size_mb=$SIZE_MB" >> $GITHUB_OUTPUT
+          echo "File size: $SIZE_MB MB"
+        shell: bash
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload to S3
+        run: |
+          # Upload to private S3 bucket (no --acl public-read)
+          aws s3 cp "${{ steps.artifact.outputs.artifact_path }}" \
+            "s3://${{ env.S3_BUCKET }}/${{ steps.artifact.outputs.s3_key }}" \
+            --region ${{ env.AWS_REGION }} \
+            --metadata "version=${{ steps.version.outputs.version }},platform=${{ matrix.platform }},checksum=${{ steps.checksum.outputs.checksum }}"
+
+          echo "✅ Uploaded to S3: s3://${{ env.S3_BUCKET }}/${{ steps.artifact.outputs.s3_key }}"
+        shell: bash
+
+      - name: Register version in database
+        run: |
+          # Get release notes from tag annotation or use default
+          RELEASE_NOTES=$(git tag -l --format='%(contents)' ${GITHUB_REF#refs/tags/})
+          if [ -z "$RELEASE_NOTES" ]; then
+            RELEASE_NOTES="Release ${{ steps.version.outputs.version }} for ${{ matrix.platform }}"
+          fi
+
+          # Create version entry via API using API Key authentication
+          HTTP_CODE=$(curl -s -o response.json -w "%{http_code}" \
+            -X POST "${{ env.API_BASE_URL }}/api/v1/app-updates" \
+            -H "X-API-Key: ${{ secrets.AMPAIRS_API_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d @- <<EOF
+          {
+            "version": "${{ steps.version.outputs.version }}",
+            "version_code": ${{ steps.version.outputs.version_code }},
+            "platform": "${{ matrix.platform }}",
+            "is_mandatory": false,
+            "s3_key": "${{ steps.artifact.outputs.s3_key }}",
+            "filename": "${{ steps.artifact.outputs.filename }}",
+            "file_size_mb": ${{ steps.filesize.outputs.size_mb }},
+            "checksum": "${{ steps.checksum.outputs.checksum }}",
+            "release_notes": $(echo "$RELEASE_NOTES" | jq -Rs .),
+            "release_date": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+          }
+          EOF
+          )
+
+          if [ "$HTTP_CODE" -eq 200 ] || [ "$HTTP_CODE" -eq 201 ]; then
+            echo "✅ Registered version in database"
+            cat response.json | jq .
+          else
+            echo "❌ Failed to register version (HTTP $HTTP_CODE)"
+            cat response.json
+            exit 1
+          fi
+        shell: bash
+
+      - name: Create GitHub Release Asset
+        uses: softprops/action-gh-release@v1
+        with:
+          files: ${{ steps.artifact.outputs.artifact_path }}
+          body: |
+            ## Release ${{ steps.version.outputs.version }} - ${{ matrix.platform }}
+
+            **Version Code:** ${{ steps.version.outputs.version_code }}
+            **Platform:** ${{ matrix.platform }}
+            **File Size:** ${{ steps.filesize.outputs.size_mb }} MB
+            **SHA-256:** `${{ steps.checksum.outputs.checksum }}`
+
+            ### Download
+            Users will be automatically notified of this update through the in-app update checker.
+
+            ### S3 Location
+            ```
+            s3://${{ env.S3_BUCKET }}/${{ steps.artifact.outputs.s3_key }}
+            ```
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  notify-completion:
+    name: Notify Release Complete
+    needs: build-and-release
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Send notification
+        run: |
+          echo "🎉 Release pipeline completed successfully!"
+          echo "All platforms built and published to S3"
+          echo "Database entries created"
+          echo "Users will receive update notifications"
