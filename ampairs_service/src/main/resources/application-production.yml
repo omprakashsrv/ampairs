@@ -280,6 +280,7 @@ application:
       development-mode: ${OTP_DEV_MODE:true}
       hardcoded-otp: ${OTP_HARDCODED_VALUE:123456}
       allow-hardcoded: ${OTP_ALLOW_HARDCODED:true}
+    admin-user-ids: ${ADMIN_USER_IDS:UID20251106140814442AYOYEOEQU7F2LV}
   security:
     jwt:
       secret-key: ${JWT_SECRET_KEY:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
