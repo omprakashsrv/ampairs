@@ -43,6 +43,14 @@ class SecurityConfiguration @Autowired constructor(
         return ProviderManager(apiKeyAuthenticationProvider)
     }
 
+    /**
+     * API key authentication filter bean.
+     */
+    @Bean
+    fun apiKeyAuthenticationFilter(): ApiKeyAuthenticationFilter {
+        return ApiKeyAuthenticationFilter(apiKeyAuthenticationManager())
+    }
+
     @Bean
     fun jwtDecoder(): JwtDecoder {
         return when (val algorithm = applicationProperties.security.jwt.algorithm) {
@@ -75,7 +83,7 @@ class SecurityConfiguration @Autowired constructor(
             .sessionManagement { session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             // Add API key authentication filter FIRST (before OAuth2 processing)
             .addFilterBefore(
-                ApiKeyAuthenticationFilter(apiKeyAuthenticationManager()),
+                apiKeyAuthenticationFilter(),
                 UsernamePasswordAuthenticationFilter::class.java
             )
             .authorizeHttpRequests { requests ->

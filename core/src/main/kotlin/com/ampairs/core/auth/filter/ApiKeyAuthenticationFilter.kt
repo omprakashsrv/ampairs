@@ -36,11 +36,16 @@ class ApiKeyAuthenticationFilter(
         response: HttpServletResponse,
         filterChain: FilterChain
     ) {
-        // Check for API key in header
+        val requestUri = request.requestURI
         val apiKey = request.getHeader(API_KEY_HEADER)
+
+        logger.info("ApiKeyAuthenticationFilter processing: $requestUri")
+        logger.info("API key header present: ${apiKey != null}, starts with prefix: ${apiKey?.startsWith(API_KEY_PREFIX)}")
 
         if (apiKey != null && apiKey.startsWith(API_KEY_PREFIX)) {
             try {
+                logger.info("Attempting API key authentication for: $requestUri")
+
                 // Create unauthenticated token
                 val authRequest = ApiKeyAuthenticationToken(apiKey)
 
@@ -50,14 +55,16 @@ class ApiKeyAuthenticationFilter(
                 // Set authenticated token in SecurityContext
                 SecurityContextHolder.getContext().authentication = authResult
 
-                logger.debug("API key authentication successful")
+                logger.info("API key authentication successful for: $requestUri")
 
             } catch (e: Exception) {
-                logger.warn("API key authentication failed: ${e.message}")
+                logger.error("API key authentication failed for $requestUri: ${e.message}", e)
                 // Clear any existing authentication
                 SecurityContextHolder.clearContext()
                 // Don't throw - let Spring Security handle 401/403
             }
+        } else {
+            logger.info("No valid API key provided for: $requestUri")
         }
 
         // Continue filter chain
@@ -65,7 +72,13 @@ class ApiKeyAuthenticationFilter(
     }
 
     override fun shouldNotFilter(request: HttpServletRequest): Boolean {
-        // Skip filter if no API key header present
-        return request.getHeader(API_KEY_HEADER) == null
+        val apiKeyHeader = request.getHeader(API_KEY_HEADER)
+        val shouldSkip = apiKeyHeader == null
+
+        if (shouldSkip) {
+            logger.info("ApiKeyAuthenticationFilter SKIPPED for ${request.requestURI} - no X-API-Key header")
+        }
+
+        return shouldSkip
     }
 }
