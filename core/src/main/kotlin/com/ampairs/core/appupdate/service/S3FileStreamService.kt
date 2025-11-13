@@ -51,6 +51,31 @@ class S3FileStreamService(
     }
 
     /**
+     * Check if a file exists in S3.
+     *
+     * @param s3Key S3 object key
+     * @return true if file exists, false otherwise
+     */
+    fun fileExists(s3Key: String): Boolean {
+        return try {
+            val headObjectRequest = software.amazon.awssdk.services.s3.model.HeadObjectRequest.builder()
+                .bucket(bucket)
+                .key(s3Key)
+                .build()
+
+            s3Client.headObject(headObjectRequest)
+            logger.debug("File exists in S3: bucket=$bucket, key=$s3Key")
+            true
+        } catch (e: NoSuchKeyException) {
+            logger.warn("File does not exist in S3: bucket=$bucket, key=$s3Key")
+            false
+        } catch (e: Exception) {
+            logger.error("Error checking file existence in S3: bucket=$bucket, key=$s3Key", e)
+            false
+        }
+    }
+
+    /**
      * Get file metadata without downloading.
      *
      * @param s3Key S3 object key

@@ -240,9 +240,7 @@ ampairs:
   # App Update Configuration (Desktop apps: macOS, Windows, Linux)
   app-updates:
     storage:
-      bucket: ${APP_UPDATES_BUCKET:ampairs-app-updates}
-      base-url: ${APP_UPDATES_BASE_URL:https://ampairs-app-updates.s3.ap-south-1.amazonaws.com}
-      folder: updates  # S3 prefix for app binaries
+      bucket: ${APP_UPDATES_BUCKET:ampairs-artifacts}
     # File size limits for desktop app binaries (larger than regular uploads)
     max-file-size: 500MB
   aws:
