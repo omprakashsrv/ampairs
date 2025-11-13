@@ -56,6 +56,9 @@ data class CreateAppVersionRequest(
 
 /**
  * Response DTO for admin listing.
+ *
+ * SECURITY: s3_key is NOT exposed - it's internal infrastructure information.
+ * Clients use uid to download files via /api/v1/app-updates/download/{uid}.
  */
 data class AppVersionResponse(
     val uid: String,
@@ -64,7 +67,6 @@ data class AppVersionResponse(
     val platform: String,
     val isMandatory: Boolean,
     val isActive: Boolean,
-    val s3Key: String,
     val filename: String,
     val fileSizeMb: BigDecimal?,
     val releaseDate: Instant?,
@@ -77,6 +79,8 @@ data class AppVersionResponse(
 /**
  * Extension function to convert entity to response DTO.
  * Follows DTO pattern from CLAUDE.md - never expose entities directly.
+ *
+ * SECURITY: s3Key is kept internal - not exposed in API responses.
  */
 fun AppVersion.asAppVersionResponse(): AppVersionResponse = AppVersionResponse(
     uid = this.uid,
@@ -85,7 +89,6 @@ fun AppVersion.asAppVersionResponse(): AppVersionResponse = AppVersionResponse(
     platform = this.platform.name,
     isMandatory = this.isMandatory,
     isActive = this.isActive,
-    s3Key = this.s3Key,
     filename = this.filename,
     fileSizeMb = this.fileSizeMb,
     releaseDate = this.releaseDate,
