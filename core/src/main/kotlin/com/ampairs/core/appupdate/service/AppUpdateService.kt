@@ -9,7 +9,8 @@ import java.math.BigDecimal
 
 @Service
 class AppUpdateService(
-    private val appVersionRepository: AppVersionRepository
+    private val appVersionRepository: AppVersionRepository,
+    private val s3FileStreamService: S3FileStreamService
 ) {
     private val logger = LoggerFactory.getLogger(javaClass)
 
@@ -86,6 +87,9 @@ class AppUpdateService(
 
     /**
      * Create a new app version (Admin only).
+     *
+     * IMPORTANT: Validates that the S3 file exists before creating the database entry.
+     * This prevents creating version records that point to non-existent files.
      */
     @Transactional
     fun createAppVersion(request: CreateAppVersionRequest, createdBy: String?): AppVersion {
@@ -95,6 +99,17 @@ class AppUpdateService(
         if (appVersionRepository.existsByVersionAndPlatform(request.version, request.platform)) {
             throw IllegalArgumentException("Version ${request.version} already exists for platform ${request.platform}")
         }
+
+        // Validate that S3 file exists before creating database entry
+        if (!s3FileStreamService.fileExists(request.s3Key)) {
+            logger.error("S3 file not found: ${request.s3Key}")
+            throw IllegalArgumentException(
+                "S3 file not found: ${request.s3Key}. " +
+                "Please upload the file to S3 before creating the version entry."
+            )
+        }
+
+        logger.info("S3 file validated: ${request.s3Key}")
 
         val entity = AppVersion().apply {
             version = request.version
@@ -157,10 +172,21 @@ class AppUpdateService(
 
     /**
      * Update app version (Admin only).
+     *
+     * IMPORTANT: Validates that the S3 file exists before updating.
      */
     @Transactional
     fun updateAppVersion(uid: String, request: CreateAppVersionRequest, updatedBy: String?): AppVersion {
         val entity = getVersionByUid(uid)
+
+        // Validate that S3 file exists if s3Key is being changed
+        if (entity.s3Key != request.s3Key && !s3FileStreamService.fileExists(request.s3Key)) {
+            logger.error("S3 file not found: ${request.s3Key}")
+            throw IllegalArgumentException(
+                "S3 file not found: ${request.s3Key}. " +
+                "Please upload the file to S3 before updating the version entry."
+            )
+        }
 
         entity.apply {
             version = request.version
