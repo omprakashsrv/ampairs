@@ -2,6 +2,9 @@ package com.ampairs.customer.domain.dto
 
 import com.ampairs.core.domain.model.Address
 import com.ampairs.customer.domain.model.Customer
+import jakarta.validation.constraints.DecimalMin
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotNull
 import java.time.Instant
 
 data class CustomerResponse(
@@ -75,4 +78,33 @@ fun Customer.asCustomerResponse(): CustomerResponse {
         updatedAt = this.updatedAt,
     )
 }
+
+/**
+ * Request DTO for GST number validation
+ */
+data class GstValidationRequest(
+    @field:NotBlank(message = "GST number is required")
+    val gstNumber: String
+)
+
+/**
+ * Response DTO for GST number validation
+ */
+data class GstValidationResponse(
+    val gstNumber: String,
+    val isValid: Boolean,
+    val message: String
+)
+
+/**
+ * Request DTO for updating customer outstanding amount
+ */
+data class UpdateOutstandingRequest(
+    @field:NotNull(message = "Amount is required")
+    @field:DecimalMin(value = "0.0", message = "Amount must be non-negative")
+    val amount: Double,
+
+    @field:NotNull(message = "Payment flag is required")
+    val isPayment: Boolean
+)
 
