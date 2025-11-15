@@ -9,6 +9,10 @@ import org.hibernate.type.SqlTypes
 import org.locationtech.jts.geom.Point
 
 @Entity(name = "customer")
+@NamedEntityGraph(
+    name = "Customer.withImages",
+    attributeNodes = [NamedAttributeNode("images")]
+)
 class Customer : OwnableBaseDomain() {
 
     @Column(name = "country_code", nullable = false)
