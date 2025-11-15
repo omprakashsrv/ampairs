@@ -7,11 +7,9 @@ import com.ampairs.file.domain.service.FileService
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.product.domain.model.Product
 import com.ampairs.product.domain.dto.group.*
-import com.ampairs.product.domain.dto.product.ProductRequest
-import com.ampairs.product.domain.dto.product.ProductResponse
-import com.ampairs.product.domain.dto.product.asDatabaseModel
-import com.ampairs.product.domain.dto.product.asResponse
+import com.ampairs.product.domain.dto.product.*
 import com.ampairs.product.service.ProductService
+import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.http.HttpStatus
@@ -213,11 +211,18 @@ class ProductController(
     @PutMapping("/{productId}/inventory")
     fun updateProductInventory(
         @PathVariable productId: String,
-        @RequestBody request: Map<String, Any>
-    ): ApiResponse<String> {
+        @RequestBody @Valid request: UpdateInventoryRequest
+    ): ApiResponse<UpdateInventoryResponse> {
         // This would integrate with inventory management
         // For now, return success response
-        return ApiResponse.success("Inventory updated successfully")
+        val response = UpdateInventoryResponse(
+            productId = productId,
+            quantity = request.quantity,
+            warehouseId = request.warehouseId,
+            message = "Inventory updated successfully",
+            updatedAt = Instant.now()
+        )
+        return ApiResponse.success(response)
     }
 
     @GetMapping("/sku/{sku}")

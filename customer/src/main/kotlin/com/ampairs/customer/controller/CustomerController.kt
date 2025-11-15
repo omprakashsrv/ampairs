@@ -141,14 +141,12 @@ class CustomerController @Autowired constructor(
     }
 
     @PostMapping("/validate-gst")
-    fun validateGstNumber(@RequestBody request: Map<String, String>): ApiResponse<Map<String, Any>> {
-        val gstNumber = request["gst_number"] ?: return ApiResponse.error("GST number is required", "VALIDATION_ERROR")
-
-        val isValid = customerService.validateGstNumber(gstNumber)
-        val response = mapOf(
-            "gst_number" to gstNumber,
-            "is_valid" to isValid,
-            "message" to if (isValid) "Valid GST number" else "Invalid GST number format"
+    fun validateGstNumber(@RequestBody @Valid request: GstValidationRequest): ApiResponse<GstValidationResponse> {
+        val isValid = customerService.validateGstNumber(request.gstNumber)
+        val response = GstValidationResponse(
+            gstNumber = request.gstNumber,
+            isValid = isValid,
+            message = if (isValid) "Valid GST number" else "Invalid GST number format"
         )
 
         return ApiResponse.success(response)
@@ -157,13 +155,9 @@ class CustomerController @Autowired constructor(
     @PutMapping("/{customerId}/outstanding")
     fun updateOutstanding(
         @PathVariable customerId: String,
-        @RequestBody request: Map<String, Any>
+        @RequestBody @Valid request: UpdateOutstandingRequest
     ): ApiResponse<CustomerResponse> {
-        val amount = (request["amount"] as? Number)?.toDouble()
-            ?: return ApiResponse.error("Amount is required", "VALIDATION_ERROR")
-        val isPayment = request["is_payment"] as? Boolean ?: false
-
-        val updatedCustomer = customerService.updateOutstanding(customerId, amount, isPayment)
+        val updatedCustomer = customerService.updateOutstanding(customerId, request.amount, request.isPayment)
             ?: return ApiResponse.error("Customer not found", "CUSTOMER_NOT_FOUND")
 
         return ApiResponse.success(updatedCustomer.asCustomerResponse())

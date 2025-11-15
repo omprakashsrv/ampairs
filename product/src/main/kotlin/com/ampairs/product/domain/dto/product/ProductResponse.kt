@@ -9,6 +9,9 @@ import com.ampairs.unit.domain.dto.UnitResponse
 import com.ampairs.unit.domain.dto.asUnitConversionResponses
 import com.ampairs.unit.domain.dto.asUnitResponse
 import com.ampairs.product.domain.model.Product
+import jakarta.validation.constraints.DecimalMin
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotNull
 import java.time.Instant
 
 data class ProductResponse(
@@ -111,3 +114,26 @@ fun Product.asResponse(): ProductResponse {
         inventory = if (inventory.size > 0) inventory[0].asResponse() else null
     )
 }
+
+/**
+ * Request DTO for updating product inventory
+ */
+data class UpdateInventoryRequest(
+    @field:NotNull(message = "Quantity is required")
+    @field:DecimalMin(value = "0.0", message = "Quantity must be non-negative")
+    val quantity: Double,
+
+    val warehouseId: String? = null,
+    val notes: String? = null
+)
+
+/**
+ * Response DTO for inventory update operation
+ */
+data class UpdateInventoryResponse(
+    val productId: String,
+    val quantity: Double,
+    val warehouseId: String?,
+    val message: String,
+    val updatedAt: Instant
+)

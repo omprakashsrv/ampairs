@@ -50,29 +50,43 @@ class ProductService(
     fun getProducts(updatedAt: Instant?): List<Product> {
         return productPagingRepository.findAllByUpdatedAtGreaterThanEqual(
             updatedAt ?: Instant.MIN,
-            PageRequest.of(0, 1000, Sort.by("lastUpdated").ascending())
+            PageRequest.of(0, 1000, Sort.by("updatedAt").ascending())
         )
     }
 
     @Transactional
     fun updateProducts(products: List<Product>): List<Product> {
+        // Batch fetch existing products by UID
+        val uids = products.filter { it.uid.isNotEmpty() }.map { it.uid }
+        val byUid = if (uids.isNotEmpty())
+            productRepository.findAllByUidIn(uids).associateBy { it.uid }
+        else emptyMap()
+
+        // Batch fetch existing products by refId
+        val refIds = products.filter { it.refId?.isNotEmpty() == true }.mapNotNull { it.refId }
+        val byRefId = if (refIds.isNotEmpty())
+            productRepository.findAllByRefIdIn(refIds).associateBy { it.refId }
+        else emptyMap()
+
+        // Process each product with pre-fetched data
         products.forEach {
             it.unitId?.takeIf { unitId -> unitId.isNotBlank() }?.let { unitId ->
                 unitService.findByUid(unitId)
                     ?: throw IllegalArgumentException("Unit not found for id: $unitId")
             }
             if (it.uid.isNotEmpty()) {
-                val group = productRepository.findByUid(it.uid)
-                it.id = group?.id ?: 0
-                it.refId = group?.refId ?: ""
+                val existing = byUid[it.uid]
+                it.id = existing?.id ?: 0
+                it.refId = existing?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
-                val group = productRepository.findByRefId(it.refId)
-                it.id = group?.id ?: 0
-                it.uid = group?.uid ?: ""
+                val existing = byRefId[it.refId]
+                it.id = existing?.id ?: 0
+                it.uid = existing?.uid ?: ""
             }
-            productRepository.save(it)
         }
-        return products
+
+        // Batch save all products
+        return productRepository.saveAll(products).toList()
     }
 
 
