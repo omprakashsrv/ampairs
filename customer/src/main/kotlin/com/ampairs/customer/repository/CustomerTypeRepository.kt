@@ -37,4 +37,16 @@ interface CustomerTypeRepository : JpaRepository<CustomerType, String>, JpaSpeci
      * Note: @TenantId automatically filters by current workspace
      */
     fun existsByTypeCode(typeCode: String): Boolean
+
+    /**
+     * Find customer type by UID
+     * Note: UID uniqueness is global (not workspace-specific)
+     */
+    fun findByUid(uid: String): CustomerType?
+
+    /**
+     * Check if UID exists
+     * Note: UID uniqueness is global (not workspace-specific)
+     */
+    fun existsByUid(uid: String): Boolean
 }

@@ -75,8 +75,22 @@ class CustomerTypeService(
 
     /**
      * Create new customer type in current workspace
+     *
+     * @throws IllegalArgumentException if UID already exists or typeCode is duplicate
      */
     fun createCustomerType(customerType: CustomerType): CustomerType {
+        // Validate UID uniqueness if client provided one
+        if (customerType.uid.isNotEmpty() && customerTypeRepository.existsByUid(customerType.uid)) {
+            logger.error("Attempted to create customer type with duplicate UID: ${customerType.uid}")
+            throw IllegalArgumentException("Customer type with UID '${customerType.uid}' already exists")
+        }
+
+        // Validate typeCode uniqueness within workspace
+        if (customerTypeRepository.existsByTypeCode(customerType.typeCode)) {
+            logger.error("Attempted to create customer type with duplicate code: ${customerType.typeCode}")
+            throw IllegalArgumentException("Customer type with code '${customerType.typeCode}' already exists in this workspace")
+        }
+
         return customerTypeRepository.save(customerType)
     }
 

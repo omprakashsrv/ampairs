@@ -5,6 +5,16 @@ import com.ampairs.customer.domain.model.CustomerType
 import jakarta.validation.constraints.*
 
 data class CustomerTypeCreateRequest(
+    /**
+     * Optional client-provided UID. If null, auto-generated with "CT" prefix.
+     * Must be unique across all customer types in the workspace.
+     * Format: alphanumeric with optional underscores, max 200 chars.
+     */
+    @field:SafeString(maxLength = 200, message = "UID contains invalid characters")
+    @field:Size(min = 2, max = 200, message = "UID must be between 2 and 200 characters")
+    @field:Pattern(regexp = "^[A-Za-z0-9_]+$", message = "UID must contain only letters, numbers and underscores")
+    val uid: String? = null,
+
     @field:NotBlank(message = "Type code is required")
     @field:SafeString(maxLength = 20, message = "Type code contains invalid characters")
     @field:Size(min = 2, max = 20, message = "Type code must be between 2 and 20 characters")
@@ -59,6 +69,8 @@ data class CustomerTypeUpdateRequest(
 
 fun CustomerTypeCreateRequest.toCustomerType(): CustomerType {
     return CustomerType().apply {
+        // Set client-provided UID if present, otherwise auto-generated in @PrePersist
+        this@toCustomerType.uid?.let { uid = it }
         typeCode = this@toCustomerType.typeCode.uppercase()
         name = this@toCustomerType.name
         description = this@toCustomerType.description
