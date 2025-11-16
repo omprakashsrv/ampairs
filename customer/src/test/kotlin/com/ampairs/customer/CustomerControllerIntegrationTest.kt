@@ -303,7 +303,7 @@ class CustomerControllerIntegrationTest {
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
-            .andExpect(jsonPath("$.error.message").value("Validation failed"))
+            .andExpect(jsonPath("$.error.message").value("Invalid input data"))
             .andExpect(jsonPath("$.error.validation_errors.gstNumber").value("GST number is required"))
 
         verify(customerService, never()).validateGstNumber(any())
