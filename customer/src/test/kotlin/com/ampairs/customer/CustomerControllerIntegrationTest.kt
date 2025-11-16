@@ -299,6 +299,7 @@ class CustomerControllerIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{}""")
         )
+            .andDo { result -> println("Response: ${result.response.contentAsString}") }
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
