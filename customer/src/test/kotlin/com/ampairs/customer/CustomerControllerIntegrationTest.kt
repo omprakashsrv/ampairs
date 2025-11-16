@@ -299,10 +299,11 @@ class CustomerControllerIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{}""")
         )
-            .andExpect(status().isOk)
+            .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.success").value(false))
-            .andExpect(jsonPath("$.error.code").value("GST number is required"))
-            .andExpect(jsonPath("$.error.message").value("VALIDATION_ERROR"))
+            .andExpect(jsonPath("$.error.code").value("VALIDATION_ERROR"))
+            .andExpect(jsonPath("$.error.message").value("Validation failed"))
+            .andExpect(jsonPath("$.error.validation_errors.gst_number").value("GST number is required"))
 
         verify(customerService, never()).validateGstNumber(any())
     }
