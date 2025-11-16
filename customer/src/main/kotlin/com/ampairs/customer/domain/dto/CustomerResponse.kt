@@ -84,7 +84,7 @@ fun Customer.asCustomerResponse(): CustomerResponse {
  */
 data class GstValidationRequest(
     @field:NotBlank(message = "GST number is required")
-    val gstNumber: String
+    val gstNumber: String = ""
 )
 
 /**
