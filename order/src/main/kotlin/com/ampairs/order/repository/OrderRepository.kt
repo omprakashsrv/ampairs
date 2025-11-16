@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.PagingAndSortingRepository
 import org.springframework.stereotype.Repository
-import java.time.LocalDateTime
+import java.time.Instant
 import java.util.*
 
 @Repository
@@ -29,7 +29,7 @@ interface OrderRepository : CrudRepository<Order, Long>, PagingAndSortingReposit
     fun findByCustomerIdAndStatusIn(customerId: String, statuses: List<OrderStatus>, pageable: Pageable): Page<Order>
 
     @Query("SELECT o FROM customer_order o WHERE o.status = :status AND o.orderDate BETWEEN :startDate AND :endDate")
-    fun findByStatusAndDateRange(status: OrderStatus, startDate: Date, endDate: Date, pageable: Pageable): Page<Order>
+    fun findByStatusAndDateRange(status: OrderStatus, startDate: Instant, endDate: Instant, pageable: Pageable): Page<Order>
 
     @Query("SELECT o FROM customer_order o WHERE o.orderNumber LIKE %:searchTerm% OR o.customerName LIKE %:searchTerm% OR o.customerPhone LIKE %:searchTerm%")
     fun searchOrders(searchTerm: String, pageable: Pageable): Page<Order>
@@ -41,7 +41,7 @@ interface OrderRepository : CrudRepository<Order, Long>, PagingAndSortingReposit
     fun findByTotalAmountRangeAndStatus(minAmount: Double, maxAmount: Double, status: OrderStatus, pageable: Pageable): Page<Order>
 
     @Query("SELECT o FROM customer_order o WHERE o.deliveryDate IS NOT NULL AND o.deliveryDate BETWEEN :startDate AND :endDate")
-    fun findByDeliveryDateRange(startDate: LocalDateTime, endDate: LocalDateTime, pageable: Pageable): Page<Order>
+    fun findByDeliveryDateRange(startDate: Instant, endDate: Instant, pageable: Pageable): Page<Order>
 
     @Query("SELECT COUNT(o) FROM customer_order o WHERE o.customerId = :customerId")
     fun countByCustomerId(customerId: String): Long

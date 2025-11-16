@@ -9,8 +9,7 @@ import com.ampairs.order.domain.enums.OrderStatus
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
-import java.time.LocalDateTime
-import java.util.*
+import java.time.Instant
 
 
 @Entity(name = "customer_order")
@@ -46,12 +45,11 @@ class Order : OwnableBaseDomain() {
     @Column(name = "invoice_ref_id", nullable = true, length = 255)
     var invoiceRefId: String? = null
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "order_date", nullable = false)
-    var orderDate: Date = Date()
+    var orderDate: Instant = Instant.now()
 
     @Column(name = "delivery_date")
-    var deliveryDate: LocalDateTime? = null
+    var deliveryDate: Instant? = null
 
     @Column(name = "from_customer_id", nullable = false, length = 255)
     var fromCustomerId: String = ""
