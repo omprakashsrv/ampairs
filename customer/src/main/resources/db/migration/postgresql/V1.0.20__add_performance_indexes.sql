@@ -14,12 +14,5 @@ CREATE INDEX IF NOT EXISTS idx_customer_group ON customer(customer_group);
 CREATE INDEX IF NOT EXISTS idx_customer_city ON customer(city);
 CREATE INDEX IF NOT EXISTS idx_customer_state ON customer(state);
 
--- Customer images table indexes
-CREATE INDEX IF NOT EXISTS idx_customer_image_customer_uid ON customer_image(customer_uid);
+-- Customer images table indexes (only add if not already exists)
 CREATE INDEX IF NOT EXISTS idx_customer_image_display_order ON customer_image(display_order);
-
--- Customer types table indexes
-CREATE INDEX IF NOT EXISTS idx_customer_type_name ON customer_type(name);
-
--- Customer groups table indexes
-CREATE INDEX IF NOT EXISTS idx_customer_group_name ON customer_group(name);

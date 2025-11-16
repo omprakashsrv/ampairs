@@ -22,10 +22,9 @@ CREATE INDEX IF NOT EXISTS idx_product_group_updated_at ON product_group(updated
 
 -- Product category table indexes
 CREATE INDEX IF NOT EXISTS idx_product_category_name ON product_category(name);
-CREATE INDEX IF NOT EXISTS idx_product_category_parent_id ON product_category(parent_id);
 
 -- Product brand table indexes
 CREATE INDEX IF NOT EXISTS idx_product_brand_name ON product_brand(name);
 
 -- Product images table indexes
-CREATE INDEX IF NOT EXISTS idx_product_image_product_uid ON product_image(product_uid);
+CREATE INDEX IF NOT EXISTS idx_product_image_product_id ON product_image(product_id);
