@@ -5,6 +5,16 @@ import com.ampairs.customer.domain.model.CustomerGroup
 import jakarta.validation.constraints.*
 
 data class CustomerGroupCreateRequest(
+    /**
+     * Optional client-provided UID. If null, auto-generated with "CG" prefix.
+     * Must be unique across all customer groups in the workspace.
+     * Format: alphanumeric with optional underscores, max 200 chars.
+     */
+    @field:SafeString(maxLength = 200, message = "UID contains invalid characters")
+    @field:Size(min = 2, max = 200, message = "UID must be between 2 and 200 characters")
+    @field:Pattern(regexp = "^[A-Za-z0-9_]+$", message = "UID must contain only letters, numbers and underscores")
+    val uid: String? = null,
+
     @field:NotBlank(message = "Group code is required")
     @field:SafeString(maxLength = 20, message = "Group code contains invalid characters")
     @field:Size(min = 2, max = 20, message = "Group code must be between 2 and 20 characters")
@@ -61,6 +71,8 @@ data class CustomerGroupUpdateRequest(
 
 fun CustomerGroupCreateRequest.toCustomerGroup(): CustomerGroup {
     return CustomerGroup().apply {
+        // Set client-provided UID if present, otherwise auto-generated in @PrePersist
+        this@toCustomerGroup.uid?.let { uid = it }
         groupCode = this@toCustomerGroup.groupCode.uppercase()
         name = this@toCustomerGroup.name
         description = this@toCustomerGroup.description
