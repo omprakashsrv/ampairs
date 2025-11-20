@@ -102,6 +102,7 @@ class SessionUserFilter @Autowired constructor(
     private fun shouldSkipFilter(requestPath: String): Boolean {
         return requestPath.contains("/auth/v1") ||
                 requestPath.contains("/user/v1") ||
+                requestPath.contains("/api/v1/account") ||  // User-level account operations (delete, etc.)
                 requestPath.contains("/api/v1/admin") ||
                 isWorkspaceListEndpoint(requestPath) ||
                 isAppUpdatesPublicEndpoint(requestPath) ||
