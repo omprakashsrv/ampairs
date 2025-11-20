@@ -37,4 +37,16 @@ interface CustomerGroupRepository : JpaRepository<CustomerGroup, String>, JpaSpe
      * Note: @TenantId automatically filters by current workspace
      */
     fun existsByGroupCode(groupCode: String): Boolean
+
+    /**
+     * Find customer group by UID
+     * Note: UID uniqueness is global (not workspace-specific)
+     */
+    fun findByUid(uid: String): CustomerGroup?
+
+    /**
+     * Check if UID exists
+     * Note: UID uniqueness is global (not workspace-specific)
+     */
+    fun existsByUid(uid: String): Boolean
 }

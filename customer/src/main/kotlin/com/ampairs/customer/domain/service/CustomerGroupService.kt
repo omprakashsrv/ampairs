@@ -84,8 +84,22 @@ class CustomerGroupService(
 
     /**
      * Create new customer group in current workspace
+     *
+     * @throws IllegalArgumentException if UID already exists or groupCode is duplicate
      */
     fun createCustomerGroup(customerGroup: CustomerGroup): CustomerGroup {
+        // Validate UID uniqueness if client provided one
+        if (customerGroup.uid.isNotEmpty() && customerGroupRepository.existsByUid(customerGroup.uid)) {
+            logger.error("Attempted to create customer group with duplicate UID: ${customerGroup.uid}")
+            throw IllegalArgumentException("Customer group with UID '${customerGroup.uid}' already exists")
+        }
+
+        // Validate groupCode uniqueness within workspace
+        if (customerGroupRepository.existsByGroupCode(customerGroup.groupCode)) {
+            logger.error("Attempted to create customer group with duplicate code: ${customerGroup.groupCode}")
+            throw IllegalArgumentException("Customer group with code '${customerGroup.groupCode}' already exists in this workspace")
+        }
+
         return customerGroupRepository.save(customerGroup)
     }
 

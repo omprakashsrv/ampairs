@@ -72,6 +72,18 @@ class FirebaseAuthService {
             return null
         }
 
+        // Pre-validate JWT format to provide better error messages
+        if (idToken.isBlank()) {
+            logger.error("Firebase ID token is blank or empty")
+            return null
+        }
+
+        val parts = idToken.split(".")
+        if (parts.size != 3) {
+            logger.error("Firebase ID token is not a valid JWT format. Expected 3 parts separated by '.', got ${parts.size} parts. Token length: ${idToken.length}")
+            return null
+        }
+
         return try {
             val decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken)
             logger.info("Firebase token verified successfully for UID: ${decodedToken.uid}")
