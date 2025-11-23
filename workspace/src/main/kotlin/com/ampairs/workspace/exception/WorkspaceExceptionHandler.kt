@@ -3,6 +3,8 @@ package com.ampairs.workspace.exception
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.ErrorCodes
 import com.ampairs.core.exception.BaseExceptionHandler
+import com.ampairs.workspace.service.WorkspaceAvatarNotFoundException
+import com.ampairs.workspace.service.WorkspaceAvatarValidationException
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.core.Ordered
 import org.springframework.core.annotation.Order
@@ -145,6 +147,36 @@ class WorkspaceExceptionHandler : BaseExceptionHandler() {
             errorCode = ErrorCodes.INVALID_TENANT_CONTEXT,
             message = "Invalid tenant context",
             details = ex.message ?: "The tenant context is invalid or missing",
+            request = request,
+            moduleName = "workspace"
+        )
+    }
+
+    @ExceptionHandler(WorkspaceAvatarValidationException::class)
+    fun handleWorkspaceAvatarValidationException(
+        ex: WorkspaceAvatarValidationException,
+        request: HttpServletRequest,
+    ): ResponseEntity<ApiResponse<Any>> {
+        return createErrorResponse(
+            httpStatus = HttpStatus.BAD_REQUEST,
+            errorCode = ErrorCodes.VALIDATION_ERROR,
+            message = "Avatar validation failed",
+            details = ex.message ?: "Invalid avatar image",
+            request = request,
+            moduleName = "workspace"
+        )
+    }
+
+    @ExceptionHandler(WorkspaceAvatarNotFoundException::class)
+    fun handleWorkspaceAvatarNotFoundException(
+        ex: WorkspaceAvatarNotFoundException,
+        request: HttpServletRequest,
+    ): ResponseEntity<ApiResponse<Any>> {
+        return createErrorResponse(
+            httpStatus = HttpStatus.NOT_FOUND,
+            errorCode = ErrorCodes.NOT_FOUND,
+            message = "Avatar not found",
+            details = ex.message ?: "Workspace avatar not found",
             request = request,
             moduleName = "workspace"
         )

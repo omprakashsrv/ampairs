@@ -227,13 +227,29 @@ class AuthService @Autowired constructor(
     }
 
     private fun createOrUpdateDeviceSession(user: User, deviceInfo: DeviceInfoExtractor.DeviceInfo): DeviceSession {
-        val existingSession = deviceSessionRepository.findByUserIdAndDeviceIdAndIsActiveTrue(
+        // Use list query to handle potential race condition duplicates
+        val existingSessions = deviceSessionRepository.findAllByUserIdAndDeviceIdAndIsActiveTrue(
             user.uid, deviceInfo.deviceId
         )
 
-        return if (existingSession.isPresent) {
+        return if (existingSessions.isNotEmpty()) {
+            // Handle potential duplicate sessions from race conditions
+            val session = existingSessions.first()
+
+            // Deactivate any duplicate sessions (keep only the first/most recent)
+            if (existingSessions.size > 1) {
+                logger.warn(
+                    "Found {} duplicate active sessions for user {} device {}, cleaning up",
+                    existingSessions.size, user.uid, deviceInfo.deviceId
+                )
+                existingSessions.drop(1).forEach { duplicate ->
+                    duplicate.isActive = false
+                    duplicate.expiredAt = LocalDateTime.now()
+                    deviceSessionRepository.save(duplicate)
+                }
+            }
+
             // Update existing session
-            val session = existingSession.get()
             session.deviceName = deviceInfo.deviceName
             session.deviceType = deviceInfo.deviceType
             session.platform = deviceInfo.platform
@@ -343,8 +359,25 @@ class AuthService @Autowired constructor(
 
         // Verify refresh token is valid and belongs to the device
         if (jwtService.isTokenValid(refreshToken, user)) {
-            val deviceSession = deviceSessionRepository.findByUserIdAndDeviceIdAndIsActiveTrue(user.uid, deviceId)
-                .orElseThrow { Exception("Device session not found or inactive") }
+            // Use list query to handle potential race condition duplicates
+            val sessions = deviceSessionRepository.findAllByUserIdAndDeviceIdAndIsActiveTrue(user.uid, deviceId)
+            if (sessions.isEmpty()) {
+                throw Exception("Device session not found or inactive")
+            }
+            val deviceSession = sessions.first()
+
+            // Clean up any duplicate sessions
+            if (sessions.size > 1) {
+                logger.warn(
+                    "Found {} duplicate active sessions for user {} device {} during token refresh, cleaning up",
+                    sessions.size, user.uid, deviceId
+                )
+                sessions.drop(1).forEach { duplicate ->
+                    duplicate.isActive = false
+                    duplicate.expiredAt = LocalDateTime.now()
+                    deviceSessionRepository.save(duplicate)
+                }
+            }
 
             // Validate session hasn't expired due to timeout rules
             if (!sessionManagementService.validateAndExpireIfNeeded(deviceSession)) {

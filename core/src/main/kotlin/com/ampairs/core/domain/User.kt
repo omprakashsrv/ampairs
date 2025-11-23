@@ -37,10 +37,16 @@ interface User {
     val isActive: Boolean
     
     /**
-     * Profile picture URL
+     * Profile picture URL (full size, max 512x512)
      */
     val profilePictureUrl: String?
-    
+
+    /**
+     * Profile picture thumbnail URL (256x256)
+     */
+    val profilePictureThumbnailUrl: String?
+        get() = null // Default implementation for backward compatibility
+
     /**
      * Get display name for the user
      */

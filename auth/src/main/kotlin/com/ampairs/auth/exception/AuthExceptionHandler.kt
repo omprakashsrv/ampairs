@@ -4,6 +4,8 @@ import com.ampairs.auth.service.JwtTokenGenerationException
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.ErrorCodes
 import com.ampairs.core.exception.BaseExceptionHandler
+import com.ampairs.user.service.ProfilePictureNotFoundException
+import com.ampairs.user.service.ProfilePictureValidationException
 import io.jsonwebtoken.*
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.core.Ordered
@@ -231,6 +233,36 @@ class AuthExceptionHandler : BaseExceptionHandler() {
             details = ex.message ?: "Security verification token is required",
             request = request,
             moduleName = "auth"
+        )
+    }
+
+    @ExceptionHandler(ProfilePictureValidationException::class)
+    fun handleProfilePictureValidationException(
+        ex: ProfilePictureValidationException,
+        request: HttpServletRequest,
+    ): ResponseEntity<ApiResponse<Any>> {
+        return createErrorResponse(
+            httpStatus = HttpStatus.BAD_REQUEST,
+            errorCode = ErrorCodes.VALIDATION_ERROR,
+            message = "Profile picture validation failed",
+            details = ex.message ?: "Invalid profile picture",
+            request = request,
+            moduleName = "user"
+        )
+    }
+
+    @ExceptionHandler(ProfilePictureNotFoundException::class)
+    fun handleProfilePictureNotFoundException(
+        ex: ProfilePictureNotFoundException,
+        request: HttpServletRequest,
+    ): ResponseEntity<ApiResponse<Any>> {
+        return createErrorResponse(
+            httpStatus = HttpStatus.NOT_FOUND,
+            errorCode = ErrorCodes.NOT_FOUND,
+            message = "Profile picture not found",
+            details = ex.message ?: "Profile picture not found",
+            request = request,
+            moduleName = "user"
         )
     }
 }

@@ -43,6 +43,15 @@ class User : BaseDomain(), UserDetails, CoreUser {
     @Column(name = "firebase_uid", length = 128)
     var firebaseUid: String? = null
 
+    @Column(name = "profile_picture_url", length = 500)
+    var profilePictureUrlField: String? = null
+
+    @Column(name = "profile_picture_thumbnail_url", length = 500)
+    override var profilePictureThumbnailUrl: String? = null
+
+    @Column(name = "profile_picture_updated_at")
+    var profilePictureUpdatedAt: Instant? = null
+
     /**
      * Whether this user account has been marked for deletion
      */
@@ -72,7 +81,7 @@ class User : BaseDomain(), UserDetails, CoreUser {
         get() = active
 
     override val profilePictureUrl: String?
-        get() = null // Can be implemented when profile pictures are added
+        get() = profilePictureUrlField
 
     // UserDetails implementation
     override fun getAuthorities(): List<SimpleGrantedAuthority> {
