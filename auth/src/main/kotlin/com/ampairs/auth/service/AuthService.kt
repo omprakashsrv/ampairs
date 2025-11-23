@@ -20,6 +20,7 @@ import jakarta.servlet.http.HttpServletRequest
 import jakarta.transaction.Transactional
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Service
 import java.security.MessageDigest
@@ -588,19 +589,13 @@ class AuthService @Autowired constructor(
         // Create username from phone number
         val userName = "${request.countryCode}${request.phone}"
 
-        // Get or create user
-        val user: User = userRepository.findByUserName(userName)
-            .orElseGet {
-                // Create new user if doesn't exist
-                val newUser = User()
-                newUser.userName = userName
-                newUser.countryCode = request.countryCode
-                newUser.phone = request.phone
-                newUser.active = true
-                // Optionally store Firebase UID for future reference
-                newUser.firebaseUid = firebaseAuthService.getFirebaseUid(firebaseToken)
-                userRepository.save(newUser)
-            }
+        // Get or create user with race condition handling
+        val user: User = getOrCreateUser(
+            userName = userName,
+            countryCode = request.countryCode,
+            phone = request.phone,
+            firebaseUid = firebaseAuthService.getFirebaseUid(firebaseToken)
+        )
 
         // Update Firebase UID if not set
         if (user.firebaseUid.isNullOrBlank()) {
@@ -663,6 +658,41 @@ class AuthService @Autowired constructor(
         authResponse.accessTokenExpiresAt = jwtService.extractExpirationAsLocalDateTime(jwtToken)
         authResponse.refreshTokenExpiresAt = jwtService.extractExpirationAsLocalDateTime(refreshToken)
         return authResponse
+    }
+
+    /**
+     * Get or create a user with race condition handling.
+     * If two concurrent requests try to create the same user, the second one
+     * will catch the DataIntegrityViolationException and fetch the existing user.
+     */
+    private fun getOrCreateUser(
+        userName: String,
+        countryCode: Int,
+        phone: String,
+        firebaseUid: String?
+    ): User {
+        // First, try to find existing user
+        val existingUser = userRepository.findByUserName(userName)
+        if (existingUser.isPresent) {
+            return existingUser.get()
+        }
+
+        // User doesn't exist, try to create
+        return try {
+            val newUser = User()
+            newUser.userName = userName
+            newUser.countryCode = countryCode
+            newUser.phone = phone
+            newUser.active = true
+            newUser.firebaseUid = firebaseUid
+            userRepository.save(newUser)
+        } catch (e: DataIntegrityViolationException) {
+            // Race condition: another request created the user concurrently
+            // Fetch the user that was created by the other request
+            logger.info("Race condition detected during user creation for userName: $userName, fetching existing user")
+            userRepository.findByUserName(userName)
+                .orElseThrow { IllegalStateException("User should exist after duplicate key error: $userName") }
+        }
     }
 
 }

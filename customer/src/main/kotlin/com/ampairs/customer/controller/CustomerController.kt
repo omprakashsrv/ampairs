@@ -132,6 +132,23 @@ class CustomerController @Autowired constructor(
         return ApiResponse.success(updatedCustomer.asCustomerResponse())
     }
 
+    @DeleteMapping("/{customerId}")
+    @Operation(
+        summary = "Delete customer",
+        description = "Soft delete a customer by setting status to DELETED"
+    )
+    fun deleteCustomer(
+        @Parameter(description = "Customer UID")
+        @PathVariable customerId: String
+    ): ApiResponse<Map<String, Any>> {
+        val deleted = customerService.deleteCustomer(customerId)
+        return if (deleted) {
+            ApiResponse.success(mapOf("deleted" to true, "customer_id" to customerId))
+        } else {
+            ApiResponse.error("Customer not found", "CUSTOMER_NOT_FOUND")
+        }
+    }
+
     @GetMapping("/gst/{gstNumber}")
     fun getCustomerByGst(@PathVariable gstNumber: String): ApiResponse<CustomerResponse> {
         val customer = customerService.getCustomerByGstNumber(gstNumber)
