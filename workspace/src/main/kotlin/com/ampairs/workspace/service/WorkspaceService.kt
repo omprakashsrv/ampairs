@@ -300,9 +300,16 @@ class WorkspaceService(
         return mapOf("available" to isAvailable)
     }
 
-    private fun findWorkspaceById(workspaceId: String): Workspace {
+    /**
+     * Get workspace entity by ID (for internal use by other services)
+     */
+    fun getWorkspaceEntity(workspaceId: String): Workspace {
         return workspaceRepository.findByUid(workspaceId)
             .orElseThrow { NotFoundException("Workspace not found: $workspaceId") }
+    }
+
+    private fun findWorkspaceById(workspaceId: String): Workspace {
+        return getWorkspaceEntity(workspaceId)
     }
 
     private fun generateSlugFromName(name: String): String {

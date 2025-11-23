@@ -53,10 +53,22 @@ class Workspace : BaseDomain() {
     var workspaceType: WorkspaceType = WorkspaceType.BUSINESS
 
     /**
-     * Company logo/avatar URL
+     * Company logo/avatar object key (stored in S3)
      */
     @Column(name = "avatar_url", length = 500)
     var avatarUrl: String? = null
+
+    /**
+     * Company logo/avatar thumbnail object key (256x256)
+     */
+    @Column(name = "avatar_thumbnail_url", length = 500)
+    var avatarThumbnailUrl: String? = null
+
+    /**
+     * When the avatar was last updated
+     */
+    @Column(name = "avatar_updated_at")
+    var avatarUpdatedAt: Instant? = null
 
     /**
      * Business address line 1

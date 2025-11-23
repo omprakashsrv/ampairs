@@ -21,6 +21,8 @@ data class WorkspaceResponse(
 
         val avatarUrl: String?,
 
+        val avatarThumbnailUrl: String?,
+
         val isActive: Boolean,
 
         val subscriptionPlan: SubscriptionPlan,
@@ -93,6 +95,8 @@ data class WorkspaceListResponse(
 
         val avatarUrl: String?,
 
+        val avatarThumbnailUrl: String?,
+
         val subscriptionPlan: SubscriptionPlan,
 
         val memberCount: Int,
@@ -119,6 +123,7 @@ fun Workspace.toResponse(memberCount: Int? = null): WorkspaceResponse {
         description = this.description,
         workspaceType = this.workspaceType,
         avatarUrl = this.avatarUrl,
+        avatarThumbnailUrl = this.avatarThumbnailUrl,
         isActive = this.active,
         subscriptionPlan = this.subscriptionPlan,
         maxMembers = this.maxUsers,
@@ -173,6 +178,7 @@ fun Workspace.toListResponse(memberCount: Int): WorkspaceListResponse {
         description = this.description,
         workspaceType = this.workspaceType,
         avatarUrl = this.avatarUrl,
+        avatarThumbnailUrl = this.avatarThumbnailUrl,
         subscriptionPlan = this.subscriptionPlan,
         memberCount = memberCount,
         lastActivityAt = this.lastActivityAt,

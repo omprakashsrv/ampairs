@@ -7,24 +7,29 @@ import com.ampairs.workspace.model.dto.CreateWorkspaceRequest
 import com.ampairs.workspace.model.dto.UpdateWorkspaceRequest
 import com.ampairs.workspace.model.dto.WorkspaceListResponse
 import com.ampairs.workspace.model.dto.WorkspaceResponse
+import com.ampairs.workspace.model.dto.toResponse
 import com.ampairs.workspace.model.enums.SubscriptionPlan
 import com.ampairs.workspace.model.enums.WorkspaceType
+import com.ampairs.workspace.service.WorkspaceAvatarNotFoundException
+import com.ampairs.workspace.service.WorkspaceAvatarService
 import com.ampairs.workspace.service.WorkspaceService
 import io.swagger.v3.oas.annotations.Operation
-import io.swagger.v3.oas.annotations.media.Content
-import io.swagger.v3.oas.annotations.media.ExampleObject
-import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
+import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
+import org.springframework.web.multipart.MultipartFile
+import java.util.concurrent.TimeUnit
 import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 
 /**
@@ -62,226 +67,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 @SecurityRequirement(name = "BearerAuth")
 class WorkspaceController(
     private val workspaceService: WorkspaceService,
+    private val workspaceAvatarService: WorkspaceAvatarService,
 ) {
 
-    @Operation(
-        summary = "Create New Workspace",
-        description = """
-        ## 🏢 **Create Multi-Tenant Business Workspace**
-        
-        Establishes a new business workspace with complete multi-tenant isolation,
-        role-based access control, and comprehensive business functionality setup.
-        
-        ### **Workspace Creation Process:**
-        
-        #### **🏗️ Workspace Initialization**
-        - **Tenant Setup**: Create isolated tenant context with unique identifier
-        - **Owner Assignment**: Assign authenticated user as workspace OWNER
-        - **Default Configuration**: Initialize workspace with standard settings
-        - **Security Setup**: Establish access control and permission framework
-        
-        #### **📋 Business Setup**
-        - **Company Profile**: Configure business information and branding
-        - **Module Installation**: Set up core business modules (CRM, Sales, etc.)
-        - **Data Structure**: Initialize database schemas and data relationships
-        - **Integration Points**: Prepare for external service integrations
-        
-        #### **👥 Team Foundation**
-        - **Owner Permissions**: Grant full administrative rights to creator
-        - **Invitation System**: Set up member invitation and onboarding workflows
-        - **Role Framework**: Initialize role hierarchy and permission structure
-        - **Collaboration Tools**: Enable team communication and collaboration features
-        
-        ### **Workspace Types & Features:**
-        
-        **STARTUP Workspace:**
-        - Basic CRM and customer management
-        - Essential sales pipeline tracking
-        - Core reporting and analytics
-        - Up to 10 team members
-        - Standard integrations
-        
-        **BUSINESS Workspace:**
-        - Advanced CRM with automation
-        - Full sales and marketing suite
-        - Comprehensive inventory management
-        - Advanced reporting and analytics
-        - Up to 50 team members
-        - Premium integrations
-        
-        **ENTERPRISE Workspace:**
-        - Complete business management suite
-        - Advanced workflow automation
-        - Custom module development
-        - Enterprise-grade security
-        - Unlimited team members
-        - Custom integrations and API access
-        
-        ### **Subscription Plans:**
-        
-        | Plan | Features | Team Size | Storage | Support |
-        |------|----------|-----------|---------|----------|
-        | **FREE** | Core features | 3 members | 1GB | Community |
-        | **STARTER** | Extended features | 10 members | 10GB | Email |
-        | **PROFESSIONAL** | Advanced features | 50 members | 100GB | Priority |
-        | **ENTERPRISE** | All features | Unlimited | 1TB+ | Dedicated |
-        
-        ### **Post-Creation Setup:**
-        - **Onboarding Workflow**: Guided setup process for new workspace
-        - **Team Invitations**: Invite initial team members with appropriate roles
-        - **Data Import**: Import existing business data from external systems
-        - **Integration Configuration**: Connect with existing business tools
-        - **Customization**: Configure workspace appearance and workflows
-        
-        ### **Use Cases:**
-        - **New Business Setup**: Complete business management system for startups
-        - **Department Isolation**: Separate workspaces for different business units
-        - **Project Management**: Dedicated workspace for specific projects or clients
-        - **Multi-Location Management**: Separate workspaces for different office locations
-        """,
-        tags = ["Workspace Management"]
-    )
-    @ApiResponses(
-        value = [
-            SwaggerApiResponse(
-                responseCode = "201",
-                description = "✅ Workspace successfully created",
-                content = [Content(
-                    mediaType = "application/json",
-                    schema = Schema(implementation = ApiResponse::class),
-                    examples = [ExampleObject(
-                        name = "Workspace Creation Success",
-                        value = """{{
-  "success": true,
-  "data": {{
-    "id": "WS_NEW_ACME_001",
-    "name": "Acme Corporation",
-    "slug": "acme-corp",
-    "description": "Complete business management workspace for Acme Corp",
-    "workspace_type": "BUSINESS",
-    "subscription_plan": "PROFESSIONAL",
-    "created_at": "2025-01-15T10:30:00Z",
-    "owner": {{
-      "user_id": "USR_JOHN_DOE_123",
-      "name": "John Doe",
-      "email": "john.doe@acme.com",
-      "role": "OWNER"
-    }},
-    "settings": {{
-      "timezone": "America/New_York",
-      "currency": "USD",
-      "language": "en-US",
-      "business_type": "Technology",
-      "employee_count": "11-50"
-    }},
-    "features": {{
-      "modules_included": [
-        "Customer CRM",
-        "Sales Pipeline",
-        "Product Catalog",
-        "Order Management",
-        "Invoice Generation",
-        "Advanced Reporting"
-      ],
-      "integrations_available": [
-        "Email Marketing",
-        "Accounting Software",
-        "E-commerce Platforms",
-        "Communication Tools"
-      ],
-      "member_limit": 50,
-      "storage_limit_gb": 100
-    }},
-    "onboarding": {{
-      "setup_progress": 20,
-      "next_steps": [
-        "Complete business profile",
-        "Invite team members",
-        "Import existing data",
-        "Configure integrations"
-      ],
-      "guided_tour_available": true
-    }},
-    "access_info": {{
-      "workspace_url": "https://app.ampairs.com/workspace/acme-corp",
-      "dashboard_url": "https://app.ampairs.com/workspace/acme-corp/dashboard",
-      "admin_panel_url": "https://app.ampairs.com/workspace/acme-corp/admin"
-    }}
-  }},
-  "timestamp": "2025-01-15T10:30:00Z"
-}}"""
-                    )]
-                )]
-            ),
-            SwaggerApiResponse(
-                responseCode = "400",
-                description = "❌ Bad request - Invalid workspace data or validation errors"
-            ),
-            SwaggerApiResponse(
-                responseCode = "401",
-                description = "🚫 Authentication required - Invalid or missing JWT token"
-            ),
-            SwaggerApiResponse(
-                responseCode = "409",
-                description = "⚠️ Conflict - Workspace name or slug already exists"
-            ),
-            SwaggerApiResponse(
-                responseCode = "422",
-                description = "🚫 Unprocessable Entity - User already owns maximum number of workspaces"
-            )
-        ]
-    )
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun createWorkspace(
-        @io.swagger.v3.oas.annotations.parameters.RequestBody(
-            description = """
-            **New Workspace Configuration**
-            
-            Complete configuration for creating a new business workspace.
-            
-            **Example Request Body:**
-            ```json
-            {
-              "name": "Acme Corporation",
-              "slug": "acme-corp",
-              "description": "Complete business management workspace for Acme Corp",
-              "workspace_type": "BUSINESS",
-              "subscription_plan": "PROFESSIONAL",
-              "settings": {
-                "timezone": "America/New_York",
-                "currency": "USD",
-                "language": "en-US",
-                "business_type": "Technology",
-                "employee_count": "11-50"
-              },
-              "branding": {
-                "logo_url": "https://example.com/logo.png",
-                "primary_color": "#1976d2",
-                "secondary_color": "#424242"
-              },
-              "initial_modules": [
-                "CUSTOMER_MANAGEMENT",
-                "SALES_PIPELINE",
-                "PRODUCT_CATALOG"
-              ]
-            }
-            ```
-            
-            **Required Fields:**
-            - `name`: Workspace display name (3-100 characters)
-            - `workspace_type`: One of: STARTUP, BUSINESS, ENTERPRISE
-            
-            **Optional Fields:**
-            - `slug`: URL-friendly identifier (auto-generated if not provided)
-            - `description`: Workspace description (max 500 characters)
-            - `subscription_plan`: Billing plan selection
-            - `settings`: Business configuration options
-            - `branding`: Visual customization options
-            - `initial_modules`: Pre-install specific business modules
-            """,
-            required = true
-        )
         @RequestBody @Valid request: CreateWorkspaceRequest,
     ): ApiResponse<WorkspaceResponse> {
         val auth: Authentication = SecurityContextHolder.getContext().authentication
@@ -470,5 +261,115 @@ class WorkspaceController(
     fun checkSlugAvailability(@PathVariable slug: String): ApiResponse<Map<String, Boolean>> {
         val result = workspaceService.checkSlugAvailability(slug)
         return ApiResponse.success(result)
+    }
+
+    // ==================== Avatar Endpoints ====================
+
+    /**
+     * Upload an avatar for a workspace.
+     *
+     * Accepts JPEG, PNG, or WebP images up to 5MB.
+     * The image will be resized to a maximum of 512x512 pixels.
+     * A thumbnail of 256x256 pixels will also be generated.
+     *
+     * @param workspaceId The workspace ID
+     * @param file The image file to upload
+     * @return Updated workspace with avatar URLs
+     */
+    @Operation(
+        summary = "Upload Workspace Avatar",
+        description = "Upload an avatar image for a workspace. Requires WORKSPACE_MANAGE permission.",
+        tags = ["Workspace Management"]
+    )
+    @PostMapping("/{workspaceId}/avatar", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).WORKSPACE_MANAGE)")
+    fun uploadAvatar(
+        @PathVariable workspaceId: String,
+        @RequestPart("file") file: MultipartFile
+    ): ApiResponse<WorkspaceResponse> {
+        val auth: Authentication = SecurityContextHolder.getContext().authentication
+        val userId = AuthenticationHelper.getCurrentUserId(auth)
+            ?: throw IllegalStateException("User not authenticated")
+
+        val workspace = workspaceService.getWorkspaceEntity(workspaceId)
+        val updatedWorkspace = workspaceAvatarService.uploadAvatar(workspace, file)
+        return ApiResponse.success(updatedWorkspace.toResponse())
+    }
+
+    /**
+     * Delete a workspace's avatar.
+     *
+     * @param workspaceId The workspace ID
+     * @return Updated workspace with null avatar URLs
+     */
+    @Operation(
+        summary = "Delete Workspace Avatar",
+        description = "Delete a workspace's avatar. Requires WORKSPACE_MANAGE permission.",
+        tags = ["Workspace Management"]
+    )
+    @DeleteMapping("/{workspaceId}/avatar")
+    @PreAuthorize("@workspaceAuthorizationService.hasWorkspacePermission(authentication, #workspaceId, T(com.ampairs.workspace.security.WorkspacePermission).WORKSPACE_MANAGE)")
+    fun deleteAvatar(@PathVariable workspaceId: String): ApiResponse<WorkspaceResponse> {
+        val workspace = workspaceService.getWorkspaceEntity(workspaceId)
+        val updatedWorkspace = workspaceAvatarService.deleteAvatar(workspace)
+        return ApiResponse.success(updatedWorkspace.toResponse())
+    }
+
+    /**
+     * Get a workspace's avatar (full size).
+     *
+     * @param workspaceId The workspace ID
+     * @return The avatar image bytes
+     */
+    @Operation(
+        summary = "Get Workspace Avatar",
+        description = "Get a workspace's avatar image (full size).",
+        tags = ["Workspace Management"]
+    )
+    @GetMapping("/{workspaceId}/avatar")
+    fun getAvatar(@PathVariable workspaceId: String): ResponseEntity<ByteArray> {
+        val workspace = workspaceService.getWorkspaceEntity(workspaceId)
+        val objectKey = workspace.avatarUrl
+            ?: throw WorkspaceAvatarNotFoundException("No avatar set for this workspace")
+
+        val imageBytes = workspaceAvatarService.getAvatar(objectKey)
+
+        return ResponseEntity.ok()
+            .cacheControl(CacheControl.maxAge(365, TimeUnit.DAYS).cachePublic())
+            .contentType(getMediaTypeFromKey(objectKey))
+            .body(imageBytes)
+    }
+
+    /**
+     * Get a workspace's avatar thumbnail.
+     *
+     * @param workspaceId The workspace ID
+     * @return The avatar thumbnail image bytes
+     */
+    @Operation(
+        summary = "Get Workspace Avatar Thumbnail",
+        description = "Get a workspace's avatar thumbnail image (256x256).",
+        tags = ["Workspace Management"]
+    )
+    @GetMapping("/{workspaceId}/avatar/thumbnail")
+    fun getAvatarThumbnail(@PathVariable workspaceId: String): ResponseEntity<ByteArray> {
+        val workspace = workspaceService.getWorkspaceEntity(workspaceId)
+        val objectKey = workspace.avatarThumbnailUrl
+            ?: throw WorkspaceAvatarNotFoundException("No avatar set for this workspace")
+
+        val imageBytes = workspaceAvatarService.getAvatar(objectKey)
+
+        return ResponseEntity.ok()
+            .cacheControl(CacheControl.maxAge(365, TimeUnit.DAYS).cachePublic())
+            .contentType(getMediaTypeFromKey(objectKey))
+            .body(imageBytes)
+    }
+
+    private fun getMediaTypeFromKey(objectKey: String): MediaType {
+        return when {
+            objectKey.endsWith(".png") -> MediaType.IMAGE_PNG
+            objectKey.endsWith(".webp") -> MediaType.parseMediaType("image/webp")
+            else -> MediaType.IMAGE_JPEG
+        }
     }
 }
