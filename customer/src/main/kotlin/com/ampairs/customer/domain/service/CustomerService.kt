@@ -249,6 +249,31 @@ class CustomerService @Autowired constructor(
         return gstNumber.matches(Regex("^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$"))
     }
 
+    /**
+     * Soft delete a customer by setting status to DELETED
+     */
+    @Transactional
+    fun deleteCustomer(customerId: String): Boolean {
+        val customer = customerRepository.findByUid(customerId) ?: return false
+
+        customer.status = "DELETED"
+        customerRepository.save(customer)
+
+        // Publish CustomerDeletedEvent
+        eventPublisher.publishEvent(
+            CustomerDeletedEvent(
+                source = this,
+                workspaceId = getWorkspaceId(),
+                entityId = customer.uid,
+                userId = getUserId(),
+                deviceId = getDeviceId(),
+                customerName = customer.name
+            )
+        )
+
+        return true
+    }
+
     @Transactional
     fun upsertCustomer(customer: Customer): Customer {
         return if (customer.uid.isNotEmpty()) {
