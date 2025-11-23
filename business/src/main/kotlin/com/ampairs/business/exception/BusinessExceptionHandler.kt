@@ -105,6 +105,58 @@ class BusinessExceptionHandler {
     }
 
     /**
+     * Handle business image not found errors (404)
+     */
+    @ExceptionHandler(BusinessImageNotFoundException::class)
+    fun handleBusinessImageNotFound(
+        ex: BusinessImageNotFoundException,
+        request: HttpServletRequest
+    ): ResponseEntity<ApiResponse<Nothing>> {
+        val error = ErrorDetails(
+            code = "BUSINESS_IMAGE_NOT_FOUND",
+            message = ex.message ?: "Business image not found",
+            details = null
+        )
+
+        val response = ApiResponse<Nothing>(
+            success = false,
+            data = null,
+            error = error,
+            timestamp = Instant.now(),
+            path = request.requestURI,
+            traceId = generateTraceId()
+        )
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response)
+    }
+
+    /**
+     * Handle business image validation errors (400)
+     */
+    @ExceptionHandler(BusinessImageValidationException::class)
+    fun handleBusinessImageValidation(
+        ex: BusinessImageValidationException,
+        request: HttpServletRequest
+    ): ResponseEntity<ApiResponse<Nothing>> {
+        val error = ErrorDetails(
+            code = "IMAGE_VALIDATION_ERROR",
+            message = ex.message ?: "Image validation failed",
+            details = null
+        )
+
+        val response = ApiResponse<Nothing>(
+            success = false,
+            data = null,
+            error = error,
+            timestamp = Instant.now(),
+            path = request.requestURI,
+            traceId = generateTraceId()
+        )
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response)
+    }
+
+    /**
      * Handle validation errors from @Valid annotations (400)
      */
     @ExceptionHandler(MethodArgumentNotValidException::class)

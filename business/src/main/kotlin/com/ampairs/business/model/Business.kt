@@ -6,6 +6,7 @@ import com.ampairs.core.domain.model.OwnableBaseDomain
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
+import java.time.Instant
 
 /**
  * Business entity representing a business profile and configuration.
@@ -118,6 +119,27 @@ class Business : OwnableBaseDomain() {
      */
     @Column(name = "website", length = 500)
     var website: String? = null
+
+    // ==================== Logo ====================
+
+    /**
+     * Business logo URL (S3 object key)
+     * Managed by BusinessImageService, not set from regular update requests
+     */
+    @Column(name = "logo_url", length = 500)
+    var logoUrl: String? = null
+
+    /**
+     * Business logo thumbnail URL (S3 object key)
+     */
+    @Column(name = "logo_thumbnail_url", length = 500)
+    var logoThumbnailUrl: String? = null
+
+    /**
+     * Timestamp when logo was last updated
+     */
+    @Column(name = "logo_updated_at")
+    var logoUpdatedAt: Instant? = null
 
     // ==================== Tax & Regulatory ====================
 
