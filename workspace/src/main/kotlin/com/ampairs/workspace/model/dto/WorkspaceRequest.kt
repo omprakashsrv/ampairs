@@ -26,7 +26,7 @@ data class CreateWorkspaceRequest(
 
     val workspaceType: WorkspaceType = WorkspaceType.BUSINESS,
 
-    val avatarUrl: String? = null,
+    // Note: avatarUrl is managed via dedicated avatar upload endpoint (POST /{workspaceId}/avatar)
 
     val timezone: String = "UTC",
 
@@ -101,7 +101,7 @@ data class UpdateWorkspaceRequest(
 
     val workspaceType: WorkspaceType? = null,
 
-    val avatarUrl: String? = null,
+    // Note: avatarUrl is managed via dedicated avatar upload endpoint (POST /{workspaceId}/avatar)
 
     val timezone: String? = null,
 

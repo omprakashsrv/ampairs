@@ -55,7 +55,7 @@ class WorkspaceService(
             this.slug = slug
             this.description = request.description
             this.workspaceType = request.workspaceType
-            this.avatarUrl = request.avatarUrl
+            // Note: avatarUrl is managed by WorkspaceAvatarService, not set from request
             this.timezone = request.timezone
             this.language = request.language
             this.createdBy = createdBy
@@ -153,10 +153,11 @@ class WorkspaceService(
         }
 
         // Update fields
+        // Note: avatarUrl and avatarThumbnailUrl are managed by WorkspaceAvatarService
+        // and should not be updated via the regular update endpoint
         request.name?.let { workspace.name = it }
         request.description?.let { workspace.description = it }
         request.workspaceType?.let { workspace.workspaceType = it }
-        request.avatarUrl?.let { workspace.avatarUrl = it }
         request.timezone?.let { workspace.timezone = it }
         request.language?.let { workspace.language = it }
 
