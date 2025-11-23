@@ -1,0 +1,14 @@
+{
+    "currentKeyId": "e8f1fe14",
+    "keys": [
+    {
+    "keyId": "e8f1fe14",
+    "algorithm": "RS256",
+    "createdAt": "2025-09-09T15:38:25.250990Z",
+    "expiresAt": "2026-02-14T12:20:04.372140Z",
+    "isActive": true,
+    "isCurrent": true,
+    "keyDirectory": "keys/e8f1fe14_2025-09-09"
+}
+    ]
+}

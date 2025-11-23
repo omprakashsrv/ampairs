@@ -12,6 +12,8 @@ data class UserResponse(
     val email: String? = null,
     val fullName: String,
     val active: Boolean,
+    val profilePictureUrl: String? = null,
+    val profilePictureThumbnailUrl: String? = null,
 )
 
 fun User.toUserResponse(): UserResponse {
@@ -24,6 +26,8 @@ fun User.toUserResponse(): UserResponse {
         phone = this.phone,
         email = this.email,
         fullName = this.getFullName(),
-        active = this.active
+        active = this.active,
+        profilePictureUrl = this.profilePictureUrl,
+        profilePictureThumbnailUrl = this.profilePictureThumbnailUrl,
     )
 }

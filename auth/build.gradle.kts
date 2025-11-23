@@ -37,6 +37,7 @@ allOpen {
 dependencies {
     api(project(mapOf("path" to ":core")))
     api(project(mapOf("path" to ":notification")))
+    api(project(mapOf("path" to ":file")))
 
     val springCloudAwsVersion = "3.2.0"
     implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:${springCloudAwsVersion}"))

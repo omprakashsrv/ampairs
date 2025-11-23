@@ -18,6 +18,11 @@ interface DeviceSessionRepository : JpaRepository<DeviceSession, String> {
     fun findByUserIdAndDeviceIdAndIsActiveTrue(userId: String, deviceId: String): Optional<DeviceSession>
 
     /**
+     * Find all active device sessions by user ID and device ID (handles potential duplicates from race conditions)
+     */
+    fun findAllByUserIdAndDeviceIdAndIsActiveTrue(userId: String, deviceId: String): List<DeviceSession>
+
+    /**
      * Find all active device sessions for a user
      */
     fun findByUserIdAndIsActiveTrueOrderByLastActivityDesc(userId: String): List<DeviceSession>
