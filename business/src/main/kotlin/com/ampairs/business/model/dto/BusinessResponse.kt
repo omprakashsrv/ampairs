@@ -39,6 +39,10 @@ data class BusinessResponse(
     val email: String?,
     val website: String?,
 
+    // Logo
+    val logoUrl: String?,
+    val logoThumbnailUrl: String?,
+
     // Tax/Regulatory
     val taxId: String?,
     val registrationNumber: String?,
