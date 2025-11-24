@@ -2,6 +2,7 @@ package com.ampairs.subscription.domain.model
 
 import com.ampairs.core.domain.model.BaseDomain
 import jakarta.persistence.*
+import java.math.BigDecimal
 import java.time.Instant
 
 /**
@@ -50,8 +51,8 @@ class SubscriptionAddon : BaseDomain() {
     /**
      * Price at time of purchase
      */
-    @Column(name = "price", nullable = false)
-    var price: Double = 0.0
+    @Column(name = "price", nullable = false, precision = 10, scale = 2)
+    var price: BigDecimal = BigDecimal.ZERO
 
     /**
      * Currency

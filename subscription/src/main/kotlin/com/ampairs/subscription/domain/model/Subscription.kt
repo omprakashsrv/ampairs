@@ -3,6 +3,7 @@ package com.ampairs.subscription.domain.model
 import com.ampairs.core.config.Constants
 import com.ampairs.core.domain.model.BaseDomain
 import jakarta.persistence.*
+import java.math.BigDecimal
 import java.time.Instant
 
 /**
@@ -135,8 +136,8 @@ class Subscription : BaseDomain() {
     /**
      * Next billing amount
      */
-    @Column(name = "next_billing_amount")
-    var nextBillingAmount: Double? = null
+    @Column(name = "next_billing_amount", precision = 10, scale = 2)
+    var nextBillingAmount: BigDecimal? = null
 
     /**
      * Last payment status

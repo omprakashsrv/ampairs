@@ -3,6 +3,7 @@ package com.ampairs.subscription.domain.model
 import com.ampairs.core.config.Constants
 import com.ampairs.core.domain.model.BaseDomain
 import jakarta.persistence.*
+import java.math.BigDecimal
 import java.time.Instant
 
 /**
@@ -44,14 +45,14 @@ class SubscriptionPlanDefinition : BaseDomain() {
     /**
      * Monthly price in INR
      */
-    @Column(name = "monthly_price_inr", nullable = false)
-    var monthlyPriceInr: Double = 0.0
+    @Column(name = "monthly_price_inr", nullable = false, precision = 10, scale = 2)
+    var monthlyPriceInr: BigDecimal = BigDecimal.ZERO
 
     /**
      * Monthly price in USD
      */
-    @Column(name = "monthly_price_usd", nullable = false)
-    var monthlyPriceUsd: Double = 0.0
+    @Column(name = "monthly_price_usd", nullable = false, precision = 10, scale = 2)
+    var monthlyPriceUsd: BigDecimal = BigDecimal.ZERO
 
     // Limits
 
@@ -218,7 +219,7 @@ class SubscriptionPlanDefinition : BaseDomain() {
     /**
      * Get price for given currency
      */
-    fun getMonthlyPrice(currency: String): Double {
+    fun getMonthlyPrice(currency: String): BigDecimal {
         return when (currency.uppercase()) {
             "INR" -> monthlyPriceInr
             "USD" -> monthlyPriceUsd

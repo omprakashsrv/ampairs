@@ -10,6 +10,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
 import java.time.Instant
 
 @Service
@@ -34,7 +35,7 @@ class BillingService(
         provider: PaymentProvider,
         externalPaymentId: String?,
         externalInvoiceId: String?,
-        amount: Double,
+        amount: BigDecimal,
         currency: String,
         status: PaymentStatus,
         description: String?,
@@ -114,7 +115,7 @@ class BillingService(
      */
     fun recordRefund(
         transactionUid: String,
-        refundAmount: Double,
+        refundAmount: BigDecimal,
         refundReason: String?
     ): PaymentTransaction {
         val transaction = paymentTransactionRepository.findByUid(transactionUid)

@@ -1,5 +1,8 @@
 package com.ampairs.subscription.domain.model
 
+import java.math.BigDecimal
+import java.math.RoundingMode
+
 /**
  * Billing cycle options for subscriptions
  */
@@ -9,10 +12,11 @@ enum class BillingCycle(val months: Int, val discountPercent: Int) {
     ANNUAL(12, 20),
     BIENNIAL(24, 30);
 
-    fun calculateDiscountedPrice(monthlyPrice: Double): Double {
-        val totalMonths = months
-        val basePrice = monthlyPrice * totalMonths
-        return basePrice * (1 - discountPercent / 100.0)
+    fun calculateDiscountedPrice(monthlyPrice: BigDecimal): BigDecimal {
+        val totalMonths = BigDecimal(months)
+        val basePrice = monthlyPrice.multiply(totalMonths)
+        val discountMultiplier = BigDecimal.ONE.subtract(BigDecimal(discountPercent).divide(BigDecimal(100), 4, RoundingMode.HALF_UP))
+        return basePrice.multiply(discountMultiplier).setScale(2, RoundingMode.HALF_UP)
     }
 }
 
@@ -95,48 +99,48 @@ enum class InvoiceStatus {
  */
 enum class AddonModuleCode(
     val displayName: String,
-    val monthlyPriceInr: Double,
-    val monthlyPriceUsd: Double,
+    val monthlyPriceInr: BigDecimal,
+    val monthlyPriceUsd: BigDecimal,
     val description: String
 ) {
     TALLY_INTEGRATION(
         displayName = "Tally Integration",
-        monthlyPriceInr = 299.0,
-        monthlyPriceUsd = 4.0,
+        monthlyPriceInr = BigDecimal("299.00"),
+        monthlyPriceUsd = BigDecimal("4.00"),
         description = "Sync with Tally ERP"
     ),
     ADVANCED_ANALYTICS(
         displayName = "Advanced Analytics",
-        monthlyPriceInr = 499.0,
-        monthlyPriceUsd = 6.0,
+        monthlyPriceInr = BigDecimal("499.00"),
+        monthlyPriceUsd = BigDecimal("6.00"),
         description = "Custom reports and dashboards"
     ),
     MULTI_CURRENCY(
         displayName = "Multi-Currency",
-        monthlyPriceInr = 199.0,
-        monthlyPriceUsd = 3.0,
+        monthlyPriceInr = BigDecimal("199.00"),
+        monthlyPriceUsd = BigDecimal("3.00"),
         description = "Support for multiple currencies"
     ),
     E_INVOICING_GST(
         displayName = "E-Invoicing (GST)",
-        monthlyPriceInr = 399.0,
-        monthlyPriceUsd = 5.0,
+        monthlyPriceInr = BigDecimal("399.00"),
+        monthlyPriceUsd = BigDecimal("5.00"),
         description = "Government e-invoicing compliance"
     ),
     INVENTORY_PRO(
         displayName = "Inventory Pro",
-        monthlyPriceInr = 299.0,
-        monthlyPriceUsd = 4.0,
+        monthlyPriceInr = BigDecimal("299.00"),
+        monthlyPriceUsd = BigDecimal("4.00"),
         description = "Advanced stock management"
     ),
     CUSTOM_FIELDS(
         displayName = "Custom Fields",
-        monthlyPriceInr = 199.0,
-        monthlyPriceUsd = 3.0,
+        monthlyPriceInr = BigDecimal("199.00"),
+        monthlyPriceUsd = BigDecimal("3.00"),
         description = "Unlimited custom fields"
     );
 
-    fun getPrice(currency: String): Double {
+    fun getPrice(currency: String): BigDecimal {
         return when (currency.uppercase()) {
             "INR" -> monthlyPriceInr
             "USD" -> monthlyPriceUsd

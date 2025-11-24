@@ -3,6 +3,7 @@ package com.ampairs.subscription.domain.dto
 import com.ampairs.subscription.domain.model.*
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
+import java.math.BigDecimal
 import java.time.Instant
 
 // =====================
@@ -17,8 +18,8 @@ data class PlanResponse(
     val planCode: String,
     val displayName: String,
     val description: String?,
-    val monthlyPriceInr: Double,
-    val monthlyPriceUsd: Double,
+    val monthlyPriceInr: BigDecimal,
+    val monthlyPriceUsd: BigDecimal,
     val limits: PlanLimitsResponse,
     val features: PlanFeaturesResponse,
     val trialDays: Int,
@@ -109,7 +110,7 @@ data class SubscriptionResponse(
     val trialEndsAt: Instant?,
     val cancelAtPeriodEnd: Boolean,
     val cancelledAt: Instant?,
-    val nextBillingAmount: Double?,
+    val nextBillingAmount: BigDecimal?,
     val lastPaymentStatus: PaymentStatus?,
     val lastPaymentAt: Instant?,
     val isFree: Boolean,
@@ -154,7 +155,7 @@ data class AddonResponse(
     val displayName: String,
     val description: String,
     val status: SubscriptionStatus,
-    val price: Double,
+    val price: BigDecimal,
     val currency: String,
     val activatedAt: Instant?,
     val expiresAt: Instant?
@@ -181,8 +182,8 @@ data class AvailableAddonResponse(
     val addonCode: AddonModuleCode,
     val displayName: String,
     val description: String,
-    val monthlyPriceInr: Double,
-    val monthlyPriceUsd: Double,
+    val monthlyPriceInr: BigDecimal,
+    val monthlyPriceUsd: BigDecimal,
     val isActive: Boolean
 )
 
@@ -194,9 +195,9 @@ data class PaymentTransactionResponse(
     val uid: String,
     val paymentProvider: PaymentProvider,
     val status: PaymentStatus,
-    val amount: Double,
+    val amount: BigDecimal,
     val currency: String,
-    val netAmount: Double,
+    val netAmount: BigDecimal,
     val paymentMethodType: PaymentMethodType?,
     val paymentMethodLast4: String?,
     val cardBrand: String?,

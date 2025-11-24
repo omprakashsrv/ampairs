@@ -7,6 +7,8 @@ import com.ampairs.subscription.exception.SubscriptionException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
+import java.math.RoundingMode
 import java.time.Duration
 import java.time.Instant
 import java.time.YearMonth
@@ -184,13 +186,14 @@ class SubscriptionService(
         val effectiveAt = if (immediate) Instant.now() else subscription.currentPeriodEnd ?: Instant.now()
 
         // Calculate proration if immediate
-        var prorationAmount: Double? = null
+        var prorationAmount: BigDecimal? = null
         if (immediate && subscription.currentPeriodEnd != null) {
             val daysRemaining = subscription.getDaysRemaining()
             val totalDays = subscription.billingCycle.months * 30
-            val unusedAmount = (subscription.nextBillingAmount ?: 0.0) * (daysRemaining.toDouble() / totalDays)
+            val currentBillingAmount = subscription.nextBillingAmount ?: BigDecimal.ZERO
+            val unusedAmount = currentBillingAmount.multiply(BigDecimal(daysRemaining)).divide(BigDecimal(totalDays), 2, RoundingMode.HALF_UP)
             val newAmount = billingCycle.calculateDiscountedPrice(newPlan.getMonthlyPrice(subscription.currency))
-            prorationAmount = newAmount - unusedAmount
+            prorationAmount = newAmount.subtract(unusedAmount)
         }
 
         if (immediate) {

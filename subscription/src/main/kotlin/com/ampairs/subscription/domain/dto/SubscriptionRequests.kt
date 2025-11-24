@@ -4,6 +4,7 @@ import com.ampairs.subscription.domain.model.*
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
+import java.math.BigDecimal
 
 // =====================
 // Purchase Requests
@@ -59,7 +60,7 @@ data class InitiatePurchaseResponse(
     val razorpayOrderId: String?,
     val razorpaySubscriptionId: String?,
     val stripeClientSecret: String?,
-    val amount: Double,
+    val amount: BigDecimal,
     val currency: String
 )
 
@@ -102,7 +103,7 @@ data class ChangePlanRequest(
  */
 data class ChangePlanResponse(
     val subscription: SubscriptionResponse,
-    val prorationAmount: Double?,
+    val prorationAmount: BigDecimal?,
     val effectiveAt: java.time.Instant,
     val isImmediate: Boolean
 )

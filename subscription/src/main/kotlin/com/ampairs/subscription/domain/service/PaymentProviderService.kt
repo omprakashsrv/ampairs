@@ -6,6 +6,7 @@ import com.ampairs.subscription.domain.repository.*
 import com.ampairs.subscription.exception.SubscriptionException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import java.math.BigDecimal
 
 /**
  * Base interface for payment provider integrations
@@ -208,7 +209,7 @@ class PaymentOrchestrationService(
 
         // Record transaction
         val plan = subscriptionPlanRepository.findByPlanCode(planCode)
-        val amount = plan?.let { billingCycle.calculateDiscountedPrice(it.getMonthlyPrice(subscription.currency)) } ?: 0.0
+        val amount = plan?.let { billingCycle.calculateDiscountedPrice(it.getMonthlyPrice(subscription.currency)) } ?: BigDecimal.ZERO
 
         billingService.recordTransaction(
             subscriptionId = subscription.uid,
@@ -243,7 +244,7 @@ class PaymentOrchestrationService(
         provider: PaymentProvider,
         externalSubscriptionId: String,
         orderId: String?,
-        amount: Double,
+        amount: BigDecimal,
         currency: String,
         periodStart: java.time.Instant?,
         periodEnd: java.time.Instant?

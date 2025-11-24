@@ -2,6 +2,7 @@ package com.ampairs.subscription.domain.model
 
 import com.ampairs.core.domain.model.BaseDomain
 import jakarta.persistence.*
+import java.math.BigDecimal
 import java.time.Instant
 
 /**
@@ -64,8 +65,8 @@ class PaymentTransaction : BaseDomain() {
     /**
      * Payment amount
      */
-    @Column(name = "amount", nullable = false)
-    var amount: Double = 0.0
+    @Column(name = "amount", nullable = false, precision = 10, scale = 2)
+    var amount: BigDecimal = BigDecimal.ZERO
 
     /**
      * Currency
@@ -76,20 +77,20 @@ class PaymentTransaction : BaseDomain() {
     /**
      * Tax amount included
      */
-    @Column(name = "tax_amount")
-    var taxAmount: Double = 0.0
+    @Column(name = "tax_amount", precision = 10, scale = 2)
+    var taxAmount: BigDecimal = BigDecimal.ZERO
 
     /**
      * Discount applied
      */
-    @Column(name = "discount_amount")
-    var discountAmount: Double = 0.0
+    @Column(name = "discount_amount", precision = 10, scale = 2)
+    var discountAmount: BigDecimal = BigDecimal.ZERO
 
     /**
      * Net amount (amount - discount + tax)
      */
-    @Column(name = "net_amount", nullable = false)
-    var netAmount: Double = 0.0
+    @Column(name = "net_amount", nullable = false, precision = 10, scale = 2)
+    var netAmount: BigDecimal = BigDecimal.ZERO
 
     /**
      * Payment method type
@@ -149,8 +150,8 @@ class PaymentTransaction : BaseDomain() {
     /**
      * Refund amount (if refunded)
      */
-    @Column(name = "refund_amount")
-    var refundAmount: Double? = null
+    @Column(name = "refund_amount", precision = 10, scale = 2)
+    var refundAmount: BigDecimal? = null
 
     /**
      * When refund was processed

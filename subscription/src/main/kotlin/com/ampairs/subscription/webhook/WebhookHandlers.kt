@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
+import java.math.BigDecimal
 import java.time.Instant
 import javax.crypto.Mac
 import javax.crypto.spec.SecretKeySpec
@@ -112,7 +113,7 @@ class GooglePlayWebhookHandler(
             provider = PaymentProvider.GOOGLE_PLAY,
             externalSubscriptionId = subscriptionId,
             orderId = purchaseToken,
-            amount = 0.0, // Will be fetched from Google Play API
+            amount = BigDecimal.ZERO, // Will be fetched from Google Play API
             currency = "USD",
             periodStart = Instant.now(),
             periodEnd = null
@@ -220,7 +221,7 @@ class AppStoreWebhookHandler(
             provider = PaymentProvider.APP_STORE,
             externalSubscriptionId = originalTransactionId,
             orderId = transactionInfo.path("transactionId").asText(),
-            amount = 0.0,
+            amount = BigDecimal.ZERO,
             currency = "USD",
             periodStart = null,
             periodEnd = null
@@ -340,7 +341,8 @@ class RazorpayWebhookHandler(
         val subscription = payload.path("payload").path("subscription").path("entity")
         val subscriptionId = subscription.path("id").asText()
         val payment = payload.path("payload").path("payment").path("entity")
-        val amount = payment.path("amount").asDouble() / 100 // Razorpay amounts are in paise
+        val amountPaise = payment.path("amount").asLong()
+        val amount = BigDecimal(amountPaise).divide(BigDecimal(100)) // Razorpay amounts are in paise
         val currency = payment.path("currency").asText("INR")
 
         paymentOrchestrationService.handleRenewal(
@@ -537,7 +539,8 @@ class StripeWebhookHandler(
         val subscriptionId = invoice.path("subscription").asText()
         if (subscriptionId.isEmpty()) return
 
-        val amount = invoice.path("amount_paid").asDouble() / 100
+        val amountCents = invoice.path("amount_paid").asLong()
+        val amount = BigDecimal(amountCents).divide(BigDecimal(100))
         val currency = invoice.path("currency").asText("usd").uppercase()
         val periodStart = invoice.path("period_start").asLong()
         val periodEnd = invoice.path("period_end").asLong()
