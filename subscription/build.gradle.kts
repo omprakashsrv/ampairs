@@ -32,6 +32,7 @@ dependencies {
     api(project(mapOf("path" to ":core")))
     api(project(mapOf("path" to ":workspace")))
     api(project(mapOf("path" to ":notification")))
+    api(project(mapOf("path" to ":event")))
 
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.8.1")
