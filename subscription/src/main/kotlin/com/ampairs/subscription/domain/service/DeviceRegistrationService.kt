@@ -4,6 +4,7 @@ import com.ampairs.subscription.domain.dto.*
 import com.ampairs.subscription.domain.model.*
 import com.ampairs.subscription.domain.repository.*
 import com.ampairs.subscription.exception.SubscriptionException
+import com.ampairs.subscription.listener.ResourceType
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -15,7 +16,8 @@ import java.time.Instant
 class DeviceRegistrationService(
     private val deviceRegistrationRepository: DeviceRegistrationRepository,
     private val subscriptionRepository: SubscriptionRepository,
-    private val subscriptionService: SubscriptionService
+    private val subscriptionService: SubscriptionService,
+    private val usageTrackingService: UsageTrackingService
 ) {
     private val logger = LoggerFactory.getLogger(DeviceRegistrationService::class.java)
 
@@ -46,7 +48,8 @@ class DeviceRegistrationService(
         val existing = deviceRegistrationRepository.findByWorkspaceIdAndDeviceId(workspaceId, request.deviceId)
         if (existing != null) {
             // Reactivate if inactive, otherwise refresh token
-            if (!existing.isActive) {
+            val wasInactive = !existing.isActive
+            if (wasInactive) {
                 existing.isActive = true
                 existing.deactivatedAt = null
                 existing.deactivationReason = null
@@ -59,8 +62,14 @@ class DeviceRegistrationService(
             existing.pushTokenType = request.pushTokenType ?: existing.pushTokenType
             existing.lastActivityAt = Instant.now()
 
-            logger.info("Reactivated device {} for workspace {}", request.deviceId, workspaceId)
-            return deviceRegistrationRepository.save(existing).asDeviceRegistrationResponse()
+            val saved = deviceRegistrationRepository.save(existing)
+
+            // Update usage count if reactivated
+            if (wasInactive) {
+                usageTrackingService.incrementCount(workspaceId, ResourceType.DEVICE)
+                logger.info("Reactivated device {} for workspace {}", request.deviceId, workspaceId)
+            }
+            return saved.asDeviceRegistrationResponse()
         }
 
         // Create new registration
@@ -81,11 +90,16 @@ class DeviceRegistrationService(
             this.isActive = true
         }
 
+        val saved = deviceRegistrationRepository.save(device)
+
+        // Update usage count for new device
+        usageTrackingService.incrementCount(workspaceId, ResourceType.DEVICE)
+
         logger.info(
             "Registered new device {} ({}) for workspace {}, user {}",
             request.deviceId, request.platform, workspaceId, userId
         )
-        return deviceRegistrationRepository.save(device).asDeviceRegistrationResponse()
+        return saved.asDeviceRegistrationResponse()
     }
 
     /**
@@ -151,6 +165,9 @@ class DeviceRegistrationService(
 
         device.deactivate(reason ?: "User requested deactivation")
         deviceRegistrationRepository.save(device)
+
+        // Update usage count
+        usageTrackingService.decrementCount(workspaceId, ResourceType.DEVICE)
 
         logger.info("Deactivated device {} in workspace {}: {}", deviceUid, workspaceId, reason)
         return true
