@@ -1,6 +1,7 @@
 package com.ampairs.subscription.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.subscription.domain.dto.*
 import com.ampairs.subscription.domain.model.PaymentProvider
@@ -17,7 +18,8 @@ import org.springframework.web.bind.annotation.*
 class SubscriptionController(
     private val subscriptionService: SubscriptionService,
     private val paymentOrchestrationService: PaymentOrchestrationService,
-    private val deviceRegistrationService: DeviceRegistrationService
+    private val deviceRegistrationService: DeviceRegistrationService,
+    private val billingService: BillingService
 ) {
 
     // =====================
@@ -185,5 +187,54 @@ class SubscriptionController(
         return ApiResponse.success(
             deviceRegistrationService.syncSubscription(workspaceId, userId, request)
         )
+    }
+
+    // =====================
+    // Payment History APIs (alias for /billing/invoices)
+    // =====================
+
+    @GetMapping("/payments")
+    @Operation(summary = "Get payment history")
+    fun getPaymentHistory(
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "20") size: Int
+    ): ApiResponse<PageResponse<PaymentTransactionResponse>> {
+        val workspaceId = TenantContextHolder.getCurrentTenant()
+            ?: throw IllegalStateException("Workspace context not set")
+
+        val pageResult = billingService.getPaymentHistory(workspaceId, page, size)
+        return ApiResponse.success(PageResponse.from(pageResult) { it })
+    }
+
+    // =====================
+    // Payment Method APIs (alias for /billing/payment-methods)
+    // =====================
+
+    @GetMapping("/payment-methods")
+    @Operation(summary = "Get all saved payment methods")
+    fun getPaymentMethods(): ApiResponse<List<PaymentMethodResponse>> {
+        val workspaceId = TenantContextHolder.getCurrentTenant()
+            ?: throw IllegalStateException("Workspace context not set")
+
+        return ApiResponse.success(billingService.getPaymentMethods(workspaceId))
+    }
+
+    @PutMapping("/payment-methods/{uid}/default")
+    @Operation(summary = "Set a payment method as default")
+    fun setDefaultPaymentMethod(@PathVariable uid: String): ApiResponse<PaymentMethodResponse> {
+        val workspaceId = TenantContextHolder.getCurrentTenant()
+            ?: throw IllegalStateException("Workspace context not set")
+
+        return ApiResponse.success(billingService.setDefaultPaymentMethod(workspaceId, uid))
+    }
+
+    @DeleteMapping("/payment-methods/{uid}")
+    @Operation(summary = "Remove a payment method")
+    fun removePaymentMethod(@PathVariable uid: String): ApiResponse<Map<String, Boolean>> {
+        val workspaceId = TenantContextHolder.getCurrentTenant()
+            ?: throw IllegalStateException("Workspace context not set")
+
+        billingService.removePaymentMethod(workspaceId, uid)
+        return ApiResponse.success(mapOf("removed" to true))
     }
 }
