@@ -18,6 +18,38 @@ class UsageEventListener(
     private val logger = LoggerFactory.getLogger(UsageEventListener::class.java)
 
     // =====================
+    // Member Events
+    // =====================
+
+    @Async
+    @EventListener
+    fun onMemberAdded(event: MemberAddedEvent) {
+        logger.debug("Member added in workspace {}: {}", event.workspaceId, event.memberUserId)
+        usageTrackingService.incrementCount(event.workspaceId, ResourceType.MEMBER)
+    }
+
+    @Async
+    @EventListener
+    fun onMemberRemoved(event: MemberRemovedEvent) {
+        logger.debug("Member removed in workspace {}: {}", event.workspaceId, event.memberUserId)
+        usageTrackingService.decrementCount(event.workspaceId, ResourceType.MEMBER)
+    }
+
+    @Async
+    @EventListener
+    fun onMemberActivated(event: MemberActivatedEvent) {
+        logger.debug("Member activated in workspace {}: {}", event.workspaceId, event.memberUserId)
+        usageTrackingService.incrementCount(event.workspaceId, ResourceType.MEMBER)
+    }
+
+    @Async
+    @EventListener
+    fun onMemberDeactivated(event: MemberDeactivatedEvent) {
+        logger.debug("Member deactivated in workspace {}: {}", event.workspaceId, event.memberUserId)
+        usageTrackingService.decrementCount(event.workspaceId, ResourceType.MEMBER)
+    }
+
+    // =====================
     // Customer Events
     // =====================
 
