@@ -7,6 +7,7 @@ import com.ampairs.workspace.model.enums.WorkspaceStatus
 import com.ampairs.workspace.model.enums.WorkspaceType
 import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.persistence.*
+import java.math.BigDecimal
 import java.time.Instant
 
 /**
@@ -307,8 +308,8 @@ class Workspace : BaseDomain() {
     /**
      * Next billing amount
      */
-    @Column(name = "next_billing_amount")
-    var nextBillingAmount: Double? = null
+    @Column(name = "next_billing_amount", precision = 10, scale = 2)
+    var nextBillingAmount: BigDecimal? = null
 
     /**
      * Last successful payment timestamp
