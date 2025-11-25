@@ -186,7 +186,8 @@ class SubscriptionService(
 
         // Calculate proration for paid plans
         var prorationAmount: BigDecimal? = null
-        if (!subscription.isFree && !newPlan.isFree() && subscription.currentPeriodEnd != null) {
+        val isNewPlanFree = newPlan.isFree()
+        if (!subscription.isFree && !isNewPlanFree && subscription.currentPeriodEnd != null) {
             val daysRemaining = subscription.getDaysRemaining()
             val totalDays = subscription.billingCycle.months * 30
             val currentBillingAmount = subscription.nextBillingAmount ?: BigDecimal.ZERO
@@ -204,7 +205,7 @@ class SubscriptionService(
             this.currentPeriodStart = now
             this.currentPeriodEnd = now.plus(Duration.ofDays(billingCycle.months * 30L))
             this.nextBillingAmount = billingCycle.calculateDiscountedPrice(newPlan.getMonthlyPrice(currency))
-            this.isFree = newPlan.isFree()
+            this.isFree = isNewPlanFree
         }
         subscriptionRepository.save(subscription)
 
