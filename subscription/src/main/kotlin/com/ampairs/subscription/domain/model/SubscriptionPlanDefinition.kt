@@ -231,4 +231,11 @@ class SubscriptionPlanDefinition : BaseDomain() {
      * Check if a limit is unlimited
      */
     fun isUnlimited(limit: Int): Boolean = limit == -1
+
+    /**
+     * Check if this is a free plan
+     */
+    fun isFree(): Boolean {
+        return planCode == "FREE" || (monthlyPriceInr == BigDecimal.ZERO && monthlyPriceUsd == BigDecimal.ZERO)
+    }
 }

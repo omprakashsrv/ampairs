@@ -169,7 +169,7 @@ class SubscriptionService(
     }
 
     /**
-     * Change subscription plan
+     * Change subscription plan (always immediate)
      */
     fun changePlan(
         workspaceId: String,
@@ -180,14 +180,13 @@ class SubscriptionService(
         val subscription = subscriptionRepository.findWithPlanByWorkspaceId(workspaceId)
             ?: throw SubscriptionException.SubscriptionNotFoundException(workspaceId)
 
+        val oldPlan = subscription.plan
         val newPlan = subscriptionPlanRepository.findByPlanCode(newPlanCode)
             ?: throw SubscriptionException.PlanNotFoundException(newPlanCode)
 
-        val effectiveAt = if (immediate) Instant.now() else subscription.currentPeriodEnd ?: Instant.now()
-
-        // Calculate proration if immediate
+        // Calculate proration for paid plans
         var prorationAmount: BigDecimal? = null
-        if (immediate && subscription.currentPeriodEnd != null) {
+        if (!subscription.isFree && !newPlan.isFree() && subscription.currentPeriodEnd != null) {
             val daysRemaining = subscription.getDaysRemaining()
             val totalDays = subscription.billingCycle.months * 30
             val currentBillingAmount = subscription.nextBillingAmount ?: BigDecimal.ZERO
@@ -196,29 +195,65 @@ class SubscriptionService(
             prorationAmount = newAmount.subtract(unusedAmount)
         }
 
-        if (immediate) {
-            subscription.apply {
-                this.plan = newPlan
-                this.planCode = newPlanCode
-                this.billingCycle = billingCycle
-                this.currentPeriodStart = Instant.now()
-                this.currentPeriodEnd = Instant.now().plus(Duration.ofDays(billingCycle.months * 30L))
-                this.nextBillingAmount = billingCycle.calculateDiscountedPrice(newPlan.getMonthlyPrice(currency))
-            }
-            subscriptionRepository.save(subscription)
-            logger.info("Immediate plan change for workspace: {} from {} to {}", workspaceId, subscription.planCode, newPlanCode)
-        } else {
-            // Schedule change for period end (store in metadata or separate table)
-            logger.info("Scheduled plan change for workspace: {} from {} to {} at {}", workspaceId, subscription.planCode, newPlanCode, effectiveAt)
+        // Apply plan change immediately
+        val now = Instant.now()
+        subscription.apply {
+            this.plan = newPlan
+            this.planCode = newPlanCode
+            this.billingCycle = billingCycle
+            this.currentPeriodStart = now
+            this.currentPeriodEnd = now.plus(Duration.ofDays(billingCycle.months * 30L))
+            this.nextBillingAmount = billingCycle.calculateDiscountedPrice(newPlan.getMonthlyPrice(currency))
+            this.isFree = newPlan.isFree()
         }
+        subscriptionRepository.save(subscription)
+
+        // Check current usage against new plan limits
+        val usageWarnings = checkUsageAgainstNewPlan(workspaceId, newPlan)
+
+        logger.info(
+            "Plan changed for workspace: {} from {} to {} (billing: {})",
+            workspaceId, oldPlan?.planCode ?: "FREE", newPlanCode, billingCycle
+        )
 
         val addons = subscriptionAddonRepository.findActiveBySubscriptionId(subscription.uid)
         return ChangePlanResponse(
             subscription = subscription.asSubscriptionResponse(addons),
             prorationAmount = prorationAmount,
-            effectiveAt = effectiveAt,
-            isImmediate = immediate
+            effectiveAt = now,
+            isImmediate = true,
+            usageWarnings = usageWarnings
         )
+    }
+
+    /**
+     * Check if current usage exceeds new plan limits
+     */
+    private fun checkUsageAgainstNewPlan(workspaceId: String, newPlan: SubscriptionPlanDefinition): List<String> {
+        val warnings = mutableListOf<String>()
+        val usage = getUsage(workspaceId)
+
+        // Check each resource limit
+        if (newPlan.maxCustomers > 0 && usage.usage.customerCount > newPlan.maxCustomers) {
+            warnings.add("Customer count (${usage.usage.customerCount}) exceeds new plan limit (${newPlan.maxCustomers})")
+        }
+        if (newPlan.maxProducts > 0 && usage.usage.productCount > newPlan.maxProducts) {
+            warnings.add("Product count (${usage.usage.productCount}) exceeds new plan limit (${newPlan.maxProducts})")
+        }
+        if (newPlan.maxInvoicesPerMonth > 0 && usage.usage.invoiceCount > newPlan.maxInvoicesPerMonth) {
+            warnings.add("Invoice count (${usage.usage.invoiceCount}) exceeds new plan limit (${newPlan.maxInvoicesPerMonth})")
+        }
+        if (newPlan.maxMembersPerWorkspace > 0 && usage.usage.memberCount > newPlan.maxMembersPerWorkspace) {
+            warnings.add("Member count (${usage.usage.memberCount}) exceeds new plan limit (${newPlan.maxMembersPerWorkspace})")
+        }
+        if (newPlan.maxDevices > 0 && usage.usage.deviceCount > newPlan.maxDevices) {
+            warnings.add("Device count (${usage.usage.deviceCount}) exceeds new plan limit (${newPlan.maxDevices})")
+        }
+        if (newPlan.maxStorageGb > 0 && usage.usage.storageUsedGb > newPlan.maxStorageGb) {
+            warnings.add("Storage usage (${usage.usage.storageUsedGb}GB) exceeds new plan limit (${newPlan.maxStorageGb}GB)")
+        }
+
+        return warnings
     }
 
     /**

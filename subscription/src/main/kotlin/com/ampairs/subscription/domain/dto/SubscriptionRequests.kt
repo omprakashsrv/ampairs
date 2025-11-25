@@ -105,7 +105,8 @@ data class ChangePlanResponse(
     val subscription: SubscriptionResponse,
     val prorationAmount: BigDecimal?,
     val effectiveAt: java.time.Instant,
-    val isImmediate: Boolean
+    val isImmediate: Boolean,
+    val usageWarnings: List<String> = emptyList()
 )
 
 // =====================
