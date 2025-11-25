@@ -334,4 +334,23 @@ interface UsageMetricRepository : JpaRepository<UsageMetric, Long> {
         @Param("count") count: Long,
         @Param("now") now: Instant
     )
+
+    /**
+     * Find all usage metrics for a specific period (for monthly reset)
+     */
+    fun findByPeriodYearAndPeriodMonth(periodYear: Int, periodMonth: Int): List<UsageMetric>
+
+    /**
+     * Find old usage metrics for cleanup
+     */
+    @Query("""
+        SELECT u FROM UsageMetric u
+        WHERE u.periodYear < :cutoffYear
+        OR (u.periodYear = :cutoffYear AND u.periodMonth < :cutoffMonth)
+    """)
+    fun findByPeriodYearLessThanOrPeriodYearAndPeriodMonthLessThan(
+        @Param("cutoffYear") cutoffYear: Int,
+        @Param("cutoffYear") sameYear: Int,
+        @Param("cutoffMonth") cutoffMonth: Int
+    ): List<UsageMetric>
 }

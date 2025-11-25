@@ -146,4 +146,119 @@ class UsageTrackingService(
             ResourceType.DEVICE -> metric.deviceCount
         }
     }
+
+    /**
+     * Reset monthly usage counters for all workspaces.
+     *
+     * Creates new usage metrics for the current month with:
+     * - Cumulative counts carried forward (customers, products, members, devices, storage)
+     * - Monthly counts reset to 0 (invoices, orders, API calls, SMS, emails)
+     *
+     * @return Number of workspaces processed
+     */
+    fun resetMonthlyCounters(): Int {
+        val now = YearMonth.now(ZoneOffset.UTC)
+        val previousMonth = now.minusMonths(1)
+
+        logger.info("Resetting monthly usage counters for {}", now)
+
+        // Get all usage metrics from previous month
+        val previousMetrics = usageMetricRepository.findByPeriodYearAndPeriodMonth(
+            previousMonth.year,
+            previousMonth.monthValue
+        )
+
+        var processedCount = 0
+
+        previousMetrics.forEach { previousMetric ->
+            try {
+                // Check if current month metric already exists
+                val existingMetric = usageMetricRepository.findByWorkspaceIdAndPeriodYearAndPeriodMonth(
+                    previousMetric.workspaceId,
+                    now.year,
+                    now.monthValue
+                )
+
+                if (existingMetric != null) {
+                    logger.warn(
+                        "Usage metric already exists for workspace {} in {}, skipping",
+                        previousMetric.workspaceId, now
+                    )
+                    return@forEach
+                }
+
+                // Create new metric for current month
+                val newMetric = UsageMetric().apply {
+                    workspaceId = previousMetric.workspaceId
+                    periodYear = now.year
+                    periodMonth = now.monthValue
+
+                    // Carry forward cumulative counts
+                    customerCount = previousMetric.customerCount
+                    productCount = previousMetric.productCount
+                    memberCount = previousMetric.memberCount
+                    deviceCount = previousMetric.deviceCount
+                    storageUsedBytes = previousMetric.storageUsedBytes
+
+                    // Reset monthly counts
+                    invoiceCount = 0
+                    orderCount = 0
+                    apiCalls = 0
+                    smsCount = 0
+                    emailCount = 0
+
+                    // Reset limit flags
+                    customerLimitExceeded = false
+                    productLimitExceeded = false
+                    invoiceLimitExceeded = false
+                    storageLimitExceeded = false
+                    memberLimitExceeded = false
+                    deviceLimitExceeded = false
+
+                    lastCalculatedAt = Instant.now()
+                }
+
+                usageMetricRepository.save(newMetric)
+                processedCount++
+
+                logger.debug(
+                    "Reset usage counters for workspace {}: carried forward {} customers, {} products",
+                    previousMetric.workspaceId, newMetric.customerCount, newMetric.productCount
+                )
+            } catch (e: Exception) {
+                logger.error(
+                    "Failed to reset usage counters for workspace {}",
+                    previousMetric.workspaceId,
+                    e
+                )
+            }
+        }
+
+        logger.info("Monthly usage counter reset completed: {} workspaces processed", processedCount)
+        return processedCount
+    }
+
+    /**
+     * Delete old usage metrics beyond retention period.
+     *
+     * @param monthsToKeep Number of months to keep (default 12)
+     * @return Number of records deleted
+     */
+    fun deleteOldUsageMetrics(monthsToKeep: Int = 12): Int {
+        val cutoffMonth = YearMonth.now(ZoneOffset.UTC).minusMonths(monthsToKeep.toLong())
+
+        logger.info("Deleting usage metrics older than {}", cutoffMonth)
+
+        val oldMetrics = usageMetricRepository.findByPeriodYearLessThanOrPeriodYearAndPeriodMonthLessThan(
+            cutoffMonth.year,
+            cutoffMonth.year,
+            cutoffMonth.monthValue
+        )
+
+        val deletedCount = oldMetrics.size
+        usageMetricRepository.deleteAll(oldMetrics)
+
+        logger.info("Deleted {} old usage metric records", deletedCount)
+        return deletedCount
+    }
 }

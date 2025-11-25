@@ -31,6 +31,9 @@ interface SubscriptionRepository : JpaRepository<Subscription, Long> {
     @Query("SELECT s FROM Subscription s WHERE s.status = :status")
     fun findByStatus(status: SubscriptionStatus): List<Subscription>
 
+    @Query("SELECT s FROM Subscription s WHERE s.status = :status")
+    fun findAllByStatus(status: SubscriptionStatus): List<Subscription>
+
     @Query("SELECT s FROM Subscription s WHERE s.status IN :statuses")
     fun findByStatusIn(statuses: List<SubscriptionStatus>): List<Subscription>
 
