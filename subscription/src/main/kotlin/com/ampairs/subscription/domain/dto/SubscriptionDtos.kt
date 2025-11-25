@@ -23,11 +23,18 @@ data class PlanResponse(
     val limits: PlanLimitsResponse,
     val features: PlanFeaturesResponse,
     val trialDays: Int,
+    val multiWorkspaceDiscount: MultiWorkspaceDiscountResponse,
     val googlePlayProductIdMonthly: String?,
     val googlePlayProductIdAnnual: String?,
     val appStoreProductIdMonthly: String?,
     val appStoreProductIdAnnual: String?,
     val displayOrder: Int
+)
+
+data class MultiWorkspaceDiscountResponse(
+    val minWorkspaces: Int,
+    val discountPercent: Int,
+    val isAvailable: Boolean
 )
 
 data class PlanLimitsResponse(
@@ -80,6 +87,11 @@ fun SubscriptionPlanDefinition.asPlanResponse(): PlanResponse = PlanResponse(
         prioritySupport = prioritySupport
     ),
     trialDays = trialDays,
+    multiWorkspaceDiscount = MultiWorkspaceDiscountResponse(
+        minWorkspaces = multiWorkspaceMinCount,
+        discountPercent = multiWorkspaceDiscountPercent,
+        isAvailable = multiWorkspaceDiscountPercent > 0 && multiWorkspaceMinCount > 0
+    ),
     googlePlayProductIdMonthly = googlePlayProductIdMonthly,
     googlePlayProductIdAnnual = googlePlayProductIdAnnual,
     appStoreProductIdMonthly = appStoreProductIdMonthly,

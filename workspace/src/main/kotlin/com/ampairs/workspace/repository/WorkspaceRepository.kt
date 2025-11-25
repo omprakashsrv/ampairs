@@ -74,4 +74,18 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
     @Query("UPDATE Workspace w SET w.lastActivityAt = :timestamp WHERE w.id = :workspaceId")
     fun updateLastActivity(@Param("workspaceId") workspaceId: String, @Param("timestamp") timestamp: LocalDateTime)
 
+    /**
+     * Count active workspaces created by a user
+     * Used for multi-workspace discount calculation
+     */
+    @Query(
+        value = """
+        SELECT COUNT(*) FROM workspaces w
+        WHERE w.created_by = :userId
+        AND w.active = true
+        """,
+        nativeQuery = true
+    )
+    fun countByCreatedByAndActiveTrue(@Param("userId") userId: String): Int
+
 }

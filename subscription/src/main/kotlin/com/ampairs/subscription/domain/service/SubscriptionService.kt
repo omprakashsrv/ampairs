@@ -19,7 +19,8 @@ class SubscriptionService(
     private val subscriptionRepository: SubscriptionRepository,
     private val subscriptionPlanRepository: SubscriptionPlanRepository,
     private val subscriptionAddonRepository: SubscriptionAddonRepository,
-    private val usageMetricRepository: UsageMetricRepository
+    private val usageMetricRepository: UsageMetricRepository,
+    private val workspaceRepository: com.ampairs.workspace.repository.WorkspaceRepository
 ) {
     private val logger = LoggerFactory.getLogger(SubscriptionService::class.java)
 
@@ -175,7 +176,7 @@ class SubscriptionService(
             this.lastPaymentAt = now
             this.lastPaymentStatus = PaymentStatus.SUCCEEDED
             this.failedPaymentCount = 0
-            this.nextBillingAmount = billingCycle.calculateDiscountedPrice(plan.getMonthlyPrice(currency))
+            this.nextBillingAmount = calculatePriceWithDiscount(workspaceId, plan, currency, billingCycle)
         }
 
         logger.info(
@@ -209,7 +210,7 @@ class SubscriptionService(
             val totalDays = subscription.billingCycle.months * 30
             val currentBillingAmount = subscription.nextBillingAmount ?: BigDecimal.ZERO
             val unusedAmount = currentBillingAmount.multiply(BigDecimal(daysRemaining)).divide(BigDecimal(totalDays), 2, RoundingMode.HALF_UP)
-            val newAmount = billingCycle.calculateDiscountedPrice(newPlan.getMonthlyPrice(subscription.currency))
+            val newAmount = calculatePriceWithDiscount(workspaceId, newPlan, subscription.currency, billingCycle)
             prorationAmount = newAmount.subtract(unusedAmount)
         }
 
@@ -221,7 +222,7 @@ class SubscriptionService(
             this.billingCycle = billingCycle
             this.currentPeriodStart = now
             this.currentPeriodEnd = now.plus(Duration.ofDays(billingCycle.months * 30L))
-            this.nextBillingAmount = billingCycle.calculateDiscountedPrice(newPlan.getMonthlyPrice(currency))
+            this.nextBillingAmount = calculatePriceWithDiscount(workspaceId, newPlan, currency, billingCycle)
             this.isFree = isNewPlanFree
         }
         subscriptionRepository.save(subscription)
@@ -486,6 +487,43 @@ class SubscriptionService(
                 plan.availableModules.contains(feature, ignoreCase = true)
             }
         }
+    }
+
+    // =====================
+    // Private Helper Methods
+    // =====================
+
+    /**
+     * Calculate subscription price with multi-workspace discount applied
+     * @param workspaceId Workspace ID to get the owner from
+     * @param plan Subscription plan
+     * @param currency Currency code (INR/USD)
+     * @param billingCycle Billing cycle for annual discount
+     * @return Discounted price
+     */
+    private fun calculatePriceWithDiscount(
+        workspaceId: String,
+        plan: SubscriptionPlanDefinition,
+        currency: String,
+        billingCycle: BillingCycle
+    ): BigDecimal {
+        // Get workspace to find the creator/owner
+        val workspace = workspaceRepository.findByUid(workspaceId).orElse(null)
+        val userId = workspace?.createdBy
+
+        // If we can't determine the user, return standard price without discount
+        if (userId == null) {
+            return billingCycle.calculateDiscountedPrice(plan.getMonthlyPrice(currency))
+        }
+
+        // Count active workspaces created by this user
+        val workspaceCount = workspaceRepository.countByCreatedByAndActiveTrue(userId)
+
+        // Get base price with multi-workspace discount
+        val pricePerWorkspace = plan.getPriceWithDiscount(currency, workspaceCount)
+
+        // Apply billing cycle discount (annual gets extra discount)
+        return billingCycle.calculateDiscountedPrice(pricePerWorkspace)
     }
 }
 

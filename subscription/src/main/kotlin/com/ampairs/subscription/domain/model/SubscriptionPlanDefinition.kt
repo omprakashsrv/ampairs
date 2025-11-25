@@ -150,6 +150,21 @@ class SubscriptionPlanDefinition : BaseDomain() {
     @Column(name = "trial_days", nullable = false)
     var trialDays: Int = 0
 
+    // Multi-Workspace Discounts
+
+    /**
+     * Minimum workspaces required for discount (e.g., 3)
+     */
+    @Column(name = "multi_workspace_min_count", nullable = false)
+    var multiWorkspaceMinCount: Int = 0
+
+    /**
+     * Discount percentage for multiple workspaces (0-100)
+     * Applied when user has multiWorkspaceMinCount or more workspaces
+     */
+    @Column(name = "multi_workspace_discount_percent", nullable = false)
+    var multiWorkspaceDiscountPercent: Int = 0
+
     // Status
 
     /**
@@ -237,5 +252,31 @@ class SubscriptionPlanDefinition : BaseDomain() {
      */
     fun isFree(): Boolean {
         return planCode == "FREE" || (monthlyPriceInr == BigDecimal.ZERO && monthlyPriceUsd == BigDecimal.ZERO)
+    }
+
+    /**
+     * Calculate price with multi-workspace discount applied
+     * @param currency Currency code (INR/USD)
+     * @param workspaceCount Number of workspaces user owns
+     * @return Discounted price per workspace
+     */
+    fun getPriceWithDiscount(currency: String, workspaceCount: Int): BigDecimal {
+        val basePrice = getMonthlyPrice(currency)
+
+        // No discount if below minimum count or discount not configured
+        if (workspaceCount < multiWorkspaceMinCount || multiWorkspaceDiscountPercent == 0) {
+            return basePrice
+        }
+
+        // Apply discount
+        val discountMultiplier = BigDecimal(100 - multiWorkspaceDiscountPercent).divide(BigDecimal(100))
+        return basePrice.multiply(discountMultiplier)
+    }
+
+    /**
+     * Check if multi-workspace discount is applicable
+     */
+    fun hasMultiWorkspaceDiscount(workspaceCount: Int): Boolean {
+        return workspaceCount >= multiWorkspaceMinCount && multiWorkspaceDiscountPercent > 0
     }
 }
