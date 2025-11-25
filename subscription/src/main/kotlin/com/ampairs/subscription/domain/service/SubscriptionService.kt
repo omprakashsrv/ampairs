@@ -494,12 +494,14 @@ class SubscriptionService(
     // =====================
 
     /**
-     * Calculate subscription price with multi-workspace discount applied
+     * Calculate subscription price with all discounts applied
+     * (multi-workspace + seasonal + billing cycle)
+     *
      * @param workspaceId Workspace ID to get the owner from
      * @param plan Subscription plan
      * @param currency Currency code (INR/USD)
      * @param billingCycle Billing cycle for annual discount
-     * @return Discounted price
+     * @return Final discounted price with all discounts stacked
      */
     private fun calculatePriceWithDiscount(
         workspaceId: String,
@@ -519,10 +521,10 @@ class SubscriptionService(
         // Count active workspaces created by this user
         val workspaceCount = workspaceRepository.countByCreatedByAndActiveTrue(userId)
 
-        // Get base price with multi-workspace discount
-        val pricePerWorkspace = plan.getPriceWithDiscount(currency, workspaceCount)
+        // Get base price with multi-workspace AND seasonal discounts
+        val pricePerWorkspace = plan.getPriceWithAllDiscounts(currency, workspaceCount)
 
-        // Apply billing cycle discount (annual gets extra discount)
+        // Apply billing cycle discount on top (annual gets extra discount)
         return billingCycle.calculateDiscountedPrice(pricePerWorkspace)
     }
 }

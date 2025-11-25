@@ -165,6 +165,33 @@ class SubscriptionPlanDefinition : BaseDomain() {
     @Column(name = "multi_workspace_discount_percent", nullable = false)
     var multiWorkspaceDiscountPercent: Int = 0
 
+    // Seasonal/Festival Discounts
+
+    /**
+     * Seasonal discount percentage (0-100)
+     * Applied during festival/promotional periods
+     */
+    @Column(name = "seasonal_discount_percent", nullable = false)
+    var seasonalDiscountPercent: Int = 0
+
+    /**
+     * Seasonal discount name (e.g., "Diwali Sale", "New Year Offer")
+     */
+    @Column(name = "seasonal_discount_name", length = 100)
+    var seasonalDiscountName: String? = null
+
+    /**
+     * Seasonal discount start date (UTC)
+     */
+    @Column(name = "seasonal_discount_start_at")
+    var seasonalDiscountStartAt: Instant? = null
+
+    /**
+     * Seasonal discount end date (UTC)
+     */
+    @Column(name = "seasonal_discount_end_at")
+    var seasonalDiscountEndAt: Instant? = null
+
     // Status
 
     /**
@@ -278,5 +305,69 @@ class SubscriptionPlanDefinition : BaseDomain() {
      */
     fun hasMultiWorkspaceDiscount(workspaceCount: Int): Boolean {
         return workspaceCount >= multiWorkspaceMinCount && multiWorkspaceDiscountPercent > 0
+    }
+
+    /**
+     * Check if seasonal discount is currently active
+     */
+    fun hasActiveSeasonalDiscount(): Boolean {
+        if (seasonalDiscountPercent == 0) return false
+        if (seasonalDiscountStartAt == null || seasonalDiscountEndAt == null) return false
+
+        val now = Instant.now()
+        return now.isAfter(seasonalDiscountStartAt) && now.isBefore(seasonalDiscountEndAt)
+    }
+
+    /**
+     * Get seasonal discount percentage if active, otherwise 0
+     */
+    fun getActiveSeasonalDiscountPercent(): Int {
+        return if (hasActiveSeasonalDiscount()) seasonalDiscountPercent else 0
+    }
+
+    /**
+     * Calculate price with all applicable discounts (multi-workspace + seasonal)
+     * @param currency Currency code (INR/USD)
+     * @param workspaceCount Number of workspaces user owns
+     * @return Final discounted price with all discounts stacked
+     */
+    fun getPriceWithAllDiscounts(currency: String, workspaceCount: Int): BigDecimal {
+        var price = getMonthlyPrice(currency)
+
+        // Apply multi-workspace discount first
+        if (workspaceCount >= multiWorkspaceMinCount && multiWorkspaceDiscountPercent > 0) {
+            val multiWorkspaceMultiplier = BigDecimal(100 - multiWorkspaceDiscountPercent)
+                .divide(BigDecimal(100), 4, java.math.RoundingMode.HALF_UP)
+            price = price.multiply(multiWorkspaceMultiplier)
+        }
+
+        // Apply seasonal discount on top (if active)
+        val seasonalDiscount = getActiveSeasonalDiscountPercent()
+        if (seasonalDiscount > 0) {
+            val seasonalMultiplier = BigDecimal(100 - seasonalDiscount)
+                .divide(BigDecimal(100), 4, java.math.RoundingMode.HALF_UP)
+            price = price.multiply(seasonalMultiplier)
+        }
+
+        return price.setScale(2, java.math.RoundingMode.HALF_UP)
+    }
+
+    /**
+     * Get total discount percentage (combined multi-workspace + seasonal)
+     * Note: This is an approximation for display purposes
+     */
+    fun getTotalDiscountPercent(workspaceCount: Int): Int {
+        var totalDiscount = 0
+
+        // Multi-workspace discount
+        if (workspaceCount >= multiWorkspaceMinCount && multiWorkspaceDiscountPercent > 0) {
+            totalDiscount += multiWorkspaceDiscountPercent
+        }
+
+        // Seasonal discount
+        totalDiscount += getActiveSeasonalDiscountPercent()
+
+        // Cap at 100%
+        return totalDiscount.coerceAtMost(100)
     }
 }

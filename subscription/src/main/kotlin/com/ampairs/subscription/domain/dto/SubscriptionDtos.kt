@@ -24,6 +24,7 @@ data class PlanResponse(
     val features: PlanFeaturesResponse,
     val trialDays: Int,
     val multiWorkspaceDiscount: MultiWorkspaceDiscountResponse,
+    val seasonalDiscount: SeasonalDiscountResponse,
     val googlePlayProductIdMonthly: String?,
     val googlePlayProductIdAnnual: String?,
     val appStoreProductIdMonthly: String?,
@@ -35,6 +36,14 @@ data class MultiWorkspaceDiscountResponse(
     val minWorkspaces: Int,
     val discountPercent: Int,
     val isAvailable: Boolean
+)
+
+data class SeasonalDiscountResponse(
+    val discountPercent: Int,
+    val discountName: String?,
+    val startAt: Instant?,
+    val endAt: Instant?,
+    val isActive: Boolean
 )
 
 data class PlanLimitsResponse(
@@ -91,6 +100,13 @@ fun SubscriptionPlanDefinition.asPlanResponse(): PlanResponse = PlanResponse(
         minWorkspaces = multiWorkspaceMinCount,
         discountPercent = multiWorkspaceDiscountPercent,
         isAvailable = multiWorkspaceDiscountPercent > 0 && multiWorkspaceMinCount > 0
+    ),
+    seasonalDiscount = SeasonalDiscountResponse(
+        discountPercent = seasonalDiscountPercent,
+        discountName = seasonalDiscountName,
+        startAt = seasonalDiscountStartAt,
+        endAt = seasonalDiscountEndAt,
+        isActive = hasActiveSeasonalDiscount()
     ),
     googlePlayProductIdMonthly = googlePlayProductIdMonthly,
     googlePlayProductIdAnnual = googlePlayProductIdAnnual,
