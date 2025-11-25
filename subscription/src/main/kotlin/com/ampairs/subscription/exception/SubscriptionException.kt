@@ -125,6 +125,18 @@ sealed class SubscriptionException(
         errorCode = "TRIAL_NOT_AVAILABLE"
     )
 
+    class TrialAlreadyUsed(workspaceId: String) : SubscriptionException(
+        message = "Trial has already been used for workspace: $workspaceId",
+        status = HttpStatus.CONFLICT,
+        errorCode = "TRIAL_ALREADY_USED"
+    )
+
+    class AlreadyHasActivePlan(workspaceId: String, planCode: String) : SubscriptionException(
+        message = "Workspace $workspaceId already has an active subscription: $planCode",
+        status = HttpStatus.CONFLICT,
+        errorCode = "ACTIVE_PLAN_EXISTS"
+    )
+
     class SubscriptionExpired(workspaceId: String) : SubscriptionException(
         message = "Subscription has expired for workspace: $workspaceId",
         status = HttpStatus.PAYMENT_REQUIRED,

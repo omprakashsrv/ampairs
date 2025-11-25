@@ -97,11 +97,28 @@ class SubscriptionService(
         val plan = subscriptionPlanRepository.findByPlanCode(planCode)
             ?: throw SubscriptionException.PlanNotFoundException(planCode)
 
+        // Check if trial is allowed
         val existingSubscription = subscriptionRepository.findByWorkspaceId(workspaceId)
+
+        // Prevent trial abuse - only allow trial once per workspace
+        if (existingSubscription != null) {
+            // Check if user has already used trial for any paid plan
+            if (existingSubscription.trialEndsAt != null) {
+                throw SubscriptionException.TrialAlreadyUsed(workspaceId)
+            }
+
+            // If already on a paid plan, cannot start trial
+            if (!existingSubscription.isFree && existingSubscription.status == SubscriptionStatus.ACTIVE) {
+                throw SubscriptionException.AlreadyHasActivePlan(workspaceId, existingSubscription.planCode)
+            }
+        }
 
         val subscription = existingSubscription ?: Subscription().apply {
             this.workspaceId = workspaceId
         }
+
+        val now = Instant.now()
+        val trialEnd = now.plus(Duration.ofDays(trialDays.toLong()))
 
         subscription.apply {
             this.plan = plan
@@ -109,9 +126,9 @@ class SubscriptionService(
             this.status = SubscriptionStatus.TRIALING
             this.billingCycle = BillingCycle.MONTHLY
             this.isFree = false
-            this.currentPeriodStart = Instant.now()
-            this.currentPeriodEnd = Instant.now().plus(Duration.ofDays(trialDays.toLong()))
-            this.trialEndsAt = this.currentPeriodEnd
+            this.currentPeriodStart = now
+            this.currentPeriodEnd = trialEnd
+            this.trialEndsAt = trialEnd
         }
 
         logger.info("Starting {} day trial for workspace: {}, plan: {}", trialDays, workspaceId, planCode)
