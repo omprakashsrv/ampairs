@@ -192,6 +192,29 @@ class SubscriptionPlanDefinition : BaseDomain() {
     @Column(name = "seasonal_discount_end_at")
     var seasonalDiscountEndAt: Instant? = null
 
+    // Pre-Launch Discount
+
+    /**
+     * Pre-launch discount percentage (0-100)
+     * Special early-bird discount for users who join before official launch
+     */
+    @Column(name = "pre_launch_discount_percent", nullable = false)
+    var preLaunchDiscountPercent: Int = 0
+
+    /**
+     * Pre-launch discount end date (UTC)
+     * After this date, the pre-launch discount no longer applies
+     */
+    @Column(name = "pre_launch_discount_end_at")
+    var preLaunchDiscountEndAt: Instant? = null
+
+    /**
+     * Pre-launch discount applies to new subscriptions only
+     * If true, only new users get the discount. If false, all can get it during period.
+     */
+    @Column(name = "pre_launch_new_users_only", nullable = false)
+    var preLaunchNewUsersOnly: Boolean = true
+
     // Status
 
     /**
@@ -326,15 +349,48 @@ class SubscriptionPlanDefinition : BaseDomain() {
     }
 
     /**
-     * Calculate price with all applicable discounts (multi-workspace + seasonal)
+     * Check if pre-launch discount is currently active
+     * @param isNewUser Whether this is a new user subscription (only checked if preLaunchNewUsersOnly is true)
+     */
+    fun hasActivePreLaunchDiscount(isNewUser: Boolean = true): Boolean {
+        if (preLaunchDiscountPercent == 0) return false
+        if (preLaunchDiscountEndAt == null) return false
+
+        // Check if we're still in the pre-launch period
+        val now = Instant.now()
+        if (now.isAfter(preLaunchDiscountEndAt)) return false
+
+        // If restricted to new users only, check the flag
+        return !preLaunchNewUsersOnly || isNewUser
+    }
+
+    /**
+     * Get pre-launch discount percentage if active, otherwise 0
+     * @param isNewUser Whether this is a new user subscription
+     */
+    fun getActivePreLaunchDiscountPercent(isNewUser: Boolean = true): Int {
+        return if (hasActivePreLaunchDiscount(isNewUser)) preLaunchDiscountPercent else 0
+    }
+
+    /**
+     * Calculate price with all applicable discounts (multi-workspace + seasonal + pre-launch)
      * @param currency Currency code (INR/USD)
      * @param workspaceCount Number of workspaces user owns
+     * @param isNewUser Whether this is a new user (for pre-launch discount eligibility)
      * @return Final discounted price with all discounts stacked
      */
-    fun getPriceWithAllDiscounts(currency: String, workspaceCount: Int): BigDecimal {
+    fun getPriceWithAllDiscounts(currency: String, workspaceCount: Int, isNewUser: Boolean = true): BigDecimal {
         var price = getMonthlyPrice(currency)
 
-        // Apply multi-workspace discount first
+        // Apply pre-launch discount first (if active) - this is the deepest discount
+        val preLaunchDiscount = getActivePreLaunchDiscountPercent(isNewUser)
+        if (preLaunchDiscount > 0) {
+            val preLaunchMultiplier = BigDecimal(100 - preLaunchDiscount)
+                .divide(BigDecimal(100), 4, java.math.RoundingMode.HALF_UP)
+            price = price.multiply(preLaunchMultiplier)
+        }
+
+        // Apply multi-workspace discount on top
         if (workspaceCount >= multiWorkspaceMinCount && multiWorkspaceDiscountPercent > 0) {
             val multiWorkspaceMultiplier = BigDecimal(100 - multiWorkspaceDiscountPercent)
                 .divide(BigDecimal(100), 4, java.math.RoundingMode.HALF_UP)
@@ -353,11 +409,16 @@ class SubscriptionPlanDefinition : BaseDomain() {
     }
 
     /**
-     * Get total discount percentage (combined multi-workspace + seasonal)
+     * Get total discount percentage (combined pre-launch + multi-workspace + seasonal)
      * Note: This is an approximation for display purposes
+     * @param workspaceCount Number of workspaces user owns
+     * @param isNewUser Whether this is a new user
      */
-    fun getTotalDiscountPercent(workspaceCount: Int): Int {
+    fun getTotalDiscountPercent(workspaceCount: Int, isNewUser: Boolean = true): Int {
         var totalDiscount = 0
+
+        // Pre-launch discount
+        totalDiscount += getActivePreLaunchDiscountPercent(isNewUser)
 
         // Multi-workspace discount
         if (workspaceCount >= multiWorkspaceMinCount && multiWorkspaceDiscountPercent > 0) {
