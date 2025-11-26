@@ -13,6 +13,280 @@ This guide explains how to integrate the **50% Pre-Launch Discount** into the mo
 
 ---
 
+## Quick Start - Step-by-Step Instructions
+
+Follow these steps to add pre-launch discount support to your app:
+
+### Step 1: Update Data Models (5 minutes)
+
+Add the new `PreLaunchDiscountResponse` DTO to your data models:
+
+**File**: `shared/src/commonMain/kotlin/com/ampairs/subscription/domain/dto/SubscriptionDtos.kt`
+
+```kotlin
+// Add this new data class
+data class PreLaunchDiscountResponse(
+    val discountPercent: Int,         // 50 = 50% off
+    val endAt: Instant?,              // When discount expires
+    val newUsersOnly: Boolean,        // true = only new users eligible
+    val isActive: Boolean             // Whether discount is currently active
+)
+
+// Update existing PlanResponse to include the new field
+data class PlanResponse(
+    val uid: String,
+    val planCode: String,
+    val displayName: String,
+    val description: String?,
+    val monthlyPriceInr: BigDecimal,
+    val monthlyPriceUsd: BigDecimal,
+    val limits: PlanLimitsResponse,
+    val features: PlanFeaturesResponse,
+    val trialDays: Int,
+    val multiWorkspaceDiscount: MultiWorkspaceDiscountResponse,
+    val seasonalDiscount: SeasonalDiscountResponse,
+    val preLaunchDiscount: PreLaunchDiscountResponse,  // ADD THIS LINE
+    val googlePlayProductIdMonthly: String?,
+    val googlePlayProductIdAnnual: String?,
+    val appStoreProductIdMonthly: String?,
+    val appStoreProductIdAnnual: String?,
+    val displayOrder: Int
+)
+```
+
+### Step 2: Update Price Calculation (10 minutes)
+
+Update your `SubscriptionViewModel` to include pre-launch discount in calculations:
+
+**File**: `shared/src/commonMain/kotlin/com/ampairs/subscription/SubscriptionViewModel.kt`
+
+```kotlin
+fun calculateFinalPrice(
+    plan: PlanResponse,
+    currency: String,
+    billingCycle: BillingCycle,
+    workspaceCount: Int,
+    isNewUser: Boolean  // ADD THIS PARAMETER
+): BigDecimal {
+    var price = when (currency) {
+        "INR" -> plan.monthlyPriceInr
+        "USD" -> plan.monthlyPriceUsd
+        else -> plan.monthlyPriceUsd
+    }
+
+    // ===== ADD THIS SECTION =====
+    // 1. Apply pre-launch discount FIRST (if eligible)
+    if (plan.preLaunchDiscount.isActive &&
+        (!plan.preLaunchDiscount.newUsersOnly || isNewUser)) {
+        price *= (100 - plan.preLaunchDiscount.discountPercent).toBigDecimal() / 100.toBigDecimal()
+    }
+    // ===== END NEW SECTION =====
+
+    // 2. Apply multi-workspace discount
+    if (plan.multiWorkspaceDiscount.isAvailable &&
+        workspaceCount >= plan.multiWorkspaceDiscount.minWorkspaces) {
+        price *= (100 - plan.multiWorkspaceDiscount.discountPercent).toBigDecimal() / 100.toBigDecimal()
+    }
+
+    // 3. Apply seasonal discount
+    if (plan.seasonalDiscount.isActive) {
+        price *= (100 - plan.seasonalDiscount.discountPercent).toBigDecimal() / 100.toBigDecimal()
+    }
+
+    // 4. Apply billing cycle discount
+    val cycleMultiplier = when (billingCycle) {
+        BillingCycle.ANNUAL -> 0.8333.toBigDecimal()      // 16.67% off
+        BillingCycle.QUARTERLY -> 0.9167.toBigDecimal()   // 8.33% off
+        else -> BigDecimal.ONE
+    }
+    price *= cycleMultiplier
+
+    return price.setScale(2, RoundingMode.HALF_UP)
+}
+```
+
+### Step 3: Add Pre-Launch Badge to Plan Cards (15 minutes)
+
+Add the badge component to show on each plan card when pre-launch is active:
+
+**File**: `shared/src/commonMain/kotlin/com/ampairs/subscription/ui/components/PreLaunchBadge.kt`
+
+```kotlin
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+
+@Composable
+fun PreLaunchBadge(
+    discount: PreLaunchDiscountResponse,
+    modifier: Modifier = Modifier
+) {
+    // Don't show if not active
+    if (!discount.isActive) return
+
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(8.dp),
+        color = Color(0xFFFF6B35),  // Vibrant orange
+        shadowElevation = 4.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            Text(text = "🚀", style = MaterialTheme.typography.bodyMedium)
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "${discount.discountPercent}% OFF",
+                style = MaterialTheme.typography.labelLarge,
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
+            )
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "PRE-LAUNCH",
+                style = MaterialTheme.typography.labelSmall,
+                color = Color.White.copy(alpha = 0.9f),
+                fontWeight = FontWeight.Medium
+            )
+        }
+    }
+}
+```
+
+### Step 4: Update Plan Card to Show Badge (10 minutes)
+
+Modify your existing `PlanCard` composable to display the pre-launch badge:
+
+**File**: `shared/src/commonMain/kotlin/com/ampairs/subscription/ui/PlanCard.kt`
+
+```kotlin
+@Composable
+fun PlanCard(
+    plan: PlanResponse,
+    userWorkspaceCount: Int,
+    isNewUser: Boolean,  // ADD THIS PARAMETER
+    onSelectPlan: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onSelectPlan
+    ) {
+        // ===== ADD THIS BADGE AT THE TOP =====
+        Box {
+            Column(modifier = Modifier.padding(16.dp)) {
+                // Plan name and details
+                Text(
+                    text = plan.displayName,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold
+                )
+
+                // ... rest of your existing plan card content ...
+            }
+
+            // Position badge in top-right corner
+            if (plan.preLaunchDiscount.isActive &&
+                (!plan.preLaunchDiscount.newUsersOnly || isNewUser)) {
+                PreLaunchBadge(
+                    discount = plan.preLaunchDiscount,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                )
+            }
+        }
+        // ===== END NEW SECTION =====
+    }
+}
+```
+
+### Step 5: Add Pre-Launch Hero Banner (20 minutes)
+
+Add a prominent banner at the top of your subscription/plans screen:
+
+**File**: `shared/src/commonMain/kotlin/com/ampairs/subscription/ui/components/PreLaunchHeroBanner.kt`
+
+Copy the complete `PreLaunchHeroBanner` component from the "UI Implementation" section below.
+
+Then add it to your plans screen:
+
+**File**: `shared/src/commonMain/kotlin/com/ampairs/subscription/ui/SubscriptionPlansScreen.kt`
+
+```kotlin
+@Composable
+fun SubscriptionPlansScreen(
+    viewModel: SubscriptionViewModel,
+    isNewUser: Boolean  // Pass this from your auth state
+) {
+    val plans by viewModel.plans.collectAsState()
+
+    Column(modifier = Modifier.fillMaxSize()) {
+        // ===== ADD THIS BANNER AT THE TOP =====
+        // Show pre-launch banner if any plan has active pre-launch discount
+        plans.firstOrNull()?.preLaunchDiscount?.let { discount ->
+            if (discount.isActive) {
+                PreLaunchHeroBanner(discount = discount)
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+        // ===== END NEW SECTION =====
+
+        // Your existing plans list
+        LazyColumn {
+            items(plans) { plan ->
+                PlanCard(
+                    plan = plan,
+                    userWorkspaceCount = viewModel.workspaceCount,
+                    isNewUser = isNewUser,  // Pass the parameter
+                    onSelectPlan = { viewModel.selectPlan(plan) }
+                )
+            }
+        }
+    }
+}
+```
+
+### Step 6: Test the Integration (10 minutes)
+
+1. **Run the app** and navigate to subscription/plans screen
+2. **Verify** the pre-launch badge appears on plan cards
+3. **Verify** the hero banner shows at the top
+4. **Check** price calculations include the 50% discount
+5. **Test** with different user states (new vs existing)
+
+---
+
+## Implementation Checklist
+
+Use this checklist to track your progress:
+
+- [ ] **Step 1**: Added `PreLaunchDiscountResponse` to data models
+- [ ] **Step 1**: Updated `PlanResponse` to include `preLaunchDiscount` field
+- [ ] **Step 2**: Updated price calculation in ViewModel
+- [ ] **Step 3**: Created `PreLaunchBadge` component
+- [ ] **Step 4**: Added badge to `PlanCard`
+- [ ] **Step 5**: Created `PreLaunchHeroBanner` component
+- [ ] **Step 5**: Added banner to plans screen
+- [ ] **Step 6**: Tested on Android
+- [ ] **Step 6**: Tested on iOS
+- [ ] **Optional**: Added countdown timer component
+- [ ] **Optional**: Added announcement modal
+- [ ] **Optional**: Implemented analytics tracking
+
+**Estimated Total Time**: 1-2 hours for basic integration
+
+---
+
 ## API Changes
 
 ### Updated Plan Response
