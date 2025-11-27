@@ -116,6 +116,7 @@ data class ProviderSubscriptionStatus(
  * Orchestrates payment operations across different providers
  */
 @Service
+@org.springframework.transaction.annotation.Transactional
 class PaymentOrchestrationService(
     private val subscriptionService: SubscriptionService,
     private val billingService: BillingService,

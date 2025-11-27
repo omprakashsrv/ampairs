@@ -22,14 +22,9 @@ interface WebhookHandler {
     fun verifySignature(payload: String, signature: String, timestamp: String?): Boolean
 
     /**
-     * Extract event ID from payload (for idempotency)
-     */
-    fun extractEventId(payload: JsonNode): String?
-
-    /**
      * Process webhook event
      */
-    fun processEvent(eventId: String?, eventType: String, payload: JsonNode)
+    fun processEvent(eventType: String, payload: JsonNode)
 }
 
 /**
@@ -50,16 +45,7 @@ class GooglePlayWebhookHandler(
         return true
     }
 
-    override fun extractEventId(payload: JsonNode): String? {
-        // Google Play uses subscription notification version as event ID
-        val notificationId = payload.path("version").asText()
-        val purchaseToken = payload.path("subscriptionNotification").path("purchaseToken").asText()
-        return if (notificationId.isNotEmpty() && purchaseToken.isNotEmpty()) {
-            "${purchaseToken}_${notificationId}"
-        } else null
-    }
-
-    override fun processEvent(eventId: String?, eventType: String, payload: JsonNode) {
+    override fun processEvent(eventType: String, payload: JsonNode) {
         val subscriptionNotification = payload.path("subscriptionNotification")
         if (subscriptionNotification.isMissingNode) {
             logger.debug("Ignoring non-subscription Google Play notification")
