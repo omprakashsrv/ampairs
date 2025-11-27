@@ -2,15 +2,13 @@ package com.ampairs.subscription.webhook
 
 import com.ampairs.subscription.domain.model.PaymentProvider
 import com.ampairs.subscription.domain.service.PaymentOrchestrationService
-import com.ampairs.subscription.exception.SubscriptionException
+import com.ampairs.subscription.provider.RazorpayService
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
 import java.time.Instant
-import javax.crypto.Mac
-import javax.crypto.spec.SecretKeySpec
 
 /**
  * Base webhook handler interface
@@ -24,9 +22,14 @@ interface WebhookHandler {
     fun verifySignature(payload: String, signature: String, timestamp: String?): Boolean
 
     /**
+     * Extract event ID from payload (for idempotency)
+     */
+    fun extractEventId(payload: JsonNode): String?
+
+    /**
      * Process webhook event
      */
-    fun processEvent(eventType: String, payload: JsonNode)
+    fun processEvent(eventId: String?, eventType: String, payload: JsonNode)
 }
 
 /**
@@ -47,7 +50,16 @@ class GooglePlayWebhookHandler(
         return true
     }
 
-    override fun processEvent(eventType: String, payload: JsonNode) {
+    override fun extractEventId(payload: JsonNode): String? {
+        // Google Play uses subscription notification version as event ID
+        val notificationId = payload.path("version").asText()
+        val purchaseToken = payload.path("subscriptionNotification").path("purchaseToken").asText()
+        return if (notificationId.isNotEmpty() && purchaseToken.isNotEmpty()) {
+            "${purchaseToken}_${notificationId}"
+        } else null
+    }
+
+    override fun processEvent(eventId: String?, eventType: String, payload: JsonNode) {
         val subscriptionNotification = payload.path("subscriptionNotification")
         if (subscriptionNotification.isMissingNode) {
             logger.debug("Ignoring non-subscription Google Play notification")
@@ -291,8 +303,7 @@ class AppStoreWebhookHandler(
 @Component
 class RazorpayWebhookHandler(
     private val paymentOrchestrationService: PaymentOrchestrationService,
-    private val razorpayService: com.ampairs.subscription.provider.RazorpayService,
-    private val objectMapper: ObjectMapper
+    private val razorpayService: RazorpayService
 ) : WebhookHandler {
     private val logger = LoggerFactory.getLogger(RazorpayWebhookHandler::class.java)
 
@@ -415,8 +426,7 @@ class RazorpayWebhookHandler(
 @Component
 class StripeWebhookHandler(
     private val paymentOrchestrationService: PaymentOrchestrationService,
-    private val stripeService: com.ampairs.subscription.provider.StripeService,
-    private val objectMapper: ObjectMapper
+    private val stripeService: com.ampairs.subscription.provider.StripeService
 ) : WebhookHandler {
     private val logger = LoggerFactory.getLogger(StripeWebhookHandler::class.java)
 
