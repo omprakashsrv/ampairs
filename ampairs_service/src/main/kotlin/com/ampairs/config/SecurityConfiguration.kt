@@ -97,7 +97,8 @@ class SecurityConfiguration @Autowired constructor(
                         "/v3/api-docs",
                         "/swagger-resources/**",
                         "/api/v1/app-updates/check",
-                        "/api/v1/app-updates/download/**"
+                        "/api/v1/app-updates/download/**",
+                        "/webhooks/**"  // Payment provider webhooks (Google Play, App Store, Razorpay, Stripe)
                     ).permitAll()
                     .anyRequest().authenticated()
             }
@@ -123,7 +124,8 @@ class SecurityConfiguration @Autowired constructor(
                         requestURI.startsWith("/v3/api-docs") ||
                         requestURI.startsWith("/swagger-resources/") ||
                         requestURI == "/api/v1/app-updates/check" ||
-                        requestURI.startsWith("/api/v1/app-updates/download/")
+                        requestURI.startsWith("/api/v1/app-updates/download/") ||
+                        requestURI.startsWith("/webhooks/")
                     ) {
                         null // Skip JWT processing for public endpoints
                     } else {
