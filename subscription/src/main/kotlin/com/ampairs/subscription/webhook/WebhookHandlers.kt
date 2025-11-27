@@ -291,31 +291,15 @@ class AppStoreWebhookHandler(
 @Component
 class RazorpayWebhookHandler(
     private val paymentOrchestrationService: PaymentOrchestrationService,
+    private val razorpayService: com.ampairs.subscription.provider.RazorpayService,
     private val objectMapper: ObjectMapper
 ) : WebhookHandler {
     private val logger = LoggerFactory.getLogger(RazorpayWebhookHandler::class.java)
 
-    // TODO: Inject from configuration
-    private var webhookSecret: String = ""
-
     override val provider = PaymentProvider.RAZORPAY
 
     override fun verifySignature(payload: String, signature: String, timestamp: String?): Boolean {
-        if (webhookSecret.isEmpty()) {
-            logger.warn("Razorpay webhook secret not configured")
-            return true // Skip verification in dev
-        }
-
-        return try {
-            val mac = Mac.getInstance("HmacSHA256")
-            mac.init(SecretKeySpec(webhookSecret.toByteArray(), "HmacSHA256"))
-            val expectedSignature = mac.doFinal(payload.toByteArray())
-                .joinToString("") { "%02x".format(it) }
-            signature == expectedSignature
-        } catch (e: Exception) {
-            logger.error("Failed to verify Razorpay signature", e)
-            false
-        }
+        return razorpayService.verifyWebhookSignature(payload, signature)
     }
 
     override fun processEvent(eventType: String, payload: JsonNode) {
@@ -423,10 +407,6 @@ class RazorpayWebhookHandler(
     private fun handleRefundCreated(payload: JsonNode) {
         logger.info("Refund created")
     }
-
-    fun setWebhookSecret(secret: String) {
-        this.webhookSecret = secret
-    }
 }
 
 /**
@@ -435,41 +415,15 @@ class RazorpayWebhookHandler(
 @Component
 class StripeWebhookHandler(
     private val paymentOrchestrationService: PaymentOrchestrationService,
+    private val stripeService: com.ampairs.subscription.provider.StripeService,
     private val objectMapper: ObjectMapper
 ) : WebhookHandler {
     private val logger = LoggerFactory.getLogger(StripeWebhookHandler::class.java)
 
-    // TODO: Inject from configuration
-    private var webhookSecret: String = ""
-
     override val provider = PaymentProvider.STRIPE
 
     override fun verifySignature(payload: String, signature: String, timestamp: String?): Boolean {
-        if (webhookSecret.isEmpty()) {
-            logger.warn("Stripe webhook secret not configured")
-            return true // Skip verification in dev
-        }
-
-        // Stripe uses t=timestamp,v1=signature format
-        val parts = signature.split(",").associate {
-            val (key, value) = it.split("=", limit = 2)
-            key to value
-        }
-
-        val stripeTimestamp = parts["t"] ?: return false
-        val stripeSignature = parts["v1"] ?: return false
-
-        return try {
-            val signedPayload = "$stripeTimestamp.$payload"
-            val mac = Mac.getInstance("HmacSHA256")
-            mac.init(SecretKeySpec(webhookSecret.toByteArray(), "HmacSHA256"))
-            val expectedSignature = mac.doFinal(signedPayload.toByteArray())
-                .joinToString("") { "%02x".format(it) }
-            stripeSignature == expectedSignature
-        } catch (e: Exception) {
-            logger.error("Failed to verify Stripe signature", e)
-            false
-        }
+        return stripeService.verifyWebhookSignature(payload, signature)
     }
 
     override fun processEvent(eventType: String, payload: JsonNode) {
@@ -586,9 +540,5 @@ class StripeWebhookHandler(
 
     private fun handleCustomerCreated(customer: JsonNode) {
         logger.info("Customer created: {}", customer.path("id").asText())
-    }
-
-    fun setWebhookSecret(secret: String) {
-        this.webhookSecret = secret
     }
 }
