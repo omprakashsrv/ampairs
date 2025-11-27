@@ -200,6 +200,7 @@ class SubscriptionDowngradeService(
      * Returns subscriptions that are:
      * - PAST_DUE with excessive failed payments
      * - ACTIVE but expired (currentPeriodEnd < now)
+     * - ACTIVE with cancelAtPeriodEnd=true and period has ended
      *
      * @return List of subscriptions to downgrade
      */
@@ -215,10 +216,20 @@ class SubscriptionDowngradeService(
             .filter {
                 !it.isFree &&
                 it.currentPeriodEnd != null &&
+                now.isAfter(it.currentPeriodEnd) &&
+                !it.cancelAtPeriodEnd // Don't include cancelled subscriptions here (handled separately)
+            }
+
+        // Find subscriptions scheduled for cancellation where period has ended
+        val scheduledCancellations = subscriptionRepository.findAllByStatus(SubscriptionStatus.ACTIVE)
+            .filter {
+                !it.isFree &&
+                it.cancelAtPeriodEnd &&
+                it.currentPeriodEnd != null &&
                 now.isAfter(it.currentPeriodEnd)
             }
 
-        return pastDueSubscriptions + expiredSubscriptions
+        return pastDueSubscriptions + expiredSubscriptions + scheduledCancellations
     }
 
     /**
@@ -242,6 +253,12 @@ class SubscriptionDowngradeService(
                 when {
                     subscription.status == SubscriptionStatus.PAST_DUE -> {
                         handlePaymentFailure(subscription.workspaceId, subscription.failedPaymentCount)
+                    }
+                    subscription.cancelAtPeriodEnd -> {
+                        handleUserCancellation(
+                            subscription.workspaceId,
+                            subscription.cancellationReason ?: "Scheduled cancellation at period end"
+                        )
                     }
                     subscription.currentPeriodEnd != null -> {
                         handleSubscriptionExpiry(subscription.workspaceId)

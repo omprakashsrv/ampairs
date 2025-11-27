@@ -20,7 +20,8 @@ class SubscriptionService(
     private val subscriptionPlanRepository: SubscriptionPlanRepository,
     private val subscriptionAddonRepository: SubscriptionAddonRepository,
     private val usageMetricRepository: UsageMetricRepository,
-    private val workspaceRepository: com.ampairs.workspace.repository.WorkspaceRepository
+    private val workspaceRepository: com.ampairs.workspace.repository.WorkspaceRepository,
+    private val subscriptionDowngradeService: SubscriptionDowngradeService
 ) {
     private val logger = LoggerFactory.getLogger(SubscriptionService::class.java)
 
@@ -276,7 +277,7 @@ class SubscriptionService(
     }
 
     /**
-     * Cancel subscription
+     * Cancel subscription - automatically downgrades to FREE plan
      */
     fun cancelSubscription(workspaceId: String, immediate: Boolean, reason: String?): SubscriptionResponse {
         val subscription = subscriptionRepository.findWithPlanByWorkspaceId(workspaceId)
@@ -284,24 +285,31 @@ class SubscriptionService(
 
         val now = Instant.now()
 
-        if (immediate) {
-            subscription.status = SubscriptionStatus.CANCELLED
-            subscription.cancelledAt = now
-            subscription.cancellationReason = reason
+        // Cancel all addons regardless of immediate or scheduled cancellation
+        subscriptionAddonRepository.cancelAllBySubscriptionId(subscription.uid, now)
 
-            // Cancel all addons
-            subscriptionAddonRepository.cancelAllBySubscriptionId(subscription.uid, now)
-            logger.info("Immediately cancelled subscription for workspace: {}", workspaceId)
+        if (immediate) {
+            // Immediately downgrade to FREE plan instead of marking as cancelled
+            subscriptionDowngradeService.handleUserCancellation(workspaceId, reason)
+            logger.info("Immediately cancelled and downgraded subscription to FREE for workspace: {}", workspaceId)
+
+            // Reload subscription to get updated details
+            val updatedSubscription = subscriptionRepository.findWithPlanByWorkspaceId(workspaceId)
+                ?: throw SubscriptionException.SubscriptionNotFoundException(workspaceId)
+
+            val addons = subscriptionAddonRepository.findActiveBySubscriptionId(updatedSubscription.uid)
+            return updatedSubscription.asSubscriptionResponse(addons)
         } else {
+            // Schedule cancellation at period end
             subscription.cancelAtPeriodEnd = true
             subscription.cancelledAt = now
             subscription.cancellationReason = reason
-            logger.info("Scheduled cancellation for workspace: {} at period end", workspaceId)
-        }
+            logger.info("Scheduled cancellation for workspace: {} at period end (will downgrade to FREE)", workspaceId)
 
-        val saved = subscriptionRepository.save(subscription)
-        val addons = subscriptionAddonRepository.findActiveBySubscriptionId(saved.uid)
-        return saved.asSubscriptionResponse(addons)
+            val saved = subscriptionRepository.save(subscription)
+            val addons = subscriptionAddonRepository.findActiveBySubscriptionId(saved.uid)
+            return saved.asSubscriptionResponse(addons)
+        }
     }
 
     /**
