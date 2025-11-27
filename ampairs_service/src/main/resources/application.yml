@@ -499,23 +499,23 @@ management:
 # Google Play Billing (Android In-App Purchases)
 google-play:
   package-name: ${GOOGLE_PLAY_PACKAGE_NAME:com.ampairs.app}
-  service-account-json: ${GOOGLE_PLAY_SERVICE_ACCOUNT_JSON}
+  service-account-json: ${GOOGLE_PLAY_SERVICE_ACCOUNT_JSON:{"type":"service_account","project_id":"PLACEHOLDER","private_key_id":"PLACEHOLDER","private_key":"-----BEGIN PRIVATE KEY-----\\nPLACEHOLDER\\n-----END PRIVATE KEY-----\\n","client_email":"PLACEHOLDER@developer.gserviceaccount.com","client_id":"PLACEHOLDER","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token"}}
 
 # Apple App Store (iOS In-App Purchases)
 apple-app-store:
   bundle-id: ${APPLE_BUNDLE_ID:com.ampairs.app}
-  shared-secret: ${APPLE_SHARED_SECRET}
+  shared-secret: ${APPLE_SHARED_SECRET:PLACEHOLDER_SHARED_SECRET}
   production: ${APPLE_PRODUCTION:false}  # Use sandbox by default, set true for production
 
 # Razorpay (Indian Market Payments)
 razorpay:
-  key-id: ${RAZORPAY_KEY_ID}
-  key-secret: ${RAZORPAY_KEY_SECRET}
-  webhook-secret: ${RAZORPAY_WEBHOOK_SECRET}
+  key-id: ${RAZORPAY_KEY_ID:rzp_test_PLACEHOLDER}
+  key-secret: ${RAZORPAY_KEY_SECRET:PLACEHOLDER_SECRET}
+  webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:PLACEHOLDER_WEBHOOK_SECRET}
 
 # Stripe (International Payments)
 stripe:
-  secret-key: ${STRIPE_SECRET_KEY}
-  webhook-secret: ${STRIPE_WEBHOOK_SECRET}
+  secret-key: ${STRIPE_SECRET_KEY:sk_test_PLACEHOLDER}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_PLACEHOLDER}
   success-url: ${STRIPE_SUCCESS_URL:https://app.ampairs.com/subscription/success}
   cancel-url: ${STRIPE_CANCEL_URL:https://app.ampairs.com/subscription/cancelled}
