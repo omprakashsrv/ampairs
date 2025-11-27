@@ -59,6 +59,18 @@ dependencies {
     implementation("com.google.apis:google-api-services-androidpublisher:v3-rev20241217-2.0.0")
     implementation("com.google.auth:google-auth-library-oauth2-http:1.30.0")
 
+    // Stripe
+    implementation("com.stripe:stripe-java:25.12.0")
+
+    // Razorpay
+    implementation("com.razorpay:razorpay-java:1.4.6")
+
+    // Apache Commons for HMAC signature verification
+    implementation("commons-codec:commons-codec:1.17.2")
+
+    // JSON processing
+    implementation("org.json:json:20240303")
+
     runtimeOnly("com.mysql:mysql-connector-j")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     testImplementation("org.springframework.boot:spring-boot-starter-test")

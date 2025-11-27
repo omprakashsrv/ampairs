@@ -20,6 +20,9 @@ data class InitiatePurchaseRequest(
     @field:NotNull
     val billingCycle: BillingCycle,
 
+    @field:NotNull
+    val provider: PaymentProvider,
+
     val currency: String = "INR",
 
     /** Optional coupon/promo code */
