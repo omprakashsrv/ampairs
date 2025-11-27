@@ -6,11 +6,12 @@ import com.ampairs.subscription.domain.model.PaymentProvider
 import com.ampairs.subscription.domain.repository.SubscriptionPlanRepository
 import com.ampairs.subscription.domain.service.*
 import com.ampairs.subscription.exception.SubscriptionException
-import com.google.api.client.googleapis.auth.oauth2.GoogleCredential
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport
 import com.google.api.client.json.gson.GsonFactory
 import com.google.api.services.androidpublisher.AndroidPublisher
 import com.google.api.services.androidpublisher.AndroidPublisherScopes
+import com.google.auth.http.HttpCredentialsAdapter
+import com.google.auth.oauth2.GoogleCredentials
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
@@ -38,14 +39,14 @@ class GooglePlayBillingService(
     @PostConstruct
     fun init() {
         try {
-            val credential = GoogleCredential.fromStream(
+            val credentials = GoogleCredentials.fromStream(
                 ByteArrayInputStream(serviceAccountJson.toByteArray())
             ).createScoped(listOf(AndroidPublisherScopes.ANDROIDPUBLISHER))
 
             publisher = AndroidPublisher.Builder(
                 GoogleNetHttpTransport.newTrustedTransport(),
                 GsonFactory.getDefaultInstance(),
-                credential
+                HttpCredentialsAdapter(credentials)
             ).setApplicationName("Ampairs").build()
 
             logger.info("Google Play Billing service initialized for package: {}", packageName)
