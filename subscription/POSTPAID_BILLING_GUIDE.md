@@ -148,13 +148,13 @@ Location: `src/main/resources/db/migration/mysql/V1.0.36__create_invoice_and_bil
 **Endpoints:**
 
 ```
-GET    /api/v1/billing/invoices              # List all invoices
-GET    /api/v1/billing/invoices/{uid}        # Get invoice details
-POST   /api/v1/billing/invoices/generate     # Manual invoice generation (Admin only)
-POST   /api/v1/billing/invoices/{uid}/pay    # Initiate payment
-POST   /api/v1/billing/invoices/{uid}/retry-payment  # Retry failed payment
-GET    /api/v1/billing/invoices/summary      # Invoice dashboard summary
-GET    /api/v1/billing/invoices/{uid}/download # Download PDF (TODO)
+GET    /api/v1/subscription/invoices              # List all invoices
+GET    /api/v1/subscription/invoices/{uid}        # Get invoice details
+POST   /api/v1/subscription/invoices/generate     # Manual invoice generation (Admin only)
+POST   /api/v1/subscription/invoices/{uid}/pay    # Initiate payment
+POST   /api/v1/subscription/invoices/{uid}/retry-payment  # Retry failed payment
+GET    /api/v1/subscription/invoices/summary      # Invoice dashboard summary
+GET    /api/v1/subscription/invoices/{uid}/download # Download PDF (TODO)
 ```
 
 #### `BillingPreferencesController.kt`
@@ -162,8 +162,8 @@ GET    /api/v1/billing/invoices/{uid}/download # Download PDF (TODO)
 **Endpoints:**
 
 ```
-GET    /api/v1/billing/preferences            # Get billing settings
-PUT    /api/v1/billing/preferences            # Update billing settings
+GET    /api/v1/subscription/billing-preferences            # Get billing settings
+PUT    /api/v1/subscription/billing-preferences            # Update billing settings
 ```
 
 ---
@@ -173,7 +173,7 @@ PUT    /api/v1/billing/preferences            # Update billing settings
 ### 1. Get Invoices for Workspace
 
 ```bash
-GET /api/v1/billing/invoices?workspaceId=WS123&status=PENDING
+GET /api/v1/subscription/invoices?workspaceId=WS123&status=PENDING
 Authorization: Bearer {jwt_token}
 ```
 
@@ -217,7 +217,7 @@ Authorization: Bearer {jwt_token}
 ### 2. Pay Invoice (Manual Payment Link)
 
 ```bash
-POST /api/v1/billing/invoices/INV-001/pay
+POST /api/v1/subscription/invoices/INV-001/pay
 Content-Type: application/json
 Authorization: Bearer {jwt_token}
 
@@ -244,7 +244,7 @@ Authorization: Bearer {jwt_token}
 ### 3. Enable Auto-Payment
 
 ```bash
-PUT /api/v1/billing/preferences?workspaceId=WS123
+PUT /api/v1/subscription/billing-preferences?workspaceId=WS123
 Content-Type: application/json
 Authorization: Bearer {jwt_token}
 

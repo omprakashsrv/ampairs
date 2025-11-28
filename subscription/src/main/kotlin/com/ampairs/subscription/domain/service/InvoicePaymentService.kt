@@ -14,7 +14,7 @@ import java.time.Instant
  */
 @Service
 class InvoicePaymentService(
-    private val invoiceRepository: InvoiceRepository,
+    private val subscriptionInvoiceRepository: SubscriptionInvoiceRepository,
     private val paymentMethodRepository: PaymentMethodRepository,
     private val paymentTransactionRepository: PaymentTransactionRepository
 ) {
@@ -35,7 +35,7 @@ class InvoicePaymentService(
 
         // Update invoice with payment link
         invoice.paymentLinkUrl = paymentLink
-        invoiceRepository.save(invoice)
+        subscriptionInvoiceRepository.save(invoice)
 
         return paymentLink
     }
@@ -103,7 +103,7 @@ class InvoicePaymentService(
         invoice.status = InvoiceStatus.PAID
         invoice.paidAmount = invoice.totalAmount
         invoice.paidAt = now
-        invoiceRepository.save(invoice)
+        subscriptionInvoiceRepository.save(invoice)
 
         // Create payment transaction record
         val transaction = PaymentTransaction().apply {

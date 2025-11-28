@@ -4,7 +4,7 @@ import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.subscription.domain.dto.*
 import com.ampairs.subscription.domain.model.Invoice
 import com.ampairs.subscription.domain.model.InvoiceStatus
-import com.ampairs.subscription.domain.repository.InvoiceRepository
+import com.ampairs.subscription.domain.repository.SubscriptionInvoiceRepository
 import com.ampairs.subscription.domain.repository.SubscriptionRepository
 import com.ampairs.subscription.domain.service.InvoiceGenerationService
 import com.ampairs.subscription.domain.service.InvoicePaymentService
@@ -23,10 +23,10 @@ import jakarta.validation.Valid
  * Controller for subscription invoice management in postpaid billing system.
  */
 @RestController
-@RequestMapping("/api/v1/billing/invoices")
+@RequestMapping("/api/v1/subscription/invoices")
 @PreAuthorize("isAuthenticated()")
 class SubscriptionInvoiceController(
-    private val invoiceRepository: InvoiceRepository,
+    private val subscriptionInvoiceRepository: SubscriptionInvoiceRepository,
     private val subscriptionRepository: SubscriptionRepository,
     private val invoiceGenerationService: InvoiceGenerationService,
     private val invoicePaymentService: InvoicePaymentService,
@@ -46,11 +46,11 @@ class SubscriptionInvoiceController(
         val effectiveWorkspaceId = workspaceId ?: throw SubscriptionException.WorkspaceRequired()
 
         val invoices = if (status != null) {
-            invoiceRepository.findByStatus(status)
+            subscriptionInvoiceRepository.findByStatus(status)
                 .filter { it.workspaceId == effectiveWorkspaceId }
                 .let { org.springframework.data.domain.PageImpl(it, pageable, it.size.toLong()) }
         } else {
-            invoiceRepository.findByWorkspaceIdOrderByCreatedAtDesc(effectiveWorkspaceId, pageable)
+            subscriptionInvoiceRepository.findByWorkspaceIdOrderByCreatedAtDesc(effectiveWorkspaceId, pageable)
         }
 
         return ApiResponse.success(invoices.map { it.asInvoiceResponse() })
@@ -61,7 +61,7 @@ class SubscriptionInvoiceController(
      */
     @GetMapping("/{invoiceUid}")
     fun getInvoice(@PathVariable invoiceUid: String): ApiResponse<InvoiceResponse> {
-        val invoice = invoiceRepository.findByUid(invoiceUid)
+        val invoice = subscriptionInvoiceRepository.findByUid(invoiceUid)
             ?: throw SubscriptionException.InvoiceNotFound(invoiceUid)
 
         return ApiResponse.success(invoice.asInvoiceResponse())
@@ -96,7 +96,7 @@ class SubscriptionInvoiceController(
         @PathVariable invoiceUid: String,
         @Valid @RequestBody request: PayInvoiceRequest
     ): ApiResponse<PaymentLinkResponse> {
-        val invoice = invoiceRepository.findByUid(invoiceUid)
+        val invoice = subscriptionInvoiceRepository.findByUid(invoiceUid)
             ?: throw SubscriptionException.InvoiceNotFound(invoiceUid)
 
         // Check if invoice is already paid
@@ -136,7 +136,7 @@ class SubscriptionInvoiceController(
     ): ApiResponse<InvoiceSummaryResponse> {
         val effectiveWorkspaceId = workspaceId ?: throw SubscriptionException.WorkspaceRequired()
 
-        val allInvoices = invoiceRepository.findByWorkspaceId(effectiveWorkspaceId)
+        val allInvoices = subscriptionInvoiceRepository.findByWorkspaceId(effectiveWorkspaceId)
         val pendingInvoices = allInvoices.filter {
             it.status in listOf(InvoiceStatus.PENDING, InvoiceStatus.OVERDUE, InvoiceStatus.PARTIALLY_PAID)
         }
@@ -166,7 +166,7 @@ class SubscriptionInvoiceController(
      */
     @GetMapping("/{invoiceUid}/download")
     fun downloadInvoice(@PathVariable invoiceUid: String): ApiResponse<String> {
-        val invoice = invoiceRepository.findByUid(invoiceUid)
+        val invoice = subscriptionInvoiceRepository.findByUid(invoiceUid)
             ?: throw SubscriptionException.InvoiceNotFound(invoiceUid)
 
         // TODO: Generate PDF and return download URL
@@ -178,7 +178,7 @@ class SubscriptionInvoiceController(
      */
     @PostMapping("/{invoiceUid}/retry-payment")
     fun retryPayment(@PathVariable invoiceUid: String): ApiResponse<PaymentLinkResponse> {
-        val invoice = invoiceRepository.findByUid(invoiceUid)
+        val invoice = subscriptionInvoiceRepository.findByUid(invoiceUid)
             ?: throw SubscriptionException.InvoiceNotFound(invoiceUid)
 
         if (invoice.isFullyPaid()) {
@@ -214,7 +214,7 @@ class SubscriptionInvoiceController(
  * Controller for subscription billing preferences management
  */
 @RestController
-@RequestMapping("/api/v1/billing/preferences")
+@RequestMapping("/api/v1/subscription/billing-preferences")
 @PreAuthorize("isAuthenticated()")
 class SubscriptionBillingPreferencesController(
     private val billingPreferencesRepository: com.ampairs.subscription.domain.repository.BillingPreferencesRepository,

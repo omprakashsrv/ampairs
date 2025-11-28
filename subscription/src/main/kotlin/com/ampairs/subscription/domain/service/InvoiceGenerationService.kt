@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger
 @Service
 class InvoiceGenerationService(
     private val subscriptionRepository: SubscriptionRepository,
-    private val invoiceRepository: InvoiceRepository,
+    private val subscriptionInvoiceRepository: SubscriptionInvoiceRepository,
     private val billingPreferencesRepository: BillingPreferencesRepository,
     private val invoicePaymentService: InvoicePaymentService
 ) {
@@ -107,7 +107,7 @@ class InvoiceGenerationService(
         val dueDate = now.plus(billingPreferences.gracePeriodDays.toLong(), ChronoUnit.DAYS)
 
         // Check if invoice already exists for this period
-        val existingInvoices = invoiceRepository.findByWorkspaceIdAndBillingPeriod(
+        val existingInvoices = subscriptionInvoiceRepository.findByWorkspaceIdAndBillingPeriod(
             subscription.workspaceId, periodStart, periodEnd
         )
         if (existingInvoices.isNotEmpty()) {
@@ -142,7 +142,7 @@ class InvoiceGenerationService(
         invoice.recalculateTotals()
 
         // Save invoice
-        return invoiceRepository.save(invoice)
+        return subscriptionInvoiceRepository.save(invoice)
     }
 
     /**

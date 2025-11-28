@@ -10,6 +10,7 @@
 CREATE TABLE IF NOT EXISTS billing_preferences (
     id BIGSERIAL PRIMARY KEY,
     uid VARCHAR(36) NOT NULL UNIQUE,
+    ref_id VARCHAR(50) NOT NULL UNIQUE,
     workspace_id VARCHAR(200) NOT NULL UNIQUE,
 
     -- Billing Mode
@@ -55,6 +56,7 @@ COMMENT ON COLUMN billing_preferences.grace_period_days IS 'Days before workspac
 CREATE TABLE IF NOT EXISTS invoices (
     id BIGSERIAL PRIMARY KEY,
     uid VARCHAR(36) NOT NULL UNIQUE,
+    ref_id VARCHAR(50) NOT NULL UNIQUE,
 
     -- Workspace & Owner
     workspace_id VARCHAR(200) NOT NULL,
@@ -127,6 +129,7 @@ COMMENT ON COLUMN invoices.payment_link_url IS 'Razorpay/Stripe payment link for
 CREATE TABLE IF NOT EXISTS invoice_line_items (
     id BIGSERIAL PRIMARY KEY,
     uid VARCHAR(36) NOT NULL UNIQUE,
+    ref_id VARCHAR(50) NOT NULL UNIQUE,
 
     -- Invoice Reference
     invoice_id BIGINT NOT NULL,

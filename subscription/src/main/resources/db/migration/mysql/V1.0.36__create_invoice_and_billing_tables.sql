@@ -9,6 +9,7 @@
 CREATE TABLE IF NOT EXISTS billing_preferences (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     uid VARCHAR(36) NOT NULL UNIQUE,
+    ref_id VARCHAR(50) NOT NULL UNIQUE,
     workspace_id VARCHAR(200) NOT NULL UNIQUE,
 
     -- Billing Mode
@@ -49,6 +50,7 @@ CREATE TABLE IF NOT EXISTS billing_preferences (
 CREATE TABLE IF NOT EXISTS invoices (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     uid VARCHAR(36) NOT NULL UNIQUE,
+    ref_id VARCHAR(50) NOT NULL UNIQUE,
 
     -- Workspace & Owner
     workspace_id VARCHAR(200) NOT NULL,
@@ -115,6 +117,7 @@ CREATE TABLE IF NOT EXISTS invoices (
 CREATE TABLE IF NOT EXISTS invoice_line_items (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     uid VARCHAR(36) NOT NULL UNIQUE,
+    ref_id VARCHAR(50) NOT NULL UNIQUE,
 
     -- Invoice Reference
     invoice_id BIGINT NOT NULL,

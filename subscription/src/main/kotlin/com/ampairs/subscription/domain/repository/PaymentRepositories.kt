@@ -197,11 +197,11 @@ interface PaymentMethodRepository : JpaRepository<PaymentMethod, Long> {
 }
 
 // =====================
-// Invoice Repository
+// Subscription Invoice Repository
 // =====================
 
 @Repository
-interface InvoiceRepository : JpaRepository<Invoice, Long> {
+interface SubscriptionInvoiceRepository : JpaRepository<Invoice, Long> {
 
     fun findByUid(uid: String): Invoice?
 

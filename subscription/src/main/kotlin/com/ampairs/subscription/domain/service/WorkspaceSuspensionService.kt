@@ -2,7 +2,7 @@ package com.ampairs.subscription.domain.service
 
 import com.ampairs.subscription.domain.model.Invoice
 import com.ampairs.subscription.domain.model.InvoiceStatus
-import com.ampairs.subscription.domain.repository.InvoiceRepository
+import com.ampairs.subscription.domain.repository.SubscriptionInvoiceRepository
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
@@ -16,7 +16,7 @@ import java.time.temporal.ChronoUnit
  */
 @Service
 class WorkspaceSuspensionService(
-    private val invoiceRepository: InvoiceRepository,
+    private val subscriptionInvoiceRepository: SubscriptionInvoiceRepository,
     private val emailNotificationService: EmailNotificationService
 ) {
 
@@ -43,7 +43,7 @@ class WorkspaceSuspensionService(
         logger.info("Starting overdue invoice check...")
 
         val now = Instant.now()
-        val overdueInvoices = invoiceRepository.findOverdueInvoices(now)
+        val overdueInvoices = subscriptionInvoiceRepository.findOverdueInvoices(now)
 
         logger.info("Found ${overdueInvoices.size} overdue invoices")
 
@@ -88,7 +88,7 @@ class WorkspaceSuspensionService(
         val reminderThreshold = now.plus(REMINDER_BEFORE_DUE_DAYS.toLong(), ChronoUnit.DAYS)
 
         // Find pending invoices due within next 3 days
-        val pendingInvoices = invoiceRepository.findByStatus(InvoiceStatus.PENDING)
+        val pendingInvoices = subscriptionInvoiceRepository.findByStatus(InvoiceStatus.PENDING)
         val dueSoonInvoices = pendingInvoices.filter { invoice ->
             invoice.dueDate.isAfter(now) && invoice.dueDate.isBefore(reminderThreshold)
         }
@@ -123,7 +123,7 @@ class WorkspaceSuspensionService(
         // Update invoice status
         invoice.status = InvoiceStatus.SUSPENDED
         invoice.suspendedAt = now
-        invoiceRepository.save(invoice)
+        subscriptionInvoiceRepository.save(invoice)
 
         // Send suspension notification
         emailNotificationService.sendWorkspaceSuspensionEmail(invoice)
@@ -148,7 +148,7 @@ class WorkspaceSuspensionService(
 
         invoice.lastReminderSentAt = now
         invoice.reminderCount++
-        invoiceRepository.save(invoice)
+        subscriptionInvoiceRepository.save(invoice)
 
         // Send email reminder
         emailNotificationService.sendOverdueInvoiceReminder(invoice, daysPastDue)
@@ -181,7 +181,7 @@ class WorkspaceSuspensionService(
     private fun updateReminderTimestamp(invoice: Invoice) {
         invoice.lastReminderSentAt = Instant.now()
         invoice.reminderCount++
-        invoiceRepository.save(invoice)
+        subscriptionInvoiceRepository.save(invoice)
     }
 
     /**
@@ -197,7 +197,7 @@ class WorkspaceSuspensionService(
         logger.info("Reactivating workspace ${invoice.workspaceId} after payment of invoice ${invoice.invoiceNumber}")
 
         // Check if there are any other unpaid invoices
-        val pendingInvoices = invoiceRepository.findPendingByWorkspaceId(invoice.workspaceId)
+        val pendingInvoices = subscriptionInvoiceRepository.findPendingByWorkspaceId(invoice.workspaceId)
         if (pendingInvoices.isEmpty()) {
             // No more pending invoices, workspace can be fully reactivated
             emailNotificationService.sendWorkspaceReactivationEmail(invoice)
