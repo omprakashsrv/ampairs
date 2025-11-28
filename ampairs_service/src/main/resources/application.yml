@@ -499,7 +499,8 @@ management:
 # Google Play Billing (Android In-App Purchases)
 google-play:
   package-name: ${GOOGLE_PLAY_PACKAGE_NAME:com.ampairs.app}
-  service-account-json: ${GOOGLE_PLAY_SERVICE_ACCOUNT_JSON:{"type":"service_account","project_id":"PLACEHOLDER","private_key_id":"PLACEHOLDER","private_key":"-----BEGIN PRIVATE KEY-----\\nPLACEHOLDER\\n-----END PRIVATE KEY-----\\n","client_email":"PLACEHOLDER@developer.gserviceaccount.com","client_id":"PLACEHOLDER","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token"}}
+  # Absolute path to service account JSON file
+  service-account-json-path: ${GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_PATH:/Users/omprakashsrv/IdeaProjects/ampairs/subscription/keys/ampairs-google-play.json}
 
 # Apple App Store (iOS In-App Purchases)
 apple-app-store:

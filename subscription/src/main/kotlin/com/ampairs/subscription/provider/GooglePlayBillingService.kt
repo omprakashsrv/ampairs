@@ -15,7 +15,8 @@ import com.google.auth.oauth2.GoogleCredentials
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
-import java.io.ByteArrayInputStream
+import java.io.File
+import java.io.FileInputStream
 import java.time.Instant
 import jakarta.annotation.PostConstruct
 
@@ -26,7 +27,7 @@ import jakarta.annotation.PostConstruct
 @Service
 class GooglePlayBillingService(
     @Value("\${google-play.package-name}") private val packageName: String,
-    @Value("\${google-play.service-account-json}") private val serviceAccountJson: String,
+    @Value("\${google-play.service-account-json-path}") private val serviceAccountJsonPath: String,
     private val subscriptionPlanRepository: SubscriptionPlanRepository
 ) : PaymentProviderService {
 
@@ -39,8 +40,16 @@ class GooglePlayBillingService(
     @PostConstruct
     fun init() {
         try {
+            // Load service account JSON from file path
+            val serviceAccountFile = File(serviceAccountJsonPath)
+
+            if (!serviceAccountFile.exists()) {
+                logger.error("Google Play service account file not found at: {}", serviceAccountJsonPath)
+                throw IllegalStateException("Service account file not found: $serviceAccountJsonPath")
+            }
+
             val credentials = GoogleCredentials.fromStream(
-                ByteArrayInputStream(serviceAccountJson.toByteArray())
+                FileInputStream(serviceAccountFile)
             ).createScoped(listOf(AndroidPublisherScopes.ANDROIDPUBLISHER))
 
             publisher = AndroidPublisher.Builder(
@@ -49,9 +58,9 @@ class GooglePlayBillingService(
                 HttpCredentialsAdapter(credentials)
             ).setApplicationName("Ampairs").build()
 
-            logger.info("Google Play Billing service initialized for package: {}", packageName)
+            logger.info("Google Play Billing service initialized for package: {} from {}", packageName, serviceAccountJsonPath)
         } catch (e: Exception) {
-            logger.error("Failed to initialize Google Play Billing service", e)
+            logger.error("Failed to initialize Google Play Billing service from path: {}", serviceAccountJsonPath, e)
             throw IllegalStateException("Google Play Billing service initialization failed", e)
         }
     }

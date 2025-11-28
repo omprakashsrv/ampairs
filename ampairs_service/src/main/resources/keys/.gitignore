@@ -1,0 +1,11 @@
+# Ignore all files in this directory
+*
+
+# Except this .gitignore file
+!.gitignore
+
+# Except the placeholder file (safe to commit)
+!ampairs-google-play.json
+
+# Except README
+!README.md
