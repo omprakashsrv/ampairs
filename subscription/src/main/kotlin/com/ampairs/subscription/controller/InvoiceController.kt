@@ -20,12 +20,12 @@ import java.time.Instant
 import jakarta.validation.Valid
 
 /**
- * Controller for invoice management in postpaid billing system.
+ * Controller for subscription invoice management in postpaid billing system.
  */
 @RestController
 @RequestMapping("/api/v1/billing/invoices")
 @PreAuthorize("isAuthenticated()")
-class InvoiceController(
+class SubscriptionInvoiceController(
     private val invoiceRepository: InvoiceRepository,
     private val subscriptionRepository: SubscriptionRepository,
     private val invoiceGenerationService: InvoiceGenerationService,
@@ -211,12 +211,12 @@ class InvoiceController(
 }
 
 /**
- * Controller for billing preferences management
+ * Controller for subscription billing preferences management
  */
 @RestController
 @RequestMapping("/api/v1/billing/preferences")
 @PreAuthorize("isAuthenticated()")
-class BillingPreferencesController(
+class SubscriptionBillingPreferencesController(
     private val billingPreferencesRepository: com.ampairs.subscription.domain.repository.BillingPreferencesRepository,
     private val paymentMethodRepository: com.ampairs.subscription.domain.repository.PaymentMethodRepository
 ) {
