@@ -89,6 +89,24 @@ sealed class SubscriptionException(
         errorCode = "PAYMENT_FAILED"
     )
 
+    class InvoiceNotFound(invoiceId: String) : SubscriptionException(
+        message = "Invoice not found: $invoiceId",
+        status = HttpStatus.NOT_FOUND,
+        errorCode = "INVOICE_NOT_FOUND"
+    )
+
+    class WorkspaceRequired : SubscriptionException(
+        message = "Workspace ID is required",
+        status = HttpStatus.BAD_REQUEST,
+        errorCode = "WORKSPACE_REQUIRED"
+    )
+
+    class NotFound(message: String) : SubscriptionException(
+        message = message,
+        status = HttpStatus.NOT_FOUND,
+        errorCode = "NOT_FOUND"
+    )
+
     class InvalidPurchaseToken(provider: String) : SubscriptionException(
         message = "Invalid purchase token from: $provider",
         status = HttpStatus.BAD_REQUEST,

@@ -74,7 +74,8 @@ enum class PaymentStatus {
  * Payment method types
  */
 enum class PaymentMethodType {
-    CARD,
+    CREDIT_CARD,
+    DEBIT_CARD,
     UPI,
     NET_BANKING,
     WALLET,
@@ -83,14 +84,45 @@ enum class PaymentMethodType {
 }
 
 /**
- * Invoice status
+ * Billing mode for subscriptions
+ */
+enum class BillingMode {
+    /** Payment before service (traditional subscription) */
+    PREPAID,
+
+    /** Payment after service usage (invoice-based) */
+    POSTPAID
+}
+
+/**
+ * Invoice status for postpaid billing
  */
 enum class InvoiceStatus {
+    /** Invoice is being generated */
     DRAFT,
+
+    /** Invoice sent to customer, awaiting payment */
     PENDING,
+
+    /** Invoice fully paid */
     PAID,
+
+    /** Invoice partially paid (for installments) */
+    PARTIALLY_PAID,
+
+    /** Invoice past due date, not yet suspended */
+    OVERDUE,
+
+    /** Invoice overdue and workspace suspended */
+    SUSPENDED,
+
+    /** Payment attempt failed */
     FAILED,
+
+    /** Invoice cancelled/voided */
     VOID,
+
+    /** Payment refunded */
     REFUNDED
 }
 

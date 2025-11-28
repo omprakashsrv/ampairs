@@ -1,9 +1,6 @@
 package com.ampairs.subscription.domain.repository
 
-import com.ampairs.subscription.domain.model.PaymentMethod
-import com.ampairs.subscription.domain.model.PaymentProvider
-import com.ampairs.subscription.domain.model.PaymentStatus
-import com.ampairs.subscription.domain.model.PaymentTransaction
+import com.ampairs.subscription.domain.model.*
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
@@ -189,7 +186,7 @@ interface PaymentMethodRepository : JpaRepository<PaymentMethod, Long> {
     @Query("""
         SELECT pm FROM PaymentMethod pm
         WHERE pm.active = true
-        AND pm.type = 'CARD'
+        AND pm.type IN ('CREDIT_CARD', 'DEBIT_CARD')
         AND pm.expYear = :year
         AND pm.expMonth <= :month
     """)
@@ -197,4 +194,185 @@ interface PaymentMethodRepository : JpaRepository<PaymentMethod, Long> {
         @Param("year") year: Int,
         @Param("month") month: Int
     ): List<PaymentMethod>
+}
+
+// =====================
+// Invoice Repository
+// =====================
+
+@Repository
+interface InvoiceRepository : JpaRepository<Invoice, Long> {
+
+    fun findByUid(uid: String): Invoice?
+
+    fun findByInvoiceNumber(invoiceNumber: String): Invoice?
+
+    fun findByWorkspaceId(workspaceId: String): List<Invoice>
+
+    @Query("""
+        SELECT i FROM Invoice i
+        WHERE i.workspaceId = :workspaceId
+        ORDER BY i.createdAt DESC
+    """)
+    fun findByWorkspaceIdOrderByCreatedAtDesc(
+        workspaceId: String,
+        pageable: Pageable
+    ): Page<Invoice>
+
+    fun findBySubscriptionId(subscriptionId: Long): List<Invoice>
+
+    fun findByStatus(status: InvoiceStatus): List<Invoice>
+
+    /**
+     * Find overdue invoices (past due date and not paid)
+     */
+    @Query("""
+        SELECT i FROM Invoice i
+        WHERE i.status IN ('PENDING', 'OVERDUE')
+        AND i.dueDate < :now
+        ORDER BY i.dueDate ASC
+    """)
+    fun findOverdueInvoices(@Param("now") now: Instant): List<Invoice>
+
+    /**
+     * Find invoices pending payment for a workspace
+     */
+    @Query("""
+        SELECT i FROM Invoice i
+        WHERE i.workspaceId = :workspaceId
+        AND i.status IN ('PENDING', 'OVERDUE', 'PARTIALLY_PAID')
+        ORDER BY i.dueDate ASC
+    """)
+    fun findPendingByWorkspaceId(workspaceId: String): List<Invoice>
+
+    /**
+     * Find invoices by status and due date before
+     */
+    fun findByStatusAndDueDateBefore(status: InvoiceStatus, dueDate: Instant): List<Invoice>
+
+    /**
+     * Find invoices in billing period
+     */
+    @Query("""
+        SELECT i FROM Invoice i
+        WHERE i.workspaceId = :workspaceId
+        AND i.billingPeriodStart >= :periodStart
+        AND i.billingPeriodEnd <= :periodEnd
+    """)
+    fun findByWorkspaceIdAndBillingPeriod(
+        @Param("workspaceId") workspaceId: String,
+        @Param("periodStart") periodStart: Instant,
+        @Param("periodEnd") periodEnd: Instant
+    ): List<Invoice>
+
+    /**
+     * Get total outstanding amount for workspace
+     */
+    @Query("""
+        SELECT COALESCE(SUM(i.totalAmount - i.paidAmount), 0)
+        FROM Invoice i
+        WHERE i.workspaceId = :workspaceId
+        AND i.status IN ('PENDING', 'OVERDUE', 'PARTIALLY_PAID')
+    """)
+    fun getTotalOutstandingByWorkspaceId(workspaceId: String): Double
+
+    /**
+     * Mark invoice as paid
+     */
+    @Modifying
+    @Transactional
+    @Query("""
+        UPDATE Invoice i
+        SET i.status = 'PAID',
+            i.paidAmount = i.totalAmount,
+            i.paidAt = :paidAt,
+            i.updatedAt = :now
+        WHERE i.uid = :uid
+    """)
+    fun markAsPaid(
+        @Param("uid") uid: String,
+        @Param("paidAt") paidAt: Instant,
+        @Param("now") now: Instant
+    )
+
+    /**
+     * Update invoice status
+     */
+    @Modifying
+    @Transactional
+    @Query("""
+        UPDATE Invoice i
+        SET i.status = :status, i.updatedAt = :now
+        WHERE i.uid = :uid
+    """)
+    fun updateStatus(
+        @Param("uid") uid: String,
+        @Param("status") status: InvoiceStatus,
+        @Param("now") now: Instant
+    )
+}
+
+// =====================
+// Invoice Line Item Repository
+// =====================
+
+@Repository
+interface InvoiceLineItemRepository : JpaRepository<InvoiceLineItem, Long> {
+
+    @Query("""
+        SELECT li FROM InvoiceLineItem li
+        WHERE li.invoice.id = :invoiceId
+    """)
+    fun findByInvoiceId(invoiceId: Long): List<InvoiceLineItem>
+
+    @Query("""
+        SELECT li FROM InvoiceLineItem li
+        WHERE li.invoice.uid = :invoiceUid
+    """)
+    fun findByInvoiceUid(invoiceUid: String): List<InvoiceLineItem>
+}
+
+// =====================
+// Billing Preferences Repository
+// =====================
+
+@Repository
+interface BillingPreferencesRepository : JpaRepository<BillingPreferences, Long> {
+
+    fun findByWorkspaceId(workspaceId: String): BillingPreferences?
+
+    @Query("""
+        SELECT bp FROM BillingPreferences bp
+        WHERE bp.autoPaymentEnabled = true
+        AND bp.defaultPaymentMethodId IS NOT NULL
+    """)
+    fun findAllWithAutoPaymentEnabled(): List<BillingPreferences>
+
+    @Modifying
+    @Transactional
+    @Query("""
+        UPDATE BillingPreferences bp
+        SET bp.defaultPaymentMethodId = :paymentMethodId,
+            bp.updatedAt = :now
+        WHERE bp.workspaceId = :workspaceId
+    """)
+    fun updateDefaultPaymentMethod(
+        @Param("workspaceId") workspaceId: String,
+        @Param("paymentMethodId") paymentMethodId: Long?,
+        @Param("now") now: Instant
+    )
+
+    @Modifying
+    @Transactional
+    @Query("""
+        UPDATE BillingPreferences bp
+        SET bp.autoPaymentEnabled = :enabled,
+            bp.updatedAt = :now
+        WHERE bp.workspaceId = :workspaceId
+    """)
+    fun updateAutoPaymentEnabled(
+        @Param("workspaceId") workspaceId: String,
+        @Param("enabled") enabled: Boolean,
+        @Param("now") now: Instant
+    )
 }

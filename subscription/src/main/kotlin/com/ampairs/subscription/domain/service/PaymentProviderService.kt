@@ -67,6 +67,46 @@ interface PaymentProviderService {
      * Verify webhook signature
      */
     fun verifyWebhookSignature(payload: String, signature: String): Boolean
+
+    /**
+     * Create invoice with payment link (for postpaid billing)
+     */
+    suspend fun createInvoice(
+        workspaceId: String,
+        amount: BigDecimal,
+        currency: String,
+        description: String,
+        notes: Map<String, String> = emptyMap()
+    ): RazorpayInvoice {
+        throw UnsupportedOperationException("Invoice creation not supported by $provider")
+    }
+
+    /**
+     * Charge a saved payment method
+     */
+    suspend fun chargePaymentMethod(
+        customerId: String,
+        paymentMethodId: String,
+        amount: BigDecimal,
+        currency: String,
+        description: String
+    ): RazorpayPayment {
+        throw UnsupportedOperationException("Payment method charging not supported by $provider")
+    }
+
+    /**
+     * Get payment details
+     */
+    suspend fun getPayment(paymentId: String): RazorpayPayment {
+        throw UnsupportedOperationException("Get payment not supported by $provider")
+    }
+
+    /**
+     * Get payment intent (Stripe)
+     */
+    suspend fun getPaymentIntent(paymentIntentId: String): StripePaymentIntent {
+        throw UnsupportedOperationException("Get payment intent not supported by $provider")
+    }
 }
 
 /**

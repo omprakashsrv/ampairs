@@ -40,11 +40,23 @@ class PaymentMethod : BaseDomain() {
     var externalPaymentMethodId: String = ""
 
     /**
+     * Razorpay customer ID (for customer-level operations)
+     */
+    @Column(name = "razorpay_customer_id", length = 100)
+    var razorpayCustomerId: String? = null
+
+    /**
+     * Stripe customer ID (for customer-level operations)
+     */
+    @Column(name = "stripe_customer_id", length = 100)
+    var stripeCustomerId: String? = null
+
+    /**
      * Type of payment method
      */
     @Column(name = "type", nullable = false, length = 30)
     @Enumerated(EnumType.STRING)
-    var type: PaymentMethodType = PaymentMethodType.CARD
+    var type: PaymentMethodType = PaymentMethodType.CREDIT_CARD
 
     /**
      * Last 4 digits (for cards)
@@ -133,7 +145,7 @@ class PaymentMethod : BaseDomain() {
      */
     fun getDisplayName(): String {
         return when (type) {
-            PaymentMethodType.CARD -> "${brand ?: "Card"} **** $last4"
+            PaymentMethodType.CREDIT_CARD, PaymentMethodType.DEBIT_CARD -> "${brand ?: "Card"} **** $last4"
             PaymentMethodType.UPI -> "UPI: $upiId"
             PaymentMethodType.NET_BANKING -> "Net Banking: $bankName"
             PaymentMethodType.WALLET -> "Wallet"
@@ -146,11 +158,18 @@ class PaymentMethod : BaseDomain() {
      * Check if card is expired
      */
     fun isExpired(): Boolean {
-        if (type != PaymentMethodType.CARD) return false
+        if (type != PaymentMethodType.CREDIT_CARD && type != PaymentMethodType.DEBIT_CARD) return false
         if (expMonth == null || expYear == null) return false
 
         val now = java.time.YearMonth.now()
         val expiry = java.time.YearMonth.of(expYear!!, expMonth!!)
         return expiry.isBefore(now)
+    }
+
+    /**
+     * Check if payment method is verified and ready for auto-charge
+     */
+    fun isVerified(): Boolean {
+        return active && !isExpired()
     }
 }
