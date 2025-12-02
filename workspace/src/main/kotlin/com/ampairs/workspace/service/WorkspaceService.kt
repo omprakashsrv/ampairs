@@ -31,7 +31,7 @@ class WorkspaceService(
     private val memberService: WorkspaceMemberService,
     private val invitationService: WorkspaceInvitationService,
     private val settingsService: WorkspaceSettingsService,
-    private val activityService: WorkspaceActivityService,
+    private val activityService: WorkspaceActivityService
 ) {
 
     companion object {
@@ -100,6 +100,9 @@ class WorkspaceService(
         TenantContextHolder.withTenant(savedWorkspace.uid) {
             settingsService.initializeDefaultSettings(savedWorkspace.uid)
         }
+
+        // Note: FREE subscription creation is handled by subscription module
+        // via lazy initialization when the subscription is first accessed
 
         // Log activity - also requires tenant context
         TenantContextHolder.withTenant(savedWorkspace.uid) {

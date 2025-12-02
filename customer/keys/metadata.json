@@ -1,9 +1,14 @@
 {
-    "keyId": "e8f1fe14",
+    "currentKeyId": "7692a9de",
+    "keys": [
+    {
+    "keyId": "7692a9de",
     "algorithm": "RS256",
-    "createdAt": "2025-09-09T15:38:25.250990Z",
-    "expiresAt": "2025-12-08T15:38:25.250975Z",
+    "createdAt": "2025-12-02T04:16:07.979639Z",
+    "expiresAt": "2026-03-02T04:16:07.979632Z",
     "isActive": true,
-    "privateKeyPath": "keys/private.pem",
-    "publicKeyPath": "keys/public.pem"
+    "isCurrent": true,
+    "keyDirectory": "keys/7692a9de_2025-12-02"
+}
+    ]
 }

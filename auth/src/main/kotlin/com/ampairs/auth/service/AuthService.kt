@@ -16,6 +16,7 @@ import com.ampairs.core.utils.UniqueIdGenerators
 import com.ampairs.notification.service.NotificationService
 import com.ampairs.user.model.User
 import com.ampairs.user.repository.UserRepository
+import jakarta.persistence.EntityManager
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.transaction.Transactional
 import org.slf4j.LoggerFactory
@@ -45,6 +46,7 @@ class AuthService @Autowired constructor(
     val sessionManagementService: SessionManagementService,
     val accountLockoutService: AccountLockoutService,
     val firebaseAuthService: FirebaseAuthService,
+    val entityManager: EntityManager,
 ) {
     private val logger = LoggerFactory.getLogger(AuthService::class.java)
 

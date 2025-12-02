@@ -51,10 +51,19 @@ class SubscriptionService(
 
     /**
      * Get current subscription for a workspace
+     * Auto-creates a FREE subscription if none exists
      */
     fun getSubscription(workspaceId: String): SubscriptionResponse {
-        val subscription = subscriptionRepository.findWithPlanByWorkspaceId(workspaceId)
-            ?: throw SubscriptionException.SubscriptionNotFoundException(workspaceId)
+        var subscription = subscriptionRepository.findWithPlanByWorkspaceId(workspaceId)
+
+        // Auto-create FREE subscription if none exists (lazy initialization)
+        if (subscription == null) {
+            logger.info("No subscription found for workspace: $workspaceId, creating FREE subscription")
+            subscription = createFreeSubscription(workspaceId)
+            // Reload with plan details
+            subscription = subscriptionRepository.findWithPlanByWorkspaceId(workspaceId)
+                ?: throw SubscriptionException.SubscriptionNotFoundException(workspaceId)
+        }
 
         val addons = subscriptionAddonRepository.findActiveBySubscriptionId(subscription.uid)
         return subscription.asSubscriptionResponse(addons)
