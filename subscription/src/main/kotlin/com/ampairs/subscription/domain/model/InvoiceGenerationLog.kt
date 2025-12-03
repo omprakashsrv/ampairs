@@ -7,6 +7,10 @@ import java.time.Instant
 /**
  * Tracks invoice generation attempts for reconciliation and failure handling.
  * Ensures idempotency and provides audit trail for invoice generation.
+ *
+ * NOTE: If you get "missing table [invoice_generation_logs]" error on first run,
+ * this means Flyway hasn't run the V1.0.37 migration yet.
+ * Solution: Run the app once to let Flyway create the table, then this entity will work.
  */
 @Entity
 @Table(
