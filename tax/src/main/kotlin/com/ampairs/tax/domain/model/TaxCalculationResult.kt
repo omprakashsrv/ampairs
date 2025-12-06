@@ -11,7 +11,7 @@ data class TaxCalculationResult(
     val totalAmount: BigDecimal,
     val hsnCode: String,
     val transactionType: TransactionType,
-    val taxComponents: List<TaxComponent>,
+    val taxComponents: List<CalculatedTaxComponent>,
     val calculationDate: LocalDateTime = LocalDateTime.now(),
     val isReverseChargeApplicable: Boolean = false,
     val exemptionApplied: String? = null,
@@ -27,11 +27,11 @@ data class TaxCalculationResult(
     fun getUtgstAmount(): BigDecimal = getTaxComponentAmount(TaxComponentType.UTGST)
     fun getCessAmount(): BigDecimal = getTaxComponentAmount(TaxComponentType.CESS)
 
-    fun getGstComponents(): List<TaxComponent> {
+    fun getGstComponents(): List<CalculatedTaxComponent> {
         return taxComponents.filter { it.componentType.isGstComponent }
     }
 
-    fun getNonGstComponents(): List<TaxComponent> {
+    fun getNonGstComponents(): List<CalculatedTaxComponent> {
         return taxComponents.filter { !it.componentType.isGstComponent }
     }
 
@@ -52,7 +52,7 @@ data class TaxCalculationResult(
     }
 }
 
-data class TaxComponent(
+data class CalculatedTaxComponent(
     val componentType: TaxComponentType,
     val name: String,
     val rate: BigDecimal,
