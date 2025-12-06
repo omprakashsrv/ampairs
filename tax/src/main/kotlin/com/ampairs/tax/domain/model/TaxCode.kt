@@ -45,6 +45,9 @@ class TaxCode : OwnableBaseDomain() {
     var shortDescription: String = ""
 
     // Workspace-specific configuration
+    @Column(name = "custom_name", length = 255)
+    var customName: String? = null
+
     @Column(name = "custom_tax_rule_id", length = 255)
     var customTaxRuleId: String? = null
 

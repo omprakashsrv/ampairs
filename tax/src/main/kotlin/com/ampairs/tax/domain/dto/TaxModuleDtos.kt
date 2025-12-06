@@ -93,6 +93,7 @@ data class WorkspaceTaxCodeDto(
     val codeType: String,
     val description: String,
     val shortDescription: String,
+    val customName: String?,
     val customTaxRuleId: String?,
     val usageCount: Int = 0,
     val lastUsedAt: Long?,
@@ -108,7 +109,8 @@ data class SubscribeTaxCodeRequest(
     val masterTaxCodeId: String,
     val customTaxRuleId: String? = null,
     val isFavorite: Boolean = false,
-    val notes: String? = null
+    val notes: String? = null,
+    val customName: String? = null
 )
 
 data class BulkSubscribeTaxCodesRequest(
@@ -146,6 +148,7 @@ fun TaxCode.asDto(): WorkspaceTaxCodeDto {
         codeType = this.codeType,
         description = this.description,
         shortDescription = this.shortDescription,
+        customName = this.customName,
         customTaxRuleId = this.customTaxRuleId,
         usageCount = this.usageCount,
         lastUsedAt = this.lastUsedAt?.toEpochMilli(),
@@ -326,3 +329,33 @@ data class TaxComponentResultDto(
     val description: String,
     val isCompound: Boolean
 )
+
+// ==================== Additional DTOs for V2 Controllers ====================
+
+// Type alias for backward compatibility with guide naming
+typealias TaxCodeDto = WorkspaceTaxCodeDto
+typealias TaxComponentDto = WorkspaceTaxComponentDto
+
+// Extension functions for TaxCode
+fun TaxConfiguration.asTaxConfigurationDto(): TaxConfigurationDto = this.asDto()
+
+fun List<TaxCode>.asTaxCodeDtos(): List<TaxCodeDto> = this.asWorkspaceTaxCodeDtos()
+
+fun List<TaxComponent>.asTaxComponentDtos(): List<TaxComponentDto> = this.asComponentDtos()
+
+// Update/Patch request DTOs
+data class UpdateTaxConfigurationRequest(
+    val countryCode: String? = null,
+    val taxStrategy: String? = null,
+    val defaultTaxCodeSystem: String? = null,
+    val taxJurisdictions: List<String>? = null,
+    val industry: String? = null,
+    val autoSubscribeNewCodes: Boolean? = null
+)
+
+data class UpdateTaxCodeRequest(
+    val isFavorite: Boolean? = null,
+    val notes: String? = null,
+    val customName: String? = null
+)
+
