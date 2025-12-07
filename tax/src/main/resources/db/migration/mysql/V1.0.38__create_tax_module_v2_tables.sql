@@ -5,9 +5,9 @@
 -- Date: 2025-01-09
 
 -- =====================================================
--- Master Tax Codes Table (Global Tax Code Registry)
+-- Master Tax Code Table (Global Tax Code Registry)
 -- =====================================================
-CREATE TABLE master_tax_codes (
+CREATE TABLE master_tax_code (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     uid VARCHAR(200) NOT NULL UNIQUE,
     country_code VARCHAR(2) NOT NULL,
@@ -29,17 +29,17 @@ CREATE TABLE master_tax_codes (
     CONSTRAINT uk_master_tax_code UNIQUE (country_code, code_type, code)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE INDEX idx_master_tax_country ON master_tax_codes(country_code);
-CREATE INDEX idx_master_tax_code_type ON master_tax_codes(code_type);
-CREATE INDEX idx_master_tax_code ON master_tax_codes(code);
-CREATE INDEX idx_master_tax_active ON master_tax_codes(is_active);
-CREATE INDEX idx_master_tax_updated ON master_tax_codes(updated_at);
-CREATE INDEX idx_master_tax_lookup ON master_tax_codes(country_code, code_type, is_active);
+CREATE INDEX idx_master_tax_country ON master_tax_code(country_code);
+CREATE INDEX idx_master_tax_code_type ON master_tax_code(code_type);
+CREATE INDEX idx_master_tax_code ON master_tax_code(code);
+CREATE INDEX idx_master_tax_active ON master_tax_code(is_active);
+CREATE INDEX idx_master_tax_updated ON master_tax_code(updated_at);
+CREATE INDEX idx_master_tax_lookup ON master_tax_code(country_code, code_type, is_active);
 
 -- =====================================================
--- Tax Configurations Table (Multi-tenant via owner_id)
+-- Tax Configuration Table (Multi-tenant via owner_id)
 -- =====================================================
-CREATE TABLE tax_configurations (
+CREATE TABLE tax_configuration (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     uid VARCHAR(200) NOT NULL UNIQUE,
     country_code VARCHAR(2) NOT NULL,
@@ -58,14 +58,14 @@ CREATE TABLE tax_configurations (
     CONSTRAINT uk_tax_config UNIQUE (owner_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE INDEX idx_tax_config ON tax_configurations(id);
-CREATE INDEX idx_tax_config_country ON tax_configurations(country_code);
-CREATE INDEX idx_tax_config_updated ON tax_configurations(updated_at);
+CREATE INDEX idx_tax_config ON tax_configuration(id);
+CREATE INDEX idx_tax_config_country ON tax_configuration(country_code);
+CREATE INDEX idx_tax_config_updated ON tax_configuration(updated_at);
 
 -- =====================================================
--- Tax Codes Table (Multi-tenant via owner_id)
+-- Tax Code Table (Multi-tenant via owner_id)
 -- =====================================================
-CREATE TABLE tax_codes (
+CREATE TABLE tax_code (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     uid VARCHAR(200) NOT NULL UNIQUE,
     master_tax_code_id VARCHAR(255) NOT NULL,
@@ -96,16 +96,16 @@ CREATE TABLE tax_codes (
     CONSTRAINT uk_tax_code UNIQUE (owner_id, master_tax_code_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE INDEX idx_tax_code_workspace ON tax_codes(owner_id);
-CREATE INDEX idx_tax_code_master ON tax_codes(master_tax_code_id);
-CREATE INDEX idx_tax_code_updated ON tax_codes(updated_at);
-CREATE INDEX idx_tax_code_favorite ON tax_codes(is_favorite);
-CREATE INDEX idx_tax_code_active ON tax_codes(is_active);
+CREATE INDEX idx_tax_code_workspace ON tax_code(owner_id);
+CREATE INDEX idx_tax_code_master ON tax_code(master_tax_code_id);
+CREATE INDEX idx_tax_code_updated ON tax_code(updated_at);
+CREATE INDEX idx_tax_code_favorite ON tax_code(is_favorite);
+CREATE INDEX idx_tax_code_active ON tax_code(is_active);
 
 -- =====================================================
--- Tax Rules Table (Multi-tenant via owner_id)
+-- Tax Rule Table (Multi-tenant via owner_id)
 -- =====================================================
-CREATE TABLE tax_rules (
+CREATE TABLE tax_rule (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     uid VARCHAR(200) NOT NULL UNIQUE,
     country_code VARCHAR(2) NOT NULL,
@@ -128,18 +128,18 @@ CREATE TABLE tax_rules (
     updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE INDEX idx_tax_rule ON tax_rules(owner_id);
-CREATE INDEX idx_tax_rule_tax_code_id ON tax_rules(tax_code_id);
-CREATE INDEX idx_tax_rule_tax_code ON tax_rules(tax_code);
-CREATE INDEX idx_tax_rule_country ON tax_rules(country_code);
-CREATE INDEX idx_tax_rule_jurisdiction ON tax_rules(jurisdiction);
-CREATE INDEX idx_tax_rule_updated ON tax_rules(updated_at);
-CREATE INDEX idx_tax_rule_active ON tax_rules(is_active);
+CREATE INDEX idx_tax_rule ON tax_rule(owner_id);
+CREATE INDEX idx_tax_rule_tax_code_id ON tax_rule(tax_code_id);
+CREATE INDEX idx_tax_rule_tax_code ON tax_rule(tax_code);
+CREATE INDEX idx_tax_rule_country ON tax_rule(country_code);
+CREATE INDEX idx_tax_rule_jurisdiction ON tax_rule(jurisdiction);
+CREATE INDEX idx_tax_rule_updated ON tax_rule(updated_at);
+CREATE INDEX idx_tax_rule_active ON tax_rule(is_active);
 
 -- =====================================================
--- Tax Components Table (Multi-tenant via owner_id)
+-- Tax Component Table (Multi-tenant via owner_id)
 -- =====================================================
-CREATE TABLE tax_components (
+CREATE TABLE tax_component (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     uid VARCHAR(200) NOT NULL UNIQUE,
     component_type_id VARCHAR(255) NOT NULL,
@@ -162,18 +162,18 @@ CREATE TABLE tax_components (
     updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-CREATE INDEX idx_tax_comp ON tax_components(owner_id);
-CREATE INDEX idx_tax_comp_type ON tax_components(component_type_id);
-CREATE INDEX idx_tax_comp_jurisdiction ON tax_components(jurisdiction);
-CREATE INDEX idx_tax_comp_updated ON tax_components(updated_at);
-CREATE INDEX idx_tax_comp_active ON tax_components(is_active);
+CREATE INDEX idx_tax_comp ON tax_component(owner_id);
+CREATE INDEX idx_tax_comp_type ON tax_component(component_type_id);
+CREATE INDEX idx_tax_comp_jurisdiction ON tax_component(jurisdiction);
+CREATE INDEX idx_tax_comp_updated ON tax_component(updated_at);
+CREATE INDEX idx_tax_comp_active ON tax_component(is_active);
 
 -- =====================================================
 -- Initial Sample Data for India (IN)
 -- =====================================================
 
 -- Insert sample master tax codes for India
-INSERT INTO master_tax_codes
+INSERT INTO master_tax_code
 (uid, country_code, code_type, code, description, short_description, chapter, heading, category, default_tax_rate, default_tax_slab_id, is_active, created_at, updated_at)
 VALUES
 ('MTC_IN_HSN_1001', 'IN', 'HSN_CODE', '1001', 'Live animals; animal products', 'Live animals', '10', '1001', 'AGRICULTURE', 5.0, 'GST_5', TRUE, CURRENT_TIMESTAMP(6), CURRENT_TIMESTAMP(6)),

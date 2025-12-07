@@ -7,7 +7,7 @@ import java.time.Instant
 
 @Entity
 @Table(
-    name = "tax_codes",
+    name = "tax_code",
     indexes = [
         Index(name = "idx_tax_code_workspace", columnList = "owner_id"),
         Index(name = "idx_tax_code_master", columnList = "master_tax_code_id"),

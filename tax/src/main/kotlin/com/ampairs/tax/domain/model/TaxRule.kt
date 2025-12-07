@@ -8,7 +8,7 @@ import org.hibernate.type.SqlTypes
 
 @Entity
 @Table(
-    name = "tax_rules",
+    name = "tax_rule",
     indexes = [
         Index(name = "idx_tax_rule", columnList = "owner_id"),
         Index(name = "idx_tax_rule_tax_code", columnList = "tax_code_id"),

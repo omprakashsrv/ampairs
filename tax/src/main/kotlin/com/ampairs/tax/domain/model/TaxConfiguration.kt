@@ -9,7 +9,7 @@ import java.time.Instant
 
 @Entity
 @Table(
-    name = "tax_configurations",
+    name = "tax_configuration",
     indexes = [
         Index(name = "idx_tax_config", columnList = "id"),
         Index(name = "idx_tax_config_country", columnList = "country_code"),

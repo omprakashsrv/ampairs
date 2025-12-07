@@ -9,7 +9,7 @@ import jakarta.persistence.Table
 
 @Entity
 @Table(
-    name = "tax_components",
+    name = "tax_component",
     indexes = [
         Index(name = "idx_tax_comp", columnList = "owner_id"),
         Index(name = "idx_tax_comp_type", columnList = "component_type_id"),
