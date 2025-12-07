@@ -46,8 +46,8 @@ class BusinessTypeEntity : OwnableBaseDomain() {
     @Column(name = "compliance_requirements")
     var complianceRequirements: Map<String, Any> = emptyMap()
 
-    @OneToMany(mappedBy = "businessTypeEntity", fetch = FetchType.LAZY)
-    var taxConfigurations: MutableList<TaxConfiguration> = mutableListOf()
+    // Note: Removed @OneToMany relationship to TaxConfiguration as V2 schema doesn't use businessTypeEntity
+    // V2 TaxConfiguration uses taxStrategy field instead of FK relationship
 
     override fun obtainSeqIdPrefix(): String {
         return "BT"
