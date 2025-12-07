@@ -15,7 +15,7 @@ This document provides the **updated API paths** for the Tax Module V2 implement
 ### ✅ NEW Pattern (implemented):
 ```
 /api/v1/tax/configuration
-/api/v1/tax/codes
+/api/v1/tax/code
 ```
 
 **Why?**
@@ -70,7 +70,7 @@ Authorization: Bearer {jwt_token}
 
 ### 2.1 Search Master Tax Codes
 
-**Endpoint**: `GET /api/v1/tax/master-codes/search`
+**Endpoint**: `GET /api/v1/tax/master-code/search`
 
 **Description**: Search global tax code registry (no tenant scoping needed - master data).
 
@@ -84,7 +84,7 @@ Authorization: Bearer {jwt_token}
 
 **Example**:
 ```
-GET /api/v1/tax/master-codes/search?query=oil&countryCode=IN&codeType=HSN_CODE&page=0&size=20
+GET /api/v1/tax/master-code/search?query=oil&countryCode=IN&codeType=HSN_CODE&page=0&size=20
 ```
 
 **Controller**: `MasterTaxCodeController.kt`
@@ -93,7 +93,7 @@ GET /api/v1/tax/master-codes/search?query=oil&countryCode=IN&codeType=HSN_CODE&p
 
 ### 2.2 Get Popular Tax Codes
 
-**Endpoint**: `GET /api/v1/tax/master-codes/popular`
+**Endpoint**: `GET /api/v1/tax/master-code/popular`
 
 **Query Parameters**:
 - `countryCode` (required)
@@ -102,7 +102,7 @@ GET /api/v1/tax/master-codes/search?query=oil&countryCode=IN&codeType=HSN_CODE&p
 
 **Example**:
 ```
-GET /api/v1/tax/master-codes/popular?countryCode=IN&industry=RETAIL_GROCERY&limit=20
+GET /api/v1/tax/master-code/popular?countryCode=IN&industry=RETAIL_GROCERY&limit=20
 ```
 
 **Controller**: `MasterTaxCodeController.kt`
@@ -113,7 +113,7 @@ GET /api/v1/tax/master-codes/popular?countryCode=IN&industry=RETAIL_GROCERY&limi
 
 ### 3.1 Subscribe to Tax Code
 
-**Endpoint**: `POST /api/v1/tax/codes/subscribe`
+**Endpoint**: `POST /api/v1/tax/code/subscribe`
 
 **Description**: Subscribe workspace to a master tax code (automatically scoped to current tenant).
 
@@ -157,7 +157,7 @@ GET /api/v1/tax/master-codes/popular?countryCode=IN&industry=RETAIL_GROCERY&limi
 
 ### 3.2 Get Workspace Tax Codes (Incremental Sync)
 
-**Endpoint**: `GET /api/v1/tax/codes`
+**Endpoint**: `GET /api/v1/tax/code`
 
 **Description**: Get all workspace subscribed tax codes (automatically scoped to current tenant).
 
@@ -168,7 +168,7 @@ GET /api/v1/tax/master-codes/popular?countryCode=IN&industry=RETAIL_GROCERY&limi
 
 **Example**:
 ```
-GET /api/v1/tax/codes?modifiedAfter=1733000000000&page=0&size=1000
+GET /api/v1/tax/code?modifiedAfter=1733000000000&page=0&size=1000
 ```
 
 **Controller**: `TaxCodeController.kt`
@@ -177,7 +177,7 @@ GET /api/v1/tax/codes?modifiedAfter=1733000000000&page=0&size=1000
 
 ### 3.3 Get Favorite Tax Codes
 
-**Endpoint**: `GET /api/v1/tax/codes/favorites`
+**Endpoint**: `GET /api/v1/tax/code/favorites`
 
 **Description**: Get favorite tax codes sorted by usage (automatically scoped to current tenant).
 
@@ -187,7 +187,7 @@ GET /api/v1/tax/codes?modifiedAfter=1733000000000&page=0&size=1000
 
 **Example**:
 ```
-GET /api/v1/tax/codes/favorites?page=0&size=20
+GET /api/v1/tax/code/favorites?page=0&size=20
 ```
 
 **Controller**: `TaxCodeController.kt`
@@ -196,7 +196,7 @@ GET /api/v1/tax/codes/favorites?page=0&size=20
 
 ### 3.4 Unsubscribe from Tax Code
 
-**Endpoint**: `DELETE /api/v1/tax/codes/{taxCodeId}`
+**Endpoint**: `DELETE /api/v1/tax/code/{taxCodeId}`
 
 **Description**: Unsubscribe workspace from a tax code (soft delete, automatically scoped to current tenant).
 
@@ -214,7 +214,7 @@ GET /api/v1/tax/codes/favorites?page=0&size=20
 
 ### 3.5 Update Tax Code Configuration
 
-**Endpoint**: `PATCH /api/v1/tax/codes/{taxCodeId}`
+**Endpoint**: `PATCH /api/v1/tax/code/{taxCodeId}`
 
 **Description**: Update workspace-specific tax code settings (automatically scoped to current tenant).
 
@@ -233,7 +233,7 @@ GET /api/v1/tax/codes/favorites?page=0&size=20
 
 ### 3.6 Increment Usage Count
 
-**Endpoint**: `POST /api/v1/tax/codes/{taxCodeId}/usage`
+**Endpoint**: `POST /api/v1/tax/code/{taxCodeId}/usage`
 
 **Description**: Increment usage count when tax code is used (automatically scoped to current tenant).
 
@@ -252,7 +252,7 @@ GET /api/v1/tax/codes/favorites?page=0&size=20
 
 ### 4.1 Get Tax Rules
 
-**Endpoint**: `GET /api/v1/tax/rules`
+**Endpoint**: `GET /api/v1/tax/rule`
 
 **Description**: Get tax rules for workspace (automatically scoped to current tenant).
 
@@ -264,7 +264,7 @@ GET /api/v1/tax/codes/favorites?page=0&size=20
 
 **Example**:
 ```
-GET /api/v1/tax/rules?modifiedAfter=1733000000000&page=0&size=1000
+GET /api/v1/tax/rule?modifiedAfter=1733000000000&page=0&size=1000
 ```
 
 **Controller**: `TaxRuleController.kt`
@@ -273,13 +273,13 @@ GET /api/v1/tax/rules?modifiedAfter=1733000000000&page=0&size=1000
 
 ### 4.2 Get Tax Rules by Tax Code
 
-**Endpoint**: `GET /api/v1/tax/rules/tax-code/{taxCodeId}`
+**Endpoint**: `GET /api/v1/tax/rule/tax-code/{taxCodeId}`
 
 **Description**: Get all tax rules for a specific tax code (automatically scoped to current tenant).
 
 **Example**:
 ```
-GET /api/v1/tax/rules/tax-code/TCD_001
+GET /api/v1/tax/rule/tax-code/TCD_001
 ```
 
 **Controller**: `TaxRuleController.kt`
@@ -290,7 +290,7 @@ GET /api/v1/tax/rules/tax-code/TCD_001
 
 ### 5.1 Get Tax Components
 
-**Endpoint**: `GET /api/v1/tax/components`
+**Endpoint**: `GET /api/v1/tax/component`
 
 **Description**: Get workspace tax components (CGST, SGST, IGST, etc.) - automatically scoped to current tenant.
 
@@ -303,7 +303,7 @@ GET /api/v1/tax/rules/tax-code/TCD_001
 
 **Example**:
 ```
-GET /api/v1/tax/components?taxType=GST&jurisdiction=MH&page=0&size=100
+GET /api/v1/tax/component?taxType=GST&jurisdiction=MH&page=0&size=100
 ```
 
 **Controller**: `TaxComponentController.kt`
@@ -365,13 +365,13 @@ GET /api/v1/tax/components?taxType=GST&jurisdiction=MH&page=0&size=100
 
 ### Required Changes:
 
-1. **Remove Workspace ID from Paths**
+1. **Remove Workspace ID from Paths and Use Singular Resource Names**
    ```kotlin
    // OLD
-   val url = "/api/v1/workspaces/$workspaceId/tax/configuration"
+   val url = "/api/v1/workspaces/$workspaceId/tax/codes"
 
-   // NEW
-   val url = "/api/v1/tax/configuration"
+   // NEW (singular naming)
+   val url = "/api/v1/tax/code"
    ```
 
 2. **Remove X-Workspace-ID Header**
