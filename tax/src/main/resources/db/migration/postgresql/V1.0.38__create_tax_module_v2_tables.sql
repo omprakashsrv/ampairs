@@ -1,8 +1,8 @@
 -- Tax Module V2 Database Migration Script (PostgreSQL)
 -- Version: V1.0.38
--- Description: Create comprehensive tax management V2 tables for multi-country tax support
+-- Description: Create comprehensive tax management V2 tables for multi-country tax support with Spring multi-tenancy
 -- Author: Claude Code
--- Date: 2025-12-06
+-- Date: 2025-01-09
 
 -- =====================================================
 -- Master Tax Codes Table (Global Tax Code Registry)
@@ -22,7 +22,7 @@ CREATE TABLE master_tax_codes (
     default_tax_rate DOUBLE PRECISION,
     default_tax_slab_id VARCHAR(255),
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
-    metadata JSONB DEFAULT '{}',
+    metadata JSONB,
     created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
@@ -37,39 +37,37 @@ CREATE INDEX idx_master_tax_updated ON master_tax_codes(updated_at);
 CREATE INDEX idx_master_tax_lookup ON master_tax_codes(country_code, code_type, is_active);
 
 -- =====================================================
--- Workspace Tax Configurations Table
+-- Tax Configurations Table (Multi-tenant via owner_id)
 -- =====================================================
-CREATE TABLE workspace_tax_configurations (
+CREATE TABLE tax_configurations (
     id BIGSERIAL PRIMARY KEY,
     uid VARCHAR(200) NOT NULL UNIQUE,
-    workspace_id VARCHAR(255) NOT NULL,
     country_code VARCHAR(2) NOT NULL,
     tax_strategy VARCHAR(50) NOT NULL,
     default_tax_code_system VARCHAR(50) NOT NULL,
-    tax_jurisdictions JSONB DEFAULT '[]',
+    tax_jurisdictions JSONB,
     industry VARCHAR(100),
     auto_subscribe_new_codes BOOLEAN NOT NULL DEFAULT TRUE,
     synced_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    metadata JSONB DEFAULT '{}',
+    metadata JSONB,
     owner_id VARCHAR(200) NOT NULL,
     ref_id VARCHAR(255),
     created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT uk_workspace_tax_config UNIQUE (workspace_id)
+    CONSTRAINT uk_tax_config UNIQUE (owner_id)
 );
 
-CREATE INDEX idx_workspace_tax_config_workspace ON workspace_tax_configurations(workspace_id);
-CREATE INDEX idx_workspace_tax_config_country ON workspace_tax_configurations(country_code);
-CREATE INDEX idx_workspace_tax_config_updated ON workspace_tax_configurations(updated_at);
+CREATE INDEX idx_tax_config ON tax_configurations(id);
+CREATE INDEX idx_tax_config_country ON tax_configurations(country_code);
+CREATE INDEX idx_tax_config_updated ON tax_configurations(updated_at);
 
 -- =====================================================
--- Workspace Tax Codes Table (Subscription Model)
+-- Tax Codes Table (Multi-tenant via owner_id)
 -- =====================================================
-CREATE TABLE workspace_tax_codes (
+CREATE TABLE tax_codes (
     id BIGSERIAL PRIMARY KEY,
     uid VARCHAR(200) NOT NULL UNIQUE,
-    workspace_id VARCHAR(255) NOT NULL,
     master_tax_code_id VARCHAR(255) NOT NULL,
 
     -- Cached master data for offline access
@@ -79,9 +77,10 @@ CREATE TABLE workspace_tax_codes (
     short_description VARCHAR(500) NOT NULL,
 
     -- Workspace-specific configuration
+    custom_name VARCHAR(255),
     custom_tax_rule_id VARCHAR(255),
     usage_count INT NOT NULL DEFAULT 0,
-    last_used_at TIMESTAMP(6),
+    last_used_at TIMESTAMP(6) NULL,
     is_favorite BOOLEAN NOT NULL DEFAULT FALSE,
     notes TEXT,
 
@@ -94,25 +93,24 @@ CREATE TABLE workspace_tax_codes (
     created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    CONSTRAINT uk_workspace_tax_code UNIQUE (workspace_id, master_tax_code_id)
+    CONSTRAINT uk_tax_code UNIQUE (owner_id, master_tax_code_id)
 );
 
-CREATE INDEX idx_workspace_tax_code_workspace ON workspace_tax_codes(workspace_id);
-CREATE INDEX idx_workspace_tax_code_master ON workspace_tax_codes(master_tax_code_id);
-CREATE INDEX idx_workspace_tax_code_updated ON workspace_tax_codes(updated_at);
-CREATE INDEX idx_workspace_tax_code_favorite ON workspace_tax_codes(is_favorite);
-CREATE INDEX idx_workspace_tax_code_active ON workspace_tax_codes(is_active);
+CREATE INDEX idx_tax_code_workspace ON tax_codes(owner_id);
+CREATE INDEX idx_tax_code_master ON tax_codes(master_tax_code_id);
+CREATE INDEX idx_tax_code_updated ON tax_codes(updated_at);
+CREATE INDEX idx_tax_code_favorite ON tax_codes(is_favorite);
+CREATE INDEX idx_tax_code_active ON tax_codes(is_active);
 
 -- =====================================================
--- Tax Rules V2 Table
+-- Tax Rules Table (Multi-tenant via owner_id)
 -- =====================================================
-CREATE TABLE tax_rules_v2 (
+CREATE TABLE tax_rules (
     id BIGSERIAL PRIMARY KEY,
     uid VARCHAR(200) NOT NULL UNIQUE,
-    workspace_id VARCHAR(255) NOT NULL,
     country_code VARCHAR(2) NOT NULL,
 
-    workspace_tax_code_id VARCHAR(255) NOT NULL,
+    tax_code_id VARCHAR(255) NOT NULL,
     tax_code VARCHAR(100) NOT NULL,
     tax_code_type VARCHAR(50) NOT NULL,
     tax_code_description TEXT,
@@ -130,21 +128,20 @@ CREATE TABLE tax_rules_v2 (
     updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_tax_rule_v2_workspace ON tax_rules_v2(workspace_id);
-CREATE INDEX idx_tax_rule_v2_workspace_tax_code ON tax_rules_v2(workspace_tax_code_id);
-CREATE INDEX idx_tax_rule_v2_tax_code ON tax_rules_v2(tax_code);
-CREATE INDEX idx_tax_rule_v2_country ON tax_rules_v2(country_code);
-CREATE INDEX idx_tax_rule_v2_jurisdiction ON tax_rules_v2(jurisdiction);
-CREATE INDEX idx_tax_rule_v2_updated ON tax_rules_v2(updated_at);
-CREATE INDEX idx_tax_rule_v2_active ON tax_rules_v2(is_active);
+CREATE INDEX idx_tax_rule ON tax_rules(owner_id);
+CREATE INDEX idx_tax_rule_tax_code_id ON tax_rules(tax_code_id);
+CREATE INDEX idx_tax_rule_tax_code ON tax_rules(tax_code);
+CREATE INDEX idx_tax_rule_country ON tax_rules(country_code);
+CREATE INDEX idx_tax_rule_jurisdiction ON tax_rules(jurisdiction);
+CREATE INDEX idx_tax_rule_updated ON tax_rules(updated_at);
+CREATE INDEX idx_tax_rule_active ON tax_rules(is_active);
 
 -- =====================================================
--- Workspace Tax Components Table
+-- Tax Components Table (Multi-tenant via owner_id)
 -- =====================================================
-CREATE TABLE workspace_tax_components (
+CREATE TABLE tax_components (
     id BIGSERIAL PRIMARY KEY,
     uid VARCHAR(200) NOT NULL UNIQUE,
-    workspace_id VARCHAR(255) NOT NULL,
     component_type_id VARCHAR(255) NOT NULL,
     component_name VARCHAR(100) NOT NULL,
     component_display_name VARCHAR(200),
@@ -165,11 +162,11 @@ CREATE TABLE workspace_tax_components (
     updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE INDEX idx_workspace_tax_comp_workspace ON workspace_tax_components(workspace_id);
-CREATE INDEX idx_workspace_tax_comp_type ON workspace_tax_components(component_type_id);
-CREATE INDEX idx_workspace_tax_comp_jurisdiction ON workspace_tax_components(jurisdiction);
-CREATE INDEX idx_workspace_tax_comp_updated ON workspace_tax_components(updated_at);
-CREATE INDEX idx_workspace_tax_comp_active ON workspace_tax_components(is_active);
+CREATE INDEX idx_tax_comp ON tax_components(owner_id);
+CREATE INDEX idx_tax_comp_type ON tax_components(component_type_id);
+CREATE INDEX idx_tax_comp_jurisdiction ON tax_components(jurisdiction);
+CREATE INDEX idx_tax_comp_updated ON tax_components(updated_at);
+CREATE INDEX idx_tax_comp_active ON tax_components(is_active);
 
 -- =====================================================
 -- Initial Sample Data for India (IN)
@@ -179,15 +176,15 @@ CREATE INDEX idx_workspace_tax_comp_active ON workspace_tax_components(is_active
 INSERT INTO master_tax_codes
 (uid, country_code, code_type, code, description, short_description, chapter, heading, category, default_tax_rate, default_tax_slab_id, is_active, created_at, updated_at)
 VALUES
-('MTC_IN_HSN_1001', 'IN', 'HSN_CODE', '1001', 'Wheat and meslin', 'Wheat', '10', '1001', 'AGRICULTURE', 0.0, 'GST_0', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('MTC_IN_HSN_1006', 'IN', 'HSN_CODE', '1006', 'Rice', 'Rice', '10', '1006', 'AGRICULTURE', 0.0, 'GST_0', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('MTC_IN_HSN_1701', 'IN', 'HSN_CODE', '1701', 'Cane or beet sugar and chemically pure sucrose', 'Sugar', '17', '1701', 'FOOD', 5.0, 'GST_5', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('MTC_IN_HSN_1905', 'IN', 'HSN_CODE', '1905', 'Bread, pastry, cakes, biscuits', 'Biscuits', '19', '1905', 'FOOD', 5.0, 'GST_5', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('MTC_IN_HSN_2201', 'IN', 'HSN_CODE', '2201', 'Waters, including natural or artificial mineral waters', 'Water', '22', '2201', 'BEVERAGES', 9.0, 'GST_9', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('MTC_IN_HSN_6109', 'IN', 'HSN_CODE', '6109', 'T-shirts, singlets and other vests, knitted or crocheted', 'T-shirts', '61', '6109', 'TEXTILES', 5.0, 'GST_5', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('MTC_IN_HSN_8517', 'IN', 'HSN_CODE', '8517', 'Telephone sets, including smartphones', 'Smartphones', '85', '8517', 'ELECTRONICS', 18.0, 'GST_18', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('MTC_IN_SAC_998314', 'IN', 'SAC_CODE', '998314', 'Information technology design and development services', 'IT Services', NULL, NULL, 'SERVICES', 18.0, 'GST_18', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('MTC_IN_SAC_996511', 'IN', 'SAC_CODE', '996511', 'Accounting, auditing and book-keeping services', 'Accounting', NULL, NULL, 'SERVICES', 18.0, 'GST_18', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+('MTC_IN_HSN_1001', 'IN', 'HSN_CODE', '1001', 'Live animals; animal products', 'Live animals', '10', '1001', 'AGRICULTURE', 5.0, 'GST_5', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MTC_IN_HSN_8517', 'IN', 'HSN_CODE', '8517', 'Telephone sets, including smartphones and other apparatus for transmission or reception of voice, images or other data', 'Smartphones', '85', '8517', 'ELECTRONICS', 18.0, 'GST_18', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MTC_IN_HSN_3004', 'IN', 'HSN_CODE', '3004', 'Medicaments (excluding goods of heading 30.02, 30.05 or 30.06) consisting of mixed or unmixed products for therapeutic or prophylactic uses', 'Medicines', '30', '3004', 'PHARMACEUTICAL', 12.0, 'GST_12', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MTC_IN_HSN_6109', 'IN', 'HSN_CODE', '6109', 'T-shirts, singlets and other vests, knitted or crocheted', 'T-shirts', '61', '6109', 'TEXTILES', 12.0, 'GST_12', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MTC_IN_HSN_8471', 'IN', 'HSN_CODE', '8471', 'Automatic data processing machines and units thereof; magnetic or optical readers', 'Computers', '84', '8471', 'ELECTRONICS', 18.0, 'GST_18', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MTC_IN_HSN_2710', 'IN', 'HSN_CODE', '2710', 'Petroleum oils and oils obtained from bituminous minerals, other than crude', 'Petroleum products', '27', '2710', 'ENERGY', 28.0, 'GST_28', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MTC_IN_HSN_9403', 'IN', 'HSN_CODE', '9403', 'Other furniture and parts thereof', 'Furniture', '94', '9403', 'FURNITURE', 18.0, 'GST_18', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MTC_IN_SAC_998314', 'IN', 'SAC_CODE', '998314', 'Consulting engineer''s services', 'Engineering services', NULL, NULL, 'SERVICES', 18.0, 'GST_18', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MTC_IN_SAC_996511', 'IN', 'SAC_CODE', '996511', 'Information technology design and development services', 'IT development', NULL, NULL, 'SERVICES', 18.0, 'GST_18', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- =====================================================
 -- End of Tax Module V2 Database Migration

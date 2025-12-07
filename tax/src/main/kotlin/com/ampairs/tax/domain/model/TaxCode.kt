@@ -9,7 +9,7 @@ import java.time.Instant
 @Table(
     name = "tax_codes",
     indexes = [
-        Index(name = "idxtax_code_workspace", columnList = "owner_id"),
+        Index(name = "idx_tax_code_workspace", columnList = "owner_id"),
         Index(name = "idx_tax_code_master", columnList = "master_tax_code_id"),
         Index(name = "idx_tax_code_updated", columnList = "updated_at"),
         Index(name = "idx_tax_code_favorite", columnList = "is_favorite"),
