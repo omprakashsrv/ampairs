@@ -73,4 +73,33 @@ class TaxCodeController(
         taxCodeService.incrementUsage(taxCodeId)
         return ApiResponse.success(Unit)
     }
+
+    @PostMapping("/bulk-subscribe")
+    fun bulkSubscribeTaxCodes(
+        @Valid @RequestBody request: BulkSubscribeTaxCodesRequest
+    ): ApiResponse<BulkSubscribeResultDto> {
+        // Multi-tenancy via @TenantId handles workspace scoping automatically
+        val result = taxCodeService.bulkSubscribe(request)
+        return ApiResponse.success(result)
+    }
+
+    @GetMapping("/{taxCodeId}")
+    fun getTaxCodeById(
+        @PathVariable taxCodeId: String
+    ): ApiResponse<TaxCodeDto> {
+        // Multi-tenancy via @TenantId handles workspace scoping automatically
+        val taxCode = taxCodeService.getById(taxCodeId)
+        return ApiResponse.success(taxCode)
+    }
+
+    @PostMapping("/{taxCodeId}/favorite")
+    fun toggleFavorite(
+        @PathVariable taxCodeId: String,
+        @Valid @RequestBody request: Map<String, Boolean>
+    ): ApiResponse<TaxCodeDto> {
+        // Multi-tenancy via @TenantId handles workspace scoping automatically
+        val isFavorite = request["isFavorite"] ?: false
+        val taxCode = taxCodeService.setFavorite(taxCodeId, isFavorite)
+        return ApiResponse.success(taxCode)
+    }
 }

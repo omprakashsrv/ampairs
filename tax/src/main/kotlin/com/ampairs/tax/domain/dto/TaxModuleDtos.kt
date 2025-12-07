@@ -359,3 +359,16 @@ data class UpdateTaxCodeRequest(
     val customName: String? = null
 )
 
+// ==================== Tax Component Type DTOs ====================
+
+data class TaxComponentTypeDto(
+    val id: String,
+    val name: String,              // "CGST", "SGST", "IGST"
+    val displayName: String,       // "Central GST", "State GST"
+    val countryCode: String,       // "IN"
+    val taxType: String,           // "GST"
+    val isCompound: Boolean,
+    val calculationMethod: String,
+    val description: String?
+)
+

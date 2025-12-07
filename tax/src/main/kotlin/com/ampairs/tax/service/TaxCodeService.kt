@@ -128,4 +128,51 @@ class TaxCodeService(
 
         taxCodeRepository.save(taxCode)
     }
+
+    fun bulkSubscribe(request: BulkSubscribeTaxCodesRequest): BulkSubscribeResultDto {
+        val subscribedCodes = mutableListOf<TaxCodeDto>()
+        val errors = mutableListOf<BulkOperationErrorDto>()
+
+        request.masterTaxCodeIds.forEach { masterCodeId ->
+            try {
+                val subscribeRequest = SubscribeTaxCodeRequest(
+                    masterTaxCodeId = masterCodeId,
+                    isFavorite = false,
+                    notes = null,
+                    customName = null
+                )
+                val taxCode = subscribe(subscribeRequest)
+                subscribedCodes.add(taxCode)
+            } catch (e: Exception) {
+                errors.add(
+                    BulkOperationErrorDto(
+                        masterTaxCodeId = masterCodeId,
+                        errorMessage = e.message ?: "Subscription failed"
+                    )
+                )
+            }
+        }
+
+        return BulkSubscribeResultDto(
+            successCount = subscribedCodes.size,
+            failureCount = errors.size,
+            subscribedCodes = subscribedCodes,
+            errors = errors
+        )
+    }
+
+    @Transactional(readOnly = true)
+    fun getById(taxCodeId: String): TaxCodeDto {
+        val taxCode = taxCodeRepository.findByUid(taxCodeId)
+            ?: throw NotFoundException("Tax code not found: $taxCodeId")
+        return taxCode.asDto()
+    }
+
+    fun setFavorite(taxCodeId: String, isFavorite: Boolean): TaxCodeDto {
+        val taxCode = taxCodeRepository.findByUid(taxCodeId)
+            ?: throw NotFoundException("Tax code not found: $taxCodeId")
+
+        taxCode.isFavorite = isFavorite
+        return taxCodeRepository.save(taxCode).asDto()
+    }
 }
