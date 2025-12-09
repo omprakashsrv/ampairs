@@ -187,5 +187,59 @@ VALUES
 ('MTC_IN_SAC_996511', 'IN', 'SAC_CODE', '996511', 'Information technology design and development services', 'IT development', NULL, NULL, 'SERVICES', 18.0, 'GST_18', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- =====================================================
+-- Sample Tax Rules (Multi-tenant - requires owner_id)
+-- =====================================================
+-- NOTE: Tax rules are workspace-specific and created when a workspace
+-- subscribes to a tax code. Below are commented examples showing the
+-- expected component_composition JSON format for Indian GST.
+--
+-- For 18% GST rate breakdown:
+-- INTRA_STATE (within same state):
+--   - CGST (Central GST): 9% (half of total)
+--   - SGST (State GST): 9% (half of total)
+-- INTER_STATE (between different states):
+--   - IGST (Integrated GST): 18% (full rate)
+--
+-- Example tax rule for HSN 8517 (Smartphones - 18% GST):
+/*
+INSERT INTO tax_rule
+(uid, country_code, tax_code_id, tax_code, tax_code_type, tax_code_description,
+ jurisdiction, jurisdiction_level, component_composition, is_active, owner_id, created_at, updated_at)
+VALUES
+('TR_IN_8517_001', 'IN', 'WTC_<workspace_tax_code_id>', '8517', 'HSN_CODE', 'Smartphones',
+ 'INDIA', 'COUNTRY',
+ '{
+   "INTRA_STATE": {
+     "scenario": "INTRA_STATE",
+     "totalRate": 18.0,
+     "components": [
+       {"id": "COMP_CGST_9", "name": "CGST", "rate": 9.0, "order": 1},
+       {"id": "COMP_SGST_9", "name": "SGST", "rate": 9.0, "order": 2}
+     ]
+   },
+   "INTER_STATE": {
+     "scenario": "INTER_STATE",
+     "totalRate": 18.0,
+     "components": [
+       {"id": "COMP_IGST_18", "name": "IGST", "rate": 18.0, "order": 1}
+     ]
+   }
+ }'::jsonb,
+ TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+-- For 5% GST (e.g., HSN 1001 - Agriculture):
+-- INTRA_STATE: CGST 2.5% + SGST 2.5%
+-- INTER_STATE: IGST 5%
+
+-- For 12% GST (e.g., HSN 3004 - Medicines):
+-- INTRA_STATE: CGST 6% + SGST 6%
+-- INTER_STATE: IGST 12%
+
+-- For 28% GST (e.g., HSN 2710 - Petroleum):
+-- INTRA_STATE: CGST 14% + SGST 14%
+-- INTER_STATE: IGST 28%
+*/
+
+-- =====================================================
 -- End of Tax Module V2 Database Migration
 -- =====================================================
