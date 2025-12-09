@@ -19,6 +19,15 @@ class TaxConfigurationController(
         return ApiResponse.success(config)
     }
 
+    @PostMapping
+    fun createConfiguration(
+        @RequestBody request: UpdateTaxConfigurationRequest
+    ): ApiResponse<TaxConfigurationDto> {
+        // Multi-tenancy via @TenantId handles workspace scoping automatically
+        val config = taxConfigurationService.createConfiguration(request)
+        return ApiResponse.success(config)
+    }
+
     @PutMapping
     fun updateConfiguration(
         @RequestBody request: UpdateTaxConfigurationRequest

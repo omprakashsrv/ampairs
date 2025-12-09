@@ -24,10 +24,34 @@ class TaxConfigurationServiceV2(
         return config.asTaxConfigurationDto()
     }
 
+    fun createConfiguration(request: UpdateTaxConfigurationRequest): TaxConfigurationDto {
+        // Multi-tenancy via @TenantId automatically filters by ownerId
+        val existingConfig = taxConfigurationRepository.findAll().firstOrNull()
+        if (existingConfig != null) {
+            throw IllegalStateException("Tax configuration already exists for this workspace")
+        }
+
+        // Require essential fields for creation
+        requireNotNull(request.countryCode) { "Country code is required for creating tax configuration" }
+        requireNotNull(request.taxStrategy) { "Tax strategy is required for creating tax configuration" }
+        requireNotNull(request.defaultTaxCodeSystem) { "Default tax code system is required for creating tax configuration" }
+
+        val config = TaxConfiguration().apply {
+            countryCode = request.countryCode!!
+            taxStrategy = request.taxStrategy!!
+            defaultTaxCodeSystem = request.defaultTaxCodeSystem!!
+            taxJurisdictions = request.taxJurisdictions ?: emptyList()
+            industry = request.industry
+            autoSubscribeNewCodes = request.autoSubscribeNewCodes ?: false
+        }
+
+        return taxConfigurationRepository.save(config).asTaxConfigurationDto()
+    }
+
     fun updateConfiguration(request: UpdateTaxConfigurationRequest): TaxConfigurationDto {
         // Multi-tenancy via @TenantId automatically filters by ownerId
         val config = taxConfigurationRepository.findAll().firstOrNull()
-            ?: createDefaultConfiguration()
+            ?: throw NotFoundException("Tax configuration not found. Please create configuration first.")
 
         config.apply {
             request.countryCode?.let { countryCode = it }
@@ -39,15 +63,5 @@ class TaxConfigurationServiceV2(
         }
 
         return taxConfigurationRepository.save(config).asTaxConfigurationDto()
-    }
-
-    private fun createDefaultConfiguration(): TaxConfiguration {
-        return TaxConfiguration().apply {
-            countryCode = "IN"
-            taxStrategy = "INDIA_GST"
-            defaultTaxCodeSystem = "HSN_CODE"
-            taxJurisdictions = emptyList()
-            autoSubscribeNewCodes = true
-        }
     }
 }
