@@ -37,9 +37,9 @@ class TaxConfigurationServiceV2(
         requireNotNull(request.defaultTaxCodeSystem) { "Default tax code system is required for creating tax configuration" }
 
         val config = TaxConfiguration().apply {
-            countryCode = request.countryCode!!
-            taxStrategy = request.taxStrategy!!
-            defaultTaxCodeSystem = request.defaultTaxCodeSystem!!
+            countryCode = request.countryCode
+            taxStrategy = request.taxStrategy
+            defaultTaxCodeSystem = request.defaultTaxCodeSystem
             taxJurisdictions = request.taxJurisdictions ?: emptyList()
             industry = request.industry
             autoSubscribeNewCodes = request.autoSubscribeNewCodes ?: false
