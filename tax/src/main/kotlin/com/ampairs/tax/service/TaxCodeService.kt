@@ -4,8 +4,10 @@ import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.core.exception.NotFoundException
 import com.ampairs.tax.domain.dto.*
 import com.ampairs.tax.domain.model.TaxCode
+import com.ampairs.tax.domain.model.TaxRule
 import com.ampairs.tax.repository.MasterTaxCodeRepository
 import com.ampairs.tax.repository.TaxCodeRepository
+import com.ampairs.tax.repository.TaxRuleRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
@@ -17,7 +19,9 @@ import java.time.Instant
 @Transactional
 class TaxCodeService(
     private val taxCodeRepository: TaxCodeRepository,
-    private val masterTaxCodeRepository: MasterTaxCodeRepository
+    private val masterTaxCodeRepository: MasterTaxCodeRepository,
+    private val taxRuleRepository: TaxRuleRepository,
+    private val gstRuleTemplateService: GstRuleTemplateService
 ) {
 
     fun subscribe(request: SubscribeTaxCodeRequest): TaxCodeDto {
@@ -51,7 +55,38 @@ class TaxCodeService(
             isActive = true
         }
 
-        return taxCodeRepository.save(taxCode).asDto()
+        val savedTaxCode = taxCodeRepository.save(taxCode)
+
+        // 4. Auto-create tax rule if custom rule not specified
+        if (request.customTaxRuleId == null && masterCode.countryCode == "IN" && masterCode.defaultTaxRate != null) {
+            createDefaultTaxRule(savedTaxCode, masterCode)
+        }
+
+        return savedTaxCode.asDto()
+    }
+
+    /**
+     * Creates a default tax rule with standard GST component breakdown.
+     */
+    private fun createDefaultTaxRule(taxCode: TaxCode, masterCode: com.ampairs.tax.domain.model.MasterTaxCode) {
+        val taxRate = masterCode.defaultTaxRate ?: return
+
+        // Generate standard GST composition
+        val componentComposition = gstRuleTemplateService.generateStandardGstComposition(taxRate)
+
+        val taxRule = TaxRule().apply {
+            countryCode = masterCode.countryCode
+            taxCodeId = taxCode.uid
+            this.taxCode = masterCode.code
+            taxCodeType = masterCode.codeType
+            taxCodeDescription = masterCode.description
+            jurisdiction = "INDIA"
+            jurisdictionLevel = "COUNTRY"
+            this.componentComposition = componentComposition
+            isActive = true
+        }
+
+        taxRuleRepository.save(taxRule)
     }
 
     @Transactional(readOnly = true)

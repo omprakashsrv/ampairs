@@ -210,6 +210,24 @@ fun ComponentReference.asDto(): ComponentReferenceDto {
     )
 }
 
+// Extension functions to convert from DTO to entity
+fun ComponentCompositionDto.toEntity(): ComponentComposition {
+    return ComponentComposition(
+        scenario = this.scenario,
+        components = this.components.map { it.toEntity() },
+        totalRate = this.totalRate
+    )
+}
+
+fun ComponentReferenceDto.toEntity(): ComponentReference {
+    return ComponentReference(
+        id = this.id,
+        name = this.name,
+        rate = this.rate,
+        order = this.order
+    )
+}
+
 fun TaxRule.asDto(): TaxRuleDto {
     return TaxRuleDto(
         id = this.uid,
@@ -346,6 +364,15 @@ data class UpdateTaxCodeRequest(
     val isFavorite: Boolean? = null,
     val notes: String? = null,
     val customName: String? = null
+)
+
+// ==================== Tax Rule Update DTOs ====================
+
+data class UpdateTaxRuleRequest(
+    val jurisdiction: String? = null,
+    val jurisdictionLevel: String? = null,
+    val componentComposition: Map<String, ComponentCompositionDto>? = null,
+    val isActive: Boolean? = null
 )
 
 // ==================== Tax Component Type DTOs ====================

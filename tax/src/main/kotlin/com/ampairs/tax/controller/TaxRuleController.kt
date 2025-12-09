@@ -3,7 +3,9 @@ package com.ampairs.tax.controller
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.tax.domain.dto.TaxRuleDto
+import com.ampairs.tax.domain.dto.UpdateTaxRuleRequest
 import com.ampairs.tax.service.TaxRuleService
+import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -36,5 +38,33 @@ class TaxRuleController(
         // Multi-tenancy via @TenantId handles workspace scoping automatically
         val rules = taxRuleService.findByTaxCodeId(taxCodeId)
         return ApiResponse.success(rules)
+    }
+
+    @GetMapping("/{taxRuleId}")
+    fun getTaxRuleById(
+        @PathVariable taxRuleId: String
+    ): ApiResponse<TaxRuleDto> {
+        // Multi-tenancy via @TenantId handles workspace scoping automatically
+        val rule = taxRuleService.getById(taxRuleId)
+        return ApiResponse.success(rule)
+    }
+
+    @PutMapping("/{taxRuleId}")
+    fun updateTaxRule(
+        @PathVariable taxRuleId: String,
+        @Valid @RequestBody request: UpdateTaxRuleRequest
+    ): ApiResponse<TaxRuleDto> {
+        // Multi-tenancy via @TenantId handles workspace scoping automatically
+        val updated = taxRuleService.updateTaxRule(taxRuleId, request)
+        return ApiResponse.success(updated)
+    }
+
+    @DeleteMapping("/{taxRuleId}")
+    fun deleteTaxRule(
+        @PathVariable taxRuleId: String
+    ): ApiResponse<Unit> {
+        // Multi-tenancy via @TenantId handles workspace scoping automatically
+        taxRuleService.deleteTaxRule(taxRuleId)
+        return ApiResponse.success(Unit)
     }
 }
