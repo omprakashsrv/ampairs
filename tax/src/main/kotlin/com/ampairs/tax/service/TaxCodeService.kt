@@ -1,5 +1,6 @@
 package com.ampairs.tax.service
 
+import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.core.exception.NotFoundException
 import com.ampairs.tax.domain.dto.*
 import com.ampairs.tax.domain.model.TaxCode
@@ -70,14 +71,7 @@ class TaxCodeService(
             taxCodeRepository.findAllActive(pageable)
         }
 
-        return PageResponse(
-            content = result.content.asTaxCodeDtos(),
-            page = result.number,
-            size = result.size,
-            totalElements = result.totalElements,
-            totalPages = result.totalPages,
-            hasNext = result.hasNext()
-        )
+        return PageResponse.from(result) { it.asDto() }
     }
 
     @Transactional(readOnly = true)
@@ -85,14 +79,7 @@ class TaxCodeService(
         val pageable: Pageable = PageRequest.of(page, size)
         val result = taxCodeRepository.findFavorites(pageable)
 
-        return PageResponse(
-            content = result.content.asTaxCodeDtos(),
-            page = result.number,
-            size = result.size,
-            totalElements = result.totalElements,
-            totalPages = result.totalPages,
-            hasNext = result.hasNext()
-        )
+        return PageResponse.from(result) { it.asDto() }
     }
 
     fun unsubscribe(taxCodeId: String) {

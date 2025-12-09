@@ -6,7 +6,7 @@ import com.ampairs.tax.service.TaxComponentService
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/v1/tax/component-type")
+@RequestMapping("/tax/v1/component-type")
 class TaxComponentTypeController(
     private val taxComponentService: TaxComponentService
 ) {

@@ -1,13 +1,14 @@
 package com.ampairs.tax.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.tax.domain.dto.*
 import com.ampairs.tax.service.TaxCodeService
 import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/v1/tax/code")
+@RequestMapping("/tax/v1/code")
 class TaxCodeController(
     private val taxCodeService: TaxCodeService
 ) {

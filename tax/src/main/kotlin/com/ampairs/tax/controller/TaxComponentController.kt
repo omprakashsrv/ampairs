@@ -1,13 +1,13 @@
 package com.ampairs.tax.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
-import com.ampairs.tax.domain.dto.PageResponse
+import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.tax.domain.dto.TaxComponentDto
 import com.ampairs.tax.service.TaxComponentService
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/v1/tax/component")
+@RequestMapping("/tax/v1/component")
 class TaxComponentController(
     private val taxComponentService: TaxComponentService
 ) {

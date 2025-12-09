@@ -36,7 +36,7 @@ fun TaxConfiguration.asDto(): TaxConfigurationDto {
         industry = this.industry,
         autoSubscribeNewCodes = this.autoSubscribeNewCodes,
         syncedAt = this.syncedAt.toEpochMilli(),
-        metadata = this.metadata
+        metadata = this.metadata ?: emptyMap()
     )
 }
 
@@ -76,7 +76,7 @@ fun MasterTaxCode.asDto(): MasterTaxCodeDto {
         defaultTaxRate = this.defaultTaxRate,
         defaultTaxSlabId = this.defaultTaxSlabId,
         isActive = this.isActive,
-        metadata = this.metadata,
+        metadata = this.metadata ?: emptyMap(),
         createdAt = this.createdAt?.toEpochMilli() ?: Instant.now().toEpochMilli(),
         updatedAt = this.updatedAt?.toEpochMilli() ?: Instant.now().toEpochMilli()
     )
@@ -266,17 +266,6 @@ fun TaxComponent.asDto(): WorkspaceTaxComponentDto {
 }
 
 fun List<TaxComponent>.asComponentDtos(): List<WorkspaceTaxComponentDto> = this.map { it.asDto() }
-
-// ==================== Pagination ====================
-
-data class PageResponse<T>(
-    val content: List<T>,
-    val page: Int,
-    val size: Int,
-    val totalElements: Long,
-    val totalPages: Int,
-    val hasNext: Boolean
-)
 
 // ==================== Tax Calculation DTOs ====================
 

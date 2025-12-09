@@ -1,7 +1,7 @@
 package com.ampairs.tax.service
 
+import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.tax.domain.dto.MasterTaxCodeDto
-import com.ampairs.tax.domain.dto.PageResponse
 import com.ampairs.tax.domain.dto.asDto
 import com.ampairs.tax.domain.dto.asDtos
 import com.ampairs.tax.domain.model.MasterTaxCode
@@ -35,14 +35,7 @@ class MasterTaxCodeService(
             pageable = pageable
         )
 
-        return PageResponse(
-            content = result.content.asDtos(),
-            page = result.number,
-            size = result.size,
-            totalElements = result.totalElements,
-            totalPages = result.totalPages,
-            hasNext = result.hasNext()
-        )
+        return PageResponse.from(result) { it.asDto() }
     }
 
     fun getPopularCodes(

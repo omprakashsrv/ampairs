@@ -1,7 +1,8 @@
 package com.ampairs.tax.service
 
-import com.ampairs.tax.domain.dto.PageResponse
+import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.tax.domain.dto.TaxRuleDto
+import com.ampairs.tax.domain.dto.asDto
 import com.ampairs.tax.domain.dto.asTaxRuleDtos
 import com.ampairs.tax.repository.TaxRuleRepository
 import org.springframework.data.domain.PageRequest
@@ -47,14 +48,7 @@ class TaxRuleService(
             }
         }
 
-        return PageResponse(
-            content = result.content.asTaxRuleDtos(),
-            page = result.number,
-            size = result.size,
-            totalElements = result.totalElements,
-            totalPages = result.totalPages,
-            hasNext = result.hasNext()
-        )
+        return PageResponse.from(result) { it.asDto() }
     }
 
     fun findByTaxCodeId(taxCodeId: String): List<TaxRuleDto> {

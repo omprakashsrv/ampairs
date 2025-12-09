@@ -1,14 +1,14 @@
 package com.ampairs.tax.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.tax.domain.dto.MasterTaxCodeDto
-import com.ampairs.tax.domain.dto.PageResponse
 import com.ampairs.tax.service.MasterTaxCodeService
 import org.springframework.web.bind.annotation.*
 import kotlin.math.min
 
 @RestController
-@RequestMapping("/api/v1/tax/master-code")
+@RequestMapping("/tax/v1/master-code")
 class MasterTaxCodeController(
     private val masterTaxCodeService: MasterTaxCodeService
 ) {

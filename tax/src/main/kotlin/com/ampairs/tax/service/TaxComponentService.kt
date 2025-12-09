@@ -1,7 +1,8 @@
 package com.ampairs.tax.service
 
-import com.ampairs.tax.domain.dto.PageResponse
+import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.tax.domain.dto.TaxComponentDto
+import com.ampairs.tax.domain.dto.asDto
 import com.ampairs.tax.domain.dto.asTaxComponentDtos
 import com.ampairs.tax.repository.TaxComponentRepository
 import org.springframework.data.domain.PageRequest
@@ -50,13 +51,6 @@ class TaxComponentService(
             }
         }
 
-        return PageResponse(
-            content = result.content.asTaxComponentDtos(),
-            page = result.number,
-            size = result.size,
-            totalElements = result.totalElements,
-            totalPages = result.totalPages,
-            hasNext = result.hasNext()
-        )
+        return PageResponse.from(result) { it.asDto() }
     }
 }

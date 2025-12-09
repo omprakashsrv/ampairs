@@ -1,13 +1,13 @@
 package com.ampairs.tax.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
-import com.ampairs.tax.domain.dto.PageResponse
+import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.tax.domain.dto.TaxRuleDto
 import com.ampairs.tax.service.TaxRuleService
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/v1/tax/rule")
+@RequestMapping("/tax/v1/rule")
 class TaxRuleController(
     private val taxRuleService: TaxRuleService
 ) {
