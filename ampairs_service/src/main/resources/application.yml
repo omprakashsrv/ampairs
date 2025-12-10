@@ -174,7 +174,7 @@ spring:
     default-schema: ${FLYWAY_DEFAULT_SCHEMA:public}
     baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE:true}
     baseline-version: ${FLYWAY_BASELINE_VERSION:1}
-    validate-on-migrate: ${FLYWAY_VALIDATE_ON_MIGRATE:true}
+    validate-on-migrate: ${FLYWAY_VALIDATE_ON_MIGRATE:false}
     out-of-order: ${FLYWAY_OUT_OF_ORDER:false}
     # Vendor-specific locations: {vendor} is replaced with mysql or postgresql automatically
     locations: ${FLYWAY_LOCATIONS:classpath:db/migration/{vendor}}
