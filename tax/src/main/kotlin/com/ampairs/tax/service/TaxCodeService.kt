@@ -31,11 +31,37 @@ class TaxCodeService(
 
         // 2. Check if already subscribed
         val existing = taxCodeRepository.findByMasterTaxCodeId(request.masterTaxCodeId)
+
         if (existing != null) {
-            throw NotFoundException("Already subscribed to this tax code")
+            // 2a. If active, throw error (already subscribed)
+            if (existing.isActive) {
+                throw IllegalStateException("Already subscribed to this tax code")
+            }
+
+            // 2b. If inactive (soft deleted), reactivate it
+            existing.apply {
+                isActive = true
+                request.customName?.let { customName = it }
+                request.isFavorite?.let { isFavorite = it }
+                request.notes?.let { notes = it }
+                // Update master data cache in case it changed
+                code = masterCode.code
+                codeType = masterCode.codeType
+                description = masterCode.description
+                shortDescription = masterCode.shortDescription
+            }
+
+            val reactivated = taxCodeRepository.save(existing)
+
+            // Reactivate or create tax rule if needed
+            if (request.customTaxRuleId == null && masterCode.countryCode == "IN" && masterCode.defaultTaxRate != null) {
+                reactivateOrCreateTaxRule(reactivated, masterCode)
+            }
+
+            return reactivated.asDto()
         }
 
-        // 3. Create workspace tax code
+        // 3. Create new workspace tax code
         val taxCode = TaxCode().apply {
             masterTaxCodeId = masterCode.uid
 
@@ -87,6 +113,27 @@ class TaxCodeService(
         }
 
         taxRuleRepository.save(taxRule)
+    }
+
+    /**
+     * Reactivates an existing inactive tax rule or creates a new one if it doesn't exist.
+     */
+    private fun reactivateOrCreateTaxRule(taxCode: TaxCode, masterCode: com.ampairs.tax.domain.model.MasterTaxCode) {
+        // Check if tax rule exists for this tax code
+        val existingRules = taxRuleRepository.findByTaxCodeId(taxCode.uid)
+
+        if (existingRules.isNotEmpty()) {
+            // Reactivate all inactive rules
+            existingRules.forEach { rule ->
+                if (!rule.isActive) {
+                    rule.isActive = true
+                    taxRuleRepository.save(rule)
+                }
+            }
+        } else {
+            // No rules exist, create default one
+            createDefaultTaxRule(taxCode, masterCode)
+        }
     }
 
     @Transactional(readOnly = true)
