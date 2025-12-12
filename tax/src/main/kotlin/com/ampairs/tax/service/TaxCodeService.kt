@@ -33,17 +33,23 @@ class TaxCodeService(
         val existing = taxCodeRepository.findByMasterTaxCodeId(request.masterTaxCodeId)
 
         if (existing != null) {
-            // 2a. If active, throw error (already subscribed)
+            // 2a. If active, return existing subscription (idempotent)
             if (existing.isActive) {
-                throw IllegalStateException("Already subscribed to this tax code")
+                // Always update fields (idempotent operation)
+                existing.apply {
+                    customName = request.customName
+                    isFavorite = request.isFavorite
+                    notes = request.notes
+                }
+                return taxCodeRepository.save(existing).asDto()
             }
 
             // 2b. If inactive (soft deleted), reactivate it
             existing.apply {
                 isActive = true
-                request.customName?.let { customName = it }
-                request.isFavorite?.let { isFavorite = it }
-                request.notes?.let { notes = it }
+                customName = request.customName
+                isFavorite = request.isFavorite
+                notes = request.notes
                 // Update master data cache in case it changed
                 code = masterCode.code
                 codeType = masterCode.codeType
