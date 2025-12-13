@@ -187,6 +187,51 @@ VALUES
 ('MTC_IN_SAC_996511', 'IN', 'SAC_CODE', '996511', 'Information technology design and development services', 'IT development', NULL, NULL, 'SERVICES', 18.0, 'GST_18', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- =====================================================
+-- Sample Tax Components (Multi-tenant - requires owner_id)
+-- =====================================================
+-- NOTE: Tax components are workspace-specific and created automatically
+-- when workspaces are initialized for GST. Below are commented examples
+-- showing the standard Indian GST components.
+--
+-- Indian GST has three main components:
+-- 1. CGST (Central GST) - collected by central government
+-- 2. SGST (State GST) - collected by state government
+-- 3. IGST (Integrated GST) - for inter-state transactions
+--
+-- Standard GST rates: 0%, 0.25%, 3%, 5%, 12%, 18%, 28%
+/*
+-- Example: Tax components for 18% GST rate
+INSERT INTO tax_component
+(uid, component_type_id, component_name, component_display_name, tax_type,
+ jurisdiction, jurisdiction_level, rate_percentage, is_compound, calculation_method,
+ is_active, owner_id, created_at, updated_at)
+VALUES
+-- CGST Components (Central GST)
+('COMP_CGST_0.125', 'TYPE_CGST', 'CGST', 'Central GST 0.125%', 'GST', 'INDIA', 'COUNTRY', 0.125, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_CGST_1.5', 'TYPE_CGST', 'CGST', 'Central GST 1.5%', 'GST', 'INDIA', 'COUNTRY', 1.5, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_CGST_2.5', 'TYPE_CGST', 'CGST', 'Central GST 2.5%', 'GST', 'INDIA', 'COUNTRY', 2.5, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_CGST_6', 'TYPE_CGST', 'CGST', 'Central GST 6%', 'GST', 'INDIA', 'COUNTRY', 6.0, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_CGST_9', 'TYPE_CGST', 'CGST', 'Central GST 9%', 'GST', 'INDIA', 'COUNTRY', 9.0, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_CGST_14', 'TYPE_CGST', 'CGST', 'Central GST 14%', 'GST', 'INDIA', 'COUNTRY', 14.0, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- SGST Components (State GST)
+('COMP_SGST_0.125', 'TYPE_SGST', 'SGST', 'State GST 0.125%', 'GST', 'INDIA', 'STATE', 0.125, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_SGST_1.5', 'TYPE_SGST', 'SGST', 'State GST 1.5%', 'GST', 'INDIA', 'STATE', 1.5, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_SGST_2.5', 'TYPE_SGST', 'SGST', 'State GST 2.5%', 'GST', 'INDIA', 'STATE', 2.5, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_SGST_6', 'TYPE_SGST', 'SGST', 'State GST 6%', 'GST', 'INDIA', 'STATE', 6.0, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_SGST_9', 'TYPE_SGST', 'SGST', 'State GST 9%', 'GST', 'INDIA', 'STATE', 9.0, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_SGST_14', 'TYPE_SGST', 'SGST', 'State GST 14%', 'GST', 'INDIA', 'STATE', 14.0, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- IGST Components (Integrated GST - for inter-state)
+('COMP_IGST_0.25', 'TYPE_IGST', 'IGST', 'Integrated GST 0.25%', 'GST', 'INDIA', 'COUNTRY', 0.25, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_IGST_3', 'TYPE_IGST', 'IGST', 'Integrated GST 3%', 'GST', 'INDIA', 'COUNTRY', 3.0, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_IGST_5', 'TYPE_IGST', 'IGST', 'Integrated GST 5%', 'GST', 'INDIA', 'COUNTRY', 5.0, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_IGST_12', 'TYPE_IGST', 'IGST', 'Integrated GST 12%', 'GST', 'INDIA', 'COUNTRY', 12.0, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_IGST_18', 'TYPE_IGST', 'IGST', 'Integrated GST 18%', 'GST', 'INDIA', 'COUNTRY', 18.0, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_IGST_28', 'TYPE_IGST', 'IGST', 'Integrated GST 28%', 'GST', 'INDIA', 'COUNTRY', 28.0, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+*/
+
+-- =====================================================
 -- Sample Tax Rules (Multi-tenant - requires owner_id)
 -- =====================================================
 -- NOTE: Tax rules are workspace-specific and created when a workspace

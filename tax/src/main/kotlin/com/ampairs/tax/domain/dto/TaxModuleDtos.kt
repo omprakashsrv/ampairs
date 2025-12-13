@@ -168,7 +168,7 @@ fun List<TaxCode>.asWorkspaceTaxCodeDtos(): List<WorkspaceTaxCodeDto> = this.map
 data class TaxRuleDto(
     val id: String,
     val countryCode: String,
-    val workspaceTaxCodeId: String,
+    val taxCodeId: String,
     val taxCode: String,
     val taxCodeType: String,
     val taxCodeDescription: String?,
@@ -232,7 +232,7 @@ fun TaxRule.asDto(): TaxRuleDto {
     return TaxRuleDto(
         id = this.uid,
         countryCode = this.countryCode,
-        workspaceTaxCodeId = this.taxCodeId,
+        taxCodeId = this.taxCodeId,
         taxCode = this.taxCode,
         taxCodeType = this.taxCodeType,
         taxCodeDescription = this.taxCodeDescription,
