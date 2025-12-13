@@ -84,6 +84,76 @@ fun MasterTaxCode.asDto(): MasterTaxCodeDto {
 
 fun List<MasterTaxCode>.asDtos(): List<MasterTaxCodeDto> = this.map { it.asDto() }
 
+// ==================== Master Tax Component DTOs ====================
+
+data class MasterTaxComponentDto(
+    val id: String,
+    val componentTypeId: String,
+    val componentName: String,
+    val componentDisplayName: String,
+    val taxType: String,
+    val jurisdiction: String,
+    val jurisdictionLevel: String,
+    val ratePercentage: Double,
+    val isActive: Boolean,
+    val createdAt: Long,
+    val updatedAt: Long
+)
+
+fun MasterTaxComponent.asDto(): MasterTaxComponentDto {
+    return MasterTaxComponentDto(
+        id = this.uid,
+        componentTypeId = this.componentTypeId,
+        componentName = this.componentName,
+        componentDisplayName = this.componentDisplayName,
+        taxType = this.taxType,
+        jurisdiction = this.jurisdiction,
+        jurisdictionLevel = this.jurisdictionLevel,
+        ratePercentage = this.ratePercentage,
+        isActive = this.isActive,
+        createdAt = this.createdAt?.toEpochMilli() ?: Instant.now().toEpochMilli(),
+        updatedAt = this.updatedAt?.toEpochMilli() ?: Instant.now().toEpochMilli()
+    )
+}
+
+fun List<MasterTaxComponent>.asMasterComponentDtos(): List<MasterTaxComponentDto> = this.map { it.asDto() }
+
+// ==================== Master Tax Rule DTOs ====================
+
+data class MasterTaxRuleDto(
+    val id: String,
+    val countryCode: String,
+    val masterTaxCodeId: String,
+    val taxCode: String,
+    val taxCodeType: String,
+    val taxRate: Double,
+    val jurisdiction: String,
+    val jurisdictionLevel: String,
+    val componentComposition: Map<String, Any>,
+    val isActive: Boolean,
+    val createdAt: Long,
+    val updatedAt: Long
+)
+
+fun MasterTaxRule.asDto(): MasterTaxRuleDto {
+    return MasterTaxRuleDto(
+        id = this.uid,
+        countryCode = this.countryCode,
+        masterTaxCodeId = this.masterTaxCodeId,
+        taxCode = this.taxCode,
+        taxCodeType = this.taxCodeType,
+        taxRate = this.taxRate,
+        jurisdiction = this.jurisdiction,
+        jurisdictionLevel = this.jurisdictionLevel,
+        componentComposition = this.componentComposition,
+        isActive = this.isActive,
+        createdAt = this.createdAt?.toEpochMilli() ?: Instant.now().toEpochMilli(),
+        updatedAt = this.updatedAt?.toEpochMilli() ?: Instant.now().toEpochMilli()
+    )
+}
+
+fun List<MasterTaxRule>.asMasterRuleDtos(): List<MasterTaxRuleDto> = this.map { it.asDto() }
+
 // ==================== Workspace Tax Code DTOs ====================
 
 data class WorkspaceTaxCodeDto(

@@ -6,6 +6,8 @@ object Constants {
 
     // V2 API Constants
     const val MASTER_TAX_CODE_PREFIX = "MTC"
+    const val MASTER_TAX_COMPONENT_PREFIX = "MCOMP"
+    const val MASTER_TAX_RULE_PREFIX = "MTR"
     const val TAX_CONFIG_PREFIX = "WTC"
     const val TAX_CODE_PREFIX = "TCD"
     const val TAX_RULE_PREFIX = "TRV"
