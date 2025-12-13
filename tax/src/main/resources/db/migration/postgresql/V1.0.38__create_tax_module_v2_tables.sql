@@ -221,35 +221,68 @@ VALUES
 ('COMP_IGST_28', 'TYPE_IGST', 'IGST', 'Integrated GST 28%', 'GST', 'INDIA', 'COUNTRY', 28.0, FALSE, 'PERCENTAGE', TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- =====================================================
--- Tax Rules (Created by GstRuleTemplateService)
+-- Indian GST Tax Rules (System-level templates)
 -- =====================================================
--- NOTE: Tax rules are auto-created when workspaces subscribe to tax codes
--- via the TaxCodeService.subscribe() method using GstRuleTemplateService.
--- They reference workspace-specific tax_code_id values, so cannot be seeded here.
---
--- Example structure showing how tax rules link components:
--- For HSN 8517 (Smartphones - 18% GST):
---   INTRA_STATE: COMP_CGST_9 (9%) + COMP_SGST_9 (9%)
---   INTER_STATE: COMP_IGST_18 (18%)
---
--- The component_composition JSON structure:
--- {
---   "INTRA_STATE": {
---     "scenario": "INTRA_STATE",
---     "totalRate": 18.0,
---     "components": [
---       {"id": "COMP_CGST_9", "name": "CGST", "rate": 9.0, "order": 1},
---       {"id": "COMP_SGST_9", "name": "SGST", "rate": 9.0, "order": 2}
---     ]
---   },
---   "INTER_STATE": {
---     "scenario": "INTER_STATE",
---     "totalRate": 18.0,
---     "components": [
---       {"id": "COMP_IGST_18", "name": "IGST", "rate": 18.0, "order": 1}
---     ]
---   }
--- }
+-- NOTE: These are system-level template tax rules with owner_id = 'SYSTEM'
+-- that demonstrate the proper component_composition structure.
+-- Workspaces create their own tax_rule entries when subscribing to tax codes.
+INSERT INTO tax_rule
+(uid, country_code, tax_code_id, tax_code, tax_code_type, tax_code_description,
+ jurisdiction, jurisdiction_level, component_composition, is_active, owner_id, created_at, updated_at)
+VALUES
+-- HSN 1001 - Live Animals (5% GST)
+('TR_SYSTEM_1001', 'IN', 'SYSTEM', '1001', 'HSN_CODE', 'Live animals; animal products',
+ 'INDIA', 'COUNTRY',
+ '{"INTRA_STATE": {"scenario": "INTRA_STATE", "totalRate": 5.0, "components": [{"id": "COMP_CGST_2.5", "name": "CGST", "rate": 2.5, "order": 1}, {"id": "COMP_SGST_2.5", "name": "SGST", "rate": 2.5, "order": 2}]}, "INTER_STATE": {"scenario": "INTER_STATE", "totalRate": 5.0, "components": [{"id": "COMP_IGST_5", "name": "IGST", "rate": 5.0, "order": 1}]}}'::jsonb,
+ TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- HSN 8517 - Smartphones (18% GST)
+('TR_SYSTEM_8517', 'IN', 'SYSTEM', '8517', 'HSN_CODE', 'Telephone sets, including smartphones',
+ 'INDIA', 'COUNTRY',
+ '{"INTRA_STATE": {"scenario": "INTRA_STATE", "totalRate": 18.0, "components": [{"id": "COMP_CGST_9", "name": "CGST", "rate": 9.0, "order": 1}, {"id": "COMP_SGST_9", "name": "SGST", "rate": 9.0, "order": 2}]}, "INTER_STATE": {"scenario": "INTER_STATE", "totalRate": 18.0, "components": [{"id": "COMP_IGST_18", "name": "IGST", "rate": 18.0, "order": 1}]}}'::jsonb,
+ TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- HSN 3004 - Medicines (12% GST)
+('TR_SYSTEM_3004', 'IN', 'SYSTEM', '3004', 'HSN_CODE', 'Medicaments',
+ 'INDIA', 'COUNTRY',
+ '{"INTRA_STATE": {"scenario": "INTRA_STATE", "totalRate": 12.0, "components": [{"id": "COMP_CGST_6", "name": "CGST", "rate": 6.0, "order": 1}, {"id": "COMP_SGST_6", "name": "SGST", "rate": 6.0, "order": 2}]}, "INTER_STATE": {"scenario": "INTER_STATE", "totalRate": 12.0, "components": [{"id": "COMP_IGST_12", "name": "IGST", "rate": 12.0, "order": 1}]}}'::jsonb,
+ TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- HSN 6109 - T-shirts (12% GST)
+('TR_SYSTEM_6109', 'IN', 'SYSTEM', '6109', 'HSN_CODE', 'T-shirts, singlets and other vests',
+ 'INDIA', 'COUNTRY',
+ '{"INTRA_STATE": {"scenario": "INTRA_STATE", "totalRate": 12.0, "components": [{"id": "COMP_CGST_6", "name": "CGST", "rate": 6.0, "order": 1}, {"id": "COMP_SGST_6", "name": "SGST", "rate": 6.0, "order": 2}]}, "INTER_STATE": {"scenario": "INTER_STATE", "totalRate": 12.0, "components": [{"id": "COMP_IGST_12", "name": "IGST", "rate": 12.0, "order": 1}]}}'::jsonb,
+ TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- HSN 8471 - Computers (18% GST)
+('TR_SYSTEM_8471', 'IN', 'SYSTEM', '8471', 'HSN_CODE', 'Automatic data processing machines',
+ 'INDIA', 'COUNTRY',
+ '{"INTRA_STATE": {"scenario": "INTRA_STATE", "totalRate": 18.0, "components": [{"id": "COMP_CGST_9", "name": "CGST", "rate": 9.0, "order": 1}, {"id": "COMP_SGST_9", "name": "SGST", "rate": 9.0, "order": 2}]}, "INTER_STATE": {"scenario": "INTER_STATE", "totalRate": 18.0, "components": [{"id": "COMP_IGST_18", "name": "IGST", "rate": 18.0, "order": 1}]}}'::jsonb,
+ TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- HSN 2710 - Petroleum (28% GST)
+('TR_SYSTEM_2710', 'IN', 'SYSTEM', '2710', 'HSN_CODE', 'Petroleum oils and oils obtained from bituminous minerals',
+ 'INDIA', 'COUNTRY',
+ '{"INTRA_STATE": {"scenario": "INTRA_STATE", "totalRate": 28.0, "components": [{"id": "COMP_CGST_14", "name": "CGST", "rate": 14.0, "order": 1}, {"id": "COMP_SGST_14", "name": "SGST", "rate": 14.0, "order": 2}]}, "INTER_STATE": {"scenario": "INTER_STATE", "totalRate": 28.0, "components": [{"id": "COMP_IGST_28", "name": "IGST", "rate": 28.0, "order": 1}]}}'::jsonb,
+ TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- HSN 9403 - Furniture (18% GST)
+('TR_SYSTEM_9403', 'IN', 'SYSTEM', '9403', 'HSN_CODE', 'Other furniture and parts thereof',
+ 'INDIA', 'COUNTRY',
+ '{"INTRA_STATE": {"scenario": "INTRA_STATE", "totalRate": 18.0, "components": [{"id": "COMP_CGST_9", "name": "CGST", "rate": 9.0, "order": 1}, {"id": "COMP_SGST_9", "name": "SGST", "rate": 9.0, "order": 2}]}, "INTER_STATE": {"scenario": "INTER_STATE", "totalRate": 18.0, "components": [{"id": "COMP_IGST_18", "name": "IGST", "rate": 18.0, "order": 1}]}}'::jsonb,
+ TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- SAC 998314 - Engineering Services (18% GST)
+('TR_SYSTEM_998314', 'IN', 'SYSTEM', '998314', 'SAC_CODE', 'Consulting engineer''s services',
+ 'INDIA', 'COUNTRY',
+ '{"INTRA_STATE": {"scenario": "INTRA_STATE", "totalRate": 18.0, "components": [{"id": "COMP_CGST_9", "name": "CGST", "rate": 9.0, "order": 1}, {"id": "COMP_SGST_9", "name": "SGST", "rate": 9.0, "order": 2}]}, "INTER_STATE": {"scenario": "INTER_STATE", "totalRate": 18.0, "components": [{"id": "COMP_IGST_18", "name": "IGST", "rate": 18.0, "order": 1}]}}'::jsonb,
+ TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- SAC 996511 - IT Development Services (18% GST)
+('TR_SYSTEM_996511', 'IN', 'SYSTEM', '996511', 'SAC_CODE', 'Information technology design and development services',
+ 'INDIA', 'COUNTRY',
+ '{"INTRA_STATE": {"scenario": "INTRA_STATE", "totalRate": 18.0, "components": [{"id": "COMP_CGST_9", "name": "CGST", "rate": 9.0, "order": 1}, {"id": "COMP_SGST_9", "name": "SGST", "rate": 9.0, "order": 2}]}, "INTER_STATE": {"scenario": "INTER_STATE", "totalRate": 18.0, "components": [{"id": "COMP_IGST_18", "name": "IGST", "rate": 18.0, "order": 1}]}}'::jsonb,
+ TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- =====================================================
 -- End of Tax Module V2 Database Migration
