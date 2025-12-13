@@ -187,103 +187,69 @@ VALUES
 ('MTC_IN_SAC_996511', 'IN', 'SAC_CODE', '996511', 'Information technology design and development services', 'IT development', NULL, NULL, 'SERVICES', 18.0, 'GST_18', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- =====================================================
--- Sample Tax Components (Multi-tenant - requires owner_id)
+-- Indian GST Tax Components (System-level seed data)
 -- =====================================================
--- NOTE: Tax components are workspace-specific and created automatically
--- when workspaces are initialized for GST. Below are commented examples
--- showing the standard Indian GST components.
---
--- Indian GST has three main components:
--- 1. CGST (Central GST) - collected by central government
--- 2. SGST (State GST) - collected by state government
--- 3. IGST (Integrated GST) - for inter-state transactions
---
--- Standard GST rates: 0%, 0.25%, 3%, 5%, 12%, 18%, 28%
-/*
--- Example: Tax components for 18% GST rate
+-- NOTE: These are system-level GST component templates with owner_id = 'SYSTEM'
+-- Workspaces can reference these or create their own custom components
 INSERT INTO tax_component
 (uid, component_type_id, component_name, component_display_name, tax_type,
  jurisdiction, jurisdiction_level, rate_percentage, is_compound, calculation_method,
  is_active, owner_id, created_at, updated_at)
 VALUES
--- CGST Components (Central GST)
-('COMP_CGST_0.125', 'TYPE_CGST', 'CGST', 'Central GST 0.125%', 'GST', 'INDIA', 'COUNTRY', 0.125, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('COMP_CGST_1.5', 'TYPE_CGST', 'CGST', 'Central GST 1.5%', 'GST', 'INDIA', 'COUNTRY', 1.5, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('COMP_CGST_2.5', 'TYPE_CGST', 'CGST', 'Central GST 2.5%', 'GST', 'INDIA', 'COUNTRY', 2.5, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('COMP_CGST_6', 'TYPE_CGST', 'CGST', 'Central GST 6%', 'GST', 'INDIA', 'COUNTRY', 6.0, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('COMP_CGST_9', 'TYPE_CGST', 'CGST', 'Central GST 9%', 'GST', 'INDIA', 'COUNTRY', 9.0, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('COMP_CGST_14', 'TYPE_CGST', 'CGST', 'Central GST 14%', 'GST', 'INDIA', 'COUNTRY', 14.0, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+-- CGST Components (Central GST) - Half of total GST rate
+('COMP_CGST_0.125', 'TYPE_CGST', 'CGST', 'Central GST 0.125%', 'GST', 'INDIA', 'COUNTRY', 0.125, FALSE, 'PERCENTAGE', TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_CGST_1.5', 'TYPE_CGST', 'CGST', 'Central GST 1.5%', 'GST', 'INDIA', 'COUNTRY', 1.5, FALSE, 'PERCENTAGE', TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_CGST_2.5', 'TYPE_CGST', 'CGST', 'Central GST 2.5%', 'GST', 'INDIA', 'COUNTRY', 2.5, FALSE, 'PERCENTAGE', TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_CGST_6', 'TYPE_CGST', 'CGST', 'Central GST 6%', 'GST', 'INDIA', 'COUNTRY', 6.0, FALSE, 'PERCENTAGE', TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_CGST_9', 'TYPE_CGST', 'CGST', 'Central GST 9%', 'GST', 'INDIA', 'COUNTRY', 9.0, FALSE, 'PERCENTAGE', TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_CGST_14', 'TYPE_CGST', 'CGST', 'Central GST 14%', 'GST', 'INDIA', 'COUNTRY', 14.0, FALSE, 'PERCENTAGE', TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
--- SGST Components (State GST)
-('COMP_SGST_0.125', 'TYPE_SGST', 'SGST', 'State GST 0.125%', 'GST', 'INDIA', 'STATE', 0.125, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('COMP_SGST_1.5', 'TYPE_SGST', 'SGST', 'State GST 1.5%', 'GST', 'INDIA', 'STATE', 1.5, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('COMP_SGST_2.5', 'TYPE_SGST', 'SGST', 'State GST 2.5%', 'GST', 'INDIA', 'STATE', 2.5, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('COMP_SGST_6', 'TYPE_SGST', 'SGST', 'State GST 6%', 'GST', 'INDIA', 'STATE', 6.0, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('COMP_SGST_9', 'TYPE_SGST', 'SGST', 'State GST 9%', 'GST', 'INDIA', 'STATE', 9.0, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('COMP_SGST_14', 'TYPE_SGST', 'SGST', 'State GST 14%', 'GST', 'INDIA', 'STATE', 14.0, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+-- SGST Components (State GST) - Half of total GST rate
+('COMP_SGST_0.125', 'TYPE_SGST', 'SGST', 'State GST 0.125%', 'GST', 'INDIA', 'STATE', 0.125, FALSE, 'PERCENTAGE', TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_SGST_1.5', 'TYPE_SGST', 'SGST', 'State GST 1.5%', 'GST', 'INDIA', 'STATE', 1.5, FALSE, 'PERCENTAGE', TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_SGST_2.5', 'TYPE_SGST', 'SGST', 'State GST 2.5%', 'GST', 'INDIA', 'STATE', 2.5, FALSE, 'PERCENTAGE', TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_SGST_6', 'TYPE_SGST', 'SGST', 'State GST 6%', 'GST', 'INDIA', 'STATE', 6.0, FALSE, 'PERCENTAGE', TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_SGST_9', 'TYPE_SGST', 'SGST', 'State GST 9%', 'GST', 'INDIA', 'STATE', 9.0, FALSE, 'PERCENTAGE', TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_SGST_14', 'TYPE_SGST', 'SGST', 'State GST 14%', 'GST', 'INDIA', 'STATE', 14.0, FALSE, 'PERCENTAGE', TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
 
--- IGST Components (Integrated GST - for inter-state)
-('COMP_IGST_0.25', 'TYPE_IGST', 'IGST', 'Integrated GST 0.25%', 'GST', 'INDIA', 'COUNTRY', 0.25, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('COMP_IGST_3', 'TYPE_IGST', 'IGST', 'Integrated GST 3%', 'GST', 'INDIA', 'COUNTRY', 3.0, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('COMP_IGST_5', 'TYPE_IGST', 'IGST', 'Integrated GST 5%', 'GST', 'INDIA', 'COUNTRY', 5.0, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('COMP_IGST_12', 'TYPE_IGST', 'IGST', 'Integrated GST 12%', 'GST', 'INDIA', 'COUNTRY', 12.0, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('COMP_IGST_18', 'TYPE_IGST', 'IGST', 'Integrated GST 18%', 'GST', 'INDIA', 'COUNTRY', 18.0, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
-('COMP_IGST_28', 'TYPE_IGST', 'IGST', 'Integrated GST 28%', 'GST', 'INDIA', 'COUNTRY', 28.0, FALSE, 'PERCENTAGE', TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
-*/
+-- IGST Components (Integrated GST) - Full GST rate for inter-state
+('COMP_IGST_0.25', 'TYPE_IGST', 'IGST', 'Integrated GST 0.25%', 'GST', 'INDIA', 'COUNTRY', 0.25, FALSE, 'PERCENTAGE', TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_IGST_3', 'TYPE_IGST', 'IGST', 'Integrated GST 3%', 'GST', 'INDIA', 'COUNTRY', 3.0, FALSE, 'PERCENTAGE', TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_IGST_5', 'TYPE_IGST', 'IGST', 'Integrated GST 5%', 'GST', 'INDIA', 'COUNTRY', 5.0, FALSE, 'PERCENTAGE', TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_IGST_12', 'TYPE_IGST', 'IGST', 'Integrated GST 12%', 'GST', 'INDIA', 'COUNTRY', 12.0, FALSE, 'PERCENTAGE', TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_IGST_18', 'TYPE_IGST', 'IGST', 'Integrated GST 18%', 'GST', 'INDIA', 'COUNTRY', 18.0, FALSE, 'PERCENTAGE', TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('COMP_IGST_28', 'TYPE_IGST', 'IGST', 'Integrated GST 28%', 'GST', 'INDIA', 'COUNTRY', 28.0, FALSE, 'PERCENTAGE', TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- =====================================================
--- Sample Tax Rules (Multi-tenant - requires owner_id)
+-- Tax Rules (Created by GstRuleTemplateService)
 -- =====================================================
--- NOTE: Tax rules are workspace-specific and created when a workspace
--- subscribes to a tax code. Below are commented examples showing the
--- expected component_composition JSON format for Indian GST.
+-- NOTE: Tax rules are auto-created when workspaces subscribe to tax codes
+-- via the TaxCodeService.subscribe() method using GstRuleTemplateService.
+-- They reference workspace-specific tax_code_id values, so cannot be seeded here.
 --
--- For 18% GST rate breakdown:
--- INTRA_STATE (within same state):
---   - CGST (Central GST): 9% (half of total)
---   - SGST (State GST): 9% (half of total)
--- INTER_STATE (between different states):
---   - IGST (Integrated GST): 18% (full rate)
+-- Example structure showing how tax rules link components:
+-- For HSN 8517 (Smartphones - 18% GST):
+--   INTRA_STATE: COMP_CGST_9 (9%) + COMP_SGST_9 (9%)
+--   INTER_STATE: COMP_IGST_18 (18%)
 --
--- Example tax rule for HSN 8517 (Smartphones - 18% GST):
-/*
-INSERT INTO tax_rule
-(uid, country_code, tax_code_id, tax_code, tax_code_type, tax_code_description,
- jurisdiction, jurisdiction_level, component_composition, is_active, owner_id, created_at, updated_at)
-VALUES
-('TR_IN_8517_001', 'IN', 'WTC_<workspace_tax_code_id>', '8517', 'HSN_CODE', 'Smartphones',
- 'INDIA', 'COUNTRY',
- '{
-   "INTRA_STATE": {
-     "scenario": "INTRA_STATE",
-     "totalRate": 18.0,
-     "components": [
-       {"id": "COMP_CGST_9", "name": "CGST", "rate": 9.0, "order": 1},
-       {"id": "COMP_SGST_9", "name": "SGST", "rate": 9.0, "order": 2}
-     ]
-   },
-   "INTER_STATE": {
-     "scenario": "INTER_STATE",
-     "totalRate": 18.0,
-     "components": [
-       {"id": "COMP_IGST_18", "name": "IGST", "rate": 18.0, "order": 1}
-     ]
-   }
- }'::jsonb,
- TRUE, '<workspace_owner_id>', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
-
--- For 5% GST (e.g., HSN 1001 - Agriculture):
--- INTRA_STATE: CGST 2.5% + SGST 2.5%
--- INTER_STATE: IGST 5%
-
--- For 12% GST (e.g., HSN 3004 - Medicines):
--- INTRA_STATE: CGST 6% + SGST 6%
--- INTER_STATE: IGST 12%
-
--- For 28% GST (e.g., HSN 2710 - Petroleum):
--- INTRA_STATE: CGST 14% + SGST 14%
--- INTER_STATE: IGST 28%
-*/
+-- The component_composition JSON structure:
+-- {
+--   "INTRA_STATE": {
+--     "scenario": "INTRA_STATE",
+--     "totalRate": 18.0,
+--     "components": [
+--       {"id": "COMP_CGST_9", "name": "CGST", "rate": 9.0, "order": 1},
+--       {"id": "COMP_SGST_9", "name": "SGST", "rate": 9.0, "order": 2}
+--     ]
+--   },
+--   "INTER_STATE": {
+--     "scenario": "INTER_STATE",
+--     "totalRate": 18.0,
+--     "components": [
+--       {"id": "COMP_IGST_18", "name": "IGST", "rate": 18.0, "order": 1}
+--     ]
+--   }
+-- }
 
 -- =====================================================
 -- End of Tax Module V2 Database Migration
