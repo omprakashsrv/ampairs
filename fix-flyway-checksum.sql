@@ -21,14 +21,14 @@ SELECT
     version,
     description,
     checksum AS current_checksum,
-    1783185596 AS new_checksum,
+    -1206606202 AS new_checksum,
     installed_on
 FROM flyway_schema_history
 WHERE version = '1.0.38';
 
 -- Step 2: Update the checksum to match the modified migration file
 UPDATE flyway_schema_history
-SET checksum = 1783185596
+SET checksum = -1206606202
 WHERE version = '1.0.38';
 
 -- Step 3: Verify the update was successful
