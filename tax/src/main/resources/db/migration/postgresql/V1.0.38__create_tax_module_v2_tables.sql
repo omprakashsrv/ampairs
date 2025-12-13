@@ -187,10 +187,64 @@ VALUES
 ('MTC_IN_SAC_996511', 'IN', 'SAC_CODE', '996511', 'Information technology design and development services', 'IT development', NULL, NULL, 'SERVICES', 18.0, 'GST_18', TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- =====================================================
--- Indian GST Tax Components (System-level seed data)
+-- Master Tax Component Table (Global reference templates)
 -- =====================================================
--- NOTE: These are system-level GST component templates with owner_id = 'SYSTEM'
--- Workspaces can reference these or create their own custom components
+-- NOTE: These are global component templates (no owner_id) that workspaces
+-- can reference when creating workspace-specific tax_component records
+CREATE TABLE master_tax_component (
+    id BIGSERIAL PRIMARY KEY,
+    uid VARCHAR(200) NOT NULL UNIQUE,
+    component_type_id VARCHAR(255) NOT NULL,
+    component_name VARCHAR(100) NOT NULL,
+    component_display_name VARCHAR(200),
+    tax_type VARCHAR(50) NOT NULL,
+    jurisdiction VARCHAR(100) NOT NULL,
+    jurisdiction_level VARCHAR(50) NOT NULL,
+    rate_percentage DOUBLE PRECISION NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT uk_master_tax_component UNIQUE (component_type_id, rate_percentage)
+);
+
+CREATE INDEX idx_master_tax_comp_type ON master_tax_component(component_type_id);
+CREATE INDEX idx_master_tax_comp_rate ON master_tax_component(rate_percentage);
+
+-- Insert global tax component templates
+INSERT INTO master_tax_component
+(uid, component_type_id, component_name, component_display_name, tax_type,
+ jurisdiction, jurisdiction_level, rate_percentage, is_active, created_at, updated_at)
+VALUES
+-- CGST Components (Central GST) - Half of total GST rate
+('MCOMP_CGST_0.125', 'TYPE_CGST', 'CGST', 'Central GST 0.125%', 'GST', 'INDIA', 'COUNTRY', 0.125, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MCOMP_CGST_1.5', 'TYPE_CGST', 'CGST', 'Central GST 1.5%', 'GST', 'INDIA', 'COUNTRY', 1.5, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MCOMP_CGST_2.5', 'TYPE_CGST', 'CGST', 'Central GST 2.5%', 'GST', 'INDIA', 'COUNTRY', 2.5, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MCOMP_CGST_6', 'TYPE_CGST', 'CGST', 'Central GST 6%', 'GST', 'INDIA', 'COUNTRY', 6.0, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MCOMP_CGST_9', 'TYPE_CGST', 'CGST', 'Central GST 9%', 'GST', 'INDIA', 'COUNTRY', 9.0, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MCOMP_CGST_14', 'TYPE_CGST', 'CGST', 'Central GST 14%', 'GST', 'INDIA', 'COUNTRY', 14.0, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- SGST Components (State GST) - Half of total GST rate
+('MCOMP_SGST_0.125', 'TYPE_SGST', 'SGST', 'State GST 0.125%', 'GST', 'INDIA', 'STATE', 0.125, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MCOMP_SGST_1.5', 'TYPE_SGST', 'SGST', 'State GST 1.5%', 'GST', 'INDIA', 'STATE', 1.5, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MCOMP_SGST_2.5', 'TYPE_SGST', 'SGST', 'State GST 2.5%', 'GST', 'INDIA', 'STATE', 2.5, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MCOMP_SGST_6', 'TYPE_SGST', 'SGST', 'State GST 6%', 'GST', 'INDIA', 'STATE', 6.0, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MCOMP_SGST_9', 'TYPE_SGST', 'SGST', 'State GST 9%', 'GST', 'INDIA', 'STATE', 9.0, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MCOMP_SGST_14', 'TYPE_SGST', 'SGST', 'State GST 14%', 'GST', 'INDIA', 'STATE', 14.0, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- IGST Components (Integrated GST) - Full GST rate for inter-state
+('MCOMP_IGST_0.25', 'TYPE_IGST', 'IGST', 'Integrated GST 0.25%', 'GST', 'INDIA', 'COUNTRY', 0.25, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MCOMP_IGST_3', 'TYPE_IGST', 'IGST', 'Integrated GST 3%', 'GST', 'INDIA', 'COUNTRY', 3.0, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MCOMP_IGST_5', 'TYPE_IGST', 'IGST', 'Integrated GST 5%', 'GST', 'INDIA', 'COUNTRY', 5.0, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MCOMP_IGST_12', 'TYPE_IGST', 'IGST', 'Integrated GST 12%', 'GST', 'INDIA', 'COUNTRY', 12.0, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MCOMP_IGST_18', 'TYPE_IGST', 'IGST', 'Integrated GST 18%', 'GST', 'INDIA', 'COUNTRY', 18.0, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+('MCOMP_IGST_28', 'TYPE_IGST', 'IGST', 'Integrated GST 28%', 'GST', 'INDIA', 'COUNTRY', 28.0, TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+-- =====================================================
+-- Workspace Tax Components (Optional system-level examples)
+-- =====================================================
+-- NOTE: These are optional example workspace-specific components with owner_id = 'SYSTEM'
+-- Workspaces typically create their own from master_tax_component templates
 INSERT INTO tax_component
 (uid, component_type_id, component_name, component_display_name, tax_type,
  jurisdiction, jurisdiction_level, rate_percentage, is_compound, calculation_method,
@@ -221,11 +275,88 @@ VALUES
 ('COMP_IGST_28', 'TYPE_IGST', 'IGST', 'Integrated GST 28%', 'GST', 'INDIA', 'COUNTRY', 28.0, FALSE, 'PERCENTAGE', TRUE, 'SYSTEM', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- =====================================================
--- Indian GST Tax Rules (System-level templates)
+-- Master Tax Rule Table (Global reference templates)
 -- =====================================================
--- NOTE: These are system-level template tax rules with owner_id = 'SYSTEM'
--- that demonstrate the proper component_composition structure.
--- Workspaces create their own tax_rule entries when subscribing to tax codes.
+-- NOTE: These are global rule templates (no owner_id) that define standard
+-- component compositions for each master_tax_code. Workspaces reference these
+-- when creating workspace-specific tax_rule records during tax code subscription.
+CREATE TABLE master_tax_rule (
+    id BIGSERIAL PRIMARY KEY,
+    uid VARCHAR(200) NOT NULL UNIQUE,
+    country_code VARCHAR(2) NOT NULL,
+    master_tax_code_id VARCHAR(255) NOT NULL,
+    tax_code VARCHAR(100) NOT NULL,
+    tax_code_type VARCHAR(50) NOT NULL,
+    tax_rate DOUBLE PRECISION NOT NULL,
+    jurisdiction VARCHAR(100) NOT NULL,
+    jurisdiction_level VARCHAR(50) NOT NULL,
+    component_composition JSONB NOT NULL,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT uk_master_tax_rule UNIQUE (master_tax_code_id, jurisdiction, jurisdiction_level)
+);
+
+CREATE INDEX idx_master_tax_rule_code ON master_tax_rule(master_tax_code_id);
+CREATE INDEX idx_master_tax_rule_rate ON master_tax_rule(tax_rate);
+CREATE INDEX idx_master_tax_rule_country ON master_tax_rule(country_code);
+
+-- Insert global tax rule templates for sample master tax codes
+INSERT INTO master_tax_rule
+(uid, country_code, master_tax_code_id, tax_code, tax_code_type, tax_rate,
+ jurisdiction, jurisdiction_level, component_composition, is_active, created_at, updated_at)
+VALUES
+-- HSN 1001 - Live Animals (5% GST)
+('MTR_IN_1001', 'IN', 'MTC_IN_HSN_1001', '1001', 'HSN_CODE', 5.0, 'INDIA', 'COUNTRY',
+ '{"INTRA_STATE": {"scenario": "INTRA_STATE", "totalRate": 5.0, "components": [{"id": "MCOMP_CGST_2.5", "name": "CGST", "rate": 2.5, "order": 1}, {"id": "MCOMP_SGST_2.5", "name": "SGST", "rate": 2.5, "order": 2}]}, "INTER_STATE": {"scenario": "INTER_STATE", "totalRate": 5.0, "components": [{"id": "MCOMP_IGST_5", "name": "IGST", "rate": 5.0, "order": 1}]}}'::jsonb,
+ TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- HSN 8517 - Smartphones (18% GST)
+('MTR_IN_8517', 'IN', 'MTC_IN_HSN_8517', '8517', 'HSN_CODE', 18.0, 'INDIA', 'COUNTRY',
+ '{"INTRA_STATE": {"scenario": "INTRA_STATE", "totalRate": 18.0, "components": [{"id": "MCOMP_CGST_9", "name": "CGST", "rate": 9.0, "order": 1}, {"id": "MCOMP_SGST_9", "name": "SGST", "rate": 9.0, "order": 2}]}, "INTER_STATE": {"scenario": "INTER_STATE", "totalRate": 18.0, "components": [{"id": "MCOMP_IGST_18", "name": "IGST", "rate": 18.0, "order": 1}]}}'::jsonb,
+ TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- HSN 3004 - Medicines (12% GST)
+('MTR_IN_3004', 'IN', 'MTC_IN_HSN_3004', '3004', 'HSN_CODE', 12.0, 'INDIA', 'COUNTRY',
+ '{"INTRA_STATE": {"scenario": "INTRA_STATE", "totalRate": 12.0, "components": [{"id": "MCOMP_CGST_6", "name": "CGST", "rate": 6.0, "order": 1}, {"id": "MCOMP_SGST_6", "name": "SGST", "rate": 6.0, "order": 2}]}, "INTER_STATE": {"scenario": "INTER_STATE", "totalRate": 12.0, "components": [{"id": "MCOMP_IGST_12", "name": "IGST", "rate": 12.0, "order": 1}]}}'::jsonb,
+ TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- HSN 6109 - T-shirts (12% GST)
+('MTR_IN_6109', 'IN', 'MTC_IN_HSN_6109', '6109', 'HSN_CODE', 12.0, 'INDIA', 'COUNTRY',
+ '{"INTRA_STATE": {"scenario": "INTRA_STATE", "totalRate": 12.0, "components": [{"id": "MCOMP_CGST_6", "name": "CGST", "rate": 6.0, "order": 1}, {"id": "MCOMP_SGST_6", "name": "SGST", "rate": 6.0, "order": 2}]}, "INTER_STATE": {"scenario": "INTER_STATE", "totalRate": 12.0, "components": [{"id": "MCOMP_IGST_12", "name": "IGST", "rate": 12.0, "order": 1}]}}'::jsonb,
+ TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- HSN 8471 - Computers (18% GST)
+('MTR_IN_8471', 'IN', 'MTC_IN_HSN_8471', '8471', 'HSN_CODE', 18.0, 'INDIA', 'COUNTRY',
+ '{"INTRA_STATE": {"scenario": "INTRA_STATE", "totalRate": 18.0, "components": [{"id": "MCOMP_CGST_9", "name": "CGST", "rate": 9.0, "order": 1}, {"id": "MCOMP_SGST_9", "name": "SGST", "rate": 9.0, "order": 2}]}, "INTER_STATE": {"scenario": "INTER_STATE", "totalRate": 18.0, "components": [{"id": "MCOMP_IGST_18", "name": "IGST", "rate": 18.0, "order": 1}]}}'::jsonb,
+ TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- HSN 2710 - Petroleum (28% GST)
+('MTR_IN_2710', 'IN', 'MTC_IN_HSN_2710', '2710', 'HSN_CODE', 28.0, 'INDIA', 'COUNTRY',
+ '{"INTRA_STATE": {"scenario": "INTRA_STATE", "totalRate": 28.0, "components": [{"id": "MCOMP_CGST_14", "name": "CGST", "rate": 14.0, "order": 1}, {"id": "MCOMP_SGST_14", "name": "SGST", "rate": 14.0, "order": 2}]}, "INTER_STATE": {"scenario": "INTER_STATE", "totalRate": 28.0, "components": [{"id": "MCOMP_IGST_28", "name": "IGST", "rate": 28.0, "order": 1}]}}'::jsonb,
+ TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- HSN 9403 - Furniture (18% GST)
+('MTR_IN_9403', 'IN', 'MTC_IN_HSN_9403', '9403', 'HSN_CODE', 18.0, 'INDIA', 'COUNTRY',
+ '{"INTRA_STATE": {"scenario": "INTRA_STATE", "totalRate": 18.0, "components": [{"id": "MCOMP_CGST_9", "name": "CGST", "rate": 9.0, "order": 1}, {"id": "MCOMP_SGST_9", "name": "SGST", "rate": 9.0, "order": 2}]}, "INTER_STATE": {"scenario": "INTER_STATE", "totalRate": 18.0, "components": [{"id": "MCOMP_IGST_18", "name": "IGST", "rate": 18.0, "order": 1}]}}'::jsonb,
+ TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- SAC 998314 - Engineering Services (18% GST)
+('MTR_IN_998314', 'IN', 'MTC_IN_SAC_998314', '998314', 'SAC_CODE', 18.0, 'INDIA', 'COUNTRY',
+ '{"INTRA_STATE": {"scenario": "INTRA_STATE", "totalRate": 18.0, "components": [{"id": "MCOMP_CGST_9", "name": "CGST", "rate": 9.0, "order": 1}, {"id": "MCOMP_SGST_9", "name": "SGST", "rate": 9.0, "order": 2}]}, "INTER_STATE": {"scenario": "INTER_STATE", "totalRate": 18.0, "components": [{"id": "MCOMP_IGST_18", "name": "IGST", "rate": 18.0, "order": 1}]}}'::jsonb,
+ TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP),
+
+-- SAC 996511 - IT Development Services (18% GST)
+('MTR_IN_996511', 'IN', 'MTC_IN_SAC_996511', '996511', 'SAC_CODE', 18.0, 'INDIA', 'COUNTRY',
+ '{"INTRA_STATE": {"scenario": "INTRA_STATE", "totalRate": 18.0, "components": [{"id": "MCOMP_CGST_9", "name": "CGST", "rate": 9.0, "order": 1}, {"id": "MCOMP_SGST_9", "name": "SGST", "rate": 9.0, "order": 2}]}, "INTER_STATE": {"scenario": "INTER_STATE", "totalRate": 18.0, "components": [{"id": "MCOMP_IGST_18", "name": "IGST", "rate": 18.0, "order": 1}]}}'::jsonb,
+ TRUE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+-- =====================================================
+-- Workspace Tax Rules (Optional system-level examples)
+-- =====================================================
+-- NOTE: These are optional example workspace-specific tax rules with owner_id = 'SYSTEM'
+-- Workspaces typically create their own from master_tax_rule templates
 INSERT INTO tax_rule
 (uid, country_code, tax_code_id, tax_code, tax_code_type, tax_code_description,
  jurisdiction, jurisdiction_level, component_composition, is_active, owner_id, created_at, updated_at)
