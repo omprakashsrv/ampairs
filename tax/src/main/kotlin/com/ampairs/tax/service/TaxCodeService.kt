@@ -3,10 +3,13 @@ package com.ampairs.tax.service
 import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.core.exception.NotFoundException
 import com.ampairs.tax.domain.dto.*
+import com.ampairs.tax.domain.model.ComponentComposition
+import com.ampairs.tax.domain.model.ComponentReference
 import com.ampairs.tax.domain.model.TaxCode
 import com.ampairs.tax.domain.model.TaxRule
 import com.ampairs.tax.repository.MasterTaxCodeRepository
 import com.ampairs.tax.repository.TaxCodeRepository
+import com.ampairs.tax.repository.TaxComponentRepository
 import com.ampairs.tax.repository.TaxRuleRepository
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
@@ -21,6 +24,9 @@ class TaxCodeService(
     private val taxCodeRepository: TaxCodeRepository,
     private val masterTaxCodeRepository: MasterTaxCodeRepository,
     private val taxRuleRepository: TaxRuleRepository,
+    private val masterTaxRuleService: MasterTaxRuleService,
+    private val masterTaxComponentService: MasterTaxComponentService,
+    private val taxComponentRepository: TaxComponentRepository,
     private val gstRuleTemplateService: GstRuleTemplateService
 ) {
 
@@ -99,12 +105,123 @@ class TaxCodeService(
 
     /**
      * Creates a default tax rule with standard GST component breakdown.
+     * This method:
+     * 1. Looks up master_tax_rule template for this master_tax_code
+     * 2. Creates workspace tax_component records from master_tax_component templates
+     * 3. Creates workspace tax_rule with references to workspace components
      */
     private fun createDefaultTaxRule(taxCode: TaxCode, masterCode: com.ampairs.tax.domain.model.MasterTaxCode) {
         val taxRate = masterCode.defaultTaxRate ?: return
 
+        // Try to get master tax rule template
+        val masterRuleDto = masterTaxRuleService.getRuleByMasterTaxCodeId(masterCode.uid)
+
+        if (masterRuleDto != null) {
+            // Use master_tax_rule as template
+            createRuleFromMasterTemplate(taxCode, masterCode, masterRuleDto)
+        } else {
+            // Fallback: Generate standard GST composition (old behavior)
+            createRuleWithGeneratedComposition(taxCode, masterCode, taxRate)
+        }
+    }
+
+    /**
+     * Creates workspace tax_rule and tax_component records from master_tax_rule template.
+     */
+    private fun createRuleFromMasterTemplate(
+        taxCode: TaxCode,
+        masterCode: com.ampairs.tax.domain.model.MasterTaxCode,
+        masterRule: MasterTaxRuleDto
+    ) {
+        // Step 1: Extract all unique component IDs from master rule composition
+        val masterComponentIds = extractComponentIds(masterRule.componentComposition)
+
+        // Step 2: Create workspace tax_component records from master templates
+        val componentIdMapping = mutableMapOf<String, String>() // master_id -> workspace_id
+
+        masterComponentIds.forEach { masterComponentId ->
+            val masterComponent = masterTaxComponentService.getComponentById(masterComponentId)
+
+            // Check if workspace component already exists
+            val existing = taxComponentRepository.findByUid(masterComponentId)
+
+            if (existing == null) {
+                // Create workspace component from master template
+                val workspaceComponent = com.ampairs.tax.domain.model.TaxComponent().apply {
+                    // Use same UID as master for consistency
+                    uid = masterComponentId
+                    componentTypeId = masterComponent.componentTypeId
+                    componentName = masterComponent.componentName
+                    componentDisplayName = masterComponent.componentDisplayName
+                    taxType = masterComponent.taxType
+                    jurisdiction = masterComponent.jurisdiction
+                    jurisdictionLevel = masterComponent.jurisdictionLevel
+                    ratePercentage = masterComponent.ratePercentage
+                    isCompound = false
+                    calculationMethod = "PERCENTAGE"
+                    isActive = true
+                }
+                taxComponentRepository.save(workspaceComponent)
+                componentIdMapping[masterComponentId] = masterComponentId
+            } else {
+                componentIdMapping[masterComponentId] = existing.uid
+            }
+        }
+
+        // Step 3: Create workspace tax_rule with component_composition from master template
+        val taxRule = TaxRule().apply {
+            countryCode = masterRule.countryCode
+            taxCodeId = taxCode.uid
+            this.taxCode = masterRule.taxCode
+            taxCodeType = masterRule.taxCodeType
+            taxCodeDescription = masterCode.description
+            jurisdiction = masterRule.jurisdiction
+            jurisdictionLevel = masterRule.jurisdictionLevel
+            // Convert Map<String, Any> to Map<String, ComponentComposition>
+            this.componentComposition = convertToComponentComposition(masterRule.componentComposition)
+            isActive = true
+        }
+
+        taxRuleRepository.save(taxRule)
+    }
+
+    /**
+     * Fallback method: Creates tax_rule with generated composition (old behavior).
+     */
+    private fun createRuleWithGeneratedComposition(
+        taxCode: TaxCode,
+        masterCode: com.ampairs.tax.domain.model.MasterTaxCode,
+        taxRate: Double
+    ) {
         // Generate standard GST composition
         val componentComposition = gstRuleTemplateService.generateStandardGstComposition(taxRate)
+
+        // Create workspace components for generated composition
+        val componentIds = extractComponentIds(componentComposition)
+        componentIds.forEach { componentId ->
+            val existing = taxComponentRepository.findByUid(componentId)
+            if (existing == null) {
+                // Extract rate from component ID (e.g., "COMP_CGST_9" -> 9.0)
+                val parts = componentId.split("_")
+                val rate = parts.lastOrNull()?.toDoubleOrNull() ?: 0.0
+                val componentType = parts.getOrNull(1) ?: "CGST"
+
+                val workspaceComponent = com.ampairs.tax.domain.model.TaxComponent().apply {
+                    uid = componentId
+                    componentTypeId = "TYPE_$componentType"
+                    componentName = componentType
+                    componentDisplayName = "$componentType $rate%"
+                    taxType = "GST"
+                    jurisdiction = "INDIA"
+                    jurisdictionLevel = if (componentType == "SGST") "STATE" else "COUNTRY"
+                    ratePercentage = rate
+                    isCompound = false
+                    calculationMethod = "PERCENTAGE"
+                    isActive = true
+                }
+                taxComponentRepository.save(workspaceComponent)
+            }
+        }
 
         val taxRule = TaxRule().apply {
             countryCode = masterCode.countryCode
@@ -119,6 +236,65 @@ class TaxCodeService(
         }
 
         taxRuleRepository.save(taxRule)
+    }
+
+    /**
+     * Extracts all unique component IDs from component_composition JSON.
+     */
+    private fun extractComponentIds(composition: Map<String, Any>): Set<String> {
+        val componentIds = mutableSetOf<String>()
+
+        composition.values.forEach { scenario ->
+            if (scenario is Map<*, *>) {
+                val components = scenario["components"]
+                if (components is List<*>) {
+                    components.forEach { component ->
+                        if (component is Map<*, *>) {
+                            val id = component["id"] as? String
+                            if (id != null) {
+                                componentIds.add(id)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return componentIds
+    }
+
+    /**
+     * Converts Map<String, Any> from master rule to Map<String, ComponentComposition>.
+     */
+    private fun convertToComponentComposition(composition: Map<String, Any>): Map<String, ComponentComposition> {
+        return composition.mapValues { (_, value) ->
+            if (value is Map<*, *>) {
+                val scenario = value["scenario"] as? String ?: ""
+                val totalRate = (value["totalRate"] as? Number)?.toDouble() ?: 0.0
+                val componentsData = value["components"] as? List<*> ?: emptyList<Any>()
+
+                val components = componentsData.mapNotNull { comp ->
+                    if (comp is Map<*, *>) {
+                        ComponentReference(
+                            id = comp["id"] as? String ?: "",
+                            name = comp["name"] as? String ?: "",
+                            rate = (comp["rate"] as? Number)?.toDouble() ?: 0.0,
+                            order = (comp["order"] as? Number)?.toInt() ?: 0
+                        )
+                    } else {
+                        null
+                    }
+                }
+
+                ComponentComposition(
+                    scenario = scenario,
+                    components = components,
+                    totalRate = totalRate
+                )
+            } else {
+                ComponentComposition("", emptyList(), 0.0)
+            }
+        }
     }
 
     /**
