@@ -17,6 +17,7 @@ CREATE TABLE product_variant (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     uid VARCHAR(255) NOT NULL UNIQUE,
     owner_id VARCHAR(255) NOT NULL,
+    ref_id VARCHAR(255),
     workspace_id VARCHAR(255) NOT NULL,
     product_id VARCHAR(255) NOT NULL,
     sku VARCHAR(100) NOT NULL UNIQUE,
@@ -62,7 +63,9 @@ CREATE TABLE product_variant (
 -- Create searchable variant attributes table (for advanced queries)
 CREATE TABLE variant_attribute (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    uid VARCHAR(255) NOT NULL UNIQUE,
     owner_id VARCHAR(255) NOT NULL,
+    ref_id VARCHAR(255),
     workspace_id VARCHAR(255) NOT NULL,
     product_id VARCHAR(255) NOT NULL,
     attribute_name VARCHAR(100) NOT NULL,
