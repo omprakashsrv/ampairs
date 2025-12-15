@@ -127,6 +127,20 @@ class Product : OwnableBaseDomain() {
     )
     var inventory: MutableList<Inventory> = mutableListOf()
 
+    // Product classification
+    @Enumerated(EnumType.STRING)
+    @Column(name = "product_type", length = 50)
+    var productType: ProductType? = null
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "service_type", length = 50)
+    var serviceType: ServiceType? = null
+
+    @Column(name = "has_variants", nullable = false)
+    var hasVariants: Boolean = false
+
+    @OneToMany(mappedBy = "product", cascade = [CascadeType.ALL], orphanRemoval = true)
+    var variants: MutableList<ProductVariant> = mutableListOf()
 
     override fun obtainSeqIdPrefix(): String {
         return Constants.PRODUCT_PREFIX
