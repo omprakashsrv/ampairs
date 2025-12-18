@@ -61,7 +61,7 @@ class UnitServiceTest {
         whenever(unitRepository.findByUid("UNIT-404")).thenReturn(null)
 
         assertThrows<UnitNotFoundException> {
-            unitService.update("UNIT-404", UnitRequest(name = "Gram"))
+            unitService.update("UNIT-404", UnitRequest(name = "Gram", shortName = "g"))
         }
     }
 
