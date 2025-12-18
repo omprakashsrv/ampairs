@@ -58,7 +58,7 @@ class UnitServiceImpl(
         val existing = unitRepository.findByUid(uid)
             ?: throw UnitNotFoundException("Unit not found for uid: $uid")
 
-        existing.applyRequest(request.copy(id = uid))
+        existing.applyRequest(request.copy(uid = uid))
         val saved = unitRepository.save(existing)
         return saved.asUnitResponse()
     }

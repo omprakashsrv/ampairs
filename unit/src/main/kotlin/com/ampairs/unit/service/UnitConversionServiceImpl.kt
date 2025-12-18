@@ -12,6 +12,7 @@ import com.ampairs.unit.repository.UnitConversionRepository
 import com.ampairs.unit.repository.UnitRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
 import kotlin.collections.ArrayDeque
 
 @Service
@@ -43,12 +44,12 @@ class UnitConversionServiceImpl(
 
         val conversion = findExactConversion(fromUnitId, toUnitId, productId)
         if (conversion != null) {
-            return quantity * conversion.multiplier
+            return quantity * conversion.multiplier.toDouble()
         }
 
         val inverse = findExactConversion(toUnitId, fromUnitId, productId)
-        if (inverse != null && inverse.multiplier != 0.0) {
-            return quantity / inverse.multiplier
+        if (inverse != null && inverse.multiplier != BigDecimal.ZERO) {
+            return quantity / inverse.multiplier.toDouble()
         }
 
         val path = findConversionPath(fromUnitId, toUnitId, productId)
@@ -81,7 +82,7 @@ class UnitConversionServiceImpl(
         validateRequest(request)
         validateNoCircularConversionInternal(request.baseUnitId, request.derivedUnitId, request.productId, excludeUid = uid)
 
-        existing.applyRequest(request.copy(id = uid))
+        existing.applyRequest(request.copy(uid = uid))
         val saved = unitConversionRepository.save(existing)
         return saved.asUnitConversionResponse()
     }
@@ -122,7 +123,7 @@ class UnitConversionServiceImpl(
         if (request.baseUnitId == request.derivedUnitId) {
             throw IllegalArgumentException("Base unit and derived unit cannot be the same")
         }
-        if (request.multiplier <= 0.0) {
+        if (request.multiplier <= BigDecimal.ZERO) {
             throw IllegalArgumentException("Conversion multiplier must be greater than zero")
         }
 
@@ -132,7 +133,7 @@ class UnitConversionServiceImpl(
             ?: throw UnitNotFoundException("Derived unit not found: ${request.derivedUnitId}")
 
         val duplicate = unitConversionRepository.findActiveExactConversion(request.baseUnitId, request.derivedUnitId, request.productId)
-        if (duplicate != null && duplicate.uid != request.id) {
+        if (duplicate != null && duplicate.uid != request.uid) {
             throw IllegalArgumentException("Conversion already exists for ${request.baseUnitId} -> ${request.derivedUnitId}")
         }
     }
@@ -217,7 +218,7 @@ class UnitConversionServiceImpl(
     private fun applyPathConversion(quantity: Double, path: List<UnitConversion>): Double {
         var result = quantity
         path.forEach { conversion ->
-            result *= conversion.multiplier
+            result *= conversion.multiplier.toDouble()
         }
         return result
     }

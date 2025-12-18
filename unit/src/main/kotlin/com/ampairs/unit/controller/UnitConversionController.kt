@@ -103,19 +103,19 @@ class UnitConversionController(
     ): ResponseEntity<ApiResponse<ConvertedQuantityResponse>> {
         setTenant(workspaceId)
         val convertedQuantity = unitConversionService.convert(
-            quantity = request.quantity,
+            quantity = request.quantity.toDouble(),
             fromUnitId = request.fromUnitId,
             toUnitId = request.toUnitId,
             productId = request.productId
         )
 
-        val multiplier = convertedQuantity / request.quantity
+        val multiplier = convertedQuantity / request.quantity.toDouble()
         val response = ConvertedQuantityResponse(
             originalQuantity = request.quantity,
-            convertedQuantity = convertedQuantity,
-            fromUnit = unitService.findByUid(request.fromUnitId),
-            toUnit = unitService.findByUid(request.toUnitId),
-            multiplier = multiplier
+            originalUnitId = request.fromUnitId,
+            convertedQuantity = convertedQuantity.toBigDecimal(),
+            convertedUnitId = request.toUnitId,
+            multiplier = multiplier.toBigDecimal()
         )
 
         return ResponseEntity.ok(ApiResponse.success(response))

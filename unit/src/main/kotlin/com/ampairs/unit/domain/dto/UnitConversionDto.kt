@@ -3,11 +3,14 @@ package com.ampairs.unit.domain.dto
 import com.ampairs.unit.domain.model.UnitConversion
 import jakarta.validation.constraints.DecimalMin
 import jakarta.validation.constraints.NotBlank
-import jakarta.validation.constraints.Size
+import java.math.BigDecimal
 import java.time.Instant
 
 data class UnitConversionRequest(
-    val id: String? = null,
+    val uid: String? = null,
+
+    @field:NotBlank(message = "Product ID is required")
+    val productId: String,
 
     @field:NotBlank(message = "Base unit ID is required")
     val baseUnitId: String,
@@ -15,47 +18,42 @@ data class UnitConversionRequest(
     @field:NotBlank(message = "Derived unit ID is required")
     val derivedUnitId: String,
 
-    val productId: String? = null,
-
     @field:DecimalMin(value = "0.0", inclusive = false, message = "Multiplier must be greater than zero")
-    val multiplier: Double,
+    val multiplier: BigDecimal,
 
-    @field:Size(max = 255, message = "Reference ID must not exceed 255 characters")
-    val refId: String? = null
+    val active: Boolean = true
 )
 
 data class UnitConversionResponse(
     val uid: String,
+    val productId: String,
     val baseUnitId: String,
     val derivedUnitId: String,
-    val productId: String?,
-    val multiplier: Double,
+    val multiplier: BigDecimal,
     val baseUnit: UnitResponse?,
     val derivedUnit: UnitResponse?,
-    val refId: String?,
     val active: Boolean,
     val createdAt: Instant?,
     val updatedAt: Instant?
 )
 
 fun UnitConversion.applyRequest(request: UnitConversionRequest): UnitConversion = apply {
-    request.id?.let { uid = it }
+    request.uid?.let { uid = it }
+    productId = request.productId
     baseUnitId = request.baseUnitId
     derivedUnitId = request.derivedUnitId
-    productId = request.productId
     multiplier = request.multiplier
-    refId = request.refId?.trim()
+    active = request.active
 }
 
 fun UnitConversion.asUnitConversionResponse(): UnitConversionResponse = UnitConversionResponse(
     uid = uid,
+    productId = productId ?: "",
     baseUnitId = baseUnitId,
     derivedUnitId = derivedUnitId,
-    productId = productId,
     multiplier = multiplier,
     baseUnit = baseUnit?.asUnitResponse(),
     derivedUnit = derivedUnit?.asUnitResponse(),
-    refId = refId,
     active = active,
     createdAt = createdAt,
     updatedAt = updatedAt
@@ -65,8 +63,8 @@ fun List<UnitConversion>.asUnitConversionResponses(): List<UnitConversionRespons
     map { it.asUnitConversionResponse() }
 
 data class ConvertQuantityRequest(
-    @field:DecimalMin(value = "0.0", inclusive = false, message = "Quantity must be greater than zero")
-    val quantity: Double,
+    @field:NotBlank(message = "Product ID is required")
+    val productId: String,
 
     @field:NotBlank(message = "From unit ID is required")
     val fromUnitId: String,
@@ -74,13 +72,14 @@ data class ConvertQuantityRequest(
     @field:NotBlank(message = "To unit ID is required")
     val toUnitId: String,
 
-    val productId: String? = null
+    @field:DecimalMin(value = "0.0", inclusive = false, message = "Quantity must be greater than zero")
+    val quantity: BigDecimal
 )
 
 data class ConvertedQuantityResponse(
-    val originalQuantity: Double,
-    val convertedQuantity: Double,
-    val fromUnit: UnitResponse?,
-    val toUnit: UnitResponse?,
-    val multiplier: Double
+    val originalQuantity: BigDecimal,
+    val originalUnitId: String,
+    val convertedQuantity: BigDecimal,
+    val convertedUnitId: String,
+    val multiplier: BigDecimal
 )

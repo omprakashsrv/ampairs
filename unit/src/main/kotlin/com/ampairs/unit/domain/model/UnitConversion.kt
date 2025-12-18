@@ -11,6 +11,7 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.NamedAttributeNode
 import jakarta.persistence.NamedEntityGraph
 import jakarta.persistence.Table
+import java.math.BigDecimal
 
 @Entity(name = "unit_conversion")
 @Table(
@@ -38,8 +39,8 @@ class UnitConversion : OwnableBaseDomain() {
     @Column(name = "product_id", length = 200)
     var productId: String? = null
 
-    @Column(name = "multiplier", nullable = false)
-    var multiplier: Double = 1.0
+    @Column(name = "multiplier", precision = 20, scale = 6, nullable = false)
+    var multiplier: BigDecimal = BigDecimal.ONE
 
     @Column(name = "active", nullable = false)
     var active: Boolean = true
@@ -53,6 +54,6 @@ class UnitConversion : OwnableBaseDomain() {
     var derivedUnit: Unit? = null
 
     override fun obtainSeqIdPrefix(): String {
-        return Constants.UNIT_PREFIX
+        return Constants.UNIT_CONVERSION_PREFIX
     }
 }
