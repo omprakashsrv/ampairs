@@ -38,7 +38,7 @@ CREATE TABLE unit_conversion (
     ref_id VARCHAR(255),
     base_unit_id VARCHAR(200) NOT NULL,
     derived_unit_id VARCHAR(200) NOT NULL,
-    product_id VARCHAR(200),
+    entity_id VARCHAR(200),
     multiplier DOUBLE NOT NULL DEFAULT 1.0,
     active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -49,10 +49,10 @@ CREATE TABLE unit_conversion (
     UNIQUE INDEX idx_unit_conversion_uid (uid),
     INDEX idx_unit_conversion_base (base_unit_id),
     INDEX idx_unit_conversion_derived (derived_unit_id),
-    INDEX idx_unit_conversion_product (product_id),
+    INDEX idx_unit_conversion_entity (entity_id),
     INDEX idx_unit_conversion_owner (owner_id),
 
     CONSTRAINT fk_unit_conversion_base FOREIGN KEY (base_unit_id) REFERENCES unit (uid) ON DELETE CASCADE,
     CONSTRAINT fk_unit_conversion_derived FOREIGN KEY (derived_unit_id) REFERENCES unit (uid) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='Workspace unit conversion factors optionally linked to products';
+COMMENT='Workspace unit conversion factors optionally linked to entitys';

@@ -37,7 +37,7 @@ CREATE TABLE unit_conversion (
     ref_id VARCHAR(255),
     base_unit_id VARCHAR(200) NOT NULL,
     derived_unit_id VARCHAR(200) NOT NULL,
-    product_id VARCHAR(200),
+    entity_id VARCHAR(200),
     multiplier DOUBLE PRECISION NOT NULL DEFAULT 1.0,
     active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -50,7 +50,7 @@ CREATE TABLE unit_conversion (
 
 CREATE INDEX idx_unit_conversion_base ON unit_conversion(base_unit_id);
 CREATE INDEX idx_unit_conversion_derived ON unit_conversion(derived_unit_id);
-CREATE INDEX idx_unit_conversion_product ON unit_conversion(product_id);
+CREATE INDEX idx_unit_conversion_entity ON unit_conversion(entity_id);
 CREATE INDEX idx_unit_conversion_owner ON unit_conversion(owner_id);
 
-COMMENT ON TABLE unit_conversion IS 'Workspace unit conversion factors optionally linked to products';
+COMMENT ON TABLE unit_conversion IS 'Workspace unit conversion factors optionally linked to entitys';
