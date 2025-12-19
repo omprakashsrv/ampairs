@@ -46,9 +46,9 @@ data class UnitResponse(
 data class UnitUsageResponse(
     val unitId: String,
     val inUse: Boolean,
-    val productCount: Int,
+    val entityCount: Int,
     val conversionCount: Int,
-    val productIds: List<String> = emptyList(),
+    val entityIds: List<String> = emptyList(),
     val conversionIds: List<String> = emptyList()
 )
 

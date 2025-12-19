@@ -12,6 +12,6 @@ interface UnitService {
     fun update(uid: String, request: UnitRequest): UnitResponse
     fun delete(uid: String)
     fun isUnitInUse(uid: String): Boolean
-    fun findProductsUsingUnit(uid: String): List<String>
+    fun findEntitiesUsingUnit(uid: String): List<String>
     fun getUsage(uid: String): UnitUsageResponse
 }

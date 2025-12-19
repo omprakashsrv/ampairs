@@ -28,12 +28,12 @@ interface UnitConversionRepository : CrudRepository<UnitConversion, Long> {
         pageable: Pageable
     ): Page<UnitConversion>
 
-    // Filter by product
+    // Filter by entity
     @EntityGraph("UnitConversion.withUnits")
-    @Query("SELECT uc FROM unit_conversion uc WHERE uc.ownerId = :ownerId AND uc.productId = :productId")
-    fun findByOwnerIdAndProductId(
+    @Query("SELECT uc FROM unit_conversion uc WHERE uc.ownerId = :ownerId AND uc.entityId = :entityId")
+    fun findByOwnerIdAndEntityId(
         @Param("ownerId") ownerId: String,
-        @Param("productId") productId: String,
+        @Param("entityId") entityId: String,
         pageable: Pageable
     ): Page<UnitConversion>
 
@@ -47,23 +47,23 @@ interface UnitConversionRepository : CrudRepository<UnitConversion, Long> {
     ): Page<UnitConversion>
 
     @EntityGraph("UnitConversion.withUnits")
-    fun findByProductIdAndActiveTrue(productId: String): List<UnitConversion>
+    fun findByEntityIdAndActiveTrue(entityId: String): List<UnitConversion>
 
-    // Find specific conversion for product and units
+    // Find specific conversion for entity and units
     @EntityGraph("UnitConversion.withUnits")
     @Query(
         """
         SELECT uc FROM unit_conversion uc
         WHERE uc.ownerId = :ownerId
-          AND uc.productId = :productId
+          AND uc.entityId = :entityId
           AND uc.baseUnitId = :baseUnitId
           AND uc.derivedUnitId = :derivedUnitId
           AND uc.active = true
     """
     )
-    fun findConversionByProductAndUnits(
+    fun findConversionByEntityAndUnits(
         @Param("ownerId") ownerId: String,
-        @Param("productId") productId: String,
+        @Param("entityId") entityId: String,
         @Param("baseUnitId") baseUnitId: String,
         @Param("derivedUnitId") derivedUnitId: String
     ): UnitConversion?
@@ -75,22 +75,22 @@ interface UnitConversionRepository : CrudRepository<UnitConversion, Long> {
         where uc.active = true
           and uc.baseUnitId = :baseUnitId
           and uc.derivedUnitId = :derivedUnitId
-          and ((:productId is null and uc.productId is null) or uc.productId = :productId)
+          and ((:entityId is null and uc.entityId is null) or uc.entityId = :entityId)
     """
     )
-    fun findActiveExactConversion(baseUnitId: String, derivedUnitId: String, productId: String?): UnitConversion?
+    fun findActiveExactConversion(baseUnitId: String, derivedUnitId: String, entityId: String?): UnitConversion?
 
     // Uniqueness check
-    fun existsByOwnerIdAndProductIdAndBaseUnitIdAndDerivedUnitId(
+    fun existsByOwnerIdAndEntityIdAndBaseUnitIdAndDerivedUnitId(
         ownerId: String,
-        productId: String,
+        entityId: String,
         baseUnitId: String,
         derivedUnitId: String
     ): Boolean
 
-    fun existsByOwnerIdAndProductIdAndBaseUnitIdAndDerivedUnitIdAndUidNot(
+    fun existsByOwnerIdAndEntityIdAndBaseUnitIdAndDerivedUnitIdAndUidNot(
         ownerId: String,
-        productId: String,
+        entityId: String,
         baseUnitId: String,
         derivedUnitId: String,
         uid: String

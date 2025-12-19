@@ -18,7 +18,7 @@ import java.math.BigDecimal
     indexes = [
         Index(name = "idx_unit_conversion_base", columnList = "base_unit_id"),
         Index(name = "idx_unit_conversion_derived", columnList = "derived_unit_id"),
-        Index(name = "idx_unit_conversion_product", columnList = "product_id")
+        Index(name = "idx_unit_conversion_entity", columnList = "entity_id")
     ]
 )
 @NamedEntityGraph(
@@ -36,8 +36,8 @@ class UnitConversion : OwnableBaseDomain() {
     @Column(name = "derived_unit_id", length = 200, nullable = false)
     var derivedUnitId: String = ""
 
-    @Column(name = "product_id", length = 200)
-    var productId: String? = null
+    @Column(name = "entity_id", length = 200)
+    var entityId: String? = null
 
     @Column(name = "multiplier", precision = 20, scale = 6, nullable = false)
     var multiplier: BigDecimal = BigDecimal.ONE

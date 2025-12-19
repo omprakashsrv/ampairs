@@ -19,7 +19,7 @@ class UnitProductUsageProvider(
 
         return UnitUsageSnapshot(
             unitUid = unitUid,
-            productIds = products.map { it.uid }
+            entityIds = products.map { it.uid }
         )
     }
 }

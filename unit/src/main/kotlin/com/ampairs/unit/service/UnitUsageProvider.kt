@@ -10,15 +10,15 @@ fun interface UnitUsageProvider {
 
 data class UnitUsageSnapshot(
     val unitUid: String,
-    val productIds: List<String> = emptyList(),
+    val entityIds: List<String> = emptyList(),
     val conversionIds: List<String> = emptyList()
 ) {
-    val productCount: Int = productIds.size
+    val entityCount: Int = entityIds.size
     val conversionCount: Int = conversionIds.size
-    val inUse: Boolean = productIds.isNotEmpty() || conversionIds.isNotEmpty()
+    val inUse: Boolean = entityIds.isNotEmpty() || conversionIds.isNotEmpty()
 
     companion object {
-        val EMPTY = UnitUsageSnapshot(unitUid = "", productIds = emptyList(), conversionIds = emptyList())
+        val EMPTY = UnitUsageSnapshot(unitUid = "", entityIds = emptyList(), conversionIds = emptyList())
     }
 }
 
@@ -27,15 +27,15 @@ data class UnitUsageSnapshot(
  */
 fun Collection<UnitUsageSnapshot>.merge(unitUid: String): UnitUsageSnapshot {
     if (isEmpty()) return UnitUsageSnapshot(unitUid = unitUid)
-    val productIds = mutableSetOf<String>()
+    val entityIds = mutableSetOf<String>()
     val conversionIds = mutableSetOf<String>()
     forEach {
-        productIds.addAll(it.productIds)
+        entityIds.addAll(it.entityIds)
         conversionIds.addAll(it.conversionIds)
     }
     return UnitUsageSnapshot(
         unitUid = unitUid,
-        productIds = productIds.toList(),
+        entityIds = entityIds.toList(),
         conversionIds = conversionIds.toList()
     )
 }

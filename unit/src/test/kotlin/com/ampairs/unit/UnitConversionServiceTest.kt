@@ -69,7 +69,7 @@ class UnitConversionServiceTest {
     @Test
     fun `create should validate units exist`() {
         val request = UnitConversionRequest(
-            productId = "PROD-1",
+            entityId = "PROD-1",
             baseUnitId = "UNIT-X",
             derivedUnitId = "UNIT-Y",
             multiplier = BigDecimal("2.0")
@@ -102,7 +102,7 @@ class UnitConversionServiceTest {
         assertThrows<CircularConversionException> {
             service.create(
                 UnitConversionRequest(
-                    productId = "PROD-1",
+                    entityId = "PROD-1",
                     baseUnitId = "UNIT-B",
                     derivedUnitId = "UNIT-A",
                     multiplier = BigDecimal("0.1")

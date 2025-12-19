@@ -38,13 +38,13 @@ class UnitConversionController(
     @GetMapping
     fun listConversions(
         @RequestHeader(name = WORKSPACE_HEADER, required = false) workspaceId: String?,
-        @RequestParam(required = false) productId: String?,
+        @RequestParam(required = false) entityId: String?,
         @RequestParam(required = false) baseUnitId: String?,
         @RequestParam(required = false) derivedUnitId: String?
     ): ResponseEntity<ApiResponse<List<UnitConversionResponse>>> {
         setTenant(workspaceId)
         val conversions = when {
-            !productId.isNullOrBlank() -> unitConversionService.findByProductId(productId)
+            !entityId.isNullOrBlank() -> unitConversionService.findByEntityId(entityId)
             else -> unitConversionService.findAll()
         }.filter { conversion ->
             (baseUnitId.isNullOrBlank() || conversion.baseUnitId == baseUnitId) &&
@@ -106,7 +106,7 @@ class UnitConversionController(
             quantity = request.quantity.toDouble(),
             fromUnitId = request.fromUnitId,
             toUnitId = request.toUnitId,
-            productId = request.productId
+            entityId = request.entityId
         )
 
         val multiplier = convertedQuantity / request.quantity.toDouble()

@@ -99,8 +99,8 @@ class UnitController(
                     code = ErrorCodes.CONSTRAINT_VIOLATION,
                     message = ex.message ?: "Unit is currently in use",
                     details = buildString {
-                        if (ex.productIds.isNotEmpty()) {
-                            append("Products: ${ex.productIds.joinToString()}")
+                        if (ex.entityIds.isNotEmpty()) {
+                            append("Entities: ${ex.entityIds.joinToString()}")
                         }
                         if (ex.conversionIds.isNotEmpty()) {
                             if (isNotEmpty()) append("; ")

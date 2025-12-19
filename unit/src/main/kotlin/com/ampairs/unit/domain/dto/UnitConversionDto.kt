@@ -9,8 +9,8 @@ import java.time.Instant
 data class UnitConversionRequest(
     val uid: String? = null,
 
-    @field:NotBlank(message = "Product ID is required")
-    val productId: String,
+    @field:NotBlank(message = "Entity ID is required")
+    val entityId: String,
 
     @field:NotBlank(message = "Base unit ID is required")
     val baseUnitId: String,
@@ -26,7 +26,7 @@ data class UnitConversionRequest(
 
 data class UnitConversionResponse(
     val uid: String,
-    val productId: String,
+    val entityId: String,
     val baseUnitId: String,
     val derivedUnitId: String,
     val multiplier: BigDecimal,
@@ -39,7 +39,7 @@ data class UnitConversionResponse(
 
 fun UnitConversion.applyRequest(request: UnitConversionRequest): UnitConversion = apply {
     request.uid?.let { uid = it }
-    productId = request.productId
+    entityId = request.entityId
     baseUnitId = request.baseUnitId
     derivedUnitId = request.derivedUnitId
     multiplier = request.multiplier
@@ -48,7 +48,7 @@ fun UnitConversion.applyRequest(request: UnitConversionRequest): UnitConversion 
 
 fun UnitConversion.asUnitConversionResponse(): UnitConversionResponse = UnitConversionResponse(
     uid = uid,
-    productId = productId ?: "",
+    entityId = entityId ?: "",
     baseUnitId = baseUnitId,
     derivedUnitId = derivedUnitId,
     multiplier = multiplier,
@@ -63,8 +63,8 @@ fun List<UnitConversion>.asUnitConversionResponses(): List<UnitConversionRespons
     map { it.asUnitConversionResponse() }
 
 data class ConvertQuantityRequest(
-    @field:NotBlank(message = "Product ID is required")
-    val productId: String,
+    @field:NotBlank(message = "Entity ID is required")
+    val entityId: String,
 
     @field:NotBlank(message = "From unit ID is required")
     val fromUnitId: String,

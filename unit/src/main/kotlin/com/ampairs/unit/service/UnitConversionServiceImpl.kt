@@ -27,8 +27,8 @@ class UnitConversionServiceImpl(
     }
 
     @Transactional(readOnly = true)
-    override fun findByProductId(productId: String): List<UnitConversionResponse> {
-        return unitConversionRepository.findByProductIdAndActiveTrue(productId).asUnitConversionResponses()
+    override fun findByEntityId(entityId: String): List<UnitConversionResponse> {
+        return unitConversionRepository.findByEntityIdAndActiveTrue(entityId).asUnitConversionResponses()
     }
 
     @Transactional(readOnly = true)
@@ -37,22 +37,22 @@ class UnitConversionServiceImpl(
     }
 
     @Transactional(readOnly = true)
-    override fun convert(quantity: Double, fromUnitId: String, toUnitId: String, productId: String?): Double {
+    override fun convert(quantity: Double, fromUnitId: String, toUnitId: String, entityId: String?): Double {
         if (fromUnitId == toUnitId) {
             return quantity
         }
 
-        val conversion = findExactConversion(fromUnitId, toUnitId, productId)
+        val conversion = findExactConversion(fromUnitId, toUnitId, entityId)
         if (conversion != null) {
             return quantity * conversion.multiplier.toDouble()
         }
 
-        val inverse = findExactConversion(toUnitId, fromUnitId, productId)
+        val inverse = findExactConversion(toUnitId, fromUnitId, entityId)
         if (inverse != null && inverse.multiplier != BigDecimal.ZERO) {
             return quantity / inverse.multiplier.toDouble()
         }
 
-        val path = findConversionPath(fromUnitId, toUnitId, productId)
+        val path = findConversionPath(fromUnitId, toUnitId, entityId)
         if (path != null) {
             return applyPathConversion(quantity, path)
         }
@@ -63,7 +63,7 @@ class UnitConversionServiceImpl(
     @Transactional
     override fun create(request: UnitConversionRequest): UnitConversionResponse {
         validateRequest(request)
-        validateNoCircularConversionInternal(request.baseUnitId, request.derivedUnitId, request.productId, excludeUid = null)
+        validateNoCircularConversionInternal(request.baseUnitId, request.derivedUnitId, request.entityId, excludeUid = null)
 
         val entity = UnitConversion().apply {
             applyRequest(request)
@@ -80,7 +80,7 @@ class UnitConversionServiceImpl(
             ?: throw UnitNotFoundException("Unit conversion not found for uid: $uid")
 
         validateRequest(request)
-        validateNoCircularConversionInternal(request.baseUnitId, request.derivedUnitId, request.productId, excludeUid = uid)
+        validateNoCircularConversionInternal(request.baseUnitId, request.derivedUnitId, request.entityId, excludeUid = uid)
 
         existing.applyRequest(request.copy(uid = uid))
         val saved = unitConversionRepository.save(existing)
@@ -98,14 +98,14 @@ class UnitConversionServiceImpl(
     private fun validateNoCircularConversionInternal(
         baseUnitId: String,
         derivedUnitId: String,
-        productId: String?,
+        entityId: String?,
         excludeUid: String?
     ) {
         if (baseUnitId == derivedUnitId) {
             throw CircularConversionException(listOf(baseUnitId, derivedUnitId))
         }
 
-        val adjacency = buildAdjacencyMap(productId, excludeUid)
+        val adjacency = buildAdjacencyMap(entityId, excludeUid)
         adjacency.getOrPut(baseUnitId) { mutableSetOf() }.add(derivedUnitId)
 
         val cyclePath = findPath(adjacency, derivedUnitId, baseUnitId)
@@ -115,8 +115,8 @@ class UnitConversionServiceImpl(
         }
     }
 
-    override fun validateNoCircularConversion(baseUnitId: String, derivedUnitId: String, productId: String?) {
-        validateNoCircularConversionInternal(baseUnitId, derivedUnitId, productId, excludeUid = null)
+    override fun validateNoCircularConversion(baseUnitId: String, derivedUnitId: String, entityId: String?) {
+        validateNoCircularConversionInternal(baseUnitId, derivedUnitId, entityId, excludeUid = null)
     }
 
     private fun validateRequest(request: UnitConversionRequest) {
@@ -132,33 +132,33 @@ class UnitConversionServiceImpl(
         unitRepository.findByUid(request.derivedUnitId)
             ?: throw UnitNotFoundException("Derived unit not found: ${request.derivedUnitId}")
 
-        val duplicate = unitConversionRepository.findActiveExactConversion(request.baseUnitId, request.derivedUnitId, request.productId)
+        val duplicate = unitConversionRepository.findActiveExactConversion(request.baseUnitId, request.derivedUnitId, request.entityId)
         if (duplicate != null && duplicate.uid != request.uid) {
             throw IllegalArgumentException("Conversion already exists for ${request.baseUnitId} -> ${request.derivedUnitId}")
         }
     }
 
-    private fun findExactConversion(baseUnitId: String, derivedUnitId: String, productId: String?): UnitConversion? {
-        val scoped = unitConversionRepository.findActiveExactConversion(baseUnitId, derivedUnitId, productId)
+    private fun findExactConversion(baseUnitId: String, derivedUnitId: String, entityId: String?): UnitConversion? {
+        val scoped = unitConversionRepository.findActiveExactConversion(baseUnitId, derivedUnitId, entityId)
         if (scoped != null) return scoped
-        if (productId != null) {
+        if (entityId != null) {
             return unitConversionRepository.findActiveExactConversion(baseUnitId, derivedUnitId, null)
         }
         return null
     }
 
-    private fun buildAdjacencyMap(productId: String?, excludeUid: String?): MutableMap<String, MutableSet<String>> {
+    private fun buildAdjacencyMap(entityId: String?, excludeUid: String?): MutableMap<String, MutableSet<String>> {
         val adjacency = mutableMapOf<String, MutableSet<String>>()
         unitConversionRepository.findAllActive().forEach { conversion ->
             if (excludeUid != null && conversion.uid == excludeUid) return@forEach
-            if (!isConversionApplicable(conversion, productId)) return@forEach
+            if (!isConversionApplicable(conversion, entityId)) return@forEach
             adjacency.getOrPut(conversion.baseUnitId) { mutableSetOf() }.add(conversion.derivedUnitId)
         }
         return adjacency
     }
 
-    private fun isConversionApplicable(conversion: UnitConversion, productId: String?): Boolean {
-        return conversion.productId == null || conversion.productId == productId
+    private fun isConversionApplicable(conversion: UnitConversion, entityId: String?): Boolean {
+        return conversion.entityId == null || conversion.entityId == entityId
     }
 
     private fun findPath(graph: Map<String, Set<String>>, start: String, target: String): List<String>? {
@@ -183,8 +183,8 @@ class UnitConversionServiceImpl(
         return if (dfs(start)) path.toList() else null
     }
 
-    private fun findConversionPath(fromUnitId: String, toUnitId: String, productId: String?): List<UnitConversion>? {
-        val adjacency = buildAdjacencyMap(productId, excludeUid = null)
+    private fun findConversionPath(fromUnitId: String, toUnitId: String, entityId: String?): List<UnitConversion>? {
+        val adjacency = buildAdjacencyMap(entityId, excludeUid = null)
         val queue: ArrayDeque<Pair<String, List<String>>> = ArrayDeque()
         val visited = mutableSetOf<String>()
 
@@ -196,7 +196,7 @@ class UnitConversionServiceImpl(
             if (current == toUnitId) {
                 val conversionSequence = path.mapIndexed { index, unitId ->
                     val nextUnit = if (index + 1 < path.size) path[index + 1] else toUnitId
-                    findExactConversion(unitId, nextUnit, productId)
+                    findExactConversion(unitId, nextUnit, entityId)
                 }
                 val resolved = conversionSequence.filterNotNull()
                 if (resolved.size == conversionSequence.size) {

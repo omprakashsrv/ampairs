@@ -88,7 +88,7 @@ class UnitServiceTest {
 
         whenever(unitRepository.findByUid("UNIT-003")).thenReturn(unit)
         whenever(usageProvider.findUsage("UNIT-003"))
-            .thenReturn(UnitUsageSnapshot(unitUid = "UNIT-003", productIds = listOf("PROD-1")))
+            .thenReturn(UnitUsageSnapshot(unitUid = "UNIT-003", entityIds = listOf("PROD-1")))
 
         assertThrows<UnitInUseException> {
             unitService.delete("UNIT-003")
