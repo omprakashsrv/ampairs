@@ -410,8 +410,8 @@ debug: ${DEBUG_MODE:false}
 google:
   recaptcha:
     enabled: ${RECAPTCHA_ENABLED:true}
-    secret-key: ${RECAPTCHA_SECRET_KEY:6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe}  # Test secret key for development
-    site-key: ${RECAPTCHA_SITE_KEY:6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI}    # Reference only - used by frontend
+    secret-key: ${RECAPTCHA_SECRET_KEY:RECAPTCHA_SECRET_KEY}  # Test secret key for development
+    site-key: ${RECAPTCHA_SITE_KEY:RECAPTCHA_SITE_KEY}    # Reference only - used by frontend
     verify-url: ${RECAPTCHA_VERIFY_URL:https://www.google.com/recaptcha/api/siteverify}
     min-score: ${RECAPTCHA_MIN_SCORE:0.5}
     timeout-ms: ${RECAPTCHA_TIMEOUT_MS:5000}

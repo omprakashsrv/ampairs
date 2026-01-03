@@ -192,8 +192,8 @@ spring:
         static: ${AWS_REGION:ap-south-1}
         auto: ${AWS_AUTO_REGION:true}
       credentials:
-        access-key: ${AWS_ACCESS_KEY:AKIAVYWGJ7XHE7XMT34K}
-        secret-key: ${AWS_SECRET_KEY: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}
+        access-key: ${AWS_ACCESS_KEY:AWS_ACCESS_KEY}
+        secret-key: ${AWS_SECRET_KEY:AWS_SECRET_KEY}
         instance-profile: ${AWS_USE_IAM_ROLE:false}
         profile-name: ${AWS_PROFILE_NAME:}
         profile-path: ${AWS_PROFILE_PATH:}
