@@ -2,6 +2,30 @@
 
 > **Comprehensive multi-platform business management solution with workspace-based architecture**
 
+## ✨ Recent Updates
+
+### 🆕 Inventory Management Module (2025-01)
+- Comprehensive multi-warehouse inventory tracking
+- Batch and serial number management with expiry tracking
+- Real-time inventory ledger with transaction history
+- Support for multiple inventory valuation methods (FIFO/LIFO/FEFO)
+- Automated stock level monitoring and alerts
+
+### 🌍 Multi-Timezone Support (2025-01)
+- Migration from `LocalDateTime` to `Instant` for all timestamps
+- UTC-based time handling prevents timezone-related bugs
+- Consistent ISO-8601 timestamp format across all APIs
+
+### 🔒 Enhanced Security & Multi-Tenancy
+- Device-aware JWT authentication
+- Improved `@TenantId` integration for automatic tenant filtering
+- Cross-tenant operations via native SQL when authorized
+
+### 📊 Database & Performance
+- Flyway migration baseline and automated testing
+- `@EntityGraph` pattern for efficient data loading
+- Performance indexes for high-traffic queries
+
 ## 📁 Project Structure
 
 ```
@@ -12,10 +36,14 @@ ampairs/
 │   ├── auth/                   # Authentication & authorization
 │   ├── workspace/              # Workspace management
 │   ├── customer/               # Customer relationship management
-│   ├── product/                # Product catalog management
+│   ├── product/                # Product catalog & inventory management
 │   ├── order/                  # Order processing
 │   ├── invoice/                # Invoice generation
-│   └── notification/           # Notification services
+│   ├── tax/                    # GST tax configuration & calculation
+│   ├── notification/           # Notification services
+│   ├── event/                  # Event streaming
+│   ├── form/                   # Dynamic form management
+│   └── business/               # Business profile management
 ├── 📁 ampairs-web/             # Angular Web Application
 ├── 📁 ampairs-mp-app/          # Kotlin Multiplatform Mobile App
 ├── 📁 .github/workflows/       # CI/CD Pipeline
@@ -28,7 +56,8 @@ ampairs/
 - **Java 25+** for backend development
 - **Node.js 18+** for web frontend
 - **Android Studio** for mobile development
-- **PostgreSQL** for database
+- **MySQL 8.0+** for database
+- **Docker** (optional, for Testcontainers integration tests)
 
 ### Quick Start
 
@@ -78,14 +107,35 @@ cd ampairs-backend
 
 ### Backend (Spring Boot + Kotlin)
 - **Modular Architecture**: Domain-driven design with separate modules
-- **Multi-tenancy**: Workspace-based isolation
-- **JWT Authentication**: Secure token-based auth
-- **PostgreSQL**: Primary database
-- **REST APIs**: RESTful services for all modules
+- **Multi-tenancy**: Workspace-based isolation with `@TenantId` annotation
+- **JWT Authentication**: Secure token-based auth with device-specific sessions
+- **MySQL 8.0**: Primary database with Flyway migrations
+- **REST APIs**: RESTful services with standardized `ApiResponse<T>` wrapper
+- **Technology Stack**:
+  - Kotlin 2.2.20
+  - Spring Boot 3.5.6
+  - Java 25
+  - Hibernate 6.2 + Spring Data JPA
+  - Flyway for database migrations
+
+### Key Features
+- **Multi-Timezone Support**: All timestamps use `java.time.Instant` (UTC) for global consistency
+- **GST Compliance**: Full Indian GST tax calculation and invoice generation
+- **Advanced Inventory Management**:
+  - Multi-warehouse stock tracking
+  - Batch and serial number management
+  - Real-time inventory ledger
+  - FIFO/LIFO/FEFO valuation methods
+  - Transaction history and audit trail
+- **Event Streaming**: WebSocket-based real-time event delivery to clients
+- **Dynamic Forms**: Configurable entity forms for customizable data capture
+- **Multi-Device Sessions**: Device-aware JWT tokens for concurrent logins
+- **Efficient Data Loading**: `@EntityGraph` pattern prevents N+1 query issues
+- **Comprehensive Testing**: Flyway migration tests with Testcontainers
 
 ### Frontend Options
-- **Web**: Angular with Material Design 3
-- **Mobile**: Kotlin Multiplatform (Android/iOS)
+- **Web**: Angular 18+ with Material Design 3 (M3)
+- **Mobile**: Kotlin Multiplatform (Android/iOS/Desktop)
 
 ## 🚀 Deployment
 
@@ -113,13 +163,29 @@ For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md)
 - **Service Status**: `systemctl status ampairs`
 - **Logs**: `journalctl -u ampairs -f`
 
+## 📚 Documentation
+
+### Developer Guidelines
+- **[CLAUDE.md](CLAUDE.md)**: Comprehensive coding standards, architectural patterns, and best practices
+- **[DEPLOYMENT.md](DEPLOYMENT.md)**: Production deployment and infrastructure setup
+- **Module-specific READMEs**: Each module has detailed documentation in its directory
+
+### Key Development Patterns
+- **Use `Instant` for timestamps**: NEVER use `LocalDateTime` (prevents timezone bugs)
+- **DTO pattern required**: Never expose JPA entities directly in API responses
+- **@EntityGraph for relations**: Prevents N+1 query issues
+- **Global snake_case**: Jackson auto-converts camelCase to snake_case JSON
+- **Multi-tenant context**: Set at controller level before repository operations
+
 ## 🤝 Contributing
 
-1. Create feature branch: `git checkout -b feature/amazing-feature`
-2. Make changes and test: `./gradlew testAll`
-3. Commit changes: `git commit -m 'Add amazing feature'`
-4. Push branch: `git push origin feature/amazing-feature`
-5. Create Pull Request
+1. **Read guidelines**: Review [CLAUDE.md](CLAUDE.md) for coding standards
+2. Create feature branch: `git checkout -b feature/amazing-feature`
+3. Follow existing patterns: Maintain consistency with codebase architecture
+4. Make changes and test: `./gradlew testAll`
+5. Commit changes: `git commit -m 'Add amazing feature'`
+6. Push branch: `git push origin feature/amazing-feature`
+7. Create Pull Request
 
 ## 📄 License
 
@@ -153,8 +219,8 @@ All modules target Kotlin 2.2, Spring Boot 3.5, and Java 25 via Gradle. Multi-te
 ├── invoice/           # Invoice generation, GST compliance, and order conversion
 ├── notification/      # Multi-channel notification orchestration
 ├── order/             # Order lifecycle management and pricing logic
-├── product/           # Product catalog, inventory, and media management
-├── tax/               # GST tax configuration, HSN catalog, and calculation engine
+├── product/           # Product catalog, inventory (batch/serial/warehouse), and media management
+├── tax/               # GST tax configuration, HSN/SAC catalog, and calculation engine
 └── workspace/         # Workspace tenancy, invitations, RBAC, and membership
 ```
 
@@ -219,9 +285,11 @@ Each module exposes its own README with deeper usage notes. The summaries below 
 - See [order/README.md](order/README.md).
 
 ### product (`product/`)
-- Maintains product catalogues, categories, units of measure, and inventory adjustments.
+- Maintains product catalogues, categories, units of measure, and comprehensive inventory management.
+- **Inventory Module**: Multi-warehouse stock tracking, batch/serial number management, real-time ledger, and transaction history.
 - Integrates with AWS S3 through `core` for media storage and publishes stock change events.
-- See [product/README.md](product/README.md).
+- Supports FIFO/LIFO/FEFO inventory valuation methods.
+- See [product/README.md](product/README.md) and [product/INVENTORY_MODULE_IMPLEMENTATION.md](product/INVENTORY_MODULE_IMPLEMENTATION.md).
 
 ### tax (`tax/`)
 - Centralises GST tax configuration, HSN/SAC catalogues, rate schedules, and the GST calculation service used by orders and invoices.
