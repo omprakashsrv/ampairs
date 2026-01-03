@@ -14,6 +14,7 @@ include("order")
 include("invoice")
 include("tax")
 include("unit")
+include("subscription")
 include("ampairs_service")
 
 

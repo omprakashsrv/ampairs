@@ -8,21 +8,27 @@ import jakarta.validation.constraints.Size
 import java.time.Instant
 
 data class UnitRequest(
-    val id: String? = null,
+    val uid: String? = null,
 
     @field:NotBlank(message = "Unit name is required")
-    @field:Size(max = 10, message = "Unit name must not exceed 10 characters")
+    @field:Size(min = 1, max = 100, message = "Unit name must be between 1 and 100 characters")
     val name: String,
 
-    @field:Size(max = 10, message = "Unit short name must not exceed 10 characters")
-    val shortName: String? = null,
+    @field:NotBlank(message = "Unit short name is required")
+    @field:Size(min = 1, max = 20, message = "Unit short name must be between 1 and 20 characters")
+    val shortName: String,
 
-    @field:Min(value = 0, message = "Decimal places must be between 0 and 6")
-    @field:Max(value = 6, message = "Decimal places must be between 0 and 6")
+    @field:Min(value = 0, message = "Decimal places must be between 0 and 10")
+    @field:Max(value = 10, message = "Decimal places must be between 0 and 10")
     val decimalPlaces: Int = 2,
 
-    @field:Size(max = 255, message = "Reference ID must not exceed 255 characters")
-    val refId: String? = null
+    @field:Size(max = 1000, message = "Description must not exceed 1000 characters")
+    val description: String? = null,
+
+    @field:Size(max = 50, message = "Category must not exceed 50 characters")
+    val category: String? = null,
+
+    val active: Boolean = true
 )
 
 data class UnitResponse(
@@ -30,7 +36,8 @@ data class UnitResponse(
     val name: String,
     val shortName: String,
     val decimalPlaces: Int,
-    val refId: String?,
+    val description: String?,
+    val category: String?,
     val active: Boolean,
     val createdAt: Instant?,
     val updatedAt: Instant?
@@ -39,18 +46,20 @@ data class UnitResponse(
 data class UnitUsageResponse(
     val unitId: String,
     val inUse: Boolean,
-    val productCount: Int,
+    val entityCount: Int,
     val conversionCount: Int,
-    val productIds: List<String> = emptyList(),
+    val entityIds: List<String> = emptyList(),
     val conversionIds: List<String> = emptyList()
 )
 
 fun Unit.applyRequest(request: UnitRequest): Unit = apply {
-    request.id?.let { uid = it }
+    request.uid?.let { uid = it }
     name = request.name.trim()
-    shortName = (request.shortName ?: request.name).trim()
+    shortName = request.shortName.trim()
     decimalPlaces = request.decimalPlaces
-    refId = request.refId?.trim()
+    description = request.description?.trim()
+    category = request.category?.trim()
+    active = request.active
 }
 
 fun Unit.asUnitResponse(): UnitResponse = UnitResponse(
@@ -58,7 +67,8 @@ fun Unit.asUnitResponse(): UnitResponse = UnitResponse(
     name = name,
     shortName = shortName,
     decimalPlaces = decimalPlaces,
-    refId = refId,
+    description = description,
+    category = category,
     active = active,
     createdAt = createdAt,
     updatedAt = updatedAt

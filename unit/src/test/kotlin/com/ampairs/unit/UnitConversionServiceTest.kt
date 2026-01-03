@@ -18,6 +18,7 @@ import org.mockito.kotlin.whenever
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.quality.Strictness
+import java.math.BigDecimal
 
 @ExtendWith(MockitoExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -37,7 +38,7 @@ class UnitConversionServiceTest {
             uid = "CONV-1"
             baseUnitId = "UNIT-A"
             derivedUnitId = "UNIT-B"
-            multiplier = 10.0
+            multiplier = BigDecimal("10.0")
             active = true
         }
 
@@ -54,7 +55,7 @@ class UnitConversionServiceTest {
             uid = "CONV-2"
             baseUnitId = "UNIT-B"
             derivedUnitId = "UNIT-A"
-            multiplier = 4.0
+            multiplier = BigDecimal("4.0")
             active = true
         }
 
@@ -68,9 +69,10 @@ class UnitConversionServiceTest {
     @Test
     fun `create should validate units exist`() {
         val request = UnitConversionRequest(
+            entityId = "PROD-1",
             baseUnitId = "UNIT-X",
             derivedUnitId = "UNIT-Y",
-            multiplier = 2.0
+            multiplier = BigDecimal("2.0")
         )
 
         whenever(unitRepository.findByUid("UNIT-X")).thenReturn(Unit())
@@ -87,12 +89,12 @@ class UnitConversionServiceTest {
             uid = "CONV-3"
             baseUnitId = "UNIT-A"
             derivedUnitId = "UNIT-B"
-            multiplier = 10.0
+            multiplier = BigDecimal("10.0")
             active = true
         }
 
         whenever(unitRepository.findByUid(any())).thenReturn(Unit())
-        whenever(unitConversionRepository.findActiveExactConversion("UNIT-A", "UNIT-B", null)).thenReturn(null)
+        whenever(unitConversionRepository.findActiveExactConversion("UNIT-A", "UNIT-B", "PROD-1")).thenReturn(null)
         whenever(unitConversionRepository.findAllActive()).thenReturn(listOf(existing))
 
         val service = service()
@@ -100,9 +102,10 @@ class UnitConversionServiceTest {
         assertThrows<CircularConversionException> {
             service.create(
                 UnitConversionRequest(
+                    entityId = "PROD-1",
                     baseUnitId = "UNIT-B",
                     derivedUnitId = "UNIT-A",
-                    multiplier = 0.1
+                    multiplier = BigDecimal("0.1")
                 )
             )
         }

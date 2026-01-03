@@ -13,5 +13,6 @@ interface Constants {
         const val TAX_COMPONENT_PREFIX = "TXC"
         const val UNIT_PREFIX = "UNT"
         const val PRODUCT_IMAGE_PREFIX = "PIM"
+        const val VARIANT_PREFIX = "VAR"
     }
 }

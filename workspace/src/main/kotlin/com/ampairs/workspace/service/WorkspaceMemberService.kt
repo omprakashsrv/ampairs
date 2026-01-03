@@ -3,12 +3,17 @@ package com.ampairs.workspace.service
 import com.ampairs.core.domain.User
 import com.ampairs.core.exception.BusinessException
 import com.ampairs.core.exception.NotFoundException
+import com.ampairs.event.domain.events.MemberAddedEvent
+import com.ampairs.event.domain.events.MemberRemovedEvent
+import com.ampairs.event.domain.events.MemberActivatedEvent
+import com.ampairs.event.domain.events.MemberDeactivatedEvent
 import com.ampairs.workspace.model.WorkspaceMember
 import com.ampairs.workspace.model.dto.*
 import com.ampairs.workspace.model.enums.WorkspaceRole
 import com.ampairs.workspace.repository.WorkspaceMemberRepository
 import com.ampairs.workspace.security.WorkspacePermission
 import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -25,7 +30,8 @@ import java.time.LocalDateTime
 class WorkspaceMemberService(
     private val memberRepository: WorkspaceMemberRepository,
     private val activityService: WorkspaceActivityService,
-    private val userDetailProvider: UserDetailProvider
+    private val userDetailProvider: UserDetailProvider,
+    private val eventPublisher: ApplicationEventPublisher
 ) {
 
     companion object {
@@ -65,6 +71,19 @@ class WorkspaceMemberService(
         val savedMember = memberRepository.save(member)
         logger.info("Added owner to workspace: $workspaceId, user: $userId")
 
+        // Publish member added event for usage tracking
+        eventPublisher.publishEvent(
+            MemberAddedEvent(
+                source = this,
+                workspaceId = workspaceId,
+                entityId = savedMember.uid,
+                userId = userId,
+                deviceId = "",
+                memberUserId = userId,
+                role = WorkspaceRole.OWNER.name
+            )
+        )
+
         return savedMember
     }
 
@@ -89,6 +108,19 @@ class WorkspaceMemberService(
 
         // Log activity
         activityService.logMemberAdded(workspaceId, userId, "Unknown User", role.name, "SYSTEM", "System")
+
+        // Publish member added event for usage tracking
+        eventPublisher.publishEvent(
+            MemberAddedEvent(
+                source = this,
+                workspaceId = workspaceId,
+                entityId = savedMember.uid,
+                userId = "SYSTEM",
+                deviceId = "",
+                memberUserId = userId,
+                role = role.name
+            )
+        )
 
         logger.info("Added member to workspace: $workspaceId, user: $userId, role: $role")
         return savedMember
@@ -137,7 +169,7 @@ class WorkspaceMemberService(
             val wasActive = member.isActive
             member.isActive = it
 
-            // Log activation/deactivation
+            // Log activation/deactivation and publish events
             if (wasActive != it) {
                 if (it) {
                     activityService.logMemberActivated(
@@ -147,6 +179,17 @@ class WorkspaceMemberService(
                         updatedBy,
                         "Unknown User"
                     )
+                    // Publish activation event for usage tracking
+                    eventPublisher.publishEvent(
+                        MemberActivatedEvent(
+                            source = this,
+                            workspaceId = workspaceId,
+                            entityId = member.uid,
+                            userId = updatedBy,
+                            deviceId = "",
+                            memberUserId = member.userId
+                        )
+                    )
                 } else {
                     activityService.logMemberDeactivated(
                         workspaceId,
@@ -154,6 +197,17 @@ class WorkspaceMemberService(
                         "Unknown User",
                         updatedBy,
                         "Unknown User"
+                    )
+                    // Publish deactivation event for usage tracking
+                    eventPublisher.publishEvent(
+                        MemberDeactivatedEvent(
+                            source = this,
+                            workspaceId = workspaceId,
+                            entityId = member.uid,
+                            userId = updatedBy,
+                            deviceId = "",
+                            memberUserId = member.userId
+                        )
                     )
                 }
             }
@@ -185,12 +239,27 @@ class WorkspaceMemberService(
             }
         }
 
+        val memberUserId = member.userId
+        val memberUid = member.uid
+
         memberRepository.delete(member)
 
         // Log activity
-        activityService.logMemberRemoved(workspaceId, member.userId, "Unknown User", removedBy, "Unknown User")
+        activityService.logMemberRemoved(workspaceId, memberUserId, "Unknown User", removedBy, "Unknown User")
 
-        logger.info("Removed member from workspace: $workspaceId, user: ${member.userId}")
+        // Publish member removed event for usage tracking
+        eventPublisher.publishEvent(
+            MemberRemovedEvent(
+                source = this,
+                workspaceId = workspaceId,
+                entityId = memberUid,
+                userId = removedBy,
+                deviceId = "",
+                memberUserId = memberUserId
+            )
+        )
+
+        logger.info("Removed member from workspace: $workspaceId, user: $memberUserId")
         return "Member removed successfully"
     }
 

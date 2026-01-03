@@ -491,3 +491,32 @@ management:
       show-details: ${MANAGEMENT_HEALTH_SHOW_DETAILS:when_authorized}
     env:
       show-values: ${MANAGEMENT_ENV_SHOW_VALUES:when_authorized}
+
+# =====================================================
+# Payment Provider Configuration
+# =====================================================
+
+# Google Play Billing (Android In-App Purchases)
+google-play:
+  package-name: ${GOOGLE_PLAY_PACKAGE_NAME:com.ampairs.app}
+  # Absolute path to service account JSON file
+  service-account-json-path: ${GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_PATH:/Users/omprakashsrv/IdeaProjects/ampairs/subscription/keys/ampairs-google-play.json}
+
+# Apple App Store (iOS In-App Purchases)
+apple-app-store:
+  bundle-id: ${APPLE_BUNDLE_ID:com.ampairs.app}
+  shared-secret: ${APPLE_SHARED_SECRET:PLACEHOLDER_SHARED_SECRET}
+  production: ${APPLE_PRODUCTION:false}  # Use sandbox by default, set true for production
+
+# Razorpay (Indian Market Payments)
+razorpay:
+  key-id: ${RAZORPAY_KEY_ID:rzp_test_PLACEHOLDER}
+  key-secret: ${RAZORPAY_KEY_SECRET:PLACEHOLDER_SECRET}
+  webhook-secret: ${RAZORPAY_WEBHOOK_SECRET:PLACEHOLDER_WEBHOOK_SECRET}
+
+# Stripe (International Payments)
+stripe:
+  secret-key: ${STRIPE_SECRET_KEY:sk_test_PLACEHOLDER}
+  webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_PLACEHOLDER}
+  success-url: ${STRIPE_SUCCESS_URL:https://app.ampairs.com/subscription/success}
+  cancel-url: ${STRIPE_CANCEL_URL:https://app.ampairs.com/subscription/cancelled}

@@ -38,13 +38,13 @@ class UnitConversionController(
     @GetMapping
     fun listConversions(
         @RequestHeader(name = WORKSPACE_HEADER, required = false) workspaceId: String?,
-        @RequestParam(required = false) productId: String?,
+        @RequestParam(required = false) entityId: String?,
         @RequestParam(required = false) baseUnitId: String?,
         @RequestParam(required = false) derivedUnitId: String?
     ): ResponseEntity<ApiResponse<List<UnitConversionResponse>>> {
         setTenant(workspaceId)
         val conversions = when {
-            !productId.isNullOrBlank() -> unitConversionService.findByProductId(productId)
+            !entityId.isNullOrBlank() -> unitConversionService.findByEntityId(entityId)
             else -> unitConversionService.findAll()
         }.filter { conversion ->
             (baseUnitId.isNullOrBlank() || conversion.baseUnitId == baseUnitId) &&
@@ -103,19 +103,19 @@ class UnitConversionController(
     ): ResponseEntity<ApiResponse<ConvertedQuantityResponse>> {
         setTenant(workspaceId)
         val convertedQuantity = unitConversionService.convert(
-            quantity = request.quantity,
+            quantity = request.quantity.toDouble(),
             fromUnitId = request.fromUnitId,
             toUnitId = request.toUnitId,
-            productId = request.productId
+            entityId = request.entityId
         )
 
-        val multiplier = convertedQuantity / request.quantity
+        val multiplier = convertedQuantity / request.quantity.toDouble()
         val response = ConvertedQuantityResponse(
             originalQuantity = request.quantity,
-            convertedQuantity = convertedQuantity,
-            fromUnit = unitService.findByUid(request.fromUnitId),
-            toUnit = unitService.findByUid(request.toUnitId),
-            multiplier = multiplier
+            originalUnitId = request.fromUnitId,
+            convertedQuantity = convertedQuantity.toBigDecimal(),
+            convertedUnitId = request.toUnitId,
+            multiplier = multiplier.toBigDecimal()
         )
 
         return ResponseEntity.ok(ApiResponse.success(response))

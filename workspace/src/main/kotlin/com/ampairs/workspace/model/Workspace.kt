@@ -7,6 +7,7 @@ import com.ampairs.workspace.model.enums.WorkspaceStatus
 import com.ampairs.workspace.model.enums.WorkspaceType
 import com.fasterxml.jackson.annotation.JsonIgnore
 import jakarta.persistence.*
+import java.math.BigDecimal
 import java.time.Instant
 
 /**
@@ -257,6 +258,70 @@ class Workspace : BaseDomain() {
      */
     @Column(name = "created_by", length = 36)
     var createdBy: String? = null
+
+    // =====================
+    // Subscription Management Fields
+    // =====================
+
+    /**
+     * Reference to subscription record
+     */
+    @Column(name = "subscription_id", length = 200)
+    var subscriptionId: String? = null
+
+    /**
+     * Current subscription status
+     */
+    @Column(name = "subscription_status", length = 20)
+    var subscriptionStatus: String = "ACTIVE"
+
+    /**
+     * Billing cycle
+     */
+    @Column(name = "billing_cycle", length = 20)
+    var billingCycle: String = "MONTHLY"
+
+    /**
+     * Payment provider used
+     */
+    @Column(name = "payment_provider", length = 30)
+    var paymentProvider: String? = null
+
+    /**
+     * External customer ID at payment provider
+     */
+    @Column(name = "external_customer_id", length = 255)
+    var externalCustomerId: String? = null
+
+    /**
+     * Current billing period start
+     */
+    @Column(name = "current_period_start")
+    var currentPeriodStart: Instant? = null
+
+    /**
+     * Current billing period end
+     */
+    @Column(name = "current_period_end")
+    var currentPeriodEnd: Instant? = null
+
+    /**
+     * Next billing amount
+     */
+    @Column(name = "next_billing_amount", precision = 10, scale = 2)
+    var nextBillingAmount: BigDecimal? = null
+
+    /**
+     * Last successful payment timestamp
+     */
+    @Column(name = "last_payment_at")
+    var lastPaymentAt: Instant? = null
+
+    /**
+     * Grace period end for failed payments
+     */
+    @Column(name = "grace_period_ends_at")
+    var gracePeriodEndsAt: Instant? = null
 
     // JPA Relationships
 

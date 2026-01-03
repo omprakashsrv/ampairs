@@ -48,6 +48,13 @@ logs/
 *.log
 .env
 .env.local
+
+### Payment Provider Credentials ###
+# Google Play service account keys (except placeholder)
+subscription/keys/
+!subscription/keys/.gitignore
+ampairs_service/keys/
+!ampairs_service/keys/.gitignore
 .env.production
 secrets/
 credentials/

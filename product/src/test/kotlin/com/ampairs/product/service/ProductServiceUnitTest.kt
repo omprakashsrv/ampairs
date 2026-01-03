@@ -64,7 +64,8 @@ class ProductServiceUnitTest {
                 name = "Kilogram",
                 shortName = "kg",
                 decimalPlaces = 3,
-                refId = null,
+                description = null,
+                category = "Weight",
                 active = true,
                 createdAt = null,
                 updatedAt = null

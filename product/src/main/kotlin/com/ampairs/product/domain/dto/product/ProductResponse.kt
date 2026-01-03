@@ -8,6 +8,8 @@ import com.ampairs.unit.domain.dto.UnitConversionResponse
 import com.ampairs.unit.domain.dto.UnitResponse
 import com.ampairs.unit.domain.dto.asUnitConversionResponses
 import com.ampairs.unit.domain.dto.asUnitResponse
+import com.ampairs.product.domain.dto.ProductVariantResponse
+import com.ampairs.product.domain.dto.asResponse
 import com.ampairs.product.domain.model.Product
 import jakarta.validation.constraints.DecimalMin
 import jakarta.validation.constraints.NotBlank
@@ -41,6 +43,12 @@ data class ProductResponse(
     val baseUnitId: String?,
     val images: List<FileResponse>?,
     val inventory: InventoryResponse?,
+
+    // Product classification and variants
+    val productType: String?,
+    val serviceType: String?,
+    val hasVariants: Boolean,
+    val variants: List<ProductVariantResponse>?
 )
 
 fun List<Product>.asResponse(): List<ProductResponse> {
@@ -75,7 +83,13 @@ fun List<Product>.asResponse(): List<ProductResponse> {
                 fileResponse
             },
             baseUnitId = it.baseUnitId,
-            inventory = if (it.inventory.size > 0) it.inventory[0].asResponse() else null
+            inventory = if (it.inventory.size > 0) it.inventory[0].asResponse() else null,
+
+            // Product classification and variants
+            productType = it.productType?.name,
+            serviceType = it.serviceType?.name,
+            hasVariants = it.hasVariants,
+            variants = it.variants.asResponse()
         )
     }
 }
@@ -111,7 +125,13 @@ fun Product.asResponse(): ProductResponse {
             fileResponse
         },
         baseUnitId = baseUnitId,
-        inventory = if (inventory.size > 0) inventory[0].asResponse() else null
+        inventory = if (inventory.size > 0) inventory[0].asResponse() else null,
+
+        // Product classification and variants
+        productType = productType?.name,
+        serviceType = serviceType?.name,
+        hasVariants = hasVariants,
+        variants = variants.asResponse()
     )
 }
 

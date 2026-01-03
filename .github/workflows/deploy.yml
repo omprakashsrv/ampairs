@@ -162,6 +162,64 @@ jobs:
         echo "✅ Firebase service account key prepared successfully"
         echo "Key file size: $FILE_SIZE bytes"
 
+    - name: Prepare Google Play Service Account Key
+      run: |
+        set -e  # Exit on any error
+
+        # Load secret from environment variable
+        GOOGLE_PLAY_KEY="${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_KEY }}"
+
+        # Check if secret exists and is not empty
+        if [ -z "$GOOGLE_PLAY_KEY" ]; then
+          echo "⚠️  WARNING: GOOGLE_PLAY_SERVICE_ACCOUNT_KEY secret is not set"
+          echo "Google Play payment features will not work in production"
+          echo "To enable Google Play payments, add the secret in GitHub Settings > Secrets"
+          echo ""
+          echo "Continuing deployment without Google Play credentials..."
+        else
+          # Create directory for payment provider keys
+          mkdir -p ./ampairs_service/src/main/resources/keys
+
+          # Write to file using environment variable (preserves formatting)
+          printf '%s' "$GOOGLE_PLAY_KEY" > ./ampairs_service/src/main/resources/keys/ampairs-google-play.json
+
+          # Verify key was written and not empty
+          if [ ! -f ./ampairs_service/src/main/resources/keys/ampairs-google-play.json ]; then
+            echo "❌ ERROR: Failed to create Google Play key file"
+            exit 1
+          fi
+
+          if [ ! -s ./ampairs_service/src/main/resources/keys/ampairs-google-play.json ]; then
+            echo "❌ ERROR: Google Play key file is empty"
+            echo "Please check that GOOGLE_PLAY_SERVICE_ACCOUNT_KEY secret contains valid content"
+            exit 1
+          fi
+
+          # Debug: Show file size and first character
+          FILE_SIZE=$(wc -c < ./ampairs_service/src/main/resources/keys/ampairs-google-play.json)
+          FIRST_CHAR=$(head -c 1 ./ampairs_service/src/main/resources/keys/ampairs-google-play.json)
+          echo "Debug: File size: $FILE_SIZE bytes"
+          echo "Debug: First character: '$FIRST_CHAR' (should be '{')"
+
+          # Verify it's valid JSON
+          if ! jq empty ./ampairs_service/src/main/resources/keys/ampairs-google-play.json 2>/dev/null; then
+            echo "❌ ERROR: Google Play key is not valid JSON"
+            echo ""
+            echo "Common issues:"
+            echo "1. Secret has extra quotes around the JSON (remove them)"
+            echo "2. Secret was pasted with formatting issues"
+            echo "3. Secret contains literal newline characters instead of \\n"
+            echo ""
+            echo "The secret value should be the raw JSON, starting with {"
+            echo "Do NOT wrap it in additional quotes."
+            echo ""
+            exit 1
+          fi
+
+          echo "✅ Google Play service account key prepared successfully"
+          echo "Key file size: $FILE_SIZE bytes"
+        fi
+
     - name: Setup SSH
       run: |
         set -e  # Exit on any error
