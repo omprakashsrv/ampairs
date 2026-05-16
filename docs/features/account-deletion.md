@@ -463,39 +463,113 @@ WHERE uid = 'usr_xxx';
 
 ---
 
-## 📚 Documentation Links
+## UI/UX Flow
 
-- **Full Documentation:** `auth/ACCOUNT_DELETION.md`
-- **Public Page:** `ampairs_service/src/main/resources/static/delete-account.html`
-- **API Controller:** `ampairs_service/src/main/kotlin/com/ampairs/account/controller/AccountDeletionController.kt`
-- **Service Logic:** `ampairs_service/src/main/kotlin/com/ampairs/account/service/AccountDeletionService.kt`
+```
+Settings
+  └─→ Delete Account
+       │
+       ├─→ [Active State]
+       │   ├─ Show warnings
+       │   ├─ Show data deletion list
+       │   ├─ Optional reason input
+       │   └─ Delete button
+       │        │
+       │        └─→ Confirmation Dialog
+       │             ├─ Type "DELETE" to confirm
+       │             └─→ API Call
+       │                  │
+       │                  ├─→ Success: Logout
+       │                  └─→ Blocked: Show workspaces
+       │
+       └─→ [Pending Deletion State]
+           ├─ Show countdown (days remaining)
+           ├─ Show deletion date
+           └─ Restore button
+                │
+                └─→ Confirmation Dialog
+                     ├─ Type "RESTORE" to confirm
+                     └─→ API Call → Account reactivated
+```
 
 ---
 
-## 🚀 Deployment Checklist
+## Implementation Notes
+
+### Security
+- All endpoints require JWT authentication
+- User can only delete their own account
+- Tokens are revoked immediately upon deletion request
+
+### Workspace Ownership Validation
+- Backend validates sole ownership before allowing deletion
+- User must transfer ownership or delete workspace before proceeding
+
+### Data Privacy
+- Immediate anonymization on deletion request
+- 30-day grace period for restoration
+- Automatic permanent deletion after grace period (daily scheduler at 2 AM)
+- GDPR/CCPA and Google Play Store compliant
+
+---
+
+## Google Play Store Configuration
+
+**Required for Data Safety section:**
+
+- Users can request deletion: **Yes**
+- Deletion URL: `https://yourdomain.com/delete-account.html`
+
+The public page lives at:
+```
+ampairs_service/src/main/resources/static/delete-account.html
+```
+
+---
+
+## Testing Checklist
+
+### Backend (complete)
+- [x] Request deletion with active account
+- [x] Request deletion when sole owner (blocked)
+- [x] Request deletion after transferring ownership
+- [x] Cancel deletion within grace period
+- [x] Attempt to cancel after grace period (error)
+- [x] Verify tokens revoked
+- [x] Verify workspace memberships deactivated
+- [x] Scheduled job runs daily at 2 AM
+- [x] Permanent deletion after 30 days
+
+### Frontend (implement in respective repos)
+- [ ] Delete account button visible in settings
+- [ ] Blocking workspaces dialog shows all sole-owner workspaces
+- [ ] Success message shows grace period days
+- [ ] User logged out immediately after deletion
+- [ ] Restore account flow works correctly
+
+---
+
+## Deployment Checklist
 
 - [ ] Run database migrations (both MySQL and PostgreSQL)
-- [ ] Verify indexes created
 - [ ] Deploy backend with account deletion feature
 - [ ] Verify `/delete-account.html` is accessible
 - [ ] Update Google Play Store with deletion URL
-- [ ] Deploy mobile app with delete account UI
 - [ ] Configure monitoring for scheduled job
-- [ ] Set up alerts for deletion failures
-- [ ] Test end-to-end deletion flow in staging
-- [ ] Communicate grace period policy to users
 
 ---
 
-## 📞 Support
+## Source Locations
 
-For questions or issues:
-- **Email:** support@ampairs.com
-- **Docs:** https://docs.ampairs.com/account-deletion
-- **GitHub Issues:** [Link to your repository]
+```
+ampairs_service/src/main/kotlin/com/ampairs/account/
+├── controller/AccountDeletionController.kt
+├── service/AccountDeletionService.kt
+├── service/AccountDeletionScheduler.kt
+└── dto/*.kt
 
----
-
-**Last Updated:** 2025-01-15
-**Version:** 1.0
+auth/src/main/kotlin/com/ampairs/user/model/User.kt
+auth/src/main/resources/db/migration/**/V1.0.16__add_user_deletion_fields.sql
+ampairs_service/src/main/resources/static/delete-account.html
+```
 **Status:** ✅ Ready for Deployment

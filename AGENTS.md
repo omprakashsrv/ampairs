@@ -1,32 +1,60 @@
-# Repository Guidelines
+# Repository Guidelines for AI Agents
 
-## Project Structure & Module Organization
-- `ampairs-backend/` — Kotlin + Spring Boot modules by domain (`core`, `auth`, `order`, etc.); the runnable service sits in `ampairs_service/src/main/kotlin`.
-- `ampairs-web/` — Angular 20 subproject with features in `src/app`, shared UI in `src/app/shared`, assets in `public/`.
-- `ampairs-mp-app/` — Compose Multiplatform subproject; shared logic in `shared/`, platform launchers in `androidApp`, `desktopApp`, `iosApp`.
-- Tooling lives in `.github/workflows/`, `scripts/`, `templates/`; generated files land in `build/` and `logs/`.
+## Project Structure
+
+- Backend modules live at the **root level** — `core`, `auth`, `workspace`, `customer`, `product`, `order`, `invoice`, `tax`, `business`, `notification`, `event`, `form`, `file`, `unit`, `subscription`, and `ampairs_service` (the runnable aggregator).
+- Web and mobile apps are in **separate repositories** — `ampairs-web/` and `ampairs-mp-app/` at the root contain only historical implementation docs, not source code.
+- Specs live in `specs/{###-feature}/` — each feature has `spec.md`, `plan.md`, `tasks.md`, `data-model.md`, and `contracts/`.
+- Tooling: `.github/workflows/`, `scripts/`, `ansible/`, `.claude/rules/`, `.specify/`.
 
 ## Build, Test, and Development Commands
-- Root orchestration: `./gradlew buildAll`, `./gradlew testAll`, `./gradlew ciBuild` (tests run first).
-- Backend: `cd ampairs-backend && ./gradlew bootRun`; add `SPRING_PROFILES_ACTIVE=test` for E2E; package with `./gradlew :ampairs_service:bootJar`.
-- Web: `cd ampairs-web && npm install && npm start`; production bundles via `npm run build:prod`; lint with `npm run lint`.
-- Multiplatform: `cd ampairs-mp-app && ./gradlew run`, `./gradlew installDebug`, `./gradlew package`.
 
-## Coding Style & Naming Conventions
-- Kotlin uses JetBrains defaults (4 spaces, `UpperCamelCase` types, `lowerCamelCase` members); group Spring stereotypes per module and prefer constructor injection with immutable DTOs (`*Dto`, `*Entity`).
-- Angular components co-locate `.ts/.html/.scss`; selectors use the `amp-` prefix, classes stay `PascalCase`, and ESLint (`npm run lint`) enforces formatting.
-- Compose shared UI stays in `shared/src/commonMain`; platform overrides belong in each launcher’s `src` tree.
+- Build all: `./gradlew buildAll`
+- Test all (requires Docker): `./gradlew testAll`
+- CI gate: `./gradlew ciBuild`
+- Run backend: `./gradlew :ampairs_service:bootRun`
+- Package JAR: `./gradlew :ampairs_service:bootJar`
+- Module-specific: `./gradlew :<module>:build` / `./gradlew :<module>:test`
+- Migrations: `./gradlew :ampairs_service:flywayInfo` / `flywayMigrate` / `flywayValidate`
 
-## Testing Guidelines
-- Backend: `cd ampairs-backend && ./gradlew test`; suites rely on JUnit 5 + Testcontainers, so keep Docker running.
-- Web: `npm test` runs Karma/Jasmine; `npm run test:e2e:headless` covers Cypress flows before merging UI or API changes.
-- Multiplatform: `cd ampairs-mp-app && ./gradlew check`; add `desktopTest` or `iosTest` when touching shared UI or native bridges. Aim for >80% backend coverage and add regression specs with fixes.
+## Coding Standards
 
-## Commit & Pull Request Guidelines
-- Use Conventional Commits (`feat:`, `fix:`, `refactor:`); keep subjects ≤72 characters and link issues (`AMP-123`) in the body.
-- PRs outline scope, affected modules, and validation commands; attach screenshots or API diffs when behavior or payloads shift.
-- Request reviewers from the owning squad (backend, web, mobile) and wait for CI (`./gradlew ciBuild`, Angular/Cypress, multiplatform checks) to pass before merging.
+Enforced rules are in `.claude/rules/` (one file per concern). Key rules:
 
-## Security & Configuration Tips
-- Keep secrets out of Git; rely on env vars (`SPRING_PROFILES_ACTIVE`, `RECAPTCHA_ENABLED`, `BUCKET4J_ENABLED`) and leave only redacted samples in `keys/`.
-- Use `docker-compose.yml` for local dependencies and extend scripts in `scripts/` or `templates/` instead of introducing ad-hoc tooling.
+- **Timestamps**: always `java.time.Instant`, never `LocalDateTime`
+- **DTOs**: never expose JPA entities in API responses — use Request/Response DTOs in `domain/dto/`
+- **JSON**: global Jackson `SNAKE_CASE` config — no `@JsonProperty` for standard camelCase fields
+- **API responses**: all endpoints return `ApiResponse<T>` wrapper
+- **Exceptions**: no try/catch in controllers — let the global handler manage them
+- **Tenant context**: set at controller level before repository access, cleared in `finally`
+- **Data loading**: `@EntityGraph` for relationships — avoid N+1 queries
+
+## Feature Development Workflow
+
+All significant features use the speckit flow:
+
+```
+/speckit.specify → /speckit.clarify → /speckit.plan → /speckit.tasks → /speckit.analyze → /speckit.implement
+```
+
+Next spec number: `006`.
+
+## Branching & Commits
+
+- Branch naming: `###-feature-name` (e.g. `006-payment-gateway`)
+- Conventional Commits: `feat(module):`, `fix(module):`, `refactor(module):` — subject ≤72 chars
+- Reference issues in commit body when applicable
+
+## Documentation
+
+All developer docs are in `docs/`:
+
+```
+docs/
+├── api/           — authentication, app updates, API key testing
+├── deployment/    — deployment, CI/CD, production validation
+├── guides/        — database migrations, configuration, security, file storage
+└── features/      — account deletion and other feature-specific docs
+```
+
+Root-level docs: `README.md` (project overview), `CLAUDE.md` (coding standards), `AGENTS.md` (this file).

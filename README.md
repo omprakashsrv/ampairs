@@ -1,323 +1,192 @@
-# 🚀 Ampairs Business Management Platform
+# Ampairs Business Management Platform
 
-> **Comprehensive multi-platform business management solution with workspace-based architecture**
-
-## ✨ Recent Updates
-
-### 🆕 Inventory Management Module (2025-01)
-- Comprehensive multi-warehouse inventory tracking
-- Batch and serial number management with expiry tracking
-- Real-time inventory ledger with transaction history
-- Support for multiple inventory valuation methods (FIFO/LIFO/FEFO)
-- Automated stock level monitoring and alerts
-
-### 🌍 Multi-Timezone Support (2025-01)
-- Migration from `LocalDateTime` to `Instant` for all timestamps
-- UTC-based time handling prevents timezone-related bugs
-- Consistent ISO-8601 timestamp format across all APIs
-
-### 🔒 Enhanced Security & Multi-Tenancy
-- Device-aware JWT authentication
-- Improved `@TenantId` integration for automatic tenant filtering
-- Cross-tenant operations via native SQL when authorized
-
-### 📊 Database & Performance
-- Flyway migration baseline and automated testing
-- `@EntityGraph` pattern for efficient data loading
-- Performance indexes for high-traffic queries
-
-## 📁 Project Structure
-
-```
-ampairs/
-├── 📁 ampairs-backend/         # Spring Boot Backend Services
-│   ├── ampairs_service/        # Main application service
-│   ├── core/                   # Shared core utilities
-│   ├── auth/                   # Authentication & authorization
-│   ├── workspace/              # Workspace management
-│   ├── customer/               # Customer relationship management
-│   ├── product/                # Product catalog & inventory management
-│   ├── order/                  # Order processing
-│   ├── invoice/                # Invoice generation
-│   ├── tax/                    # GST tax configuration & calculation
-│   ├── notification/           # Notification services
-│   ├── event/                  # Event streaming
-│   ├── form/                   # Dynamic form management
-│   └── business/               # Business profile management
-├── 📁 ampairs-web/             # Angular Web Application
-├── 📁 ampairs-mp-app/          # Kotlin Multiplatform Mobile App
-├── 📁 .github/workflows/       # CI/CD Pipeline
-└── 📁 scripts/                 # Deployment scripts
-```
-
-## 🛠️ Development Setup
-
-### Prerequisites
-- **Java 25+** for backend development
-- **Node.js 18+** for web frontend
-- **Android Studio** for mobile development
-- **MySQL 8.0+** for database
-- **Docker** (optional, for Testcontainers integration tests)
-
-### Quick Start
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd ampairs
-   ```
-
-2. **Setup development environment**
-   ```bash
-   ./gradlew devSetup
-   ```
-
-3. **Start backend services**
-   ```bash
-   cd ampairs-backend
-   ./gradlew bootRun
-   ```
-
-4. **Start web frontend** (if available)
-   ```bash
-   cd ampairs-web
-   npm install
-   npm start
-   ```
-
-## 🔧 Available Commands
-
-### Root Level Commands
-```bash
-./gradlew buildAll      # Build all project components
-./gradlew testAll       # Run tests for all components  
-./gradlew cleanAll      # Clean all project components
-./gradlew ciBuild       # CI/CD build with tests
-```
-
-### Backend Development
-```bash
-cd ampairs-backend
-./gradlew bootRun              # Start the application
-./gradlew test                 # Run tests
-./gradlew :ampairs_service:bootJar  # Build JAR file
-```
-
-## 🏗️ Architecture
-
-### Backend (Spring Boot + Kotlin)
-- **Modular Architecture**: Domain-driven design with separate modules
-- **Multi-tenancy**: Workspace-based isolation with `@TenantId` annotation
-- **JWT Authentication**: Secure token-based auth with device-specific sessions
-- **MySQL 8.0**: Primary database with Flyway migrations
-- **REST APIs**: RESTful services with standardized `ApiResponse<T>` wrapper
-- **Technology Stack**:
-  - Kotlin 2.2.20
-  - Spring Boot 3.5.6
-  - Java 25
-  - Hibernate 6.2 + Spring Data JPA
-  - Flyway for database migrations
-
-### Key Features
-- **Multi-Timezone Support**: All timestamps use `java.time.Instant` (UTC) for global consistency
-- **GST Compliance**: Full Indian GST tax calculation and invoice generation
-- **Advanced Inventory Management**:
-  - Multi-warehouse stock tracking
-  - Batch and serial number management
-  - Real-time inventory ledger
-  - FIFO/LIFO/FEFO valuation methods
-  - Transaction history and audit trail
-- **Event Streaming**: WebSocket-based real-time event delivery to clients
-- **Dynamic Forms**: Configurable entity forms for customizable data capture
-- **Multi-Device Sessions**: Device-aware JWT tokens for concurrent logins
-- **Efficient Data Loading**: `@EntityGraph` pattern prevents N+1 query issues
-- **Comprehensive Testing**: Flyway migration tests with Testcontainers
-
-### Frontend Options
-- **Web**: Angular 18+ with Material Design 3 (M3)
-- **Mobile**: Kotlin Multiplatform (Android/iOS/Desktop)
-
-## 🚀 Deployment
-
-### Automated CI/CD
-Push to `main` branch triggers automatic deployment:
-1. ✅ Build & compile verification
-2. 🧪 Automated testing  
-3. 📦 JAR creation
-4. 🚀 SSH deployment to Ubuntu server
-5. 🔄 Service restart
-6. 💚 Health verification
-
-### Manual Deployment
-```bash
-cd ampairs-backend
-./gradlew :ampairs_service:bootJar
-```
-
-For detailed deployment instructions, see [DEPLOYMENT.md](DEPLOYMENT.md)
-
-## 📊 Monitoring
-
-### Health Checks
-- **Application**: `http://localhost:8080/actuator/health`
-- **Service Status**: `systemctl status ampairs`
-- **Logs**: `journalctl -u ampairs -f`
-
-## 📚 Documentation
-
-### Developer Guidelines
-- **[CLAUDE.md](CLAUDE.md)**: Comprehensive coding standards, architectural patterns, and best practices
-- **[DEPLOYMENT.md](DEPLOYMENT.md)**: Production deployment and infrastructure setup
-- **Module-specific READMEs**: Each module has detailed documentation in its directory
-
-### Key Development Patterns
-- **Use `Instant` for timestamps**: NEVER use `LocalDateTime` (prevents timezone bugs)
-- **DTO pattern required**: Never expose JPA entities directly in API responses
-- **@EntityGraph for relations**: Prevents N+1 query issues
-- **Global snake_case**: Jackson auto-converts camelCase to snake_case JSON
-- **Multi-tenant context**: Set at controller level before repository operations
-
-## 🤝 Contributing
-
-1. **Read guidelines**: Review [CLAUDE.md](CLAUDE.md) for coding standards
-2. Create feature branch: `git checkout -b feature/amazing-feature`
-3. Follow existing patterns: Maintain consistency with codebase architecture
-4. Make changes and test: `./gradlew testAll`
-5. Commit changes: `git commit -m 'Add amazing feature'`
-6. Push branch: `git push origin feature/amazing-feature`
-7. Create Pull Request
-
-## 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## 📞 Support
-
-For questions and support:
-- 📧 Email: support@ampairs.com
-- 📖 Documentation: [DEPLOYMENT.md](DEPLOYMENT.md)
-- 🐛 Issues: GitHub Issues
+Comprehensive multi-platform business management system with workspace-based multi-tenancy.
 
 ---
 
-# Ampairs Backend
+## Applications
 
-## Overview
-The `ampairs-backend` directory contains the multi-module Kotlin and Spring Boot services that power the Ampairs platform. Each module isolates a specific business domain (workspaces, authentication, products, orders, taxation, etc.) while sharing foundational infrastructure exposed by the `core` module. The runnable application lives in `ampairs_service`, which aggregates all domain modules into a single deployable service.
+| App | Repository | Technology | Purpose |
+|-----|-----------|-----------|---------|
+| **Backend** | this repo | Spring Boot 3.5 + Kotlin 2.2 + Java 25 | REST API, business logic, database |
+| **Web** | separate repo | Angular 20 + Material Design 3 | Browser client |
+| **Mobile / Desktop** | separate repo | Compose Multiplatform | Android, iOS, Desktop |
 
-All modules target Kotlin 2.2, Spring Boot 3.5, and Java 25 via Gradle. Multi-tenancy, security, persistence, and API contracts are enforced consistently across modules to keep the codebase composable and maintainable.
+All clients consume REST APIs from the Spring Boot backend with JWT authentication and multi-tenant workspace isolation.
 
-## Directory Layout
+---
+
+## Project Structure
+
 ```
-├── ampairs_service/   # Main Spring Boot application (see ampairs_service/README.md)
-├── auth/              # Authentication, user identity, and JWT management
-├── business/          # Workspace-level business profile management
-├── core/              # Shared configuration, base entities, utilities, multi-tenancy
-├── customer/          # Customer CRM with GST-aware addressing
-├── event/             # Real-time workspace event streaming and WebSocket infrastructure
-├── form/              # Dynamic entity form and attribute configuration
-├── invoice/           # Invoice generation, GST compliance, and order conversion
-├── notification/      # Multi-channel notification orchestration
-├── order/             # Order lifecycle management and pricing logic
-├── product/           # Product catalog, inventory (batch/serial/warehouse), and media management
-├── tax/               # GST tax configuration, HSN/SAC catalog, and calculation engine
-└── workspace/         # Workspace tenancy, invitations, RBAC, and membership
+ampairs/
+├── ampairs_service/    # Main Spring Boot application (aggregates all modules)
+├── core/               # Shared utilities, base entities, multi-tenancy, AWS
+├── auth/               # JWT authentication, OTP, device-aware sessions
+├── workspace/          # Workspace management, RBAC, memberships, invitations
+├── product/            # Product catalog, inventory (multi-warehouse, batch/serial)
+├── subscription/       # Subscription plans, billing, recurring charges
+├── customer/           # CRM, contacts, GST-aware addressing
+├── tax/                # GST configuration, HSN/SAC catalog, calculation engine
+├── business/           # Business profile, legal details, multi-branch
+├── order/              # Order lifecycle, pricing, discounts, status transitions
+├── invoice/            # Invoice generation, GST compliance, PDF export
+├── event/              # Domain event streaming, WebSocket/STOMP delivery
+├── notification/       # Multi-channel notifications (SMS, email, push, WhatsApp)
+├── unit/               # Unit of measure definitions and conversions
+├── form/               # Dynamic form builder, configurable entity schemas
+├── file/               # File storage, upload/download, AWS S3 integration
+│
+├── specs/              # Feature specifications (spec → plan → tasks → impl)
+├── scripts/            # Deployment and automation scripts
+├── ansible/            # Infrastructure as code
+├── .github/workflows/  # CI/CD pipelines
+└── docker-compose.yml  # Local development dependencies
 ```
 
-Build output lives in each module’s `build/` folder, and database migration scripts for shared schemas are colocated with their owning modules.
+> Web and mobile apps live in their own repositories and consume the backend REST API.
 
-## Module Catalogue
-Each module exposes its own README with deeper usage notes. The summaries below outline their primary responsibilities and integration touchpoints.
+---
 
-### ampairs_service (`ampairs_service/`)
-- Aggregates every backend module into the runnable Spring Boot service (`AmpairsApplication`).
-- Hosts cross-cutting configuration such as global security filters, CORS, and feature toggles.
-- Coordinates module auto-configuration and is the target for `bootRun`/`bootJar`.
-- See [ampairs_service/README.md](ampairs_service/README.md) for full details.
+## Quick Start
 
-### auth (`auth/`)
-- Provides authentication flows, OTP verification, JWT token issuance, and session management.
-- Includes user profile APIs, role resolution, and integration with the workspace security context.
-- Shares core abstractions from `core` (exceptions, responses) and publishes events consumed by `event`.
-- See [auth/README.md](auth/README.md).
+### Prerequisites
 
-### business (`business/`)
-- Manages the single business profile associated with a workspace, including legal details, addresses, hours, and regulatory metadata.
-- Enforces multi-tenancy via `TenantContextHolder`, validates business hours, and centralises address formatting.
-- Exposes REST endpoints under `/api/v1/business` for profile CRUD and introspection.
-- See [business/README.md](business/README.md).
+- Java 25+
+- Docker (required for Testcontainers integration tests)
+- MySQL 8.0+ or via `docker-compose.yml`
+- Node.js 20+ (web frontend only)
 
-### core (`core/`)
-- Supplies foundational infrastructure: base domain entities, shared DTOs, multi-tenancy, AWS integration, exception handling, caching, and rate limiting.
-- Other modules depend on `core` for persistence primitives, tenant scoping, and utility services.
-- See [core/README.md](core/README.md).
+### Backend
 
-### customer (`customer/`)
-- Implements CRM capabilities with rich address handling, GST fields, pagination, and search.
-- Integrates with `workspace` for tenant scoping and publishes customer lifecycle events consumed by `event`.
-- See [customer/README.md](customer/README.md).
+```bash
+# Start local dependencies (MySQL, RabbitMQ, etc.)
+docker-compose up -d
 
-### event (`event/`)
-- Captures domain events from orders, invoices, products, and customers, persists them, and streams them to clients via WebSocket/STOMP.
-- Provides device heartbeat APIs, event replay, and scheduled cleanup of consumed events.
-- Bridges message delivery through RabbitMQ/STOMP relay when enabled.
-- See [event/README.md](event/README.md).
+# Run the application
+./gradlew :ampairs_service:bootRun
 
-### form (`form/`)
-- Stores dynamic entity form definitions (field configs and attribute definitions) so the web and mobile clients can render configurable UI.
-- Auto-seeds default schemas per entity type, supports granular CRUD, and versions updates with timestamps.
-- Leverages `workspace` for tenant isolation and Jackson for JSON-driven validation rules.
-- See [form/README.md](form/README.md).
+# Or use the dev script
+./start-dev.sh
+```
 
-### invoice (`invoice/`)
-- Generates invoices from orders, applies GST rules, tracks invoice statuses, and produces PDF-ready payloads.
-- Integrates with `product`, `order`, and `tax` modules for pricing and compliance data.
-- See [invoice/README.md](invoice/README.md).
+---
 
-### notification (`notification/`)
-- Delivers multi-channel notifications (SMS, email, push, WhatsApp) with provider failover, retry policies, and monitoring.
-- Exposes queue management APIs and abstracts provider-specific logic behind channel interfaces.
-- See [notification/README.md](notification/README.md).
+## Build & Test Commands
 
-### order (`order/`)
-- Owns the full order lifecycle, including status transitions, discounting, tax computation hooks, and auditing.
-- Utilises `product` inventory data, `customer` context, and delegates tax math to the `tax` module.
-- See [order/README.md](order/README.md).
+```bash
+# From the project root
+./gradlew buildAll      # Build all modules (produces ampairs_service/build/libs/*.jar)
+./gradlew testAll       # Run all module tests (requires Docker)
+./gradlew cleanAll      # Clean all build outputs
+./gradlew ciBuild       # Full CI gate: tests + build
 
-### product (`product/`)
-- Maintains product catalogues, categories, units of measure, and comprehensive inventory management.
-- **Inventory Module**: Multi-warehouse stock tracking, batch/serial number management, real-time ledger, and transaction history.
-- Integrates with AWS S3 through `core` for media storage and publishes stock change events.
-- Supports FIFO/LIFO/FEFO inventory valuation methods.
-- See [product/README.md](product/README.md) and [product/INVENTORY_MODULE_IMPLEMENTATION.md](product/INVENTORY_MODULE_IMPLEMENTATION.md).
+# Module-specific
+./gradlew :<module>:build
+./gradlew :<module>:test
 
-### tax (`tax/`)
-- Centralises GST tax configuration, HSN/SAC catalogues, rate schedules, and the GST calculation service used by orders and invoices.
-- Provides administrative APIs for maintaining tax rates, configurations, and business type classifications.
-- See [tax/README.md](tax/README.md).
+# Database migrations
+./gradlew :ampairs_service:flywayInfo      # Current migration status
+./gradlew :ampairs_service:flywayValidate  # Verify checksums
+./gradlew :ampairs_service:flywayMigrate   # Apply pending migrations
+```
 
-### workspace (`workspace/`)
-- Implements tenant management: workspace creation, membership, invitations, teams, role assignments, and module enablement.
-- Supplies filters and security adapters that other modules consume to determine workspace context.
-- See [workspace/README.md](workspace/README.md).
+---
 
-## Build & Test
-- **Build the entire backend**: `./gradlew build` (from `ampairs-backend/`)
-- **Run all module tests**: `./gradlew test`
-- **Run the full Ampairs service locally**: `./gradlew :ampairs_service:bootRun`
-- **Package the runnable JAR**: `./gradlew :ampairs_service:bootJar`
-- **Module-specific build/test**: `./gradlew :<module>:build` or `./gradlew :<module>:test`
+## Architecture
 
-Modules inherit shared Gradle conventions (Java 25 toolchain, ktlint, Spring dependency management). Testcontainers-backed tests require Docker running locally.
+### Backend
 
-## Shared Patterns
-- **Multi-tenancy**: `TenantContextHolder` (from `core`) plus workspace headers drive entity scoping across repositories.
-- **API Envelope**: Controllers return `ApiResponse<T>` for consistent response shapes and error semantics.
-- **Security**: `auth` defines JWT verification, while `workspace` and `core` provide permission evaluators and request filters.
-- **Messaging**: Domain services publish events (Spring ApplicationEvents), captured by the `event` module for persistence and streaming.
-- **Configuration**: Environment and profile management flow through `core` configuration classes; sensitive settings live in externalised env vars.
+- **Modular monolith**: 15 domain modules + `ampairs_service` aggregator
+- **Multi-tenancy**: Workspace-based isolation via `@TenantId` on `OwnableBaseDomain`
+- **Auth**: Device-aware JWT with concurrent multi-device login support
+- **API**: Versioned REST endpoints (`/api/v1/{resource}`), all responses wrapped in `ApiResponse<T>`
+- **Database**: Flyway-versioned migrations, `@EntityGraph` for efficient relationship loading
+- **Events**: Spring ApplicationEvents captured by `event` module, delivered via WebSocket/STOMP
 
-Refer to individual module READMEs for deeper API examples, data model diagrams, and troubleshooting tips.
+### Key Design Rules (enforced across all modules)
 
+- `java.time.Instant` for all timestamps — never `LocalDateTime`
+- DTO isolation — entities never exposed in API responses
+- Global Jackson `SNAKE_CASE` — no `@JsonProperty` for standard fields
+- Tenant context set at controller level, never in services
+- `@EntityGraph` for relationship loading — no `JOIN FETCH` in JPQL
 
-**Made with ❤️ by the Ampairs Team**
+Full rules: `.claude/rules/` | Architecture standards: [CLAUDE.md](CLAUDE.md)
+
+### Frontend & Mobile
+
+Both live in separate repositories and consume this backend's REST API:
+
+- **Web**: Angular 20 + Material Design 3
+- **Mobile/Desktop**: Compose Multiplatform (Android, iOS, Desktop)
+
+---
+
+## Feature Development Workflow
+
+Features follow a spec-driven process using the built-in speckit commands:
+
+```
+/speckit.specify   → create feature spec   (specs/###-feature/spec.md)
+/speckit.clarify   → fill specification gaps
+/speckit.plan      → generate implementation plan + data model
+/speckit.tasks     → generate dependency-ordered task list
+/speckit.analyze   → cross-artifact consistency check
+/speckit.implement → execute tasks
+```
+
+Existing specs: `specs/002` (timezone), `003` (business), `004` (unit), `005` (backend).
+
+---
+
+## Deployment
+
+Push to `main` triggers the CI/CD pipeline:
+
+1. Build & compile verification
+2. Automated test suite
+3. JAR packaging
+4. SSH deployment to production server
+5. Service restart and health verification
+
+```bash
+# Manual JAR build
+./gradlew :ampairs_service:bootJar
+# Output: ampairs_service/build/libs/ampairs_service-1.0.0.jar
+```
+
+See [DEPLOYMENT.md](DEPLOYMENT.md) for full production setup.
+
+---
+
+## Monitoring
+
+```bash
+# Application health
+curl http://localhost:8080/actuator/health
+
+# Service status (production)
+systemctl status ampairs
+journalctl -u ampairs -f
+```
+
+---
+
+## Documentation
+
+| Document | Purpose |
+|----------|---------|
+| [CLAUDE.md](CLAUDE.md) | Coding standards, architectural patterns |
+| [docs/](docs/README.md) | All developer guides — API, deployment, migrations, features |
+| `specs/###-feature/` | Per-feature specifications, plans, and API contracts |
+
+---
+
+## Contributing
+
+1. Read [CLAUDE.md](CLAUDE.md) and `.claude/rules/` for coding standards
+2. Create a feature branch: `git checkout -b ###-feature-name` (e.g. `006-payment-gateway`)
+3. Use Conventional Commits: `feat(module):`, `fix(module):`, `refactor(module):` — subject ≤72 chars
+4. Run `./gradlew ciBuild` and ensure it passes before opening a PR
+5. For features > 30 min, start with `/speckit.specify` to generate a spec first
