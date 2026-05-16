@@ -3,7 +3,10 @@
 ## Project Structure
 
 - Backend modules live at the **root level** — `core`, `auth`, `workspace`, `customer`, `product`, `order`, `invoice`, `tax`, `business`, `notification`, `event`, `form`, `file`, `unit`, `subscription`, and `ampairs_service` (the runnable aggregator).
-- Web and mobile apps are in **separate repositories** — `ampairs-web/` and `ampairs-mp-app/` at the root contain only historical implementation docs, not source code.
+- Web and mobile apps are in **separate repositories**:
+  - Web: https://github.com/omprakashsrv/ampairs-web (Angular 20 + Material Design 3)
+  - Mobile/Desktop: https://github.com/omprakashsrv/ampairs-app (Compose Multiplatform)
+  - `ampairs-web/` and `ampairs-mp-app/` at the root contain only historical implementation docs, not source code.
 - Specs live in `specs/{###-feature}/` — each feature has `spec.md`, `plan.md`, `tasks.md`, `data-model.md`, and `contracts/`.
 - Tooling: `.github/workflows/`, `scripts/`, `ansible/`, `.claude/rules/`, `.specify/`.
 

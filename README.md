@@ -9,8 +9,8 @@ Comprehensive multi-platform business management system with workspace-based mul
 | App | Repository | Technology | Purpose |
 |-----|-----------|-----------|---------|
 | **Backend** | this repo | Spring Boot 3.5 + Kotlin 2.2 + Java 25 | REST API, business logic, database |
-| **Web** | separate repo | Angular 20 + Material Design 3 | Browser client |
-| **Mobile / Desktop** | separate repo | Compose Multiplatform | Android, iOS, Desktop |
+| **Web** | [omprakashsrv/ampairs-web](https://github.com/omprakashsrv/ampairs-web) | Angular 20 + Material Design 3 | Browser client |
+| **Mobile / Desktop** | [omprakashsrv/ampairs-app](https://github.com/omprakashsrv/ampairs-app) | Compose Multiplatform | Android, iOS, Desktop |
 
 All clients consume REST APIs from the Spring Boot backend with JWT authentication and multi-tenant workspace isolation.
 
