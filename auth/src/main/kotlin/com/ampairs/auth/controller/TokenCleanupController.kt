@@ -3,6 +3,7 @@ package com.ampairs.auth.controller
 import com.ampairs.auth.service.TokenCleanupService
 import com.ampairs.core.domain.dto.ApiResponse
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -27,6 +28,7 @@ class TokenCleanupController(
      * Get the count of expired/revoked tokens that would be cleaned up
      */
     @GetMapping("/status")
+    @PreAuthorize("hasRole('ADMIN')")
     fun getCleanupStatus(): ApiResponse<Map<String, Any>> {
         val expiredCount = tokenCleanupService.getExpiredTokenCount()
         return ApiResponse.success(
@@ -41,6 +43,7 @@ class TokenCleanupController(
      * Manually trigger token cleanup
      */
     @PostMapping("/run")
+    @PreAuthorize("hasRole('ADMIN')")
     fun runCleanup(): ApiResponse<Map<String, Any>> {
         val deletedCount = tokenCleanupService.performManualCleanup()
         return ApiResponse.success(

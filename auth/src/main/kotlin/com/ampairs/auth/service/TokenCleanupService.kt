@@ -12,7 +12,8 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.TransactionDefinition
 import org.springframework.transaction.support.TransactionTemplate
-import java.time.LocalDateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.*
 
 /**
@@ -96,8 +97,7 @@ class TokenCleanupService(
      */
     private fun cleanupExplicitlyRevokedTokens(): Int {
         return try {
-            // Use a far future date to only match explicitly expired/revoked tokens
-            val farFutureDate = LocalDateTime.now().plusYears(100)
+            val farFutureDate = Instant.now().plus(100 * 365, ChronoUnit.DAYS)
             tokenRepository.deleteExpiredOrRevokedTokens(farFutureDate)
         } catch (e: Exception) {
             logger.warn("Error cleaning up explicitly revoked tokens", e)
@@ -111,9 +111,9 @@ class TokenCleanupService(
      */
     private fun cleanupExpiredAccessTokens(): Int {
         return try {
-            val accessTokenCutoff = LocalDateTime.now()
+            val accessTokenCutoff = Instant.now()
                 .minus(applicationProperties.security.jwt.expiration)
-                .minusHours(2) // Small buffer for access tokens
+                .minus(2, ChronoUnit.HOURS)
 
             processBatchedTokenCleanupWithPagination(accessTokenCutoff) { tokenEntity ->
                 isAccessTokenExpired(tokenEntity.token)
@@ -130,9 +130,9 @@ class TokenCleanupService(
      */
     private fun cleanupExpiredRefreshTokens(): Int {
         return try {
-            val refreshTokenCutoff = LocalDateTime.now()
+            val refreshTokenCutoff = Instant.now()
                 .minus(applicationProperties.security.jwt.refreshToken.expiration)
-                .minusHours(24) // Larger buffer for long-lived refresh tokens
+                .minus(24, ChronoUnit.HOURS)
 
             processBatchedTokenCleanupWithPagination(refreshTokenCutoff) { tokenEntity ->
                 isRefreshTokenExpired(tokenEntity.token)
@@ -150,7 +150,7 @@ class TokenCleanupService(
      * @return Total number of tokens deleted
      */
     private fun processBatchedTokenCleanupWithPagination(
-        cutoffDate: LocalDateTime,
+        cutoffDate: Instant,
         shouldDelete: (Token) -> Boolean,
     ): Int {
         val batchSize = applicationProperties.security.tokenCleanup.batchSize
@@ -321,13 +321,13 @@ class TokenCleanupService(
      */
     fun getExpiredTokenCount(): Long {
         return try {
-            val accessTokenCutoff = LocalDateTime.now()
+            val accessTokenCutoff = Instant.now()
                 .minus(applicationProperties.security.jwt.expiration)
-                .minusHours(2)
+                .minus(2, ChronoUnit.HOURS)
 
-            val refreshTokenCutoff = LocalDateTime.now()
+            val refreshTokenCutoff = Instant.now()
                 .minus(applicationProperties.security.jwt.refreshToken.expiration)
-                .minusHours(24)
+                .minus(24, ChronoUnit.HOURS)
 
             // Use count queries instead of loading all tokens
             val accessTokenCount = tokenRepository.countExpiredOrRevokedTokens(accessTokenCutoff)

@@ -37,7 +37,7 @@ class AccountLockoutController(
                 "locked_until" to (status.lockedUntil ?: ""),
                 "failed_attempts" to status.failedAttempts,
                 "remaining_minutes" to if (status.lockedUntil != null) {
-                    java.time.Duration.between(java.time.LocalDateTime.now(), status.lockedUntil).toMinutes()
+                    java.time.Duration.between(java.time.Instant.now(), status.lockedUntil).toMinutes()
                         .coerceAtLeast(0)
                 } else 0
             )
@@ -107,7 +107,7 @@ class AccountLockoutController(
             mapOf(
                 "is_locked" to status.isLocked,
                 "remaining_minutes" to if (status.lockedUntil != null) {
-                    java.time.Duration.between(java.time.LocalDateTime.now(), status.lockedUntil).toMinutes()
+                    java.time.Duration.between(java.time.Instant.now(), status.lockedUntil).toMinutes()
                         .coerceAtLeast(0)
                 } else 0,
                 "message" to if (status.isLocked) {

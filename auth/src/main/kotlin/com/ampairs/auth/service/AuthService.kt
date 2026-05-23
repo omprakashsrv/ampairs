@@ -18,14 +18,14 @@ import com.ampairs.user.model.User
 import com.ampairs.user.repository.UserRepository
 import jakarta.persistence.EntityManager
 import jakarta.servlet.http.HttpServletRequest
-import jakarta.transaction.Transactional
+import org.springframework.transaction.annotation.Transactional
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Service
 import java.security.MessageDigest
-import java.time.LocalDateTime
+import java.time.Instant
 import java.util.*
 
 val OTP_LENGTH: Int = 6
@@ -57,7 +57,7 @@ class AuthService @Autowired constructor(
             val lockoutStatus =
                 accountLockoutService.getLockoutStatus(authInitRequest.phone, authInitRequest.countryCode)
             val remainingMinutes = if (lockoutStatus.lockedUntil != null) {
-                java.time.Duration.between(LocalDateTime.now(), lockoutStatus.lockedUntil).toMinutes()
+                java.time.Duration.between(Instant.now(), lockoutStatus.lockedUntil).toMinutes()
             } else 0
 
             throw Exception("Account temporarily locked due to multiple failed attempts. Please try again in $remainingMinutes minutes.")
@@ -66,8 +66,7 @@ class AuthService @Autowired constructor(
         loginSession.phone = authInitRequest.phone
         loginSession.countryCode = authInitRequest.countryCode
         loginSession.code = UniqueIdGenerators.NUMERIC.generate(OTP_LENGTH)
-        // Create expiry time - 10 minutes from now
-        loginSession.expiresAt = Date(System.currentTimeMillis() + SMS_VERIFICATION_VALIDITY)
+        loginSession.expiresAt = Instant.now().plusMillis(SMS_VERIFICATION_VALIDITY)
         val savedSession = loginSessionRepository.save(loginSession)
 
         // Log OTP generation event
@@ -110,14 +109,14 @@ class AuthService @Autowired constructor(
                     sessionId = request.sessionId
                 )
                 
-                throw Exception("Invalid session Id")
+                throw com.ampairs.auth.exception.InvalidSessionException("Invalid session ID")
             }
 
         // Check if account is locked before OTP verification
         if (accountLockoutService.isAccountLocked(loginSession.phone, loginSession.countryCode)) {
             val lockoutStatus = accountLockoutService.getLockoutStatus(loginSession.phone, loginSession.countryCode)
             val remainingMinutes = if (lockoutStatus.lockedUntil != null) {
-                java.time.Duration.between(LocalDateTime.now(), lockoutStatus.lockedUntil).toMinutes()
+                java.time.Duration.between(Instant.now(), lockoutStatus.lockedUntil).toMinutes()
             } else 0
 
             throw Exception("Account temporarily locked due to multiple failed attempts. Please try again in $remainingMinutes minutes.")
@@ -158,7 +157,7 @@ class AuthService @Autowired constructor(
 
             // Mark login session as verified to prevent reuse
             loginSession.verified = true
-            loginSession.verifiedAt = Date()
+            loginSession.verifiedAt = Instant.now()
             loginSessionRepository.save(loginSession)
 
             // Record successful authentication
@@ -184,7 +183,7 @@ class AuthService @Autowired constructor(
             // Log JWT token generation
             securityAuditService.logTokenEvent(
                 eventType = SecurityAuditService.TokenEventType.GENERATED,
-                userId = user.id!!.toString(),
+                userId = user.uid,
                 deviceId = deviceSession.deviceId,
                 request = httpRequest
             )
@@ -192,8 +191,8 @@ class AuthService @Autowired constructor(
             val authResponse = AuthenticationResponse()
             authResponse.accessToken = jwtToken
             authResponse.refreshToken = refreshToken
-            authResponse.accessTokenExpiresAt = jwtService.extractExpirationAsLocalDateTime(jwtToken)
-            authResponse.refreshTokenExpiresAt = jwtService.extractExpirationAsLocalDateTime(refreshToken)
+            authResponse.accessTokenExpiresAt = jwtService.extractExpirationAsInstant(jwtToken)
+            authResponse.refreshTokenExpiresAt = jwtService.extractExpirationAsInstant(refreshToken)
             return authResponse
         } else {
             // Record failure for invalid OTP
@@ -225,7 +224,7 @@ class AuthService @Autowired constructor(
                 sessionId = request.sessionId
             )
             
-            throw Exception("Invalid otp")
+            throw com.ampairs.auth.exception.InvalidSessionException("Invalid OTP")
         }
     }
 
@@ -247,7 +246,7 @@ class AuthService @Autowired constructor(
                 )
                 existingSessions.drop(1).forEach { duplicate ->
                     duplicate.isActive = false
-                    duplicate.expiredAt = LocalDateTime.now()
+                    duplicate.expiredAt = Instant.now()
                     deviceSessionRepository.save(duplicate)
                 }
             }
@@ -276,8 +275,8 @@ class AuthService @Autowired constructor(
             newSession.ipAddress = deviceInfo.ipAddress
             newSession.userAgent = deviceInfo.userAgent
             newSession.location = deviceInfo.location
-            newSession.loginTime = LocalDateTime.now()
-            newSession.lastActivity = LocalDateTime.now()
+            newSession.loginTime = Instant.now()
+            newSession.lastActivity = Instant.now()
             newSession.isActive = true
             newSession
         }
@@ -377,7 +376,7 @@ class AuthService @Autowired constructor(
                 )
                 sessions.drop(1).forEach { duplicate ->
                     duplicate.isActive = false
-                    duplicate.expiredAt = LocalDateTime.now()
+                    duplicate.expiredAt = Instant.now()
                     deviceSessionRepository.save(duplicate)
                 }
             }
@@ -410,8 +409,8 @@ class AuthService @Autowired constructor(
             val authResponse = AuthenticationResponse()
             authResponse.accessToken = accessToken
             authResponse.refreshToken = refreshToken // Keep same refresh token
-            authResponse.accessTokenExpiresAt = jwtService.extractExpirationAsLocalDateTime(accessToken)
-            authResponse.refreshTokenExpiresAt = jwtService.extractExpirationAsLocalDateTime(refreshToken)
+            authResponse.accessTokenExpiresAt = jwtService.extractExpirationAsInstant(accessToken)
+            authResponse.refreshTokenExpiresAt = jwtService.extractExpirationAsInstant(refreshToken)
             return authResponse
         }
         throw Exception("Refresh token not valid")
@@ -657,8 +656,8 @@ class AuthService @Autowired constructor(
         val authResponse = AuthenticationResponse()
         authResponse.accessToken = jwtToken
         authResponse.refreshToken = refreshToken
-        authResponse.accessTokenExpiresAt = jwtService.extractExpirationAsLocalDateTime(jwtToken)
-        authResponse.refreshTokenExpiresAt = jwtService.extractExpirationAsLocalDateTime(refreshToken)
+        authResponse.accessTokenExpiresAt = jwtService.extractExpirationAsInstant(jwtToken)
+        authResponse.refreshTokenExpiresAt = jwtService.extractExpirationAsInstant(refreshToken)
         return authResponse
     }
 

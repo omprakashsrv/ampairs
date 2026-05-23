@@ -6,15 +6,15 @@ import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
 import org.springframework.stereotype.Repository
-import java.time.LocalDateTime
+import java.time.Instant
 import java.util.*
 
 @Repository
 interface TokenRepository : CrudRepository<Token, String> {
 
     @Query(value = """
-            select t from Token t inner join User u 
-            on t.userId = u.uid 
+            select t from Token t inner join User u
+            on t.userId = u.uid
             where u.uid = :userId and (t.expired = false or t.revoked = false)
             """)
     fun findAllValidTokenByUser(userId: String): List<Token>
@@ -23,39 +23,39 @@ interface TokenRepository : CrudRepository<Token, String> {
 
     @Query(
         value = """
-            select t from Token t 
-            where t.expired = true or t.revoked = true 
+            select t from Token t
+            where t.expired = true or t.revoked = true
             or t.createdAt < :beforeDate
             """
     )
-    fun findExpiredOrRevokedTokens(beforeDate: LocalDateTime): List<Token>
+    fun findExpiredOrRevokedTokens(beforeDate: Instant): List<Token>
 
     @Query(
         value = """
-            select t from Token t 
-            where t.expired = true or t.revoked = true 
+            select t from Token t
+            where t.expired = true or t.revoked = true
             or t.createdAt < :beforeDate
             order by t.createdAt asc
             """
     )
-    fun findExpiredOrRevokedTokensPaged(beforeDate: LocalDateTime, pageable: Pageable): List<Token>
+    fun findExpiredOrRevokedTokensPaged(beforeDate: Instant, pageable: Pageable): List<Token>
 
     @Query(
         value = """
-            select count(t) from Token t 
-            where t.expired = true or t.revoked = true 
+            select count(t) from Token t
+            where t.expired = true or t.revoked = true
             or t.createdAt < :beforeDate
             """
     )
-    fun countExpiredOrRevokedTokens(beforeDate: LocalDateTime): Long
+    fun countExpiredOrRevokedTokens(beforeDate: Instant): Long
 
     @Modifying
     @Query(
         value = """
-            delete from Token t 
-            where t.expired = true or t.revoked = true 
+            delete from Token t
+            where t.expired = true or t.revoked = true
             or t.createdAt < :beforeDate
             """
     )
-    fun deleteExpiredOrRevokedTokens(beforeDate: LocalDateTime): Int
+    fun deleteExpiredOrRevokedTokens(beforeDate: Instant): Int
 }
