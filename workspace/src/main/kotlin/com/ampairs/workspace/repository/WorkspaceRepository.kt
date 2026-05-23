@@ -88,4 +88,18 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
     )
     fun countByCreatedByAndActiveTrue(@Param("userId") userId: String): Int
 
+    /**
+     * Find all workspaces for a user with no pagination.
+     * Native query bypasses @TenantId filter — required for cross-tenant account deletion flows.
+     */
+    @Query(
+        value = """
+        SELECT * FROM workspaces w
+        INNER JOIN workspace_members wm ON w.uid = wm.workspace_id
+        WHERE wm.user_id = :userId
+        """,
+        nativeQuery = true
+    )
+    fun findAllWorkspacesByUserIdCrossTenant(@Param("userId") userId: String): List<Workspace>
+
 }

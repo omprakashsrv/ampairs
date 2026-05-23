@@ -11,6 +11,7 @@ import com.ampairs.workspace.model.WorkspaceMember
 import com.ampairs.workspace.model.dto.*
 import com.ampairs.workspace.model.enums.WorkspaceRole
 import com.ampairs.workspace.repository.WorkspaceMemberRepository
+import com.ampairs.workspace.repository.WorkspaceRepository
 import com.ampairs.workspace.security.WorkspacePermission
 import org.slf4j.LoggerFactory
 import org.springframework.context.ApplicationEventPublisher
@@ -29,9 +30,10 @@ import java.time.LocalDateTime
 @Transactional
 class WorkspaceMemberService(
     private val memberRepository: WorkspaceMemberRepository,
+    private val workspaceRepository: WorkspaceRepository,
     private val activityService: WorkspaceActivityService,
     private val userDetailProvider: UserDetailProvider,
-    private val eventPublisher: ApplicationEventPublisher
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
 
     companion object {
@@ -808,5 +810,47 @@ class WorkspaceMemberService(
     fun findMemberById(memberId: String): WorkspaceMember {
         return memberRepository.findByUid(memberId)
             .orElseThrow { NotFoundException("Member not found: $memberId") }
+    }
+
+    /**
+     * Returns workspaces where the given user is the sole active OWNER.
+     * Uses cross-tenant native queries — safe for account deletion pre-flight check.
+     */
+    @Transactional(readOnly = true)
+    fun findBlockingWorkspacesForDeletion(userId: String): List<SoleOwnerInfo> {
+        val workspaceIndex = workspaceRepository.findAllWorkspacesByUserIdCrossTenant(userId)
+            .associateBy { it.uid }
+        val memberships = memberRepository.findAllByUserIdCrossTenant(userId)
+        return memberships
+            .filter { it.role == WorkspaceRole.OWNER && it.isActive }
+            .mapNotNull { membership ->
+                val ownerCount = memberRepository.countActiveOwnersCrossTenant(membership.workspaceId)
+                if (ownerCount == 1L) {
+                    val workspace = workspaceIndex[membership.workspaceId]
+                    SoleOwnerInfo(
+                        workspaceId = membership.workspaceId,
+                        workspaceName = workspace?.name ?: membership.workspaceId,
+                        workspaceSlug = workspace?.slug ?: membership.workspaceId,
+                        memberCount = memberRepository.countActiveMembersCrossTenant(membership.workspaceId),
+                    )
+                } else null
+            }
+    }
+
+    /**
+     * Deactivates and deletes all workspace memberships for a user.
+     * Uses cross-tenant native queries — called during permanent account deletion.
+     */
+    @Transactional
+    fun revokeAndDeleteMembershipsForUser(userId: String) {
+        val memberships = memberRepository.findAllByUserIdCrossTenant(userId)
+        memberships.forEach { member ->
+            member.isActive = false
+            member.deactivatedAt = java.time.Instant.now()
+            member.deactivationReason = "User account permanently deleted"
+        }
+        memberRepository.saveAll(memberships)
+        memberRepository.deleteAll(memberships)
+        logger.info("Revoked and deleted {} workspace memberships for user {}", memberships.size, userId)
     }
 }
