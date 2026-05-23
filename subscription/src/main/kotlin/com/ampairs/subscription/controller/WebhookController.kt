@@ -5,8 +5,8 @@ import com.ampairs.subscription.domain.model.WebhookStatus
 import com.ampairs.subscription.domain.service.WebhookIdempotencyService
 import com.ampairs.subscription.exception.SubscriptionException
 import com.ampairs.subscription.webhook.*
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.ObjectMapper
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag

@@ -42,7 +42,7 @@ data class PageResponse<T>(
         /**
          * Create PageResponse from Spring Data Page
          */
-        fun <T> from(page: Page<T>): PageResponse<T> {
+        fun <T : Any> from(page: Page<T>): PageResponse<T> {
             return PageResponse(
                 content = page.content,
                 pageNumber = page.number,
@@ -60,7 +60,7 @@ data class PageResponse<T>(
         /**
          * Create PageResponse with mapped content
          */
-        fun <T, R> from(page: Page<T>, mapper: (T) -> R): PageResponse<R> {
+        fun <T : Any, R : Any> from(page: Page<T>, mapper: (T) -> R): PageResponse<R> {
             return PageResponse(
                 content = page.content.map(mapper),
                 pageNumber = page.number,

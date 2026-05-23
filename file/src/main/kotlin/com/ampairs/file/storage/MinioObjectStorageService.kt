@@ -4,7 +4,6 @@ import com.ampairs.file.config.MinioProperties
 import com.ampairs.file.config.StorageProperties
 import io.minio.*
 import io.minio.errors.ErrorResponseException
-import io.minio.http.Method
 import io.minio.messages.ErrorResponse
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -113,7 +112,7 @@ class MinioObjectStorageService(
                 contentLength = response.size(),
                 etag = response.etag(),
                 lastModified = response.lastModified().toInstant(),
-                metadata = response.userMetadata()
+                metadata = response.userMetadata().entrySet().associate { it.key to it.value }
             )
         } catch (e: ErrorResponseException) {
             if (e.errorResponse().code() == "NoSuchKey") {
@@ -132,7 +131,7 @@ class MinioObjectStorageService(
             validateObjectKey(objectKey)
 
             val args = GetPresignedObjectUrlArgs.builder()
-                .method(Method.GET)
+                .method(Http.Method.GET)
                 .bucket(bucketName)
                 .`object`(objectKey)
                 .expiry(expirationSeconds.toInt())
@@ -202,7 +201,7 @@ class MinioObjectStorageService(
                 CopyObjectArgs.builder()
                     .bucket(targetBucket)
                     .`object`(targetKey)
-                    .source(CopySource.builder().bucket(sourceBucket).`object`(sourceKey).build())
+                    .source(SourceObject.builder().bucket(sourceBucket).`object`(sourceKey).build())
                     .build()
             )
 

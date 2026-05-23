@@ -7,7 +7,7 @@ import org.springframework.stereotype.Service
 @Service
 class SecurityService {
     fun username(): String? {
-        val name = SecurityContextHolder.getContext().authentication.name
+        val name = SecurityContextHolder.getContext().authentication?.name ?: return null
         if (name == "anonymousUser") {
             return null
         }

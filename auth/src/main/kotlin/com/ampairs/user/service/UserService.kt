@@ -35,7 +35,7 @@ class UserService @Autowired constructor(val userRepository: UserRepository) {
 
         return when (val principal = auth.principal) {
             is User -> principal
-            else -> throw IllegalStateException("Authentication principal is not a User: ${principal::class.simpleName}")
+            else -> throw IllegalStateException("Authentication principal is not a User: ${principal?.javaClass?.simpleName}")
         }
     }
 

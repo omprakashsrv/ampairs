@@ -2,7 +2,7 @@ package com.ampairs.core.multitenancy
 
 import org.hibernate.cfg.AvailableSettings
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.autoconfigure.orm.jpa.HibernatePropertiesCustomizer
+import org.springframework.boot.hibernate.autoconfigure.HibernatePropertiesCustomizer
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 

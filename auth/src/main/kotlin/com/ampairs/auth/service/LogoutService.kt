@@ -47,7 +47,7 @@ class LogoutService @Autowired constructor(val tokenRepository: TokenRepository)
     }
 
     override fun onLogoutSuccess(
-        request: HttpServletRequest?, response: HttpServletResponse?, authentication: Authentication?
+        request: HttpServletRequest, response: HttpServletResponse, authentication: Authentication?
     ) {
         SecurityContextHolder.clearContext()
     }

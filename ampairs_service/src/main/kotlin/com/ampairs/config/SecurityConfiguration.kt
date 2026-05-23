@@ -111,8 +111,7 @@ class SecurityConfiguration @Autowired constructor(
                 oauth2.authenticationEntryPoint(unauthorizedHandler)
                 oauth2.bearerTokenResolver { request ->
                     // Skip OAuth2 if already authenticated (e.g., by API key)
-                    if (org.springframework.security.core.context.SecurityContextHolder.getContext().authentication != null
-                        && org.springframework.security.core.context.SecurityContextHolder.getContext().authentication.isAuthenticated) {
+                    if (org.springframework.security.core.context.SecurityContextHolder.getContext().authentication?.isAuthenticated == true) {
                         return@bearerTokenResolver null
                     }
                     // Only resolve bearer tokens for authenticated endpoints

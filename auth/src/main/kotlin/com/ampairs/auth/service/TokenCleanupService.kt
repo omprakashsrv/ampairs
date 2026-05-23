@@ -279,15 +279,14 @@ class TokenCleanupService(
      */
     private fun extractTokenType(tokenString: String): String? {
         return try {
-            val claims = Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+            val claims = Jwts.parser()
+                .verifyWith(getSigningKey())
                 .build()
-                .parseClaimsJws(tokenString)
-                .body
+                .parseSignedClaims(tokenString)
+                .payload
 
             claims[JwtService.TOKEN_TYPE_CLAIM] as? String
         } catch (e: ExpiredJwtException) {
-            // Token is expired but we can still read the claims
             e.claims[JwtService.TOKEN_TYPE_CLAIM] as? String
         } catch (e: Exception) {
             logger.debug("Could not extract token type from token", e)
@@ -295,29 +294,23 @@ class TokenCleanupService(
         }
     }
 
-    /**
-     * Check if JWT token is expired
-     */
     private fun isTokenExpired(tokenString: String): Boolean {
         return try {
-            val claims = Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+            val claims = Jwts.parser()
+                .verifyWith(getSigningKey())
                 .build()
-                .parseClaimsJws(tokenString)
-                .body
+                .parseSignedClaims(tokenString)
+                .payload
 
             claims.expiration?.before(Date()) ?: true
         } catch (e: ExpiredJwtException) {
-            true // Token is expired
+            true
         } catch (e: Exception) {
-            true // Any other error means token is invalid/expired
+            true
         }
     }
 
-    /**
-     * Get JWT signing key
-     */
-    private fun getSigningKey(): java.security.Key {
+    private fun getSigningKey(): javax.crypto.SecretKey {
         val keyBytes = io.jsonwebtoken.io.Decoders.BASE64.decode(applicationProperties.security.jwt.secretKey)
         return io.jsonwebtoken.security.Keys.hmacShaKeyFor(keyBytes)
     }

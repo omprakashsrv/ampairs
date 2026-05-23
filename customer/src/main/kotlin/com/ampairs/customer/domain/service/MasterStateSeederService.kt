@@ -19,7 +19,7 @@ class MasterStateSeederService(
 
     private val logger = LoggerFactory.getLogger(MasterStateSeederService::class.java)
 
-    override fun run(vararg args: String?) {
+    override fun run(vararg args: String) {
         seedMasterStates()
     }
 

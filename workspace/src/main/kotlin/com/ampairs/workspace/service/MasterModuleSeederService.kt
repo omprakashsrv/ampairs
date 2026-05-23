@@ -20,7 +20,7 @@ class MasterModuleSeederService(
     
     private val logger = LoggerFactory.getLogger(MasterModuleSeederService::class.java)
     
-    override fun run(vararg args: String?) {
+    override fun run(vararg args: String) {
         seedMasterModules()
     }
     

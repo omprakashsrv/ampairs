@@ -35,19 +35,16 @@ class GooglePlayBillingService(
 
     override val provider = PaymentProvider.GOOGLE_PLAY
 
-    private lateinit var publisher: AndroidPublisher
+    private var publisher: AndroidPublisher? = null
 
     @PostConstruct
     fun init() {
+        val serviceAccountFile = File(serviceAccountJsonPath)
+        if (!serviceAccountFile.exists()) {
+            logger.warn("Google Play Billing disabled — service account file not found: {}", serviceAccountJsonPath)
+            return
+        }
         try {
-            // Load service account JSON from file path
-            val serviceAccountFile = File(serviceAccountJsonPath)
-
-            if (!serviceAccountFile.exists()) {
-                logger.error("Google Play service account file not found at: {}", serviceAccountJsonPath)
-                throw IllegalStateException("Service account file not found: $serviceAccountJsonPath")
-            }
-
             val credentials = GoogleCredentials.fromStream(
                 FileInputStream(serviceAccountFile)
             ).createScoped(listOf(AndroidPublisherScopes.ANDROIDPUBLISHER))
@@ -61,7 +58,6 @@ class GooglePlayBillingService(
             logger.info("Google Play Billing service initialized for package: {} from {}", packageName, serviceAccountJsonPath)
         } catch (e: Exception) {
             logger.error("Failed to initialize Google Play Billing service from path: {}", serviceAccountJsonPath, e)
-            throw IllegalStateException("Google Play Billing service initialization failed", e)
         }
     }
 
@@ -70,8 +66,9 @@ class GooglePlayBillingService(
             logger.debug("Verifying Google Play purchase: productId={}, token={}",
                 request.productId, request.purchaseToken.take(10) + "...")
 
+            val p = publisher ?: throw IllegalStateException("Google Play Billing not initialized — service account file missing")
             // Call Google Play Developer API to verify subscription purchase
-            val purchase = publisher.purchases()
+            val purchase = p.purchases()
                 .subscriptions()
                 .get(packageName, request.productId, request.purchaseToken)
                 .execute()

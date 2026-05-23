@@ -298,7 +298,7 @@ class UserInvitationController(
         )
         @PathVariable id: String,
     ): ApiResponse<InvitationResponse> {
-        val auth: Authentication = SecurityContextHolder.getContext().authentication
+        val auth = SecurityContextHolder.getContext().authentication ?: throw IllegalStateException("User not authenticated")
         val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
@@ -489,7 +489,7 @@ class UserInvitationController(
         )
         @RequestParam(required = false) reason: String?
     ): ApiResponse<InvitationResponse> {
-        val auth: Authentication = SecurityContextHolder.getContext().authentication
+        val auth = SecurityContextHolder.getContext().authentication ?: throw IllegalStateException("User not authenticated")
         val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 

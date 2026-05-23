@@ -117,7 +117,7 @@ class Product : OwnableBaseDomain() {
 
     @OneToMany()
     @JoinColumn(
-        name = "product_id", referencedColumnName = "uid", insertable = false, updatable = false, nullable = false
+        name = "entity_id", referencedColumnName = "uid", insertable = false, updatable = false
     )
     var unitConversions: MutableList<UnitConversion> = mutableListOf()
 

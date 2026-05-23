@@ -3,6 +3,7 @@
 
 plugins {
     base // Provides clean and other basic tasks
+    kotlin("plugin.spring") version "2.3.20"
 }
 
 // Project information
@@ -111,3 +112,6 @@ tasks.register("devSetup") {
 
 // Default task information
 defaultTasks("devSetup")
+repositories {
+    mavenCentral()
+}

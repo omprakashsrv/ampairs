@@ -117,14 +117,24 @@ logging:
     console: "%highlight(%-5level) [%date{HH:mm:ss.SSS}] [%thread] [%cyan(%logger{36})]: %message%n"
 
 spring:
+  autoconfigure:
+    exclude:
+      - org.springdoc.webmvc.ui.SwaggerConfig
+      - org.springdoc.core.properties.SwaggerUiConfigProperties
+      - org.springdoc.core.properties.SwaggerUiOAuthProperties
+      - org.springdoc.core.configuration.SpringDocUIConfiguration
+      - org.springdoc.webmvc.core.configuration.SpringDocWebMvcConfiguration
+      - org.springdoc.webmvc.core.configuration.MultipleOpenApiSupportConfiguration
+      - org.springdoc.core.configuration.SpringDocConfiguration
+      - org.springdoc.core.properties.SpringDocConfigProperties
+      - org.springdoc.core.configuration.SpringDocSecurityConfiguration
+      - org.springdoc.core.configuration.SpringDocKotlinConfiguration
   threads:
     virtual:
       enabled: ${SPRING_VIRTUAL_THREADS_ENABLED:true}
   jackson:
     property-naming-strategy: SNAKE_CASE
-    time-zone: UTC  # Serialize all timestamps in UTC timezone (ISO-8601 with Z suffix)
-    serialization:
-      write-dates-as-timestamps: false
+    time-zone: UTC
     deserialization:
       fail-on-unknown-properties: false
   cache:
@@ -135,9 +145,9 @@ spring:
     cache-specs:
       userDetails: maximumSize=1000,expireAfterWrite=${CACHE_USER_DETAILS_EXPIRE:300s},recordStats
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/ampairs_prod}
-    username: ${DB_USERNAME:admin}
-    password: ${DB_PASSWORD:secret}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/springdb}
+    username: ${DB_USERNAME:springuser}
+    password: ${DB_PASSWORD:springpass}
     driver-class-name: org.postgresql.Driver
     hikari:
       pool-name: main-db-pool

@@ -5,7 +5,7 @@ import com.ampairs.core.multitenancy.CurrentTenantIdentifierResolver
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.core.security.AuthenticationHelper
 import com.ampairs.workspace.service.WorkspaceMemberService
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import jakarta.servlet.FilterChain
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
@@ -159,7 +159,7 @@ class SessionUserFilter @Autowired constructor(
                 val authWithDetails = when (authentication) {
                     is UsernamePasswordAuthenticationToken -> {
                         val newAuth = UsernamePasswordAuthenticationToken(
-                            authentication.principal,
+                            authentication.principal!!,
                             authentication.credentials,
                             authentication.authorities,
                         )
