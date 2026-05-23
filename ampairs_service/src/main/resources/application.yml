@@ -54,7 +54,7 @@ websocket:
     # - SIMPLE: In-memory broker (single instance, no external dependencies)
     # - RABBITMQ: External RabbitMQ STOMP relay (multi-instance, production)
     # - AUTO: Auto-detect RabbitMQ, fallback to SIMPLE if unavailable (recommended)
-    type: ${WEBSOCKET_BROKER_TYPE:RABBITMQ}
+    type: ${WEBSOCKET_BROKER_TYPE:AUTO}
 
     # Heartbeat interval for SimpleBroker STOMP protocol heartbeats (milliseconds)
     # IMPORTANT: SimpleBroker has limited STOMP heartbeat support - set to 0 to disable
@@ -441,8 +441,8 @@ google:
 
 # Firebase Configuration
 firebase:
-  enabled: ${FIREBASE_ENABLED:true}
-  service-account-key-path: ${FIREBASE_SERVICE_ACCOUNT_KEY_PATH:/Users/omprakashsrv/IdeaProjects/ampairs/auth/keys/ampairs-firebase-adminsdk.json}
+  enabled: ${FIREBASE_ENABLED:false}
+  service-account-key-path: ${FIREBASE_SERVICE_ACCOUNT_KEY_PATH:}
 
 # Notification Configuration
 notification:
@@ -510,7 +510,7 @@ management:
 google-play:
   package-name: ${GOOGLE_PLAY_PACKAGE_NAME:com.ampairs.app}
   # Absolute path to service account JSON file
-  service-account-json-path: ${GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_PATH:/Users/omprakashsrv/IdeaProjects/ampairs/subscription/keys/ampairs-google-play.json}
+  service-account-json-path: ${GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_PATH:}
 
 # Apple App Store (iOS In-App Purchases)
 apple-app-store:

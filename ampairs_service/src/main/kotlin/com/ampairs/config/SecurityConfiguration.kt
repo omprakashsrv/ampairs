@@ -22,6 +22,19 @@ import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import javax.crypto.spec.SecretKeySpec
 
+private val PUBLIC_PATHS = arrayOf(
+    "/auth/v1/**",
+    "/actuator/**",
+    "/swagger-ui/**",
+    "/swagger-ui.html",
+    "/v3/api-docs/**",
+    "/v3/api-docs",
+    "/swagger-resources/**",
+    "/api/v1/app-updates/check",
+    "/api/v1/app-updates/download/**",
+    "/webhooks/**"
+)
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
@@ -88,18 +101,7 @@ class SecurityConfiguration @Autowired constructor(
             )
             .authorizeHttpRequests { requests ->
                 requests
-                    .requestMatchers(
-                        "/auth/v1/**",
-                        "/actuator/**",
-                        "/swagger-ui/**",
-                        "/swagger-ui.html",
-                        "/v3/api-docs/**",
-                        "/v3/api-docs",
-                        "/swagger-resources/**",
-                        "/api/v1/app-updates/check",
-                        "/api/v1/app-updates/download/**",
-                        "/webhooks/**"  // Payment provider webhooks (Google Play, App Store, Razorpay, Stripe)
-                    ).permitAll()
+                    .requestMatchers(*PUBLIC_PATHS).permitAll()
                     .anyRequest().authenticated()
             }
             .oauth2ResourceServer { oauth2 ->
@@ -107,28 +109,18 @@ class SecurityConfiguration @Autowired constructor(
                     jwt.decoder(jwtDecoder())
                         .jwtAuthenticationConverter(customJwtAuthenticationConverter)
                 }
-                // Only use entry point if no other authentication exists
                 oauth2.authenticationEntryPoint(unauthorizedHandler)
                 oauth2.bearerTokenResolver { request ->
-                    // Skip OAuth2 if already authenticated (e.g., by API key)
                     if (org.springframework.security.core.context.SecurityContextHolder.getContext().authentication?.isAuthenticated == true) {
                         return@bearerTokenResolver null
                     }
-                    // Only resolve bearer tokens for authenticated endpoints
-                    val requestURI = request.requestURI
-                    if (requestURI.startsWith("/auth/v1/") ||
-                        requestURI.startsWith("/actuator/") ||
-                        requestURI.startsWith("/swagger-ui/") ||
-                        requestURI == "/swagger-ui.html" ||
-                        requestURI.startsWith("/v3/api-docs") ||
-                        requestURI.startsWith("/swagger-resources/") ||
-                        requestURI == "/api/v1/app-updates/check" ||
-                        requestURI.startsWith("/api/v1/app-updates/download/") ||
-                        requestURI.startsWith("/webhooks/")
-                    ) {
-                        null // Skip JWT processing for public endpoints
+                    val isPublic = PUBLIC_PATHS.any { pattern ->
+                        val prefix = pattern.removeSuffix("**").removeSuffix("*")
+                        request.requestURI.startsWith(prefix) || request.requestURI == pattern
+                    }
+                    if (isPublic) {
+                        null
                     } else {
-                        // Use default bearer token resolution for protected endpoints
                         val authorizationHeaderValue = request.getHeader("Authorization")
                         if (authorizationHeaderValue != null && authorizationHeaderValue.startsWith("Bearer ")) {
                             authorizationHeaderValue.substring(7)

@@ -11,7 +11,7 @@ import com.ampairs.user.service.UserService
 import com.ampairs.workspace.model.enums.WorkspaceRole
 import com.ampairs.workspace.repository.WorkspaceMemberRepository
 import com.ampairs.workspace.repository.WorkspaceRepository
-import jakarta.transaction.Transactional
+import org.springframework.transaction.annotation.Transactional
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
@@ -192,8 +192,7 @@ class AccountDeletionService @Autowired constructor(
      * Find all accounts ready for permanent deletion
      */
     fun findAccountsReadyForDeletion(): List<User> {
-        return userRepository.findAll()
-            .filter { it.isReadyForPermanentDeletion() }
+        return userRepository.findByDeletedTrueAndDeletionScheduledForBefore(Instant.now())
     }
 
     /**
@@ -231,19 +230,6 @@ class AccountDeletionService @Autowired constructor(
         }
 
         return blockingWorkspaces
-    }
-
-    /**
-     * Revoke all authentication tokens for a user
-     */
-    private fun revokeAllUserTokens(userId: String) {
-        val tokens = tokenRepository.findAllValidTokenByUser(userId)
-        tokens.forEach { token ->
-            token.revoked = true
-            token.expired = true
-        }
-        tokenRepository.saveAll(tokens)
-        logger.info("Revoked ${tokens.size} tokens for user $userId")
     }
 
     /**
