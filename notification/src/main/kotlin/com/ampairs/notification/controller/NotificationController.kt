@@ -46,45 +46,11 @@ class NotificationController @Autowired constructor(
         @RequestParam recipient: String,
         @RequestParam(defaultValue = "Test notification from Ampairs") message: String,
         @RequestParam(defaultValue = "SMS") channel: String,
-    ): Map<String, Any> {
+    ): ApiResponse<Map<String, Any>> {
         logger.info("Sending test notification to: {} via {}", recipient, channel)
-
-        return try {
-            val notificationChannel = NotificationChannel.valueOf(channel.uppercase())
-            val notificationId = notificationService.queueNotification(recipient, message, notificationChannel)
-
-            mapOf(
-                "success" to true,
-                "data" to mapOf(
-                    "notificationId" to notificationId,
-                    "channel" to notificationChannel
-                ),
-                "message" to "Test notification queued successfully"
-            )
-        } catch (e: IllegalArgumentException) {
-            logger.error("Invalid notification channel: {}", channel, e)
-            mapOf(
-                "success" to false,
-                "error" to mapOf(
-                    "code" to "INVALID_CHANNEL",
-                    "message" to "Invalid notification channel: $channel. Valid channels: ${
-                        NotificationChannel.entries.joinToString(
-                            ", "
-                        )
-                    }"
-                )
-            )
-        } catch (e: Exception) {
-            logger.error("Failed to send test notification to: {}", recipient, e)
-
-            mapOf(
-                "success" to false,
-                "error" to mapOf(
-                    "code" to "NOTIFICATION_QUEUE_ERROR",
-                    "message" to "Failed to queue notification: ${e.message}"
-                )
-            )
-        }
+        val notificationChannel = NotificationChannel.valueOf(channel.uppercase())
+        val notificationId = notificationService.queueNotification(recipient, message, notificationChannel)
+        return ApiResponse.success(mapOf("notificationId" to notificationId, "channel" to notificationChannel.name))
     }
 
     /**
@@ -94,28 +60,10 @@ class NotificationController @Autowired constructor(
     fun sendTestSms(
         @RequestParam phoneNumber: String,
         @RequestParam(defaultValue = "Test SMS from Ampairs") message: String,
-    ): Map<String, Any> {
+    ): ApiResponse<Map<String, Any>> {
         logger.info("Sending test SMS to: {}", phoneNumber)
-
-        return try {
-            val smsId = notificationService.queueSms(phoneNumber, message)
-
-            mapOf(
-                "success" to true,
-                "data" to mapOf("smsId" to smsId),
-                "message" to "Test SMS queued successfully"
-            )
-        } catch (e: Exception) {
-            logger.error("Failed to send test SMS to: {}", phoneNumber, e)
-
-            mapOf(
-                "success" to false,
-                "error" to mapOf(
-                    "code" to "SMS_QUEUE_ERROR",
-                    "message" to "Failed to queue SMS: ${e.message}"
-                )
-            )
-        }
+        val smsId = notificationService.queueSms(phoneNumber, message)
+        return ApiResponse.success(mapOf("smsId" to smsId))
     }
 
     /**
@@ -126,52 +74,19 @@ class NotificationController @Autowired constructor(
         @RequestParam recipient: String,
         @RequestParam message: String,
         @RequestParam(defaultValue = "SMS") channel: String,
-    ): Map<String, Any> {
+    ): ApiResponse<Map<String, Any>> {
         logger.info("Sending immediate notification to: {} via {}", recipient, channel)
-
-        return try {
-            val notificationChannel = NotificationChannel.valueOf(channel.uppercase())
-            val result = notificationService.sendImmediateNotification(recipient, message, notificationChannel)
-
-            if (result.success) {
-                mapOf(
-                    "success" to true,
-                    "data" to mapOf(
-                        "messageId" to result.messageId,
-                        "provider" to result.providerName,
-                        "channel" to result.channel
-                    ),
-                    "message" to "Notification sent successfully"
-                )
-            } else {
-                mapOf(
-                    "success" to false,
-                    "error" to mapOf(
-                        "code" to "NOTIFICATION_SEND_FAILED",
-                        "message" to result.errorMessage,
-                        "channel" to result.channel
-                    )
-                )
-            }
-        } catch (e: IllegalArgumentException) {
-            logger.error("Invalid notification channel: {}", channel, e)
-            mapOf(
-                "success" to false,
-                "error" to mapOf(
-                    "code" to "INVALID_CHANNEL",
-                    "message" to "Invalid notification channel: $channel"
-                )
-            )
-        } catch (e: Exception) {
-            logger.error("Failed to send immediate notification to: {}", recipient, e)
-
-            mapOf(
-                "success" to false,
-                "error" to mapOf(
-                    "code" to "NOTIFICATION_SEND_ERROR",
-                    "message" to "Failed to send notification: ${e.message}"
-                )
-            )
+        val notificationChannel = NotificationChannel.valueOf(channel.uppercase())
+        val result = notificationService.sendImmediateNotification(recipient, message, notificationChannel)
+        if (!result.success) {
+            throw IllegalStateException(result.errorMessage ?: "Notification send failed")
         }
+        return ApiResponse.success(
+            mapOf(
+                "messageId" to (result.messageId ?: ""),
+                "provider" to result.providerName,
+                "channel" to result.channel.name,
+            )
+        )
     }
 }
