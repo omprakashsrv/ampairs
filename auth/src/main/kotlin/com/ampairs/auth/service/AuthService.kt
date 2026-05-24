@@ -521,7 +521,7 @@ class AuthService @Autowired constructor(
         val deactivatedCount = deviceSessionRepository.deactivateDeviceSession(user.uid, targetDeviceId)
 
         if (deactivatedCount == 0) {
-            throw Exception("Device not found or already inactive")
+            throw com.ampairs.auth.exception.InvalidSessionException("Device not found or already inactive")
         }
 
         val genericSuccessResponse = GenericSuccessResponse()
@@ -553,7 +553,7 @@ class AuthService @Autowired constructor(
                     sessionId = null
                 )
 
-                throw Exception("Invalid Firebase authentication token")
+                throw com.ampairs.auth.exception.InvalidSessionException("Invalid Firebase authentication token")
             }
 
         // Extract phone number from Firebase token
@@ -575,7 +575,7 @@ class AuthService @Autowired constructor(
                 sessionId = null
             )
 
-            throw Exception("Phone number does not match Firebase authentication")
+            throw IllegalArgumentException("Phone number does not match Firebase authentication")
         }
 
         // Create username from phone number
