@@ -71,7 +71,7 @@ class AuthService(
             phone = authInitRequest.phone,
             eventType = SecurityAuditService.OtpEventType.GENERATION,
             success = true,
-            sessionId = savedSession.id!!.toString(),
+            sessionId = savedSession.id.toString(),
             request = httpRequest,
             reason = null
         )
@@ -393,7 +393,7 @@ class AuthService(
             // Log token refresh event
             securityAuditService.logTokenEvent(
                 eventType = SecurityAuditService.TokenEventType.REFRESHED,
-                userId = user.id!!.toString(),
+                userId = user.id.toString(),
                 deviceId = deviceId,
                 request = httpRequest
             )
@@ -638,7 +638,7 @@ class AuthService(
         // Log JWT token generation
         securityAuditService.logTokenEvent(
             eventType = SecurityAuditService.TokenEventType.GENERATED,
-            userId = user.id!!.toString(),
+            userId = user.id.toString(),
             deviceId = deviceSession.deviceId,
             request = httpRequest
         )
