@@ -17,6 +17,12 @@ kotlin {
     jvmToolchain(21)
 }
 
+allOpen {
+    annotation("jakarta.persistence.Entity")
+    annotation("jakarta.persistence.MappedSuperclass")
+    annotation("jakarta.persistence.Embeddable")
+}
+
 configurations {
     compileOnly {
         extendsFrom(configurations.annotationProcessor.get())
