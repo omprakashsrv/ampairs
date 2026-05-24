@@ -351,7 +351,7 @@ class AuthService(
             ?: throw IllegalArgumentException("Device ID is required")
         
         val user: User = this.userRepository.findByUserName(userName)
-            .orElseThrow()
+            .orElseThrow { IllegalStateException("User not found for token: $userName") }
 
         // Verify refresh token is valid and belongs to the device
         if (jwtService.isTokenValid(refreshToken, user)) {
@@ -423,7 +423,7 @@ class AuthService(
             ?: throw IllegalArgumentException("Device ID not found in token")
             
         val user: User = this.userRepository.findByUserName(userName)
-            .orElseThrow()
+            .orElseThrow { IllegalStateException("User not found for token: $userName") }
 
         // Deactivate specific device session only
         deviceSessionRepository.deactivateDeviceSession(user.uid, deviceId)
@@ -445,7 +445,7 @@ class AuthService(
         val accessToken: String = authHeader.substring(7)
         val userName: String = jwtService.extractUsername(accessToken)
         val user: User = this.userRepository.findByUserName(userName)
-            .orElseThrow()
+            .orElseThrow { IllegalStateException("User not found for token: $userName") }
 
         // Deactivate all device sessions for the user
         deviceSessionRepository.deactivateAllUserSessions(user.uid)
@@ -480,7 +480,7 @@ class AuthService(
         val accessToken: String = authHeader.substring(7)
         val userName: String = jwtService.extractUsername(accessToken)
         val user: User = this.userRepository.findByUserName(userName)
-            .orElseThrow()
+            .orElseThrow { IllegalStateException("User not found for token: $userName") }
 
         val deviceSessions = deviceSessionRepository.findByUserIdAndIsActiveTrueOrderByLastActivityDesc(user.uid)
 
@@ -514,7 +514,7 @@ class AuthService(
         val accessToken: String = authHeader.substring(7)
         val userName: String = jwtService.extractUsername(accessToken)
         val user: User = this.userRepository.findByUserName(userName)
-            .orElseThrow()
+            .orElseThrow { IllegalStateException("User not found for token: $userName") }
 
         // Deactivate specific device session
         val deactivatedCount = deviceSessionRepository.deactivateDeviceSession(user.uid, targetDeviceId)

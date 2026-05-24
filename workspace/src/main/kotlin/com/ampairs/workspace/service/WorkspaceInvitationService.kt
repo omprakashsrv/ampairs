@@ -53,9 +53,10 @@ class WorkspaceInvitationService(
 
         // Check if there's already a pending invitation
         val existingInvitation = when (contactType) {
-            "email" -> invitationRepository.findByWorkspaceIdAndEmailAndStatus(
-                workspaceId, request.email!!, InvitationStatus.PENDING
-            ).orElse(null)
+            "email" -> {
+                val email = request.email ?: throw BusinessException("INVALID_CONTACT", "Email is required for email invitations")
+                invitationRepository.findByWorkspaceIdAndEmailAndStatus(workspaceId, email, InvitationStatus.PENDING).orElse(null)
+            }
             "phone" -> invitationRepository.findByWorkspaceIdAndPhoneAndStatus(
                 workspaceId, request.phone, InvitationStatus.PENDING
             )

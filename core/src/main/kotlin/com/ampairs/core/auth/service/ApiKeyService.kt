@@ -70,7 +70,7 @@ class ApiKeyService(
             keyPrefix = keyPrefix,
             scope = saved.scope.name,
             expiresAt = saved.expiresAt,
-            createdAt = saved.createdAt!!
+            createdAt = saved.createdAt ?: Instant.now()
         )
     }
 

@@ -3,6 +3,7 @@ package com.ampairs.auth.controller
 import com.ampairs.auth.service.AccountLockoutService
 import com.ampairs.core.domain.dto.ApiResponse
 import jakarta.servlet.http.HttpServletRequest
+import jakarta.validation.Valid
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
@@ -51,7 +52,7 @@ class AccountLockoutController(
     @PostMapping("/unlock")
     @PreAuthorize("hasRole('ADMIN')")
     fun unlockAccount(
-        @RequestBody request: UnlockAccountRequest,
+        @Valid @RequestBody request: UnlockAccountRequest,
         httpRequest: HttpServletRequest,
     ): ApiResponse<Map<String, Any>> {
         val currentUser = SecurityContextHolder.getContext().authentication?.name ?: "system"

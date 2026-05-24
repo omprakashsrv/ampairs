@@ -4,6 +4,7 @@ import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.tax.domain.dto.TaxConfigurationDto
 import com.ampairs.tax.domain.dto.UpdateTaxConfigurationRequest
 import com.ampairs.tax.service.TaxConfigurationServiceV2
+import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -21,7 +22,7 @@ class TaxConfigurationController(
 
     @PostMapping
     fun createConfiguration(
-        @RequestBody request: UpdateTaxConfigurationRequest
+        @Valid @RequestBody request: UpdateTaxConfigurationRequest
     ): ApiResponse<TaxConfigurationDto> {
         // Multi-tenancy via @TenantId handles workspace scoping automatically
         val config = taxConfigurationService.createConfiguration(request)
@@ -30,7 +31,7 @@ class TaxConfigurationController(
 
     @PutMapping
     fun updateConfiguration(
-        @RequestBody request: UpdateTaxConfigurationRequest
+        @Valid @RequestBody request: UpdateTaxConfigurationRequest
     ): ApiResponse<TaxConfigurationDto> {
         // Multi-tenancy via @TenantId handles workspace scoping automatically
         val config = taxConfigurationService.updateConfiguration(request)
