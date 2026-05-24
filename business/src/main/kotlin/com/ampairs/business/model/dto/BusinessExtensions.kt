@@ -49,8 +49,8 @@ fun Business.asBusinessResponse(): BusinessResponse {
         website = this.website,
 
         // Logo (return API URLs, not S3 object keys)
-        logoUrl = this.logoUrl?.let { "/api/v1/business/logo" },
-        logoThumbnailUrl = this.logoThumbnailUrl?.let { "/api/v1/business/logo/thumbnail" },
+        logoUrl = this.logoUrl?.let { "/business/v1/businesses/logo" },
+        logoThumbnailUrl = this.logoThumbnailUrl?.let { "/business/v1/businesses/logo/thumbnail" },
 
         // Tax/Regulatory
         taxId = this.taxId,

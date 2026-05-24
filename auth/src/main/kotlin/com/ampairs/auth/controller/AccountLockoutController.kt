@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*
  * Provides endpoints for checking lockout status and administrative unlock functions
  */
 @RestController
-@RequestMapping("/auth/v1/lockout")
+@RequestMapping("/auth/v1/lockouts")
 class AccountLockoutController(
     private val accountLockoutService: AccountLockoutService,
 ) {

@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.*
  * Located in ampairs_service module to coordinate between auth and workspace modules
  */
 @RestController
-@RequestMapping("/api/v1/account")
+@RequestMapping("/account/v1/accounts")
 class AccountDeletionController(
     private val accountDeletionService: AccountDeletionService
 ) {

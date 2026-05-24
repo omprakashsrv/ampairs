@@ -8,7 +8,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/v1/devices")
+@RequestMapping("/event/v1/device-sessions")
 class DeviceStatusController(
     private val deviceStatusService: DeviceStatusService
 ) {

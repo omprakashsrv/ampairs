@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*
 import java.time.Instant
 
 @RestController
-@RequestMapping("/order/v1")
+@RequestMapping("/order/v1/orders")
 class OrderController(
     private val orderService: OrderService,
 ) {
@@ -21,7 +21,7 @@ class OrderController(
         return ApiResponse.success(result)
     }
 
-    @PostMapping("create_invoice")
+    @PostMapping("/create-invoice")
     fun createInvoice(@RequestBody @Valid orderUpdateRequest: OrderUpdateRequest): ApiResponse<OrderResponse> {
         val order = orderUpdateRequest.toOrder()
         val orderItems = orderUpdateRequest.orderItems.toOrderItems()

@@ -26,26 +26,29 @@ springdoc:
   group-configs:
     - group: 'public'
       displayName: 'Public APIs'
-      pathsToMatch: 
+      pathsToMatch:
         - '/auth/v1/**'
-        - '/workspace/v1'
-        - '/workspace/v1/check-slug/**'
-        - '/workspace/v1/search/**'
+        - '/workspace/v1/workspaces'
+        - '/workspace/v1/workspaces/check-slug/**'
+        - '/workspace/v1/workspaces/search/**'
     - group: 'workspace'
       displayName: 'Workspace Management'
-      pathsToMatch: 
+      pathsToMatch:
         - '/workspace/v1/**'
     - group: 'modules'
       displayName: 'Module Management'
-      pathsToMatch: 
+      pathsToMatch:
         - '/workspace/v1/modules/**'
     - group: 'business'
       displayName: 'Business Operations'
-      pathsToMatch: 
+      pathsToMatch:
         - '/customer/v1/**'
         - '/product/v1/**'
+        - '/inventory/v1/**'
         - '/order/v1/**'
         - '/invoice/v1/**'
+        - '/unit/v1/**'
+        - '/tax/v1/**'
 
 # WebSocket & Real-time Messaging Configuration
 websocket:
@@ -160,6 +163,9 @@ spring:
       max-lifetime: 300000
       validation-timeout: 5000
       leak-detection-threshold: 300000
+  mvc:
+    servlet:
+      path: /api
   servlet:
     multipart:
       enabled: true

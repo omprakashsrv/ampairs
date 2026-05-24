@@ -29,9 +29,9 @@ private val PUBLIC_PATHS = arrayOf(
     "/v3/api-docs/**",
     "/v3/api-docs",
     "/swagger-resources/**",
-    "/api/v1/app-updates/check",
-    "/api/v1/app-updates/download/**",
-    "/webhooks/**"
+    "/core/v1/app-updates/check",
+    "/core/v1/app-updates/download/**",
+    "/subscription/v1/webhooks/**"
 )
 
 @Configuration

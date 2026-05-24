@@ -19,7 +19,7 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/v1/subscription/invoices")
+@RequestMapping("/subscription/v1/invoices")
 @PreAuthorize("isAuthenticated()")
 class SubscriptionInvoiceController(
     private val subscriptionInvoiceQueryService: SubscriptionInvoiceQueryService,
@@ -133,7 +133,7 @@ class SubscriptionInvoiceController(
 }
 
 @RestController
-@RequestMapping("/api/v1/subscription/billing-preferences")
+@RequestMapping("/subscription/v1/billing-preferences")
 @PreAuthorize("isAuthenticated()")
 class SubscriptionBillingPreferencesController(
     private val billingPreferencesService: BillingPreferencesService

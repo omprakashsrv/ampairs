@@ -15,7 +15,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/webhooks")
+@RequestMapping("/subscription/v1/webhooks")
 @Tag(name = "Webhooks", description = "Payment provider webhook endpoints")
 class WebhookController(
     private val googlePlayWebhookHandler: GooglePlayWebhookHandler,

@@ -4,6 +4,7 @@ import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.inventory.domain.dto.*
 import com.ampairs.inventory.service.InventorySerialService
 import jakarta.validation.Valid
+import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -33,6 +34,7 @@ class SerialController(
      * @return Created serial
      */
     @PostMapping("")
+    @ResponseStatus(HttpStatus.CREATED)
     fun createSerial(@Valid @RequestBody request: SerialRequest): ApiResponse<InventorySerialResponse> {
         val serial = inventorySerialService.createSerial(request)
         return ApiResponse.success(serial.asInventorySerialResponse())
@@ -49,6 +51,7 @@ class SerialController(
      * @return List of created serials
      */
     @PostMapping("/bulk")
+    @ResponseStatus(HttpStatus.CREATED)
     fun createBulkSerials(@Valid @RequestBody request: BulkSerialRequest): ApiResponse<List<InventorySerialResponse>> {
         val serials = inventorySerialService.createBulkSerials(request)
         return ApiResponse.success(serials.asInventorySerialResponses())

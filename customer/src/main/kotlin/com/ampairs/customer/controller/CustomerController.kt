@@ -17,7 +17,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/customer/v1")
+@RequestMapping("/customer/v1/customers")
 @Tag(name = "Customer Management", description = "Customer CRUD and management operations")
 class CustomerController(
     private val customerService: CustomerService,

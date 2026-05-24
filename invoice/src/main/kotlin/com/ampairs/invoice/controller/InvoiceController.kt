@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*
 import java.time.Instant
 
 @RestController
-@RequestMapping("/invoice/v1")
+@RequestMapping("/invoice/v1/invoices")
 class InvoiceController(
     private val invoiceService: InvoiceService,
 ) {

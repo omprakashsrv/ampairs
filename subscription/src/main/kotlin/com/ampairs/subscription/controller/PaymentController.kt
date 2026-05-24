@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*
  * Handles both mobile (Google Play, App Store) and desktop/web (Razorpay, Stripe) payments.
  */
 @RestController
-@RequestMapping("/api/v1/subscription/payment")
+@RequestMapping("/subscription/v1/payments")
 @Tag(name = "Payment", description = "Payment and purchase APIs")
 class PaymentController(
     private val orchestrationService: PaymentOrchestrationService

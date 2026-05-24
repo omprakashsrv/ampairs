@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*
  * Base path: /api/v1/form
  */
 @RestController
-@RequestMapping("/form/v1")
+@RequestMapping("/form/v1/config")
 class ConfigController(
     private val configService: ConfigService
 ) {

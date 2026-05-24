@@ -4,6 +4,7 @@ import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.inventory.domain.dto.*
 import com.ampairs.inventory.service.InventoryBatchService
 import jakarta.validation.Valid
+import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -35,6 +36,7 @@ class BatchController(
      * @return Created batch
      */
     @PostMapping("")
+    @ResponseStatus(HttpStatus.CREATED)
     fun createBatch(@Valid @RequestBody request: InventoryBatchRequest): ApiResponse<InventoryBatchResponse> {
         val batch = inventoryBatchService.createBatch(request)
         return ApiResponse.success(batch.asInventoryBatchResponse())

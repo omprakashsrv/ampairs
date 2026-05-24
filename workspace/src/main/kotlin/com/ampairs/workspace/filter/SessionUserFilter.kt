@@ -101,8 +101,8 @@ class SessionUserFilter(
     private fun shouldSkipFilter(requestPath: String): Boolean {
         return requestPath.contains("/auth/v1") ||
                 requestPath.contains("/user/v1") ||
-                requestPath.contains("/api/v1/account") ||  // User-level account operations (delete, etc.)
-                requestPath.contains("/api/v1/admin") ||
+                requestPath.contains("/account/v1") ||
+                requestPath.contains("/core/v1/admin") ||
                 isWorkspaceListEndpoint(requestPath) ||
                 isAppUpdatesPublicEndpoint(requestPath) ||
                 requestPath.contains("/actuator/health") ||
@@ -113,15 +113,13 @@ class SessionUserFilter(
     }
 
     private fun isAppUpdatesPublicEndpoint(requestPath: String): Boolean {
-        // Public endpoints that don't require workspace context
-        return requestPath == "/api/v1/app-updates/check" ||
-                requestPath.startsWith("/api/v1/app-updates/download/")
+        return requestPath.endsWith("/core/v1/app-updates/check") ||
+                requestPath.contains("/core/v1/app-updates/download/")
     }
 
     private fun isWorkspaceListEndpoint(requestPath: String): Boolean {
-        // Match exact path /workspace/v1 or /workspace/v1/ for GET requests (getUserWorkspaces)
-        // and POST requests (createWorkspace)
-        return requestPath.matches(Regex("^/workspace/v1/?$")) || requestPath.contains("/workspace/v1/search")
+        return requestPath.matches(Regex("^(/api)?/workspace/v1/workspaces/?$")) ||
+                requestPath.contains("/workspace/v1/workspaces/search")
     }
 
     private fun sendAccessDeniedResponse(

@@ -39,7 +39,7 @@ import org.springframework.web.bind.annotation.*
     """
 )
 @RestController
-@RequestMapping("/workspace/v1/workspaces/{workspaceId}/teams")
+@RequestMapping("/workspace/v1/teams")
 @SecurityRequirement(name = "BearerAuth")
 class WorkspaceTeamController(
     private val teamService: WorkspaceTeamService
@@ -120,7 +120,7 @@ class WorkspaceTeamController(
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("@workspaceAuthorizationService.hasPermission(#workspaceId, 'MANAGE_TEAMS')")
     fun createTeam(
-        @PathVariable workspaceId: String,
+        @RequestHeader("X-Workspace-ID") workspaceId: String,
         @Valid @RequestBody request: CreateTeamRequest
     ): ApiResponse<TeamResponse> {
         return ApiResponse.success(teamService.createTeam(workspaceId, request))
@@ -192,7 +192,7 @@ class WorkspaceTeamController(
     @GetMapping
     @PreAuthorize("@workspaceAuthorizationService.hasPermission(#workspaceId, 'VIEW_TEAMS')")
     fun searchTeams(
-        @PathVariable workspaceId: String,
+        @RequestHeader("X-Workspace-ID") workspaceId: String,
         @Parameter(description = "Search text to filter teams by name or description")
         @RequestParam(required = false) query: String?,
         @Parameter(description = "Filter teams by department")
@@ -222,7 +222,7 @@ class WorkspaceTeamController(
     @GetMapping("/{teamId}")
     @PreAuthorize("@workspaceAuthorizationService.hasPermission(#workspaceId, 'VIEW_TEAMS')")
     fun getTeam(
-        @PathVariable workspaceId: String,
+        @RequestHeader("X-Workspace-ID") workspaceId: String,
         @PathVariable teamId: String
     ): ApiResponse<TeamResponse> {
         return ApiResponse.success(teamService.getTeamById(workspaceId, teamId))
@@ -235,7 +235,7 @@ class WorkspaceTeamController(
     @PutMapping("/{teamId}")
     @PreAuthorize("@workspaceAuthorizationService.hasPermission(#workspaceId, 'MANAGE_TEAMS')")
     fun updateTeam(
-        @PathVariable workspaceId: String,
+        @RequestHeader("X-Workspace-ID") workspaceId: String,
         @PathVariable teamId: String,
         @Valid @RequestBody request: UpdateTeamRequest
     ): ApiResponse<TeamResponse> {
@@ -249,7 +249,7 @@ class WorkspaceTeamController(
     @DeleteMapping("/{teamId}")
     @PreAuthorize("@workspaceAuthorizationService.hasPermission(#workspaceId, 'MANAGE_TEAMS')")
     fun deleteTeam(
-        @PathVariable workspaceId: String,
+        @RequestHeader("X-Workspace-ID") workspaceId: String,
         @PathVariable teamId: String
     ): ApiResponse<GenericSuccessResponse> {
         teamService.deleteTeam(workspaceId, teamId)
@@ -263,7 +263,7 @@ class WorkspaceTeamController(
     @PostMapping("/{teamId}/members")
     @PreAuthorize("@workspaceAuthorizationService.hasPermission(#workspaceId, 'MANAGE_TEAM_MEMBERS')")
     fun addTeamMembers(
-        @PathVariable workspaceId: String,
+        @RequestHeader("X-Workspace-ID") workspaceId: String,
         @PathVariable teamId: String,
         @Valid @RequestBody request: AddTeamMembersRequest
     ): ApiResponse<TeamResponse> {
@@ -277,7 +277,7 @@ class WorkspaceTeamController(
     @PostMapping("/{teamId}/members/remove")
     @PreAuthorize("@workspaceAuthorizationService.hasPermission(#workspaceId, 'MANAGE_TEAM_MEMBERS')")
     fun removeTeamMembers(
-        @PathVariable workspaceId: String,
+        @RequestHeader("X-Workspace-ID") workspaceId: String,
         @PathVariable teamId: String,
         @Valid @RequestBody request: RemoveTeamMembersRequest
     ): ApiResponse<TeamResponse> {
@@ -291,7 +291,7 @@ class WorkspaceTeamController(
     @PutMapping("/{teamId}/members/{memberId}")
     @PreAuthorize("@workspaceAuthorizationService.hasPermission(#workspaceId, 'MANAGE_TEAM_MEMBERS')")
     fun updateTeamMember(
-        @PathVariable workspaceId: String,
+        @RequestHeader("X-Workspace-ID") workspaceId: String,
         @PathVariable teamId: String,
         @PathVariable memberId: String,
         @Valid @RequestBody request: UpdateTeamMemberRequest

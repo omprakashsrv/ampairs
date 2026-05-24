@@ -28,7 +28,7 @@ import org.springframework.web.bind.annotation.*
  * - Description: Desktop app update management (macOS, Windows, Linux)
  */
 @RestController
-@RequestMapping("/api/v1/app-updates")
+@RequestMapping("/core/v1/app-updates")
 class AppUpdateController(
     private val appUpdateService: AppUpdateService,
     private val s3FileStreamService: S3FileStreamService

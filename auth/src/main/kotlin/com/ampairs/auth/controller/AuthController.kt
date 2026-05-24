@@ -308,7 +308,7 @@ class AuthController(
         return ApiResponse.success(authService.authenticateWithFirebase(firebaseAuthRequest, request))
     }
 
-    @PostMapping("/refresh_token")
+    @PostMapping("/refresh-token")
     @Operation(
         summary = "Refresh access token",
         description = "Use refresh token to obtain a new access token. This endpoint is device-specific."

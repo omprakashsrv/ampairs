@@ -40,7 +40,7 @@ import java.util.concurrent.TimeUnit
  * - Returns ApiResponse<T> format consistently
  */
 @RestController
-@RequestMapping("/api/v1/business")
+@RequestMapping("/business/v1/businesses")
 @Tag(name = "Business Management", description = "Complete business configuration and management")
 class BusinessController(
     private val businessService: BusinessService,

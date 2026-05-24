@@ -10,7 +10,7 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/v1/events")
+@RequestMapping("/event/v1/events")
 class WorkspaceEventController(
     private val eventService: WorkspaceEventService
 ) {

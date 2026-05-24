@@ -5,6 +5,7 @@ import com.ampairs.core.exception.NotFoundException
 import com.ampairs.inventory.domain.dto.*
 import com.ampairs.inventory.service.InventoryItemService
 import jakarta.validation.Valid
+import org.springframework.http.HttpStatus
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.web.bind.annotation.*
@@ -22,6 +23,7 @@ class InventoryController(
 ) {
 
     @PostMapping("")
+    @ResponseStatus(HttpStatus.CREATED)
     fun createInventoryItem(@Valid @RequestBody request: InventoryItemRequest): ApiResponse<InventoryItemResponse> {
         val item = request.toInventoryItem()
         val created = inventoryItemService.createInventoryItem(item)

@@ -12,7 +12,7 @@ import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/v1/unit")
+@RequestMapping("/unit/v1/units")
 @Validated
 class UnitController(
     private val unitService: UnitService

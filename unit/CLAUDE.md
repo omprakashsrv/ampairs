@@ -13,7 +13,7 @@ Formula: `derivedQuantity = baseQuantity × multiplier`
 - Units in use by products cannot be deleted (`UnitInUseException`)
 
 ## Base path
-`/api/v1/unit/**`
+`/unit/v1/units/**`, `/unit/v1/conversions/**`
 
 ## Migrations
 `V1.0.41`

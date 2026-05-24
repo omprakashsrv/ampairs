@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController
  * Only available when token cleanup is enabled.
  */
 @RestController
-@RequestMapping("/api/admin/token-cleanup")
+@RequestMapping("/auth/v1/admin/token-cleanup")
 @ConditionalOnProperty(
     name = ["application.security.token-cleanup.enabled"],
     havingValue = "true",
@@ -33,7 +33,7 @@ class TokenCleanupController(
         val expiredCount = tokenCleanupService.getExpiredTokenCount()
         return ApiResponse.success(
             mapOf(
-                "expiredTokenCount" to expiredCount,
+                "expired_token_count" to expiredCount,
                 "message" to "Number of expired/revoked tokens pending cleanup"
             )
         )
@@ -48,7 +48,7 @@ class TokenCleanupController(
         val deletedCount = tokenCleanupService.performManualCleanup()
         return ApiResponse.success(
             mapOf(
-                "deletedCount" to deletedCount,
+                "deleted_count" to deletedCount,
                 "message" to "Token cleanup completed successfully"
             )
         )

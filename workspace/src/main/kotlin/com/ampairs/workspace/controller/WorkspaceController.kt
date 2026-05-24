@@ -63,7 +63,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
     """
 )
 @RestController
-@RequestMapping("/workspace/v1")
+@RequestMapping("/workspace/v1/workspaces")
 @SecurityRequirement(name = "BearerAuth")
 class WorkspaceController(
     private val workspaceService: WorkspaceService,

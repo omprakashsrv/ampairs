@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.RestController
 import java.time.Instant
 
 @RestController
-@RequestMapping("/api/test")
+@RequestMapping("/core/v1/test")
 class TestController {
 
     @GetMapping("/rate-limit")

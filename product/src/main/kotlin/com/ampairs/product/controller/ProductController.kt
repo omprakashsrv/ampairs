@@ -19,7 +19,7 @@ import org.springframework.web.multipart.MultipartFile
 import java.time.Instant
 
 @RestController
-@RequestMapping("/product/v1")
+@RequestMapping("/product/v1/products")
 class ProductController(
     val productService: ProductService,
     val fileService: FileService
@@ -38,7 +38,7 @@ class ProductController(
         return ApiResponse.success(products.asResponse())
     }
 
-    @GetMapping("/product_category")
+    @GetMapping("/product-category")
     fun getProductsWithCategory(@RequestParam("group_id") groupId: String): ApiResponse<ProductsCategoryResponse> {
         val products = productService.getProducts(groupId)
         val categoryIds = products.map { it.categoryId ?: "" }.toSet()
@@ -59,7 +59,7 @@ class ProductController(
         return ApiResponse.success(groups.asResponse())
     }
 
-    @GetMapping("/all_groups_category")
+    @GetMapping("/all-groups-category")
     fun getGroupsCategory(): ApiResponse<AllGroupsResponse> {
         val groups = productService.getGroups()
         val categories = productService.getCategories()
@@ -80,7 +80,7 @@ class ProductController(
         return ApiResponse.success(brands.asResponse())
     }
 
-    @GetMapping("/sub_categories")
+    @GetMapping("/sub-categories")
     fun getSubCategories(): ApiResponse<List<ProductSubCategoryResponse>> {
         val categories = productService.getSubCategories()
         return ApiResponse.success(categories.asResponse())
@@ -105,14 +105,14 @@ class ProductController(
         return ApiResponse.success(productCategories.asResponse())
     }
 
-    @PostMapping("/sub_categories")
+    @PostMapping("/sub-categories")
     fun updateSubCategories(@RequestBody categories: List<ProductSubCategoryRequest>): ApiResponse<List<ProductSubCategoryResponse>> {
         val productSubCategories =
             productService.updateProductSubCategories(categories.asDatabaseModel())
         return ApiResponse.success(productSubCategories.asResponse())
     }
 
-    @PostMapping("/upload_image")
+    @PostMapping("/upload-image")
     fun uploadImage(
         @RequestParam("file") file: MultipartFile,
         @RequestParam("path") path: String,

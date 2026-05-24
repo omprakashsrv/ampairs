@@ -72,7 +72,7 @@ import org.springframework.web.bind.annotation.*
     """
 )
 @RestController
-@RequestMapping("/workspace/v1/member")
+@RequestMapping("/workspace/v1/members")
 @SecurityRequirement(name = "BearerAuth")
 @SecurityRequirement(name = "WorkspaceContext")
 class WorkspaceMemberController(

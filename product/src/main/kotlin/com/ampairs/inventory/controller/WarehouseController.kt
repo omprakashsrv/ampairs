@@ -9,6 +9,7 @@ import com.ampairs.inventory.domain.dto.asWarehouseResponses
 import com.ampairs.inventory.domain.dto.toWarehouse
 import com.ampairs.inventory.service.WarehouseService
 import jakarta.validation.Valid
+import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -34,6 +35,7 @@ class WarehouseController(
      * @return Created warehouse
      */
     @PostMapping("")
+    @ResponseStatus(HttpStatus.CREATED)
     fun createWarehouse(
         @Valid @RequestBody request: WarehouseRequest
     ): ApiResponse<WarehouseResponse> {

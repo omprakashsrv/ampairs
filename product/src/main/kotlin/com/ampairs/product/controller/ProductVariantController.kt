@@ -12,7 +12,7 @@ import java.math.BigDecimal
 import java.time.Instant
 
 @RestController
-@RequestMapping("/product/v1")
+@RequestMapping("/product/v1/products")
 class ProductVariantController(
     private val variantService: ProductVariantService
 ) {
@@ -21,8 +21,8 @@ class ProductVariantController(
      * Get all variants for a product
      * GET /product/v1/{productId}/variants
      */
-    @GetMapping("/{product_id}/variants")
-    fun getProductVariants(@PathVariable("product_id") productId: String): ApiResponse<List<ProductVariantResponse>> {
+    @GetMapping("/{productId}/variants")
+    fun getProductVariants(@PathVariable productId: String): ApiResponse<List<ProductVariantResponse>> {
         val variants = variantService.getProductVariants(productId)
         return ApiResponse.success(variants)
     }
@@ -31,8 +31,8 @@ class ProductVariantController(
      * Get a specific variant by UID
      * GET /product/v1/variants/{variantId}
      */
-    @GetMapping("/variants/{variant_id}")
-    fun getVariant(@PathVariable("variant_id") variantId: String): ApiResponse<ProductVariantResponse> {
+    @GetMapping("/variants/{variantId}")
+    fun getVariant(@PathVariable variantId: String): ApiResponse<ProductVariantResponse> {
         val variant = variantService.getVariant(variantId)
         return ApiResponse.success(variant)
     }
@@ -51,10 +51,10 @@ class ProductVariantController(
      * Create a new variant
      * POST /product/v1/{productId}/variants
      */
-    @PostMapping("/{product_id}/variants")
+    @PostMapping("/{productId}/variants")
     @ResponseStatus(HttpStatus.CREATED)
     fun createVariant(
-        @PathVariable("product_id") productId: String,
+        @PathVariable productId: String,
         @Valid @RequestBody request: ProductVariantRequest
     ): ApiResponse<ProductVariantResponse> {
         val variant = variantService.createVariant(productId, request)
@@ -65,9 +65,9 @@ class ProductVariantController(
      * Update a variant
      * PUT /product/v1/variants/{variantId}
      */
-    @PutMapping("/variants/{variant_id}")
+    @PutMapping("/variants/{variantId}")
     fun updateVariant(
-        @PathVariable("variant_id") variantId: String,
+        @PathVariable variantId: String,
         @Valid @RequestBody request: ProductVariantRequest
     ): ApiResponse<ProductVariantResponse> {
         val variant = variantService.updateVariant(variantId, request)
@@ -78,8 +78,8 @@ class ProductVariantController(
      * Delete a variant (soft delete)
      * DELETE /product/v1/variants/{variantId}
      */
-    @DeleteMapping("/variants/{variant_id}")
-    fun deleteVariant(@PathVariable("variant_id") variantId: String): ApiResponse<String> {
+    @DeleteMapping("/variants/{variantId}")
+    fun deleteVariant(@PathVariable variantId: String): ApiResponse<String> {
         variantService.deleteVariant(variantId)
         return ApiResponse.success("Variant deleted successfully")
     }
@@ -88,8 +88,8 @@ class ProductVariantController(
      * Get total stock across all variants
      * GET /product/v1/{productId}/variants/stock
      */
-    @GetMapping("/{product_id}/variants/stock")
-    fun getTotalVariantStock(@PathVariable("product_id") productId: String): ApiResponse<BigDecimal> {
+    @GetMapping("/{productId}/variants/stock")
+    fun getTotalVariantStock(@PathVariable productId: String): ApiResponse<BigDecimal> {
         val totalStock = variantService.getTotalVariantStock(productId)
         return ApiResponse.success(totalStock)
     }
@@ -98,8 +98,8 @@ class ProductVariantController(
      * Get available attribute options for a product
      * GET /product/v1/{productId}/variants/attributes
      */
-    @GetMapping("/{product_id}/variants/attributes")
-    fun getAttributeOptions(@PathVariable("product_id") productId: String): ApiResponse<Map<String, List<String>>> {
+    @GetMapping("/{productId}/variants/attributes")
+    fun getAttributeOptions(@PathVariable productId: String): ApiResponse<Map<String, List<String>>> {
         val attributes = variantService.getAttributeOptions(productId)
         return ApiResponse.success(attributes)
     }

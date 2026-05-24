@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController
  * Only accessible by authenticated users for their own rate limit status
  */
 @RestController
-@RequestMapping("/auth/v1/rate-limit")
+@RequestMapping("/auth/v1/rate-limits")
 class RateLimitController(
     private val rateLimitingService: RateLimitingService,
 ) {

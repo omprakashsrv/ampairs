@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*
  * Provides endpoints for creating, listing, and revoking API keys.
  */
 @RestController
-@RequestMapping("/api/v1/admin/api-keys")
+@RequestMapping("/core/v1/admin/api-keys")
 @PreAuthorize("hasRole('SUPER_ADMIN')")
 class ApiKeyController(
     private val apiKeyService: ApiKeyService

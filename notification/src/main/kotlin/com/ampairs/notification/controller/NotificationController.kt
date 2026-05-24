@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*
  * Notification Controller for monitoring and managing notification operations
  */
 @RestController
-@RequestMapping("/notification/v1")
+@RequestMapping("/notification/v1/notifications")
 class NotificationController(
     private val notificationService: NotificationService,
 ) {
@@ -49,7 +49,7 @@ class NotificationController(
         logger.info("Sending test notification to: {} via {}", recipient, channel)
         val notificationChannel = NotificationChannel.valueOf(channel.uppercase())
         val notificationId = notificationService.queueNotification(recipient, message, notificationChannel)
-        return ApiResponse.success(mapOf("notificationId" to notificationId, "channel" to notificationChannel.name))
+        return ApiResponse.success(mapOf("notification_id" to notificationId, "channel" to notificationChannel.name))
     }
 
     /**
@@ -62,7 +62,7 @@ class NotificationController(
     ): ApiResponse<Map<String, Any>> {
         logger.info("Sending test SMS to: {}", phoneNumber)
         val smsId = notificationService.queueSms(phoneNumber, message)
-        return ApiResponse.success(mapOf("smsId" to smsId))
+        return ApiResponse.success(mapOf("sms_id" to smsId))
     }
 
     /**
