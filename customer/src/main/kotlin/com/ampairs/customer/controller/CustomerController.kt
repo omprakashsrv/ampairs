@@ -111,7 +111,7 @@ class CustomerController @Autowired constructor(
     @PutMapping("/{customerId}")
     fun updateCustomer(
         @PathVariable customerId: String,
-        @RequestBody request: CustomerUpdateRequest
+        @Valid @RequestBody request: CustomerUpdateRequest
     ): ApiResponse<CustomerResponse> {
         val updates = Customer().apply {
             name = request.name
