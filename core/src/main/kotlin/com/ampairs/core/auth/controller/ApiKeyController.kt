@@ -3,8 +3,10 @@ package com.ampairs.core.auth.controller
 import com.ampairs.core.auth.domain.*
 import com.ampairs.core.auth.service.ApiKeyService
 import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.security.AuthenticationHelper
 import org.slf4j.LoggerFactory
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -31,14 +33,10 @@ class ApiKeyController(
     @PostMapping
     fun createApiKey(
         @RequestBody request: CreateApiKeyRequest
-        // TODO: Get current user from SecurityContext
-        // @AuthenticationPrincipal user: UserPrincipal
     ): ApiResponse<ApiKeyCreationResponse> {
-        logger.info("Creating API key: ${request.name}")
-
-        val result = apiKeyService.createApiKey(request, createdByUserId = "admin")
-
-        return ApiResponse.success(result)
+        val userId = AuthenticationHelper.getCurrentUserId(SecurityContextHolder.getContext().authentication) ?: "admin"
+        logger.info("Creating API key: ${request.name} by user: $userId")
+        return ApiResponse.success(apiKeyService.createApiKey(request, createdByUserId = userId))
     }
 
     /**
@@ -75,9 +73,9 @@ class ApiKeyController(
     fun revokeApiKey(
         @PathVariable uid: String,
         @RequestParam reason: String
-        // TODO: Get current user from SecurityContext
     ): ApiResponse<Map<String, String>> {
-        apiKeyService.revokeApiKey(uid, reason, revokedBy = "admin")
+        val userId = AuthenticationHelper.getCurrentUserId(SecurityContextHolder.getContext().authentication) ?: "admin"
+        apiKeyService.revokeApiKey(uid, reason, revokedBy = userId)
         return ApiResponse.success(mapOf(
             "message" to "API key revoked successfully",
             "uid" to uid
