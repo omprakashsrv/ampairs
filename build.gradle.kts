@@ -2,8 +2,12 @@
 // This coordinates builds between different components
 
 plugins {
-    base // Provides clean and other basic tasks
-    kotlin("plugin.spring") version "2.3.20"
+    base
+    id("org.springframework.boot") version "4.0.6" apply false
+    id("io.spring.dependency-management") version "1.1.7" apply false
+    id("org.flywaydb.flyway") version "11.14.1" apply false
+    kotlin("jvm") version "2.3.20" apply false
+    kotlin("plugin.spring") version "2.3.20" apply false
 }
 
 // Project information
