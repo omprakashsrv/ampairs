@@ -1,5 +1,6 @@
 package com.ampairs.notification.service
 
+import com.ampairs.notification.config.NotificationProperties
 import com.ampairs.notification.model.NotificationQueue
 import com.ampairs.notification.provider.NotificationChannel
 import com.ampairs.notification.provider.NotificationProvider
@@ -10,7 +11,6 @@ import com.ampairs.notification.provider.sms.Msg91SmsProvider
 import com.ampairs.notification.repository.NotificationQueueRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Primary
 import org.springframework.scheduling.annotation.Async
 import org.springframework.scheduling.annotation.Scheduled
@@ -20,10 +20,6 @@ import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executor
 
-/**
- * Notification Service with scheduler for sending notifications across multiple channels
- * Supports multiple providers with failover mechanism
- */
 @Service
 @Primary
 class NotificationService(
@@ -32,21 +28,10 @@ class NotificationService(
     private val awsSnsSmsProvider: AwsSnsSmsProvider,
     @Qualifier("notificationTaskExecutor") private val taskExecutor: Executor,
     private val notificationDatabaseService: NotificationDatabaseService,
+    private val props: NotificationProperties,
 ) {
 
     private val logger = LoggerFactory.getLogger(NotificationService::class.java)
-
-    @Value("\${notification.sms.primary-provider:MSG91}")
-    private lateinit var primarySmsProvider: String
-
-    @Value("\${notification.batch-size:10}")
-    private var batchSize: Int = 10
-
-    @Value("\${notification.retry-delay-minutes:5}")
-    private var retryDelayMinutes: Long = 5
-
-    @Value("\${notification.cleanup-days:30}")
-    private var cleanupDays: Long = 30
 
     /**
      * Send notification via specified channel
@@ -160,7 +145,7 @@ class NotificationService(
     @Scheduled(fixedDelay = 30000) // 30 seconds
     fun processPendingNotifications() {
         try {
-            val pendingNotifications = notificationQueueRepository.findPendingNotifications().take(batchSize)
+            val pendingNotifications = notificationQueueRepository.findPendingNotifications().take(props.batchSize)
 
             if (pendingNotifications.isNotEmpty()) {
                 logger.info(
@@ -208,7 +193,7 @@ class NotificationService(
     @Scheduled(fixedDelay = 300000) // 5 minutes
     fun processFailedNotifications() {
         try {
-            val failedNotifications = notificationQueueRepository.findFailedNotificationsForRetry().take(batchSize)
+            val failedNotifications = notificationQueueRepository.findFailedNotificationsForRetry().take(props.batchSize)
 
             if (failedNotifications.isNotEmpty()) {
                 logger.info("Retrying {} failed notifications in parallel", failedNotifications.size)
@@ -238,7 +223,7 @@ class NotificationService(
         try {
             if (notification.canRetry()) {
                 // Update database in separate short transaction
-                notificationDatabaseService.markNotificationForRetry(notification, retryDelayMinutes)
+                notificationDatabaseService.markNotificationForRetry(notification, props.retryDelayMinutes)
                 logger.info(
                     "Notification marked for retry: {} (attempt {}/{})",
                     notification.uid, notification.retryCount, notification.maxRetries
@@ -260,14 +245,14 @@ class NotificationService(
     @Transactional
     fun cleanupOldNotifications() {
         try {
-            val cutoffDate = Instant.now().minus(cleanupDays.toLong(), java.time.temporal.ChronoUnit.DAYS)
+            val cutoffDate = Instant.now().minus(props.cleanupDays, java.time.temporal.ChronoUnit.DAYS)
             val oldNotifications = notificationQueueRepository.findOldCompletedNotifications(cutoffDate)
 
             if (oldNotifications.isNotEmpty()) {
                 notificationQueueRepository.deleteAll(oldNotifications)
                 logger.info(
                     "Cleaned up {} old notification records older than {} days",
-                    oldNotifications.size, cleanupDays
+                    oldNotifications.size, props.cleanupDays
                 )
             }
         } catch (e: Exception) {
@@ -365,11 +350,11 @@ class NotificationService(
      * Get SMS providers in preferred order
      */
     private fun getSmsProvidersInOrder(): List<NotificationProvider> {
-        return when (primarySmsProvider.uppercase()) {
+        return when (props.sms.primaryProvider.uppercase()) {
             "MSG91" -> listOf(msg91SmsProvider, awsSnsSmsProvider)
             "AWS_SNS" -> listOf(awsSnsSmsProvider, msg91SmsProvider)
             else -> {
-                logger.warn("Unknown primary SMS provider: {}, using default order", primarySmsProvider)
+                logger.warn("Unknown primary SMS provider: {}, using default order", props.sms.primaryProvider)
                 listOf(msg91SmsProvider, awsSnsSmsProvider)
             }
         }

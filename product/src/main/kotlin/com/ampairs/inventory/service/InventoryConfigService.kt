@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional
  * - Provide configuration for transaction processing
  */
 @Service
+@Transactional(readOnly = true)
 class InventoryConfigService(
     private val inventoryConfigRepository: InventoryConfigRepository
 ) {

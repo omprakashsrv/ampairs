@@ -31,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional
  * - Multi-tenant aware (uses TenantContextHolder)
  */
 @Service
+@Transactional(readOnly = true)
 class BusinessService(
     private val businessRepository: BusinessRepository
 ) {

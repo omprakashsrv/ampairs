@@ -1,37 +1,20 @@
 package com.ampairs.notification.provider.sms
 
+import com.ampairs.notification.config.NotificationProperties
 import com.ampairs.notification.provider.NotificationResult
 import com.fasterxml.jackson.annotation.JsonProperty
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.*
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClientException
 import org.springframework.web.client.RestTemplate
 
-/**
- * MSG91 SMS Provider implementation
- */
 @Component
-class Msg91SmsProvider : SmsNotificationProvider {
+class Msg91SmsProvider(
+    private val props: NotificationProperties
+) : SmsNotificationProvider {
 
     private val logger = LoggerFactory.getLogger(Msg91SmsProvider::class.java)
-
-    @Value("\${notification.sms.msg91.auth-key}")
-    private lateinit var authKey: String
-
-    @Value("\${notification.sms.msg91.template-id}")
-    private lateinit var templateId: String
-
-    @Value("\${notification.sms.msg91.sender-id:AMPAIR}")
-    private lateinit var senderId: String
-
-    @Value("\${notification.sms.msg91.api-url:https://control.msg91.com/api/v5/otp}")
-    private lateinit var apiUrl: String
-
-    @Value("\${notification.sms.msg91.enabled:true}")
-    private var enabled: Boolean = true
-
     private val restTemplate = RestTemplate()
 
     override fun sendSms(phoneNumber: String, message: String): NotificationResult {
@@ -67,15 +50,15 @@ class Msg91SmsProvider : SmsNotificationProvider {
     }
 
     private fun callMsg91Api(phoneNumber: String, message: String): ResponseEntity<Msg91Response> {
+        val msg91 = props.sms.msg91
         val headers = HttpHeaders()
         headers.contentType = MediaType.APPLICATION_JSON
-        headers.set("authkey", authKey)
+        headers.set("authkey", msg91.authKey)
 
-        // Extract OTP from message (assuming format: "123456 is one time password...")
         val otp = message.split(" ")[0]
 
         val requestBody = Msg91Request(
-            template_id = templateId,
+            template_id = msg91.templateId,
             short_url = "0",
             recipients = listOf(
                 Msg91Recipient(
@@ -87,8 +70,8 @@ class Msg91SmsProvider : SmsNotificationProvider {
 
         val requestEntity = HttpEntity(requestBody, headers)
 
-        logger.debug("Sending MSG91 SMS to: {} with template: {}", phoneNumber, templateId)
-        return restTemplate.postForEntity(apiUrl, requestEntity, Msg91Response::class.java)
+        logger.debug("Sending MSG91 SMS to: {} with template: {}", phoneNumber, msg91.templateId)
+        return restTemplate.postForEntity(msg91.apiUrl, requestEntity, Msg91Response::class.java)
     }
 
     private fun handleMsg91Response(response: ResponseEntity<Msg91Response>): NotificationResult {
@@ -127,12 +110,12 @@ class Msg91SmsProvider : SmsNotificationProvider {
 
     override fun getProviderName(): String = "MSG91"
 
-    override fun isAvailable(): Boolean = enabled && authKey.isNotEmpty() && templateId.isNotEmpty()
+    override fun isAvailable(): Boolean {
+        val msg91 = props.sms.msg91
+        return msg91.enabled && msg91.authKey.isNotEmpty() && msg91.templateId.isNotEmpty()
+    }
 }
 
-/**
- * MSG91 API Request model
- */
 data class Msg91Request(
     val template_id: String,
     val short_url: String = "0",
@@ -141,14 +124,11 @@ data class Msg91Request(
 
 data class Msg91Recipient(
     val mobiles: String,
-    val var1: String, // OTP variable
+    val var1: String,
 )
 
-/**
- * MSG91 API Response model
- */
 data class Msg91Response(
     val type: String,
     val message: String,
-    @JsonProperty("request_id") val requestId: String?, // MSG91 API uses snake_case with underscore
+    @JsonProperty("request_id") val requestId: String?,
 )
