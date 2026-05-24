@@ -6,8 +6,8 @@ import com.ampairs.subscription.domain.model.PaymentProvider
 import com.ampairs.subscription.domain.repository.SubscriptionPlanRepository
 import com.ampairs.subscription.domain.service.*
 import com.ampairs.subscription.exception.SubscriptionException
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.MediaType
@@ -224,12 +224,12 @@ class AppleAppStoreService(
 
         val status = json.get("status")?.asInt() ?: 21100
 
-        val latestReceiptInfo = json.get("latest_receipt_info")?.let { array ->
-            array.map { parseReceiptInfo(it) }
+        val latestReceiptInfo: List<AppleReceiptInfo>? = json.get("latest_receipt_info")?.let { array ->
+            array.toList().map { parseReceiptInfo(it) }
         }
 
-        val pendingRenewalInfo = json.get("pending_renewal_info")?.let { array ->
-            array.map { parsePendingRenewalInfo(it) }
+        val pendingRenewalInfo: List<ApplePendingRenewalInfo>? = json.get("pending_renewal_info")?.let { array ->
+            array.toList().map { parsePendingRenewalInfo(it) }
         }
 
         return AppleReceiptResponse(

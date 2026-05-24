@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.http.CacheControl
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -41,9 +40,9 @@ import java.util.concurrent.TimeUnit
  * - Returns ApiResponse<T> format consistently
  */
 @RestController
-@RequestMapping("/api/v1/business")
+@RequestMapping("/business/v1/businesses")
 @Tag(name = "Business Management", description = "Complete business configuration and management")
-class BusinessController @Autowired constructor(
+class BusinessController(
     private val businessService: BusinessService,
     private val businessImageService: BusinessImageService
 ) {

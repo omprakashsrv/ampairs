@@ -1,11 +1,10 @@
 package com.ampairs.user.service
 
 import com.ampairs.core.service.UserService as CoreUserService
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 @Service
-class CoreUserServiceImpl @Autowired constructor(
+class CoreUserServiceImpl(
     private val authUserService: UserService
 ) : CoreUserService {
 

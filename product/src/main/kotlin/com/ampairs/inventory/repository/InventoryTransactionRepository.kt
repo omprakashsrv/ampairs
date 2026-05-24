@@ -299,11 +299,10 @@ interface InventoryTransactionRepository : CrudRepository<InventoryTransaction, 
      * @param serialNumber Serial number to search for
      * @return List of transactions containing the serial number
      */
-    @EntityGraph("InventoryTransaction.full")
     @Query("""
-        SELECT t FROM inventory_transaction t
-        WHERE JSON_CONTAINS(t.serialNumbers, :serialNumber) = 1
-    """, nativeQuery = false)
+        SELECT * FROM inventory_transaction
+        WHERE serial_numbers::jsonb @> jsonb_build_array(CAST(:serialNumber AS text))
+    """, nativeQuery = true)
     fun findBySerialNumber(@Param("serialNumber") serialNumber: String): List<InventoryTransaction>
 
     // ============================================================================

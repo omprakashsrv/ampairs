@@ -58,7 +58,7 @@ data class PaginatedResponse<T>(
     val data: T,
     val pagination: PaginationInfo,
     val path: String? = null,
-    val timestamp: java.time.LocalDateTime = java.time.LocalDateTime.now(),
+    val timestamp: java.time.Instant = java.time.Instant.now(),
 )
 
 data class PaginationInfo(

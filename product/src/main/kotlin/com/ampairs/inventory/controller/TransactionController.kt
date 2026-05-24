@@ -4,7 +4,6 @@ import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.inventory.domain.dto.*
 import com.ampairs.inventory.service.InventoryTransactionService
 import jakarta.validation.Valid
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.web.bind.annotation.*
@@ -24,7 +23,7 @@ import org.springframework.web.bind.annotation.*
  */
 @RestController
 @RequestMapping("/inventory/v1/transactions")
-class TransactionController @Autowired constructor(
+class TransactionController(
     private val inventoryTransactionService: InventoryTransactionService
 ) {
 

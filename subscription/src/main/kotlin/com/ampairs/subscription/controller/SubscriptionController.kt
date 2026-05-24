@@ -13,7 +13,7 @@ import kotlinx.coroutines.runBlocking
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/v1/subscriptions")
+@RequestMapping("/subscription/v1/subscriptions")
 @Tag(name = "Subscription Management", description = "APIs for subscription and billing management")
 class SubscriptionController(
     private val subscriptionService: SubscriptionService,

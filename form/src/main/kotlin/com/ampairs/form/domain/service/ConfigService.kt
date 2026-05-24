@@ -8,7 +8,7 @@ import com.ampairs.form.domain.repository.FieldConfigRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * Service for managing entity configuration schemas
@@ -220,7 +220,7 @@ class ConfigService(
         val attributeUpdates = attributeDefinitions.mapNotNull { it.updatedAt }
         val allUpdates = fieldUpdates + attributeUpdates
 
-        return allUpdates.maxOrNull() ?: LocalDateTime.now().toString()
+        return allUpdates.maxOrNull() ?: Instant.now().toString()
     }
 
     /**

@@ -4,24 +4,24 @@ import com.ampairs.workspace.model.WorkspaceActivity
 import com.ampairs.workspace.model.enums.SubscriptionPlan
 import com.ampairs.workspace.model.enums.WorkspaceActivityType
 import com.ampairs.workspace.repository.WorkspaceActivityRepository
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.context.request.RequestContextHolder
 import org.springframework.web.context.request.ServletRequestAttributes
-import java.time.LocalDateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 
 /**
  * Service for workspace activity logging and tracking operations
  * Provides central activity logging with database persistence
  */
 @Service
-class WorkspaceActivityService @Autowired constructor(
+class WorkspaceActivityService(
     private val activityRepository: WorkspaceActivityRepository,
     private val objectMapper: ObjectMapper,
 ) {
@@ -801,7 +801,7 @@ class WorkspaceActivityService @Autowired constructor(
     @Transactional(readOnly = true)
     fun getActivityStatistics(workspaceId: String, days: Int = 30): Map<String, Any> {
         return try {
-            val sinceDate = LocalDateTime.now().minusDays(days.toLong())
+            val sinceDate = Instant.now().minus(days.toLong(), ChronoUnit.DAYS)
 
             // Get statistics from database
             val activityStatsByType = activityRepository.getActivityStatsByType(workspaceId, sinceDate)
@@ -819,11 +819,11 @@ class WorkspaceActivityService @Autowired constructor(
             }
 
             val totalActivities = activityRepository.countByWorkspaceIdAndCreatedAtBetween(
-                workspaceId, sinceDate, LocalDateTime.now()
+                workspaceId, sinceDate, Instant.now()
             )
 
             val recentActivities = activityRepository.getRecentActivities(
-                workspaceId, LocalDateTime.now().minusDays(1),
+                workspaceId, Instant.now().minus(1, ChronoUnit.DAYS),
                 Pageable.ofSize(10)
             ).size
 

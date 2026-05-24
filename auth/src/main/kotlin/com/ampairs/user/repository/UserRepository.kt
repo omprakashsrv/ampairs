@@ -3,6 +3,7 @@ package com.ampairs.user.repository
 import com.ampairs.user.model.User
 import org.springframework.data.repository.CrudRepository
 import org.springframework.stereotype.Repository
+import java.time.Instant
 import java.util.*
 
 @Repository
@@ -22,4 +23,6 @@ interface UserRepository : CrudRepository<User, Long> {
     fun findByPhone(phone: String): Optional<User>
 
     fun findByEmail(email: String): Optional<User>
+
+    fun findByDeletedTrueAndDeletionScheduledForBefore(cutoff: Instant): List<User>
 }

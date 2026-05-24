@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * Repository for Notification Queue operations
@@ -31,7 +31,7 @@ interface NotificationQueueRepository : JpaRepository<NotificationQueue, String>
             NotificationStatus.PENDING,
             NotificationStatus.RETRYING
         ),
-        @Param("currentTime") currentTime: LocalDateTime = LocalDateTime.now(),
+        @Param("currentTime") currentTime: Instant = Instant.now(),
     ): List<NotificationQueue>
 
     /**
@@ -52,7 +52,7 @@ interface NotificationQueueRepository : JpaRepository<NotificationQueue, String>
             NotificationStatus.PENDING,
             NotificationStatus.RETRYING
         ),
-        @Param("currentTime") currentTime: LocalDateTime = LocalDateTime.now(),
+        @Param("currentTime") currentTime: Instant = Instant.now(),
     ): List<NotificationQueue>
 
     /**
@@ -69,7 +69,7 @@ interface NotificationQueueRepository : JpaRepository<NotificationQueue, String>
     )
     fun findFailedNotificationsForRetry(
         @Param("status") status: NotificationStatus = NotificationStatus.FAILED,
-        @Param("currentTime") currentTime: LocalDateTime = LocalDateTime.now(),
+        @Param("currentTime") currentTime: Instant = Instant.now(),
     ): List<NotificationQueue>
 
     /**
@@ -102,7 +102,7 @@ interface NotificationQueueRepository : JpaRepository<NotificationQueue, String>
      * Delete old notification records (for cleanup)
      */
     @Query("DELETE FROM NotificationQueue n WHERE n.createdAt < :cutoffDate")
-    fun deleteOldRecords(@Param("cutoffDate") cutoffDate: LocalDateTime)
+    fun deleteOldRecords(@Param("cutoffDate") cutoffDate: Instant)
 
     /**
      * Find notifications older than specified days for cleanup
@@ -114,7 +114,7 @@ interface NotificationQueueRepository : JpaRepository<NotificationQueue, String>
         AND n.status IN ('SENT', 'EXHAUSTED')
     """
     )
-    fun findOldCompletedNotifications(@Param("cutoffDate") cutoffDate: LocalDateTime): List<NotificationQueue>
+    fun findOldCompletedNotifications(@Param("cutoffDate") cutoffDate: Instant): List<NotificationQueue>
 }
 
 /**

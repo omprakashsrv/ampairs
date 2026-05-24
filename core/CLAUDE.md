@@ -11,8 +11,11 @@ Shared infrastructure — consumed by all other modules. No business logic.
 - `GlobalExceptionHandler` — all domain exceptions bubble here; never catch in controllers
 
 ## API endpoints
-- `/api/v1/app-updates/**` — app version check + admin management
-- `/api/v1/admin/api-keys/**` — API key CRUD
+- `/core/v1/app-updates/**` — app version check + admin management
+- `/core/v1/admin/api-keys/**` — API key CRUD
+- `/core/v1/test` — dev/healthcheck endpoint
+
+Note: `/api` prefix is set globally via `spring.mvc.servlet.path` in application.yml.
 
 ## Migrations
 `V1.0.2`, `V1.0.17` (app_versions), `V1.0.18` (S3 streaming), `V1.0.19` (api_keys)

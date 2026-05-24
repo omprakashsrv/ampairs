@@ -5,8 +5,8 @@ import com.ampairs.subscription.domain.model.WebhookStatus
 import com.ampairs.subscription.domain.service.WebhookIdempotencyService
 import com.ampairs.subscription.exception.SubscriptionException
 import com.ampairs.subscription.webhook.*
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.ObjectMapper
 import io.swagger.v3.oas.annotations.Hidden
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -15,7 +15,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/webhooks")
+@RequestMapping("/subscription/v1/webhooks")
 @Tag(name = "Webhooks", description = "Payment provider webhook endpoints")
 class WebhookController(
     private val googlePlayWebhookHandler: GooglePlayWebhookHandler,

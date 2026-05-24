@@ -1,5 +1,6 @@
 package com.ampairs.core.appupdate.domain
 
+import jakarta.validation.constraints.NotBlank
 import java.math.BigDecimal
 import java.time.Instant
 
@@ -41,11 +42,14 @@ data class UpdateInfoDTO(
  * Admin uploads file to S3 first, then provides s3_key and filename.
  */
 data class CreateAppVersionRequest(
+    @field:NotBlank(message = "Version is required")
     val version: String,
     val versionCode: Int,
     val platform: PlatformType,
     val isMandatory: Boolean = false,
+    @field:NotBlank(message = "S3 key is required")
     val s3Key: String,
+    @field:NotBlank(message = "Filename is required")
     val filename: String,
     val fileSizeMb: BigDecimal? = null,
     val releaseNotes: String? = null,

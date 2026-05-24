@@ -11,7 +11,6 @@ import com.ampairs.customer.repository.StateRepository
 import com.ampairs.event.domain.events.CustomerCreatedEvent
 import com.ampairs.event.domain.events.CustomerDeletedEvent
 import com.ampairs.event.domain.events.CustomerUpdatedEvent
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
@@ -26,7 +25,8 @@ import java.time.Instant
 import java.util.*
 
 @Service
-class CustomerService @Autowired constructor(
+@Transactional(readOnly = true)
+class CustomerService(
     val customerRepository: CustomerRepository,
     val customerPagingRepository: CustomerPagingRepository,
     val stateRepository: StateRepository,
@@ -170,8 +170,9 @@ class CustomerService @Autowired constructor(
             existingCustomer.creditDays = updates.creditDays
         }
         if (updates.attributes?.isNotEmpty() == true && updates.attributes != existingCustomer.attributes) {
-            fieldChanges["attributes"] = mapOf("old" to existingCustomer.attributes, "new" to updates.attributes!!)
-            existingCustomer.attributes = updates.attributes
+            val newAttributes = updates.attributes ?: emptyMap()
+            fieldChanges["attributes"] = mapOf("old" to existingCustomer.attributes, "new" to newAttributes)
+            existingCustomer.attributes = newAttributes
         }
         if (updates.status.isNotBlank() && updates.status != existingCustomer.status) {
             fieldChanges["status"] = mapOf("old" to existingCustomer.status, "new" to updates.status)
@@ -223,6 +224,8 @@ class CustomerService @Autowired constructor(
             }
         }
     }
+
+    fun getCustomerByUid(uid: String): Customer? = customerRepository.findByUid(uid)
 
     fun getCustomerByGstNumber(gstNumber: String): Customer? {
         return customerRepository.findByGstNumber(gstNumber).orElse(null)

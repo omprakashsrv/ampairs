@@ -3,7 +3,7 @@ package com.ampairs.auth.model
 import com.ampairs.core.domain.enums.VerificationStatus
 import com.ampairs.core.domain.model.BaseDomain
 import jakarta.persistence.*
-import java.util.*
+import java.time.Instant
 
 private const val LOGIN_SESSION_ID = "LSQ"
 
@@ -20,9 +20,8 @@ class LoginSession : BaseDomain() {
     @Column(name = "user_agent", nullable = false, length = 255)
     var userAgent: String = ""
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "expiry_time", nullable = false)
-    var expiresAt: Date? = null
+    var expiresAt: Instant? = null
 
     @Column(name = "code")
     var code: String = ""
@@ -33,9 +32,8 @@ class LoginSession : BaseDomain() {
     @Column(name = "verified")
     var verified: Boolean = false
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "verified_at")
-    var verifiedAt: Date? = null
+    var verifiedAt: Instant? = null
 
     @Column(name = "expired")
     var expired: Boolean = false
@@ -49,7 +47,7 @@ class LoginSession : BaseDomain() {
     }
 
     fun isExpired(): Boolean {
-        return expiresAt?.before(Date()) ?: true
+        return expiresAt?.isBefore(Instant.now()) ?: true
     }
 
     fun userName(): String {

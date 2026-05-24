@@ -1,7 +1,6 @@
 package com.ampairs.account.service
 
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 
@@ -10,7 +9,7 @@ import org.springframework.stereotype.Service
  * Runs daily at 2 AM
  */
 @Service
-class AccountDeletionScheduler @Autowired constructor(
+class AccountDeletionScheduler(
     private val accountDeletionService: AccountDeletionService
 ) {
 

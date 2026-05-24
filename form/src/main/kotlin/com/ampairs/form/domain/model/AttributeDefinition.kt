@@ -1,7 +1,6 @@
 package com.ampairs.form.domain.model
 
 import com.ampairs.core.domain.model.OwnableBaseDomain
-import com.fasterxml.jackson.annotation.JsonProperty
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
@@ -57,12 +56,10 @@ class AttributeDefinition : OwnableBaseDomain() {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "validation_params")
-    @JsonProperty("validation_params")
     var validationParams: String? = null
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "enum_values")
-    @JsonProperty("enum_values")
     var enumValues: String? = null
 
     @Column(name = "placeholder")

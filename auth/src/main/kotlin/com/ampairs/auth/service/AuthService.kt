@@ -18,21 +18,20 @@ import com.ampairs.user.model.User
 import com.ampairs.user.repository.UserRepository
 import jakarta.persistence.EntityManager
 import jakarta.servlet.http.HttpServletRequest
-import jakarta.transaction.Transactional
+import org.springframework.transaction.annotation.Transactional
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Service
 import java.security.MessageDigest
-import java.time.LocalDateTime
+import java.time.Instant
 import java.util.*
 
 val OTP_LENGTH: Int = 6
 val SMS_VERIFICATION_VALIDITY = 10 * 60 * 1000L
 
 @Service
-class AuthService @Autowired constructor(
+class AuthService(
     val userRepository: UserRepository,
     val tokenRepository: TokenRepository,
     val loginSessionRepository: LoginSessionRepository,
@@ -52,22 +51,19 @@ class AuthService @Autowired constructor(
 
     @Transactional
     fun init(authInitRequest: AuthInitRequest, httpRequest: HttpServletRequest): AuthInitResponse {
-        // Check if account is locked before generating OTP
         if (accountLockoutService.isAccountLocked(authInitRequest.phone, authInitRequest.countryCode)) {
             val lockoutStatus =
                 accountLockoutService.getLockoutStatus(authInitRequest.phone, authInitRequest.countryCode)
             val remainingMinutes = if (lockoutStatus.lockedUntil != null) {
-                java.time.Duration.between(LocalDateTime.now(), lockoutStatus.lockedUntil).toMinutes()
+                java.time.Duration.between(Instant.now(), lockoutStatus.lockedUntil).toMinutes()
             } else 0
-
-            throw Exception("Account temporarily locked due to multiple failed attempts. Please try again in $remainingMinutes minutes.")
+            throw com.ampairs.auth.exception.AccountLockedException(remainingMinutes)
         }
         val loginSession = LoginSession()
         loginSession.phone = authInitRequest.phone
         loginSession.countryCode = authInitRequest.countryCode
         loginSession.code = UniqueIdGenerators.NUMERIC.generate(OTP_LENGTH)
-        // Create expiry time - 10 minutes from now
-        loginSession.expiresAt = Date(System.currentTimeMillis() + SMS_VERIFICATION_VALIDITY)
+        loginSession.expiresAt = Instant.now().plusMillis(SMS_VERIFICATION_VALIDITY)
         val savedSession = loginSessionRepository.save(loginSession)
 
         // Log OTP generation event
@@ -75,7 +71,7 @@ class AuthService @Autowired constructor(
             phone = authInitRequest.phone,
             eventType = SecurityAuditService.OtpEventType.GENERATION,
             success = true,
-            sessionId = savedSession.id!!.toString(),
+            sessionId = savedSession.id.toString(),
             request = httpRequest,
             reason = null
         )
@@ -110,17 +106,15 @@ class AuthService @Autowired constructor(
                     sessionId = request.sessionId
                 )
                 
-                throw Exception("Invalid session Id")
+                throw com.ampairs.auth.exception.InvalidSessionException("Invalid session ID")
             }
 
-        // Check if account is locked before OTP verification
         if (accountLockoutService.isAccountLocked(loginSession.phone, loginSession.countryCode)) {
             val lockoutStatus = accountLockoutService.getLockoutStatus(loginSession.phone, loginSession.countryCode)
             val remainingMinutes = if (lockoutStatus.lockedUntil != null) {
-                java.time.Duration.between(LocalDateTime.now(), lockoutStatus.lockedUntil).toMinutes()
+                java.time.Duration.between(Instant.now(), lockoutStatus.lockedUntil).toMinutes()
             } else 0
-
-            throw Exception("Account temporarily locked due to multiple failed attempts. Please try again in $remainingMinutes minutes.")
+            throw com.ampairs.auth.exception.AccountLockedException(remainingMinutes)
         }
 
         if (loginSession.code == request.otp || isHardcodedOtpValid(request.otp)) {
@@ -158,7 +152,7 @@ class AuthService @Autowired constructor(
 
             // Mark login session as verified to prevent reuse
             loginSession.verified = true
-            loginSession.verifiedAt = Date()
+            loginSession.verifiedAt = Instant.now()
             loginSessionRepository.save(loginSession)
 
             // Record successful authentication
@@ -184,7 +178,7 @@ class AuthService @Autowired constructor(
             // Log JWT token generation
             securityAuditService.logTokenEvent(
                 eventType = SecurityAuditService.TokenEventType.GENERATED,
-                userId = user.id!!.toString(),
+                userId = user.uid,
                 deviceId = deviceSession.deviceId,
                 request = httpRequest
             )
@@ -192,8 +186,8 @@ class AuthService @Autowired constructor(
             val authResponse = AuthenticationResponse()
             authResponse.accessToken = jwtToken
             authResponse.refreshToken = refreshToken
-            authResponse.accessTokenExpiresAt = jwtService.extractExpirationAsLocalDateTime(jwtToken)
-            authResponse.refreshTokenExpiresAt = jwtService.extractExpirationAsLocalDateTime(refreshToken)
+            authResponse.accessTokenExpiresAt = jwtService.extractExpirationAsInstant(jwtToken)
+            authResponse.refreshTokenExpiresAt = jwtService.extractExpirationAsInstant(refreshToken)
             return authResponse
         } else {
             // Record failure for invalid OTP
@@ -225,7 +219,7 @@ class AuthService @Autowired constructor(
                 sessionId = request.sessionId
             )
             
-            throw Exception("Invalid otp")
+            throw com.ampairs.auth.exception.InvalidSessionException("Invalid OTP")
         }
     }
 
@@ -247,7 +241,7 @@ class AuthService @Autowired constructor(
                 )
                 existingSessions.drop(1).forEach { duplicate ->
                     duplicate.isActive = false
-                    duplicate.expiredAt = LocalDateTime.now()
+                    duplicate.expiredAt = Instant.now()
                     deviceSessionRepository.save(duplicate)
                 }
             }
@@ -276,8 +270,8 @@ class AuthService @Autowired constructor(
             newSession.ipAddress = deviceInfo.ipAddress
             newSession.userAgent = deviceInfo.userAgent
             newSession.location = deviceInfo.location
-            newSession.loginTime = LocalDateTime.now()
-            newSession.lastActivity = LocalDateTime.now()
+            newSession.loginTime = Instant.now()
+            newSession.lastActivity = Instant.now()
             newSession.isActive = true
             newSession
         }
@@ -343,7 +337,6 @@ class AuthService @Autowired constructor(
         // against token issue time, but current approach is sufficient for most use cases.
     }
 
-    @Throws(Exception::class)
     @Transactional
     fun refreshToken(
         refreshTokenRequest: RefreshTokenRequest,
@@ -358,14 +351,14 @@ class AuthService @Autowired constructor(
             ?: throw IllegalArgumentException("Device ID is required")
         
         val user: User = this.userRepository.findByUserName(userName)
-            .orElseThrow()
+            .orElseThrow { IllegalStateException("User not found for token: $userName") }
 
         // Verify refresh token is valid and belongs to the device
         if (jwtService.isTokenValid(refreshToken, user)) {
             // Use list query to handle potential race condition duplicates
             val sessions = deviceSessionRepository.findAllByUserIdAndDeviceIdAndIsActiveTrue(user.uid, deviceId)
             if (sessions.isEmpty()) {
-                throw Exception("Device session not found or inactive")
+                throw com.ampairs.auth.exception.InvalidSessionException("Device session not found or inactive")
             }
             val deviceSession = sessions.first()
 
@@ -377,19 +370,17 @@ class AuthService @Autowired constructor(
                 )
                 sessions.drop(1).forEach { duplicate ->
                     duplicate.isActive = false
-                    duplicate.expiredAt = LocalDateTime.now()
+                    duplicate.expiredAt = Instant.now()
                     deviceSessionRepository.save(duplicate)
                 }
             }
 
-            // Validate session hasn't expired due to timeout rules
             if (!sessionManagementService.validateAndExpireIfNeeded(deviceSession)) {
-                throw Exception("Device session has expired")
+                throw com.ampairs.auth.exception.InvalidSessionException("Device session has expired")
             }
 
-            // Verify refresh token hash matches
             if (deviceSession.refreshTokenHash != hashToken(refreshToken)) {
-                throw Exception("Invalid refresh token for device")
+                throw com.ampairs.auth.exception.InvalidSessionException("Invalid refresh token for device")
             }
 
             // CRITICAL: Update device session activity to prevent expiration
@@ -402,7 +393,7 @@ class AuthService @Autowired constructor(
             // Log token refresh event
             securityAuditService.logTokenEvent(
                 eventType = SecurityAuditService.TokenEventType.REFRESHED,
-                userId = user.id!!.toString(),
+                userId = user.id.toString(),
                 deviceId = deviceId,
                 request = httpRequest
             )
@@ -410,30 +401,29 @@ class AuthService @Autowired constructor(
             val authResponse = AuthenticationResponse()
             authResponse.accessToken = accessToken
             authResponse.refreshToken = refreshToken // Keep same refresh token
-            authResponse.accessTokenExpiresAt = jwtService.extractExpirationAsLocalDateTime(accessToken)
-            authResponse.refreshTokenExpiresAt = jwtService.extractExpirationAsLocalDateTime(refreshToken)
+            authResponse.accessTokenExpiresAt = jwtService.extractExpirationAsInstant(accessToken)
+            authResponse.refreshTokenExpiresAt = jwtService.extractExpirationAsInstant(refreshToken)
             return authResponse
         }
-        throw Exception("Refresh token not valid")
+        throw com.ampairs.auth.exception.InvalidSessionException("Refresh token not valid")
     }
 
-    @Throws(Exception::class)
     @Transactional
     fun logout(
         request: HttpServletRequest,
     ): GenericSuccessResponse {
         val authHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw Exception("Access token not found")
+            throw IllegalArgumentException("Access token not found")
         }
 
         val accessToken: String = authHeader.substring(7)
         val userName: String = jwtService.extractUsername(accessToken)
         val deviceId: String = jwtService.extractDeviceId(accessToken)
-            ?: throw Exception("Device ID not found in token")
+            ?: throw IllegalArgumentException("Device ID not found in token")
             
         val user: User = this.userRepository.findByUserName(userName)
-            .orElseThrow()
+            .orElseThrow { IllegalStateException("User not found for token: $userName") }
 
         // Deactivate specific device session only
         deviceSessionRepository.deactivateDeviceSession(user.uid, deviceId)
@@ -443,20 +433,19 @@ class AuthService @Autowired constructor(
         return genericSuccessResponse
     }
 
-    @Throws(Exception::class)
     @Transactional
     fun logoutAllDevices(
         request: HttpServletRequest,
     ): GenericSuccessResponse {
         val authHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw Exception("Access token not found")
+            throw IllegalArgumentException("Access token not found")
         }
 
         val accessToken: String = authHeader.substring(7)
         val userName: String = jwtService.extractUsername(accessToken)
         val user: User = this.userRepository.findByUserName(userName)
-            .orElseThrow()
+            .orElseThrow { IllegalStateException("User not found for token: $userName") }
 
         // Deactivate all device sessions for the user
         deviceSessionRepository.deactivateAllUserSessions(user.uid)
@@ -485,13 +474,13 @@ class AuthService @Autowired constructor(
     fun getUserDevices(request: HttpServletRequest): List<DeviceSessionDto> {
         val authHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw Exception("Access token not found")
+            throw IllegalArgumentException("Access token not found")
         }
 
         val accessToken: String = authHeader.substring(7)
         val userName: String = jwtService.extractUsername(accessToken)
         val user: User = this.userRepository.findByUserName(userName)
-            .orElseThrow()
+            .orElseThrow { IllegalStateException("User not found for token: $userName") }
 
         val deviceSessions = deviceSessionRepository.findByUserIdAndIsActiveTrueOrderByLastActivityDesc(user.uid)
 
@@ -519,19 +508,19 @@ class AuthService @Autowired constructor(
     fun logoutFromDevice(request: HttpServletRequest, targetDeviceId: String): GenericSuccessResponse {
         val authHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw Exception("Access token not found")
+            throw IllegalArgumentException("Access token not found")
         }
 
         val accessToken: String = authHeader.substring(7)
         val userName: String = jwtService.extractUsername(accessToken)
         val user: User = this.userRepository.findByUserName(userName)
-            .orElseThrow()
+            .orElseThrow { IllegalStateException("User not found for token: $userName") }
 
         // Deactivate specific device session
         val deactivatedCount = deviceSessionRepository.deactivateDeviceSession(user.uid, targetDeviceId)
 
         if (deactivatedCount == 0) {
-            throw Exception("Device not found or already inactive")
+            throw com.ampairs.auth.exception.InvalidSessionException("Device not found or already inactive")
         }
 
         val genericSuccessResponse = GenericSuccessResponse()
@@ -563,7 +552,7 @@ class AuthService @Autowired constructor(
                     sessionId = null
                 )
 
-                throw Exception("Invalid Firebase authentication token")
+                throw com.ampairs.auth.exception.InvalidSessionException("Invalid Firebase authentication token")
             }
 
         // Extract phone number from Firebase token
@@ -585,7 +574,7 @@ class AuthService @Autowired constructor(
                 sessionId = null
             )
 
-            throw Exception("Phone number does not match Firebase authentication")
+            throw IllegalArgumentException("Phone number does not match Firebase authentication")
         }
 
         // Create username from phone number
@@ -649,7 +638,7 @@ class AuthService @Autowired constructor(
         // Log JWT token generation
         securityAuditService.logTokenEvent(
             eventType = SecurityAuditService.TokenEventType.GENERATED,
-            userId = user.id!!.toString(),
+            userId = user.id.toString(),
             deviceId = deviceSession.deviceId,
             request = httpRequest
         )
@@ -657,8 +646,8 @@ class AuthService @Autowired constructor(
         val authResponse = AuthenticationResponse()
         authResponse.accessToken = jwtToken
         authResponse.refreshToken = refreshToken
-        authResponse.accessTokenExpiresAt = jwtService.extractExpirationAsLocalDateTime(jwtToken)
-        authResponse.refreshTokenExpiresAt = jwtService.extractExpirationAsLocalDateTime(refreshToken)
+        authResponse.accessTokenExpiresAt = jwtService.extractExpirationAsInstant(jwtToken)
+        authResponse.refreshTokenExpiresAt = jwtService.extractExpirationAsInstant(refreshToken)
         return authResponse
     }
 

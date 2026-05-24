@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 
 @Service
+@Transactional(readOnly = true)
 class ProductService(
     val productPagingRepository: ProductPagingRepository,
     private val unitService: UnitService,
@@ -249,8 +250,9 @@ class ProductService(
             existingProduct.costPrice = updates.costPrice
         }
         if (updates.attributes?.isNotEmpty() == true && updates.attributes != existingProduct.attributes) {
-            fieldChanges["attributes"] = mapOf("old" to existingProduct.attributes, "new" to updates.attributes!!)
-            existingProduct.attributes = updates.attributes
+            val newAttributes = updates.attributes ?: emptyMap()
+            fieldChanges["attributes"] = mapOf("old" to existingProduct.attributes, "new" to newAttributes)
+            existingProduct.attributes = newAttributes
         }
         if (updates.status.isNotBlank() && updates.status != existingProduct.status) {
             fieldChanges["status"] = mapOf("old" to existingProduct.status, "new" to updates.status)
@@ -292,6 +294,8 @@ class ProductService(
             }
         }
     }
+
+    fun getProductByUid(uid: String): Product? = productRepository.findByUid(uid)
 
     fun getProductBySku(sku: String): Product? {
         return productRepository.findBySku(sku).orElse(null)

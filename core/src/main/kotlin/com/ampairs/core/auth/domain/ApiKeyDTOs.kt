@@ -1,11 +1,13 @@
 package com.ampairs.core.auth.domain
 
+import jakarta.validation.constraints.NotBlank
 import java.time.Instant
 
 /**
  * Request DTO for creating a new API key.
  */
 data class CreateApiKeyRequest(
+    @field:NotBlank(message = "API key name is required")
     val name: String,
     val description: String? = null,
     val scope: ApiKeyScope = ApiKeyScope.APP_UPDATES,

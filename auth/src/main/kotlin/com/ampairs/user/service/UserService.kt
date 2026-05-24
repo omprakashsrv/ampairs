@@ -3,14 +3,14 @@ package com.ampairs.user.service
 import com.ampairs.user.model.User
 import com.ampairs.user.model.dto.UserUpdateRequest
 import com.ampairs.user.repository.UserRepository
-import jakarta.transaction.Transactional
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 
 @Service
-class UserService @Autowired constructor(val userRepository: UserRepository) {
+@Transactional(readOnly = true)
+class UserService(val userRepository: UserRepository) {
 
     @Transactional
     fun createUser(user: User): User {
@@ -35,7 +35,7 @@ class UserService @Autowired constructor(val userRepository: UserRepository) {
 
         return when (val principal = auth.principal) {
             is User -> principal
-            else -> throw IllegalStateException("Authentication principal is not a User: ${principal::class.simpleName}")
+            else -> throw IllegalStateException("Authentication principal is not a User: ${principal?.javaClass?.simpleName}")
         }
     }
 

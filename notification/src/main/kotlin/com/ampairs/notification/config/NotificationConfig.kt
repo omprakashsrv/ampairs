@@ -1,14 +1,13 @@
 package com.ampairs.notification.config
 
+import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.task.VirtualThreadTaskExecutor
 import java.util.concurrent.Executor
 
-/**
- * Configuration for notification processing
- */
 @Configuration
+@EnableConfigurationProperties(NotificationProperties::class)
 class NotificationConfig {
 
     /**

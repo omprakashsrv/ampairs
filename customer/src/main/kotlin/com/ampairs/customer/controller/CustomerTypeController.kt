@@ -2,6 +2,7 @@ package com.ampairs.customer.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
+import com.ampairs.core.exception.NotFoundException
 import com.ampairs.customer.domain.dto.CustomerTypeCreateRequest
 import com.ampairs.customer.domain.dto.CustomerTypeResponse
 import com.ampairs.customer.domain.dto.CustomerTypeUpdateRequest
@@ -76,8 +77,7 @@ class CustomerTypeController(
     @GetMapping("/{typeCode}")
     fun getCustomerTypeByCode(@PathVariable typeCode: String): ApiResponse<CustomerTypeResponse> {
         val customerType = customerTypeService.findByTypeCode(typeCode.uppercase())
-            ?: return ApiResponse.error("Customer type not found", "CUSTOMER_TYPE_NOT_FOUND")
-
+            ?: throw NotFoundException("Customer type not found: $typeCode")
         return ApiResponse.success(customerType.asCustomerTypeResponse())
     }
 
@@ -101,7 +101,7 @@ class CustomerTypeController(
         @RequestBody @Valid request: CustomerTypeUpdateRequest
     ): ApiResponse<CustomerTypeResponse> {
         val existingType = customerTypeService.findByTypeCode(typeCode.uppercase())
-            ?: return ApiResponse.error("Customer type not found", "CUSTOMER_TYPE_NOT_FOUND")
+            ?: throw NotFoundException("Customer type not found: $typeCode")
 
         // Apply updates to existing entity
         request.name?.let { existingType.name = it }
@@ -113,8 +113,7 @@ class CustomerTypeController(
         request.metadata?.let { existingType.metadata = it }
 
         val updatedType = customerTypeService.updateCustomerType(typeCode.uppercase(), existingType)
-            ?: return ApiResponse.error("Failed to update customer type", "UPDATE_FAILED")
-
+            ?: throw NotFoundException("Customer type not found: $typeCode")
         return ApiResponse.success(updatedType.asCustomerTypeResponse())
     }
 

@@ -4,13 +4,12 @@ import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.invoice.domain.dto.*
 import com.ampairs.invoice.service.InvoiceService
 import jakarta.validation.Valid
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
 import java.time.Instant
 
 @RestController
-@RequestMapping("/invoice/v1")
-class InvoiceController @Autowired constructor(
+@RequestMapping("/invoice/v1/invoices")
+class InvoiceController(
     private val invoiceService: InvoiceService,
 ) {
 

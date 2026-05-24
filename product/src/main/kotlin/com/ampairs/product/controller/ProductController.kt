@@ -1,6 +1,7 @@
 package com.ampairs.product.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.exception.NotFoundException
 import com.ampairs.file.domain.dto.FileResponse
 import com.ampairs.file.domain.dto.toFileResponse
 import com.ampairs.file.domain.service.FileService
@@ -18,7 +19,7 @@ import org.springframework.web.multipart.MultipartFile
 import java.time.Instant
 
 @RestController
-@RequestMapping("/product/v1")
+@RequestMapping("/product/v1/products")
 class ProductController(
     val productService: ProductService,
     val fileService: FileService
@@ -37,7 +38,7 @@ class ProductController(
         return ApiResponse.success(products.asResponse())
     }
 
-    @GetMapping("/product_category")
+    @GetMapping("/product-category")
     fun getProductsWithCategory(@RequestParam("group_id") groupId: String): ApiResponse<ProductsCategoryResponse> {
         val products = productService.getProducts(groupId)
         val categoryIds = products.map { it.categoryId ?: "" }.toSet()
@@ -58,7 +59,7 @@ class ProductController(
         return ApiResponse.success(groups.asResponse())
     }
 
-    @GetMapping("/all_groups_category")
+    @GetMapping("/all-groups-category")
     fun getGroupsCategory(): ApiResponse<AllGroupsResponse> {
         val groups = productService.getGroups()
         val categories = productService.getCategories()
@@ -79,7 +80,7 @@ class ProductController(
         return ApiResponse.success(brands.asResponse())
     }
 
-    @GetMapping("/sub_categories")
+    @GetMapping("/sub-categories")
     fun getSubCategories(): ApiResponse<List<ProductSubCategoryResponse>> {
         val categories = productService.getSubCategories()
         return ApiResponse.success(categories.asResponse())
@@ -104,14 +105,14 @@ class ProductController(
         return ApiResponse.success(productCategories.asResponse())
     }
 
-    @PostMapping("/sub_categories")
+    @PostMapping("/sub-categories")
     fun updateSubCategories(@RequestBody categories: List<ProductSubCategoryRequest>): ApiResponse<List<ProductSubCategoryResponse>> {
         val productSubCategories =
             productService.updateProductSubCategories(categories.asDatabaseModel())
         return ApiResponse.success(productSubCategories.asResponse())
     }
 
-    @PostMapping("/upload_image")
+    @PostMapping("/upload-image")
     fun uploadImage(
         @RequestParam("file") file: MultipartFile,
         @RequestParam("path") path: String,
@@ -131,7 +132,7 @@ class ProductController(
 
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
-    fun createProduct(@RequestBody request: ProductRequest): ApiResponse<ProductResponse> {
+    fun createProduct(@RequestBody @Valid request: ProductRequest): ApiResponse<ProductResponse> {
         val product = Product().apply {
             name = request.name
             sku = request.sku ?: ""
@@ -182,16 +183,15 @@ class ProductController(
 
     @GetMapping("/{productId}")
     fun getProduct(@PathVariable productId: String): ApiResponse<ProductResponse> {
-        val product = productService.updateProducts(emptyList()).find { it.uid == productId }
-            ?: return ApiResponse.error("Product not found", "PRODUCT_NOT_FOUND")
-        
+        val product = productService.getProductByUid(productId)
+            ?: throw NotFoundException("Product not found: $productId")
         return ApiResponse.success(product.asResponse())
     }
 
     @PutMapping("/{productId}")
     fun updateProduct(
         @PathVariable productId: String,
-        @RequestBody request: ProductRequest
+        @RequestBody @Valid request: ProductRequest
     ): ApiResponse<ProductResponse> {
         val updates = Product().apply {
             name = request.name
@@ -203,8 +203,7 @@ class ProductController(
         }
         
         val updatedProduct = productService.updateProduct(productId, updates)
-            ?: return ApiResponse.error("Product not found", "PRODUCT_NOT_FOUND")
-        
+            ?: throw NotFoundException("Product not found: $productId")
         return ApiResponse.success(updatedProduct.asResponse())
     }
 
@@ -228,8 +227,7 @@ class ProductController(
     @GetMapping("/sku/{sku}")
     fun getProductBySku(@PathVariable sku: String): ApiResponse<ProductResponse> {
         val product = productService.getProductBySku(sku)
-            ?: return ApiResponse.error("Product not found with SKU: $sku", "PRODUCT_NOT_FOUND")
-        
+            ?: throw NotFoundException("Product not found with SKU: $sku")
         return ApiResponse.success(product.asResponse())
     }
 }

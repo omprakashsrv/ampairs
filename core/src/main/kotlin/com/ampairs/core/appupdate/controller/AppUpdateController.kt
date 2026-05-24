@@ -4,11 +4,14 @@ import com.ampairs.core.appupdate.domain.*
 import com.ampairs.core.appupdate.service.AppUpdateService
 import com.ampairs.core.appupdate.service.S3FileStreamService
 import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.security.AuthenticationHelper
+import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.access.prepost.PreAuthorize
+import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -25,7 +28,7 @@ import org.springframework.web.bind.annotation.*
  * - Description: Desktop app update management (macOS, Windows, Linux)
  */
 @RestController
-@RequestMapping("/api/v1/app-updates")
+@RequestMapping("/core/v1/app-updates")
 class AppUpdateController(
     private val appUpdateService: AppUpdateService,
     private val s3FileStreamService: S3FileStreamService
@@ -113,12 +116,11 @@ class AppUpdateController(
     @PostMapping
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasAuthority('API_KEY:APP_UPDATES')")
     fun createVersion(
-        @RequestBody request: CreateAppVersionRequest
-        // TODO: Get current user from SecurityContext
-        // @AuthenticationPrincipal user: UserPrincipal
+        @RequestBody @Valid request: CreateAppVersionRequest
     ): ApiResponse<AppVersionResponse> {
-        val version = appUpdateService.createAppVersion(request, createdBy = "admin")
-        return ApiResponse.success(version.asAppVersionResponse())
+        val userId = SecurityContextHolder.getContext().authentication
+            ?.let { AuthenticationHelper.getCurrentUserId(it) } ?: ""
+        return ApiResponse.success(appUpdateService.createAppVersion(request, createdBy = userId).asAppVersionResponse())
     }
 
     /**
@@ -144,9 +146,11 @@ class AppUpdateController(
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     fun updateVersion(
         @PathVariable uid: String,
-        @RequestBody request: CreateAppVersionRequest
+        @RequestBody @Valid request: CreateAppVersionRequest
     ): ApiResponse<AppVersionResponse> {
-        val version = appUpdateService.updateAppVersion(uid, request, updatedBy = "admin")
+        val userId = SecurityContextHolder.getContext().authentication
+            ?.let { AuthenticationHelper.getCurrentUserId(it) } ?: ""
+        val version = appUpdateService.updateAppVersion(uid, request, updatedBy = userId)
         return ApiResponse.success(version.asAppVersionResponse())
     }
 

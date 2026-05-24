@@ -2,7 +2,7 @@
 
 ## Project
 
-Ampairs — business management SaaS. Backend (Spring Boot 3.5 + Kotlin 2.2 + Java 25), Web (Angular 20 + M3, separate repo), Mobile (Compose Multiplatform, separate repo).
+Ampairs — business management SaaS. Backend (Spring Boot 4.0 + Kotlin 2.3 + Java 21), Web (Angular 20 + M3, separate repo), Mobile (Compose Multiplatform, separate repo).
 
 - 15 domain modules at root + `ampairs_service` aggregator
 - Package convention: `com.ampairs.{module}.{domain|repository|service|controller}`

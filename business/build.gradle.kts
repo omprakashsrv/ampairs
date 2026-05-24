@@ -1,9 +1,8 @@
 plugins {
-    id("org.springframework.boot") version "3.5.6"
-    id("io.spring.dependency-management") version "1.1.7"
-    kotlin("jvm") version "2.2.20"
-    kotlin("plugin.spring") version "2.2.20"
-    id("org.jetbrains.kotlin.plugin.allopen") version "2.2.20"
+    id("org.springframework.boot")
+    id("io.spring.dependency-management")
+    kotlin("jvm")
+    kotlin("plugin.spring")
 }
 
 group = "com.ampairs"
@@ -16,6 +15,12 @@ java {
 }
 kotlin {
     jvmToolchain(21)
+}
+
+allOpen {
+    annotation("jakarta.persistence.Entity")
+    annotation("jakarta.persistence.MappedSuperclass")
+    annotation("jakarta.persistence.Embeddable")
 }
 
 configurations {
@@ -52,7 +57,7 @@ dependencies {
     runtimeOnly("com.mysql:mysql-connector-j")
 
     // OpenAPI/Swagger Documentation
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.17")
 
     // Development
     developmentOnly("org.springframework.boot:spring-boot-devtools")
@@ -60,11 +65,11 @@ dependencies {
     // Testing
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
-    testImplementation("io.mockk:mockk:1.13.8")
-    testImplementation("com.ninja-squad:springmockk:4.0.2")
-    testImplementation("org.testcontainers:testcontainers:1.19.3")
-    testImplementation("org.testcontainers:postgresql:1.19.3")
-    testImplementation("org.testcontainers:junit-jupiter:1.19.3")
+    testImplementation("io.mockk:mockk:1.14.7")
+    testImplementation("com.ninja-squad:springmockk:5.0.1")
+    testImplementation("org.testcontainers:testcontainers")
+    testImplementation("org.testcontainers:postgresql")
+    testImplementation("org.testcontainers:junit-jupiter")
     testImplementation(project(":ampairs_service"))
 }
 

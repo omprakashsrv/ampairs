@@ -11,7 +11,7 @@ import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/v1/billing")
+@RequestMapping("/subscription/v1/billing")
 @Tag(name = "Billing Management", description = "APIs for billing, invoices, and payment methods")
 class BillingController(
     private val billingService: BillingService

@@ -12,7 +12,8 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.TransactionDefinition
 import org.springframework.transaction.support.TransactionTemplate
-import java.time.LocalDateTime
+import java.time.Instant
+import java.time.temporal.ChronoUnit
 import java.util.*
 
 /**
@@ -96,8 +97,7 @@ class TokenCleanupService(
      */
     private fun cleanupExplicitlyRevokedTokens(): Int {
         return try {
-            // Use a far future date to only match explicitly expired/revoked tokens
-            val farFutureDate = LocalDateTime.now().plusYears(100)
+            val farFutureDate = Instant.now().plus(100 * 365, ChronoUnit.DAYS)
             tokenRepository.deleteExpiredOrRevokedTokens(farFutureDate)
         } catch (e: Exception) {
             logger.warn("Error cleaning up explicitly revoked tokens", e)
@@ -111,9 +111,9 @@ class TokenCleanupService(
      */
     private fun cleanupExpiredAccessTokens(): Int {
         return try {
-            val accessTokenCutoff = LocalDateTime.now()
+            val accessTokenCutoff = Instant.now()
                 .minus(applicationProperties.security.jwt.expiration)
-                .minusHours(2) // Small buffer for access tokens
+                .minus(2, ChronoUnit.HOURS)
 
             processBatchedTokenCleanupWithPagination(accessTokenCutoff) { tokenEntity ->
                 isAccessTokenExpired(tokenEntity.token)
@@ -130,9 +130,9 @@ class TokenCleanupService(
      */
     private fun cleanupExpiredRefreshTokens(): Int {
         return try {
-            val refreshTokenCutoff = LocalDateTime.now()
+            val refreshTokenCutoff = Instant.now()
                 .minus(applicationProperties.security.jwt.refreshToken.expiration)
-                .minusHours(24) // Larger buffer for long-lived refresh tokens
+                .minus(24, ChronoUnit.HOURS)
 
             processBatchedTokenCleanupWithPagination(refreshTokenCutoff) { tokenEntity ->
                 isRefreshTokenExpired(tokenEntity.token)
@@ -150,7 +150,7 @@ class TokenCleanupService(
      * @return Total number of tokens deleted
      */
     private fun processBatchedTokenCleanupWithPagination(
-        cutoffDate: LocalDateTime,
+        cutoffDate: Instant,
         shouldDelete: (Token) -> Boolean,
     ): Int {
         val batchSize = applicationProperties.security.tokenCleanup.batchSize
@@ -279,15 +279,14 @@ class TokenCleanupService(
      */
     private fun extractTokenType(tokenString: String): String? {
         return try {
-            val claims = Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+            val claims = Jwts.parser()
+                .verifyWith(getSigningKey())
                 .build()
-                .parseClaimsJws(tokenString)
-                .body
+                .parseSignedClaims(tokenString)
+                .payload
 
             claims[JwtService.TOKEN_TYPE_CLAIM] as? String
         } catch (e: ExpiredJwtException) {
-            // Token is expired but we can still read the claims
             e.claims[JwtService.TOKEN_TYPE_CLAIM] as? String
         } catch (e: Exception) {
             logger.debug("Could not extract token type from token", e)
@@ -295,29 +294,23 @@ class TokenCleanupService(
         }
     }
 
-    /**
-     * Check if JWT token is expired
-     */
     private fun isTokenExpired(tokenString: String): Boolean {
         return try {
-            val claims = Jwts.parserBuilder()
-                .setSigningKey(getSigningKey())
+            val claims = Jwts.parser()
+                .verifyWith(getSigningKey())
                 .build()
-                .parseClaimsJws(tokenString)
-                .body
+                .parseSignedClaims(tokenString)
+                .payload
 
             claims.expiration?.before(Date()) ?: true
         } catch (e: ExpiredJwtException) {
-            true // Token is expired
+            true
         } catch (e: Exception) {
-            true // Any other error means token is invalid/expired
+            true
         }
     }
 
-    /**
-     * Get JWT signing key
-     */
-    private fun getSigningKey(): java.security.Key {
+    private fun getSigningKey(): javax.crypto.SecretKey {
         val keyBytes = io.jsonwebtoken.io.Decoders.BASE64.decode(applicationProperties.security.jwt.secretKey)
         return io.jsonwebtoken.security.Keys.hmacShaKeyFor(keyBytes)
     }
@@ -328,13 +321,13 @@ class TokenCleanupService(
      */
     fun getExpiredTokenCount(): Long {
         return try {
-            val accessTokenCutoff = LocalDateTime.now()
+            val accessTokenCutoff = Instant.now()
                 .minus(applicationProperties.security.jwt.expiration)
-                .minusHours(2)
+                .minus(2, ChronoUnit.HOURS)
 
-            val refreshTokenCutoff = LocalDateTime.now()
+            val refreshTokenCutoff = Instant.now()
                 .minus(applicationProperties.security.jwt.refreshToken.expiration)
-                .minusHours(24)
+                .minus(24, ChronoUnit.HOURS)
 
             // Use count queries instead of loading all tokens
             val accessTokenCount = tokenRepository.countExpiredOrRevokedTokens(accessTokenCutoff)

@@ -10,7 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * Service for managing session timeouts, concurrent session limits, and session cleanup
@@ -29,7 +29,7 @@ class SessionManagementService(
      * Device sessions should remain active as long as refresh tokens are valid
      */
     fun isSessionValid(deviceSession: DeviceSession): Boolean {
-        val now = LocalDateTime.now()
+        val now = Instant.now()
         val sessionConfig = applicationProperties.security.sessionManagement
         val jwtConfig = applicationProperties.security.jwt
 
@@ -68,7 +68,7 @@ class SessionManagementService(
     @Transactional
     fun expireSession(deviceSession: DeviceSession, reason: String) {
         deviceSession.isActive = false
-        deviceSession.expiredAt = LocalDateTime.now()
+        deviceSession.expiredAt = Instant.now()
         deviceSessionRepository.save(deviceSession)
 
         logger.info(
@@ -154,7 +154,7 @@ class SessionManagementService(
     @Transactional
     fun validateAndExpireIfNeeded(deviceSession: DeviceSession): Boolean {
         if (!isSessionValid(deviceSession)) {
-            val now = LocalDateTime.now()
+            val now = Instant.now()
             val jwtConfig = applicationProperties.security.jwt
             val extendedIdleTimeout = Duration.ofDays(30)
 
@@ -179,7 +179,7 @@ class SessionManagementService(
      */
     @Transactional
     fun updateSessionActivity(deviceSession: DeviceSession, request: HttpServletRequest? = null) {
-        deviceSession.lastActivity = LocalDateTime.now()
+        deviceSession.lastActivity = Instant.now()
 
         // Optionally update IP address if it changed
         if (request != null) {
@@ -236,7 +236,7 @@ class SessionManagementService(
             var expiredInBatch = 0
             activeSessions.forEach { session ->
                 if (!isSessionValid(session)) {
-                    val now = LocalDateTime.now()
+                    val now = Instant.now()
                     val jwtConfig = applicationProperties.security.jwt
                     val extendedIdleTimeout = Duration.ofDays(30)
 
@@ -280,7 +280,7 @@ class SessionManagementService(
                 (it[0] as String? ?: "Unknown") to (it[1] as Long)
             },
             "oldest_active_session_age_hours" to (oldestActiveSession?.let {
-                java.time.Duration.between(it.loginTime, LocalDateTime.now()).toHours()
+                java.time.Duration.between(it.loginTime, Instant.now()).toHours()
             } ?: 0)
         )
     }

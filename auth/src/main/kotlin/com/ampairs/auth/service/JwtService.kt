@@ -9,10 +9,10 @@ import io.jsonwebtoken.security.Keys
 import org.slf4j.LoggerFactory
 import org.springframework.security.core.userdetails.UserDetails
 import org.springframework.stereotype.Service
-import java.security.Key
 import java.time.Instant
 import java.util.*
 import java.util.function.Function
+import javax.crypto.SecretKey
 
 @Service
 class JwtService(
@@ -216,38 +216,32 @@ class JwtService(
         return extractClaim(token) { claims: Claims -> claims.expiration }
     }
 
-    fun extractExpirationAsLocalDateTime(token: String): java.time.LocalDateTime {
-        val expirationDate = extractExpiration(token)
-        return expirationDate.toInstant()
-            .atZone(java.time.ZoneId.systemDefault())
-            .toLocalDateTime()
+    fun extractExpirationAsInstant(token: String): Instant {
+        return extractExpiration(token).toInstant()
     }
 
     private fun extractAllClaims(token: String): Claims {
         return try {
             val algorithm = applicationProperties.security.jwt.algorithm
-            val parser = Jwts.parserBuilder()
+            val parserBuilder = Jwts.parser()
 
             if (algorithm == "RS256") {
-                // For RS256, we need to determine which public key to use
                 val keyId = extractKeyIdFromHeader(token)
                 val publicKey = if (keyId != null) {
                     rsaKeyManager.getPublicKey(keyId)
                         ?: throw SignatureException("Unknown key ID: $keyId")
                 } else {
-                    // Fallback to current key if no kid in header
                     rsaKeyManager.getCurrentKeyPair().publicKey
                 }
 
-                parser.setSigningKey(publicKey)
+                parserBuilder.verifyWith(publicKey)
             } else {
-                // Legacy HS256 support
-                parser.setSigningKey(signInKey)
+                parserBuilder.verifyWith(signInKey)
             }
 
-            parser.build()
-                .parseClaimsJws(token)
-                .body
+            parserBuilder.build()
+                .parseSignedClaims(token)
+                .payload
         } catch (e: ExpiredJwtException) {
             logger.debug("JWT token expired: {}", e.message)
             throw e
@@ -284,7 +278,7 @@ class JwtService(
         }
     }
 
-    private val signInKey: Key
+    private val signInKey: SecretKey
         get() {
             val keyBytes = Decoders.BASE64.decode(applicationProperties.security.jwt.secretKey)
             return Keys.hmacShaKeyFor(keyBytes)

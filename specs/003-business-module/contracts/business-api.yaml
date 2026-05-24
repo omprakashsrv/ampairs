@@ -66,7 +66,7 @@ paths:
                   created_at: "2025-10-10T10:00:00Z"
                   updated_at: "2025-10-10T10:00:00Z"
                 timestamp: "2025-10-10T10:00:00Z"
-                path: "/api/v1/business"
+                path: "/business/v1/businesses"
         '404':
           description: Business profile not found for workspace
           content:
@@ -81,7 +81,7 @@ paths:
                   message: "Business profile not found for workspace"
                   details: null
                 timestamp: "2025-10-10T10:00:00Z"
-                path: "/api/v1/business"
+                path: "/business/v1/businesses"
                 trace_id: "abc-def-123"
         '401':
           $ref: '#/components/responses/UnauthorizedError'
@@ -142,7 +142,7 @@ paths:
                     - field: "email"
                       message: "Invalid email format"
                 timestamp: "2025-10-10T10:00:00Z"
-                path: "/api/v1/business"
+                path: "/business/v1/businesses"
         '409':
           description: Business profile already exists for workspace
           content:
@@ -156,7 +156,7 @@ paths:
                   code: "BUSINESS_ALREADY_EXISTS"
                   message: "Business profile already exists for this workspace"
                 timestamp: "2025-10-10T10:00:00Z"
-                path: "/api/v1/business"
+                path: "/business/v1/businesses"
         '401':
           $ref: '#/components/responses/UnauthorizedError'
         '403':
@@ -616,7 +616,7 @@ components:
           format: date-time
         path:
           type: string
-          example: "/api/v1/business"
+          example: "/business/v1/businesses"
 
     ErrorResponse:
       type: object
@@ -650,7 +650,7 @@ components:
           format: date-time
         path:
           type: string
-          example: "/api/v1/business"
+          example: "/business/v1/businesses"
         trace_id:
           type: string
           example: "abc-def-123"

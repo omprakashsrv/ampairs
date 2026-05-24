@@ -8,31 +8,24 @@ import com.ampairs.auth.repository.TokenRepository
 import com.ampairs.user.model.User
 import com.ampairs.user.repository.UserRepository
 import com.ampairs.user.service.UserService
-import com.ampairs.workspace.model.enums.WorkspaceRole
-import com.ampairs.workspace.repository.WorkspaceMemberRepository
-import com.ampairs.workspace.repository.WorkspaceRepository
-import jakarta.transaction.Transactional
+import com.ampairs.workspace.service.WorkspaceMemberService
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
 import java.time.Instant
 
 /**
- * Application-level service for handling user account deletion
- * with workspace ownership validation and soft delete with grace period.
- *
- * Located in ampairs_service (application layer) to coordinate between
- * auth module (User) and workspace module (WorkspaceMember, Workspace).
+ * Application-layer service coordinating user account deletion across the auth and workspace modules.
+ * Cross-module repository injection is intentionally avoided — workspace interactions go through
+ * WorkspaceMemberService's public interface per the module boundary rule.
  */
 @Service
-class AccountDeletionService @Autowired constructor(
+class AccountDeletionService(
     private val userRepository: UserRepository,
     private val userService: UserService,
     private val tokenRepository: TokenRepository,
-    private val workspaceMemberRepository: WorkspaceMemberRepository,
-    private val workspaceRepository: WorkspaceRepository
+    private val workspaceMemberService: WorkspaceMemberService,
 ) {
 
     private val logger = LoggerFactory.getLogger(AccountDeletionService::class.java)
@@ -173,14 +166,11 @@ class AccountDeletionService @Autowired constructor(
         }
         tokenRepository.saveAll(tokens)
 
-        // Deactivate workspace memberships
-        deactivateWorkspaceMemberships(userId)
+        // Revoke and delete all workspace memberships (deactivate then delete)
+        workspaceMemberService.revokeAndDeleteMembershipsForUser(userId)
 
         // Delete all tokens
         tokenRepository.deleteAll(tokens)
-
-        // Delete workspace memberships
-        deleteWorkspaceMemberships(userId)
 
         // Delete user account
         userRepository.delete(user)
@@ -192,94 +182,18 @@ class AccountDeletionService @Autowired constructor(
      * Find all accounts ready for permanent deletion
      */
     fun findAccountsReadyForDeletion(): List<User> {
-        return userRepository.findAll()
-            .filter { it.isReadyForPermanentDeletion() }
+        return userRepository.findByDeletedTrueAndDeletionScheduledForBefore(Instant.now())
     }
 
-    /**
-     * Find workspaces where user is the sole owner
-     */
     private fun findWorkspacesWhereSoleOwner(userId: String): List<WorkspaceOwnershipInfo> {
-        val blockingWorkspaces = mutableListOf<WorkspaceOwnershipInfo>()
-
-        // Get all workspaces where user is a member (using native query to bypass tenant filtering)
-        val userWorkspaces = workspaceRepository.findWorkspacesByUserId(userId, PageRequest.of(0, 100))
-
-        for (workspace in userWorkspaces.content) {
-            // Count OWNER role members in this workspace
-            val ownerCount = workspaceMemberRepository.countByWorkspaceIdAndRoleAndIsActiveTrue(
-                workspace.uid,
-                WorkspaceRole.OWNER
+        return workspaceMemberService.findBlockingWorkspacesForDeletion(userId).map { info ->
+            WorkspaceOwnershipInfo(
+                workspaceId = info.workspaceId,
+                workspaceName = info.workspaceName,
+                workspaceSlug = info.workspaceSlug,
+                memberCount = info.memberCount.toInt(),
             )
-
-            // Check if current user is owner
-            val userMembership = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspace.uid, userId)
-            val isOwner = userMembership.map { it.role == WorkspaceRole.OWNER }.orElse(false)
-
-            // If user is owner and is the only owner, block deletion
-            if (isOwner && ownerCount == 1L) {
-                val totalMembers = workspaceMemberRepository.countByWorkspaceIdAndIsActiveTrue(workspace.uid)
-                blockingWorkspaces.add(
-                    WorkspaceOwnershipInfo(
-                        workspaceId = workspace.uid,
-                        workspaceName = workspace.name,
-                        workspaceSlug = workspace.slug,
-                        memberCount = totalMembers.toInt()
-                    )
-                )
-            }
         }
-
-        return blockingWorkspaces
-    }
-
-    /**
-     * Revoke all authentication tokens for a user
-     */
-    private fun revokeAllUserTokens(userId: String) {
-        val tokens = tokenRepository.findAllValidTokenByUser(userId)
-        tokens.forEach { token ->
-            token.revoked = true
-            token.expired = true
-        }
-        tokenRepository.saveAll(tokens)
-        logger.info("Revoked ${tokens.size} tokens for user $userId")
-    }
-
-    /**
-     * Deactivate all workspace memberships for a user
-     */
-    private fun deactivateWorkspaceMemberships(userId: String) {
-        // Use native query to get all memberships across workspaces
-        val workspaces = workspaceRepository.findWorkspacesByUserId(userId, PageRequest.of(0, 100))
-
-        var deactivatedCount = 0
-        workspaces.content.forEach { workspace ->
-            val membership = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspace.uid, userId)
-            membership.ifPresent { member ->
-                if (member.role != WorkspaceRole.OWNER) {  // Don't deactivate sole owners (already validated)
-                    member.isActive = false
-                    member.deactivatedAt = Instant.now()
-                    member.deactivationReason = "User account deleted"
-                    workspaceMemberRepository.save(member)
-                    deactivatedCount++
-                }
-            }
-        }
-        logger.info("Deactivated $deactivatedCount workspace memberships for user $userId")
-    }
-
-    /**
-     * Permanently delete all workspace memberships for a user
-     */
-    private fun deleteWorkspaceMemberships(userId: String) {
-        val workspaces = workspaceRepository.findWorkspacesByUserId(userId, PageRequest.of(0, 100))
-
-        workspaces.content.forEach { workspace ->
-            val membership = workspaceMemberRepository.findByWorkspaceIdAndUserId(workspace.uid, userId)
-            membership.ifPresent { workspaceMemberRepository.delete(it) }
-        }
-        logger.info("Deleted all workspace memberships for user $userId")
     }
 
     /**

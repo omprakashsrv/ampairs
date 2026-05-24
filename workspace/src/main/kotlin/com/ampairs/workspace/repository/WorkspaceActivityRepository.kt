@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * Repository for workspace activity operations
@@ -29,8 +29,8 @@ interface WorkspaceActivityRepository : JpaRepository<WorkspaceActivity, String>
     @Query("SELECT COUNT(wa) FROM com.ampairs.workspace.model.WorkspaceActivity wa WHERE wa.workspaceId = :workspaceId AND wa.createdAt BETWEEN :startDate AND :endDate")
     fun countByWorkspaceIdAndCreatedAtBetween(
         @Param("workspaceId") workspaceId: String,
-        @Param("startDate") startDate: LocalDateTime,
-        @Param("endDate") endDate: LocalDateTime,
+        @Param("startDate") startDate: Instant,
+        @Param("endDate") endDate: Instant,
     ): Long
 
     /**
@@ -48,7 +48,7 @@ interface WorkspaceActivityRepository : JpaRepository<WorkspaceActivity, String>
     )
     fun getActivityStatsByType(
         @Param("workspaceId") workspaceId: String,
-        @Param("sinceDate") sinceDate: LocalDateTime,
+        @Param("sinceDate") sinceDate: Instant,
     ): List<Array<Any>>
 
     /**
@@ -66,7 +66,7 @@ interface WorkspaceActivityRepository : JpaRepository<WorkspaceActivity, String>
     )
     fun getMostActiveUsers(
         @Param("workspaceId") workspaceId: String,
-        @Param("sinceDate") sinceDate: LocalDateTime,
+        @Param("sinceDate") sinceDate: Instant,
         pageable: Pageable,
     ): List<Array<Any>>
 
@@ -84,7 +84,7 @@ interface WorkspaceActivityRepository : JpaRepository<WorkspaceActivity, String>
     )
     fun getRecentActivities(
         @Param("workspaceId") workspaceId: String,
-        @Param("sinceDate") sinceDate: LocalDateTime,
+        @Param("sinceDate") sinceDate: Instant,
         pageable: Pageable,
     ): List<WorkspaceActivity>
 

@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.*
 import kotlin.math.min
 
 @RestController
-@RequestMapping("/tax/v1/master-component")
+@RequestMapping("/tax/v1/master-components")
 class MasterTaxComponentController(
     private val masterTaxComponentService: MasterTaxComponentService
 ) {

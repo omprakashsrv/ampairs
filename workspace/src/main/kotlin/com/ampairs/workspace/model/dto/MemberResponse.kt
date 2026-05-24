@@ -4,6 +4,7 @@ import com.ampairs.core.domain.User
 import com.ampairs.workspace.model.WorkspaceMember
 import com.ampairs.workspace.model.enums.WorkspaceRole
 import com.ampairs.workspace.security.WorkspacePermission
+import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.Instant
 
 /**
@@ -14,6 +15,7 @@ data class TeamSummary(
     val name: String,
     val teamCode: String,
     val department: String?,
+    @get:JsonProperty("is_primary_team")
     val isPrimaryTeam: Boolean = false
 )
 
@@ -43,6 +45,7 @@ data class MemberResponse(
 
     val permissions: Set<WorkspacePermission>,
 
+    @get:JsonProperty("is_active")
     val isActive: Boolean,
 
     val joinedAt: Instant,
@@ -76,6 +79,7 @@ data class MemberListResponse(
 
     val role: WorkspaceRole,
 
+    @get:JsonProperty("is_active")
     val isActive: Boolean,
 
     val joinedAt: Instant,

@@ -8,7 +8,7 @@ import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/tax/v1/code")
+@RequestMapping("/tax/v1/codes")
 class TaxCodeController(
     private val taxCodeService: TaxCodeService
 ) {

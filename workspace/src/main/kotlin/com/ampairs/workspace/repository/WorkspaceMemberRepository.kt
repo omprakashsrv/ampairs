@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
-import java.time.LocalDateTime
+import java.time.Instant
 import java.util.*
 
 /**
@@ -64,7 +64,7 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
      */
     @Modifying
     @Query("UPDATE com.ampairs.workspace.model.WorkspaceMember wm SET wm.lastActiveAt = :timestamp WHERE wm.uid = :memberId")
-    fun updateLastActivity(@Param("memberId") memberId: String, @Param("timestamp") timestamp: LocalDateTime)
+    fun updateLastActivity(@Param("memberId") memberId: String, @Param("timestamp") timestamp: Instant)
 
     /**
      * Check if user exists in workspace
@@ -97,7 +97,7 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
     /**
      * Count members who joined after a specific date
      */
-    fun countByWorkspaceIdAndJoinedAtAfter(workspaceId: String, joinedAfter: LocalDateTime): Long
+    fun countByWorkspaceIdAndJoinedAtAfter(workspaceId: String, joinedAfter: Instant): Long
 
     /**
      * Find members by role (simplified to avoid cross-module JPA queries)
@@ -177,4 +177,32 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
      * Check if user exists with specific role in current tenant - uses @TenantId
      */
     fun existsByUserIdAndRoleAndIsActiveTrue(userId: String, role: WorkspaceRole): Boolean
+
+    /**
+     * Find all memberships for a user across all workspaces.
+     * Native query bypasses @TenantId filter — required for account deletion flows.
+     */
+    @Query(
+        value = "SELECT * FROM workspace_members WHERE user_id = :userId",
+        nativeQuery = true
+    )
+    fun findAllByUserIdCrossTenant(@Param("userId") userId: String): List<WorkspaceMember>
+
+    /**
+     * Count active owners in a workspace. Native query bypasses @TenantId filter.
+     */
+    @Query(
+        value = "SELECT COUNT(*) FROM workspace_members WHERE workspace_id = :workspaceId AND role = 'OWNER' AND is_active = true",
+        nativeQuery = true
+    )
+    fun countActiveOwnersCrossTenant(@Param("workspaceId") workspaceId: String): Long
+
+    /**
+     * Count active members in a workspace. Native query bypasses @TenantId filter.
+     */
+    @Query(
+        value = "SELECT COUNT(*) FROM workspace_members WHERE workspace_id = :workspaceId AND is_active = true",
+        nativeQuery = true
+    )
+    fun countActiveMembersCrossTenant(@Param("workspaceId") workspaceId: String): Long
 }

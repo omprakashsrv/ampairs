@@ -1,9 +1,8 @@
 plugins {
-    id("org.springframework.boot") version "3.5.6"
-    id("io.spring.dependency-management") version "1.1.7"
-    kotlin("jvm") version "2.2.20"
-    kotlin("plugin.spring") version "2.2.20"
-    id("org.jetbrains.kotlin.plugin.allopen") version "2.2.20"
+    id("org.springframework.boot")
+    id("io.spring.dependency-management")
+    kotlin("jvm")
+    kotlin("plugin.spring")
 }
 
 group = "com.ampairs"
@@ -46,11 +45,11 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-configuration-processor")
 
-    implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.3.0"))
+    implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:4.0.2"))
     implementation("io.awspring.cloud:spring-cloud-aws-starter-s3")
     implementation("io.awspring.cloud:spring-cloud-aws-starter-sns")
 
-    implementation("io.minio:minio:8.5.17")
+    implementation("io.minio:minio:9.0.1")
 
     runtimeOnly("com.mysql:mysql-connector-j")
 

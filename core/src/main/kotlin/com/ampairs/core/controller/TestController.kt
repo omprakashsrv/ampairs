@@ -4,10 +4,10 @@ import com.ampairs.core.domain.dto.ApiResponse
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
-import java.time.LocalDateTime
+import java.time.Instant
 
 @RestController
-@RequestMapping("/api/test")
+@RequestMapping("/core/v1/test")
 class TestController {
 
     @GetMapping("/rate-limit")
@@ -15,7 +15,7 @@ class TestController {
         return ApiResponse.success(
             mapOf(
                 "message" to "Rate limit test endpoint",
-                "timestamp" to LocalDateTime.now()
+                "timestamp" to Instant.now()
             )
         )
     }

@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController
  * Provides session statistics and administrative controls
  */
 @RestController
-@RequestMapping("/core/v1/sessions")
+@RequestMapping("/auth/v1/sessions")
 class SessionManagementController(
     private val sessionManagementService: SessionManagementService,
 ) {

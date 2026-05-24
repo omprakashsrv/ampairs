@@ -2,7 +2,6 @@ package com.ampairs.inventory.service
 
 import com.ampairs.inventory.domain.model.InventoryConfig
 import com.ampairs.inventory.repository.InventoryConfigRepository
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -18,7 +17,8 @@ import org.springframework.transaction.annotation.Transactional
  * - Provide configuration for transaction processing
  */
 @Service
-class InventoryConfigService @Autowired constructor(
+@Transactional(readOnly = true)
+class InventoryConfigService(
     private val inventoryConfigRepository: InventoryConfigRepository
 ) {
 

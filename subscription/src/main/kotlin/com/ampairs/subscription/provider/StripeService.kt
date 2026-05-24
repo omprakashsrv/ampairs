@@ -250,6 +250,7 @@ class StripeService(
 
             logger.info("Stripe subscription plan changed: id={}", externalSubscriptionId)
 
+            val updatedItem = updated.items.data.first()
             ProviderSubscriptionResult(
                 success = true,
                 externalSubscriptionId = externalSubscriptionId,
@@ -257,8 +258,8 @@ class StripeService(
                 checkoutUrl = null,
                 clientSecret = null,
                 orderId = null,
-                currentPeriodStart = Instant.ofEpochSecond(updated.currentPeriodStart),
-                currentPeriodEnd = Instant.ofEpochSecond(updated.currentPeriodEnd)
+                currentPeriodStart = updatedItem.currentPeriodStart?.let { Instant.ofEpochSecond(it) },
+                currentPeriodEnd = updatedItem.currentPeriodEnd?.let { Instant.ofEpochSecond(it) }
             )
         } catch (e: Exception) {
             logger.error("Error changing Stripe subscription plan", e)
@@ -281,8 +282,9 @@ class StripeService(
             val subscription = Subscription.retrieve(externalSubscriptionId)
 
             val active = subscription.status in listOf("active", "trialing")
-            val currentPeriodStart = Instant.ofEpochSecond(subscription.currentPeriodStart)
-            val currentPeriodEnd = Instant.ofEpochSecond(subscription.currentPeriodEnd)
+            val firstItem = subscription.items.data.firstOrNull()
+            val currentPeriodStart = firstItem?.currentPeriodStart?.let { Instant.ofEpochSecond(it) }
+            val currentPeriodEnd = firstItem?.currentPeriodEnd?.let { Instant.ofEpochSecond(it) }
             val cancelAtPeriodEnd = subscription.cancelAtPeriodEnd ?: false
             val cancelledAt = subscription.canceledAt?.let { Instant.ofEpochSecond(it) }
 

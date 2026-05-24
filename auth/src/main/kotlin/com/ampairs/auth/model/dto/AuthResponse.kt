@@ -1,16 +1,16 @@
 package com.ampairs.auth.model.dto
 
 import com.ampairs.user.model.dto.UserResponse
-import java.time.LocalDateTime
+import java.time.Instant
 
 data class AuthResponse(
     val accessToken: String,
     val refreshToken: String,
     val tokenType: String = "Bearer",
-    val expiresIn: Long, // seconds
-    val refreshExpiresIn: Long, // seconds
+    val expiresIn: Long,
+    val refreshExpiresIn: Long,
     val user: UserResponse,
-    val issuedAt: LocalDateTime = LocalDateTime.now(),
+    val issuedAt: Instant = Instant.now(),
 )
 
 data class OtpInitResponse(

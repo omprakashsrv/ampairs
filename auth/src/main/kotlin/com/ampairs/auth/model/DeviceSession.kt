@@ -5,7 +5,7 @@ import com.ampairs.core.domain.model.BaseDomain
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Table
-import java.time.LocalDateTime
+import java.time.Instant
 
 @Entity
 @Table(name = "device_session")
@@ -42,19 +42,19 @@ class DeviceSession : BaseDomain() {
     var location: String? = null // City, Country (optional, based on IP)
 
     @Column(name = "last_activity", nullable = false)
-    var lastActivity: LocalDateTime = LocalDateTime.now()
+    var lastActivity: Instant = Instant.now()
 
     @Column(name = "login_time", nullable = false)
-    var loginTime: LocalDateTime = LocalDateTime.now()
+    var loginTime: Instant = Instant.now()
 
     @Column(name = "is_active", nullable = false)
     var isActive: Boolean = true
 
     @Column(name = "refresh_token_hash", length = 500)
-    var refreshTokenHash: String? = null // Hash of refresh token for this device
+    var refreshTokenHash: String? = null
 
     @Column(name = "expired_at")
-    var expiredAt: LocalDateTime? = null // When the session was expired (if expired)
+    var expiredAt: Instant? = null
 
     override fun obtainSeqIdPrefix(): String {
         return Constants.DEVICE_SESSION_PREFIX
@@ -64,7 +64,7 @@ class DeviceSession : BaseDomain() {
      * Update last activity timestamp
      */
     fun updateActivity() {
-        this.lastActivity = LocalDateTime.now()
+        this.lastActivity = Instant.now()
     }
 
     /**
@@ -79,6 +79,6 @@ class DeviceSession : BaseDomain() {
      * Check if device session is expired (inactive for more than specified days)
      */
     fun isExpired(maxInactiveDays: Long = 180): Boolean {
-        return lastActivity.isBefore(LocalDateTime.now().minusDays(maxInactiveDays))
+        return lastActivity.isBefore(Instant.now().minusSeconds(maxInactiveDays * 86400))
     }
 }

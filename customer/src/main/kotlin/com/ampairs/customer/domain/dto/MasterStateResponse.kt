@@ -50,3 +50,7 @@ fun MasterState.asMasterStateResponse(): MasterStateResponse {
 fun List<MasterState>.asMasterStateResponses(): List<MasterStateResponse> {
     return map { it.asMasterStateResponse() }
 }
+
+data class BulkImportRequest(
+    val stateCodes: List<String>,
+)

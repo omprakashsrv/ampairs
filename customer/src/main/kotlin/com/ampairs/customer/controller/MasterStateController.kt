@@ -1,12 +1,13 @@
 package com.ampairs.customer.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.exception.NotFoundException
+import com.ampairs.customer.domain.dto.BulkImportRequest
 import com.ampairs.customer.domain.dto.MasterStateResponse
 import com.ampairs.customer.domain.dto.asMasterStateResponse
 import com.ampairs.customer.domain.dto.asMasterStateResponses
 import com.ampairs.customer.domain.service.MasterStateService
-import org.springframework.data.domain.PageRequest
-import org.springframework.data.domain.Sort
+import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -71,8 +72,7 @@ class MasterStateController(
     @GetMapping("/{stateCode}")
     fun getStateByCode(@PathVariable stateCode: String): ApiResponse<MasterStateResponse> {
         val state = masterStateService.findByStateCode(stateCode.uppercase())
-            ?: return ApiResponse.error("Master state not found", "MASTER_STATE_NOT_FOUND")
-
+            ?: throw NotFoundException("Master state not found: $stateCode")
         return ApiResponse.success(state.asMasterStateResponse())
     }
 
@@ -84,8 +84,7 @@ class MasterStateController(
         @PathVariable stateCode: String,
     ): ApiResponse<String> {
         val importedState = masterStateService.importStateToWorkspace(stateCode.uppercase())
-            ?: return ApiResponse.error("Failed to import state or state not found", "IMPORT_FAILED")
-
+            ?: throw NotFoundException("State not found: $stateCode")
         return ApiResponse.success("State imported successfully with ID: ${importedState.uid}")
     }
 
@@ -94,7 +93,7 @@ class MasterStateController(
      */
     @PostMapping("/bulk-import")
     fun bulkImportStates(
-        @RequestBody request: BulkImportRequest
+        @Valid @RequestBody request: BulkImportRequest
     ): ApiResponse<Map<String, Any>> {
         val importedStates = masterStateService.importStatesToWorkspace(
             request.stateCodes.map { it.uppercase() },
@@ -141,10 +140,3 @@ class MasterStateController(
     }
 
 }
-
-/**
- * Request DTO for bulk import
- */
-data class BulkImportRequest(
-    val stateCodes: List<String>,
-)

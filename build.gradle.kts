@@ -2,7 +2,12 @@
 // This coordinates builds between different components
 
 plugins {
-    base // Provides clean and other basic tasks
+    base
+    id("org.springframework.boot") version "4.0.6" apply false
+    id("io.spring.dependency-management") version "1.1.7" apply false
+    id("org.flywaydb.flyway") version "11.14.1" apply false
+    kotlin("jvm") version "2.3.20" apply false
+    kotlin("plugin.spring") version "2.3.20" apply false
 }
 
 // Project information
@@ -13,6 +18,10 @@ version = "1.0.0"
 subprojects {
     group = "com.ampairs"
     version = "1.0.0"
+
+    // Override Spring Boot 4.0's managed testcontainers version (2.0.5 sub-modules don't
+    // all exist on Maven Central yet). Pin to the last stable 1.x release instead.
+    extra["testcontainers.version"] = "1.21.0"
 }
 
 // Global tasks for the entire project
@@ -111,3 +120,6 @@ tasks.register("devSetup") {
 
 // Default task information
 defaultTasks("devSetup")
+repositories {
+    mavenCentral()
+}

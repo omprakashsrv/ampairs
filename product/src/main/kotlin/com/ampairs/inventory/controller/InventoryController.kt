@@ -1,10 +1,11 @@
 package com.ampairs.inventory.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.exception.NotFoundException
 import com.ampairs.inventory.domain.dto.*
 import com.ampairs.inventory.service.InventoryItemService
 import jakarta.validation.Valid
-import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.web.bind.annotation.*
@@ -17,11 +18,12 @@ import org.springframework.web.bind.annotation.*
  */
 @RestController
 @RequestMapping("/inventory/v1/items")
-class InventoryController @Autowired constructor(
+class InventoryController(
     private val inventoryItemService: InventoryItemService
 ) {
 
     @PostMapping("")
+    @ResponseStatus(HttpStatus.CREATED)
     fun createInventoryItem(@Valid @RequestBody request: InventoryItemRequest): ApiResponse<InventoryItemResponse> {
         val item = request.toInventoryItem()
         val created = inventoryItemService.createInventoryItem(item)
@@ -62,7 +64,7 @@ class InventoryController @Autowired constructor(
     @GetMapping("/{uid}")
     fun getInventoryItem(@PathVariable uid: String): ApiResponse<InventoryItemResponse> {
         val item = inventoryItemService.getInventoryItemByUid(uid)
-            ?: return ApiResponse.error("INVENTORY_ITEM_NOT_FOUND", "Inventory item not found: $uid")
+            ?: throw NotFoundException("Inventory item not found: $uid")
         return ApiResponse.success(item.asInventoryItemResponse())
     }
 

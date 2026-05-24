@@ -5,7 +5,6 @@ import com.ampairs.inventory.domain.dto.BatchUpdateRequest
 import com.ampairs.inventory.domain.dto.InventoryBatchRequest
 import com.ampairs.inventory.domain.model.InventoryBatch
 import com.ampairs.inventory.repository.InventoryBatchRepository
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -31,7 +30,7 @@ import java.time.Instant
  * - WarehouseService for warehouse validation
  */
 @Service
-class InventoryBatchService @Autowired constructor(
+class InventoryBatchService(
     private val inventoryBatchRepository: InventoryBatchRepository,
     private val inventoryItemService: InventoryItemService,
     private val warehouseService: WarehouseService,

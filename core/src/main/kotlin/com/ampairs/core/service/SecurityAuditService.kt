@@ -1,13 +1,13 @@
 package com.ampairs.core.service
 
 import com.ampairs.core.config.ApplicationProperties
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
-import java.time.LocalDateTime
+import java.time.Instant
 import java.util.*
 
 /**
@@ -297,7 +297,7 @@ class SecurityAuditService(
             val traceId = MDC.get("traceId") ?: generateTraceId()
 
             val logEntry = SecurityLogEntry(
-                timestamp = LocalDateTime.now(),
+                timestamp = Instant.now(),
                 traceId = traceId,
                 event = event
             )
@@ -382,7 +382,7 @@ class SecurityAuditService(
 
     // Data classes for structured logging
     data class SecurityLogEntry(
-        val timestamp: LocalDateTime,
+        val timestamp: Instant,
         val traceId: String,
         val event: SecurityEvent,
     )

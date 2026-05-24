@@ -7,11 +7,16 @@ import com.ampairs.order.domain.dto.Discount
 import com.ampairs.order.domain.dto.TaxInfo
 import com.ampairs.order.domain.enums.OrderStatus
 import jakarta.persistence.*
+import org.hibernate.annotations.BatchSize
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.time.Instant
 
 
+@NamedEntityGraph(
+    name = "Order.withItems",
+    attributeNodes = [NamedAttributeNode("orderItems")]
+)
 @Entity(name = "customer_order")
 @Table(
     indexes = [
@@ -136,6 +141,7 @@ class Order : OwnableBaseDomain() {
     @Column(name = "attributes")
     var attributes: Map<String, Any> = emptyMap()
 
+    @BatchSize(size = 30)
     @OneToMany()
     @JoinColumn(
         name = "order_id", referencedColumnName = "uid", insertable = false, updatable = false, nullable = false

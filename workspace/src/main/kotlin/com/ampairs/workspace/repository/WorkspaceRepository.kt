@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
-import java.time.LocalDateTime
+import java.time.Instant
 import java.util.*
 
 /**
@@ -72,7 +72,7 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
      */
     @Modifying
     @Query("UPDATE Workspace w SET w.lastActivityAt = :timestamp WHERE w.id = :workspaceId")
-    fun updateLastActivity(@Param("workspaceId") workspaceId: String, @Param("timestamp") timestamp: LocalDateTime)
+    fun updateLastActivity(@Param("workspaceId") workspaceId: String, @Param("timestamp") timestamp: Instant)
 
     /**
      * Count active workspaces created by a user
@@ -87,5 +87,19 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
         nativeQuery = true
     )
     fun countByCreatedByAndActiveTrue(@Param("userId") userId: String): Int
+
+    /**
+     * Find all workspaces for a user with no pagination.
+     * Native query bypasses @TenantId filter — required for cross-tenant account deletion flows.
+     */
+    @Query(
+        value = """
+        SELECT * FROM workspaces w
+        INNER JOIN workspace_members wm ON w.uid = wm.workspace_id
+        WHERE wm.user_id = :userId
+        """,
+        nativeQuery = true
+    )
+    fun findAllWorkspacesByUserIdCrossTenant(@Param("userId") userId: String): List<Workspace>
 
 }

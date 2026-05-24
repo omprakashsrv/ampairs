@@ -529,7 +529,7 @@ data class RecaptchaApiResponse(
     val action: String?,
     val hostname: String?,
     val challengeTs: String?,
-    val errorCodes: List<String>?,
+    @JsonProperty("error-codes") val errorCodes: List<String>?, // Google uses hyphens, not underscores
 )
 
 /**

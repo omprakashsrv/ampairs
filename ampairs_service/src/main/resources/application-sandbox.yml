@@ -257,8 +257,8 @@ ampairs:
   minio:
     enabled: ${MINIO_ENABLED:false}
     endpoint: ${MINIO_ENDPOINT:http://localhost:9000}
-    access-key: ${MINIO_ACCESS_KEY:minioadmin}
-    secret-key: ${MINIO_SECRET_KEY:minioadmin}
+    access-key: ${MINIO_ACCESS_KEY:}
+    secret-key: ${MINIO_SECRET_KEY:}
     default-bucket: ${MINIO_BUCKET:ampairs-files}
     auto-create-bucket: ${MINIO_AUTO_CREATE_BUCKET:true}
     # MinIO-specific settings

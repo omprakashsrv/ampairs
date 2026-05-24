@@ -3,6 +3,7 @@ package com.ampairs.auth.controller
 import com.ampairs.auth.service.AccountLockoutService
 import com.ampairs.core.domain.dto.ApiResponse
 import jakarta.servlet.http.HttpServletRequest
+import jakarta.validation.Valid
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.*
@@ -12,7 +13,7 @@ import org.springframework.web.bind.annotation.*
  * Provides endpoints for checking lockout status and administrative unlock functions
  */
 @RestController
-@RequestMapping("/auth/v1/lockout")
+@RequestMapping("/auth/v1/lockouts")
 class AccountLockoutController(
     private val accountLockoutService: AccountLockoutService,
 ) {
@@ -37,7 +38,7 @@ class AccountLockoutController(
                 "locked_until" to (status.lockedUntil ?: ""),
                 "failed_attempts" to status.failedAttempts,
                 "remaining_minutes" to if (status.lockedUntil != null) {
-                    java.time.Duration.between(java.time.LocalDateTime.now(), status.lockedUntil).toMinutes()
+                    java.time.Duration.between(java.time.Instant.now(), status.lockedUntil).toMinutes()
                         .coerceAtLeast(0)
                 } else 0
             )
@@ -51,7 +52,7 @@ class AccountLockoutController(
     @PostMapping("/unlock")
     @PreAuthorize("hasRole('ADMIN')")
     fun unlockAccount(
-        @RequestBody request: UnlockAccountRequest,
+        @Valid @RequestBody request: UnlockAccountRequest,
         httpRequest: HttpServletRequest,
     ): ApiResponse<Map<String, Any>> {
         val currentUser = SecurityContextHolder.getContext().authentication?.name ?: "system"
@@ -107,7 +108,7 @@ class AccountLockoutController(
             mapOf(
                 "is_locked" to status.isLocked,
                 "remaining_minutes" to if (status.lockedUntil != null) {
-                    java.time.Duration.between(java.time.LocalDateTime.now(), status.lockedUntil).toMinutes()
+                    java.time.Duration.between(java.time.Instant.now(), status.lockedUntil).toMinutes()
                         .coerceAtLeast(0)
                 } else 0,
                 "message" to if (status.isLocked) {

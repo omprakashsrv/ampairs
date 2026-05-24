@@ -96,7 +96,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
     """
 )
 @RestController
-@RequestMapping("/workspace/v1/invitation")
+@RequestMapping("/workspace/v1/invitations")
 @SecurityRequirement(name = "BearerAuth")
 @SecurityRequirement(name = "WorkspaceContext")
 class WorkspaceInvitationController(
@@ -468,7 +468,7 @@ class WorkspaceInvitationController(
         )
         @RequestBody @Valid request: CreateInvitationRequest,
     ): ApiResponse<InvitationResponse> {
-        val auth: Authentication = SecurityContextHolder.getContext().authentication
+        val auth = SecurityContextHolder.getContext().authentication ?: throw IllegalStateException("User not authenticated")
         val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
@@ -684,7 +684,7 @@ class WorkspaceInvitationController(
         )
         @RequestBody request: ResendInvitationRequest = ResendInvitationRequest(),
     ): ApiResponse<InvitationResponse> {
-        val auth: Authentication = SecurityContextHolder.getContext().authentication
+        val auth = SecurityContextHolder.getContext().authentication ?: throw IllegalStateException("User not authenticated")
         val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
@@ -881,7 +881,7 @@ class WorkspaceInvitationController(
         )
         @PathVariable invitationId: String,
     ): ApiResponse<String> {
-        val auth: Authentication = SecurityContextHolder.getContext().authentication
+        val auth = SecurityContextHolder.getContext().authentication ?: throw IllegalStateException("User not authenticated")
         val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 

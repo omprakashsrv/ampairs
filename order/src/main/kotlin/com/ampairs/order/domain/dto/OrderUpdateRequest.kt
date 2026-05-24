@@ -8,7 +8,7 @@ import com.ampairs.order.domain.model.Order
 
 data class OrderUpdateRequest(
     val id: String = "",
-    val orderDate: String = "",
+    val orderDate: java.time.Instant? = null,
     val orderNumber: String = "",
     val invoiceRefId: String = "",
     var fromCustomerId: String = "",

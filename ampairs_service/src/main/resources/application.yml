@@ -26,26 +26,29 @@ springdoc:
   group-configs:
     - group: 'public'
       displayName: 'Public APIs'
-      pathsToMatch: 
+      pathsToMatch:
         - '/auth/v1/**'
-        - '/workspace/v1'
-        - '/workspace/v1/check-slug/**'
-        - '/workspace/v1/search/**'
+        - '/workspace/v1/workspaces'
+        - '/workspace/v1/workspaces/check-slug/**'
+        - '/workspace/v1/workspaces/search/**'
     - group: 'workspace'
       displayName: 'Workspace Management'
-      pathsToMatch: 
+      pathsToMatch:
         - '/workspace/v1/**'
     - group: 'modules'
       displayName: 'Module Management'
-      pathsToMatch: 
+      pathsToMatch:
         - '/workspace/v1/modules/**'
     - group: 'business'
       displayName: 'Business Operations'
-      pathsToMatch: 
+      pathsToMatch:
         - '/customer/v1/**'
         - '/product/v1/**'
+        - '/inventory/v1/**'
         - '/order/v1/**'
         - '/invoice/v1/**'
+        - '/unit/v1/**'
+        - '/tax/v1/**'
 
 # WebSocket & Real-time Messaging Configuration
 websocket:
@@ -54,7 +57,7 @@ websocket:
     # - SIMPLE: In-memory broker (single instance, no external dependencies)
     # - RABBITMQ: External RabbitMQ STOMP relay (multi-instance, production)
     # - AUTO: Auto-detect RabbitMQ, fallback to SIMPLE if unavailable (recommended)
-    type: ${WEBSOCKET_BROKER_TYPE:RABBITMQ}
+    type: ${WEBSOCKET_BROKER_TYPE:AUTO}
 
     # Heartbeat interval for SimpleBroker STOMP protocol heartbeats (milliseconds)
     # IMPORTANT: SimpleBroker has limited STOMP heartbeat support - set to 0 to disable
@@ -117,27 +120,39 @@ logging:
     console: "%highlight(%-5level) [%date{HH:mm:ss.SSS}] [%thread] [%cyan(%logger{36})]: %message%n"
 
 spring:
+  autoconfigure:
+    exclude:
+      - org.springdoc.webmvc.ui.SwaggerConfig
+      - org.springdoc.core.properties.SwaggerUiConfigProperties
+      - org.springdoc.core.properties.SwaggerUiOAuthProperties
+      - org.springdoc.core.configuration.SpringDocUIConfiguration
+      - org.springdoc.webmvc.core.configuration.SpringDocWebMvcConfiguration
+      - org.springdoc.webmvc.core.configuration.MultipleOpenApiSupportConfiguration
+      - org.springdoc.core.configuration.SpringDocConfiguration
+      - org.springdoc.core.properties.SpringDocConfigProperties
+      - org.springdoc.core.configuration.SpringDocSecurityConfiguration
+      - org.springdoc.core.configuration.SpringDocKotlinConfiguration
   threads:
     virtual:
       enabled: ${SPRING_VIRTUAL_THREADS_ENABLED:true}
   jackson:
     property-naming-strategy: SNAKE_CASE
-    time-zone: UTC  # Serialize all timestamps in UTC timezone (ISO-8601 with Z suffix)
-    serialization:
-      write-dates-as-timestamps: false
+    time-zone: UTC
     deserialization:
       fail-on-unknown-properties: false
   cache:
     type: caffeine
     caffeine:
       spec: maximumSize=1000,expireAfterAccess=${CACHE_EXPIRE_AFTER_ACCESS:300s},recordStats  # 5 minutes for development
-    cache-names: userDetails
+    cache-names: userDetails,tokenValidity,deviceSession
     cache-specs:
       userDetails: maximumSize=1000,expireAfterWrite=${CACHE_USER_DETAILS_EXPIRE:300s},recordStats
+      tokenValidity: maximumSize=5000,expireAfterWrite=${CACHE_TOKEN_VALIDITY_EXPIRE:60s},recordStats
+      deviceSession: maximumSize=5000,expireAfterWrite=${CACHE_DEVICE_SESSION_EXPIRE:30s},recordStats
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/ampairs_prod}
-    username: ${DB_USERNAME:admin}
-    password: ${DB_PASSWORD:secret}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/springdb}
+    username: ${DB_USERNAME:springuser}
+    password: ${DB_PASSWORD:springpass}
     driver-class-name: org.postgresql.Driver
     hikari:
       pool-name: main-db-pool
@@ -148,6 +163,9 @@ spring:
       max-lifetime: 300000
       validation-timeout: 5000
       leak-detection-threshold: 300000
+  mvc:
+    servlet:
+      path: /api
   servlet:
     multipart:
       enabled: true
@@ -191,8 +209,8 @@ spring:
         static: ${AWS_REGION:ap-south-1}
         auto: ${AWS_AUTO_REGION:true}
       credentials:
-        access-key: ${AWS_ACCESS_KEY:AKIAVYWGJ7XHE7XMT34K}
-        secret-key: ${AWS_SECRET_KEY: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}
+        access-key: ${AWS_ACCESS_KEY:}
+        secret-key: ${AWS_SECRET_KEY:}
         instance-profile: ${AWS_USE_IAM_ROLE:false}
         profile-name: ${AWS_PROFILE_NAME:}
         profile-path: ${AWS_PROFILE_PATH:}
@@ -431,8 +449,8 @@ google:
 
 # Firebase Configuration
 firebase:
-  enabled: ${FIREBASE_ENABLED:true}
-  service-account-key-path: ${FIREBASE_SERVICE_ACCOUNT_KEY_PATH:/Users/omprakashsrv/IdeaProjects/ampairs/auth/keys/ampairs-firebase-adminsdk.json}
+  enabled: ${FIREBASE_ENABLED:false}
+  service-account-key-path: ${FIREBASE_SERVICE_ACCOUNT_KEY_PATH:}
 
 # Notification Configuration
 notification:
@@ -500,7 +518,7 @@ management:
 google-play:
   package-name: ${GOOGLE_PLAY_PACKAGE_NAME:com.ampairs.app}
   # Absolute path to service account JSON file
-  service-account-json-path: ${GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_PATH:/Users/omprakashsrv/IdeaProjects/ampairs/subscription/keys/ampairs-google-play.json}
+  service-account-json-path: ${GOOGLE_PLAY_SERVICE_ACCOUNT_JSON_PATH:}
 
 # Apple App Store (iOS In-App Purchases)
 apple-app-store:

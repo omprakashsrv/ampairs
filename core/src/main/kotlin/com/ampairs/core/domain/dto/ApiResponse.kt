@@ -116,6 +116,8 @@ object ErrorCodes {
     const val TOKEN_GENERATION_FAILED = "AUTH_005"
     const val ACCESS_DENIED = "AUTH_006"
     const val INSUFFICIENT_PERMISSIONS = "AUTH_007"
+    const val ACCOUNT_LOCKED = "AUTH_008"
+    const val RATE_LIMIT_EXCEEDED = "AUTH_009"
 
     // File operations
     const val FILE_NOT_FOUND = "FILE_001"
@@ -136,6 +138,9 @@ object ErrorCodes {
     const val ORDER_NOT_FOUND = "ORDER_001"
     const val INVOICE_NOT_FOUND = "INVOICE_001"
     const val WORKSPACE_NOT_FOUND = "WORKSPACE_001"
+    const val UNIT_NOT_FOUND = "UNIT_001"
+    const val UNIT_IN_USE = "UNIT_002"
+    const val CIRCULAR_CONVERSION = "UNIT_003"
 
     // Data integrity
     const val DUPLICATE_ENTRY = "DATA_001"

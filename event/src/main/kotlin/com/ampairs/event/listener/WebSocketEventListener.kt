@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component
 import org.springframework.web.socket.messaging.SessionConnectEvent
 import org.springframework.web.socket.messaging.SessionConnectedEvent
 import org.springframework.web.socket.messaging.SessionDisconnectEvent
-import java.time.LocalDateTime
+import java.time.Instant
 
 @Component
 class WebSocketEventListener(
@@ -81,9 +81,9 @@ class WebSocketEventListener(
                 this.deviceId = deviceId
                 this.sessionId = sessionId
                 status = DeviceStatus.ONLINE
-                lastHeartbeat = LocalDateTime.now()
+                lastHeartbeat = Instant.now()
                 if (existingSession == null) {
-                    connectedAt = LocalDateTime.now()
+                    connectedAt = Instant.now()
                     // Could extract device name from User-Agent header if available
                     deviceName = extractDeviceName(accessor)
                 } else {

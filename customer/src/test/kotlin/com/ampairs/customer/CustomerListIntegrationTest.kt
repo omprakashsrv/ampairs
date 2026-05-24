@@ -3,6 +3,8 @@ package com.ampairs.customer
 import com.ampairs.AmpairsApplication
 import com.ampairs.customer.domain.model.Customer
 import com.ampairs.customer.domain.service.CustomerService
+import com.ampairs.workspace.service.WorkspaceMemberService
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -14,9 +16,9 @@ import org.mockito.kotlin.isNull
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -28,22 +30,37 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.springframework.test.web.servlet.setup.DefaultMockMvcBuilder
+import org.springframework.test.web.servlet.setup.MockMvcBuilders
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.context.WebApplicationContext
 import java.time.Instant
 import java.time.LocalDateTime
 
-@Suppress("DEPRECATION")
 @SpringBootTest(classes = [AmpairsApplication::class])
-@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 @Transactional
 class CustomerListIntegrationTest {
 
     @Autowired
+    private lateinit var webApplicationContext: WebApplicationContext
+
     private lateinit var mockMvc: MockMvc
 
-    @field:MockBean
+    @field:MockitoBean
     private lateinit var customerService: CustomerService
+
+    @field:MockitoBean
+    private lateinit var workspaceMemberService: WorkspaceMemberService
+
+    @BeforeEach
+    fun setUp() {
+        whenever(workspaceMemberService.isWorkspaceMember(any())).thenReturn(true)
+        mockMvc = MockMvcBuilders
+            .webAppContextSetup(webApplicationContext)
+            .apply<DefaultMockMvcBuilder>(springSecurity())
+            .build()
+    }
 
     @Test
     @DisplayName("GET /customer/v1 - Returns paginated customers")

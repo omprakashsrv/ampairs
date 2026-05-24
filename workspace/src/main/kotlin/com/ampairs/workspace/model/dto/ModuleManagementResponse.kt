@@ -2,6 +2,7 @@ package com.ampairs.workspace.model.dto
 
 import com.ampairs.workspace.model.*
 import com.ampairs.workspace.model.enums.WorkspaceModuleStatus
+import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.Instant
 
 /**
@@ -60,6 +61,7 @@ data class WorkspaceModuleResponse(
 
     var effectiveCategory: String = "",
 
+    @get:JsonProperty("is_operational")
     var isOperational: Boolean = false,
 
     var hasValidLicense: Boolean = true,
@@ -72,6 +74,7 @@ data class WorkspaceModuleResponse(
 
     var engagementLevel: Double = 0.0,
 
+    @get:JsonProperty("is_popular")
     var isPopular: Boolean = false,
 
     var createdAt: Instant = Instant.now(),

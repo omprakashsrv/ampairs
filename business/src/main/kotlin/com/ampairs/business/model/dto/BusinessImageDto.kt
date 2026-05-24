@@ -1,6 +1,7 @@
 package com.ampairs.business.model.dto
 
 import com.ampairs.business.model.BusinessImage
+import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.Instant
 
 /**
@@ -16,6 +17,7 @@ data class BusinessImageResponse(
     val description: String?,
     val altText: String?,
     val displayOrder: Int,
+    @get:JsonProperty("is_primary")
     val isPrimary: Boolean,
     val active: Boolean,
     val originalFilename: String?,
@@ -54,8 +56,8 @@ fun BusinessImage.asBusinessImageResponse(): BusinessImageResponse {
         uid = this.uid,
         businessId = this.businessId,
         imageType = this.imageType.name,
-        imageUrl = "/api/v1/business/images/${this.uid}/file",
-        thumbnailUrl = this.thumbnailUrl?.let { "/api/v1/business/images/${this.uid}/thumbnail" },
+        imageUrl = "/business/v1/businesses/images/${this.uid}/file",
+        thumbnailUrl = this.thumbnailUrl?.let { "/business/v1/businesses/images/${this.uid}/thumbnail" },
         title = this.title,
         description = this.description,
         altText = this.altText,

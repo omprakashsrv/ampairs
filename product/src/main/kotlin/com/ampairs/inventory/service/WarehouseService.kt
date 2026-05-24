@@ -3,7 +3,6 @@ package com.ampairs.inventory.service
 import com.ampairs.inventory.config.Constants
 import com.ampairs.inventory.domain.model.Warehouse
 import com.ampairs.inventory.repository.WarehouseRepository
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -20,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional
  * - Prevent deletion of warehouses with existing inventory
  */
 @Service
-class WarehouseService @Autowired constructor(
+class WarehouseService(
     private val warehouseRepository: WarehouseRepository
 ) {
 

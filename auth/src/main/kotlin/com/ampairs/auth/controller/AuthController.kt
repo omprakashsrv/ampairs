@@ -17,14 +17,13 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
 import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 
 @RestController
 @RequestMapping("/auth/v1")
 @Tag(name = "Authentication", description = "Authentication and session management APIs")
-class AuthController @Autowired constructor(
+class AuthController(
     private val authService: AuthService,
     private val recaptchaValidationService: RecaptchaValidationService,
 ) {
@@ -309,7 +308,7 @@ class AuthController @Autowired constructor(
         return ApiResponse.success(authService.authenticateWithFirebase(firebaseAuthRequest, request))
     }
 
-    @PostMapping("/refresh_token")
+    @PostMapping("/refresh-token")
     @Operation(
         summary = "Refresh access token",
         description = "Use refresh token to obtain a new access token. This endpoint is device-specific."

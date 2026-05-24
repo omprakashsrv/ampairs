@@ -1,7 +1,6 @@
 package com.ampairs.form.domain.dto
 
 import com.ampairs.form.domain.model.AttributeDefinition
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 

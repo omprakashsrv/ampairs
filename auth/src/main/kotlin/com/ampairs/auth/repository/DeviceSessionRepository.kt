@@ -6,7 +6,7 @@ import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
-import java.time.LocalDateTime
+import java.time.Instant
 import java.util.*
 
 @Repository
@@ -59,21 +59,21 @@ interface DeviceSessionRepository : JpaRepository<DeviceSession, String> {
     fun updateLastActivity(
         @Param("userId") userId: String,
         @Param("deviceId") deviceId: String,
-        @Param("lastActivity") lastActivity: LocalDateTime,
+        @Param("lastActivity") lastActivity: Instant,
     ): Int
 
     /**
      * Find expired device sessions (inactive for more than specified days)
      */
     @Query("SELECT d FROM DeviceSession d WHERE d.lastActivity < :cutoffDate")
-    fun findExpiredSessions(@Param("cutoffDate") cutoffDate: LocalDateTime): List<DeviceSession>
+    fun findExpiredSessions(@Param("cutoffDate") cutoffDate: Instant): List<DeviceSession>
 
     /**
      * Delete expired device sessions
      */
     @Modifying
     @Query("DELETE FROM DeviceSession d WHERE d.lastActivity < :cutoffDate")
-    fun deleteExpiredSessions(@Param("cutoffDate") cutoffDate: LocalDateTime): Int
+    fun deleteExpiredSessions(@Param("cutoffDate") cutoffDate: Instant): Int
 
     /**
      * Count active sessions for a user

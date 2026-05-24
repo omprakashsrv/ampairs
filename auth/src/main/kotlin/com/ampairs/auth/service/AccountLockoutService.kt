@@ -7,7 +7,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.time.Duration
-import java.time.LocalDateTime
+import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -39,7 +39,7 @@ class AccountLockoutService(
         val record = lockoutCache[key] ?: return false
 
         // Check if lockout has expired
-        if (record.lockedUntil != null && LocalDateTime.now().isAfter(record.lockedUntil)) {
+        if (record.lockedUntil != null && Instant.now().isAfter(record.lockedUntil)) {
             // Lockout expired, remove from cache
             lockoutCache.remove(key)
             logger.info("Lockout expired for phone: {}", maskPhoneNumber(phone))
@@ -47,7 +47,7 @@ class AccountLockoutService(
             return false
         }
 
-        return record.lockedUntil != null && LocalDateTime.now().isBefore(record.lockedUntil)
+        return record.lockedUntil != null && Instant.now().isBefore(record.lockedUntil)
     }
 
     /**
@@ -65,7 +65,7 @@ class AccountLockoutService(
             return LockoutStatus(false, null, 0)
         }
 
-        val isLocked = record.lockedUntil != null && LocalDateTime.now().isBefore(record.lockedUntil)
+        val isLocked = record.lockedUntil != null && Instant.now().isBefore(record.lockedUntil)
         return LockoutStatus(
             isLocked = isLocked,
             lockedUntil = record.lockedUntil,
@@ -88,7 +88,7 @@ class AccountLockoutService(
 
         val key = getUserKey(phone, countryCode)
         val config = applicationProperties.security.accountLockout
-        val now = LocalDateTime.now()
+        val now = Instant.now()
 
         val record = lockoutCache.computeIfAbsent(key) { LockoutRecord() }
 
@@ -156,7 +156,7 @@ class AccountLockoutService(
      * Get lockout statistics for monitoring
      */
     fun getLockoutStatistics(): Map<String, Any> {
-        val currentTime = LocalDateTime.now()
+        val currentTime = Instant.now()
         val allRecords = lockoutCache.values
 
         val currentlyLocked = allRecords.count { record ->
@@ -189,7 +189,7 @@ class AccountLockoutService(
         request: HttpServletRequest,
     ) {
         val config = applicationProperties.security.accountLockout
-        val now = LocalDateTime.now()
+        val now = Instant.now()
 
         // Calculate lockout duration with progressive increase
         var lockoutDuration = config.lockoutDuration
@@ -250,7 +250,7 @@ class AccountLockoutService(
             return
         }
 
-        val now = LocalDateTime.now()
+        val now = Instant.now()
         var removedCount = 0
 
         // Get expired entries
@@ -301,21 +301,21 @@ class AccountLockoutService(
     private data class LockoutRecord(
         val failureCount: AtomicInteger = AtomicInteger(0),
         val failures: MutableList<FailureRecord> = mutableListOf(),
-        val lockoutHistory: MutableList<LocalDateTime> = mutableListOf(),
-        var lockedUntil: LocalDateTime? = null,
-        var lastLockoutTime: LocalDateTime? = null,
-        var lastFailureTime: LocalDateTime? = null,
+        val lockoutHistory: MutableList<Instant> = mutableListOf(),
+        var lockedUntil: Instant? = null,
+        var lastLockoutTime: Instant? = null,
+        var lastFailureTime: Instant? = null,
         var lockoutDurationMinutes: Long = 0,
     ) {
 
-        fun addFailure(timestamp: LocalDateTime, reason: String) {
+        fun addFailure(timestamp: Instant, reason: String) {
             failures.add(FailureRecord(timestamp, reason))
             failureCount.incrementAndGet()
             lastFailureTime = timestamp
         }
 
         fun cleanupOldFailures(window: Duration) {
-            val cutoff = LocalDateTime.now().minus(window)
+            val cutoff = Instant.now().minus(window)
             val oldCount = failures.size
             failures.removeIf { it.timestamp.isBefore(cutoff) }
             val newCount = failures.size
@@ -333,7 +333,7 @@ class AccountLockoutService(
             lastFailureTime = null
         }
 
-        fun lockAccount(timestamp: LocalDateTime, duration: Duration) {
+        fun lockAccount(timestamp: Instant, duration: Duration) {
             lockedUntil = timestamp.plus(duration)
             lastLockoutTime = timestamp
             lockoutDurationMinutes = duration.toMinutes()
@@ -350,7 +350,7 @@ class AccountLockoutService(
      * Individual failure record
      */
     private data class FailureRecord(
-        val timestamp: LocalDateTime,
+        val timestamp: Instant,
         val reason: String,
     )
 
@@ -359,7 +359,7 @@ class AccountLockoutService(
      */
     data class LockoutStatus(
         val isLocked: Boolean,
-        val lockedUntil: LocalDateTime?,
+        val lockedUntil: Instant?,
         val failedAttempts: Int,
     )
 }

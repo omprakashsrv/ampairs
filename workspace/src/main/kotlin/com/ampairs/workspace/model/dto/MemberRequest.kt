@@ -2,6 +2,7 @@ package com.ampairs.workspace.model.dto
 
 import com.ampairs.workspace.model.enums.WorkspaceRole
 import com.ampairs.workspace.security.WorkspacePermission
+import com.fasterxml.jackson.annotation.JsonProperty
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.NotBlank
 
@@ -28,6 +29,7 @@ data class UpdateMemberRequest(
 
     val permissions: Set<WorkspacePermission>? = null,
 
+    @get:JsonProperty("is_active")
     val isActive: Boolean? = null,
 )
 

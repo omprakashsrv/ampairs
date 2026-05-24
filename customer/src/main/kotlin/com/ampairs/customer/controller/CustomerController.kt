@@ -2,6 +2,7 @@ package com.ampairs.customer.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
+import com.ampairs.core.exception.NotFoundException
 import com.ampairs.customer.domain.dto.*
 import com.ampairs.customer.domain.model.Customer
 import com.ampairs.customer.domain.service.CustomerService
@@ -10,16 +11,15 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/customer/v1")
+@RequestMapping("/customer/v1/customers")
 @Tag(name = "Customer Management", description = "Customer CRUD and management operations")
-class CustomerController @Autowired constructor(
+class CustomerController(
     private val customerService: CustomerService,
     private val customerImageService: CustomerImageService,
 ) {
@@ -102,16 +102,15 @@ class CustomerController @Autowired constructor(
 
     @GetMapping("/{customerId}")
     fun getCustomer(@PathVariable customerId: String): ApiResponse<CustomerResponse> {
-        val customer = customerService.getCustomers().find { it.uid == customerId }
-            ?: return ApiResponse.error("Customer not found", "CUSTOMER_NOT_FOUND")
-
+        val customer = customerService.getCustomerByUid(customerId)
+            ?: throw NotFoundException("Customer not found: $customerId")
         return ApiResponse.success(customer.asCustomerResponse())
     }
 
     @PutMapping("/{customerId}")
     fun updateCustomer(
         @PathVariable customerId: String,
-        @RequestBody request: CustomerUpdateRequest
+        @Valid @RequestBody request: CustomerUpdateRequest
     ): ApiResponse<CustomerResponse> {
         val updates = Customer().apply {
             name = request.name
@@ -127,8 +126,7 @@ class CustomerController @Autowired constructor(
         }
 
         val updatedCustomer = customerService.updateCustomer(customerId, updates)
-            ?: return ApiResponse.error("Customer not found", "CUSTOMER_NOT_FOUND")
-
+            ?: throw NotFoundException("Customer not found: $customerId")
         return ApiResponse.success(updatedCustomer.asCustomerResponse())
     }
 
@@ -141,19 +139,16 @@ class CustomerController @Autowired constructor(
         @Parameter(description = "Customer UID")
         @PathVariable customerId: String
     ): ApiResponse<Map<String, Any>> {
-        val deleted = customerService.deleteCustomer(customerId)
-        return if (deleted) {
-            ApiResponse.success(mapOf("deleted" to true, "customer_id" to customerId))
-        } else {
-            ApiResponse.error("Customer not found", "CUSTOMER_NOT_FOUND")
+        if (!customerService.deleteCustomer(customerId)) {
+            throw NotFoundException("Customer not found: $customerId")
         }
+        return ApiResponse.success(mapOf("deleted" to true, "customer_id" to customerId))
     }
 
     @GetMapping("/gst/{gstNumber}")
     fun getCustomerByGst(@PathVariable gstNumber: String): ApiResponse<CustomerResponse> {
         val customer = customerService.getCustomerByGstNumber(gstNumber)
-            ?: return ApiResponse.error("Customer not found with GST: $gstNumber", "CUSTOMER_NOT_FOUND")
-
+            ?: throw NotFoundException("Customer not found with GST: $gstNumber")
         return ApiResponse.success(customer.asCustomerResponse())
     }
 
@@ -175,8 +170,7 @@ class CustomerController @Autowired constructor(
         @RequestBody @Valid request: UpdateOutstandingRequest
     ): ApiResponse<CustomerResponse> {
         val updatedCustomer = customerService.updateOutstanding(customerId, request.amount, request.isPayment)
-            ?: return ApiResponse.error("Customer not found", "CUSTOMER_NOT_FOUND")
-
+            ?: throw NotFoundException("Customer not found: $customerId")
         return ApiResponse.success(updatedCustomer.asCustomerResponse())
     }
 
@@ -240,27 +234,3 @@ class CustomerController @Autowired constructor(
         return ApiResponse.success(image)
     }
 }
-
-/**
- * DTOs for retail customer API
- */
-data class CustomerCreateRequest(
-    val name: String,
-    val customerType: String? = null,
-    val phone: String? = null,
-    val email: String? = null,
-    val gstNumber: String? = null,
-    val panNumber: String? = null,
-    val creditLimit: Double? = null,
-    val creditDays: Int? = null,
-    val address: CustomerAddressRequest? = null,
-    val attributes: Map<String, Any>? = null
-)
-
-data class CustomerAddressRequest(
-    val street: String,
-    val city: String,
-    val state: String,
-    val postalCode: String,
-    val country: String = "India"
-)

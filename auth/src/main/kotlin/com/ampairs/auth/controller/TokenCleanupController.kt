@@ -3,6 +3,7 @@ package com.ampairs.auth.controller
 import com.ampairs.auth.service.TokenCleanupService
 import com.ampairs.core.domain.dto.ApiResponse
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -13,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController
  * Only available when token cleanup is enabled.
  */
 @RestController
-@RequestMapping("/api/admin/token-cleanup")
+@RequestMapping("/auth/v1/admin/token-cleanup")
 @ConditionalOnProperty(
     name = ["application.security.token-cleanup.enabled"],
     havingValue = "true",
@@ -27,11 +28,12 @@ class TokenCleanupController(
      * Get the count of expired/revoked tokens that would be cleaned up
      */
     @GetMapping("/status")
+    @PreAuthorize("hasRole('ADMIN')")
     fun getCleanupStatus(): ApiResponse<Map<String, Any>> {
         val expiredCount = tokenCleanupService.getExpiredTokenCount()
         return ApiResponse.success(
             mapOf(
-                "expiredTokenCount" to expiredCount,
+                "expired_token_count" to expiredCount,
                 "message" to "Number of expired/revoked tokens pending cleanup"
             )
         )
@@ -41,11 +43,12 @@ class TokenCleanupController(
      * Manually trigger token cleanup
      */
     @PostMapping("/run")
+    @PreAuthorize("hasRole('ADMIN')")
     fun runCleanup(): ApiResponse<Map<String, Any>> {
         val deletedCount = tokenCleanupService.performManualCleanup()
         return ApiResponse.success(
             mapOf(
-                "deletedCount" to deletedCount,
+                "deleted_count" to deletedCount,
                 "message" to "Token cleanup completed successfully"
             )
         )

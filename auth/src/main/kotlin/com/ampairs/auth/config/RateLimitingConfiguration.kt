@@ -1,7 +1,6 @@
 package com.ampairs.auth.config
 
 import com.ampairs.auth.interceptor.RateLimitingInterceptor
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Configuration
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
@@ -10,7 +9,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
  * Configuration for rate limiting interceptors
  */
 @Configuration
-class RateLimitingConfiguration @Autowired constructor(
+class RateLimitingConfiguration(
     private val rateLimitingInterceptor: RateLimitingInterceptor,
 ) : WebMvcConfigurer {
 

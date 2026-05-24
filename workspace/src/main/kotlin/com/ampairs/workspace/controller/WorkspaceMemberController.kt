@@ -72,7 +72,7 @@ import org.springframework.web.bind.annotation.*
     """
 )
 @RestController
-@RequestMapping("/workspace/v1/member")
+@RequestMapping("/workspace/v1/members")
 @SecurityRequirement(name = "BearerAuth")
 @SecurityRequirement(name = "WorkspaceContext")
 class WorkspaceMemberController(
@@ -156,7 +156,7 @@ class WorkspaceMemberController(
         @PathVariable memberId: String,
         @RequestBody @Valid request: UpdateMemberRequest,
     ): ApiResponse<MemberResponse> {
-        val auth: Authentication = SecurityContextHolder.getContext().authentication
+        val auth = SecurityContextHolder.getContext().authentication ?: throw IllegalStateException("User not authenticated")
         val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
@@ -181,7 +181,7 @@ class WorkspaceMemberController(
         )
         @PathVariable memberId: String,
     ): ApiResponse<String> {
-        val auth: Authentication = SecurityContextHolder.getContext().authentication
+        val auth = SecurityContextHolder.getContext().authentication ?: throw IllegalStateException("User not authenticated")
         val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
@@ -200,7 +200,7 @@ class WorkspaceMemberController(
     fun getMyRole(): ApiResponse<UserRoleResponse> {
         val workspaceId = TenantContextHolder.getCurrentTenant()
             ?: throw IllegalStateException("No workspace context found")
-        val auth: Authentication = SecurityContextHolder.getContext().authentication
+        val auth = SecurityContextHolder.getContext().authentication ?: throw IllegalStateException("User not authenticated")
         val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
@@ -272,7 +272,7 @@ class WorkspaceMemberController(
             workspaceId = workspaceId,
             currentRole = member.role.name,
             membershipStatus = if (member.isActive) "ACTIVE" else "INACTIVE",
-            joinedAt = (member.joinedAt ?: member.createdAt ?: java.time.LocalDateTime.now()).toString(),
+            joinedAt = (member.joinedAt ?: member.createdAt ?: java.time.Instant.now()).toString(),
             lastActivity = member.lastActiveAt?.toString(),
             roleHierarchy = roleHierarchy,
             permissions = permissions,

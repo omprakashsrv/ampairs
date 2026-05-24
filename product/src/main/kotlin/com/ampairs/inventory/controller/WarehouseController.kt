@@ -1,6 +1,7 @@
 package com.ampairs.inventory.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.exception.NotFoundException
 import com.ampairs.inventory.domain.dto.WarehouseRequest
 import com.ampairs.inventory.domain.dto.WarehouseResponse
 import com.ampairs.inventory.domain.dto.asWarehouseResponse
@@ -8,7 +9,7 @@ import com.ampairs.inventory.domain.dto.asWarehouseResponses
 import com.ampairs.inventory.domain.dto.toWarehouse
 import com.ampairs.inventory.service.WarehouseService
 import jakarta.validation.Valid
-import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.*
  */
 @RestController
 @RequestMapping("/inventory/v1/warehouses")
-class WarehouseController @Autowired constructor(
+class WarehouseController(
     private val warehouseService: WarehouseService
 ) {
 
@@ -34,6 +35,7 @@ class WarehouseController @Autowired constructor(
      * @return Created warehouse
      */
     @PostMapping("")
+    @ResponseStatus(HttpStatus.CREATED)
     fun createWarehouse(
         @Valid @RequestBody request: WarehouseRequest
     ): ApiResponse<WarehouseResponse> {
@@ -75,8 +77,7 @@ class WarehouseController @Autowired constructor(
         @PathVariable uid: String
     ): ApiResponse<WarehouseResponse> {
         val warehouse = warehouseService.getWarehouseByUid(uid)
-            ?: return ApiResponse.error("WAREHOUSE_NOT_FOUND", "Warehouse not found: $uid")
-
+            ?: throw NotFoundException("Warehouse not found: $uid")
         return ApiResponse.success(warehouse.asWarehouseResponse())
     }
 

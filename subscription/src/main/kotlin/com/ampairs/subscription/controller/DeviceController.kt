@@ -12,7 +12,7 @@ import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/v1/devices")
+@RequestMapping("/subscription/v1/devices")
 @Tag(name = "Device Management", description = "APIs for device registration and management")
 class DeviceController(
     private val deviceRegistrationService: DeviceRegistrationService
@@ -80,7 +80,7 @@ class DeviceController(
             ?: throw IllegalStateException("Workspace context not set")
 
         val accessMode = deviceRegistrationService.getAccessMode(workspaceId, deviceId)
-        return ApiResponse.success(mapOf("accessMode" to accessMode))
+        return ApiResponse.success(mapOf("access_mode" to accessMode))
     }
 
     @DeleteMapping("/{deviceUid}")

@@ -2,7 +2,7 @@ package com.ampairs.event.domain.dto
 
 import com.ampairs.event.domain.WebSocketSession
 import com.ampairs.event.domain.DeviceStatus
-import java.time.LocalDateTime
+import java.time.Instant
 
 /**
  * Response DTO for DeviceSession
@@ -15,9 +15,9 @@ data class DeviceSessionResponse(
     val deviceName: String?,
     val sessionId: String,
     val status: DeviceStatus,
-    val lastHeartbeat: LocalDateTime,
-    val connectedAt: LocalDateTime,
-    val disconnectedAt: LocalDateTime?
+    val lastHeartbeat: Instant,
+    val connectedAt: Instant,
+    val disconnectedAt: Instant?
 )
 
 /**

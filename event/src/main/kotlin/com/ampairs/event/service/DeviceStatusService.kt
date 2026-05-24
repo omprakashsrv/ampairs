@@ -12,7 +12,7 @@ import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
+import java.time.Instant
 
 @Service
 class DeviceStatusService(
@@ -30,7 +30,7 @@ class DeviceStatusService(
     @Transactional
     fun detectStaleAndAwaySessions() {
         try {
-            val now = LocalDateTime.now()
+            val now = Instant.now()
 
             // Find sessions that haven't sent heartbeat for 30 seconds
             val idleSessions = webSocketSessionRepository.findByStatusAndLastHeartbeatBefore(
@@ -169,7 +169,7 @@ class DeviceStatusService(
             this.workspaceId = workspaceId
             this.userId = userId
             this.deviceId = deviceId
-            this.connectedAt = LocalDateTime.now()
+            this.connectedAt = Instant.now()
         }
 
         session.apply {
@@ -188,7 +188,7 @@ class DeviceStatusService(
     @Transactional
     fun cleanupOldSessions() {
         try {
-            val cutoffDate = LocalDateTime.now().minusDays(7)
+            val cutoffDate = Instant.now().minus(7, java.time.temporal.ChronoUnit.DAYS)
             val deletedCount = webSocketSessionRepository.deleteOfflineSessionsBefore(cutoffDate)
 
             if (deletedCount > 0) {

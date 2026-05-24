@@ -1,5 +1,6 @@
 package com.ampairs.invoice.domain.model
 
+import org.hibernate.annotations.BatchSize
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import com.ampairs.core.domain.model.Address
@@ -9,9 +10,14 @@ import com.ampairs.invoice.domain.dto.Discount
 import com.ampairs.invoice.domain.dto.TaxInfo
 import com.ampairs.invoice.domain.enums.InvoiceStatus
 import jakarta.persistence.*
+import java.time.Instant
 import java.util.*
 
 
+@NamedEntityGraph(
+    name = "Invoice.withItems",
+    attributeNodes = [NamedAttributeNode("invoiceItems")]
+)
 @Entity(name = "invoice")
 @Table(
     indexes = [
@@ -27,9 +33,8 @@ class Invoice : OwnableBaseDomain() {
     @Column(name = "order_ref_id", nullable = true, length = 255)
     var orderRefId: String? = null
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "invoice_date", nullable = false)
-    var invoiceDate: Date = Date()
+    var invoiceDate: Instant = Instant.now()
 
     @Column(name = "from_customer_id", nullable = false, length = 255)
     var fromCustomerId: String = ""
@@ -87,6 +92,7 @@ class Invoice : OwnableBaseDomain() {
     @Column(name = "tax_info", length = 255)
     var taxInfos: List<TaxInfo> = listOf()
 
+    @BatchSize(size = 30)
     @OneToMany()
     @JoinColumn(
         name = "invoice_id", referencedColumnName = "uid", insertable = false, updatable = false, nullable = false

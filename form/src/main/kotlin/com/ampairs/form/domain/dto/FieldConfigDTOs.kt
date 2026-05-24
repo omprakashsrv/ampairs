@@ -1,7 +1,6 @@
 package com.ampairs.form.domain.dto
 
 import com.ampairs.form.domain.model.FieldConfig
-import com.fasterxml.jackson.annotation.JsonProperty
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 
@@ -30,25 +29,17 @@ data class FieldConfigResponse(
  * Field configuration create/update request DTO
  */
 data class FieldConfigRequest(
-    @JsonProperty("entity_type")
     val entityType: String,
-    @JsonProperty("field_name")
     val fieldName: String,
-    @JsonProperty("display_name")
     val displayName: String,
     val visible: Boolean = true,
     val mandatory: Boolean = false,
     val enabled: Boolean = true,
-    @JsonProperty("display_order")
     val displayOrder: Int = 0,
-    @JsonProperty("validation_type")
     val validationType: String? = null,
-    @JsonProperty("validation_params")
     val validationParams: Map<String, String>? = null,
     val placeholder: String? = null,
-    @JsonProperty("help_text")
     val helpText: String? = null,
-    @JsonProperty("default_value")
     val defaultValue: String? = null
 )
 

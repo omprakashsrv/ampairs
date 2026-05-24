@@ -1,6 +1,7 @@
 package com.ampairs.customer.domain.service
 
 import com.ampairs.file.config.StorageProperties
+import com.ampairs.core.exception.NotFoundException
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.file.service.ImageResizingService
 import com.ampairs.file.service.ThumbnailCacheService
@@ -44,53 +45,42 @@ class CustomerImageService(
     ): CustomerImageUploadResponse {
         val startTime = System.currentTimeMillis()
 
-        return try {
-            validateUploadRequest(file, request)
+        validateUploadRequest(file, request)
 
-            // Create customer image entity
-            val customerImage = createCustomerImageEntity(file, request, workspaceSlug)
+        val customerImage = createCustomerImageEntity(file, request, workspaceSlug)
 
-            // Upload to object storage
-            logger.debug("Uploading image with storage path: {}", customerImage.storagePath)
-            val uploadResult = uploadToStorage(file, customerImage)
+        logger.debug("Uploading image with storage path: {}", customerImage.storagePath)
+        val uploadResult = uploadToStorage(file, customerImage)
 
-            // Update entity with storage metadata
-            customerImage.updateStorageMetadata(
-                url = uploadResult.url,
-                etag = uploadResult.etag,
-                lastModified = uploadResult.lastModified
-            )
+        customerImage.updateStorageMetadata(
+            url = uploadResult.url,
+            etag = uploadResult.etag,
+            lastModified = uploadResult.lastModified
+        )
 
-            // Extract and save image dimensions
-            extractAndSaveImageDimensions(file, customerImage)
+        extractAndSaveImageDimensions(file, customerImage)
 
-            // Handle primary image logic
-            if (request.isPrimary) {
-                handlePrimaryImageLogic(customerImage)
-            } else {
-                // Set display order if not specified
-                if (request.displayOrder == null) {
-                    customerImage.displayOrder = customerImageRepository.getNextDisplayOrder(request.customerUid)
-                }
+        if (request.isPrimary) {
+            handlePrimaryImageLogic(customerImage)
+        } else {
+            if (request.displayOrder == null) {
+                customerImage.displayOrder = customerImageRepository.getNextDisplayOrder(request.customerUid)
             }
-
-            val savedImage = customerImageRepository.save(customerImage)
-            val processingTime = System.currentTimeMillis() - startTime
-
-            logger.info(
-                "Customer image uploaded successfully: customer={}, image={}, size={}, time={}ms",
-                request.customerUid, savedImage.uid, file.size, processingTime
-            )
-
-            CustomerImageUploadResponse(
-                image = savedImage.asCustomerImageResponse(),
-                uploadedAt = savedImage.uploadedAt,
-                processingTime = processingTime
-            )
-        } catch (e: Exception) {
-            logger.error("Failed to upload customer image: customer={}, error={}", request.customerUid, e.message, e)
-            throw CustomerImageException("Failed to upload image: ${e.message}", e)
         }
+
+        val savedImage = customerImageRepository.save(customerImage)
+        val processingTime = System.currentTimeMillis() - startTime
+
+        logger.info(
+            "Customer image uploaded successfully: customer={}, image={}, size={}, time={}ms",
+            request.customerUid, savedImage.uid, file.size, processingTime
+        )
+
+        return CustomerImageUploadResponse(
+            image = savedImage.asCustomerImageResponse(),
+            uploadedAt = savedImage.uploadedAt,
+            processingTime = processingTime
+        )
     }
 
     /**
@@ -108,10 +98,10 @@ class CustomerImageService(
     @Transactional(readOnly = true)
     fun getCustomerImage(customerUid: String, imageUid: String): CustomerImageResponse {
         val image = customerImageRepository.findByUidAndCustomerUid(imageUid, customerUid)
-            ?: throw CustomerImageNotFoundException("Image not found: $imageUid for customer: $customerUid")
+            ?: throw NotFoundException("Image not found: $imageUid for customer: $customerUid")
 
         if (!image.active) {
-            throw CustomerImageNotFoundException("Image is not active: $imageUid")
+            throw NotFoundException("Image is not active: $imageUid")
         }
 
         return image.asCustomerImageResponse()
@@ -123,10 +113,10 @@ class CustomerImageService(
     @Transactional(readOnly = true)
     fun downloadCustomerImage(customerUid: String, imageUid: String): Pair<CustomerImage, java.io.InputStream> {
         val image = customerImageRepository.findByUidAndCustomerUid(imageUid, customerUid)
-            ?: throw CustomerImageNotFoundException("Image not found: $imageUid for customer: $customerUid")
+            ?: throw NotFoundException("Image not found: $imageUid for customer: $customerUid")
 
         if (!image.active) {
-            throw CustomerImageNotFoundException("Image is not active: $imageUid")
+            throw NotFoundException("Image is not active: $imageUid")
         }
 
         try {
@@ -134,7 +124,7 @@ class CustomerImageService(
             return Pair(image, inputStream)
         } catch (e: ObjectNotFoundException) {
             logger.warn("Image file not found in storage: bucket={}, path={}", storageProperties.defaultBucket, image.storagePath)
-            throw CustomerImageNotFoundException("Image file not found in storage: ${image.originalFilename}")
+            throw NotFoundException("Image file not found in storage: ${image.originalFilename}")
         }
     }
 
@@ -147,10 +137,10 @@ class CustomerImageService(
         request: CustomerImageUpdateRequest
     ): CustomerImageResponse {
         val image = customerImageRepository.findByUidAndCustomerUid(imageUid, customerUid)
-            ?: throw CustomerImageNotFoundException("Image not found: $imageUid for customer: $customerUid")
+            ?: throw NotFoundException("Image not found: $imageUid for customer: $customerUid")
 
         if (!image.active) {
-            throw CustomerImageNotFoundException("Image is not active: $imageUid")
+            throw NotFoundException("Image is not active: $imageUid")
         }
 
         // Update fields
@@ -178,7 +168,7 @@ class CustomerImageService(
      */
     fun deleteCustomerImage(customerUid: String, imageUid: String): Boolean {
         val image = customerImageRepository.findByUidAndCustomerUid(imageUid, customerUid)
-            ?: throw CustomerImageNotFoundException("Image not found: $imageUid for customer: $customerUid")
+            ?: throw NotFoundException("Image not found: $imageUid for customer: $customerUid")
 
         return try {
             // Soft delete in database
@@ -200,10 +190,10 @@ class CustomerImageService(
      */
     fun setPrimaryImage(customerUid: String, imageUid: String): CustomerImageResponse {
         val image = customerImageRepository.findByUidAndCustomerUid(imageUid, customerUid)
-            ?: throw CustomerImageNotFoundException("Image not found: $imageUid for customer: $customerUid")
+            ?: throw NotFoundException("Image not found: $imageUid for customer: $customerUid")
 
         if (!image.active) {
-            throw CustomerImageNotFoundException("Image is not active: $imageUid")
+            throw NotFoundException("Image is not active: $imageUid")
         }
 
         handlePrimaryImageLogic(image)
@@ -223,7 +213,7 @@ class CustomerImageService(
         // Validate all images belong to the customer
         val images = imageOrders.map { orderItem ->
             customerImageRepository.findByUidAndCustomerUid(orderItem.imageUid, customerUid)
-                ?: throw CustomerImageNotFoundException("Image not found: ${orderItem.imageUid} for customer: $customerUid")
+                ?: throw NotFoundException("Image not found: ${orderItem.imageUid} for customer: $customerUid")
         }
 
         // Update display orders
@@ -317,10 +307,10 @@ class CustomerImageService(
         format: String = storageProperties.image.thumbnails.format
     ): Pair<CustomerImage, InputStream> {
         val image = customerImageRepository.findByUidAndCustomerUid(imageUid, customerUid)
-            ?: throw CustomerImageNotFoundException("Image not found: $imageUid for customer: $customerUid")
+            ?: throw NotFoundException("Image not found: $imageUid for customer: $customerUid")
 
         if (!image.active) {
-            throw CustomerImageNotFoundException("Image is not active: $imageUid")
+            throw NotFoundException("Image is not active: $imageUid")
         }
 
         val thumbnailSize = ImageResizingService.ThumbnailSize.fromPixels(size)
@@ -345,7 +335,7 @@ class CustomerImageService(
     @Transactional(readOnly = true)
     fun getAvailableThumbnails(customerUid: String, imageUid: String): ThumbnailSizesResponse {
         val image = customerImageRepository.findByUidAndCustomerUid(imageUid, customerUid)
-            ?: throw CustomerImageNotFoundException("Image not found: $imageUid for customer: $customerUid")
+            ?: throw NotFoundException("Image not found: $imageUid for customer: $customerUid")
 
         val availableThumbnails = mutableListOf<ThumbnailResponse>()
 
@@ -386,7 +376,7 @@ class CustomerImageService(
      */
     fun generateThumbnails(customerUid: String, imageUid: String, sizes: List<Int>? = null): BulkThumbnailGenerationResponse {
         val image = customerImageRepository.findByUidAndCustomerUid(imageUid, customerUid)
-            ?: throw CustomerImageNotFoundException("Image not found: $imageUid for customer: $customerUid")
+            ?: throw NotFoundException("Image not found: $imageUid for customer: $customerUid")
 
         val targetSizes = sizes?.mapNotNull { ImageResizingService.ThumbnailSize.fromPixels(it) }
             ?: ImageResizingService.ThumbnailSize.values().toList()
@@ -466,7 +456,7 @@ class CustomerImageService(
      */
     fun deleteThumbnails(customerUid: String, imageUid: String): ThumbnailCleanupResponse {
         val image = customerImageRepository.findByUidAndCustomerUid(imageUid, customerUid)
-            ?: throw CustomerImageNotFoundException("Image not found: $imageUid for customer: $customerUid")
+            ?: throw NotFoundException("Image not found: $imageUid for customer: $customerUid")
 
         val deletedPaths = thumbnailCacheService.deleteThumbnails(
             storageProperties.defaultBucket,
@@ -500,21 +490,21 @@ class CustomerImageService(
 
     private fun validateUploadRequest(file: MultipartFile, request: CustomerImageUploadRequest) {
         if (file.isEmpty) {
-            throw CustomerImageException("File cannot be empty")
+            throw IllegalArgumentException("File cannot be empty")
         }
 
         val contentType = file.contentType ?: "application/octet-stream"
         if (!storageProperties.allowedContentTypes.contains(contentType)) {
-            throw CustomerImageException("Content type not allowed: $contentType")
+            throw IllegalArgumentException("Content type not allowed: $contentType")
         }
 
         if (!contentType.startsWith("image/")) {
-            throw CustomerImageException("File must be an image")
+            throw IllegalArgumentException("File must be an image")
         }
 
         val maxSize = parseSize(storageProperties.maxFileSize)
         if (file.size > maxSize) {
-            throw CustomerImageException("File size exceeds maximum allowed: ${formatFileSize(maxSize)}")
+            throw IllegalArgumentException("File size exceeds maximum allowed: ${formatFileSize(maxSize)}")
         }
     }
 
@@ -614,8 +604,3 @@ class CustomerImageService(
 
 }
 
-/**
- * Custom exceptions for customer image operations
- */
-class CustomerImageException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
-class CustomerImageNotFoundException(message: String) : RuntimeException(message)

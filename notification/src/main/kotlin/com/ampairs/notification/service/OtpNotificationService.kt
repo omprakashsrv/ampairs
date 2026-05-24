@@ -3,7 +3,6 @@ package com.ampairs.notification.service
 import com.ampairs.notification.provider.NotificationChannel
 import com.ampairs.notification.template.OtpScenario
 import com.ampairs.notification.template.SmsTemplateService
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 
 /**
@@ -11,7 +10,7 @@ import org.springframework.stereotype.Service
  * This service combines template generation with notification sending
  */
 @Service
-class OtpNotificationService @Autowired constructor(
+class OtpNotificationService(
     private val notificationService: NotificationService,
     private val smsTemplateService: SmsTemplateService,
 ) {

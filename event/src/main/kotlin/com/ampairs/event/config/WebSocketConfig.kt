@@ -49,7 +49,7 @@ class WebSocketConfig(
     fun simpleBrokerHeartbeatScheduler(): TaskScheduler {
         val scheduler = ThreadPoolTaskScheduler()
         scheduler.poolSize = 1
-        scheduler.threadNamePrefix = "websocket-heartbeat-"
+        scheduler.setThreadNamePrefix("websocket-heartbeat-")
         scheduler.initialize()
         return scheduler
     }

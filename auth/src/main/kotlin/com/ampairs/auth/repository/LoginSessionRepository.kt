@@ -5,7 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
-import java.time.LocalDateTime
+import java.time.Instant
 
 @Repository
 interface LoginSessionRepository : JpaRepository<LoginSession, Long> {
@@ -21,7 +21,7 @@ interface LoginSessionRepository : JpaRepository<LoginSession, Long> {
         "UPDATE login_session ls SET ls.expired = true WHERE ls.expiresAt < ?1 AND ls.expired = false",
         nativeQuery = true
     )
-    fun expireOldSessions(currentTime: LocalDateTime): Int
+    fun expireOldSessions(currentTime: Instant): Int
 
     @Query(
         "SELECT COUNT(*) FROM login_session WHERE phone = ?1 AND country_code = ?2 AND created_at > ?3",

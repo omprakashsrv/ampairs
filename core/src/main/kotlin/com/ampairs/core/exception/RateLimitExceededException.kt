@@ -1,15 +1,12 @@
 package com.ampairs.core.exception
 
-import java.time.LocalDateTime
+import java.time.Instant
 
-/**
- * Exception thrown when rate limit is exceeded
- */
 class RateLimitExceededException(
     message: String,
     val retryAfterSeconds: Long,
     val limitType: String,
-    val resetTime: LocalDateTime,
+    val resetTime: Instant,
 ) : RuntimeException(message) {
 
     companion object {

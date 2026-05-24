@@ -96,6 +96,9 @@ class Warehouse : OwnableBaseDomain() {
      * Embedded value object containing street, city, state, pincode, etc.
      */
     @Embedded
+    @AttributeOverrides(
+        AttributeOverride(name = "phone", column = Column(name = "address_phone", length = 20))
+    )
     var address: Address = Address()
 
     /**

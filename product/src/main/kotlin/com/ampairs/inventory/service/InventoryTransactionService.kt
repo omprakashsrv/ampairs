@@ -4,7 +4,6 @@ import com.ampairs.inventory.config.Constants
 import com.ampairs.inventory.domain.dto.*
 import com.ampairs.inventory.domain.model.InventoryTransaction
 import com.ampairs.inventory.repository.InventoryTransactionRepository
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -40,7 +39,7 @@ import java.time.format.DateTimeFormatter
  * - InventoryConfigService for business rules
  */
 @Service
-class InventoryTransactionService @Autowired constructor(
+class InventoryTransactionService(
     private val inventoryTransactionRepository: InventoryTransactionRepository,
     private val inventoryItemService: InventoryItemService,
     private val warehouseService: WarehouseService,

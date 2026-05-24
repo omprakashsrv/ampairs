@@ -157,6 +157,37 @@ class GlobalExceptionHandler : BaseExceptionHandler() {
         )
     }
 
+    // Standard Java/Kotlin exceptions that map to 400
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun handleIllegalArgumentException(
+        ex: IllegalArgumentException,
+        request: HttpServletRequest,
+    ): ResponseEntity<ApiResponse<Any>> {
+        return createErrorResponse(
+            httpStatus = HttpStatus.BAD_REQUEST,
+            errorCode = ErrorCodes.BAD_REQUEST,
+            message = ex.message ?: "Invalid argument",
+            details = null,
+            request = request,
+            moduleName = "global"
+        )
+    }
+
+    @ExceptionHandler(IllegalStateException::class)
+    fun handleIllegalStateException(
+        ex: IllegalStateException,
+        request: HttpServletRequest,
+    ): ResponseEntity<ApiResponse<Any>> {
+        return createErrorResponse(
+            httpStatus = HttpStatus.CONFLICT,
+            errorCode = ErrorCodes.BAD_REQUEST,
+            message = ex.message ?: "Invalid state",
+            details = null,
+            request = request,
+            moduleName = "global"
+        )
+    }
+
     // Business Exceptions
     @ExceptionHandler(BusinessException::class)
     fun handleBusinessException(

@@ -1,9 +1,17 @@
+buildscript {
+    repositories { mavenCentral() }
+    dependencies {
+        classpath("org.flywaydb:flyway-database-postgresql:11.14.1")
+        classpath("org.postgresql:postgresql:42.7.10")
+    }
+}
+
 plugins {
-    id("org.springframework.boot") version "3.5.6"
-    id("io.spring.dependency-management") version "1.1.7"
-    kotlin("jvm") version "2.2.20"
-    kotlin("plugin.spring") version "2.2.20"
-    id("org.jetbrains.kotlin.plugin.allopen") version "2.2.20"
+    id("org.springframework.boot")
+    id("io.spring.dependency-management")
+    id("org.flywaydb.flyway")
+    kotlin("jvm")
+    kotlin("plugin.spring")
 }
 
 group = "com.ampairs"
@@ -26,6 +34,8 @@ repositories {
 
 allOpen {
     annotation("jakarta.persistence.Entity")
+    annotation("jakarta.persistence.MappedSuperclass")
+    annotation("jakarta.persistence.Embeddable")
 }
 
 dependencies {
@@ -48,6 +58,7 @@ dependencies {
 
     // Spring Boot starters
     implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-webflux")
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-security")
@@ -63,17 +74,12 @@ dependencies {
 
     // Kotlin
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.springframework:spring-web")
-    implementation("org.springframework:spring-webmvc")
 
-    // Caching
-    val caffeine = "3.2.0"
-    implementation("javax.cache:cache-api:1.1.1")
-    implementation("com.github.ben-manes.caffeine:caffeine:$caffeine")
-    implementation("com.github.ben-manes.caffeine:jcache:$caffeine")
+    // Caching — Spring Boot auto-configures CaffeineCacheManager from spring-boot-starter-cache
+    implementation("com.github.ben-manes.caffeine:caffeine:3.2.4")
 
     // JWT
-    val jwt = "0.11.5"
+    val jwt = "0.13.0"
     implementation("io.jsonwebtoken:jjwt-api:$jwt")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:$jwt")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:$jwt")
@@ -87,18 +93,15 @@ dependencies {
     implementation("org.flywaydb:flyway-database-postgresql")
 
     // Spring Cloud AWS - Auto-configuration for AWS services
-    implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:3.3.0"))
+    implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:4.0.2"))
     implementation("io.awspring.cloud:spring-cloud-aws-starter-s3")
     implementation("io.awspring.cloud:spring-cloud-aws-starter-sns")
 
     // Jackson for JSON processing
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
-    // Observability
-    implementation("io.micrometer:micrometer-registry-prometheus")
-
     // OpenAPI/Swagger Documentation
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.7.0")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.17")
 
     // Development
     developmentOnly("org.springframework.boot:spring-boot-devtools")
@@ -109,8 +112,27 @@ dependencies {
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:mysql")
     testImplementation("com.h2database:h2")
+    implementation(kotlin("stdlib"))
 }
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+val migrationModules = listOf(
+    "auth", "business", "core", "customer", "event", "form",
+    "invoice", "notification", "order", "product", "subscription",
+    "tax", "unit", "workspace"
+)
+
+flyway {
+    url = System.getenv("DB_URL") ?: "jdbc:postgresql://localhost:5432/springdb"
+    user = System.getenv("DB_USERNAME") ?: "springuser"
+    password = System.getenv("DB_PASSWORD") ?: "springpass"
+    locations = migrationModules
+        .map { "filesystem:${rootDir}/$it/src/main/resources/db/migration/postgresql" }
+        .toTypedArray()
+    baselineOnMigrate = true
+    baselineVersion = "1"
+    outOfOrder = false
 }

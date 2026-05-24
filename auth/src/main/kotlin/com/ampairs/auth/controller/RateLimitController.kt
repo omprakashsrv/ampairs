@@ -4,7 +4,6 @@ import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.service.RateLimitingService
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -15,8 +14,8 @@ import org.springframework.web.bind.annotation.RestController
  * Only accessible by authenticated users for their own rate limit status
  */
 @RestController
-@RequestMapping("/auth/v1/rate-limit")
-class RateLimitController @Autowired constructor(
+@RequestMapping("/auth/v1/rate-limits")
+class RateLimitController(
     private val rateLimitingService: RateLimitingService,
 ) {
 
@@ -107,7 +106,7 @@ class RateLimitController @Autowired constructor(
     data class RateLimitSummary(
         val isLimited: Boolean,
         val remainingRequests: Int,
-        val resetTime: java.time.LocalDateTime?,
+        val resetTime: java.time.Instant?,
         val limitType: String,
         val message: String,
     )

@@ -4,12 +4,11 @@ import com.ampairs.core.domain.model.Address
 import com.ampairs.invoice.domain.enums.InvoiceStatus
 import com.ampairs.invoice.domain.model.Invoice
 import com.ampairs.invoice.domain.model.InvoiceItem
-import java.text.SimpleDateFormat
-import java.util.*
+import java.time.Instant
 
 data class InvoiceResponse(
     val id: String = "",
-    val invoiceDate: String = "",
+    val invoiceDate: Instant = Instant.now(),
     val invoiceNumber: String = "",
     val orderRefId: String? = null,
     var fromCustomerId: String = "",
@@ -42,7 +41,7 @@ fun List<Invoice>.toResponse(): List<InvoiceResponse> {
 fun Invoice.toResponse(invoiceItems: List<InvoiceItem>): InvoiceResponse {
     return InvoiceResponse(
         id = this.uid,
-        invoiceDate = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.ENGLISH).format(this.invoiceDate),
+        invoiceDate = this.invoiceDate,
         invoiceNumber = this.invoiceNumber,
         orderRefId = this.orderRefId,
         fromCustomerId = this.fromCustomerId,

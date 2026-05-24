@@ -13,7 +13,6 @@ import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
-import org.springframework.http.ResponseEntity
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.GetMapping
@@ -32,7 +31,7 @@ import org.springframework.web.bind.annotation.RestController
     description = "User-scoped invitation management endpoints"
 )
 @RestController
-@RequestMapping("/user/v1/invitation")
+@RequestMapping("/user/v1/invitations")
 class UserInvitationController(
     private val invitationService: WorkspaceInvitationService,
 ) {
@@ -122,9 +121,8 @@ class UserInvitationController(
         ]
     )
     @GetMapping("/pending")
-    fun getMyPendingInvitations(): ResponseEntity<ApiResponse<List<InvitationResponse>>> {
-        val pendingInvitations = invitationService.getUserPendingInvitations()
-        return ResponseEntity.ok(ApiResponse.success(pendingInvitations))
+    fun getMyPendingInvitations(): ApiResponse<List<InvitationResponse>> {
+        return ApiResponse.success(invitationService.getUserPendingInvitations())
     }
 
     @Operation(
@@ -298,7 +296,7 @@ class UserInvitationController(
         )
         @PathVariable id: String,
     ): ApiResponse<InvitationResponse> {
-        val auth: Authentication = SecurityContextHolder.getContext().authentication
+        val auth = SecurityContextHolder.getContext().authentication ?: throw IllegalStateException("User not authenticated")
         val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 
@@ -489,7 +487,7 @@ class UserInvitationController(
         )
         @RequestParam(required = false) reason: String?
     ): ApiResponse<InvitationResponse> {
-        val auth: Authentication = SecurityContextHolder.getContext().authentication
+        val auth = SecurityContextHolder.getContext().authentication ?: throw IllegalStateException("User not authenticated")
         val userId = AuthenticationHelper.getCurrentUserId(auth)
             ?: throw IllegalStateException("User not authenticated")
 

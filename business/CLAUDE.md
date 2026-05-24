@@ -7,7 +7,7 @@ One business profile per workspace — legal details, address, hours, branding (
 - `BusinessImage` — storageUrl, thumbnailUrl, imageType (LOGO/GALLERY/BANNER), isPrimary, displayOrder
 
 ## Base path
-`/api/v1/business/**`
+`/business/v1/businesses/**`
 
 ## Migrations
 `V1.0.12`, `V1.0.14` (custom attributes), `V1.0.25` (logo + images)

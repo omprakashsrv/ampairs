@@ -3,6 +3,7 @@ package com.ampairs.form.controller
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.form.domain.dto.*
 import com.ampairs.form.domain.service.ConfigService
+import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -10,7 +11,7 @@ import org.springframework.web.bind.annotation.*
  * Base path: /api/v1/form
  */
 @RestController
-@RequestMapping("/form/v1")
+@RequestMapping("/form/v1/config")
 class ConfigController(
     private val configService: ConfigService
 ) {
@@ -44,7 +45,7 @@ class ConfigController(
      */
     @PostMapping("/config")
     fun saveConfigSchema(
-        @RequestBody request: EntityConfigSchemaRequest
+        @Valid @RequestBody request: EntityConfigSchemaRequest
     ): ApiResponse<EntityConfigSchemaResponse> {
         val saved = configService.saveConfigSchema(request)
         return ApiResponse.success(saved)
@@ -56,7 +57,7 @@ class ConfigController(
      */
     @PostMapping("/field-config")
     fun saveFieldConfig(
-        @RequestBody request: FieldConfigRequest
+        @Valid @RequestBody request: FieldConfigRequest
     ): ApiResponse<FieldConfigResponse> {
         val saved = configService.saveFieldConfig(request)
         return ApiResponse.success(saved)
@@ -68,7 +69,7 @@ class ConfigController(
      */
     @PostMapping("/attribute-definition")
     fun saveAttributeDefinition(
-        @RequestBody request: AttributeDefinitionRequest
+        @Valid @RequestBody request: AttributeDefinitionRequest
     ): ApiResponse<AttributeDefinitionResponse> {
         val saved = configService.saveAttributeDefinition(request)
         return ApiResponse.success(saved)
