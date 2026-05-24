@@ -141,9 +141,11 @@ spring:
     type: caffeine
     caffeine:
       spec: maximumSize=1000,expireAfterAccess=${CACHE_EXPIRE_AFTER_ACCESS:300s},recordStats  # 5 minutes for development
-    cache-names: userDetails
+    cache-names: userDetails,tokenValidity,deviceSession
     cache-specs:
       userDetails: maximumSize=1000,expireAfterWrite=${CACHE_USER_DETAILS_EXPIRE:300s},recordStats
+      tokenValidity: maximumSize=5000,expireAfterWrite=${CACHE_TOKEN_VALIDITY_EXPIRE:60s},recordStats
+      deviceSession: maximumSize=5000,expireAfterWrite=${CACHE_DEVICE_SESSION_EXPIRE:30s},recordStats
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/springdb}
     username: ${DB_USERNAME:springuser}

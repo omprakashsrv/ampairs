@@ -52,15 +52,13 @@ class AuthService @Autowired constructor(
 
     @Transactional
     fun init(authInitRequest: AuthInitRequest, httpRequest: HttpServletRequest): AuthInitResponse {
-        // Check if account is locked before generating OTP
         if (accountLockoutService.isAccountLocked(authInitRequest.phone, authInitRequest.countryCode)) {
             val lockoutStatus =
                 accountLockoutService.getLockoutStatus(authInitRequest.phone, authInitRequest.countryCode)
             val remainingMinutes = if (lockoutStatus.lockedUntil != null) {
                 java.time.Duration.between(Instant.now(), lockoutStatus.lockedUntil).toMinutes()
             } else 0
-
-            throw Exception("Account temporarily locked due to multiple failed attempts. Please try again in $remainingMinutes minutes.")
+            throw com.ampairs.auth.exception.AccountLockedException(remainingMinutes)
         }
         val loginSession = LoginSession()
         loginSession.phone = authInitRequest.phone
@@ -112,14 +110,12 @@ class AuthService @Autowired constructor(
                 throw com.ampairs.auth.exception.InvalidSessionException("Invalid session ID")
             }
 
-        // Check if account is locked before OTP verification
         if (accountLockoutService.isAccountLocked(loginSession.phone, loginSession.countryCode)) {
             val lockoutStatus = accountLockoutService.getLockoutStatus(loginSession.phone, loginSession.countryCode)
             val remainingMinutes = if (lockoutStatus.lockedUntil != null) {
                 java.time.Duration.between(Instant.now(), lockoutStatus.lockedUntil).toMinutes()
             } else 0
-
-            throw Exception("Account temporarily locked due to multiple failed attempts. Please try again in $remainingMinutes minutes.")
+            throw com.ampairs.auth.exception.AccountLockedException(remainingMinutes)
         }
 
         if (loginSession.code == request.otp || isHardcodedOtpValid(request.otp)) {
@@ -342,7 +338,6 @@ class AuthService @Autowired constructor(
         // against token issue time, but current approach is sufficient for most use cases.
     }
 
-    @Throws(Exception::class)
     @Transactional
     fun refreshToken(
         refreshTokenRequest: RefreshTokenRequest,
@@ -364,7 +359,7 @@ class AuthService @Autowired constructor(
             // Use list query to handle potential race condition duplicates
             val sessions = deviceSessionRepository.findAllByUserIdAndDeviceIdAndIsActiveTrue(user.uid, deviceId)
             if (sessions.isEmpty()) {
-                throw Exception("Device session not found or inactive")
+                throw com.ampairs.auth.exception.InvalidSessionException("Device session not found or inactive")
             }
             val deviceSession = sessions.first()
 
@@ -381,14 +376,12 @@ class AuthService @Autowired constructor(
                 }
             }
 
-            // Validate session hasn't expired due to timeout rules
             if (!sessionManagementService.validateAndExpireIfNeeded(deviceSession)) {
-                throw Exception("Device session has expired")
+                throw com.ampairs.auth.exception.InvalidSessionException("Device session has expired")
             }
 
-            // Verify refresh token hash matches
             if (deviceSession.refreshTokenHash != hashToken(refreshToken)) {
-                throw Exception("Invalid refresh token for device")
+                throw com.ampairs.auth.exception.InvalidSessionException("Invalid refresh token for device")
             }
 
             // CRITICAL: Update device session activity to prevent expiration
@@ -413,23 +406,22 @@ class AuthService @Autowired constructor(
             authResponse.refreshTokenExpiresAt = jwtService.extractExpirationAsInstant(refreshToken)
             return authResponse
         }
-        throw Exception("Refresh token not valid")
+        throw com.ampairs.auth.exception.InvalidSessionException("Refresh token not valid")
     }
 
-    @Throws(Exception::class)
     @Transactional
     fun logout(
         request: HttpServletRequest,
     ): GenericSuccessResponse {
         val authHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw Exception("Access token not found")
+            throw IllegalArgumentException("Access token not found")
         }
 
         val accessToken: String = authHeader.substring(7)
         val userName: String = jwtService.extractUsername(accessToken)
         val deviceId: String = jwtService.extractDeviceId(accessToken)
-            ?: throw Exception("Device ID not found in token")
+            ?: throw IllegalArgumentException("Device ID not found in token")
             
         val user: User = this.userRepository.findByUserName(userName)
             .orElseThrow()
@@ -442,14 +434,13 @@ class AuthService @Autowired constructor(
         return genericSuccessResponse
     }
 
-    @Throws(Exception::class)
     @Transactional
     fun logoutAllDevices(
         request: HttpServletRequest,
     ): GenericSuccessResponse {
         val authHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw Exception("Access token not found")
+            throw IllegalArgumentException("Access token not found")
         }
 
         val accessToken: String = authHeader.substring(7)
@@ -484,7 +475,7 @@ class AuthService @Autowired constructor(
     fun getUserDevices(request: HttpServletRequest): List<DeviceSessionDto> {
         val authHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw Exception("Access token not found")
+            throw IllegalArgumentException("Access token not found")
         }
 
         val accessToken: String = authHeader.substring(7)
@@ -518,7 +509,7 @@ class AuthService @Autowired constructor(
     fun logoutFromDevice(request: HttpServletRequest, targetDeviceId: String): GenericSuccessResponse {
         val authHeader = request.getHeader(HttpHeaders.AUTHORIZATION)
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw Exception("Access token not found")
+            throw IllegalArgumentException("Access token not found")
         }
 
         val accessToken: String = authHeader.substring(7)

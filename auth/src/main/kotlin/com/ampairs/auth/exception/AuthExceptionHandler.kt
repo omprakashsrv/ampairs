@@ -204,6 +204,21 @@ class AuthExceptionHandler : BaseExceptionHandler() {
         )
     }
 
+    @ExceptionHandler(AccountLockedException::class)
+    fun handleAccountLockedException(
+        ex: AccountLockedException,
+        request: HttpServletRequest,
+    ): ResponseEntity<ApiResponse<Any>> {
+        return createErrorResponse(
+            httpStatus = HttpStatus.TOO_MANY_REQUESTS,
+            errorCode = ErrorCodes.ACCOUNT_LOCKED,
+            message = "Account temporarily locked",
+            details = ex.message ?: "Too many failed attempts. Try again later.",
+            request = request,
+            moduleName = "auth"
+        )
+    }
+
     @ExceptionHandler(RecaptchaValidationException::class)
     fun handleRecaptchaValidationException(
         ex: RecaptchaValidationException,

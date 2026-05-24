@@ -13,7 +13,10 @@ import org.springframework.security.web.authentication.logout.LogoutSuccessHandl
 import org.springframework.stereotype.Service
 
 @Service
-class LogoutService @Autowired constructor(val tokenRepository: TokenRepository) : LogoutHandler, LogoutSuccessHandler {
+class LogoutService @Autowired constructor(
+    val tokenRepository: TokenRepository,
+    val tokenValidationCacheService: TokenValidationCacheService,
+) : LogoutHandler, LogoutSuccessHandler {
 
     @Transactional
     override fun logout(
@@ -25,15 +28,12 @@ class LogoutService @Autowired constructor(val tokenRepository: TokenRepository)
         }
         val jwt: String = authHeader.substring(7)
 
-        // OPTIMIZATION: Add token to blacklist only if not already present
         val storedToken = tokenRepository.findByToken(jwt).orElse(null)
         if (storedToken != null) {
-            // Token already in database, mark as revoked
             storedToken.expired = true
             storedToken.revoked = true
             tokenRepository.save(storedToken)
         } else {
-            // Token not in database (normal case), add to blacklist
             val blacklistToken = Token()
             blacklistToken.token = jwt
             blacklistToken.expired = true
@@ -42,6 +42,9 @@ class LogoutService @Autowired constructor(val tokenRepository: TokenRepository)
             blacklistToken.tokenType = com.ampairs.auth.model.enums.TokenType.BEARER
             tokenRepository.save(blacklistToken)
         }
+
+        // Evict cached validity so the revoked token is rejected immediately
+        tokenValidationCacheService.evictTokenValidity(jwt.take(32))
 
         SecurityContextHolder.clearContext()
     }

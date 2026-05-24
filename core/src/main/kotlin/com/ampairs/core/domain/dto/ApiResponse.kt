@@ -116,6 +116,8 @@ object ErrorCodes {
     const val TOKEN_GENERATION_FAILED = "AUTH_005"
     const val ACCESS_DENIED = "AUTH_006"
     const val INSUFFICIENT_PERMISSIONS = "AUTH_007"
+    const val ACCOUNT_LOCKED = "AUTH_008"
+    const val RATE_LIMIT_EXCEEDED = "AUTH_009"
 
     // File operations
     const val FILE_NOT_FOUND = "FILE_001"
