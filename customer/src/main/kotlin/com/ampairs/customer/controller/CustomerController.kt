@@ -2,6 +2,7 @@ package com.ampairs.customer.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
+import com.ampairs.core.exception.NotFoundException
 import com.ampairs.customer.domain.dto.*
 import com.ampairs.customer.domain.model.Customer
 import com.ampairs.customer.domain.service.CustomerService
@@ -102,9 +103,8 @@ class CustomerController @Autowired constructor(
 
     @GetMapping("/{customerId}")
     fun getCustomer(@PathVariable customerId: String): ApiResponse<CustomerResponse> {
-        val customer = customerService.getCustomers().find { it.uid == customerId }
-            ?: return ApiResponse.error("Customer not found", "CUSTOMER_NOT_FOUND")
-
+        val customer = customerService.getCustomerByUid(customerId)
+            ?: throw NotFoundException("Customer not found: $customerId")
         return ApiResponse.success(customer.asCustomerResponse())
     }
 
@@ -127,8 +127,7 @@ class CustomerController @Autowired constructor(
         }
 
         val updatedCustomer = customerService.updateCustomer(customerId, updates)
-            ?: return ApiResponse.error("Customer not found", "CUSTOMER_NOT_FOUND")
-
+            ?: throw NotFoundException("Customer not found: $customerId")
         return ApiResponse.success(updatedCustomer.asCustomerResponse())
     }
 

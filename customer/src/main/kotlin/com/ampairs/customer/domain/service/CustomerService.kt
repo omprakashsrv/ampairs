@@ -224,6 +224,8 @@ class CustomerService @Autowired constructor(
         }
     }
 
+    fun getCustomerByUid(uid: String): Customer? = customerRepository.findByUid(uid)
+
     fun getCustomerByGstNumber(gstNumber: String): Customer? {
         return customerRepository.findByGstNumber(gstNumber).orElse(null)
     }
