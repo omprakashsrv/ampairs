@@ -9,7 +9,6 @@ import com.ampairs.inventory.domain.dto.asWarehouseResponses
 import com.ampairs.inventory.domain.dto.toWarehouse
 import com.ampairs.inventory.service.WarehouseService
 import jakarta.validation.Valid
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -22,7 +21,7 @@ import org.springframework.web.bind.annotation.*
  */
 @RestController
 @RequestMapping("/inventory/v1/warehouses")
-class WarehouseController @Autowired constructor(
+class WarehouseController(
     private val warehouseService: WarehouseService
 ) {
 

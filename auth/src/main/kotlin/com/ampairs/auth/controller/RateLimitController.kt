@@ -4,7 +4,6 @@ import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.service.RateLimitingService
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestMapping
@@ -16,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController
  */
 @RestController
 @RequestMapping("/auth/v1/rate-limit")
-class RateLimitController @Autowired constructor(
+class RateLimitController(
     private val rateLimitingService: RateLimitingService,
 ) {
 

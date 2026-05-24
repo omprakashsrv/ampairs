@@ -13,7 +13,6 @@ import com.ampairs.invoice.domain.model.InvoiceItem
 import com.ampairs.invoice.repository.InvoiceItemRepository
 import com.ampairs.invoice.repository.InvoicePagingRepository
 import com.ampairs.invoice.repository.InvoiceRepository
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -24,7 +23,8 @@ import java.time.Instant
 import kotlin.jvm.optionals.getOrDefault
 
 @Service
-class InvoiceService @Autowired constructor(
+@Transactional(readOnly = true)
+class InvoiceService(
     val invoiceRepository: InvoiceRepository,
     val invoiceItemRepository: InvoiceItemRepository,
     val invoicePagingRepository: InvoicePagingRepository,

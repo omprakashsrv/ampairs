@@ -5,7 +5,6 @@ import com.ampairs.core.exception.NotFoundException
 import com.ampairs.inventory.domain.dto.*
 import com.ampairs.inventory.service.InventoryItemService
 import jakarta.validation.Valid
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.web.bind.annotation.*
@@ -18,7 +17,7 @@ import org.springframework.web.bind.annotation.*
  */
 @RestController
 @RequestMapping("/inventory/v1/items")
-class InventoryController @Autowired constructor(
+class InventoryController(
     private val inventoryItemService: InventoryItemService
 ) {
 

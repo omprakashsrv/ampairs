@@ -9,7 +9,6 @@ import com.ampairs.notification.provider.sms.AwsSnsSmsProvider
 import com.ampairs.notification.provider.sms.Msg91SmsProvider
 import com.ampairs.notification.repository.NotificationQueueRepository
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Primary
@@ -27,7 +26,7 @@ import java.util.concurrent.Executor
  */
 @Service
 @Primary
-class NotificationService @Autowired constructor(
+class NotificationService(
     private val notificationQueueRepository: NotificationQueueRepository,
     private val msg91SmsProvider: Msg91SmsProvider,
     private val awsSnsSmsProvider: AwsSnsSmsProvider,

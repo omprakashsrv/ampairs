@@ -4,7 +4,6 @@ import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.inventory.domain.dto.InventoryItemResponse
 import com.ampairs.inventory.domain.dto.asInventoryItemResponses
 import com.ampairs.inventory.service.*
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.*
 import java.math.BigDecimal
@@ -20,7 +19,7 @@ import java.time.LocalDate
  */
 @RestController
 @RequestMapping("/inventory/v1/dashboard")
-class DashboardController @Autowired constructor(
+class DashboardController(
     private val inventoryItemService: InventoryItemService,
     private val inventoryLedgerService: InventoryLedgerService,
     private val inventoryBatchService: InventoryBatchService,

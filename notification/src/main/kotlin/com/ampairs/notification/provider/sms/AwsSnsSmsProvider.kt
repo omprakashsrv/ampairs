@@ -3,7 +3,6 @@ package com.ampairs.notification.provider.sms
 import com.ampairs.notification.provider.NotificationResult
 import io.awspring.cloud.sns.sms.SnsSmsTemplate
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Component
 
@@ -11,7 +10,7 @@ import org.springframework.stereotype.Component
  * AWS SNS SMS Provider implementation
  */
 @Component
-class AwsSnsSmsProvider @Autowired constructor(
+class AwsSnsSmsProvider(
     private val snsSmsTemplate: SnsSmsTemplate,
 ) : SmsNotificationProvider {
 

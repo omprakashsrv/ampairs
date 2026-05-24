@@ -10,7 +10,6 @@ import com.ampairs.user.repository.UserRepository
 import com.ampairs.user.service.UserService
 import com.ampairs.workspace.service.WorkspaceMemberService
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
@@ -22,7 +21,7 @@ import java.time.Instant
  * WorkspaceMemberService's public interface per the module boundary rule.
  */
 @Service
-class AccountDeletionService @Autowired constructor(
+class AccountDeletionService(
     private val userRepository: UserRepository,
     private val userService: UserService,
     private val tokenRepository: TokenRepository,

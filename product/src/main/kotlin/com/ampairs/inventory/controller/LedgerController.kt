@@ -6,7 +6,6 @@ import com.ampairs.inventory.domain.dto.asInventoryLedgerResponse
 import com.ampairs.inventory.domain.dto.asInventoryLedgerResponses
 import com.ampairs.inventory.domain.model.InventoryLedger
 import com.ampairs.inventory.service.InventoryLedgerService
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.web.bind.annotation.*
 import java.math.BigDecimal
@@ -22,7 +21,7 @@ import java.time.LocalDate
  */
 @RestController
 @RequestMapping("/inventory/v1/ledger")
-class LedgerController @Autowired constructor(
+class LedgerController(
     private val inventoryLedgerService: InventoryLedgerService
 ) {
 

@@ -4,7 +4,6 @@ import com.ampairs.inventory.service.InventoryBatchService
 import com.ampairs.inventory.service.InventoryItemService
 import com.ampairs.inventory.service.InventoryLedgerService
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
@@ -20,7 +19,7 @@ import org.springframework.stereotype.Component
  * Can also be triggered manually via controller endpoints.
  */
 @Component
-class InventoryScheduler @Autowired constructor(
+class InventoryScheduler(
     private val inventoryLedgerService: InventoryLedgerService,
     private val inventoryBatchService: InventoryBatchService,
     private val inventoryItemService: InventoryItemService

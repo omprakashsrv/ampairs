@@ -5,7 +5,6 @@ import com.ampairs.auth.repository.TokenRepository
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.springframework.transaction.annotation.Transactional
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.web.authentication.logout.LogoutHandler
@@ -13,7 +12,7 @@ import org.springframework.security.web.authentication.logout.LogoutSuccessHandl
 import org.springframework.stereotype.Service
 
 @Service
-class LogoutService @Autowired constructor(
+class LogoutService(
     val tokenRepository: TokenRepository,
     val tokenValidationCacheService: TokenValidationCacheService,
 ) : LogoutHandler, LogoutSuccessHandler {

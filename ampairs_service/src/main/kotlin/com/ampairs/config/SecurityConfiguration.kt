@@ -6,7 +6,6 @@ import com.ampairs.core.auth.filter.ApiKeyAuthenticationFilter
 import com.ampairs.core.auth.provider.ApiKeyAuthenticationProvider
 import com.ampairs.core.config.ApplicationProperties
 import com.ampairs.core.exception.AuthEntryPointJwt
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
@@ -39,7 +38,7 @@ private val PUBLIC_PATHS = arrayOf(
 @EnableWebSecurity
 @EnableMethodSecurity
 @ComponentScan(value = ["com.ampairs.core"])
-class SecurityConfiguration @Autowired constructor(
+class SecurityConfiguration(
     val jwtService: JwtService,
     val rsaKeyManager: RsaKeyManager,
     val applicationProperties: ApplicationProperties,

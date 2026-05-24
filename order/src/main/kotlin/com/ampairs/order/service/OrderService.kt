@@ -16,7 +16,6 @@ import com.ampairs.order.domain.model.OrderItem
 import com.ampairs.order.repository.OrderItemRepository
 import com.ampairs.order.repository.OrderPagingRepository
 import com.ampairs.order.repository.OrderRepository
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -24,11 +23,14 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
+
+
 import kotlin.jvm.optionals.getOrDefault
 import kotlin.jvm.optionals.getOrNull
 
 @Service
-class OrderService @Autowired constructor(
+@Transactional(readOnly = true)
+class OrderService(
     val orderRepository: OrderRepository,
     val orderItemRepository: OrderItemRepository,
     val orderPagingRepository: OrderPagingRepository,

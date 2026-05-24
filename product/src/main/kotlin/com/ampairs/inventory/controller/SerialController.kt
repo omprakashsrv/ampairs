@@ -4,7 +4,6 @@ import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.inventory.domain.dto.*
 import com.ampairs.inventory.service.InventorySerialService
 import jakarta.validation.Valid
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -17,7 +16,7 @@ import org.springframework.web.bind.annotation.*
  */
 @RestController
 @RequestMapping("/inventory/v1/serials")
-class SerialController @Autowired constructor(
+class SerialController(
     private val inventorySerialService: InventorySerialService
 ) {
 

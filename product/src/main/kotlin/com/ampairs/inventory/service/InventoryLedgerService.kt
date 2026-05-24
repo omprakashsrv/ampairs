@@ -5,7 +5,6 @@ import com.ampairs.inventory.domain.model.InventoryLedger
 import com.ampairs.inventory.repository.InventoryItemRepository
 import com.ampairs.inventory.repository.InventoryLedgerRepository
 import com.ampairs.inventory.repository.InventoryTransactionRepository
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -40,7 +39,7 @@ import java.time.ZoneId
  * - Scheduled jobs for automatic daily generation
  */
 @Service
-class InventoryLedgerService @Autowired constructor(
+class InventoryLedgerService(
     private val inventoryLedgerRepository: InventoryLedgerRepository,
     private val inventoryTransactionRepository: InventoryTransactionRepository,
     private val inventoryItemRepository: InventoryItemRepository

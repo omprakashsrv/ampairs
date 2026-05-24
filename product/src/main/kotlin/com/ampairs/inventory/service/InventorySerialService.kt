@@ -4,7 +4,6 @@ import com.ampairs.inventory.config.Constants
 import com.ampairs.inventory.domain.dto.*
 import com.ampairs.inventory.domain.model.InventorySerial
 import com.ampairs.inventory.repository.InventorySerialRepository
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -30,7 +29,7 @@ import java.time.Instant
  * - InventoryBatchService for batch association (optional)
  */
 @Service
-class InventorySerialService @Autowired constructor(
+class InventorySerialService(
     private val inventorySerialRepository: InventorySerialRepository,
     private val inventoryItemService: InventoryItemService,
     private val warehouseService: WarehouseService

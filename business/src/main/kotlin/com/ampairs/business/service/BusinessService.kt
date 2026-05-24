@@ -14,7 +14,6 @@ import com.ampairs.business.model.dto.toBusiness
 import com.ampairs.business.repository.BusinessRepository
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.core.security.AuthenticationHelper
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -32,7 +31,7 @@ import org.springframework.transaction.annotation.Transactional
  * - Multi-tenant aware (uses TenantContextHolder)
  */
 @Service
-class BusinessService @Autowired constructor(
+class BusinessService(
     private val businessRepository: BusinessRepository
 ) {
 

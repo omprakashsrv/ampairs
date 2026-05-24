@@ -11,7 +11,6 @@ import com.ampairs.customer.repository.StateRepository
 import com.ampairs.event.domain.events.CustomerCreatedEvent
 import com.ampairs.event.domain.events.CustomerDeletedEvent
 import com.ampairs.event.domain.events.CustomerUpdatedEvent
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
@@ -26,7 +25,8 @@ import java.time.Instant
 import java.util.*
 
 @Service
-class CustomerService @Autowired constructor(
+@Transactional(readOnly = true)
+class CustomerService(
     val customerRepository: CustomerRepository,
     val customerPagingRepository: CustomerPagingRepository,
     val stateRepository: StateRepository,

@@ -3,7 +3,6 @@ package com.ampairs.inventory.service
 import com.ampairs.inventory.config.Constants
 import com.ampairs.inventory.domain.model.InventoryItem
 import com.ampairs.inventory.repository.InventoryItemRepository
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -24,7 +23,7 @@ import java.math.BigDecimal
  * - Link inventory with products (optional)
  */
 @Service
-class InventoryItemService @Autowired constructor(
+class InventoryItemService(
     private val inventoryItemRepository: InventoryItemRepository,
     private val warehouseService: WarehouseService
 ) {

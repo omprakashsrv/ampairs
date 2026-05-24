@@ -4,7 +4,6 @@ import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.notification.provider.NotificationChannel
 import com.ampairs.notification.service.NotificationService
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -12,7 +11,7 @@ import org.springframework.web.bind.annotation.*
  */
 @RestController
 @RequestMapping("/notification/v1")
-class NotificationController @Autowired constructor(
+class NotificationController(
     private val notificationService: NotificationService,
 ) {
 

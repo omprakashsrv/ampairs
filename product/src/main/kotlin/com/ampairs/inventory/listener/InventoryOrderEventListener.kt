@@ -4,7 +4,6 @@ import com.ampairs.event.domain.events.OrderCreatedEvent
 import com.ampairs.event.domain.events.OrderStatusChangedEvent
 import com.ampairs.inventory.repository.InventoryConfigRepository
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
@@ -54,7 +53,7 @@ import org.springframework.stereotype.Component
  * ```
  */
 @Component
-class InventoryOrderEventListener @Autowired constructor(
+class InventoryOrderEventListener(
     private val inventoryConfigRepository: InventoryConfigRepository
 ) {
 

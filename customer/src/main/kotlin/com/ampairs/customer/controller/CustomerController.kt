@@ -11,7 +11,6 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.http.HttpStatus
@@ -20,7 +19,7 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping("/customer/v1")
 @Tag(name = "Customer Management", description = "Customer CRUD and management operations")
-class CustomerController @Autowired constructor(
+class CustomerController(
     private val customerService: CustomerService,
     private val customerImageService: CustomerImageService,
 ) {

@@ -7,7 +7,6 @@ import com.ampairs.workspace.repository.WorkspaceActivityRepository
 import tools.jackson.databind.ObjectMapper
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -22,7 +21,7 @@ import java.time.temporal.ChronoUnit
  * Provides central activity logging with database persistence
  */
 @Service
-class WorkspaceActivityService @Autowired constructor(
+class WorkspaceActivityService(
     private val activityRepository: WorkspaceActivityRepository,
     private val objectMapper: ObjectMapper,
 ) {

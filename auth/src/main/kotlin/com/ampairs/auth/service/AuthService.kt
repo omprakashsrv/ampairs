@@ -20,7 +20,6 @@ import jakarta.persistence.EntityManager
 import jakarta.servlet.http.HttpServletRequest
 import org.springframework.transaction.annotation.Transactional
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Service
@@ -32,7 +31,7 @@ val OTP_LENGTH: Int = 6
 val SMS_VERIFICATION_VALIDITY = 10 * 60 * 1000L
 
 @Service
-class AuthService @Autowired constructor(
+class AuthService(
     val userRepository: UserRepository,
     val tokenRepository: TokenRepository,
     val loginSessionRepository: LoginSessionRepository,

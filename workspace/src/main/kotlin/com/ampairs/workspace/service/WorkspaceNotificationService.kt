@@ -5,7 +5,6 @@ import com.ampairs.notification.service.NotificationService
 import com.ampairs.workspace.model.WorkspaceInvitation
 import com.ampairs.workspace.model.enums.WorkspaceRole
 import org.slf4j.LoggerFactory
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 
@@ -14,7 +13,7 @@ import org.springframework.stereotype.Service
  * Integrates workspace operations with the centralized notification system
  */
 @Service
-class WorkspaceNotificationService @Autowired constructor(
+class WorkspaceNotificationService(
     private val notificationService: NotificationService,
 ) {
 

@@ -4,13 +4,12 @@ import com.ampairs.user.model.User
 import com.ampairs.user.model.dto.UserUpdateRequest
 import com.ampairs.user.repository.UserRepository
 import jakarta.transaction.Transactional
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 
 
 @Service
-class UserService @Autowired constructor(val userRepository: UserRepository) {
+class UserService(val userRepository: UserRepository) {
 
     @Transactional
     fun createUser(user: User): User {

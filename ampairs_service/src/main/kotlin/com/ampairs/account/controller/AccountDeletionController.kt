@@ -6,7 +6,6 @@ import com.ampairs.account.dto.AccountDeletionStatusResponse
 import com.ampairs.account.service.AccountDeletionService
 import com.ampairs.core.domain.dto.ApiResponse
 import jakarta.validation.Valid
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -15,7 +14,7 @@ import org.springframework.web.bind.annotation.*
  */
 @RestController
 @RequestMapping("/api/v1/account")
-class AccountDeletionController @Autowired constructor(
+class AccountDeletionController(
     private val accountDeletionService: AccountDeletionService
 ) {
 

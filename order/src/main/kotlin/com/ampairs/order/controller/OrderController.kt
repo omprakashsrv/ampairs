@@ -4,13 +4,12 @@ import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.order.domain.dto.*
 import com.ampairs.order.service.OrderService
 import jakarta.validation.Valid
-import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.web.bind.annotation.*
 import java.time.Instant
 
 @RestController
 @RequestMapping("/order/v1")
-class OrderController @Autowired constructor(
+class OrderController(
     private val orderService: OrderService,
 ) {
 
