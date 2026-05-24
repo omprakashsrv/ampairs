@@ -6,7 +6,7 @@ import com.ampairs.invoice.domain.model.Invoice
 
 data class InvoiceUpdateRequest(
     val id: String = "",
-    val invoiceDate: String = "",
+    val invoiceDate: java.time.Instant? = null,
     val invoiceNumber: String = "",
     val orderRefId: String? = null,
     var fromCustomerId: String = "",
