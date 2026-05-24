@@ -124,8 +124,9 @@ data class BillingPreferencesResponse(
  */
 data class PaymentLinkResponse(
     val invoiceUid: String,
-    val paymentLinkUrl: String,
-    val expiresAt: Instant? = null
+    val paymentLinkUrl: String?,
+    val expiresAt: Instant? = null,
+    val autoCharged: Boolean = false
 )
 
 /**

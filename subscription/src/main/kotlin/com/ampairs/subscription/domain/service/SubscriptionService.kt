@@ -53,6 +53,10 @@ class SubscriptionService(
      * Get current subscription for a workspace
      * Auto-creates a FREE subscription if none exists
      */
+    fun getSubscriptionById(id: Long): Subscription =
+        subscriptionRepository.findById(id)
+            .orElseThrow { SubscriptionException.NotFound("Subscription not found") }
+
     fun getSubscription(workspaceId: String): SubscriptionResponse {
         var subscription = subscriptionRepository.findWithPlanByWorkspaceId(workspaceId)
 
