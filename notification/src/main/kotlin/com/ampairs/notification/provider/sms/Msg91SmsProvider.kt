@@ -99,7 +99,7 @@ class Msg91SmsProvider : SmsNotificationProvider {
                 logger.info("MSG91 SMS sent successfully: {}", msg91Response.message)
                 NotificationResult(
                     success = true,
-                    messageId = msg91Response.request_id,
+                    messageId = msg91Response.requestId,
                     providerResponse = msg91Response.message,
                     providerName = getProviderName(),
                     channel = getChannel()
@@ -150,6 +150,5 @@ data class Msg91Recipient(
 data class Msg91Response(
     val type: String,
     val message: String,
-    @JsonProperty("request_id")
-    val request_id: String?,
+    @JsonProperty("request_id") val requestId: String?, // MSG91 API uses snake_case with underscore
 )
