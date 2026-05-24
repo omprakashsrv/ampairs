@@ -18,6 +18,10 @@ version = "1.0.0"
 subprojects {
     group = "com.ampairs"
     version = "1.0.0"
+
+    // Override Spring Boot 4.0's managed testcontainers version (2.0.5 sub-modules don't
+    // all exist on Maven Central yet). Pin to the last stable 1.x release instead.
+    extra["testcontainers.version"] = "1.21.0"
 }
 
 // Global tasks for the entire project

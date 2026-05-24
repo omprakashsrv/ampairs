@@ -67,9 +67,9 @@ dependencies {
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("io.mockk:mockk:1.14.7")
     testImplementation("com.ninja-squad:springmockk:5.0.1")
-    testImplementation("org.testcontainers:testcontainers:2.0.5")
-    testImplementation("org.testcontainers:postgresql:2.0.5")
-    testImplementation("org.testcontainers:junit-jupiter:2.0.5")
+    testImplementation("org.testcontainers:testcontainers")
+    testImplementation("org.testcontainers:postgresql")
+    testImplementation("org.testcontainers:junit-jupiter")
     testImplementation(project(":ampairs_service"))
 }
 
