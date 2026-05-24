@@ -17,7 +17,6 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
 import org.springframework.security.oauth2.jwt.JwtDecoder
-import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import javax.crypto.spec.SecretKeySpec
@@ -67,21 +66,12 @@ class SecurityConfiguration @Autowired constructor(
     @Bean
     fun jwtDecoder(): JwtDecoder {
         return when (val algorithm = applicationProperties.security.jwt.algorithm) {
-            "RS256" -> {
-                // Use RSA public key for RS256
-                val currentKeyPair = rsaKeyManager.getCurrentKeyPair()
-                NimbusJwtDecoder.withPublicKey(currentKeyPair.publicKey).build()
-            }
-
+            "RS256" -> RotatingRsaJwtDecoder(rsaKeyManager)
             "HS256" -> {
-                // Legacy HS256 support
                 val secretKey = SecretKeySpec(jwtService.getSignInKey(), "HmacSHA256")
                 NimbusJwtDecoder.withSecretKey(secretKey).build()
             }
-
-            else -> {
-                throw IllegalArgumentException("Unsupported JWT algorithm: $algorithm")
-            }
+            else -> throw IllegalArgumentException("Unsupported JWT algorithm: $algorithm")
         }
     }
 
