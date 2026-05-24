@@ -1,5 +1,6 @@
 package com.ampairs.invoice.domain.model
 
+import org.hibernate.annotations.BatchSize
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import com.ampairs.core.domain.model.Address
@@ -91,6 +92,7 @@ class Invoice : OwnableBaseDomain() {
     @Column(name = "tax_info", length = 255)
     var taxInfos: List<TaxInfo> = listOf()
 
+    @BatchSize(size = 30)
     @OneToMany()
     @JoinColumn(
         name = "invoice_id", referencedColumnName = "uid", insertable = false, updatable = false, nullable = false

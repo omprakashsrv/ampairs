@@ -4,6 +4,7 @@ import com.ampairs.core.domain.model.Address
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.customer.config.Constants
 import jakarta.persistence.*
+import org.hibernate.annotations.BatchSize
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import org.locationtech.jts.geom.Point
@@ -101,6 +102,7 @@ class Customer : OwnableBaseDomain() {
      * Customer images relationship
      * Lazy loading to avoid N+1 queries. Use @EntityGraph when needed.
      */
+    @BatchSize(size = 30)
     @OneToMany(cascade = [CascadeType.ALL], fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_uid", referencedColumnName = "uid")
     @OrderBy("displayOrder ASC, createdAt ASC")
