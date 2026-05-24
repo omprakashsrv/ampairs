@@ -4,10 +4,8 @@ import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.notification.provider.NotificationChannel
 import com.ampairs.notification.provider.NotificationStatus
 import jakarta.persistence.*
+import java.time.Instant
 
-/**
- * Notification Queue entity for storing notification requests for async processing
- */
 @Entity
 @Table(name = "notification_queue")
 class NotificationQueue : OwnableBaseDomain() {
@@ -35,10 +33,10 @@ class NotificationQueue : OwnableBaseDomain() {
     var maxRetries: Int = 3
 
     @Column(name = "scheduled_at", nullable = false)
-    var scheduledAt: java.time.LocalDateTime = java.time.LocalDateTime.now()
+    var scheduledAt: Instant = Instant.now()
 
     @Column(name = "last_attempt_at")
-    var lastAttemptAt: java.time.LocalDateTime? = null
+    var lastAttemptAt: Instant? = null
 
     @Column(name = "provider_used", length = 50)
     var providerUsed: String? = null
@@ -55,7 +53,7 @@ class NotificationQueue : OwnableBaseDomain() {
     fun isReadyForRetry(): Boolean {
         return status == NotificationStatus.FAILED &&
                 retryCount < maxRetries &&
-                scheduledAt.isBefore(java.time.LocalDateTime.now())
+                scheduledAt.isBefore(Instant.now())
     }
 
     fun canRetry(): Boolean {
@@ -65,7 +63,7 @@ class NotificationQueue : OwnableBaseDomain() {
     fun markForRetry(delayMinutes: Long = 5) {
         this.retryCount++
         this.status = NotificationStatus.RETRYING
-        this.scheduledAt = java.time.LocalDateTime.now().plusMinutes(delayMinutes)
+        this.scheduledAt = Instant.now().plusSeconds(delayMinutes * 60)
     }
 
     fun markAsExhausted() {
@@ -77,7 +75,7 @@ class NotificationQueue : OwnableBaseDomain() {
         this.providerUsed = providerName
         this.providerMessageId = messageId
         this.providerResponse = response
-        this.lastAttemptAt = java.time.LocalDateTime.now()
+        this.lastAttemptAt = Instant.now()
     }
 
     fun markAsFailed(providerName: String, error: String?, response: String?) {
@@ -85,11 +83,8 @@ class NotificationQueue : OwnableBaseDomain() {
         this.providerUsed = providerName
         this.errorMessage = error
         this.providerResponse = response
-        this.lastAttemptAt = java.time.LocalDateTime.now()
+        this.lastAttemptAt = Instant.now()
     }
 }
 
-/**
- * Legacy SMS Queue alias for backward compatibility
- */
 typealias SmsQueue = NotificationQueue

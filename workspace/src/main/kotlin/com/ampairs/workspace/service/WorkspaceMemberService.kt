@@ -21,7 +21,6 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
-import java.time.LocalDateTime
 
 /**
  * Service for workspace member management operations
@@ -440,7 +439,7 @@ class WorkspaceMemberService(
         }
         val recentJoins = memberRepository.countByWorkspaceIdAndJoinedAtAfter(
             workspaceId,
-            LocalDateTime.now().minusDays(7)
+            Instant.now().minus(7, java.time.temporal.ChronoUnit.DAYS)
         )
 
         return mapOf(
@@ -493,7 +492,7 @@ class WorkspaceMemberService(
     fun updateMemberActivity(workspaceId: String, userId: String) {
         val member = memberRepository.findByWorkspaceIdAndUserIdAndIsActiveTrue(workspaceId, userId)
             .orElse(null) ?: return
-        memberRepository.updateLastActivity(member.uid, LocalDateTime.now())
+        memberRepository.updateLastActivity(member.uid, Instant.now())
     }
 
     /**

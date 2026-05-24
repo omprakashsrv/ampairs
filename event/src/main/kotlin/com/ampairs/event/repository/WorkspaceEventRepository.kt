@@ -10,7 +10,7 @@ import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.PagingAndSortingRepository
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
-import java.time.LocalDateTime
+import java.time.Instant
 
 @Repository
 interface WorkspaceEventRepository : CrudRepository<WorkspaceEvent, Long>, PagingAndSortingRepository<WorkspaceEvent, Long> {
@@ -91,7 +91,7 @@ interface WorkspaceEventRepository : CrudRepository<WorkspaceEvent, Long>, Pagin
         WHERE e.consumed = true
         AND e.createdAt < :cutoffDate
     """)
-    fun deleteConsumedEventsBefore(@Param("cutoffDate") cutoffDate: LocalDateTime): Int
+    fun deleteConsumedEventsBefore(@Param("cutoffDate") cutoffDate: Instant): Int
 
     /**
      * Mark event as consumed

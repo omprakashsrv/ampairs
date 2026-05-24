@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import java.time.Duration
-import java.time.LocalDateTime
+import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicLong
@@ -161,7 +161,7 @@ class RateLimitingService(
                     status[key] = RateLimitStatus(
                         key = key,
                         remainingRequests = maxOf(0, bucket.capacity - bucket.currentCount.get()),
-                        resetTime = bucket.windowStart.plusMinutes(bucket.windowMinutes.toLong()),
+                        resetTime = bucket.windowStart.plusSeconds(bucket.windowMinutes.toLong() * 60),
                         isBlocked = bucket.isBlocked()
                     )
                 }
@@ -176,7 +176,7 @@ class RateLimitingService(
                         status[key] = RateLimitStatus(
                             key = key,
                             remainingRequests = maxOf(0, bucket.capacity - bucket.currentCount.get()),
-                            resetTime = bucket.windowStart.plusMinutes(bucket.windowMinutes.toLong()),
+                            resetTime = bucket.windowStart.plusSeconds(bucket.windowMinutes.toLong() * 60),
                             isBlocked = bucket.isBlocked()
                         )
                     }
@@ -245,8 +245,8 @@ class RateLimitingService(
         }
 
         if (!bucket.allowRequest()) {
-            val resetTime = bucket.windowStart.plusMinutes(config.windowMinutes.toLong())
-            val remainingSeconds = Duration.between(LocalDateTime.now(), resetTime).seconds
+            val resetTime = bucket.windowStart.plusSeconds(config.windowMinutes.toLong() * 60)
+            val remainingSeconds = Duration.between(Instant.now(), resetTime).seconds
             
             logger.warn(
                 "Rate limit exceeded: key={}, type={}, remaining_time={}",
@@ -319,17 +319,18 @@ class RateLimitingService(
         val windowMinutes: Int,
         val burstCapacity: Int,
     ) {
-        var windowStart: LocalDateTime = LocalDateTime.now()
+        var windowStart: Instant = Instant.now()
         val currentCount = AtomicInteger(0)
         val burstCount = AtomicInteger(0)
 
         fun allowRequest(): Boolean {
-            val now = LocalDateTime.now()
+            val now = Instant.now()
+            val windowEnd = windowStart.plusSeconds(windowMinutes.toLong() * 60)
 
             // Reset window if expired
-            if (now.isAfter(windowStart.plusMinutes(windowMinutes.toLong()))) {
+            if (now.isAfter(windowEnd)) {
                 synchronized(this) {
-                    if (now.isAfter(windowStart.plusMinutes(windowMinutes.toLong()))) {
+                    if (now.isAfter(windowStart.plusSeconds(windowMinutes.toLong() * 60))) {
                         windowStart = now
                         currentCount.set(0)
                         burstCount.set(0)
@@ -387,7 +388,7 @@ class RateLimitingService(
     data class RateLimitStatus(
         val key: String,
         val remainingRequests: Int,
-        val resetTime: LocalDateTime,
+        val resetTime: Instant,
         val isBlocked: Boolean,
     )
 }

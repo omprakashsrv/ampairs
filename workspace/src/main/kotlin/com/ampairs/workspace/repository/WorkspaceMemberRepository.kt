@@ -10,7 +10,7 @@ import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
-import java.time.LocalDateTime
+import java.time.Instant
 import java.util.*
 
 /**
@@ -64,7 +64,7 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
      */
     @Modifying
     @Query("UPDATE com.ampairs.workspace.model.WorkspaceMember wm SET wm.lastActiveAt = :timestamp WHERE wm.uid = :memberId")
-    fun updateLastActivity(@Param("memberId") memberId: String, @Param("timestamp") timestamp: LocalDateTime)
+    fun updateLastActivity(@Param("memberId") memberId: String, @Param("timestamp") timestamp: Instant)
 
     /**
      * Check if user exists in workspace
@@ -97,7 +97,7 @@ interface WorkspaceMemberRepository : JpaRepository<WorkspaceMember, String> {
     /**
      * Count members who joined after a specific date
      */
-    fun countByWorkspaceIdAndJoinedAtAfter(workspaceId: String, joinedAfter: LocalDateTime): Long
+    fun countByWorkspaceIdAndJoinedAtAfter(workspaceId: String, joinedAfter: Instant): Long
 
     /**
      * Find members by role (simplified to avoid cross-module JPA queries)

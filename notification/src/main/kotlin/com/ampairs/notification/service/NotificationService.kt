@@ -17,7 +17,7 @@ import org.springframework.scheduling.annotation.Async
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
+import java.time.Instant
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executor
 
@@ -94,7 +94,7 @@ class NotificationService @Autowired constructor(
                 this.message = message
                 this.channel = channel
                 this.status = NotificationStatus.PENDING
-                this.scheduledAt = LocalDateTime.now()
+                this.scheduledAt = Instant.now()
                 // Explicitly set the tenant ID to match current context
                 this.ownerId = effectiveTenantId
             }
@@ -127,7 +127,7 @@ class NotificationService @Autowired constructor(
                 this.message = message
                 this.channel = channel
                 this.status = NotificationStatus.PENDING
-                this.scheduledAt = LocalDateTime.now().plusMinutes(delayMinutes)
+                this.scheduledAt = Instant.now().plusSeconds(delayMinutes * 60)
                 // Explicitly set the tenant ID to match current context
                 this.ownerId = effectiveTenantId
             }
@@ -261,7 +261,7 @@ class NotificationService @Autowired constructor(
     @Transactional
     fun cleanupOldNotifications() {
         try {
-            val cutoffDate = LocalDateTime.now().minusDays(cleanupDays)
+            val cutoffDate = Instant.now().minus(cleanupDays.toLong(), java.time.temporal.ChronoUnit.DAYS)
             val oldNotifications = notificationQueueRepository.findOldCompletedNotifications(cutoffDate)
 
             if (oldNotifications.isNotEmpty()) {

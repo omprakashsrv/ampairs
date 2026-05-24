@@ -107,7 +107,7 @@ class RateLimitController @Autowired constructor(
     data class RateLimitSummary(
         val isLimited: Boolean,
         val remainingRequests: Int,
-        val resetTime: java.time.LocalDateTime?,
+        val resetTime: java.time.Instant?,
         val limitType: String,
         val message: String,
     )

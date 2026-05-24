@@ -9,6 +9,7 @@ import com.ampairs.invoice.domain.dto.Discount
 import com.ampairs.invoice.domain.dto.TaxInfo
 import com.ampairs.invoice.domain.enums.InvoiceStatus
 import jakarta.persistence.*
+import java.time.Instant
 import java.util.*
 
 
@@ -27,9 +28,8 @@ class Invoice : OwnableBaseDomain() {
     @Column(name = "order_ref_id", nullable = true, length = 255)
     var orderRefId: String? = null
 
-    @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "invoice_date", nullable = false)
-    var invoiceDate: Date = Date()
+    var invoiceDate: Instant = Instant.now()
 
     @Column(name = "from_customer_id", nullable = false, length = 255)
     var fromCustomerId: String = ""

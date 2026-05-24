@@ -11,7 +11,7 @@ import org.springframework.data.domain.Pageable
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.time.LocalDateTime
+import java.time.Instant
 
 @Service
 class WorkspaceEventService(
@@ -164,7 +164,7 @@ class WorkspaceEventService(
     @Transactional
     fun cleanupOldConsumedEvents() {
         try {
-            val cutoffDate = LocalDateTime.now().minusDays(30)
+            val cutoffDate = Instant.now().minus(30, java.time.temporal.ChronoUnit.DAYS)
             val deletedCount = eventRepository.deleteConsumedEventsBefore(cutoffDate)
 
             if (deletedCount > 0) {

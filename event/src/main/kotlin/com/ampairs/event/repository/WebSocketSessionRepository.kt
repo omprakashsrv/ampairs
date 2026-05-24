@@ -10,7 +10,7 @@ import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.PagingAndSortingRepository
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
-import java.time.LocalDateTime
+import java.time.Instant
 
 @Repository
 interface WebSocketSessionRepository : CrudRepository<WebSocketSession, Long>, PagingAndSortingRepository<WebSocketSession, Long> {
@@ -76,7 +76,7 @@ interface WebSocketSessionRepository : CrudRepository<WebSocketSession, Long>, P
         AND s.lastHeartbeat < :cutoffTime
     """)
     fun findStaleSessions(
-        @Param("cutoffTime") cutoffTime: LocalDateTime
+        @Param("cutoffTime") cutoffTime: Instant
     ): List<WebSocketSession>
 
     /**
@@ -84,7 +84,7 @@ interface WebSocketSessionRepository : CrudRepository<WebSocketSession, Long>, P
      */
     fun findByStatusAndLastHeartbeatBefore(
         status: DeviceStatus,
-        cutoffTime: LocalDateTime
+        cutoffTime: Instant
     ): List<WebSocketSession>
 
     /**
@@ -98,7 +98,7 @@ interface WebSocketSessionRepository : CrudRepository<WebSocketSession, Long>, P
     """)
     fun markSessionOffline(
         @Param("sessionId") sessionId: String,
-        @Param("disconnectedAt") disconnectedAt: LocalDateTime
+        @Param("disconnectedAt") disconnectedAt: Instant
     ): Int
 
     /**
@@ -112,7 +112,7 @@ interface WebSocketSessionRepository : CrudRepository<WebSocketSession, Long>, P
     """)
     fun updateHeartbeat(
         @Param("sessionId") sessionId: String,
-        @Param("heartbeatTime") heartbeatTime: LocalDateTime
+        @Param("heartbeatTime") heartbeatTime: Instant
     ): Int
 
     /**
@@ -124,7 +124,7 @@ interface WebSocketSessionRepository : CrudRepository<WebSocketSession, Long>, P
         WHERE s.status = 'OFFLINE'
         AND s.disconnectedAt < :cutoffDate
     """)
-    fun deleteOfflineSessionsBefore(@Param("cutoffDate") cutoffDate: LocalDateTime): Int
+    fun deleteOfflineSessionsBefore(@Param("cutoffDate") cutoffDate: Instant): Int
 
     /**
      * Count active sessions for a workspace
