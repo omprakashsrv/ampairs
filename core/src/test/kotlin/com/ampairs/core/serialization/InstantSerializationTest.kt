@@ -3,6 +3,7 @@ package com.ampairs.core.serialization
 import com.ampairs.core.utils.TimezoneTestUtils
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -30,6 +31,7 @@ class InstantSerializationTest {
     @BeforeEach
     fun setup() {
         objectMapper = ObjectMapper().apply {
+            registerModule(JavaTimeModule())
             disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS)
             setTimeZone(TimeZone.getTimeZone("UTC"))
             // Match global snake_case naming strategy

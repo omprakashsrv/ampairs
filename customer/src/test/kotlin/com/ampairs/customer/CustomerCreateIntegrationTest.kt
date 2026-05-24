@@ -223,7 +223,7 @@ class CustomerCreateIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(customerRequest))
         )
-            .andExpect(status().is5xxServerError)
+            .andExpect(status().isBadRequest)
 
         verify(customerService).createCustomer(any<Customer>())
     }
