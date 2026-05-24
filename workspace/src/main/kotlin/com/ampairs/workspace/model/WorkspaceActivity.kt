@@ -2,7 +2,6 @@ package com.ampairs.workspace.model
 
 import com.ampairs.core.domain.model.BaseDomain
 import com.ampairs.workspace.model.enums.WorkspaceActivityType
-import com.fasterxml.jackson.annotation.JsonProperty
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
