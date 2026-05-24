@@ -2,6 +2,7 @@ package com.ampairs.customer.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
+import com.ampairs.core.exception.NotFoundException
 import com.ampairs.customer.domain.dto.CustomerGroupCreateRequest
 import com.ampairs.customer.domain.dto.CustomerGroupResponse
 import com.ampairs.customer.domain.dto.CustomerGroupUpdateRequest
@@ -86,8 +87,7 @@ class CustomerGroupController(
     @GetMapping("/{groupCode}")
     fun getCustomerGroupByCode(@PathVariable groupCode: String): ApiResponse<CustomerGroupResponse> {
         val customerGroup = customerGroupService.findByGroupCode(groupCode.uppercase())
-            ?: return ApiResponse.error("Customer group not found", "CUSTOMER_GROUP_NOT_FOUND")
-
+            ?: throw NotFoundException("Customer group not found: $groupCode")
         return ApiResponse.success(customerGroup.asCustomerGroupResponse())
     }
 
@@ -111,7 +111,7 @@ class CustomerGroupController(
         @RequestBody @Valid request: CustomerGroupUpdateRequest
     ): ApiResponse<CustomerGroupResponse> {
         val existingGroup = customerGroupService.findByGroupCode(groupCode.uppercase())
-            ?: return ApiResponse.error("Customer group not found", "CUSTOMER_GROUP_NOT_FOUND")
+            ?: throw NotFoundException("Customer group not found: $groupCode")
 
         // Apply updates to existing entity
         request.name?.let { existingGroup.name = it }
@@ -123,8 +123,7 @@ class CustomerGroupController(
         request.metadata?.let { existingGroup.metadata = it }
 
         val updatedGroup = customerGroupService.updateCustomerGroup(groupCode.uppercase(), existingGroup)
-            ?: return ApiResponse.error("Failed to update customer group", "UPDATE_FAILED")
-
+            ?: throw NotFoundException("Customer group not found: $groupCode")
         return ApiResponse.success(updatedGroup.asCustomerGroupResponse())
     }
 

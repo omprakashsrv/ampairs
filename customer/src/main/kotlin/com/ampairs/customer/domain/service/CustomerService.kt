@@ -170,8 +170,9 @@ class CustomerService @Autowired constructor(
             existingCustomer.creditDays = updates.creditDays
         }
         if (updates.attributes?.isNotEmpty() == true && updates.attributes != existingCustomer.attributes) {
-            fieldChanges["attributes"] = mapOf("old" to existingCustomer.attributes, "new" to updates.attributes!!)
-            existingCustomer.attributes = updates.attributes
+            val newAttributes = updates.attributes ?: emptyMap()
+            fieldChanges["attributes"] = mapOf("old" to existingCustomer.attributes, "new" to newAttributes)
+            existingCustomer.attributes = newAttributes
         }
         if (updates.status.isNotBlank() && updates.status != existingCustomer.status) {
             fieldChanges["status"] = mapOf("old" to existingCustomer.status, "new" to updates.status)
