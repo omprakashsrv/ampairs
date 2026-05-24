@@ -1,17 +1,14 @@
 package com.ampairs.unit.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
-import com.ampairs.core.domain.dto.ErrorCodes
 import com.ampairs.unit.domain.dto.ConvertQuantityRequest
 import com.ampairs.unit.domain.dto.ConvertedQuantityResponse
 import com.ampairs.unit.domain.dto.UnitConversionRequest
 import com.ampairs.unit.domain.dto.UnitConversionResponse
-import com.ampairs.unit.exception.CircularConversionException
 import com.ampairs.unit.exception.UnitNotFoundException
 import com.ampairs.unit.service.UnitConversionService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
-import org.springframework.http.ResponseEntity
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
 
@@ -80,19 +77,4 @@ class UnitConversionController(
         ))
     }
 
-    @ExceptionHandler(UnitNotFoundException::class)
-    fun handleConversionNotFound(ex: UnitNotFoundException): ResponseEntity<ApiResponse<Unit>> {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-            .body(ApiResponse.error(ErrorCodes.NOT_FOUND, ex.message ?: "Unit conversion not found"))
-    }
-
-    @ExceptionHandler(CircularConversionException::class)
-    fun handleCircularConversion(ex: CircularConversionException): ResponseEntity<ApiResponse<Unit>> {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-            .body(ApiResponse.error(
-                code = ErrorCodes.BAD_REQUEST,
-                message = ex.message ?: "Circular conversion detected",
-                details = ex.cycle.joinToString(" -> ")
-            ))
-    }
 }
