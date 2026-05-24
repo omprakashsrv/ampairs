@@ -1,5 +1,6 @@
 package com.ampairs.auth.model.dto
 
+import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.Instant
 
 data class DeviceSessionDto(
@@ -13,5 +14,6 @@ data class DeviceSessionDto(
     val location: String?,
     val lastActivity: Instant,
     val loginTime: Instant,
+    @get:JsonProperty("is_current_device")
     val isCurrentDevice: Boolean,
 )

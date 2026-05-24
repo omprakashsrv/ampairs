@@ -1,5 +1,6 @@
 package com.ampairs.notification.service
 
+import com.ampairs.notification.config.NotificationProperties
 import com.ampairs.notification.model.NotificationQueue
 import com.ampairs.notification.provider.NotificationChannel
 import com.ampairs.notification.provider.NotificationResult
@@ -47,26 +48,20 @@ class NotificationServiceTest {
             notificationDatabaseService
         )
         
+        val props = NotificationProperties(
+            batchSize = 5,
+            retryDelayMinutes = 2L,
+            sms = NotificationProperties.SmsProperties(primaryProvider = "MSG91")
+        )
+
         notificationService = NotificationService(
             notificationQueueRepository,
             msg91SmsProvider,
             awsSnsSmsProvider,
             taskExecutor,
-            notificationDatabaseService
+            notificationDatabaseService,
+            props
         )
-
-        // Use reflection to set the @Value properties that would normally be injected by Spring
-        val primarySmsProviderField = NotificationService::class.java.getDeclaredField("primarySmsProvider")
-        primarySmsProviderField.isAccessible = true
-        primarySmsProviderField.set(notificationService, "MSG91")
-
-        val batchSizeField = NotificationService::class.java.getDeclaredField("batchSize")
-        batchSizeField.isAccessible = true
-        batchSizeField.set(notificationService, 5)
-
-        val retryDelayMinutesField = NotificationService::class.java.getDeclaredField("retryDelayMinutes")
-        retryDelayMinutesField.isAccessible = true
-        retryDelayMinutesField.set(notificationService, 2L)
     }
 
     @Test

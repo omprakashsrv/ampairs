@@ -3,6 +3,7 @@ package com.ampairs.workspace.model.dto
 import com.ampairs.workspace.model.Workspace
 import com.ampairs.workspace.model.enums.SubscriptionPlan
 import com.ampairs.workspace.model.enums.WorkspaceType
+import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.Instant
 
 /**
@@ -23,6 +24,7 @@ data class WorkspaceResponse(
 
         val avatarThumbnailUrl: String?,
 
+        @get:JsonProperty("is_active")
         val isActive: Boolean,
 
         val subscriptionPlan: SubscriptionPlan,
@@ -49,6 +51,7 @@ data class WorkspaceResponse(
 
         val memberCount: Int? = null,
 
+        @get:JsonProperty("is_trial")
         val isTrial: Boolean? = null,
 
         val storagePercentage: Double? = null,

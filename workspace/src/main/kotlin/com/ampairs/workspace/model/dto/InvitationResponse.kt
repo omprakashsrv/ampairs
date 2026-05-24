@@ -3,6 +3,7 @@ package com.ampairs.workspace.model.dto
 import com.ampairs.workspace.model.WorkspaceInvitation
 import com.ampairs.workspace.model.enums.InvitationStatus
 import com.ampairs.workspace.model.enums.WorkspaceRole
+import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.Instant
 
 /**
@@ -53,6 +54,7 @@ data class InvitationResponse(
 
     val updatedAt: Instant,
 
+    @get:JsonProperty("is_expired")
     val isExpired: Boolean,
 
     val daysUntilExpiry: Long?,
@@ -94,6 +96,7 @@ data class InvitationListResponse(
 
     val createdAt: Instant,
 
+    @get:JsonProperty("is_expired")
     val isExpired: Boolean,
 )
 
@@ -132,8 +135,10 @@ data class PublicInvitationResponse(
 
     val expiresAt: Instant,
 
+    @get:JsonProperty("is_expired")
     val isExpired: Boolean,
 
+    @get:JsonProperty("is_valid")
     val isValid: Boolean,
 )
 

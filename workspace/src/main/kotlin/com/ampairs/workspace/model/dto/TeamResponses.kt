@@ -2,6 +2,7 @@ package com.ampairs.workspace.model.dto
 
 import com.ampairs.workspace.model.WorkspaceTeam
 import com.ampairs.workspace.security.WorkspacePermission
+import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.Instant
 
 /**
@@ -24,6 +25,7 @@ data class TeamResponse(
 
         val teamLead: TeamMemberSummary?,
 
+        @get:JsonProperty("is_active")
         val isActive: Boolean,
 
         val maxMembers: Int?,
@@ -70,6 +72,7 @@ data class TeamMemberSummary(
 
         val jobTitle: String?,
 
+        @get:JsonProperty("is_primary_team")
         val isPrimaryTeam: Boolean
 )
 

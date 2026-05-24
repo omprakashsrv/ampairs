@@ -2,6 +2,7 @@ package com.ampairs.workspace.model.dto
 
 import com.ampairs.workspace.model.enums.WorkspaceModuleStatus
 import com.ampairs.workspace.model.ModuleRouteInfo
+import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.Instant
 
 /**
@@ -223,6 +224,7 @@ data class ModuleWithActionsResponse(
  * Installation status information for a module
  */
 data class ModuleInstallationStatus(
+    @get:JsonProperty("is_installed")
     var isInstalled: Boolean = false,
     var workspaceModuleId: String? = null,
     var status: WorkspaceModuleStatus? = null,

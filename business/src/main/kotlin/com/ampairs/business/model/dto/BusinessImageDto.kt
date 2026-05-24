@@ -1,6 +1,7 @@
 package com.ampairs.business.model.dto
 
 import com.ampairs.business.model.BusinessImage
+import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.Instant
 
 /**
@@ -16,6 +17,7 @@ data class BusinessImageResponse(
     val description: String?,
     val altText: String?,
     val displayOrder: Int,
+    @get:JsonProperty("is_primary")
     val isPrimary: Boolean,
     val active: Boolean,
     val originalFilename: String?,

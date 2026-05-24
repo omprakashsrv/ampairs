@@ -170,22 +170,4 @@ class InventoryExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response)
     }
 
-    // ============================================================================
-    // General Exception Handler (500)
-    // ============================================================================
-
-    @ExceptionHandler(Exception::class)
-    fun handleGeneralException(
-        ex: Exception,
-        request: WebRequest
-    ): ResponseEntity<ApiResponse<Nothing>> {
-        logger.error("Unexpected error in inventory module: ${ex.message}", ex)
-
-        val response = ApiResponse.error<Nothing>(
-            code = "INTERNAL_SERVER_ERROR",
-            message = "An unexpected error occurred. Please try again or contact support."
-        )
-
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response)
-    }
 }

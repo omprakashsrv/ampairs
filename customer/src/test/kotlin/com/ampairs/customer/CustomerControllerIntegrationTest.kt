@@ -6,7 +6,8 @@ import com.ampairs.customer.domain.dto.CustomerUpdateRequest
 import com.ampairs.customer.domain.model.Customer
 import com.ampairs.customer.domain.model.State
 import com.ampairs.customer.domain.service.CustomerService
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.ampairs.workspace.service.WorkspaceMemberService
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
@@ -17,13 +18,17 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.MediaType
 import org.springframework.security.test.context.support.WithMockUser
+import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.setup.DefaultMockMvcBuilder
+import org.springframework.test.web.servlet.setup.MockMvcBuilders
+import org.springframework.web.context.WebApplicationContext
+import tools.jackson.databind.ObjectMapper
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
@@ -33,21 +38,33 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 import java.time.LocalDateTime
 
-@Suppress("DEPRECATION")
 @SpringBootTest(classes = [AmpairsApplication::class])
-@AutoConfigureMockMvc(addFilters = false)
 @ActiveProfiles("test")
 @Transactional
 class CustomerControllerIntegrationTest {
 
     @Autowired
+    private lateinit var webApplicationContext: WebApplicationContext
+
     private lateinit var mockMvc: MockMvc
 
     @Autowired
     private lateinit var objectMapper: ObjectMapper
 
-    @field:MockBean
+    @field:MockitoBean
     private lateinit var customerService: CustomerService
+
+    @field:MockitoBean
+    private lateinit var workspaceMemberService: WorkspaceMemberService
+
+    @BeforeEach
+    fun setUp() {
+        whenever(workspaceMemberService.isWorkspaceMember(any())).thenReturn(true)
+        mockMvc = MockMvcBuilders
+            .webAppContextSetup(webApplicationContext)
+            .apply<DefaultMockMvcBuilder>(springSecurity())
+            .build()
+    }
 
     @Test
     @DisplayName("POST /customer/v1 - Upsert customer")
