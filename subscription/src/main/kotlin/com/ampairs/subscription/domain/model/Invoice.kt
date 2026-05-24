@@ -9,6 +9,10 @@ import java.time.Instant
  * Invoice entity for postpaid billing system.
  * Represents a billing invoice generated for a workspace's subscription usage.
  */
+@NamedEntityGraph(
+    name = "SubscriptionInvoice.withLineItems",
+    attributeNodes = [NamedAttributeNode("lineItems")]
+)
 @Entity
 @Table(
     name = "invoices",

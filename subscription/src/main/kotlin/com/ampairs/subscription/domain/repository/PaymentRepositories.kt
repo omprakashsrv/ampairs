@@ -3,6 +3,7 @@ package com.ampairs.subscription.domain.repository
 import com.ampairs.subscription.domain.model.*
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
@@ -203,12 +204,15 @@ interface PaymentMethodRepository : JpaRepository<PaymentMethod, Long> {
 @Repository
 interface SubscriptionInvoiceRepository : JpaRepository<Invoice, Long> {
 
+    @EntityGraph("SubscriptionInvoice.withLineItems")
     fun findByUid(uid: String): Invoice?
 
     fun findByInvoiceNumber(invoiceNumber: String): Invoice?
 
+    @EntityGraph("SubscriptionInvoice.withLineItems")
     fun findByWorkspaceId(workspaceId: String): List<Invoice>
 
+    @EntityGraph("SubscriptionInvoice.withLineItems")
     @Query("""
         SELECT i FROM Invoice i
         WHERE i.workspaceId = :workspaceId
