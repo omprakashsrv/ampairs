@@ -12,6 +12,10 @@ import org.hibernate.type.SqlTypes
 import java.time.Instant
 
 
+@NamedEntityGraph(
+    name = "Order.withItems",
+    attributeNodes = [NamedAttributeNode("orderItems")]
+)
 @Entity(name = "customer_order")
 @Table(
     indexes = [

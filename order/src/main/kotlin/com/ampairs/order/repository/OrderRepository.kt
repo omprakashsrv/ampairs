@@ -4,6 +4,7 @@ import com.ampairs.order.domain.enums.OrderStatus
 import com.ampairs.order.domain.model.Order
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.PagingAndSortingRepository
@@ -13,9 +14,12 @@ import java.util.*
 
 @Repository
 interface OrderRepository : CrudRepository<Order, Long>, PagingAndSortingRepository<Order, Long> {
+    @EntityGraph("Order.withItems")
     fun findByUid(uid: String): Optional<Order>
     fun findByOrderNumber(orderNumber: String): Optional<Order>
+    @EntityGraph("Order.withItems")
     fun findByCustomerId(customerId: String): List<Order>
+    @EntityGraph("Order.withItems")
     fun findByStatus(status: OrderStatus): List<Order>
     fun findByOrderType(orderType: String): List<Order>
     fun findByPaymentMethod(paymentMethod: String): List<Order>

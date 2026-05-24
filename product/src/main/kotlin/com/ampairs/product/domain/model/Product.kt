@@ -10,6 +10,7 @@ import com.ampairs.product.domain.model.group.ProductSubCategory
 import com.ampairs.unit.domain.model.Unit
 import com.ampairs.unit.domain.model.UnitConversion
 import jakarta.persistence.*
+import org.hibernate.annotations.BatchSize
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 
@@ -109,18 +110,21 @@ class Product : OwnableBaseDomain() {
     @Column(name = "attributes")
     var attributes: Map<String, Any> = emptyMap()
 
+    @BatchSize(size = 30)
     @OneToMany()
     @JoinColumn(
         name = "product_id", referencedColumnName = "uid", insertable = false, updatable = false, nullable = false
     )
     var images: MutableList<ProductImage> = mutableListOf()
 
+    @BatchSize(size = 30)
     @OneToMany()
     @JoinColumn(
         name = "entity_id", referencedColumnName = "uid", insertable = false, updatable = false
     )
     var unitConversions: MutableList<UnitConversion> = mutableListOf()
 
+    @BatchSize(size = 30)
     @OneToMany
     @JoinColumn(
         name = "product_id", referencedColumnName = "uid", insertable = false, updatable = false, nullable = false
@@ -139,6 +143,7 @@ class Product : OwnableBaseDomain() {
     @Column(name = "has_variants", nullable = false)
     var hasVariants: Boolean = false
 
+    @BatchSize(size = 30)
     @OneToMany(mappedBy = "product", cascade = [CascadeType.ALL], orphanRemoval = true)
     var variants: MutableList<ProductVariant> = mutableListOf()
 

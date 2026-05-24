@@ -13,6 +13,10 @@ import java.time.Instant
 import java.util.*
 
 
+@NamedEntityGraph(
+    name = "Invoice.withItems",
+    attributeNodes = [NamedAttributeNode("invoiceItems")]
+)
 @Entity(name = "invoice")
 @Table(
     indexes = [
