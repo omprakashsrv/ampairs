@@ -7,6 +7,7 @@ import com.ampairs.customer.domain.dto.MasterStateResponse
 import com.ampairs.customer.domain.dto.asMasterStateResponse
 import com.ampairs.customer.domain.dto.asMasterStateResponses
 import com.ampairs.customer.domain.service.MasterStateService
+import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -92,7 +93,7 @@ class MasterStateController(
      */
     @PostMapping("/bulk-import")
     fun bulkImportStates(
-        @RequestBody request: BulkImportRequest
+        @Valid @RequestBody request: BulkImportRequest
     ): ApiResponse<Map<String, Any>> {
         val importedStates = masterStateService.importStatesToWorkspace(
             request.stateCodes.map { it.uppercase() },

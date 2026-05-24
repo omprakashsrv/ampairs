@@ -3,6 +3,7 @@ package com.ampairs.auth.controller
 import com.ampairs.auth.service.KeyRotationScheduler
 import com.ampairs.auth.service.RsaKeyManager
 import com.ampairs.core.domain.dto.ApiResponse
+import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.CacheControl
 import org.springframework.http.ResponseEntity
@@ -96,7 +97,7 @@ class JwksController(
 
     @PostMapping("/rotate")
     @PreAuthorize("hasRole('ADMIN')")
-    fun rotateKeys(@RequestBody request: KeyRotationRequest): ApiResponse<Map<String, Any>> {
+    fun rotateKeys(@Valid @RequestBody request: KeyRotationRequest): ApiResponse<Map<String, Any>> {
         val newKeyPair = keyRotationScheduler.manualKeyRotation(
             request.reason ?: "Manual rotation via API"
         )
