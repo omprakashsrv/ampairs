@@ -132,7 +132,7 @@ class ProductController(
 
     @PostMapping("")
     @ResponseStatus(HttpStatus.CREATED)
-    fun createProduct(@RequestBody request: ProductRequest): ApiResponse<ProductResponse> {
+    fun createProduct(@RequestBody @Valid request: ProductRequest): ApiResponse<ProductResponse> {
         val product = Product().apply {
             name = request.name
             sku = request.sku ?: ""
@@ -191,7 +191,7 @@ class ProductController(
     @PutMapping("/{productId}")
     fun updateProduct(
         @PathVariable productId: String,
-        @RequestBody request: ProductRequest
+        @RequestBody @Valid request: ProductRequest
     ): ApiResponse<ProductResponse> {
         val updates = Product().apply {
             name = request.name

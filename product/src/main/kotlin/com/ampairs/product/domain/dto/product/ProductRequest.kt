@@ -2,10 +2,12 @@ package com.ampairs.product.domain.dto.product
 
 import com.ampairs.unit.domain.dto.UnitConversionRequest
 import com.ampairs.product.domain.model.Product
+import jakarta.validation.constraints.NotBlank
 
 data class ProductRequest(
     val id: String = "",
     val refId: String? = null,
+    @field:NotBlank(message = "Product name is required")
     val name: String,
     val code: String = "",
     val sku: String? = null,

@@ -4,6 +4,7 @@ import com.ampairs.core.auth.domain.*
 import com.ampairs.core.auth.service.ApiKeyService
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.security.AuthenticationHelper
+import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.context.SecurityContextHolder
@@ -32,7 +33,7 @@ class ApiKeyController(
      */
     @PostMapping
     fun createApiKey(
-        @RequestBody request: CreateApiKeyRequest
+        @RequestBody @Valid request: CreateApiKeyRequest
     ): ApiResponse<ApiKeyCreationResponse> {
         val userId = AuthenticationHelper.getCurrentUserId(SecurityContextHolder.getContext().authentication) ?: "admin"
         logger.info("Creating API key: ${request.name} by user: $userId")

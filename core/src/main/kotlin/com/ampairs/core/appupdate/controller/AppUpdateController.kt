@@ -5,6 +5,7 @@ import com.ampairs.core.appupdate.service.AppUpdateService
 import com.ampairs.core.appupdate.service.S3FileStreamService
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.security.AuthenticationHelper
+import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
@@ -115,7 +116,7 @@ class AppUpdateController(
     @PostMapping
     @PreAuthorize("hasRole('SUPER_ADMIN') or hasAuthority('API_KEY:APP_UPDATES')")
     fun createVersion(
-        @RequestBody request: CreateAppVersionRequest
+        @RequestBody @Valid request: CreateAppVersionRequest
     ): ApiResponse<AppVersionResponse> {
         val userId = AuthenticationHelper.getCurrentUserId(SecurityContextHolder.getContext().authentication) ?: "admin"
         return ApiResponse.success(appUpdateService.createAppVersion(request, createdBy = userId).asAppVersionResponse())
@@ -144,7 +145,7 @@ class AppUpdateController(
     @PreAuthorize("hasRole('SUPER_ADMIN')")
     fun updateVersion(
         @PathVariable uid: String,
-        @RequestBody request: CreateAppVersionRequest
+        @RequestBody @Valid request: CreateAppVersionRequest
     ): ApiResponse<AppVersionResponse> {
         val userId = AuthenticationHelper.getCurrentUserId(SecurityContextHolder.getContext().authentication) ?: "admin"
         val version = appUpdateService.updateAppVersion(uid, request, updatedBy = userId)
