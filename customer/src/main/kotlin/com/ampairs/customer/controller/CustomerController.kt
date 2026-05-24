@@ -140,19 +140,16 @@ class CustomerController @Autowired constructor(
         @Parameter(description = "Customer UID")
         @PathVariable customerId: String
     ): ApiResponse<Map<String, Any>> {
-        val deleted = customerService.deleteCustomer(customerId)
-        return if (deleted) {
-            ApiResponse.success(mapOf("deleted" to true, "customer_id" to customerId))
-        } else {
-            ApiResponse.error("Customer not found", "CUSTOMER_NOT_FOUND")
+        if (!customerService.deleteCustomer(customerId)) {
+            throw NotFoundException("Customer not found: $customerId")
         }
+        return ApiResponse.success(mapOf("deleted" to true, "customer_id" to customerId))
     }
 
     @GetMapping("/gst/{gstNumber}")
     fun getCustomerByGst(@PathVariable gstNumber: String): ApiResponse<CustomerResponse> {
         val customer = customerService.getCustomerByGstNumber(gstNumber)
-            ?: return ApiResponse.error("Customer not found with GST: $gstNumber", "CUSTOMER_NOT_FOUND")
-
+            ?: throw NotFoundException("Customer not found with GST: $gstNumber")
         return ApiResponse.success(customer.asCustomerResponse())
     }
 
@@ -174,8 +171,7 @@ class CustomerController @Autowired constructor(
         @RequestBody @Valid request: UpdateOutstandingRequest
     ): ApiResponse<CustomerResponse> {
         val updatedCustomer = customerService.updateOutstanding(customerId, request.amount, request.isPayment)
-            ?: return ApiResponse.error("Customer not found", "CUSTOMER_NOT_FOUND")
-
+            ?: throw NotFoundException("Customer not found: $customerId")
         return ApiResponse.success(updatedCustomer.asCustomerResponse())
     }
 
@@ -239,27 +235,3 @@ class CustomerController @Autowired constructor(
         return ApiResponse.success(image)
     }
 }
-
-/**
- * DTOs for retail customer API
- */
-data class CustomerCreateRequest(
-    val name: String,
-    val customerType: String? = null,
-    val phone: String? = null,
-    val email: String? = null,
-    val gstNumber: String? = null,
-    val panNumber: String? = null,
-    val creditLimit: Double? = null,
-    val creditDays: Int? = null,
-    val address: CustomerAddressRequest? = null,
-    val attributes: Map<String, Any>? = null
-)
-
-data class CustomerAddressRequest(
-    val street: String,
-    val city: String,
-    val state: String,
-    val postalCode: String,
-    val country: String = "India"
-)

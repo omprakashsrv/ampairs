@@ -439,3 +439,12 @@ fun UsageMetric.asUsageResponse(plan: SubscriptionPlanDefinition?): UsageRespons
     ),
     lastCalculatedAt = lastCalculatedAt
 )
+
+
+data class ProductIdsResponse(
+    val planCode: String,
+    val googlePlayMonthly: String?,
+    val googlePlayAnnual: String?,
+    val appStoreMonthly: String?,
+    val appStoreAnnual: String?
+)
