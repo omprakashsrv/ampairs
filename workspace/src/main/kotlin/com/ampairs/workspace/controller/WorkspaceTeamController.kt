@@ -17,7 +17,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
-import org.springframework.http.ResponseEntity
+import org.springframework.http.HttpStatus
+import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
@@ -116,13 +117,13 @@ class WorkspaceTeamController(
         ]
     )
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("@workspaceAuthorizationService.hasPermission(#workspaceId, 'MANAGE_TEAMS')")
     fun createTeam(
         @PathVariable workspaceId: String,
         @Valid @RequestBody request: CreateTeamRequest
-    ): ResponseEntity<ApiResponse<TeamResponse>> {
-        val team = teamService.createTeam(workspaceId, request)
-        return ResponseEntity.ok(ApiResponse.success(team))
+    ): ApiResponse<TeamResponse> {
+        return ApiResponse.success(teamService.createTeam(workspaceId, request))
     }
 
     @Operation(
@@ -206,14 +207,12 @@ class WorkspaceTeamController(
         @RequestParam(defaultValue = "name") sort: String,
         @Parameter(description = "Sort direction (asc/desc)")
         @RequestParam(defaultValue = "asc") direction: String
-    ): ResponseEntity<ApiResponse<PageResponse<TeamListResponse>>> {
+    ): ApiResponse<PageResponse<TeamListResponse>> {
         val pageable = PageRequest.of(
             page, size,
             Sort.by(Sort.Direction.fromString(direction), sort)
         )
-
-        val teams = teamService.searchTeams(workspaceId, query, department, status, pageable)
-        return ResponseEntity.ok(ApiResponse.success(PageResponse.from(teams)))
+        return ApiResponse.success(PageResponse.from(teamService.searchTeams(workspaceId, query, department, status, pageable)))
     }
 
     @Operation(
@@ -225,9 +224,8 @@ class WorkspaceTeamController(
     fun getTeam(
         @PathVariable workspaceId: String,
         @PathVariable teamId: String
-    ): ResponseEntity<ApiResponse<TeamResponse>> {
-        val team = teamService.getTeamById(workspaceId, teamId)
-        return ResponseEntity.ok(ApiResponse.success(team))
+    ): ApiResponse<TeamResponse> {
+        return ApiResponse.success(teamService.getTeamById(workspaceId, teamId))
     }
 
     @Operation(
@@ -240,9 +238,8 @@ class WorkspaceTeamController(
         @PathVariable workspaceId: String,
         @PathVariable teamId: String,
         @Valid @RequestBody request: UpdateTeamRequest
-    ): ResponseEntity<ApiResponse<TeamResponse>> {
-        val team = teamService.updateTeam(workspaceId, teamId, request)
-        return ResponseEntity.ok(ApiResponse.success(team))
+    ): ApiResponse<TeamResponse> {
+        return ApiResponse.success(teamService.updateTeam(workspaceId, teamId, request))
     }
 
     @Operation(
@@ -254,9 +251,9 @@ class WorkspaceTeamController(
     fun deleteTeam(
         @PathVariable workspaceId: String,
         @PathVariable teamId: String
-    ): ResponseEntity<ApiResponse<GenericSuccessResponse>> {
+    ): ApiResponse<GenericSuccessResponse> {
         teamService.deleteTeam(workspaceId, teamId)
-        return ResponseEntity.ok(ApiResponse.success(data = GenericSuccessResponse()))
+        return ApiResponse.success(GenericSuccessResponse())
     }
 
     @Operation(
@@ -269,9 +266,8 @@ class WorkspaceTeamController(
         @PathVariable workspaceId: String,
         @PathVariable teamId: String,
         @Valid @RequestBody request: AddTeamMembersRequest
-    ): ResponseEntity<ApiResponse<TeamResponse>> {
-        val team = teamService.addMembers(workspaceId, teamId, request)
-        return ResponseEntity.ok(ApiResponse.success(team))
+    ): ApiResponse<TeamResponse> {
+        return ApiResponse.success(teamService.addMembers(workspaceId, teamId, request))
     }
 
     @Operation(
@@ -284,9 +280,8 @@ class WorkspaceTeamController(
         @PathVariable workspaceId: String,
         @PathVariable teamId: String,
         @Valid @RequestBody request: RemoveTeamMembersRequest
-    ): ResponseEntity<ApiResponse<TeamResponse>> {
-        val team = teamService.removeMembers(workspaceId, teamId, request)
-        return ResponseEntity.ok(ApiResponse.success(team))
+    ): ApiResponse<TeamResponse> {
+        return ApiResponse.success(teamService.removeMembers(workspaceId, teamId, request))
     }
 
     @Operation(
@@ -300,8 +295,7 @@ class WorkspaceTeamController(
         @PathVariable teamId: String,
         @PathVariable memberId: String,
         @Valid @RequestBody request: UpdateTeamMemberRequest
-    ): ResponseEntity<ApiResponse<TeamMemberSummary>> {
-        val member = teamService.updateTeamMember(workspaceId, teamId, memberId, request)
-        return ResponseEntity.ok(ApiResponse.success(member))
+    ): ApiResponse<TeamMemberSummary> {
+        return ApiResponse.success(teamService.updateTeamMember(workspaceId, teamId, memberId, request))
     }
 }
