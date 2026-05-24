@@ -1,6 +1,7 @@
 package com.ampairs.inventory.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.exception.NotFoundException
 import com.ampairs.inventory.domain.dto.*
 import com.ampairs.inventory.service.InventoryItemService
 import jakarta.validation.Valid
@@ -62,7 +63,7 @@ class InventoryController @Autowired constructor(
     @GetMapping("/{uid}")
     fun getInventoryItem(@PathVariable uid: String): ApiResponse<InventoryItemResponse> {
         val item = inventoryItemService.getInventoryItemByUid(uid)
-            ?: return ApiResponse.error("INVENTORY_ITEM_NOT_FOUND", "Inventory item not found: $uid")
+            ?: throw NotFoundException("Inventory item not found: $uid")
         return ApiResponse.success(item.asInventoryItemResponse())
     }
 

@@ -293,6 +293,8 @@ class ProductService(
         }
     }
 
+    fun getProductByUid(uid: String): Product? = productRepository.findByUid(uid)
+
     fun getProductBySku(sku: String): Product? {
         return productRepository.findBySku(sku).orElse(null)
     }

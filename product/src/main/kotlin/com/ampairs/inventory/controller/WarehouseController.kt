@@ -1,6 +1,7 @@
 package com.ampairs.inventory.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.exception.NotFoundException
 import com.ampairs.inventory.domain.dto.WarehouseRequest
 import com.ampairs.inventory.domain.dto.WarehouseResponse
 import com.ampairs.inventory.domain.dto.asWarehouseResponse
@@ -75,8 +76,7 @@ class WarehouseController @Autowired constructor(
         @PathVariable uid: String
     ): ApiResponse<WarehouseResponse> {
         val warehouse = warehouseService.getWarehouseByUid(uid)
-            ?: return ApiResponse.error("WAREHOUSE_NOT_FOUND", "Warehouse not found: $uid")
-
+            ?: throw NotFoundException("Warehouse not found: $uid")
         return ApiResponse.success(warehouse.asWarehouseResponse())
     }
 

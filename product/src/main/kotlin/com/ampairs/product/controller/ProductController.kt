@@ -1,6 +1,7 @@
 package com.ampairs.product.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.exception.NotFoundException
 import com.ampairs.file.domain.dto.FileResponse
 import com.ampairs.file.domain.dto.toFileResponse
 import com.ampairs.file.domain.service.FileService
@@ -182,9 +183,8 @@ class ProductController(
 
     @GetMapping("/{productId}")
     fun getProduct(@PathVariable productId: String): ApiResponse<ProductResponse> {
-        val product = productService.updateProducts(emptyList()).find { it.uid == productId }
-            ?: return ApiResponse.error("Product not found", "PRODUCT_NOT_FOUND")
-        
+        val product = productService.getProductByUid(productId)
+            ?: throw NotFoundException("Product not found: $productId")
         return ApiResponse.success(product.asResponse())
     }
 
@@ -203,8 +203,7 @@ class ProductController(
         }
         
         val updatedProduct = productService.updateProduct(productId, updates)
-            ?: return ApiResponse.error("Product not found", "PRODUCT_NOT_FOUND")
-        
+            ?: throw NotFoundException("Product not found: $productId")
         return ApiResponse.success(updatedProduct.asResponse())
     }
 
@@ -228,8 +227,7 @@ class ProductController(
     @GetMapping("/sku/{sku}")
     fun getProductBySku(@PathVariable sku: String): ApiResponse<ProductResponse> {
         val product = productService.getProductBySku(sku)
-            ?: return ApiResponse.error("Product not found with SKU: $sku", "PRODUCT_NOT_FOUND")
-        
+            ?: throw NotFoundException("Product not found with SKU: $sku")
         return ApiResponse.success(product.asResponse())
     }
 }
