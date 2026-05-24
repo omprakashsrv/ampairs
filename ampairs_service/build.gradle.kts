@@ -74,14 +74,9 @@ dependencies {
 
     // Kotlin
     implementation("org.jetbrains.kotlin:kotlin-reflect")
-    implementation("org.springframework:spring-web")
-    implementation("org.springframework:spring-webmvc")
 
-    // Caching
-    val caffeine = "3.2.4"
-    implementation("javax.cache:cache-api:1.1.1")
-    implementation("com.github.ben-manes.caffeine:caffeine:$caffeine")
-    implementation("com.github.ben-manes.caffeine:jcache:$caffeine")
+    // Caching — Spring Boot auto-configures CaffeineCacheManager from spring-boot-starter-cache
+    implementation("com.github.ben-manes.caffeine:caffeine:3.2.4")
 
     // JWT
     val jwt = "0.13.0"
@@ -104,9 +99,6 @@ dependencies {
 
     // Jackson for JSON processing
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
-
-    // Observability
-    implementation("io.micrometer:micrometer-registry-prometheus")
 
     // OpenAPI/Swagger Documentation
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.17")
