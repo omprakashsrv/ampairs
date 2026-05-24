@@ -1,47 +1,20 @@
 package com.ampairs.core.domain.dto
 
-import com.fasterxml.jackson.annotation.JsonProperty
 import org.springframework.data.domain.Page
 
-/**
- * Custom page response DTO that provides stable JSON structure for paginated data
- * Replaces direct Page serialization to avoid Spring Data warnings
- */
 data class PageResponse<T>(
-    @JsonProperty("content")
     val content: List<T>,
-    
-    @JsonProperty("page_number")
     val pageNumber: Int,
-    
-    @JsonProperty("page_size")
     val pageSize: Int,
-    
-    @JsonProperty("total_elements")
     val totalElements: Long,
-    
-    @JsonProperty("total_pages")
     val totalPages: Int,
-    
-    @JsonProperty("first")
     val first: Boolean,
-    
-    @JsonProperty("last")
     val last: Boolean,
-    
-    @JsonProperty("has_next")
     val hasNext: Boolean,
-    
-    @JsonProperty("has_previous")
     val hasPrevious: Boolean,
-    
-    @JsonProperty("empty")
     val empty: Boolean
 ) {
     companion object {
-        /**
-         * Create PageResponse from Spring Data Page
-         */
         fun <T : Any> from(page: Page<T>): PageResponse<T> {
             return PageResponse(
                 content = page.content,
@@ -56,10 +29,7 @@ data class PageResponse<T>(
                 empty = page.isEmpty
             )
         }
-        
-        /**
-         * Create PageResponse with mapped content
-         */
+
         fun <T : Any, R : Any> from(page: Page<T>, mapper: (T) -> R): PageResponse<R> {
             return PageResponse(
                 content = page.content.map(mapper),
