@@ -35,7 +35,8 @@ class ApiKeyController(
     fun createApiKey(
         @RequestBody @Valid request: CreateApiKeyRequest
     ): ApiResponse<ApiKeyCreationResponse> {
-        val userId = AuthenticationHelper.getCurrentUserId(SecurityContextHolder.getContext().authentication) ?: "admin"
+        val userId = SecurityContextHolder.getContext().authentication
+            ?.let { AuthenticationHelper.getCurrentUserId(it) } ?: ""
         logger.info("Creating API key: ${request.name} by user: $userId")
         return ApiResponse.success(apiKeyService.createApiKey(request, createdByUserId = userId))
     }
@@ -75,7 +76,8 @@ class ApiKeyController(
         @PathVariable uid: String,
         @RequestParam reason: String
     ): ApiResponse<Map<String, String>> {
-        val userId = AuthenticationHelper.getCurrentUserId(SecurityContextHolder.getContext().authentication) ?: "admin"
+        val userId = SecurityContextHolder.getContext().authentication
+            ?.let { AuthenticationHelper.getCurrentUserId(it) } ?: ""
         apiKeyService.revokeApiKey(uid, reason, revokedBy = userId)
         return ApiResponse.success(mapOf(
             "message" to "API key revoked successfully",

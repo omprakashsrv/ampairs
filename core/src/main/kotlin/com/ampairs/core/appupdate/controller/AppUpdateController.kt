@@ -118,7 +118,8 @@ class AppUpdateController(
     fun createVersion(
         @RequestBody @Valid request: CreateAppVersionRequest
     ): ApiResponse<AppVersionResponse> {
-        val userId = AuthenticationHelper.getCurrentUserId(SecurityContextHolder.getContext().authentication) ?: "admin"
+        val userId = SecurityContextHolder.getContext().authentication
+            ?.let { AuthenticationHelper.getCurrentUserId(it) } ?: ""
         return ApiResponse.success(appUpdateService.createAppVersion(request, createdBy = userId).asAppVersionResponse())
     }
 
@@ -147,7 +148,8 @@ class AppUpdateController(
         @PathVariable uid: String,
         @RequestBody @Valid request: CreateAppVersionRequest
     ): ApiResponse<AppVersionResponse> {
-        val userId = AuthenticationHelper.getCurrentUserId(SecurityContextHolder.getContext().authentication) ?: "admin"
+        val userId = SecurityContextHolder.getContext().authentication
+            ?.let { AuthenticationHelper.getCurrentUserId(it) } ?: ""
         val version = appUpdateService.updateAppVersion(uid, request, updatedBy = userId)
         return ApiResponse.success(version.asAppVersionResponse())
     }
