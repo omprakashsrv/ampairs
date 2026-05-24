@@ -3,7 +3,6 @@ package com.ampairs.workspace.model.dto
 import com.ampairs.workspace.model.enums.WorkspaceModuleStatus
 import com.ampairs.workspace.model.ModuleRouteInfo
 import java.time.Instant
-import java.time.LocalDateTime
 
 /**
  * Installed module information for overview
@@ -31,7 +30,7 @@ data class InstalledModuleResponse(
 data class RecentActivityResponse(
     var lastInstalled: String? = null,
     var lastConfigured: String? = null,
-    var lastAccessed: LocalDateTime? = null,
+    var lastAccessed: Instant? = null,
 )
 
 /**
@@ -107,7 +106,7 @@ data class ModuleActionResponse(
  * Details about the executed action
  */
 data class ActionDetailsResponse(
-    var executedAt: LocalDateTime = LocalDateTime.now(),
+    var executedAt: Instant = Instant.now(),
     var duration: String = "",
     var affectedComponents: List<String> = emptyList(),
 )
@@ -182,7 +181,7 @@ data class ModuleUninstallationResponse(
     var moduleId: String = "",
     var workspaceId: String = "",
     var message: String = "",
-    var uninstalledAt: LocalDateTime = LocalDateTime.now(),
+    var uninstalledAt: Instant = Instant.now(),
 )
 
 /**

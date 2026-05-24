@@ -52,9 +52,9 @@ data class NotificationRequest(
     val channel: NotificationChannel,
     val retryCount: Int = 0,
     val maxRetries: Int = 3,
-    val createdAt: java.time.LocalDateTime = java.time.LocalDateTime.now(),
-    val scheduledAt: java.time.LocalDateTime = java.time.LocalDateTime.now(),
-    val lastAttemptAt: java.time.LocalDateTime? = null,
+    val createdAt: java.time.Instant = java.time.Instant.now(),
+    val scheduledAt: java.time.Instant = java.time.Instant.now(),
+    val lastAttemptAt: java.time.Instant? = null,
     val status: NotificationStatus = NotificationStatus.PENDING,
 )
 

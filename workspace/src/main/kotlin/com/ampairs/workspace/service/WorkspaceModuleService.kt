@@ -12,7 +12,6 @@ import com.ampairs.workspace.repository.WorkspaceModuleRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
-import java.time.LocalDateTime
 
 /**
  * Comprehensive service for workspace module management operations.
@@ -256,7 +255,7 @@ class WorkspaceModuleService(
             moduleId = moduleCode,
             workspaceId = workspaceId,
             message = "Module $moduleName uninstalled successfully",
-            uninstalledAt = LocalDateTime.now()
+            uninstalledAt = Instant.now()
         )
     }
 

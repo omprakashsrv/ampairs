@@ -9,7 +9,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.io.InputStream
-import java.time.LocalDateTime
+import java.time.Instant
 import java.util.*
 
 /**
@@ -232,7 +232,7 @@ class FileService(
     }
 
     private fun generateObjectKey(fileName: String, folder: String): String {
-        val timestamp = LocalDateTime.now().toString().replace(":", "-")
+        val timestamp = Instant.now().toString().replace(":", "-")
         val uuid = UUID.randomUUID().toString().substring(0, 8)
         val sanitizedFileName = fileName.replace("[^a-zA-Z0-9.-]".toRegex(), "_")
         val cleanFolder = folder.trim('/').let { if (it.isEmpty()) "" else "$it/" }

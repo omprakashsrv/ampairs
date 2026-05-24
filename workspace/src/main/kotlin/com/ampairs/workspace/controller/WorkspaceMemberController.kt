@@ -272,7 +272,7 @@ class WorkspaceMemberController(
             workspaceId = workspaceId,
             currentRole = member.role.name,
             membershipStatus = if (member.isActive) "ACTIVE" else "INACTIVE",
-            joinedAt = (member.joinedAt ?: member.createdAt ?: java.time.LocalDateTime.now()).toString(),
+            joinedAt = (member.joinedAt ?: member.createdAt ?: java.time.Instant.now()).toString(),
             lastActivity = member.lastActiveAt?.toString(),
             roleHierarchy = roleHierarchy,
             permissions = permissions,
