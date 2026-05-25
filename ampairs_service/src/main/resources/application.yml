@@ -449,8 +449,8 @@ google:
 
 # Firebase Configuration
 firebase:
-  enabled: ${FIREBASE_ENABLED:false}
-  service-account-key-path: ${FIREBASE_SERVICE_ACCOUNT_KEY_PATH:}
+  enabled: ${FIREBASE_ENABLED:true}
+  service-account-key-path: ${FIREBASE_SERVICE_ACCOUNT_KEY_PATH:keys/ampairs-firebase-adminsdk.json}
 
 # Notification Configuration
 notification:
