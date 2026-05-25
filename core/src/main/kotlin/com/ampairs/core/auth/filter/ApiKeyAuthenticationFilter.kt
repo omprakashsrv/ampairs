@@ -24,7 +24,7 @@ class ApiKeyAuthenticationFilter(
     private val authenticationManager: AuthenticationManager
 ) : OncePerRequestFilter() {
 
-    private val logger = LoggerFactory.getLogger(javaClass)
+    private val log = LoggerFactory.getLogger(javaClass)
 
     companion object {
         private const val API_KEY_HEADER = "X-API-Key"
@@ -39,12 +39,12 @@ class ApiKeyAuthenticationFilter(
         val requestUri = request.requestURI
         val apiKey = request.getHeader(API_KEY_HEADER)
 
-        logger.info("ApiKeyAuthenticationFilter processing: $requestUri")
-        logger.info("API key header present: ${apiKey != null}, starts with prefix: ${apiKey?.startsWith(API_KEY_PREFIX)}")
+        log.info("ApiKeyAuthenticationFilter processing: $requestUri")
+        log.info("API key header present: ${apiKey != null}, starts with prefix: ${apiKey?.startsWith(API_KEY_PREFIX)}")
 
         if (apiKey != null && apiKey.startsWith(API_KEY_PREFIX)) {
             try {
-                logger.info("Attempting API key authentication for: $requestUri")
+                log.info("Attempting API key authentication for: $requestUri")
 
                 // Create unauthenticated token
                 val authRequest = ApiKeyAuthenticationToken(apiKey)
@@ -55,16 +55,16 @@ class ApiKeyAuthenticationFilter(
                 // Set authenticated token in SecurityContext
                 SecurityContextHolder.getContext().authentication = authResult
 
-                logger.info("API key authentication successful for: $requestUri")
+                log.info("API key authentication successful for: $requestUri")
 
             } catch (e: Exception) {
-                logger.error("API key authentication failed for $requestUri: ${e.message}", e)
+                log.error("API key authentication failed for $requestUri: ${e.message}", e)
                 // Clear any existing authentication
                 SecurityContextHolder.clearContext()
                 // Don't throw - let Spring Security handle 401/403
             }
         } else {
-            logger.info("No valid API key provided for: $requestUri")
+            log.info("No valid API key provided for: $requestUri")
         }
 
         // Continue filter chain
@@ -76,7 +76,7 @@ class ApiKeyAuthenticationFilter(
         val shouldSkip = apiKeyHeader == null
 
         if (shouldSkip) {
-            logger.info("ApiKeyAuthenticationFilter SKIPPED for ${request.requestURI} - no X-API-Key header")
+            log.info("ApiKeyAuthenticationFilter SKIPPED for ${request.requestURI} - no X-API-Key header")
         }
 
         return shouldSkip

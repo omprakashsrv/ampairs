@@ -65,6 +65,7 @@ class WorkspaceEvent : OwnableBaseDomain() {
             emptyMap()
         } else {
             try {
+                @Suppress("UNCHECKED_CAST")
                 com.fasterxml.jackson.module.kotlin.jacksonObjectMapper()
                     .readValue(payload, Map::class.java) as Map<String, Any>
             } catch (e: Exception) {

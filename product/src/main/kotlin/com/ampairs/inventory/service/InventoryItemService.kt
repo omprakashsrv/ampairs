@@ -67,7 +67,6 @@ class InventoryItemService(
     @Transactional
     fun updateInventoryItem(uid: String, updates: InventoryItem): InventoryItem {
         val existing = getInventoryItemByUid(uid)
-            ?: throw IllegalArgumentException(Constants.ERROR_INVENTORY_ITEM_NOT_FOUND + ": $uid")
 
         // Check SKU uniqueness if changed
         if (updates.sku != existing.sku && inventoryItemRepository.existsBySku(updates.sku)) {
@@ -267,7 +266,6 @@ class InventoryItemService(
     @Transactional
     fun updateStockQuantities(uid: String, currentStock: BigDecimal, reservedStock: BigDecimal): InventoryItem {
         val item = getInventoryItemByUid(uid)
-            ?: throw IllegalArgumentException(Constants.ERROR_INVENTORY_ITEM_NOT_FOUND + ": $uid")
 
         item.currentStock = currentStock
         item.reservedStock = reservedStock
@@ -289,7 +287,6 @@ class InventoryItemService(
     @Transactional
     fun reserveStock(uid: String, quantity: BigDecimal): InventoryItem {
         val item = getInventoryItemByUid(uid)
-            ?: throw IllegalArgumentException(Constants.ERROR_INVENTORY_ITEM_NOT_FOUND + ": $uid")
 
         if (item.availableStock < quantity) {
             throw IllegalArgumentException(Constants.ERROR_INSUFFICIENT_STOCK +
@@ -314,7 +311,6 @@ class InventoryItemService(
     @Transactional
     fun releaseReservedStock(uid: String, quantity: BigDecimal): InventoryItem {
         val item = getInventoryItemByUid(uid)
-            ?: throw IllegalArgumentException(Constants.ERROR_INVENTORY_ITEM_NOT_FOUND + ": $uid")
 
         item.reservedStock = item.reservedStock.subtract(quantity)
         if (item.reservedStock < BigDecimal.ZERO) {
@@ -335,7 +331,6 @@ class InventoryItemService(
     @Transactional
     fun deleteInventoryItem(uid: String) {
         val item = getInventoryItemByUid(uid)
-            ?: throw IllegalArgumentException(Constants.ERROR_INVENTORY_ITEM_NOT_FOUND + ": $uid")
 
         item.isActive = false
         inventoryItemRepository.save(item)
@@ -392,7 +387,7 @@ class InventoryItemService(
      * @return true if low stock, false otherwise
      */
     fun isLowStock(uid: String): Boolean {
-        val item = getInventoryItemByUid(uid) ?: return false
+        val item = getInventoryItemByUid(uid)
         return item.currentStock <= item.reorderLevel
     }
 

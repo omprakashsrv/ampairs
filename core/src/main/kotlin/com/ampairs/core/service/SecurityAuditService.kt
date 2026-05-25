@@ -206,7 +206,7 @@ class SecurityAuditService(
             details = mapOf<String, Any>(
                 "endpoint" to endpoint,
                 "method" to request.method
-            ) + (reason?.let { mapOf<String, Any>("reason" to it) } ?: emptyMap()) +
+            ) + mapOf<String, Any>("reason" to reason) +
                     (requiredRole?.let { mapOf<String, Any>("required_role" to it) } ?: emptyMap())
         )
 

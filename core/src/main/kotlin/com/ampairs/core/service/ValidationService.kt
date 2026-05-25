@@ -493,7 +493,7 @@ class ValidationService {
         if (url.isNullOrBlank()) return false
 
         try {
-            val parsedUrl = java.net.URL(url)
+            val parsedUrl = java.net.URI(url).toURL()
             val protocol = parsedUrl.protocol.lowercase()
 
             // Only allow HTTP and HTTPS

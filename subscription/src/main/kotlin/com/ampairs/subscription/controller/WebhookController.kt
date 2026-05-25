@@ -49,16 +49,16 @@ class WebhookController(
 
             // 2. Parse Pub/Sub message
             val message = objectMapper.readTree(payload)
-            val data = message.path("message").path("data").asText()
+            val data = message.path("message").path("data").asString()
 
             // Decode base64 data
             val decodedData = String(java.util.Base64.getDecoder().decode(data))
             val notification = objectMapper.readTree(decodedData)
 
             // 3. Extract event ID (use messageId from Pub/Sub message)
-            val messageId = message.path("message").path("messageId").asText()
+            val messageId = message.path("message").path("messageId").asString()
             val eventId = messageId.takeIf { it.isNotEmpty() }
-                ?: notification.path("subscriptionNotification").path("purchaseToken").asText()
+                ?: notification.path("subscriptionNotification").path("purchaseToken").asString()
 
             // 4. Check idempotency (prevent duplicate processing)
             if (webhookIdempotencyService.isProcessed(PaymentProvider.GOOGLE_PLAY, eventId)) {
@@ -75,7 +75,7 @@ class WebhookController(
 
             // 7. Extract subscription ID for tracking
             val externalSubId = notification.path("subscriptionNotification")
-                .path("subscriptionId").asText().takeIf { it.isNotEmpty() }
+                .path("subscriptionId").asString().takeIf { it.isNotEmpty() }
 
             // 8. Mark event as processed (idempotency record)
             webhookIdempotencyService.markAsProcessed(
@@ -125,14 +125,14 @@ class WebhookController(
 
             // 2. Parse and decode JWS
             val body = objectMapper.readTree(payload)
-            val signedPayload = body.path("signedPayload").asText()
+            val signedPayload = body.path("signedPayload").asString()
 
             // TODO: Verify JWS signature in production
             val decodedPayload = decodeJws(signedPayload)
 
             // 3. Extract event ID (use notificationUUID)
-            val notificationType = decodedPayload.path("notificationType").asText()
-            val eventId = decodedPayload.path("notificationUUID").asText()
+            val notificationType = decodedPayload.path("notificationType").asString()
+            val eventId = decodedPayload.path("notificationUUID").asString()
 
             // 4. Check idempotency (prevent duplicate processing)
             if (webhookIdempotencyService.isProcessed(PaymentProvider.APP_STORE, eventId)) {
@@ -148,10 +148,10 @@ class WebhookController(
             appStoreWebhookHandler.processEvent(notificationType, decodedPayload)
 
             // 7. Extract subscription ID for tracking
-            val transactionInfo = decodedPayload.path("data").path("signedTransactionInfo").asText()
+            val transactionInfo = decodedPayload.path("data").path("signedTransactionInfo").asString()
             val externalSubId = if (transactionInfo.isNotEmpty()) {
                 val decoded = decodeJws(transactionInfo)
-                decoded.path("originalTransactionId").asText().takeIf { it.isNotEmpty() }
+                decoded.path("originalTransactionId").asString().takeIf { it.isNotEmpty() }
             } else null
 
             // 8. Mark event as processed (idempotency record)
@@ -213,8 +213,8 @@ class WebhookController(
 
             // 3. Parse payload and extract event ID
             val body = objectMapper.readTree(payload)
-            val eventType = body.path("event").asText()
-            val eventId = body.path("id").asText()  // Razorpay event ID
+            val eventType = body.path("event").asString()
+            val eventId = body.path("id").asString()  // Razorpay event ID
 
             // 4. Check idempotency (prevent duplicate processing)
             if (webhookIdempotencyService.isProcessed(PaymentProvider.RAZORPAY, eventId)) {
@@ -231,7 +231,7 @@ class WebhookController(
 
             // 7. Extract subscription ID for tracking
             val subscription = body.path("payload").path("subscription").path("entity")
-            val externalSubId = subscription.path("id").asText()
+            val externalSubId = subscription.path("id").asString()
 
             // 8. Mark event as processed (idempotency record)
             webhookIdempotencyService.markAsProcessed(
@@ -300,8 +300,8 @@ class WebhookController(
 
             // 3. Parse payload and extract event ID
             val body = objectMapper.readTree(payload)
-            val eventType = body.path("type").asText()
-            val eventId = body.path("id").asText()  // Stripe event ID
+            val eventType = body.path("type").asString()
+            val eventId = body.path("id").asString()  // Stripe event ID
 
             // 4. Check idempotency (prevent duplicate processing)
             if (webhookIdempotencyService.isProcessed(PaymentProvider.STRIPE, eventId)) {
@@ -319,8 +319,8 @@ class WebhookController(
             // 7. Extract subscription ID for tracking
             val dataObject = body.path("data").path("object")
             val externalSubId = when {
-                dataObject.has("subscription") -> dataObject.path("subscription").asText()
-                dataObject.has("id") && eventType.contains("customer.subscription") -> dataObject.path("id").asText()
+                dataObject.has("subscription") -> dataObject.path("subscription").asString()
+                dataObject.has("id") && eventType.contains("customer.subscription") -> dataObject.path("id").asString()
                 else -> null
             }
 

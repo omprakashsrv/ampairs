@@ -53,8 +53,8 @@ class GooglePlayWebhookHandler(
         }
 
         val notificationType = subscriptionNotification.path("notificationType").asInt()
-        val purchaseToken = subscriptionNotification.path("purchaseToken").asText()
-        val subscriptionId = subscriptionNotification.path("subscriptionId").asText()
+        val purchaseToken = subscriptionNotification.path("purchaseToken").asString()
+        val subscriptionId = subscriptionNotification.path("subscriptionId").asString()
 
         logger.info("Processing Google Play notification type {} for subscription {}", notificationType, subscriptionId)
 
@@ -185,7 +185,7 @@ class AppStoreWebhookHandler(
     }
 
     override fun processEvent(eventType: String, payload: JsonNode) {
-        val notificationType = payload.path("notificationType").asText()
+        val notificationType = payload.path("notificationType").asString()
         val subtype = payload.path("subtype").asText("")
         val data = payload.path("data")
         val transactionInfo = data.path("signedTransactionInfo")
@@ -209,16 +209,16 @@ class AppStoreWebhookHandler(
     }
 
     private fun handleSubscribed(subtype: String, transactionInfo: JsonNode) {
-        val originalTransactionId = transactionInfo.path("originalTransactionId").asText()
+        val originalTransactionId = transactionInfo.path("originalTransactionId").asString()
         logger.info("New subscription: {} (subtype: {})", originalTransactionId, subtype)
     }
 
     private fun handleRenewal(transactionInfo: JsonNode) {
-        val originalTransactionId = transactionInfo.path("originalTransactionId").asText()
+        val originalTransactionId = transactionInfo.path("originalTransactionId").asString()
         paymentOrchestrationService.handleRenewal(
             provider = PaymentProvider.APP_STORE,
             externalSubscriptionId = originalTransactionId,
-            orderId = transactionInfo.path("transactionId").asText(),
+            orderId = transactionInfo.path("transactionId").asString(),
             amount = BigDecimal.ZERO,
             currency = "USD",
             periodStart = null,
@@ -231,7 +231,7 @@ class AppStoreWebhookHandler(
     }
 
     private fun handleRenewalStatusChange(subtype: String, renewalInfo: JsonNode) {
-        val originalTransactionId = renewalInfo.path("originalTransactionId").asText()
+        val originalTransactionId = renewalInfo.path("originalTransactionId").asString()
         if (subtype == "AUTO_RENEW_DISABLED") {
             paymentOrchestrationService.handleCancellation(
                 provider = PaymentProvider.APP_STORE,
@@ -242,7 +242,7 @@ class AppStoreWebhookHandler(
     }
 
     private fun handleRenewalFailure(subtype: String, transactionInfo: JsonNode) {
-        val originalTransactionId = transactionInfo.path("originalTransactionId").asText()
+        val originalTransactionId = transactionInfo.path("originalTransactionId").asString()
         paymentOrchestrationService.handlePaymentFailure(
             provider = PaymentProvider.APP_STORE,
             externalSubscriptionId = originalTransactionId,
@@ -252,7 +252,7 @@ class AppStoreWebhookHandler(
     }
 
     private fun handleExpiry(subtype: String, transactionInfo: JsonNode) {
-        val originalTransactionId = transactionInfo.path("originalTransactionId").asText()
+        val originalTransactionId = transactionInfo.path("originalTransactionId").asString()
         paymentOrchestrationService.handleCancellation(
             provider = PaymentProvider.APP_STORE,
             externalSubscriptionId = originalTransactionId,
@@ -261,7 +261,7 @@ class AppStoreWebhookHandler(
     }
 
     private fun handleGracePeriodExpired(transactionInfo: JsonNode) {
-        val originalTransactionId = transactionInfo.path("originalTransactionId").asText()
+        val originalTransactionId = transactionInfo.path("originalTransactionId").asString()
         paymentOrchestrationService.handleCancellation(
             provider = PaymentProvider.APP_STORE,
             externalSubscriptionId = originalTransactionId,
@@ -274,7 +274,7 @@ class AppStoreWebhookHandler(
     }
 
     private fun handleRevoke(transactionInfo: JsonNode) {
-        val originalTransactionId = transactionInfo.path("originalTransactionId").asText()
+        val originalTransactionId = transactionInfo.path("originalTransactionId").asString()
         paymentOrchestrationService.handleCancellation(
             provider = PaymentProvider.APP_STORE,
             externalSubscriptionId = originalTransactionId,
@@ -320,7 +320,7 @@ class RazorpayWebhookHandler(
 
     private fun handleSubscriptionCharged(payload: JsonNode) {
         val subscription = payload.path("payload").path("subscription").path("entity")
-        val subscriptionId = subscription.path("id").asText()
+        val subscriptionId = subscription.path("id").asString()
         val payment = payload.path("payload").path("payment").path("entity")
         val amountPaise = payment.path("amount").asLong()
         val amount = BigDecimal(amountPaise).divide(BigDecimal(100)) // Razorpay amounts are in paise
@@ -329,7 +329,7 @@ class RazorpayWebhookHandler(
         paymentOrchestrationService.handleRenewal(
             provider = PaymentProvider.RAZORPAY,
             externalSubscriptionId = subscriptionId,
-            orderId = payment.path("id").asText(),
+            orderId = payment.path("id").asString(),
             amount = amount,
             currency = currency,
             periodStart = null,
@@ -339,17 +339,17 @@ class RazorpayWebhookHandler(
 
     private fun handleSubscriptionActivated(payload: JsonNode) {
         val subscription = payload.path("payload").path("subscription").path("entity")
-        logger.info("Subscription activated: {}", subscription.path("id").asText())
+        logger.info("Subscription activated: {}", subscription.path("id").asString())
     }
 
     private fun handleSubscriptionPending(payload: JsonNode) {
         val subscription = payload.path("payload").path("subscription").path("entity")
-        logger.info("Subscription pending: {}", subscription.path("id").asText())
+        logger.info("Subscription pending: {}", subscription.path("id").asString())
     }
 
     private fun handleSubscriptionHalted(payload: JsonNode) {
         val subscription = payload.path("payload").path("subscription").path("entity")
-        val subscriptionId = subscription.path("id").asText()
+        val subscriptionId = subscription.path("id").asString()
 
         paymentOrchestrationService.handlePaymentFailure(
             provider = PaymentProvider.RAZORPAY,
@@ -361,7 +361,7 @@ class RazorpayWebhookHandler(
 
     private fun handleSubscriptionCancelled(payload: JsonNode) {
         val subscription = payload.path("payload").path("subscription").path("entity")
-        val subscriptionId = subscription.path("id").asText()
+        val subscriptionId = subscription.path("id").asString()
 
         paymentOrchestrationService.handleCancellation(
             provider = PaymentProvider.RAZORPAY,
@@ -380,7 +380,7 @@ class RazorpayWebhookHandler(
 
     private fun handleSubscriptionCompleted(payload: JsonNode) {
         val subscription = payload.path("payload").path("subscription").path("entity")
-        val subscriptionId = subscription.path("id").asText()
+        val subscriptionId = subscription.path("id").asString()
 
         paymentOrchestrationService.handleCancellation(
             provider = PaymentProvider.RAZORPAY,
@@ -395,8 +395,8 @@ class RazorpayWebhookHandler(
 
     private fun handlePaymentFailed(payload: JsonNode) {
         val payment = payload.path("payload").path("payment").path("entity")
-        val errorCode = payment.path("error_code").asText()
-        val errorDescription = payment.path("error_description").asText()
+        val errorCode = payment.path("error_code").asString()
+        val errorDescription = payment.path("error_description").asString()
 
         logger.warn("Payment failed: {} - {}", errorCode, errorDescription)
     }
@@ -443,12 +443,12 @@ class StripeWebhookHandler(
     }
 
     private fun handleSubscriptionCreated(subscription: JsonNode) {
-        logger.info("Subscription created: {}", subscription.path("id").asText())
+        logger.info("Subscription created: {}", subscription.path("id").asString())
     }
 
     private fun handleSubscriptionUpdated(subscription: JsonNode) {
-        val subscriptionId = subscription.path("id").asText()
-        val status = subscription.path("status").asText()
+        val subscriptionId = subscription.path("id").asString()
+        val status = subscription.path("status").asString()
 
         logger.info("Subscription {} updated to status: {}", subscriptionId, status)
 
@@ -473,7 +473,7 @@ class StripeWebhookHandler(
     }
 
     private fun handleSubscriptionDeleted(subscription: JsonNode) {
-        val subscriptionId = subscription.path("id").asText()
+        val subscriptionId = subscription.path("id").asString()
         paymentOrchestrationService.handleCancellation(
             provider = PaymentProvider.STRIPE,
             externalSubscriptionId = subscriptionId,
@@ -482,11 +482,11 @@ class StripeWebhookHandler(
     }
 
     private fun handleTrialWillEnd(subscription: JsonNode) {
-        logger.info("Trial will end for subscription: {}", subscription.path("id").asText())
+        logger.info("Trial will end for subscription: {}", subscription.path("id").asString())
     }
 
     private fun handleInvoicePaid(invoice: JsonNode) {
-        val subscriptionId = invoice.path("subscription").asText()
+        val subscriptionId = invoice.path("subscription").asString()
         if (subscriptionId.isEmpty()) return
 
         val amountCents = invoice.path("amount_paid").asLong()
@@ -498,7 +498,7 @@ class StripeWebhookHandler(
         paymentOrchestrationService.handleRenewal(
             provider = PaymentProvider.STRIPE,
             externalSubscriptionId = subscriptionId,
-            orderId = invoice.path("id").asText(),
+            orderId = invoice.path("id").asString(),
             amount = amount,
             currency = currency,
             periodStart = Instant.ofEpochSecond(periodStart),
@@ -507,7 +507,7 @@ class StripeWebhookHandler(
     }
 
     private fun handleInvoicePaymentFailed(invoice: JsonNode) {
-        val subscriptionId = invoice.path("subscription").asText()
+        val subscriptionId = invoice.path("subscription").asString()
         if (subscriptionId.isEmpty()) return
 
         paymentOrchestrationService.handlePaymentFailure(
@@ -519,22 +519,22 @@ class StripeWebhookHandler(
     }
 
     private fun handleInvoiceFinalized(invoice: JsonNode) {
-        logger.info("Invoice finalized: {}", invoice.path("id").asText())
+        logger.info("Invoice finalized: {}", invoice.path("id").asString())
     }
 
     private fun handlePaymentSucceeded(paymentIntent: JsonNode) {
-        logger.info("Payment succeeded: {}", paymentIntent.path("id").asText())
+        logger.info("Payment succeeded: {}", paymentIntent.path("id").asString())
     }
 
     private fun handlePaymentFailed(paymentIntent: JsonNode) {
         val error = paymentIntent.path("last_payment_error")
         logger.warn("Payment failed: {} - {}",
-            error.path("code").asText(),
-            error.path("message").asText()
+            error.path("code").asString(),
+            error.path("message").asString()
         )
     }
 
     private fun handleCustomerCreated(customer: JsonNode) {
-        logger.info("Customer created: {}", customer.path("id").asText())
+        logger.info("Customer created: {}", customer.path("id").asString())
     }
 }

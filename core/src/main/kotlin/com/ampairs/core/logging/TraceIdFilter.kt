@@ -18,7 +18,7 @@ import java.util.*
 @Order(0) // Highest priority to run before all other filters
 class TraceIdFilter : OncePerRequestFilter() {
 
-    private val logger = LoggerFactory.getLogger(TraceIdFilter::class.java)
+    private val log = LoggerFactory.getLogger(TraceIdFilter::class.java)
 
     companion object {
         const val TRACE_ID_HEADER = "X-Trace-ID"
@@ -40,13 +40,13 @@ class TraceIdFilter : OncePerRequestFilter() {
             // Add trace ID to response headers for client tracking
             response.setHeader(TRACE_ID_RESPONSE_HEADER, traceId)
 
-            logger.debug("Trace ID set for request: {} -> {}", request.requestURI, traceId)
+            log.debug("Trace ID set for request: {} -> {}", request.requestURI, traceId)
 
             filterChain.doFilter(request, response)
         } finally {
             // Clean up MDC to prevent memory leaks
             MDC.remove(TRACE_ID_MDC_KEY)
-            logger.debug("Trace ID cleared after request: {}", request.requestURI)
+            log.debug("Trace ID cleared after request: {}", request.requestURI)
         }
     }
 
@@ -58,14 +58,14 @@ class TraceIdFilter : OncePerRequestFilter() {
         // Try to get trace ID from incoming request header (for distributed tracing)
         request.getHeader(TRACE_ID_HEADER)?.let { headerTraceId ->
             if (headerTraceId.isNotBlank() && isValidTraceId(headerTraceId)) {
-                logger.debug("Using trace ID from request header: {}", headerTraceId)
+                log.debug("Using trace ID from request header: {}", headerTraceId)
                 return headerTraceId
             }
         }
 
         // Generate new trace ID if not provided or invalid
         val newTraceId = UUID.randomUUID().toString().substring(0, 8)
-        logger.debug("Generated new trace ID: {}", newTraceId)
+        log.debug("Generated new trace ID: {}", newTraceId)
         return newTraceId
     }
 

@@ -1,3 +1,5 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package com.ampairs.workspace.service
 
 import com.ampairs.core.domain.User

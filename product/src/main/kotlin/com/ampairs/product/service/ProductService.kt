@@ -249,8 +249,8 @@ class ProductService(
             fieldChanges["costPrice"] = mapOf("old" to existingProduct.costPrice, "new" to updates.costPrice)
             existingProduct.costPrice = updates.costPrice
         }
-        if (updates.attributes?.isNotEmpty() == true && updates.attributes != existingProduct.attributes) {
-            val newAttributes = updates.attributes ?: emptyMap()
+        if (updates.attributes.isNotEmpty() && updates.attributes != existingProduct.attributes) {
+            val newAttributes = updates.attributes
             fieldChanges["attributes"] = mapOf("old" to existingProduct.attributes, "new" to newAttributes)
             existingProduct.attributes = newAttributes
         }
