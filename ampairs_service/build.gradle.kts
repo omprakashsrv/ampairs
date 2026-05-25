@@ -1,15 +1,8 @@
-buildscript {
-    repositories { mavenCentral() }
-    dependencies {
-        classpath("org.flywaydb:flyway-database-postgresql:11.14.1")
-        classpath("org.postgresql:postgresql:42.7.10")
-    }
-}
+import java.net.URLClassLoader
 
 plugins {
     id("org.springframework.boot")
     id("io.spring.dependency-management")
-    id("org.flywaydb.flyway")
     kotlin("jvm")
     kotlin("plugin.spring")
 }
@@ -25,8 +18,6 @@ java {
 kotlin {
     jvmToolchain(21)
 }
-
-
 
 repositories {
     mavenCentral()
@@ -76,7 +67,7 @@ dependencies {
     // Kotlin
     implementation("org.jetbrains.kotlin:kotlin-reflect")
 
-    // Caching — Spring Boot auto-configures CaffeineCacheManager from spring-boot-starter-cache
+    // Caching
     implementation("com.github.ben-manes.caffeine:caffeine:3.2.4")
 
     // JWT
@@ -85,23 +76,22 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:$jwt")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:$jwt")
 
-    // Rate limiting - using custom comprehensive rate limiting service from core module
-
     // Database & Migrations
     runtimeOnly("com.mysql:mysql-connector-j")
     runtimeOnly("org.postgresql:postgresql")
-    implementation("org.flywaydb:flyway-mysql")
+    // Spring Boot 4.x requires the starter for Flyway auto-configuration (flyway-core alone is not enough)
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.flywaydb:flyway-database-postgresql")
 
-    // Spring Cloud AWS - Auto-configuration for AWS services
+    // Spring Cloud AWS
     implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:4.0.2"))
     implementation("io.awspring.cloud:spring-cloud-aws-starter-s3")
     implementation("io.awspring.cloud:spring-cloud-aws-starter-sns")
 
-    // Jackson for JSON processing
+    // Jackson
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
-    // OpenAPI/Swagger Documentation
+    // OpenAPI/Swagger
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.17")
 
     // Development
@@ -126,14 +116,71 @@ val migrationModules = listOf(
     "tax", "unit", "user", "workspace"
 )
 
-flyway {
-    url = System.getenv("DB_URL") ?: "jdbc:postgresql://localhost:5432/springdb"
-    user = System.getenv("DB_USERNAME") ?: "springuser"
-    password = System.getenv("DB_PASSWORD") ?: "springpass"
-    locations = migrationModules
+// ── Local-dev migration tasks ──────────────────────────────────────────────────
+// The Flyway Gradle plugin has a classloader bug in Gradle 9.x (flyway/flyway#4165).
+// These tasks bypass the plugin entirely: a URLClassLoader we fully control
+// ensures ServiceLoader finds flyway-database-postgresql every time.
+// In production, Spring Boot runs Flyway on startup via spring-boot-starter-flyway.
+
+val flywayRuntime by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+}
+
+dependencies {
+    flywayRuntime("org.flywaydb:flyway-core:11.14.1")
+    flywayRuntime("org.flywaydb:flyway-database-postgresql:11.14.1")
+    flywayRuntime("org.postgresql:postgresql:42.7.10")
+    flywayRuntime("org.slf4j:slf4j-simple:2.0.13")
+}
+
+fun runFlyway(command: String) {
+    val dbUrl      = System.getenv("DB_URL")      ?: "jdbc:postgresql://localhost:5432/springdb"
+    val dbUser     = System.getenv("DB_USERNAME") ?: "springuser"
+    val dbPassword = System.getenv("DB_PASSWORD") ?: "springpass"
+    val locations: Array<String> = migrationModules
         .map { "filesystem:${rootDir}/$it/src/main/resources/db/migration/postgresql" }
         .toTypedArray()
-    baselineOnMigrate = true
-    baselineVersion = "1"
-    outOfOrder = false
+
+    val urls = flywayRuntime.map { it.toURI().toURL() }.toTypedArray()
+    val cl = URLClassLoader(urls, ClassLoader.getPlatformClassLoader())
+    val saved = Thread.currentThread().contextClassLoader
+    Thread.currentThread().contextClassLoader = cl
+    try {
+        val flywayClass: Class<*> = cl.loadClass("org.flywaydb.core.Flyway")
+        var cfg: Any = flywayClass.getMethod("configure", ClassLoader::class.java).invoke(null, cl)!!
+        cfg = cfg.javaClass.getMethod("dataSource", String::class.java, String::class.java, String::class.java)
+            .invoke(cfg, dbUrl, dbUser, dbPassword)!!
+        cfg = cfg.javaClass.getMethod("locations", Array<String>::class.java)
+            .invoke(cfg, locations as Any)!!
+        cfg = cfg.javaClass.getMethod("baselineOnMigrate", Boolean::class.javaPrimitiveType!!)
+            .invoke(cfg, true)!!
+        cfg = cfg.javaClass.getMethod("baselineVersion", String::class.java)
+            .invoke(cfg, "1")!!
+        val flyway: Any = cfg.javaClass.getMethod("load").invoke(cfg)!!
+        when (command) {
+            "migrate"  -> flyway.javaClass.getMethod("migrate").invoke(flyway)
+            "validate" -> flyway.javaClass.getMethod("validate").invoke(flyway)
+            "repair"   -> flyway.javaClass.getMethod("repair").invoke(flyway)
+            "info"     -> {
+                val info: Any = flyway.javaClass.getMethod("info").invoke(flyway)!!
+                val all = info.javaClass.getMethod("all").invoke(info) as Array<*>
+                all.forEach { m ->
+                    if (m != null) {
+                        val state = m.javaClass.getMethod("getState").invoke(m)
+                        val desc  = m.javaClass.getMethod("getDescription").invoke(m)
+                        println("  [$state] $desc")
+                    }
+                }
+            }
+        }
+    } finally {
+        Thread.currentThread().contextClassLoader = saved
+        cl.close()
+    }
 }
+
+tasks.register("dbMigrate")   { group = "flyway"; description = "Apply pending migrations";    doLast { runFlyway("migrate")  } }
+tasks.register("dbInfo")      { group = "flyway"; description = "Show migration status";       doLast { runFlyway("info")     } }
+tasks.register("dbValidate")  { group = "flyway"; description = "Validate applied migrations"; doLast { runFlyway("validate") } }
+tasks.register("dbRepair")    { group = "flyway"; description = "Repair schema history";       doLast { runFlyway("repair")   } }
