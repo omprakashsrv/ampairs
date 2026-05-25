@@ -43,6 +43,7 @@ dependencies {
     implementation(project(mapOf("path" to ":core")))
     implementation(project(mapOf("path" to ":notification")))
     implementation(project(mapOf("path" to ":auth")))
+    implementation(project(mapOf("path" to ":user")))
     implementation(project(mapOf("path" to ":workspace")))
     implementation(project(mapOf("path" to ":business")))
     implementation(project(mapOf("path" to ":form")))
@@ -122,7 +123,7 @@ tasks.withType<Test> {
 val migrationModules = listOf(
     "auth", "business", "core", "customer", "event", "form",
     "invoice", "notification", "order", "product", "subscription",
-    "tax", "unit", "workspace"
+    "tax", "unit", "user", "workspace"
 )
 
 flyway {

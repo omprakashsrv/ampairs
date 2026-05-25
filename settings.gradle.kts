@@ -3,6 +3,7 @@ rootProject.name = "ampairs"
 include("core")
 include("notification")
 include("auth")
+include("user")
 include("workspace")
 include("form")
 include("event")
