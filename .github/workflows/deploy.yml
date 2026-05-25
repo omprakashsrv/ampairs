@@ -94,16 +94,6 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Set up JDK 21
-      uses: actions/setup-java@v4
-      with:
-        java-version: '21'
-        distribution: 'temurin'
-        cache: gradle
-
-    - name: Grant execute permission for gradlew
-      run: chmod +x gradlew
-
     - name: Download build artifacts
       uses: actions/download-artifact@v4
       with:
@@ -330,33 +320,6 @@ jobs:
           echo "Files in home directory:"
           ls -lh ~/ampairs* 2>/dev/null || echo "ERROR: No ampairs files found after upload!"
         VERIFY_EOF
-
-    - name: Run Flyway migrations
-      env:
-        DB_HOST: ${{ vars.DB_HOST }}
-        DB_USERNAME: ${{ vars.DB_USERNAME }}
-        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
-      run: |
-        SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=10"
-
-        echo "Opening SSH tunnel to internal DB via ${{ vars.SERVER_HOST }}..."
-        ssh $SSH_OPTS -N -f -L 15432:${DB_HOST}:5432 ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}
-
-        # Wait briefly for tunnel to establish
-        sleep 2
-
-        echo "Running Flyway migrations..."
-        ./gradlew :ampairs_service:flywayMigrate \
-          -Dflyway.url="jdbc:postgresql://127.0.0.1:15432/ampairs_prod" \
-          -Dflyway.user="${DB_USERNAME}" \
-          -Dflyway.password="${DB_PASSWORD}" \
-          --no-daemon
-
-        echo "Closing SSH tunnel..."
-        # Find and kill the tunnel process
-        pkill -f "ssh.*15432:${DB_HOST}:5432" || true
-
-        echo "✅ Flyway migrations completed"
 
     - name: Deploy application
       run: |
