@@ -123,8 +123,6 @@ spring:
   jackson:
     property-naming-strategy: SNAKE_CASE
     time-zone: UTC  # Serialize all timestamps in UTC timezone (ISO-8601 with Z suffix)
-    serialization:
-      WRITE_DATES_AS_TIMESTAMPS: false
     deserialization:
       fail-on-unknown-properties: false
   cache:
