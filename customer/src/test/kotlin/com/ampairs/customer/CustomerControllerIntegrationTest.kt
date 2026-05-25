@@ -75,7 +75,7 @@ class CustomerControllerIntegrationTest {
         whenever(customerService.upsertCustomer(any())).thenReturn(savedCustomer)
 
         mockMvc.perform(
-            post("/customer/v1")
+            post("/customer/v1/customers")
                 .header("X-Workspace-ID", "TEST_WORKSPACE")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
@@ -105,7 +105,7 @@ class CustomerControllerIntegrationTest {
         whenever(customerService.updateCustomers(any())).thenReturn(updatedEntities)
 
         mockMvc.perform(
-            post("/customer/v1/customers")
+            post("/customer/v1/customers/customers")
                 .header("X-Workspace-ID", "TEST_WORKSPACE")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
@@ -130,7 +130,7 @@ class CustomerControllerIntegrationTest {
         whenever(customerService.getStates()).thenReturn(listOf(state))
 
         mockMvc.perform(
-            get("/customer/v1/states")
+            get("/customer/v1/customers/states")
                 .header("X-Workspace-ID", "TEST_WORKSPACE")
                 .param("last_updated", "1000")
         )
@@ -148,7 +148,7 @@ class CustomerControllerIntegrationTest {
         whenever(customerService.getCustomerByUid("cust-1")).thenReturn(customer)
 
         mockMvc.perform(
-            get("/customer/v1/cust-1")
+            get("/customer/v1/customers/cust-1")
                 .header("X-Workspace-ID", "TEST_WORKSPACE")
         )
             .andExpect(status().isOk)
@@ -164,7 +164,7 @@ class CustomerControllerIntegrationTest {
         whenever(customerService.getCustomerByUid("missing-id")).thenReturn(null)
 
         mockMvc.perform(
-            get("/customer/v1/missing-id")
+            get("/customer/v1/customers/missing-id")
                 .header("X-Workspace-ID", "TEST_WORKSPACE")
         )
             .andExpect(status().isNotFound)
@@ -182,7 +182,7 @@ class CustomerControllerIntegrationTest {
         whenever(customerService.updateCustomer(eq("cust-1"), any())).thenReturn(updatedCustomer)
 
         mockMvc.perform(
-            put("/customer/v1/cust-1")
+            put("/customer/v1/customers/cust-1")
                 .header("X-Workspace-ID", "TEST_WORKSPACE")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
@@ -201,7 +201,7 @@ class CustomerControllerIntegrationTest {
         whenever(customerService.updateCustomer(eq("cust-404"), any())).thenReturn(null)
 
         mockMvc.perform(
-            put("/customer/v1/cust-404")
+            put("/customer/v1/customers/cust-404")
                 .header("X-Workspace-ID", "TEST_WORKSPACE")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
@@ -222,7 +222,7 @@ class CustomerControllerIntegrationTest {
         whenever(customerService.getCustomerByGstNumber("29ABCDE1234F1Z5")).thenReturn(customer)
 
         mockMvc.perform(
-            get("/customer/v1/gst/29ABCDE1234F1Z5")
+            get("/customer/v1/customers/gst/29ABCDE1234F1Z5")
                 .header("X-Workspace-ID", "TEST_WORKSPACE")
         )
             .andExpect(status().isOk)
@@ -239,7 +239,7 @@ class CustomerControllerIntegrationTest {
         whenever(customerService.getCustomerByGstNumber("29ABCDE1234F1Z5")).thenReturn(null)
 
         mockMvc.perform(
-            get("/customer/v1/gst/29ABCDE1234F1Z5")
+            get("/customer/v1/customers/gst/29ABCDE1234F1Z5")
                 .header("X-Workspace-ID", "TEST_WORKSPACE")
         )
             .andExpect(status().isNotFound)
@@ -255,7 +255,7 @@ class CustomerControllerIntegrationTest {
         whenever(customerService.validateGstNumber("29ABCDE1234F1Z5")).thenReturn(true)
 
         mockMvc.perform(
-            post("/customer/v1/validate-gst")
+            post("/customer/v1/customers/validate-gst")
                 .header("X-Workspace-ID", "TEST_WORKSPACE")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"gst_number":"29ABCDE1234F1Z5"}""")
@@ -276,7 +276,7 @@ class CustomerControllerIntegrationTest {
         whenever(customerService.updateOutstanding("cust-1", 50.0, false)).thenReturn(updatedCustomer)
 
         mockMvc.perform(
-            put("/customer/v1/cust-1/outstanding")
+            put("/customer/v1/customers/cust-1/outstanding")
                 .header("X-Workspace-ID", "TEST_WORKSPACE")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"amount":50.0,"is_payment":false}""")
@@ -294,7 +294,7 @@ class CustomerControllerIntegrationTest {
         whenever(customerService.updateOutstanding("cust-404", 25.0, true)).thenReturn(null)
 
         mockMvc.perform(
-            put("/customer/v1/cust-404/outstanding")
+            put("/customer/v1/customers/cust-404/outstanding")
                 .header("X-Workspace-ID", "TEST_WORKSPACE")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"amount":25.0,"is_payment":true}""")
@@ -310,7 +310,7 @@ class CustomerControllerIntegrationTest {
     @WithMockUser(username = "testuser", roles = ["USER"])
     fun `should return validation error when gst missing`() {
         mockMvc.perform(
-            post("/customer/v1/validate-gst")
+            post("/customer/v1/customers/validate-gst")
                 .header("X-Workspace-ID", "TEST_WORKSPACE")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{}""")

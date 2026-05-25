@@ -67,7 +67,7 @@ class AuthIntegrationTest {
                 .content(objectMapper.writeValueAsString(request))
         )
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.data.success").value(true))
+            .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.message").value("OTP sent successfully"))
             .andExpect(jsonPath("$.data.session_id").exists())
     }

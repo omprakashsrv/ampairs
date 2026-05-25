@@ -76,7 +76,7 @@ class CustomerListIntegrationTest {
         whenever(customerService.getCustomersAfterSync(anyOrNull(), any())).thenReturn(customerPage)
 
         mockMvc.perform(
-            get("/customer/v1")
+            get("/customer/v1/customers")
                 .header("X-Workspace-ID", "TEST_WORKSPACE")
                 .param("page", "0")
                 .param("size", "20")
@@ -102,7 +102,7 @@ class CustomerListIntegrationTest {
         whenever(customerService.getCustomersAfterSync(eq(lastSync), any())).thenReturn(emptyPage)
 
         mockMvc.perform(
-            get("/customer/v1")
+            get("/customer/v1/customers")
                 .header("X-Workspace-ID", "TEST_WORKSPACE")
                 .param("last_sync", lastSync)
                 .param("page", "0")
