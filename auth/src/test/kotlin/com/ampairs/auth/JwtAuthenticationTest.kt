@@ -169,7 +169,7 @@ class JwtAuthenticationTest {
         )
 
         mockMvc.perform(
-            post("/auth/v1/refresh_token")
+            post("/auth/v1/refresh-token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(refreshRequest))
         )
@@ -187,7 +187,7 @@ class JwtAuthenticationTest {
         }
 
         mockMvc.perform(
-            post("/auth/v1/refresh_token")
+            post("/auth/v1/refresh-token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(refreshRequest))
         )
@@ -456,7 +456,7 @@ class JwtAuthenticationTest {
         )
 
         mockMvc.perform(
-            post("/auth/v1/refresh_token")
+            post("/auth/v1/refresh-token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(refreshRequest))
         )
@@ -477,7 +477,7 @@ class JwtAuthenticationTest {
         )
 
         mockMvc.perform(
-            post("/auth/v1/refresh_token")
+            post("/auth/v1/refresh-token")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(refreshRequest))
         )

@@ -27,6 +27,11 @@ spring:
         dialect: org.hibernate.dialect.H2Dialect
         hbm2ddl:
           auto: create-drop
+  # Disable /api servlet path prefix in tests — MockMvc routes directly to the DispatcherServlet
+  # without stripping any prefix, so MvcRequestMatcher would fail to match PUBLIC_PATHS
+  mvc:
+    servlet:
+      path: /
   # Jackson configuration for consistent JSON naming
   jackson:
     property-naming-strategy: SNAKE_CASE
