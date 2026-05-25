@@ -334,6 +334,7 @@ jobs:
     - name: Run Flyway migrations
       env:
         DB_HOST: ${{ vars.DB_HOST }}
+        DB_URL: "jdbc:postgresql://127.0.0.1:15432/ampairs_prod"
         DB_USERNAME: ${{ vars.DB_USERNAME }}
         DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       run: |
@@ -346,14 +347,9 @@ jobs:
         sleep 2
 
         echo "Running Flyway migrations..."
-        ./gradlew :ampairs_service:flywayMigrate \
-          -Dflyway.url="jdbc:postgresql://127.0.0.1:15432/ampairs_prod" \
-          -Dflyway.user="${DB_USERNAME}" \
-          -Dflyway.password="${DB_PASSWORD}" \
-          --no-daemon
+        ./gradlew :ampairs_service:flywayMigrate --no-daemon
 
         echo "Closing SSH tunnel..."
-        # Find and kill the tunnel process
         pkill -f "ssh.*15432:${DB_HOST}:5432" || true
 
         echo "✅ Flyway migrations completed"
