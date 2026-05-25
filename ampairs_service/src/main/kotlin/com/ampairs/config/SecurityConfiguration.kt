@@ -6,6 +6,7 @@ import com.ampairs.core.auth.filter.ApiKeyAuthenticationFilter
 import com.ampairs.core.auth.provider.ApiKeyAuthenticationProvider
 import com.ampairs.core.config.ApplicationProperties
 import com.ampairs.core.exception.AuthEntryPointJwt
+import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
@@ -23,7 +24,6 @@ import javax.crypto.spec.SecretKeySpec
 
 private val PUBLIC_PATHS = arrayOf(
     "/auth/v1/**",
-    "/actuator/**",
     "/swagger-ui/**",
     "/swagger-ui.html",
     "/v3/api-docs/**",
@@ -31,7 +31,8 @@ private val PUBLIC_PATHS = arrayOf(
     "/swagger-resources/**",
     "/core/v1/app-updates/check",
     "/core/v1/app-updates/download/**",
-    "/subscription/v1/webhooks/**"
+    "/subscription/v1/webhooks/**",
+    "/error"
 )
 
 @Configuration
@@ -91,6 +92,7 @@ class SecurityConfiguration(
             )
             .authorizeHttpRequests { requests ->
                 requests
+                    .requestMatchers(EndpointRequest.toAnyEndpoint()).permitAll()
                     .requestMatchers(*PUBLIC_PATHS).permitAll()
                     .anyRequest().authenticated()
             }
@@ -104,10 +106,12 @@ class SecurityConfiguration(
                     if (org.springframework.security.core.context.SecurityContextHolder.getContext().authentication?.isAuthenticated == true) {
                         return@bearerTokenResolver null
                     }
-                    val isPublic = PUBLIC_PATHS.any { pattern ->
-                        val prefix = pattern.removeSuffix("**").removeSuffix("*")
-                        request.requestURI.startsWith(prefix) || request.requestURI == pattern
-                    }
+                    val uri = request.requestURI
+                    val isPublic = uri.startsWith("/actuator/") || uri == "/actuator" ||
+                        PUBLIC_PATHS.any { pattern ->
+                            val prefix = pattern.removeSuffix("**").removeSuffix("*")
+                            uri.startsWith(prefix) || uri == pattern
+                        }
                     if (isPublic) {
                         null
                     } else {
