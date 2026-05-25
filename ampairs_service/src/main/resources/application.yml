@@ -234,7 +234,7 @@ ampairs:
   # Object Storage Configuration
   storage:
     # Storage provider: LOCAL, S3, or MINIO
-    provider: ${STORAGE_PROVIDER:S3}
+    provider: ${STORAGE_PROVIDER:LOCAL}
     default-bucket: ${STORAGE_BUCKET:ampairs-test}
     max-file-size: ${STORAGE_MAX_FILE_SIZE:10MB}
     allowed-content-types: ${STORAGE_ALLOWED_CONTENT_TYPES:image/jpeg,image/png,image/gif,image/webp,image/bmp,image/tiff}
@@ -274,7 +274,7 @@ ampairs:
       sms-type: ${AWS_SNS_SMS_TYPE:Transactional}
   # Local Filesystem Configuration (for development/testing)
   local:
-    enabled: ${LOCAL_STORAGE_ENABLED:false}
+    enabled: ${LOCAL_STORAGE_ENABLED:true}
     base-path: ${LOCAL_STORAGE_PATH:./storage}
     create-directories: ${LOCAL_STORAGE_CREATE_DIRS:true}
     url-base: ${LOCAL_STORAGE_URL_BASE:http://localhost:8080/files}
@@ -449,8 +449,8 @@ google:
 
 # Firebase Configuration
 firebase:
-  enabled: ${FIREBASE_ENABLED:false}
-  service-account-key-path: ${FIREBASE_SERVICE_ACCOUNT_KEY_PATH:}
+  enabled: ${FIREBASE_ENABLED:true}
+  service-account-key-path: ${FIREBASE_SERVICE_ACCOUNT_KEY_PATH:keys/ampairs-firebase-adminsdk.json}
 
 # Notification Configuration
 notification:

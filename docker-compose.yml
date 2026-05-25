@@ -1,6 +1,25 @@
-version: '3.8'
-
 services:
+  postgres:
+    image: postgis/postgis:17-3.5
+    platform: linux/amd64
+    container_name: ampairs-postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: springdb
+      POSTGRES_USER: springuser
+      POSTGRES_PASSWORD: springpass
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U springuser -d springdb"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ampairs-network
+    restart: unless-stopped
+
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
@@ -26,7 +45,10 @@ services:
       - ampairs-network
     restart: unless-stopped
 
+
 volumes:
+  postgres_data:
+    driver: local
   rabbitmq_data:
     driver: local
 
