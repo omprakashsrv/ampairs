@@ -236,7 +236,7 @@ class TokenCleanupService(
             newTransactionTemplate.execute {
                 tokenRepository.deleteAll(tokensToDelete)
                 tokensToDelete.size
-            } ?: 0
+            }
         } catch (e: Exception) {
             logger.warn("Error deleting batch of {} tokens", tokensToDelete.size, e)
             // Return 0 if deletion failed, so the count stays accurate

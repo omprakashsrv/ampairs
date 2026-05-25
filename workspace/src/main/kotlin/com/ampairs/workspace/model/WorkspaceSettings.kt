@@ -1,3 +1,5 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package com.ampairs.workspace.model
 
 import com.ampairs.core.config.Constants

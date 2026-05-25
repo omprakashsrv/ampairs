@@ -241,9 +241,9 @@ class AppleAppStoreService(
 
     private fun parseReceiptInfo(node: JsonNode): AppleReceiptInfo {
         return AppleReceiptInfo(
-            productId = node.get("product_id")?.asText() ?: "",
-            transactionId = node.get("transaction_id")?.asText() ?: "",
-            originalTransactionId = node.get("original_transaction_id")?.asText() ?: "",
+            productId = node.get("product_id")?.asString() ?: "",
+            transactionId = node.get("transaction_id")?.asString() ?: "",
+            originalTransactionId = node.get("original_transaction_id")?.asString() ?: "",
             purchaseDateMs = node.get("purchase_date_ms")?.asLong(),
             expiresDateMs = node.get("expires_date_ms")?.asLong()
         )
@@ -251,7 +251,7 @@ class AppleAppStoreService(
 
     private fun parsePendingRenewalInfo(node: JsonNode): ApplePendingRenewalInfo {
         return ApplePendingRenewalInfo(
-            autoRenewStatus = node.get("auto_renew_status")?.asText()
+            autoRenewStatus = node.get("auto_renew_status")?.asString()
         )
     }
 

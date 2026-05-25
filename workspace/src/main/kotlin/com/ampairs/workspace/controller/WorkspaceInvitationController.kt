@@ -1,3 +1,5 @@
+@file:Suppress("UNCHECKED_CAST")
+
 package com.ampairs.workspace.controller
 
 import com.ampairs.core.domain.dto.ApiResponse

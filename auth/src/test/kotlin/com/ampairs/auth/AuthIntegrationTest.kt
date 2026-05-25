@@ -96,7 +96,7 @@ class AuthIntegrationTest {
             .andReturn()
 
         val initResponseBody = objectMapper.readTree(initResponse.response.contentAsString)
-        val sessionId = initResponseBody.get("data").get("session_id").asText()
+        val sessionId = initResponseBody.get("data").get("session_id").asString()
 
         // Then authenticate with hardcoded OTP
         val authRequest = AuthenticationRequest(
@@ -142,7 +142,7 @@ class AuthIntegrationTest {
             .andReturn()
 
         val initResponseBody = objectMapper.readTree(initResponse.response.contentAsString)
-        val sessionId = initResponseBody.get("data").get("session_id").asText()
+        val sessionId = initResponseBody.get("data").get("session_id").asString()
 
         // Try to authenticate with wrong OTP
         val authRequest = AuthenticationRequest(
@@ -185,7 +185,7 @@ class AuthIntegrationTest {
             .andReturn()
 
         val sessionId = objectMapper.readTree(initResponse.response.contentAsString)
-            .get("data").get("session_id").asText()
+            .get("data").get("session_id").asString()
 
         val authRequest = AuthenticationRequest(
             sessionId = sessionId,
@@ -233,7 +233,7 @@ class AuthIntegrationTest {
             .andReturn()
 
         val sessionId = objectMapper.readTree(initResponse.response.contentAsString)
-            .get("data").get("session_id").asText()
+            .get("data").get("session_id").asString()
 
         // Check valid session
         mockMvc.perform(

@@ -67,7 +67,7 @@ class JwtAuthenticationTest {
             .andReturn()
 
         val sessionId = objectMapper.readTree(initResponse.response.contentAsString)
-            .get("data").get("session_id").asText()
+            .get("data").get("session_id").asString()
 
         // Authenticate with hardcoded OTP
         val authRequest = AuthenticationRequest(
@@ -88,7 +88,7 @@ class JwtAuthenticationTest {
             .andReturn()
 
         val authResponseBody = objectMapper.readTree(authResponse.response.contentAsString)
-        return authResponseBody.get("data").get("access_token").asText()
+        return authResponseBody.get("data").get("access_token").asString()
     }
 
     @Test
@@ -140,7 +140,7 @@ class JwtAuthenticationTest {
             .andReturn()
 
         val sessionId = objectMapper.readTree(initResponse.response.contentAsString)
-            .get("data").get("session_id").asText()
+            .get("data").get("session_id").asString()
 
         val authRequest = AuthenticationRequest(
             sessionId = sessionId,
@@ -160,7 +160,7 @@ class JwtAuthenticationTest {
             .andReturn()
 
         val authResponseBody = objectMapper.readTree(authResponse.response.contentAsString)
-        val refreshToken = authResponseBody.get("data").get("refresh_token").asText()
+        val refreshToken = authResponseBody.get("data").get("refresh_token").asString()
 
         // Now refresh the token
         val refreshRequest = RefreshTokenRequest(
@@ -259,7 +259,7 @@ class JwtAuthenticationTest {
             .andReturn()
 
         val sessionId2 = objectMapper.readTree(initResponse2.response.contentAsString)
-            .get("data").get("session_id").asText()
+            .get("data").get("session_id").asString()
 
         val authRequest2 = AuthenticationRequest(
             sessionId = sessionId2,
@@ -279,7 +279,7 @@ class JwtAuthenticationTest {
             .andReturn()
 
         val device2Token = objectMapper.readTree(authResponse2.response.contentAsString)
-            .get("data").get("access_token").asText()
+            .get("data").get("access_token").asString()
 
         // Both devices should be able to access protected endpoints
         mockMvc.perform(
@@ -375,7 +375,7 @@ class JwtAuthenticationTest {
                 val responseBody = result.response.contentAsString
                 val jsonResponse = objectMapper.readTree(responseBody)
                 assert(jsonResponse.get("success").asBoolean() == false)
-                assert(jsonResponse.get("error").get("code").asText() == "VALIDATION_ERROR")
+                assert(jsonResponse.get("error").get("code").asString() == "VALIDATION_ERROR")
             }
     }
 
@@ -422,7 +422,7 @@ class JwtAuthenticationTest {
             .andReturn()
 
         val sessionId = objectMapper.readTree(initResponse.response.contentAsString)
-            .get("data").get("session_id").asText()
+            .get("data").get("session_id").asString()
 
         // Try with wrong OTP
         val wrongOtpRequest = AuthenticationRequest(
@@ -576,9 +576,9 @@ class JwtAuthenticationTest {
 
         // Both should succeed but only the latest session should be valid
         val sessionId1 = objectMapper.readTree(response1.response.contentAsString)
-            .get("data").get("session_id").asText()
+            .get("data").get("session_id").asString()
         val sessionId2 = objectMapper.readTree(response2.response.contentAsString)
-            .get("data").get("session_id").asText()
+            .get("data").get("session_id").asString()
 
         // They should be different sessions
         assert(sessionId1 != sessionId2)

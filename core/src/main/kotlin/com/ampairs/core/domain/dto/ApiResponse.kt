@@ -1,7 +1,6 @@
 package com.ampairs.core.domain.dto
 
 import com.fasterxml.jackson.annotation.JsonInclude
-import com.fasterxml.jackson.annotation.JsonProperty
 import java.time.Instant
 
 /**
@@ -16,22 +15,11 @@ import java.time.Instant
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class ApiResponse<T>(
-    @JsonProperty("success")
     val success: Boolean,
-
-    @JsonProperty("data")
     val data: T? = null,
-
-    @JsonProperty("error")
     val error: ErrorDetails? = null,
-
-    @JsonProperty("timestamp")
     val timestamp: Instant = Instant.now(),
-
-    @JsonProperty("path")
     val path: String? = null,
-
-    @JsonProperty("trace_id")
     val traceId: String? = null,
 ) {
     companion object {
@@ -82,19 +70,10 @@ data class ApiResponse<T>(
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 data class ErrorDetails(
-    @JsonProperty("code")
     val code: String,
-
-    @JsonProperty("message")
     val message: String,
-
-    @JsonProperty("details")
     val details: String? = null,
-
-    @JsonProperty("validation_errors")
     val validationErrors: Map<String, String>? = null,
-
-    @JsonProperty("module")
     val module: String? = null,
 )
 

@@ -24,13 +24,12 @@ Environment="SERVER_PORT=8080"
 # Firebase Configuration
 Environment="FIREBASE_SERVICE_ACCOUNT_KEY_PATH=/opt/ampairs/production/keys/ampairs-firebase-adminsdk.json"
 
-# Database Configuration (override in /etc/environment or use secrets)
-# Environment="SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/ampairs_prod"
-# Environment="SPRING_DATASOURCE_USERNAME=ampairs_user"
-# Environment="SPRING_DATASOURCE_PASSWORD=your_secure_password_here"
+# Secrets — loaded from a file that is NOT committed to git.
+# Create /etc/ampairs/secrets.env on the server (see scripts/secrets.env.example)
+# with chmod 640 and chown root:ampairs so only the service user can read it.
+EnvironmentFile=/etc/ampairs/secrets.env
 
 # JWT Configuration
-Environment="JWT_SECRET=your_jwt_secret_here_change_in_production"
 Environment="JWT_EXPIRATION_TIME=86400000"
 
 # AWS Configuration (if using AWS services)

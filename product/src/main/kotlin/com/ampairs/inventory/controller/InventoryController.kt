@@ -64,7 +64,6 @@ class InventoryController(
     @GetMapping("/{uid}")
     fun getInventoryItem(@PathVariable uid: String): ApiResponse<InventoryItemResponse> {
         val item = inventoryItemService.getInventoryItemByUid(uid)
-            ?: throw NotFoundException("Inventory item not found: $uid")
         return ApiResponse.success(item.asInventoryItemResponse())
     }
 

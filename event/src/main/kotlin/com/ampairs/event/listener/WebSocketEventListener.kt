@@ -121,7 +121,7 @@ class WebSocketEventListener(
         logger.info(
             "WebSocket DISCONNECT: session={}, closeStatus={}",
             sessionId,
-            event.closeStatus?.code
+            event.closeStatus.code
         )
 
         // Find and update session

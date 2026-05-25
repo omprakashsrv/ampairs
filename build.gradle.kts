@@ -19,6 +19,15 @@ subprojects {
     group = "com.ampairs"
     version = "1.0.0"
 
+    // Opt into Kotlin 2.x annotation default target (param-property): applies annotations on
+    // constructor parameters to both the parameter and the generated backing field/property,
+    // which is correct for Spring/Jackson annotations and silences KT-73255 warnings.
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        compilerOptions {
+            freeCompilerArgs.add("-Xannotation-default-target=param-property")
+        }
+    }
+
     // Override Spring Boot 4.0's managed testcontainers version (2.0.5 sub-modules don't
     // all exist on Maven Central yet). Pin to the last stable 1.x release instead.
     extra["testcontainers.version"] = "1.21.0"
