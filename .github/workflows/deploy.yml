@@ -259,6 +259,48 @@ jobs:
         chmod 600 ~/.ssh/known_hosts
         echo "SSH setup completed"
 
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+        cache: gradle
+
+    - name: Run database migrations
+      env:
+        DB_USERNAME: ${{ vars.DB_USERNAME }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+      run: |
+        chmod +x gradlew
+        SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=10 -o ExitOnForwardFailure=yes"
+
+        # Open tunnel: CI runner :15432 → DB server :5432 (via app server)
+        ssh $SSH_OPTS -N \
+          -L 15432:${{ vars.DB_HOST }}:5432 \
+          ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} &
+        TUNNEL_PID=$!
+
+        # Wait up to 10s for tunnel to become ready
+        for i in {1..10}; do
+          if nc -z 127.0.0.1 15432 2>/dev/null; then
+            echo "SSH tunnel established (attempt $i)"
+            break
+          fi
+          if [ $i -eq 10 ]; then
+            echo "ERROR: SSH tunnel failed to establish after 10s"
+            kill $TUNNEL_PID 2>/dev/null
+            exit 1
+          fi
+          sleep 1
+        done
+
+        # Run Flyway migrations through the tunnel
+        DB_URL="jdbc:postgresql://127.0.0.1:15432/ampairs_prod" \
+          ./gradlew :ampairs_service:dbMigrate --no-daemon
+
+        kill $TUNNEL_PID 2>/dev/null || true
+        echo "Migrations complete"
+
     - name: Copy files to server
       run: |
         # Verify JAR file exists locally
