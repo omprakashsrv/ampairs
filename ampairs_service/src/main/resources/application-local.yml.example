@@ -1,0 +1,38 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/springdb
+    username: springuser
+    password: springpass
+  flyway:
+    enabled: true
+    locations: classpath:db/migration/{vendor}
+  jackson:
+    property-naming-strategy: SNAKE_CASE
+    time-zone: UTC
+    deserialization:
+      fail-on-unknown-properties: false
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+
+ampairs:
+  storage:
+    provider: LOCAL
+  local:
+    enabled: true
+    base-path: ./storage
+    url-base: http://localhost:8080/api/files
+
+aws:
+  sns:
+    enabled: false
+
+firebase:
+  enabled: false
+
+logging:
+  level:
+    com.ampairs: DEBUG
+    org.flywaydb: INFO
