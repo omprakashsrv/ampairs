@@ -3,6 +3,8 @@ package com.ampairs.auth.service
 import com.ampairs.core.config.ApplicationProperties
 import com.ampairs.core.multitenancy.TenantAware
 import com.ampairs.core.multitenancy.TenantContextHolder
+import com.ampairs.core.security.UserDetailsWithId
+import com.ampairs.core.security.UserDetailsWithRoles
 import io.jsonwebtoken.*
 import io.jsonwebtoken.io.Decoders
 import io.jsonwebtoken.security.Keys
@@ -287,14 +289,6 @@ class JwtService(
     fun getSignInKey(): ByteArray {
         return Decoders.BASE64.decode(applicationProperties.security.jwt.secretKey)
     }
-}
-
-interface UserDetailsWithId {
-    fun getId(): String
-}
-
-interface UserDetailsWithRoles {
-    fun getRoles(): List<String>
 }
 
 class JwtTokenGenerationException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
