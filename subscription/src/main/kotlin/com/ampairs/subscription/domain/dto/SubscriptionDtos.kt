@@ -1,8 +1,7 @@
 package com.ampairs.subscription.domain.dto
 
 import com.ampairs.subscription.domain.model.*
-import jakarta.validation.constraints.NotBlank
-import jakarta.validation.constraints.NotNull
+import com.fasterxml.jackson.annotation.JsonProperty
 import java.math.BigDecimal
 import java.time.Instant
 
@@ -155,6 +154,7 @@ data class SubscriptionResponse(
     val nextBillingAmount: BigDecimal?,
     val lastPaymentStatus: PaymentStatus?,
     val lastPaymentAt: Instant?,
+    @get:JsonProperty("is_free") // Kotlin `is`-prefix getter causes Jackson to strip it → "free"; this forces "is_free"
     val isFree: Boolean,
     val daysRemaining: Long,
     val activeAddons: List<AddonResponse>,
