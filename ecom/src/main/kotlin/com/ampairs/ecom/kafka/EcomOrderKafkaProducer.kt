@@ -7,12 +7,13 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Component
 
 @Component
 class EcomOrderKafkaProducer(
-    private val ecomOrderKafkaTemplate: KafkaTemplate<String, String>,
+    @Qualifier("ecomOrderKafkaTemplate") private val ecomOrderKafkaTemplate: KafkaTemplate<String, String>,
 ) {
     private val log = LoggerFactory.getLogger(EcomOrderKafkaProducer::class.java)
     private val objectMapper = ObjectMapper()

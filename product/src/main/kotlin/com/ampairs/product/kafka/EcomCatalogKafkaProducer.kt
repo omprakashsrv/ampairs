@@ -7,6 +7,7 @@ import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringSerializer
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -35,7 +36,7 @@ class EcomCatalogKafkaConfig(
 
 @Component
 class EcomCatalogKafkaProducer(
-    private val ecomCatalogKafkaTemplate: KafkaTemplate<String, String>,
+    @Qualifier("ecomCatalogKafkaTemplate") private val ecomCatalogKafkaTemplate: KafkaTemplate<String, String>,
 ) {
     private val log = LoggerFactory.getLogger(EcomCatalogKafkaProducer::class.java)
     private val objectMapper = ObjectMapper()
