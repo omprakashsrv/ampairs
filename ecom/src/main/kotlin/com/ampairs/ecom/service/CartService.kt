@@ -68,6 +68,7 @@ class CartService(
         if (existing != null) {
             existing.quantity = request.quantity
             existing.unitPrice = product.price
+            existing.mrpAtAdd = product.mrp
             cartItemRepository.save(existing)
         } else {
             val item = EcomCartItem()
@@ -75,7 +76,10 @@ class CartService(
             item.listedProductId = product.uid
             item.managementProductId = product.managementProductId
             item.productName = product.name
+            item.brand = product.brand
+            item.unit = product.unit
             item.unitPrice = product.price
+            item.mrpAtAdd = product.mrp
             item.quantity = request.quantity
             item.primaryImageUrl = product.imageUrls.firstOrNull()
             cartItemRepository.save(item)
@@ -134,7 +138,10 @@ class CartService(
                 newItem.listedProductId = guestItem.listedProductId
                 newItem.managementProductId = guestItem.managementProductId
                 newItem.productName = guestItem.productName
+                newItem.brand = guestItem.brand
+                newItem.unit = guestItem.unit
                 newItem.unitPrice = guestItem.unitPrice
+                newItem.mrpAtAdd = guestItem.mrpAtAdd
                 newItem.quantity = minOf(guestItem.quantity, maxQty)
                 newItem.primaryImageUrl = guestItem.primaryImageUrl
                 cartItemRepository.save(newItem)

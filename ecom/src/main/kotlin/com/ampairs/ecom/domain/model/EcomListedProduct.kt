@@ -48,8 +48,14 @@ class EcomListedProduct : OwnableBaseDomain() {
     @Column(name = "subcategory", length = 255)
     var subcategory: String? = null
 
+    @Column(name = "unit", length = 100)
+    var unit: String? = null
+
     @Column(name = "price", nullable = false, precision = 19, scale = 4)
     var price: BigDecimal = BigDecimal.ZERO
+
+    @Column(name = "mrp", precision = 19, scale = 4)
+    var mrp: BigDecimal? = null
 
     @Column(name = "stock_quantity", nullable = false)
     var stockQuantity: Int = 0

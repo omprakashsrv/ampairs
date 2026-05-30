@@ -27,7 +27,9 @@ class CatalogSyncService(
         product.brand = event.brand
         product.category = event.category
         product.subcategory = event.subcategory
+        product.unit = event.unit
         product.price = event.price ?: product.price
+        product.mrp = event.mrp ?: product.mrp
         product.stockQuantity = event.stockQuantity ?: product.stockQuantity
         product.stockStatus = resolveStockStatus(product.stockQuantity)
         product.imageUrls = event.imageUrls ?: product.imageUrls
@@ -54,6 +56,7 @@ class CatalogSyncService(
             event.storefrontId, event.managementProductId
         )?.let {
             event.price?.let { p -> it.price = p }
+            event.mrp?.let { m -> it.mrp = m }
             it.lastSyncedAt = Instant.now()
             listedProductRepository.save(it)
         }
@@ -82,6 +85,8 @@ class CatalogSyncService(
             event.brand?.let { v -> it.brand = v }
             event.category?.let { v -> it.category = v }
             event.subcategory?.let { v -> it.subcategory = v }
+            event.unit?.let { v -> it.unit = v }
+            event.mrp?.let { v -> it.mrp = v }
             event.imageUrls?.let { v -> it.imageUrls = v }
             event.description?.let { v -> it.description = v }
             it.lastSyncedAt = Instant.now()

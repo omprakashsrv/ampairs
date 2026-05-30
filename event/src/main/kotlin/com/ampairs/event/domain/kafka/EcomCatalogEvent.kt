@@ -13,6 +13,8 @@ data class EcomCatalogEvent(
     val category: String? = null,
     val subcategory: String? = null,
     val price: BigDecimal? = null,
+    val mrp: BigDecimal? = null,
+    val unit: String? = null,
     val stockQuantity: Int? = null,
     val imageUrls: List<String>? = null,
     val description: String? = null,

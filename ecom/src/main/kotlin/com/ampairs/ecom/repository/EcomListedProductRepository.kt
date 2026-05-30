@@ -52,4 +52,27 @@ interface EcomListedProductRepository :
         subcategory: String?,
         pageable: Pageable,
     ): Page<EcomListedProduct>
+
+    @Query(
+        value = """
+            SELECT category, subcategory, COUNT(*) as cnt
+            FROM ecom_listed_product
+            WHERE storefront_id = :storefrontId AND is_visible = true AND category IS NOT NULL
+            GROUP BY category, subcategory
+        """,
+        nativeQuery = true
+    )
+    fun countByCategoryAndSubcategory(storefrontId: String): List<Array<Any>>
+
+    @Query(
+        value = """
+            SELECT brand, COUNT(*) as cnt
+            FROM ecom_listed_product
+            WHERE storefront_id = :storefrontId AND is_visible = true AND brand IS NOT NULL
+            GROUP BY brand
+            ORDER BY cnt DESC
+        """,
+        nativeQuery = true
+    )
+    fun countByBrand(storefrontId: String): List<Array<Any>>
 }
