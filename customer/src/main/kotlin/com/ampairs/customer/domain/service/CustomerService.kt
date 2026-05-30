@@ -71,7 +71,7 @@ class CustomerService(
 
     fun getCustomers(): List<Customer> {
         val customers =
-            customerPagingRepository.findAllByUpdatedAtGreaterThanEqual(Instant.MIN ,PageRequest.of(0, 1000, Sort.by("updatedAt").ascending())
+            customerPagingRepository.findAllByUpdatedAtGreaterThanEqual(Instant.EPOCH, PageRequest.of(0, 1000, Sort.by("updatedAt").ascending())
             )
         return customers
     }

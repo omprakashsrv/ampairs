@@ -50,7 +50,7 @@ class ProductService(
 
     fun getProducts(updatedAt: Instant?): List<Product> {
         return productPagingRepository.findAllByUpdatedAtGreaterThanEqual(
-            updatedAt ?: Instant.MIN,
+            updatedAt ?: Instant.EPOCH,
             PageRequest.of(0, 1000, Sort.by("updatedAt").ascending())
         )
     }
