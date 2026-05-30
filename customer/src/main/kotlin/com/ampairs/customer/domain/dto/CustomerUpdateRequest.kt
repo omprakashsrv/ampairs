@@ -27,7 +27,7 @@ data class CustomerUpdateRequest(
     var gstin: String?,
 
 //    @field:ValidCountryCode
-    val countryCode: Int,
+    val countryCode: Int = 91,
 
     @field:ValidPhone
     var phone: String?,
@@ -100,8 +100,8 @@ data class CustomerUpdateRequest(
     @field:DecimalMax(value = "180.0", message = "Longitude must be between -180 and 180")
     val longitude: Double?,
 
-    val active: Boolean,
-    val softDeleted: Boolean,
+    val active: Boolean = true,
+    val softDeleted: Boolean = false,
 )
 
 fun CustomerUpdateRequest.toCustomer(): Customer {
