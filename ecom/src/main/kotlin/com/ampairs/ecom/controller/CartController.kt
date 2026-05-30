@@ -31,7 +31,7 @@ class CartController(
             val customerId = authentication?.let { AuthenticationHelper.getUserId(it) }
             return ApiResponse.success(cartService.createCart(storefront.uid, customerId).asCartResponse())
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 
@@ -45,7 +45,7 @@ class CartController(
         try {
             return ApiResponse.success(cartService.getCart(sessionToken).asCartResponse())
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 
@@ -60,7 +60,7 @@ class CartController(
         try {
             return ApiResponse.success(cartService.addOrUpdateItem(sessionToken, request).asCartResponse())
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 
@@ -75,7 +75,7 @@ class CartController(
         try {
             return ApiResponse.success(cartService.removeItem(sessionToken, itemId).asCartResponse())
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 
@@ -92,7 +92,7 @@ class CartController(
             val customerId = AuthenticationHelper.getUserId(authentication)!!
             return ApiResponse.success(cartService.claimGuestCart(sessionToken, customerId, storefront.uid).asCartResponse())
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 
@@ -106,7 +106,7 @@ class CartController(
         try {
             return ApiResponse.success(cartService.clearCart(sessionToken).asCartResponse())
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 }

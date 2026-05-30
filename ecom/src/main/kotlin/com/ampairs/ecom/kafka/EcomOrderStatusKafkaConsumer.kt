@@ -39,7 +39,7 @@ class EcomOrderStatusKafkaConsumer(
             ack.acknowledge()
             return
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
         ack.acknowledge()
     }

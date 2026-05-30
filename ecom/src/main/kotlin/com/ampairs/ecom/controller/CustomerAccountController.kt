@@ -79,7 +79,7 @@ class CustomerAccountController(
                 .map { it.asEcomOrderResponse() }
             return ApiResponse.success(PageResponse.from(page))
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 
@@ -95,7 +95,7 @@ class CustomerAccountController(
             val customerId = AuthenticationHelper.getUserId(authentication)!!
             return ApiResponse.success(orderService.getCustomerOrder(customerId, ecomOrderRef).asEcomOrderResponse())
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 }

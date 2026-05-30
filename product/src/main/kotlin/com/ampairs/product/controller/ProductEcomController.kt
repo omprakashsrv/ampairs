@@ -23,7 +23,7 @@ class ProductEcomController(
             productEcomService.listProductOnEcom(productId, workspaceId)
             return ApiResponse.success(mapOf("listed" to true))
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 
@@ -38,7 +38,7 @@ class ProductEcomController(
             productEcomService.unlistProductFromEcom(productId, workspaceId)
             return ApiResponse.success(mapOf("listed" to false))
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 }

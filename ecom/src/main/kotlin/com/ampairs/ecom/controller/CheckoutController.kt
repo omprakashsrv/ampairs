@@ -41,7 +41,7 @@ class CheckoutController(
             val order = checkoutService.checkout(sessionToken, request, customerId, customerEmail, customerName, storefront)
             return ApiResponse.success(order.asEcomOrderResponse())
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 }

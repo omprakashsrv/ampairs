@@ -46,11 +46,11 @@ class EcomOrderKafkaConfig {
             ConsumerConfig.AUTO_OFFSET_RESET_CONFIG to "earliest",
             ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG to false,
         )
-        val factory = ConcurrentKafkaListenerContainerFactory<String, String>()
-        factory.consumerFactory = DefaultKafkaConsumerFactory(props)
-        factory.containerProperties.ackMode = ContainerProperties.AckMode.MANUAL
-        factory.setCommonErrorHandler(defaultErrorHandler())
-        return factory
+        return ConcurrentKafkaListenerContainerFactory<String, String>().apply {
+            setConsumerFactory(DefaultKafkaConsumerFactory(props))
+            containerProperties.ackMode = ContainerProperties.AckMode.MANUAL
+            setCommonErrorHandler(defaultErrorHandler())
+        }
     }
 
     @Bean

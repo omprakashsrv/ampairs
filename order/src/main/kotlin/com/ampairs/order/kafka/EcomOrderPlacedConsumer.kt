@@ -44,7 +44,7 @@ class EcomOrderPlacedConsumer(
         try {
             processEvent(event)
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
         ack.acknowledge()
     }

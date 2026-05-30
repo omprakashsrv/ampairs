@@ -17,41 +17,39 @@ class EcomExceptionHandler : BaseExceptionHandler() {
 
     @ExceptionHandler(StorefrontNotFoundException::class)
     fun handleStorefrontNotFound(ex: StorefrontNotFoundException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> =
-        createErrorResponse(HttpStatus.NOT_FOUND, ErrorCodes.NOT_FOUND, "Storefront not found", ex.message ?: "Storefront not found", request, "ecom")
+        createErrorResponse(HttpStatus.NOT_FOUND, ErrorCodes.NOT_FOUND, "Storefront not found", ex.message, request, moduleName = "ecom")
 
     @ExceptionHandler(StorefrontSlugConflictException::class)
     fun handleSlugConflict(ex: StorefrontSlugConflictException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> =
-        createErrorResponse(HttpStatus.CONFLICT, ErrorCodes.DUPLICATE_ENTRY, "Slug already taken", ex.message ?: "A storefront with this slug already exists", request, "ecom")
+        createErrorResponse(HttpStatus.CONFLICT, ErrorCodes.DUPLICATE_ENTRY, "Slug already taken", ex.message, request, moduleName = "ecom")
 
     @ExceptionHandler(StorefrontAlreadyExistsException::class)
     fun handleStorefrontAlreadyExists(ex: StorefrontAlreadyExistsException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> =
-        createErrorResponse(HttpStatus.CONFLICT, ErrorCodes.DUPLICATE_ENTRY, "Storefront already exists", ex.message ?: "This workspace already has a storefront", request, "ecom")
+        createErrorResponse(HttpStatus.CONFLICT, ErrorCodes.DUPLICATE_ENTRY, "Storefront already exists", ex.message, request, moduleName = "ecom")
 
     @ExceptionHandler(ProductUnavailableException::class)
     fun handleProductUnavailable(ex: ProductUnavailableException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> =
-        createErrorResponse(HttpStatus.CONFLICT, ErrorCodes.CONSTRAINT_VIOLATION, "Product unavailable", ex.message ?: "Product is not available", request, "ecom")
+        createErrorResponse(HttpStatus.CONFLICT, ErrorCodes.CONSTRAINT_VIOLATION, "Product unavailable", ex.message, request, moduleName = "ecom")
 
     @ExceptionHandler(InsufficientStockException::class)
-    fun handleInsufficientStock(ex: InsufficientStockException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> {
-        val details = mapOf("available_quantity" to ex.availableQuantity, "message" to (ex.message ?: "Insufficient stock"))
-        return createErrorResponse(HttpStatus.UNPROCESSABLE_ENTITY, ErrorCodes.CONSTRAINT_VIOLATION, "Insufficient stock", details.toString(), request, "ecom")
-    }
+    fun handleInsufficientStock(ex: InsufficientStockException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> =
+        createErrorResponse(HttpStatus.UNPROCESSABLE_ENTITY, ErrorCodes.CONSTRAINT_VIOLATION, "Insufficient stock", ex.message, request, moduleName = "ecom")
 
     @ExceptionHandler(CartExpiredException::class)
     fun handleCartExpired(ex: CartExpiredException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> =
-        createErrorResponse(HttpStatus.NOT_FOUND, ErrorCodes.NOT_FOUND, "Cart not found or expired", ex.message ?: "Cart session has expired", request, "ecom")
+        createErrorResponse(HttpStatus.NOT_FOUND, ErrorCodes.NOT_FOUND, "Cart not found or expired", ex.message, request, moduleName = "ecom")
 
     @ExceptionHandler(EmptyCartException::class)
     fun handleEmptyCart(ex: EmptyCartException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> =
-        createErrorResponse(HttpStatus.BAD_REQUEST, ErrorCodes.VALIDATION_ERROR, "Cart is empty", ex.message ?: "Cannot checkout with an empty cart", request, "ecom")
+        createErrorResponse(HttpStatus.BAD_REQUEST, ErrorCodes.VALIDATION_ERROR, "Cart is empty", ex.message, request, moduleName = "ecom")
 
     @ExceptionHandler(EcomOrderNotFoundException::class)
     fun handleEcomOrderNotFound(ex: EcomOrderNotFoundException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> =
-        createErrorResponse(HttpStatus.NOT_FOUND, ErrorCodes.NOT_FOUND, "Order not found", ex.message ?: "Ecom order not found", request, "ecom")
+        createErrorResponse(HttpStatus.NOT_FOUND, ErrorCodes.NOT_FOUND, "Order not found", ex.message, request, moduleName = "ecom")
 
     @ExceptionHandler(InvalidOrderStatusTransitionException::class)
     fun handleInvalidStatusTransition(ex: InvalidOrderStatusTransitionException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> =
-        createErrorResponse(HttpStatus.CONFLICT, ErrorCodes.CONSTRAINT_VIOLATION, "Invalid status transition", ex.message ?: "Order status transition is not allowed", request, "ecom")
+        createErrorResponse(HttpStatus.CONFLICT, ErrorCodes.CONSTRAINT_VIOLATION, "Invalid status transition", ex.message, request, moduleName = "ecom")
 }
 
 // Ecom domain exceptions

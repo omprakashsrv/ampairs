@@ -47,7 +47,7 @@ class StorefrontPublicController(
             }
             return ApiResponse.success(PageResponse.from(result.map { it.asListedProductResponse() }))
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 
@@ -65,7 +65,7 @@ class StorefrontPublicController(
             val result = listedProductRepository.searchByText(storefront.uid, q, pageable)
             return ApiResponse.success(PageResponse.from(result.map { it.asListedProductResponse() }))
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 
@@ -82,7 +82,7 @@ class StorefrontPublicController(
                 ?: throw EcomOrderNotFoundException("Product not found")
             return ApiResponse.success(product.asListedProductResponse())
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 }

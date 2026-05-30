@@ -30,7 +30,7 @@ class StorefrontManagementController(
         try {
             return ApiResponse.success(storefrontService.createStorefront(request, workspaceId).asStorefrontResponse())
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 
@@ -43,7 +43,7 @@ class StorefrontManagementController(
         try {
             return ApiResponse.success(storefrontService.getStorefront(workspaceId).asStorefrontResponse())
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 
@@ -57,7 +57,7 @@ class StorefrontManagementController(
         try {
             return ApiResponse.success(storefrontService.updateStorefront(request, workspaceId).asStorefrontResponse())
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 
@@ -70,7 +70,7 @@ class StorefrontManagementController(
         try {
             return ApiResponse.success(storefrontService.publishStorefront(workspaceId).asStorefrontResponse())
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 
@@ -83,7 +83,7 @@ class StorefrontManagementController(
         try {
             return ApiResponse.success(storefrontService.unpublishStorefront(workspaceId).asStorefrontResponse())
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 }

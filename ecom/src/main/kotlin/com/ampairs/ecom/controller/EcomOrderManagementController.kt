@@ -34,7 +34,7 @@ class EcomOrderManagementController(
                 .map { it.asEcomOrderManagementResponse() }
             return ApiResponse.success(PageResponse.from(page))
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 
@@ -47,7 +47,7 @@ class EcomOrderManagementController(
         try {
             return ApiResponse.success(ecomOrderService.getManagementOrder(workspaceId, ecomOrderRef).asEcomOrderManagementResponse())
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 
@@ -61,7 +61,7 @@ class EcomOrderManagementController(
         try {
             return ApiResponse.success(ecomOrderService.editLineItems(workspaceId, ecomOrderRef, items).asEcomOrderManagementResponse())
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 
@@ -75,7 +75,7 @@ class EcomOrderManagementController(
         try {
             return ApiResponse.success(ecomOrderService.confirmOrder(workspaceId, ecomOrderRef).asEcomOrderManagementResponse())
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 
@@ -89,7 +89,7 @@ class EcomOrderManagementController(
         try {
             return ApiResponse.success(ecomOrderService.advanceStatus(workspaceId, ecomOrderRef, newStatus).asEcomOrderManagementResponse())
         } finally {
-            TenantContextHolder.clear()
+            TenantContextHolder.clearTenantContext()
         }
     }
 }
