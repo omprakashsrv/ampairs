@@ -64,6 +64,7 @@ class AuthService(
         loginSession.countryCode = authInitRequest.countryCode
         loginSession.code = UniqueIdGenerators.NUMERIC.generate(OTP_LENGTH)
         loginSession.expiresAt = Instant.now().plusMillis(SMS_VERIFICATION_VALIDITY)
+        loginSession.userType = authInitRequest.userType
         val savedSession = loginSessionRepository.save(loginSession)
 
         // Log OTP generation event
@@ -126,6 +127,7 @@ class AuthService(
                     newUser.countryCode = loginSession.countryCode
                     newUser.phone = loginSession.phone
                     newUser.active = true
+                    newUser.userType = loginSession.userType
                     userRepository.save(newUser)
                 }
 

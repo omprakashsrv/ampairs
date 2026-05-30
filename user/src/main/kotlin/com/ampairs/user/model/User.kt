@@ -6,6 +6,8 @@ import com.ampairs.core.config.Constants
 import com.ampairs.core.domain.model.BaseDomain
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.Table
 import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.userdetails.UserDetails
@@ -75,6 +77,10 @@ class User : BaseDomain(), UserDetails, CoreUser {
      */
     @Column(name = "deletion_reason", length = 500)
     var deletionReason: String? = null
+
+    @Column(name = "user_type", nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
+    var userType: UserType = UserType.MERCHANT_USER
 
     // Core User interface implementation
     override val isActive: Boolean

@@ -5,6 +5,7 @@ import com.ampairs.core.multitenancy.TenantAware
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.core.security.UserDetailsWithId
 import com.ampairs.core.security.UserDetailsWithRoles
+import com.ampairs.user.model.User
 import io.jsonwebtoken.*
 import io.jsonwebtoken.io.Decoders
 import io.jsonwebtoken.security.Keys
@@ -29,6 +30,7 @@ class JwtService(
         const val ROLES_CLAIM = "roles"
         const val TOKEN_TYPE_CLAIM = "type"
         const val DEVICE_ID_CLAIM = "deviceId"
+        const val USER_TYPE_CLAIM = "user_type"
         const val ACCESS_TOKEN_TYPE = "access"
         const val REFRESH_TOKEN_TYPE = "refresh"
         const val KEY_ID_CLAIM = "kid"
@@ -126,6 +128,10 @@ class JwtService(
 
         if (userDetails is UserDetailsWithRoles) {
             claims[ROLES_CLAIM] = userDetails.getRoles()
+        }
+
+        if (userDetails is User) {
+            claims[USER_TYPE_CLAIM] = userDetails.userType.name
         }
 
         claims[TOKEN_TYPE_CLAIM] = ACCESS_TOKEN_TYPE

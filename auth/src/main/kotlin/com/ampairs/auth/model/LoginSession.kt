@@ -2,6 +2,7 @@ package com.ampairs.auth.model
 
 import com.ampairs.core.domain.enums.VerificationStatus
 import com.ampairs.core.domain.model.BaseDomain
+import com.ampairs.user.model.UserType
 import jakarta.persistence.*
 import java.time.Instant
 
@@ -41,6 +42,10 @@ class LoginSession : BaseDomain() {
     @Enumerated(value = EnumType.STRING)
     @Column(name = "status")
     var status = VerificationStatus.NEW
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "user_type", nullable = false, length = 20)
+    var userType: UserType = UserType.MERCHANT_USER
 
     override fun obtainSeqIdPrefix(): String {
         return LOGIN_SESSION_ID

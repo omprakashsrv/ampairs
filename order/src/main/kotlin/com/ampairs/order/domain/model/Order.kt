@@ -141,6 +141,9 @@ class Order : OwnableBaseDomain() {
     @Column(name = "attributes")
     var attributes: Map<String, Any> = emptyMap()
 
+    @Column(name = "ecom_order_ref", length = 50)
+    var ecomOrderRef: String? = null
+
     @BatchSize(size = 30)
     @OneToMany()
     @JoinColumn(

@@ -50,27 +50,14 @@ springdoc:
 # WebSocket & Real-time Messaging Configuration
 websocket:
   message-broker:
-    # Message Broker Type:
-    # - SIMPLE: In-memory broker (single instance, no external dependencies)
-    # - RABBITMQ: External RabbitMQ STOMP relay (multi-instance, production)
-    # - AUTO: Auto-detect RabbitMQ, fallback to SIMPLE if unavailable (recommended)
-    type: ${WEBSOCKET_BROKER_TYPE:RABBITMQ}
+    type: ${WEBSOCKET_BROKER_TYPE:KAFKA}
 
-    # Heartbeat interval for SimpleBroker STOMP protocol heartbeats (milliseconds)
-    # IMPORTANT: SimpleBroker has limited STOMP heartbeat support - set to 0 to disable
-    # We rely on application-level heartbeats via /app/heartbeat instead
-    # RabbitMQ broker properly supports STOMP heartbeats and will use this value
-    # Default: 0 (disabled for SimpleBroker, works with RabbitMQ)
     heartbeat-interval: ${WEBSOCKET_HEARTBEAT_INTERVAL:15000}
 
-    # RabbitMQ STOMP Relay Configuration (only used when type=RABBITMQ or AUTO)
-    rabbitmq:
-      host: ${RABBITMQ_HOST:localhost}
-      port: ${RABBITMQ_STOMP_PORT:61613}  # STOMP port, not AMQP port (5672)
-      username: ${RABBITMQ_USER:admin}
-      password: ${RABBITMQ_PASSWORD:Om@711590}
-      virtual-host: ${RABBITMQ_VHOST:/}
-      connection-timeout: ${RABBITMQ_CONNECTION_TIMEOUT:500}  # milliseconds for availability probe
+    kafka:
+      bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+      topic-name: ${KAFKA_TOPIC_WORKSPACE_EVENTS:workspace-events}
+      connection-timeout: ${KAFKA_CONNECTION_TIMEOUT:500}
 
 server:
   compression:
@@ -480,3 +467,8 @@ management:
       show-details: ${MANAGEMENT_HEALTH_SHOW_DETAILS:when_authorized}
     env:
       show-values: ${MANAGEMENT_ENV_SHOW_VALUES:when_authorized}
+
+# Ecom module Kafka configuration
+ecom:
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}

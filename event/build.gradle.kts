@@ -53,9 +53,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-websocket")
     implementation("org.springframework:spring-messaging")
 
-    // RabbitMQ for distributed WebSocket with STOMP relay
-    implementation("org.springframework.boot:spring-boot-starter-amqp")
-    implementation("io.projectreactor.netty:reactor-netty")
+    // Kafka for distributed WebSocket event fan-out
+    implementation("org.springframework.kafka:spring-kafka")
 
     // Jackson for JSON processing
     implementation("com.fasterxml.jackson.core:jackson-databind")

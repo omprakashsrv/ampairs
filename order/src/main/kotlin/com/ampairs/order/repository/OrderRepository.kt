@@ -52,4 +52,6 @@ interface OrderRepository : CrudRepository<Order, Long>, PagingAndSortingReposit
 
     @Query("SELECT SUM(o.totalAmount) FROM customer_order o WHERE o.customerId = :customerId AND o.status IN :statuses")
     fun sumTotalAmountByCustomerIdAndStatusIn(customerId: String, statuses: List<OrderStatus>): Double?
+
+    fun findByEcomOrderRef(ref: String): Order?
 }
