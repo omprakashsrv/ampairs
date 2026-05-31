@@ -118,7 +118,7 @@ class CustomerController(
             email = request.email ?: ""
             gstNumber = request.gstNumber
             address = request.address ?: ""
-            city = request.city
+            city = request.city ?: ""
             state = request.state ?: ""
             pincode = request.pincode ?: ""
             status = request.status ?: "ACTIVE"

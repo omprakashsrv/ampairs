@@ -68,4 +68,11 @@ class WorkspaceModuleController(
         if (!result.success) throw IllegalArgumentException(result.message)
         return ApiResponse.success(result)
     }
+
+    @PatchMapping("/reorder")
+    @PreAuthorize("@workspaceAuthorizationService.isCurrentTenantAdmin(authentication) || @workspaceAuthorizationService.isCurrentTenantOwner(authentication)")
+    fun reorderModules(@RequestBody request: ModuleReorderRequest): ApiResponse<Unit> {
+        workspaceModuleService.reorderModules(request.orders)
+        return ApiResponse.success(Unit)
+    }
 }

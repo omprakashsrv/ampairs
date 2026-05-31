@@ -159,22 +159,6 @@ data class ModuleRatingRequest(
 )
 
 /**
- * Request to reorder modules
- */
-data class ModuleReorderRequest(
-    @field:NotEmpty(message = "Module order list cannot be empty")
-        var moduleOrders: List<ModuleOrderItem> = emptyList()
-)
-
-data class ModuleOrderItem(
-    @field:NotBlank(message = "Module ID is required")
-        var moduleId: String = "",
-
-    @field:Min(value = 0, message = "Display order must be non-negative")
-        var displayOrder: Int = 0
-)
-
-/**
  * Request to export/import module configuration
  */
 data class ModuleConfigurationExportRequest(
