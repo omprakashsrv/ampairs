@@ -46,6 +46,12 @@ data class CustomerGroupCreateRequest(
 )
 
 data class CustomerGroupUpdateRequest(
+    @field:NotBlank(message = "Group code is required")
+    @field:SafeString(maxLength = 20, message = "Group code contains invalid characters")
+    @field:Size(min = 2, max = 20, message = "Group code must be between 2 and 20 characters")
+    @field:Pattern(regexp = "^[A-Z0-9_]+$", message = "Group code must contain only uppercase letters, numbers and underscores")
+    val groupCode: String? = null,
+
     @field:SafeString(maxLength = 100, message = "Name contains invalid characters")
     @field:Size(min = 2, max = 100, message = "Name must be between 2 and 100 characters")
     val name: String?,
@@ -69,17 +75,49 @@ data class CustomerGroupUpdateRequest(
     val metadata: String?
 )
 
-fun CustomerGroupCreateRequest.toCustomerGroup(): CustomerGroup {
-    return CustomerGroup().apply {
-        // Set client-provided UID if present, otherwise auto-generated in @PrePersist
-        this@toCustomerGroup.uid?.let { uid = it }
-        groupCode = this@toCustomerGroup.groupCode.uppercase()
-        name = this@toCustomerGroup.name
-        description = this@toCustomerGroup.description
-        displayOrder = this@toCustomerGroup.displayOrder
-        active = this@toCustomerGroup.active
-        defaultDiscountPercentage = this@toCustomerGroup.defaultDiscountPercentage
-        priorityLevel = this@toCustomerGroup.priorityLevel
-        metadata = this@toCustomerGroup.metadata
-    }
+private fun buildCustomerGroup(
+    uid: String? = null,
+    groupCode: String,
+    name: String,
+    description: String?,
+    displayOrder: Int,
+    active: Boolean,
+    defaultDiscountPercentage: Double,
+    priorityLevel: Int,
+    metadata: String?
+): CustomerGroup = CustomerGroup().apply {
+    uid?.let { this.uid = it }
+    this.groupCode = groupCode
+    this.name = name
+    this.description = description
+    this.displayOrder = displayOrder
+    this.active = active
+    this.defaultDiscountPercentage = defaultDiscountPercentage
+    this.priorityLevel = priorityLevel
+    this.metadata = metadata
 }
+
+fun CustomerGroupCreateRequest.toCustomerGroup(): CustomerGroup = buildCustomerGroup(
+    uid = uid,
+    groupCode = groupCode.uppercase(),
+    name = name,
+    description = description,
+    displayOrder = displayOrder,
+    active = active,
+    defaultDiscountPercentage = defaultDiscountPercentage,
+    priorityLevel = priorityLevel,
+    metadata = metadata
+)
+
+fun CustomerGroupUpdateRequest.toCustomerGroup(): CustomerGroup = buildCustomerGroup(
+    groupCode = groupCode?.uppercase() ?: "",
+    name = name ?: "",
+    description = description,
+    displayOrder = displayOrder ?: 0,
+    active = active ?: true,
+    defaultDiscountPercentage = defaultDiscountPercentage ?: 0.0,
+    priorityLevel = priorityLevel ?: 0,
+    metadata = metadata
+)
+
+fun List<CustomerGroupUpdateRequest>.toCustomerGroups(): List<CustomerGroup> = map { it.toCustomerGroup() }

@@ -31,11 +31,9 @@ class ProductController(
         @RequestParam("group_id") groupId: String?,
     ): ApiResponse<List<ProductResponse>> {
         if (!groupId.isNullOrEmpty()) {
-            val products = productService.getProducts(groupId)
-            return ApiResponse.success(products.asResponse())
+            return ApiResponse.success(productService.getProducts(groupId))
         }
-        val products = productService.getProducts(lastUpdated)
-        return ApiResponse.success(products.asResponse())
+        return ApiResponse.success(productService.getProducts(lastUpdated))
     }
 
     @GetMapping("/product-category")
@@ -43,14 +41,13 @@ class ProductController(
         val products = productService.getProducts(groupId)
         val categoryIds = products.map { it.categoryId ?: "" }.toSet()
         val productCategories = productService.getCategories(categoryIds)
-        val result = ProductsCategoryResponse(products = products.asResponse(), categories = productCategories.asResponse())
+        val result = ProductsCategoryResponse(products = products, categories = productCategories.asResponse())
         return ApiResponse.success(result)
     }
 
-    @PostMapping("/products")
+    @PostMapping("")
     fun updateProducts(@RequestBody products: List<ProductRequest>): ApiResponse<List<ProductResponse>> {
-        val result = productService.updateProducts(products.asDatabaseModel()).asResponse()
-        return ApiResponse.success(result)
+        return ApiResponse.success(productService.updateProducts(products.asDatabaseModel()))
     }
 
     @GetMapping("/groups")
@@ -124,29 +121,6 @@ class ProductController(
             folder = "products/${TenantContextHolder.getCurrentTenant()}$path"
         ).toFileResponse()
         return ApiResponse.success(result)
-    }
-
-    /**
-     * Retail-specific Product Management API endpoints
-     */
-
-    @PostMapping("")
-    @ResponseStatus(HttpStatus.CREATED)
-    fun createProduct(@RequestBody @Valid request: ProductRequest): ApiResponse<ProductResponse> {
-        val product = Product().apply {
-            name = request.name
-            sku = request.sku ?: ""
-            description = request.description
-            unitId = request.unitId
-            taxCodeId = request.taxCodeId  
-            basePrice = request.basePrice ?: 0.0
-            costPrice = request.costPrice ?: 0.0
-            attributes = request.attributes ?: emptyMap()
-            status = "ACTIVE"
-        }
-        
-        val createdProduct = productService.createProduct(product)
-        return ApiResponse.success(createdProduct.asResponse())
     }
 
     @GetMapping("/list")

@@ -12,7 +12,7 @@ import java.math.BigDecimal
 import java.time.Instant
 
 @RestController
-@RequestMapping("/product/v1/products")
+@RequestMapping("/product/v1/variant")
 class ProductVariantController(
     private val variantService: ProductVariantService
 ) {

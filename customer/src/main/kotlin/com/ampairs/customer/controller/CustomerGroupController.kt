@@ -9,6 +9,7 @@ import com.ampairs.customer.domain.dto.CustomerGroupUpdateRequest
 import com.ampairs.customer.domain.dto.asCustomerGroupResponse
 import com.ampairs.customer.domain.dto.asCustomerGroupResponses
 import com.ampairs.customer.domain.dto.toCustomerGroup
+import com.ampairs.customer.domain.dto.toCustomerGroups
 import com.ampairs.customer.domain.service.CustomerGroupService
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
@@ -91,15 +92,13 @@ class CustomerGroupController(
         return ApiResponse.success(customerGroup.asCustomerGroupResponse())
     }
 
-    /**
-     * Create new customer group in current workspace
-     */
     @PostMapping("")
-    @ResponseStatus(HttpStatus.CREATED)
-    fun createCustomerGroup(@RequestBody @Valid request: CustomerGroupCreateRequest): ApiResponse<CustomerGroupResponse> {
-        val customerGroup = request.toCustomerGroup()
-        val createdGroup = customerGroupService.createCustomerGroup(customerGroup)
-        return ApiResponse.success(createdGroup.asCustomerGroupResponse())
+    fun bulkUpsertCustomerGroups(
+        @RequestBody @Valid request: List<CustomerGroupUpdateRequest>
+    ): ApiResponse<List<CustomerGroupResponse>> {
+        val groups = request.toCustomerGroups()
+        val result = customerGroupService.bulkUpsertCustomerGroups(groups)
+        return ApiResponse.success(result.asCustomerGroupResponses())
     }
 
     /**

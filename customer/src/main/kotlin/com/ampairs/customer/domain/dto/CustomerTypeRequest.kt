@@ -45,6 +45,12 @@ data class CustomerTypeCreateRequest(
 )
 
 data class CustomerTypeUpdateRequest(
+    @field:NotBlank(message = "Type code is required")
+    @field:SafeString(maxLength = 20, message = "Type code contains invalid characters")
+    @field:Size(min = 2, max = 20, message = "Type code must be between 2 and 20 characters")
+    @field:Pattern(regexp = "^[A-Z0-9_]+$", message = "Type code must contain only uppercase letters, numbers and underscores")
+    val typeCode: String? = null,
+
     @field:SafeString(maxLength = 100, message = "Name contains invalid characters")
     @field:Size(min = 2, max = 100, message = "Name must be between 2 and 100 characters")
     val name: String?,
@@ -67,17 +73,49 @@ data class CustomerTypeUpdateRequest(
     val metadata: String?
 )
 
-fun CustomerTypeCreateRequest.toCustomerType(): CustomerType {
-    return CustomerType().apply {
-        // Set client-provided UID if present, otherwise auto-generated in @PrePersist
-        this@toCustomerType.uid?.let { uid = it }
-        typeCode = this@toCustomerType.typeCode.uppercase()
-        name = this@toCustomerType.name
-        description = this@toCustomerType.description
-        displayOrder = this@toCustomerType.displayOrder
-        active = this@toCustomerType.active
-        defaultCreditLimit = this@toCustomerType.defaultCreditLimit
-        defaultCreditDays = this@toCustomerType.defaultCreditDays
-        metadata = this@toCustomerType.metadata
-    }
+private fun buildCustomerType(
+    uid: String? = null,
+    typeCode: String,
+    name: String,
+    description: String?,
+    displayOrder: Int,
+    active: Boolean,
+    defaultCreditLimit: Double,
+    defaultCreditDays: Int,
+    metadata: String?
+): CustomerType = CustomerType().apply {
+    uid?.let { this.uid = it }
+    this.typeCode = typeCode
+    this.name = name
+    this.description = description
+    this.displayOrder = displayOrder
+    this.active = active
+    this.defaultCreditLimit = defaultCreditLimit
+    this.defaultCreditDays = defaultCreditDays
+    this.metadata = metadata
 }
+
+fun CustomerTypeCreateRequest.toCustomerType(): CustomerType = buildCustomerType(
+    uid = uid,
+    typeCode = typeCode.uppercase(),
+    name = name,
+    description = description,
+    displayOrder = displayOrder,
+    active = active,
+    defaultCreditLimit = defaultCreditLimit,
+    defaultCreditDays = defaultCreditDays,
+    metadata = metadata
+)
+
+fun CustomerTypeUpdateRequest.toCustomerType(): CustomerType = buildCustomerType(
+    typeCode = typeCode?.uppercase() ?: "",
+    name = name ?: "",
+    description = description,
+    displayOrder = displayOrder ?: 0,
+    active = active ?: true,
+    defaultCreditLimit = defaultCreditLimit ?: 0.0,
+    defaultCreditDays = defaultCreditDays ?: 0,
+    metadata = metadata
+)
+
+fun List<CustomerTypeUpdateRequest>.toCustomerTypes(): List<CustomerType> = map { it.toCustomerType() }

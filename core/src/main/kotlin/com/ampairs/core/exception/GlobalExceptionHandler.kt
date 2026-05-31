@@ -10,11 +10,13 @@ import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
+import org.springframework.validation.FieldError
 import org.springframework.web.HttpRequestMethodNotSupportedException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.method.annotation.HandlerMethodValidationException
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.web.multipart.MaxUploadSizeExceededException
 import org.springframework.web.servlet.NoHandlerFoundException
@@ -30,6 +32,22 @@ class GlobalExceptionHandler : BaseExceptionHandler() {
         request: HttpServletRequest,
     ): ResponseEntity<ApiResponse<Any>> {
         val errors = extractValidationErrors(ex.bindingResult)
+        return createValidationErrorResponse(errors, request, "global")
+    }
+
+    @ExceptionHandler(HandlerMethodValidationException::class)
+    fun handleHandlerMethodValidationException(
+        ex: HandlerMethodValidationException,
+        request: HttpServletRequest,
+    ): ResponseEntity<ApiResponse<Any>> {
+        val errors = linkedMapOf<String, String>()
+        ex.parameterValidationResults.forEach { result ->
+            result.resolvableErrors.forEach { error ->
+                val field = if (error is FieldError) error.field
+                else result.methodParameter.parameterName ?: "param"
+                errors[field] = error.defaultMessage ?: "Invalid value"
+            }
+        }
         return createValidationErrorResponse(errors, request, "global")
     }
 

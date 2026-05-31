@@ -76,6 +76,9 @@ interface UnitRepository : CrudRepository<Unit, Long> {
     fun isUnitInUse(@Param("unitId") unitId: String): Boolean
 
     @EntityGraph("Unit.basic")
+    fun findByActive(active: Boolean, pageable: Pageable): Page<Unit>
+
+    @EntityGraph("Unit.basic")
     fun findAllByActiveTrueOrderByName(): List<Unit>
 
     @Query("SELECT u FROM unit u WHERE u.active = true ORDER BY u.name")

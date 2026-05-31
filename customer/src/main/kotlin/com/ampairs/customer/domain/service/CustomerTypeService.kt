@@ -128,6 +128,30 @@ class CustomerTypeService(
     }
 
     /**
+     * Bulk upsert customer types — creates new types or updates existing ones by typeCode.
+     */
+    fun bulkUpsertCustomerTypes(types: List<CustomerType>): List<CustomerType> {
+        return types.map { incoming ->
+            val existing = findByTypeCode(incoming.typeCode)
+            if (existing != null) {
+                existing.name = incoming.name
+                existing.description = incoming.description
+                existing.displayOrder = incoming.displayOrder
+                existing.active = incoming.active
+                existing.defaultCreditLimit = incoming.defaultCreditLimit
+                existing.defaultCreditDays = incoming.defaultCreditDays
+                existing.metadata = incoming.metadata
+                customerTypeRepository.save(existing)
+            } else {
+                if (incoming.uid.isNotEmpty() && customerTypeRepository.existsByUid(incoming.uid)) {
+                    throw IllegalArgumentException("Customer type with UID '${incoming.uid}' already exists")
+                }
+                customerTypeRepository.save(incoming)
+            }
+        }
+    }
+
+    /**
      * Check if customer type exists within current workspace
      */
     @Transactional(readOnly = true)

@@ -20,7 +20,7 @@ data class ProductResponse(
     val id: String,
     val name: String,
     val code: String,
-    val sku: String,
+    val sku: String?,
     val description: String?,
     val status: String,
     val taxCode: String,

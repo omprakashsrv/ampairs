@@ -137,6 +137,30 @@ class CustomerGroupService(
     }
 
     /**
+     * Bulk upsert customer groups — creates new groups or updates existing ones by groupCode.
+     */
+    fun bulkUpsertCustomerGroups(groups: List<CustomerGroup>): List<CustomerGroup> {
+        return groups.map { incoming ->
+            val existing = findByGroupCode(incoming.groupCode)
+            if (existing != null) {
+                existing.name = incoming.name
+                existing.description = incoming.description
+                existing.displayOrder = incoming.displayOrder
+                existing.active = incoming.active
+                existing.defaultDiscountPercentage = incoming.defaultDiscountPercentage
+                existing.priorityLevel = incoming.priorityLevel
+                existing.metadata = incoming.metadata
+                customerGroupRepository.save(existing)
+            } else {
+                if (incoming.uid.isNotEmpty() && customerGroupRepository.existsByUid(incoming.uid)) {
+                    throw IllegalArgumentException("Customer group with UID '${incoming.uid}' already exists")
+                }
+                customerGroupRepository.save(incoming)
+            }
+        }
+    }
+
+    /**
      * Check if customer group exists within current workspace
      */
     @Transactional(readOnly = true)

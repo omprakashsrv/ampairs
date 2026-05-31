@@ -3,6 +3,7 @@ package com.ampairs.product.repository
 import com.ampairs.product.domain.model.Product
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.PagingAndSortingRepository
@@ -21,6 +22,7 @@ interface ProductRepository : CrudRepository<Product, Long>, PagingAndSortingRep
 
     fun findAllByUnitId(unitId: String): List<Product>
 
+    @EntityGraph("Product.withCollections")
     @Query("SELECT p FROM product p WHERE p.groupId IN (:ids)")
     fun getProduct(ids: String): List<Product>
 

@@ -9,6 +9,7 @@ import com.ampairs.customer.domain.dto.CustomerTypeUpdateRequest
 import com.ampairs.customer.domain.dto.asCustomerTypeResponse
 import com.ampairs.customer.domain.dto.asCustomerTypeResponses
 import com.ampairs.customer.domain.dto.toCustomerType
+import com.ampairs.customer.domain.dto.toCustomerTypes
 import com.ampairs.customer.domain.service.CustomerTypeService
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
@@ -81,15 +82,13 @@ class CustomerTypeController(
         return ApiResponse.success(customerType.asCustomerTypeResponse())
     }
 
-    /**
-     * Create new customer type in current workspace
-     */
     @PostMapping("")
-    @ResponseStatus(HttpStatus.CREATED)
-    fun createCustomerType(@RequestBody @Valid request: CustomerTypeCreateRequest): ApiResponse<CustomerTypeResponse> {
-        val customerType = request.toCustomerType()
-        val createdType = customerTypeService.createCustomerType(customerType)
-        return ApiResponse.success(createdType.asCustomerTypeResponse())
+    fun bulkUpsertCustomerTypes(
+        @RequestBody @Valid request: List<CustomerTypeUpdateRequest>
+    ): ApiResponse<List<CustomerTypeResponse>> {
+        val types = request.toCustomerTypes()
+        val result = customerTypeService.bulkUpsertCustomerTypes(types)
+        return ApiResponse.success(result.asCustomerTypeResponses())
     }
 
     /**

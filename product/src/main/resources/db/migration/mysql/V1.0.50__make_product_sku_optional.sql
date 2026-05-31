@@ -1,0 +1,2 @@
+ALTER TABLE product MODIFY COLUMN sku VARCHAR(100) NULL;
+ALTER TABLE product DROP INDEX idx_product_sku;
