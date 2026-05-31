@@ -11,8 +11,10 @@ import com.ampairs.ecom.domain.dto.StorefrontResponse
 import com.ampairs.ecom.domain.dto.SubcategoryMeta
 import com.ampairs.ecom.domain.dto.asListedProductResponse
 import com.ampairs.ecom.domain.dto.asStorefrontResponse
+import com.ampairs.ecom.domain.enums.TaxonomyType
 import com.ampairs.ecom.exception.EcomOrderNotFoundException
 import com.ampairs.ecom.repository.EcomListedProductRepository
+import com.ampairs.ecom.repository.EcomTaxonomyImageRepository
 import com.ampairs.ecom.service.StorefrontService
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.*
 class StorefrontPublicController(
     private val storefrontService: StorefrontService,
     private val listedProductRepository: EcomListedProductRepository,
+    private val taxonomyImageRepository: EcomTaxonomyImageRepository,
 ) {
 
     @GetMapping
@@ -78,20 +81,52 @@ class StorefrontPublicController(
         val storefront = storefrontService.getPublishedStorefrontBySlug(slug)
         TenantContextHolder.setCurrentTenant(storefront.ownerId)
         try {
+            val taxonomyImages = taxonomyImageRepository
+                .findByStorefrontIdOrderBySortOrderAsc(storefront.uid)
+                .groupBy { it.taxonomyType }
+
+            val catImages = taxonomyImages[TaxonomyType.CATEGORY]?.associateBy { it.name } ?: emptyMap()
+            val subImages = taxonomyImages[TaxonomyType.SUBCATEGORY]?.associateBy { it.name } ?: emptyMap()
+            val brandImages = taxonomyImages[TaxonomyType.BRAND]?.associateBy { it.name } ?: emptyMap()
+
             val catRows = listedProductRepository.countByCategoryAndSubcategory(storefront.uid)
             val categories = catRows
                 .groupBy { it[0] as String }
                 .map { (cat, rows) ->
                     val total = rows.sumOf { (it[2] as Number).toInt() }
                     val subs = rows
-                        .mapNotNull { row -> (row[1] as? String)?.let { SubcategoryMeta(it, (row[2] as Number).toInt()) } }
-                        .sortedByDescending { it.productCount }
-                    CategoryMeta(name = cat, productCount = total, subcategories = subs)
+                        .mapNotNull { row ->
+                            (row[1] as? String)?.let { sub ->
+                                SubcategoryMeta(
+                                    name = sub,
+                                    productCount = (row[2] as Number).toInt(),
+                                    imageUrl = subImages[sub]?.imageUrl,
+                                    sortOrder = subImages[sub]?.sortOrder ?: 0,
+                                )
+                            }
+                        }
+                        .sortedWith(compareBy({ subImages[it.name]?.sortOrder ?: Int.MAX_VALUE }, { -it.productCount }))
+                    CategoryMeta(
+                        name = cat,
+                        productCount = total,
+                        imageUrl = catImages[cat]?.imageUrl,
+                        sortOrder = catImages[cat]?.sortOrder ?: 0,
+                        subcategories = subs,
+                    )
                 }
-                .sortedByDescending { it.productCount }
+                .sortedWith(compareBy({ catImages[it.name]?.sortOrder ?: Int.MAX_VALUE }, { -it.productCount }))
 
             val brands = listedProductRepository.countByBrand(storefront.uid)
-                .map { BrandMeta(name = it[0] as String, productCount = (it[1] as Number).toInt()) }
+                .map { row ->
+                    val name = row[0] as String
+                    BrandMeta(
+                        name = name,
+                        productCount = (row[1] as Number).toInt(),
+                        imageUrl = brandImages[name]?.imageUrl,
+                        sortOrder = brandImages[name]?.sortOrder ?: 0,
+                    )
+                }
+                .sortedWith(compareBy({ brandImages[it.name]?.sortOrder ?: Int.MAX_VALUE }, { -it.productCount }))
 
             return ApiResponse.success(StorefrontCatalogMetaResponse(categories = categories, brands = brands))
         } finally {
