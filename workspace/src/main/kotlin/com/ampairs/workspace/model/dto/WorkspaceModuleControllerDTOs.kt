@@ -12,6 +12,7 @@ data class InstalledModuleResponse(
     var id: String = "",
     var moduleCode: String = "",
     var name: String = "",
+    var description: String? = null,
     var category: String = "",
     var version: String = "",
     var status: WorkspaceModuleStatus = WorkspaceModuleStatus.ACTIVE,
@@ -23,6 +24,18 @@ data class InstalledModuleResponse(
     var needsAttention: Boolean = false,
     var routeInfo: ModuleRouteInfo = ModuleRouteInfo(),
     var navigationIndex: Int = 0
+)
+
+/**
+ * Reorder request — list of module codes in the desired display order
+ */
+data class ModuleReorderRequest(
+    val orders: List<ModuleReorderItem> = emptyList()
+)
+
+data class ModuleReorderItem(
+    val moduleCode: String = "",
+    val displayOrder: Int = 0
 )
 
 /**

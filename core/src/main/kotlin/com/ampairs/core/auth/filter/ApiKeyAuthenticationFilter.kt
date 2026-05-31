@@ -76,7 +76,7 @@ class ApiKeyAuthenticationFilter(
         val shouldSkip = apiKeyHeader == null
 
         if (shouldSkip) {
-            log.info("ApiKeyAuthenticationFilter SKIPPED for ${request.requestURI} - no X-API-Key header")
+            log.debug("ApiKeyAuthenticationFilter SKIPPED for ${request.requestURI} - no X-API-Key header")
         }
 
         return shouldSkip

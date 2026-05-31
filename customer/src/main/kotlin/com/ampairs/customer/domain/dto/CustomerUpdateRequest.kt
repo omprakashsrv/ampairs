@@ -27,7 +27,7 @@ data class CustomerUpdateRequest(
     var gstin: String?,
 
 //    @field:ValidCountryCode
-    val countryCode: Int,
+    val countryCode: Int? = 91,
 
     @field:ValidPhone
     var phone: String?,
@@ -75,19 +75,19 @@ data class CustomerUpdateRequest(
 
     @field:SafeString(maxLength = 200, message = "Street contains invalid characters")
     @field:Size(max = 200, message = "Street cannot exceed 200 characters")
-    var street: String = "",
+    var street: String? = null,
 
     @field:SafeString(maxLength = 200, message = "Street2 contains invalid characters")
     @field:Size(max = 200, message = "Street2 cannot exceed 200 characters")
-    var street2: String = "",
+    var street2: String? = null,
 
     @field:SafeString(maxLength = 100, message = "City contains invalid characters")
     @field:Size(max = 100, message = "City cannot exceed 100 characters")
-    var city: String = "",
+    var city: String? = null,
 
     @field:SafeString(maxLength = 100, message = "Country contains invalid characters")
     @field:Size(max = 100, message = "Country cannot exceed 100 characters")
-    var country: String = "",
+    var country: String? = null,
 
     var billingAddress: Address? = Address(),
     var shippingAddress: Address? = Address(),
@@ -100,8 +100,8 @@ data class CustomerUpdateRequest(
     @field:DecimalMax(value = "180.0", message = "Longitude must be between -180 and 180")
     val longitude: Double?,
 
-    val active: Boolean,
-    val softDeleted: Boolean,
+    val active: Boolean? = true,
+    val softDeleted: Boolean? = false,
 )
 
 fun CustomerUpdateRequest.toCustomer(): Customer {
@@ -109,7 +109,7 @@ fun CustomerUpdateRequest.toCustomer(): Customer {
     customer.uid = this.uid ?: ""
     customer.refId = this.refId ?: ""
     customer.name = this.name
-    customer.countryCode = this.countryCode
+    customer.countryCode = this.countryCode ?: 91
     customer.phone = this.phone ?: ""
     customer.landline = this.landline ?: ""
     customer.email = this.email ?: ""
@@ -122,10 +122,10 @@ fun CustomerUpdateRequest.toCustomer(): Customer {
     customer.creditDays = this.creditDays ?: 0
     customer.address = this.address ?: ""
     customer.state = this.state ?: ""
-    customer.street = this.street
-    customer.street2 = this.street2
-    customer.city = this.city
-    customer.country = this.country
+    customer.street = this.street ?: ""
+    customer.street2 = this.street2 ?: ""
+    customer.city = this.city ?: ""
+    customer.country = this.country ?: ""
     customer.billingAddress = this.billingAddress ?: Address()
     customer.shippingAddress = this.shippingAddress ?: Address()
     customer.location = if (this.latitude != null && this.longitude != null) {

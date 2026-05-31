@@ -17,7 +17,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/customer/v1/customers")
+@RequestMapping("/customer/v1")
 @Tag(name = "Customer Management", description = "Customer CRUD and management operations")
 class CustomerController(
     private val customerService: CustomerService,
@@ -38,7 +38,7 @@ class CustomerController(
         return ApiResponse.success(result)
     }
 
-    @GetMapping("")
+    @GetMapping("/customers")
     fun getCustomers(
         @RequestParam("last_sync", required = false) lastSync: String?,
         @RequestParam("page", defaultValue = "0") page: Int,
@@ -118,7 +118,7 @@ class CustomerController(
             email = request.email ?: ""
             gstNumber = request.gstNumber
             address = request.address ?: ""
-            city = request.city
+            city = request.city ?: ""
             state = request.state ?: ""
             pincode = request.pincode ?: ""
             status = request.status ?: "ACTIVE"

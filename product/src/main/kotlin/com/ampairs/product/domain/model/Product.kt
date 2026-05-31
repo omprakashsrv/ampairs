@@ -147,6 +147,9 @@ class Product : OwnableBaseDomain() {
     @OneToMany(mappedBy = "product", cascade = [CascadeType.ALL], orphanRemoval = true)
     var variants: MutableList<ProductVariant> = mutableListOf()
 
+    @Column(name = "is_ecom_listed", nullable = false)
+    var isEcomListed: Boolean = false
+
     override fun obtainSeqIdPrefix(): String {
         return Constants.PRODUCT_PREFIX
     }

@@ -47,6 +47,7 @@ dependencies {
     implementation(project(mapOf("path" to ":invoice")))
     implementation(project(mapOf("path" to ":tax")))
     implementation(project(mapOf("path" to ":subscription")))
+    implementation(project(mapOf("path" to ":ecom")))
 
     // Spring Boot starters
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -111,7 +112,7 @@ tasks.withType<Test> {
 }
 
 val migrationModules = listOf(
-    "auth", "business", "core", "customer", "event", "form",
+    "auth", "business", "core", "customer", "ecom", "event", "form",
     "invoice", "notification", "order", "product", "subscription",
     "tax", "unit", "user", "workspace"
 )

@@ -16,6 +16,7 @@ include("invoice")
 include("tax")
 include("unit")
 include("subscription")
+include("ecom")
 include("ampairs_service")
 
 

@@ -109,7 +109,8 @@ class SessionUserFilter(
                 requestPath.contains("/actuator/info") ||
                 requestPath.contains("/actuator/prometheus") ||
                 requestPath.contains("/swagger") ||
-                requestPath.contains("/api-docs")
+                requestPath.contains("/api-docs") ||
+                requestPath.contains("/api/v1/store/")
     }
 
     private fun isAppUpdatesPublicEndpoint(requestPath: String): Boolean {

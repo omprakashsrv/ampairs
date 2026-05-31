@@ -117,7 +117,7 @@ class InvoiceService(
     fun getInvoices(lastUpdated: Instant?): List<Invoice> {
         val invoices =
             invoicePagingRepository.findAllByUpdatedAtGreaterThanEqual(
-                lastUpdated ?: Instant.MIN, PageRequest.of(0, 50, Sort.by("lastUpdated").ascending())
+                lastUpdated ?: Instant.EPOCH, PageRequest.of(0, 50, Sort.by("lastUpdated").ascending())
             )
         return invoices
     }

@@ -39,6 +39,7 @@ class WorkspaceModuleService(
                 id = module.uid,
                 moduleCode = module.masterModule.moduleCode,
                 name = module.getEffectiveName(),
+                description = module.masterModule.description,
                 category = module.getEffectiveCategory(),
                 version = module.installedVersion,
                 status = module.status,
@@ -49,7 +50,7 @@ class WorkspaceModuleService(
                 healthScore = module.getHealthScore(),
                 needsAttention = module.needsAttention(),
                 routeInfo = module.masterModule.routeInfo,
-                navigationIndex = module.masterModule.navigationIndex
+                navigationIndex = module.displayOrder
             )
         }.sortedBy { it.navigationIndex }
     }
@@ -589,6 +590,21 @@ class WorkspaceModuleService(
             notificationsEnabled = settings.notificationsEnabled,
             customFields = customFields
         )
+    }
+
+    /**
+     * Update per-workspace display order for installed modules
+     */
+    fun reorderModules(orders: List<com.ampairs.workspace.model.dto.ModuleReorderItem>) {
+        val workspaceId = TenantContextHolder.getCurrentTenant() ?: return
+        orders.forEach { item ->
+            workspaceModuleRepository
+                .findByWorkspaceIdAndMasterModuleModuleCode(workspaceId, item.moduleCode)
+                ?.also { module ->
+                    module.displayOrder = item.displayOrder
+                    workspaceModuleRepository.save(module)
+                }
+        }
     }
 
     private fun checkMissingDependencies(workspaceId: String, masterModule: MasterModule): List<String> {

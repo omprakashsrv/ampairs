@@ -236,7 +236,7 @@ class MasterModuleSeederService(
         configuration = createModuleConfiguration(
             requiredPermissions = listOf("ORDER_READ", "ORDER_WRITE"),
             optionalPermissions = listOf("ORDER_DELETE", "ORDER_APPROVE"),
-            dependencies = listOf("customer-management", "product-catalog")
+            dependencies = listOf("customer-management", "product-management")
         )
         uiMetadata = createUIMetadata(
             icon = "shopping_cart",
@@ -287,13 +287,23 @@ class MasterModuleSeederService(
             primaryColor = "#7B1FA2",
             tags = listOf("Invoicing", "GST", "Billing", "Payments", "PDF")
         )
+        routeInfo = createRouteInfo(
+            basePath = "/invoices",
+            displayName = "Sales",
+            iconName = "receipt",
+            menuItems = listOf(
+                createMenuItem("invoice-list", "All Invoices", "/invoices", "receipt", 1, true),
+                createMenuItem("invoice-create", "Create Invoice", "/invoices/create", "add", 2)
+            )
+        )
+        navigationIndex = 50
         provider = "Ampairs"
         sizeMb = 15
         featured = true
         displayOrder = 40
         active = true
     }
-    
+
     private fun createInventoryModule() = MasterModule().apply {
         moduleCode = "inventory-management"
         name = "Inventory Management"
@@ -313,20 +323,29 @@ class MasterModuleSeederService(
         configuration = createModuleConfiguration(
             requiredPermissions = listOf("INVENTORY_READ", "INVENTORY_WRITE"),
             optionalPermissions = listOf("INVENTORY_ADJUST", "BATCH_MANAGEMENT"),
-            dependencies = listOf("product-catalog")
+            dependencies = listOf("product-management")
         )
         uiMetadata = createUIMetadata(
             icon = "warehouse",
             primaryColor = "#5D4037",
             tags = listOf("Stock Control", "Warehousing", "Alerts", "Multi-location")
         )
+        routeInfo = createRouteInfo(
+            basePath = "/inventory",
+            displayName = "Inventory",
+            iconName = "warehouse",
+            menuItems = listOf(
+                createMenuItem("inventory-list", "Inventory", "/inventory", "warehouse", 1, true)
+            )
+        )
+        navigationIndex = 60
         provider = "Ampairs"
         sizeMb = 20
         featured = false
         displayOrder = 50
         active = true
     }
-    
+
     private fun createTaxCodeModule() = MasterModule().apply {
         moduleCode = "tax-code-management"
         name = "Tax Code Management"
@@ -352,6 +371,16 @@ class MasterModuleSeederService(
             primaryColor = "#D32F2F",
             tags = listOf("GST", "Tax Compliance", "HSN Codes", "Indian Taxation")
         )
+        routeInfo = createRouteInfo(
+            basePath = "/tax",
+            displayName = "Tax",
+            iconName = "calculate",
+            menuItems = listOf(
+                createMenuItem("tax-list", "Tax Codes", "/tax", "calculate", 1, true),
+                createMenuItem("tax-calculator", "Calculator", "/tax/calculator", "calculate", 2)
+            )
+        )
+        navigationIndex = 70
         provider = "Ampairs"
         sizeMb = 6
         featured = true
@@ -442,7 +471,7 @@ class MasterModuleSeederService(
         configuration = createModuleConfiguration(
             requiredPermissions = listOf("REPORT_READ", "REPORT_GENERATE"),
             optionalPermissions = listOf("REPORT_ADMIN", "DASHBOARD_CONFIG"),
-            dependencies = listOf("customer-management", "product-catalog", "order-management", "invoice-billing")
+            dependencies = listOf("customer-management", "product-management", "order-management", "invoice-billing")
         )
         uiMetadata = createUIMetadata(
             icon = "analytics",

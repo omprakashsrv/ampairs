@@ -12,8 +12,9 @@ Domain service → `ApplicationEvent` → `WorkspaceEventListener` → persisted
 - `WorkspaceEvent` — eventType, entityType, entityId, payload (JSON snapshot), sequenceNumber, consumed
 
 ## WebSocket broker
-`WEBSOCKET_BROKER_TYPE`: `SIMPLE` (dev), `RABBITMQ` (prod), `AUTO` (recommended)
-RabbitMQ STOMP port: `61613` (not AMQP `5672`)
+`WEBSOCKET_BROKER_TYPE`: `SIMPLE` (dev), `KAFKA` (prod), `AUTO` (recommended)
+Kafka bootstrap: `KAFKA_BOOTSTRAP_SERVERS` (default `localhost:9092`)
+Topic: `KAFKA_TOPIC_WORKSPACE_EVENTS` (default `workspace-events`)
 
 ## Base path
 `/api/v1/events/**`, `/api/v1/devices/**`, WS `/app/heartbeat`

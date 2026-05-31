@@ -26,8 +26,6 @@ import org.springframework.web.socket.config.annotation.StompEndpointRegistry
 import org.springframework.web.socket.config.annotation.WebSocketMessageBrokerConfigurer
 import org.springframework.web.socket.config.annotation.WebSocketTransportRegistration
 import org.springframework.web.socket.server.HandshakeInterceptor
-import java.net.InetSocketAddress
-import java.net.Socket
 import java.security.Principal
 
 @Configuration
@@ -56,60 +54,22 @@ class WebSocketConfig(
 
     override fun configureMessageBroker(registry: MessageBrokerRegistry) {
         val brokerType = webSocketConfigProperties.type
-        val rabbitmqConfig = webSocketConfigProperties.rabbitmq
+        val kafka = webSocketConfigProperties.kafka
 
-        val useSimpleBroker = when (brokerType) {
-            WebSocketConfigProperties.MessageBrokerType.SIMPLE -> {
-                logger.info("Using in-memory SimpleBroker (configured)")
-                true
-            }
-            WebSocketConfigProperties.MessageBrokerType.RABBITMQ -> {
-                logger.info("Using RabbitMQ STOMP relay at {}:{} (configured)", rabbitmqConfig.host, rabbitmqConfig.port)
-                false
-            }
-            WebSocketConfigProperties.MessageBrokerType.AUTO -> {
-                val available = isBrokerAvailable(rabbitmqConfig.host, rabbitmqConfig.port, rabbitmqConfig.connectionTimeout)
-                if (!available) {
-                    logger.warn(
-                        "RabbitMQ STOMP relay at {}:{} unavailable. Falling back to SimpleBroker.",
-                        rabbitmqConfig.host, rabbitmqConfig.port
-                    )
-                } else {
-                    logger.info("Using RabbitMQ STOMP relay at {}:{} (auto-detected)", rabbitmqConfig.host, rabbitmqConfig.port)
-                }
-                !available
-            }
-        }
+        // WebSocket always uses in-memory SimpleBroker for local delivery.
+        // When KAFKA or AUTO mode is active, KafkaWorkspaceEventConsumer handles
+        // cross-server fan-out by consuming from Kafka and re-broadcasting here.
+        val brokerConfig = registry.enableSimpleBroker("/topic", "/queue")
+        // Disable STOMP heartbeats — application-level heartbeats via /app/heartbeat are used instead.
+        brokerConfig.setHeartbeatValue(longArrayOf(0, 0))
 
-        if (useSimpleBroker) {
-            // SimpleBroker with heartbeat configuration
-            // IMPORTANT: SimpleBroker has poor STOMP heartbeat support.
-            // We disable STOMP heartbeats ([0,0]) and rely on application-level
-            // heartbeats via /app/heartbeat for session tracking instead.
-            val heartbeat = webSocketConfigProperties.heartbeatInterval
-
-            val brokerConfig = registry.enableSimpleBroker("/topic", "/queue")
-
-            if (heartbeat > 0) {
-                // Enable STOMP heartbeats (not recommended for SimpleBroker)
-                brokerConfig.setHeartbeatValue(longArrayOf(0, 0))
-                brokerConfig.setTaskScheduler(simpleBrokerHeartbeatScheduler())
-                logger.info("SimpleBroker STOMP heartbeat enabled: {}ms (not recommended)", heartbeat)
-            } else {
-                // CRITICAL: Explicitly set heartbeat to [0, 0] to disable STOMP heartbeats
-                // If we don't set this, SimpleBroker uses default values which cause issues
-                brokerConfig.setHeartbeatValue(longArrayOf(0, 0))
-                logger.info("SimpleBroker STOMP heartbeat disabled (using application-level heartbeats)")
-            }
-        } else {
-            registry.enableStompBrokerRelay("/topic", "/queue")
-                .setRelayHost(rabbitmqConfig.host)
-                .setRelayPort(rabbitmqConfig.port)
-                .setClientLogin(rabbitmqConfig.username)
-                .setClientPasscode(rabbitmqConfig.password)
-                .setSystemLogin(rabbitmqConfig.username)
-                .setSystemPasscode(rabbitmqConfig.password)
-                .setVirtualHost(rabbitmqConfig.virtualHost)
+        when (brokerType) {
+            WebSocketConfigProperties.MessageBrokerType.SIMPLE ->
+                logger.info("WebSocket broker: SimpleBroker (single-instance mode)")
+            WebSocketConfigProperties.MessageBrokerType.KAFKA ->
+                logger.info("WebSocket broker: SimpleBroker + Kafka fan-out at {}", kafka.bootstrapServers)
+            WebSocketConfigProperties.MessageBrokerType.AUTO ->
+                logger.info("WebSocket broker: SimpleBroker + Kafka fan-out (auto) at {}", kafka.bootstrapServers)
         }
 
         registry.setApplicationDestinationPrefixes("/app")
@@ -144,15 +104,6 @@ class WebSocketConfig(
         registry.setMessageSizeLimit(128 * 1024)     // 128KB message size limit
     }
 
-    private fun isBrokerAvailable(host: String, port: Int, timeout: Int): Boolean {
-        return runCatching {
-            Socket().use { socket ->
-                socket.connect(InetSocketAddress(host, port), timeout)
-            }
-        }.onFailure {
-            logger.debug("STOMP broker probe failed for {}:{} -> {}", host, port, it.message)
-        }.isSuccess
-    }
 }
 
 /**

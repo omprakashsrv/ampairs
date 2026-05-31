@@ -3,6 +3,7 @@ package com.ampairs.auth.model.dto
 import com.ampairs.core.validation.SafeString
 import com.ampairs.core.validation.ValidCountryCode
 import com.ampairs.core.validation.ValidPhone
+import com.ampairs.user.model.UserType
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
@@ -45,6 +46,8 @@ data class AuthInitRequest(
     @field:SafeString(maxLength = 100, message = "OS contains invalid characters")
     @field:Size(max = 100, message = "OS cannot exceed 100 characters")
     val os: String? = null, // "iOS 17.1", "Android 14", "Windows 11", etc.
+
+    val userType: UserType = UserType.MERCHANT_USER,
 
 ) {
     fun phoneNumber(): String = "$countryCode$phone"

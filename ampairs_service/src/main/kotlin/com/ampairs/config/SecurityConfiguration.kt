@@ -20,6 +20,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.web.cors.CorsConfigurationSource
 import javax.crypto.spec.SecretKeySpec
 
 private val PUBLIC_PATHS = arrayOf(
@@ -46,6 +47,7 @@ class SecurityConfiguration(
     val customJwtAuthenticationConverter: CustomJwtAuthenticationConverter,
     val unauthorizedHandler: AuthEntryPointJwt,
     val apiKeyAuthenticationProvider: ApiKeyAuthenticationProvider,
+    val corsConfigurationSource: CorsConfigurationSource,
 ) {
 
     /**
@@ -80,7 +82,7 @@ class SecurityConfiguration(
     @Throws(Exception::class)
     fun securityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http.csrf { csrf -> csrf.disable() }
-            .cors { /* Use default CORS configuration from CorsConfig */ }
+            .cors { cors -> cors.configurationSource(corsConfigurationSource) }
             .exceptionHandling { exception ->
                 exception.authenticationEntryPoint(unauthorizedHandler)
             }

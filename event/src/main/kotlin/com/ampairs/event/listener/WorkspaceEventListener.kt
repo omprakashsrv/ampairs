@@ -5,6 +5,7 @@ import com.ampairs.event.domain.EventType
 import com.ampairs.event.domain.WorkspaceEvent
 import com.ampairs.event.domain.dto.asWorkspaceEventResponse
 import com.ampairs.event.domain.events.*
+import com.ampairs.event.kafka.WorkspaceEventKafkaProducer
 import com.ampairs.event.repository.WorkspaceEventRepository
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
@@ -16,7 +17,8 @@ import org.springframework.transaction.annotation.Transactional
 @Component
 class WorkspaceEventListener(
     private val eventRepository: WorkspaceEventRepository,
-    private val webSocketPublisher: SimpMessagingTemplate?
+    private val webSocketPublisher: SimpMessagingTemplate?,
+    private val kafkaProducer: WorkspaceEventKafkaProducer? = null
 ) {
 
     private val logger = LoggerFactory.getLogger(WorkspaceEventListener::class.java)
@@ -303,16 +305,21 @@ class WorkspaceEventListener(
                 eventType, entityType, entityId, sequenceNumber
             )
 
-            // Broadcast to WebSocket (if available)
-            webSocketPublisher?.let { publisher ->
-                try {
-                    publisher.convertAndSend(
-                        Constants.WORKSPACE_EVENTS_TOPIC_PREFIX + workspaceId,
-                        workspaceEvent.asWorkspaceEventResponse()
-                    )
-                    logger.debug("Broadcasted event to workspace: {}", workspaceId)
-                } catch (e: Exception) {
-                    logger.error("Error broadcasting event via WebSocket", e)
+            val response = workspaceEvent.asWorkspaceEventResponse()
+            val destination = Constants.WORKSPACE_EVENTS_TOPIC_PREFIX + workspaceId
+
+            if (kafkaProducer != null) {
+                // Kafka mode: publish to Kafka; KafkaWorkspaceEventConsumer broadcasts on each server instance.
+                kafkaProducer.publish(destination, response)
+            } else {
+                // Simple mode: broadcast directly to local WebSocket subscribers.
+                webSocketPublisher?.let { publisher ->
+                    try {
+                        publisher.convertAndSend(destination, response)
+                        logger.debug("Broadcasted event to workspace: {}", workspaceId)
+                    } catch (e: Exception) {
+                        logger.error("Error broadcasting event via WebSocket", e)
+                    }
                 }
             }
 
