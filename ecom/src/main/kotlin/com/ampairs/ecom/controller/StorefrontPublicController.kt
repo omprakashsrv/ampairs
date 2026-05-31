@@ -6,10 +6,13 @@ import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.ecom.domain.dto.BrandMeta
 import com.ampairs.ecom.domain.dto.CategoryMeta
 import com.ampairs.ecom.domain.dto.ListedProductResponse
+import com.ampairs.ecom.domain.dto.ProductSyncItem
 import com.ampairs.ecom.domain.dto.StorefrontCatalogMetaResponse
 import com.ampairs.ecom.domain.dto.StorefrontResponse
 import com.ampairs.ecom.domain.dto.SubcategoryMeta
+import com.ampairs.ecom.domain.dto.SyncPage
 import com.ampairs.ecom.domain.dto.asListedProductResponse
+import com.ampairs.ecom.domain.dto.asProductSyncItem
 import com.ampairs.ecom.domain.dto.asStorefrontResponse
 import com.ampairs.ecom.domain.enums.TaxonomyType
 import com.ampairs.ecom.exception.EcomOrderNotFoundException
@@ -19,6 +22,7 @@ import com.ampairs.ecom.service.StorefrontService
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.web.bind.annotation.*
+import java.time.Instant
 
 @RestController
 @RequestMapping("/api/v1/store/{slug}")
@@ -71,6 +75,35 @@ class StorefrontPublicController(
             val pageable = PageRequest.of(page, size)
             val result = listedProductRepository.searchByText(storefront.uid, q, pageable)
             return ApiResponse.success(PageResponse.from(result.map { it.asListedProductResponse() }))
+        } finally {
+            TenantContextHolder.clearTenantContext()
+        }
+    }
+
+    @GetMapping("/products/sync")
+    fun syncProducts(
+        @PathVariable slug: String,
+        @RequestParam since: Instant,
+        @RequestParam(defaultValue = "0") page: Int,
+        @RequestParam(defaultValue = "100") size: Int,
+    ): ApiResponse<SyncPage<ProductSyncItem>> {
+        val storefront = storefrontService.getPublishedStorefrontBySlug(slug)
+        TenantContextHolder.setCurrentTenant(storefront.ownerId)
+        try {
+            // Capture server time BEFORE the query so no updates fall between the cracks.
+            val nextSince = Instant.now()
+            val pageable = PageRequest.of(page, size, Sort.by("updatedAt").ascending())
+            val result = listedProductRepository.findChangedSince(storefront.uid, since, pageable)
+            return ApiResponse.success(
+                SyncPage(
+                    items = result.content.map { it.asProductSyncItem() },
+                    totalChanges = result.totalElements,
+                    page = result.number,
+                    size = result.size,
+                    hasMore = result.hasNext(),
+                    nextSince = nextSince,
+                )
+            )
         } finally {
             TenantContextHolder.clearTenantContext()
         }

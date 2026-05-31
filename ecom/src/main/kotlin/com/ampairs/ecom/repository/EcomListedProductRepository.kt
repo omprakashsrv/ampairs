@@ -3,6 +3,7 @@ package com.ampairs.ecom.repository
 import com.ampairs.ecom.domain.model.EcomListedProduct
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import java.time.Instant
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.PagingAndSortingRepository
@@ -52,6 +53,12 @@ interface EcomListedProductRepository :
         subcategory: String?,
         pageable: Pageable,
     ): Page<EcomListedProduct>
+
+    @Query(
+        "SELECT p FROM EcomListedProduct p WHERE p.storefrontId = :storefrontId " +
+        "AND p.updatedAt > :since ORDER BY p.updatedAt ASC"
+    )
+    fun findChangedSince(storefrontId: String, since: Instant, pageable: Pageable): Page<EcomListedProduct>
 
     @Query(
         value = """
