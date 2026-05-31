@@ -3,15 +3,12 @@
   hosts: all
   become: true
   gather_facts: true
-  collections:
-    - community.rabbitmq
   vars:
     domain_name: "{{ lookup('env', 'API_DOMAIN') | default('api.ampairs.in', true) }}"
     app_upstream: "{{ lookup('env', 'APP_UPSTREAM') | default('http://127.0.0.1:8080', true) }}"
     nginx_max_body_size: "{{ lookup('env', 'NGINX_MAX_BODY_SIZE') | default('20M', true) }}"
     letsencrypt_email: "{{ lookup('env', 'LETSENCRYPT_EMAIL') | default('', true) }}"
-    rabbitmq_admin_user: "{{ lookup('env', 'RABBITMQ_ADMIN_USER') | default('admin', true) }}"
-    rabbitmq_admin_password: "{{ lookup('env', 'RABBITMQ_ADMIN_PASSWORD') | default('', true) }}"
+    kafka_version: "{{ lookup('env', 'KAFKA_VERSION') | default('3.9.0', true) }}"
     aws_access_key_id: "{{ lookup('env', 'AWS_ACCESS_KEY_ID') | default('', true) }}"
     aws_secret_access_key: "{{ lookup('env', 'AWS_SECRET_ACCESS_KEY') | default('', true) }}"
     aws_region: "{{ lookup('env', 'AWS_REGION') | default('ap-south-1', true) }}"
@@ -42,11 +39,6 @@
       ansible.builtin.fail:
         msg: "LETSENCRYPT_EMAIL environment variable must be supplied to request certificates."
       when: letsencrypt_email | length == 0
-
-    - name: Fail if RabbitMQ admin password is not provided
-      ansible.builtin.fail:
-        msg: "RABBITMQ_ADMIN_PASSWORD environment variable must be supplied for RabbitMQ user creation."
-      when: rabbitmq_admin_password | length == 0
 
     - name: Fail if AWS credentials are not provided
       ansible.builtin.fail:
@@ -92,7 +84,6 @@
           - nginx
           - certbot
           - python3-certbot-nginx
-          - rabbitmq-server
           - curl
           - "postgresql-client-{{ postgresql_client_version }}"
           - unzip
@@ -354,28 +345,147 @@
         state: started
         enabled: true
 
-    - name: Enable RabbitMQ service
-      ansible.builtin.service:
-        name: rabbitmq-server
+    - name: Create Kafka system user
+      ansible.builtin.user:
+        name: kafka
+        system: true
+        shell: /bin/false
+        home: /opt/kafka-dist
+        create_home: true
+
+    - name: Ensure Kafka data and log directories exist
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: kafka
+        group: kafka
+        mode: "0750"
+      loop:
+        - /var/lib/kafka/data
+        - /var/log/kafka
+        - /opt/kafka-dist
+
+    - name: Check if Kafka {{ kafka_version }} is already installed
+      ansible.builtin.stat:
+        path: "/opt/kafka-dist/kafka_2.13-{{ kafka_version }}/bin/kafka-server-start.sh"
+      register: kafka_installed
+
+    - name: Download Apache Kafka {{ kafka_version }}
+      ansible.builtin.get_url:
+        url: "https://downloads.apache.org/kafka/{{ kafka_version }}/kafka_2.13-{{ kafka_version }}.tgz"
+        dest: /tmp/kafka.tgz
+        mode: "0644"
+      when: not kafka_installed.stat.exists
+
+    - name: Extract Apache Kafka
+      ansible.builtin.unarchive:
+        src: /tmp/kafka.tgz
+        dest: /opt/kafka-dist
+        remote_src: true
+        owner: kafka
+        group: kafka
+      when: not kafka_installed.stat.exists
+
+    - name: Ensure /opt/kafka symlink points to current version
+      ansible.builtin.file:
+        src: "/opt/kafka-dist/kafka_2.13-{{ kafka_version }}"
+        dest: /opt/kafka
+        state: link
+        force: true
+
+    - name: Deploy Kafka KRaft server.properties
+      ansible.builtin.copy:
+        dest: /opt/kafka/config/kraft/server.properties
+        owner: kafka
+        group: kafka
+        mode: "0640"
+        content: |
+          process.roles=broker,controller
+          node.id=1
+          controller.quorum.voters=1@localhost:9093
+          listeners=PLAINTEXT://localhost:9092,CONTROLLER://localhost:9093
+          inter.broker.listener.name=PLAINTEXT
+          advertised.listeners=PLAINTEXT://localhost:9092
+          controller.listener.names=CONTROLLER
+          listener.security.protocol.map=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+          log.dirs=/var/lib/kafka/data
+          num.partitions=1
+          default.replication.factor=1
+          offsets.topic.replication.factor=1
+          transaction.state.log.replication.factor=1
+          transaction.state.log.min.isr=1
+          auto.create.topics.enable=true
+          log.retention.hours=168
+          log.segment.bytes=1073741824
+          log.retention.check.interval.ms=300000
+      notify: Restart Kafka
+
+    - name: Check if Kafka KRaft storage is already formatted
+      ansible.builtin.stat:
+        path: /var/lib/kafka/data/meta.properties
+      register: kafka_storage
+
+    - name: Initialize Kafka KRaft storage (first run only)
+      when: not kafka_storage.stat.exists
+      block:
+        - name: Generate Kafka cluster UUID
+          ansible.builtin.command: /opt/kafka/bin/kafka-storage.sh random-uuid
+          register: kafka_cluster_uuid
+          changed_when: true
+          become_user: kafka
+
+        - name: Format Kafka KRaft storage
+          ansible.builtin.command: >
+            /opt/kafka/bin/kafka-storage.sh format
+            -t {{ kafka_cluster_uuid.stdout | trim }}
+            -c /opt/kafka/config/kraft/server.properties
+          become_user: kafka
+
+    - name: Deploy Kafka systemd service unit
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/kafka.service
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          [Unit]
+          Description=Apache Kafka (KRaft single-node)
+          Documentation=https://kafka.apache.org/documentation/
+          After=network.target
+
+          [Service]
+          Type=simple
+          User=kafka
+          Group=kafka
+          ExecStart=/opt/kafka/bin/kafka-server-start.sh /opt/kafka/config/kraft/server.properties
+          ExecStop=/opt/kafka/bin/kafka-server-stop.sh
+          Restart=on-failure
+          RestartSec=10
+          LimitNOFILE=65536
+          StandardOutput=append:/var/log/kafka/server.log
+          StandardError=append:/var/log/kafka/server.log
+
+          [Install]
+          WantedBy=multi-user.target
+      notify:
+        - Reload systemd
+        - Restart Kafka
+
+    - name: Reload systemd to register Kafka unit
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Ensure Kafka service is enabled and started
+      ansible.builtin.systemd:
+        name: kafka.service
         state: started
         enabled: true
 
-    - name: Enable RabbitMQ STOMP plugin
-      community.rabbitmq.rabbitmq_plugin:
-        name: rabbitmq_stomp
-        state: enabled
-
-    - name: Ensure RabbitMQ administrator user exists
-      community.rabbitmq.rabbitmq_user:
-        user: "{{ rabbitmq_admin_user }}"
-        password: "{{ rabbitmq_admin_password }}"
-        vhost: /
-        configure_priv: ".*"
-        read_priv: ".*"
-        write_priv: ".*"
-        tags:
-          - administrator
-        state: present
+    - name: Wait for Kafka to become ready on port 9092
+      ansible.builtin.wait_for:
+        port: 9092
+        host: localhost
+        timeout: 60
 
     - name: Validate Java 21 is installed
       ansible.builtin.command: java -version
@@ -415,18 +525,15 @@
       failed_when: https_probe.rc != 0
       changed_when: false
 
-    - name: Validate RabbitMQ user can authenticate
-      ansible.builtin.command: >
-        rabbitmqctl authenticate_user {{ rabbitmq_admin_user }} {{ rabbitmq_admin_password }}
-      register: rabbitmq_auth
-      failed_when: >
-        rabbitmq_auth.rc != 0 or
-        ('success' not in (rabbitmq_auth.stdout | lower))
+    - name: Validate Kafka broker is responding
+      ansible.builtin.command: /opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092
+      register: kafka_api_check
       changed_when: false
+      failed_when: kafka_api_check.rc != 0
 
-    - name: Report RabbitMQ authentication output
+    - name: Report Kafka broker API versions
       ansible.builtin.debug:
-        var: rabbitmq_auth.stdout
+        var: kafka_api_check.stdout_lines
 
     - name: Validate AWS CLI installation
       ansible.builtin.command: aws --version
@@ -451,4 +558,13 @@
     - name: Restart Grafana Alloy
       ansible.builtin.systemd:
         name: alloy.service
+        state: restarted
+
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Restart Kafka
+      ansible.builtin.systemd:
+        name: kafka.service
         state: restarted
