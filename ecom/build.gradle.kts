@@ -48,6 +48,7 @@ dependencies {
     implementation("org.springframework.kafka:spring-kafka")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
+    implementation("com.github.ben-manes.caffeine:caffeine:3.2.4")
 
     runtimeOnly("org.postgresql:postgresql")
 

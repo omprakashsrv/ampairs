@@ -1,6 +1,7 @@
 package com.ampairs.ecom.domain.model
 
 import com.ampairs.core.domain.model.OwnableBaseDomain
+import com.ampairs.ecom.domain.enums.StorefrontAccessMode
 import com.ampairs.ecom.domain.enums.StorefrontStatus
 import jakarta.persistence.*
 import java.time.Instant
@@ -39,6 +40,10 @@ class Storefront : OwnableBaseDomain() {
 
     @Column(name = "unpublished_at")
     var unpublishedAt: Instant? = null
+
+    @Column(name = "access_mode", nullable = false, length = 20)
+    @Enumerated(EnumType.STRING)
+    var accessMode: StorefrontAccessMode = StorefrontAccessMode.PUBLIC
 
     override fun obtainSeqIdPrefix(): String = "SFR"
 }

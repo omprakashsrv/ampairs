@@ -50,6 +50,14 @@ class EcomExceptionHandler : BaseExceptionHandler() {
     @ExceptionHandler(InvalidOrderStatusTransitionException::class)
     fun handleInvalidStatusTransition(ex: InvalidOrderStatusTransitionException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> =
         createErrorResponse(HttpStatus.CONFLICT, ErrorCodes.CONSTRAINT_VIOLATION, "Invalid status transition", ex.message, request, moduleName = "ecom")
+
+    @ExceptionHandler(StoreAccessDeniedException::class)
+    fun handleStoreAccessDenied(ex: StoreAccessDeniedException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> =
+        createErrorResponse(HttpStatus.FORBIDDEN, "STORE_ACCESS_DENIED", "Access denied", ex.message, request, moduleName = "ecom")
+
+    @ExceptionHandler(StoreUnauthenticatedException::class)
+    fun handleStoreUnauthenticated(ex: StoreUnauthenticatedException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> =
+        createErrorResponse(HttpStatus.FORBIDDEN, "STORE_UNAUTHENTICATED", "Authentication required", ex.message, request, moduleName = "ecom")
 }
 
 // Ecom domain exceptions
@@ -62,3 +70,5 @@ class CartExpiredException(message: String) : RuntimeException(message)
 class EmptyCartException(message: String) : RuntimeException(message)
 class EcomOrderNotFoundException(message: String) : RuntimeException(message)
 class InvalidOrderStatusTransitionException(message: String) : RuntimeException(message)
+class StoreAccessDeniedException(message: String) : RuntimeException(message)
+class StoreUnauthenticatedException(message: String) : RuntimeException(message)

@@ -1,5 +1,6 @@
 package com.ampairs.ecom.domain.dto
 
+import com.ampairs.ecom.domain.enums.StorefrontAccessMode
 import com.ampairs.ecom.domain.enums.StorefrontStatus
 import com.ampairs.ecom.domain.model.Storefront
 import java.time.Instant
@@ -12,6 +13,7 @@ data class StorefrontResponse(
     val logoUrl: String?,
     val bannerUrl: String?,
     val status: StorefrontStatus,
+    val accessMode: StorefrontAccessMode,
     val publishedAt: Instant?,
     val unpublishedAt: Instant?,
     val createdAt: Instant?,
@@ -26,6 +28,7 @@ fun Storefront.asStorefrontResponse() = StorefrontResponse(
     logoUrl = logoUrl,
     bannerUrl = bannerUrl,
     status = status,
+    accessMode = accessMode,
     publishedAt = publishedAt,
     unpublishedAt = unpublishedAt,
     createdAt = createdAt,

@@ -10,6 +10,7 @@
 | Entity | Table | Extends | Tenant-Scoped |
 |--------|-------|---------|---------------|
 | `Storefront` | `ecom_storefront` | `OwnableBaseDomain` | Yes (workspace) |
+| `StorefrontAccessEntry` | `ecom_storefront_access_entry` | `OwnableBaseDomain` | Yes (workspace) |
 | `EcomListedProduct` | `ecom_listed_product` | `OwnableBaseDomain` | Yes (workspace) |
 | `EcomCart` | `ecom_cart` | `BaseDomain` | No (explicit `storefront_id`) |
 | `EcomCartItem` | `ecom_cart_item` | `BaseDomain` | No |
@@ -47,15 +48,60 @@ class Storefront : OwnableBaseDomain() {
     var logoUrl: String?
     var bannerUrl: String?
     var status: StorefrontStatus         // DRAFT | PUBLISHED | UNPUBLISHED
+    var accessMode: StorefrontAccessMode // PUBLIC (default) | RESTRICTED
     var publishedAt: Instant?
     var unpublishedAt: Instant?
 }
 
 enum class StorefrontStatus { DRAFT, PUBLISHED, UNPUBLISHED }
+enum class StorefrontAccessMode { PUBLIC, RESTRICTED }
 ```
 
 **State transitions**: DRAFT → PUBLISHED → UNPUBLISHED → PUBLISHED (re-publish allowed)  
-**Constraints**: `slug` is unique globally; immutable after first creation. Validated against workspace slug on creation.
+**Constraints**: `slug` is unique globally; immutable after first creation. `accessMode` defaults to `PUBLIC` and can be toggled at any time independent of `status`.
+
+---
+
+### StorefrontAccessEntry
+
+One row per allowed identity on a RESTRICTED storefront. Scoped to the workspace via `OwnableBaseDomain`.
+
+```kotlin
+@Entity("ecom_storefront_access_entry")
+@Table(
+    indexes = [
+        Index(name = "idx_ecom_access_uid", columnList = "uid", unique = true),
+        Index(name = "idx_ecom_access_storefront", columnList = "storefront_id"),
+        Index(name = "idx_ecom_access_lookup", columnList = "storefront_id, identifier_type, identifier_value", unique = true)
+    ]
+)
+class StorefrontAccessEntry : OwnableBaseDomain() {
+    var storefrontId: String                          // FK to Storefront.uid
+    var identifierType: StorefrontAccessIdentifierType // USER_ID | PHONE | EMAIL | EXTERNAL_ID
+    var identifierValue: String                       // The actual identifier value
+}
+
+enum class StorefrontAccessIdentifierType { USER_ID, PHONE, EMAIL, EXTERNAL_ID }
+```
+
+**Constraints**:
+- Unique composite index on `(storefront_id, identifier_type, identifier_value)` — prevents duplicate entries.
+- `identifierValue` for PHONE: E.164 format (server validates on insert).
+- `identifierValue` for EMAIL: lowercased on insert for case-insensitive matching.
+- Entries survive `accessMode` toggles (PUBLIC ↔ RESTRICTED) — never auto-deleted.
+
+**Access check (runtime)**:
+The `StorefrontAccessFilter` extracts all available identifiers from the authenticated JWT principal and runs a single `IN` query:
+```sql
+SELECT 1 FROM ecom_storefront_access_entry
+WHERE storefront_id = :storefrontId
+  AND ((identifier_type = 'USER_ID'    AND identifier_value = :userId)
+    OR (identifier_type = 'EMAIL'      AND identifier_value = lower(:email))
+    OR (identifier_type = 'PHONE'      AND identifier_value = :phone)
+    OR (identifier_type = 'EXTERNAL_ID' AND identifier_value = :externalId))
+LIMIT 1
+```
+Results are served from a Caffeine LRU cache (max 100 storefront entries) keyed by `storefrontId`. Cache is evicted on every write to that storefront's access list.
 
 ---
 
@@ -451,3 +497,5 @@ app_user (user module, UserType = END_CUSTOMER)
 | V1.0.33 | ecom | `create_ecom_order_tables.sql` |
 | V1.0.34 | ecom | `create_ecom_customer_address.sql` |
 | V1.0.35 | ecom | `add_tsvector_search_index.sql` |
+| V1.0.36 | ecom | `add_access_mode_to_storefront.sql` |
+| V1.0.37 | ecom | `create_ecom_storefront_access_entry.sql` |

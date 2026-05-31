@@ -166,6 +166,25 @@
 
 ---
 
+## Phase 10: US7 Storefront Access Control
+
+**Purpose**: Allow merchants to restrict storefront access to a specific allowlist of users identified by USER_ID, PHONE, EMAIL, or EXTERNAL_ID. Unauthenticated or unlisted principals are denied with 403.
+
+- [X] T048 [US7] Create `ecom/src/main/resources/db/migration/postgresql/V1.0.71__add_access_mode_to_storefront.sql` — `ALTER TABLE ecom_storefront ADD COLUMN access_mode VARCHAR(20) NOT NULL DEFAULT 'PUBLIC'`
+- [X] T049 [US7] Create `ecom/src/main/resources/db/migration/postgresql/V1.0.72__create_ecom_storefront_access_entry.sql` — table `ecom_storefront_access_entry` with columns `id`, `uid`, `owner_id`, `ref_id`, `created_at`, `updated_at`, `storefront_id`, `identifier_type`, `identifier_value`; unique constraint on `(storefront_id, identifier_type, identifier_value)`; index on `(storefront_id)`
+- [X] T050 [P] [US7] Create `ecom/src/main/kotlin/com/ampairs/ecom/domain/enums/StorefrontAccessMode.kt` (`PUBLIC`, `RESTRICTED`) and `StorefrontAccessIdentifierType.kt` (`USER_ID`, `PHONE`, `EMAIL`, `EXTERNAL_ID`)
+- [X] T051 [P] [US7] Create `StorefrontAccessEntry.kt` entity extending `OwnableBaseDomain` with `storefrontId`, `identifierType`, `identifierValue` fields; create `StorefrontAccessEntryRepository.kt` with `findAllByStorefrontId`, `existsByStorefrontIdAndIdentifierTypeAndIdentifierValue`, `findByUid`
+- [X] T052 [US7] Add `accessMode: StorefrontAccessMode` field to `Storefront.kt` entity; add `accessMode` to `StorefrontResponse.kt` and map in `asStorefrontResponse()`; add `accessMode: StorefrontAccessMode?` to `StorefrontUpdateRequest.kt` and apply in `applyTo()`
+- [X] T053 [US7] Add `StoreAccessDeniedException` (403, `STORE_ACCESS_DENIED`) and `StoreUnauthenticatedException` (403, `STORE_UNAUTHENTICATED`) to `EcomExceptionHandler.kt`
+- [X] T054 [US7] Add `com.github.ben-manes.caffeine:caffeine:3.2.4` to `ecom/build.gradle.kts`; create `StorefrontAccessService.kt` with Caffeine LRU cache (max 100 entries, keyed by `storefrontId`), `checkAccess()`, `addAccessEntry()`, `removeAccessEntry()`, `listAccessEntries()`, `bulkImport()`, cache invalidation on writes; extract `external_id` claim via JWT payload base64 decoding
+- [X] T055 [US7] Update `StorefrontTenantInterceptor.kt` to inject `StorefrontAccessService` and `JwtService`; add `enforceAccessControl()` called when `storefront.accessMode == RESTRICTED`; unauthenticated → `StoreUnauthenticatedException`; workspace member bypass via JWT `tenant` claim; access denied → WARN log + `StoreAccessDeniedException`
+- [X] T056 [P] [US7] Create `StorefrontAccessEntryDto.kt` with `StorefrontAccessEntryRequest`, `StorefrontAccessEntryResponse`, `StorefrontAccessBulkImportResult` DTOs and `StorefrontAccessEntry.asResponse()` extension
+- [X] T057 [US7] Create `StorefrontAccessController.kt` at `/api/v1/ecom/management/storefront/access` — `GET` (list entries paginated), `POST` (add entry), `DELETE /{uid}` (remove entry), `POST /bulk-import` (two-column CSV: `identifier_type,identifier_value`)
+
+**Checkpoint ✅ Phase 10 done**: `PUBLIC` stores remain open to all. `RESTRICTED` stores reject unauthenticated requests (403 STORE_UNAUTHENTICATED), allow workspace members through, and deny unlisted principals (403 STORE_ACCESS_DENIED). Access list management API fully functional. Caffeine cache evicted on every write.
+
+---
+
 ## Dependencies Graph
 
 ```
