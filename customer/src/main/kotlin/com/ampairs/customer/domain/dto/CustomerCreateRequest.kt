@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank
 data class CustomerCreateRequest(
     @field:NotBlank(message = "Customer name is required")
     val name: String,
+    val refId: String? = null,
     val customerType: String? = null,
     val phone: String? = null,
     val email: String? = null,

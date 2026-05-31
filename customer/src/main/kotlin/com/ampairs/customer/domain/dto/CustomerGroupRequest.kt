@@ -42,7 +42,9 @@ data class CustomerGroupCreateRequest(
     @field:Min(value = 0, message = "Priority level must be non-negative")
     val priorityLevel: Int = 0,
 
-    val metadata: String? = null
+    val metadata: String? = null,
+
+    val refId: String? = null
 )
 
 data class CustomerGroupUpdateRequest(
@@ -72,7 +74,9 @@ data class CustomerGroupUpdateRequest(
     @field:Min(value = 0, message = "Priority level must be non-negative")
     val priorityLevel: Int?,
 
-    val metadata: String?
+    val metadata: String?,
+
+    val refId: String? = null
 )
 
 private fun buildCustomerGroup(
@@ -84,7 +88,8 @@ private fun buildCustomerGroup(
     active: Boolean,
     defaultDiscountPercentage: Double,
     priorityLevel: Int,
-    metadata: String?
+    metadata: String?,
+    refId: String? = null
 ): CustomerGroup = CustomerGroup().apply {
     uid?.let { this.uid = it }
     this.groupCode = groupCode
@@ -95,6 +100,7 @@ private fun buildCustomerGroup(
     this.defaultDiscountPercentage = defaultDiscountPercentage
     this.priorityLevel = priorityLevel
     this.metadata = metadata
+    this.refId = refId
 }
 
 fun CustomerGroupCreateRequest.toCustomerGroup(): CustomerGroup = buildCustomerGroup(
@@ -106,7 +112,8 @@ fun CustomerGroupCreateRequest.toCustomerGroup(): CustomerGroup = buildCustomerG
     active = active,
     defaultDiscountPercentage = defaultDiscountPercentage,
     priorityLevel = priorityLevel,
-    metadata = metadata
+    metadata = metadata,
+    refId = refId
 )
 
 fun CustomerGroupUpdateRequest.toCustomerGroup(): CustomerGroup = buildCustomerGroup(
@@ -117,7 +124,8 @@ fun CustomerGroupUpdateRequest.toCustomerGroup(): CustomerGroup = buildCustomerG
     active = active ?: true,
     defaultDiscountPercentage = defaultDiscountPercentage ?: 0.0,
     priorityLevel = priorityLevel ?: 0,
-    metadata = metadata
+    metadata = metadata,
+    refId = refId
 )
 
 fun List<CustomerGroupUpdateRequest>.toCustomerGroups(): List<CustomerGroup> = map { it.toCustomerGroup() }

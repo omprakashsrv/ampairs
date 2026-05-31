@@ -5,6 +5,7 @@ import java.time.Instant
 
 data class CustomerGroupResponse(
     val uid: String,
+    val refId: String?,
     val groupCode: String,
     val name: String,
     val description: String?,
@@ -20,6 +21,7 @@ data class CustomerGroupResponse(
 fun CustomerGroup.asCustomerGroupResponse(): CustomerGroupResponse {
     return CustomerGroupResponse(
         uid = this.uid,
+        refId = this.refId,
         groupCode = this.groupCode,
         name = this.name,
         description = this.description,

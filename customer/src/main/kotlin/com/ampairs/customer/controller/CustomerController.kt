@@ -93,6 +93,7 @@ class CustomerController(
             pincode = request.address?.postalCode ?: ""
             country = request.address?.country ?: "India"
             attributes = request.attributes ?: emptyMap()
+            refId = request.refId
             status = "ACTIVE"
         }
 
