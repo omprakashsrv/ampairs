@@ -7,6 +7,7 @@ import java.awt.Graphics2D
 import java.awt.RenderingHints
 import java.awt.image.BufferedImage
 import java.io.BufferedInputStream
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import javax.imageio.ImageIO
@@ -175,6 +176,37 @@ class ImageResizingService(
         return format.lowercase() in listOf("png", "gif", "webp")
     }
 
+    fun processForStorage(bytes: ByteArray, format: String = "jpg"): ProcessedImage {
+        return try {
+            ByteArrayInputStream(bytes).use { bais ->
+                val bufferedInput = BufferedInputStream(bais, 8192)
+                val original = ImageIO.read(bufferedInput)
+                    ?: throw ImageResizingException("Unable to read image data")
+                try {
+                    // Resize if over max dimensions; otherwise use original dimensions.
+                    // Either way, re-encode through ImageIO — this strips all EXIF metadata.
+                    val processed = if (shouldResizeForUpload(original.width, original.height)) {
+                        resizeImageMemoryEfficient(original, storageProperties.image.maxWidth, storageProperties.image.maxHeight)
+                    } else {
+                        original
+                    }
+                    val outputFormat = if (format.lowercase() == "png") "png" else "jpg"
+                    val out = ByteArrayOutputStream()
+                    ImageIO.write(processed, outputFormat, out)
+                    if (processed !== original) processed.flush()
+                    ProcessedImage(out.toByteArray(), processed.width, processed.height)
+                } finally {
+                    original.flush()
+                }
+            }
+        } catch (e: ImageResizingException) {
+            throw e
+        } catch (e: Exception) {
+            logger.error("Failed to process image for storage: format={}, error={}", format, e.message, e)
+            throw ImageResizingException("Failed to process image for storage: ${e.message}", e)
+        }
+    }
+
     private fun resizeImage(originalImage: BufferedImage, maxWidth: Int, maxHeight: Int): BufferedImage {
         val originalWidth = originalImage.width
         val originalHeight = originalImage.height
@@ -269,5 +301,7 @@ class ImageResizingService(
         return finalImage
     }
 }
+
+data class ProcessedImage(val bytes: ByteArray, val width: Int, val height: Int)
 
 class ImageResizingException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)

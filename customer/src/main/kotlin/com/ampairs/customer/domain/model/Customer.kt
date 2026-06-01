@@ -4,16 +4,11 @@ import com.ampairs.core.domain.model.Address
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.customer.config.Constants
 import jakarta.persistence.*
-import org.hibernate.annotations.BatchSize
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import org.locationtech.jts.geom.Point
 
 @Entity(name = "customer")
-@NamedEntityGraph(
-    name = "Customer.withImages",
-    attributeNodes = [NamedAttributeNode("images")]
-)
 class Customer : OwnableBaseDomain() {
 
     @Column(name = "country_code", nullable = false)
@@ -98,16 +93,6 @@ class Customer : OwnableBaseDomain() {
     @Column(name = "attributes")
     var attributes: Map<String, Any>? = null
 
-    /**
-     * Customer images relationship
-     * Lazy loading to avoid N+1 queries. Use @EntityGraph when needed.
-     */
-    @BatchSize(size = 30)
-    @OneToMany(cascade = [CascadeType.ALL], fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_uid", referencedColumnName = "uid")
-    @OrderBy("displayOrder ASC, createdAt ASC")
-    var images: MutableSet<CustomerImage> = mutableSetOf()
-
     override fun obtainSeqIdPrefix(): String {
         return Constants.CUSTOMER_PREFIX
     }
@@ -147,42 +132,6 @@ class Customer : OwnableBaseDomain() {
         outstandingAmount = maxOf(0.0, outstandingAmount - amount)
     }
 
-    /**
-     * Get the primary image for this customer
-     */
-    fun getPrimaryImage(): CustomerImage? {
-        return images.find { it.isPrimary && it.active }
-    }
-
-    /**
-     * Get all active images for this customer
-     */
-    fun getActiveImages(): List<CustomerImage> {
-        return images.filter { it.active }.sortedWith(
-            compareBy<CustomerImage> { it.displayOrder }.thenBy { it.createdAt }
-        )
-    }
-
-    /**
-     * Check if customer has any images
-     */
-    fun hasImages(): Boolean {
-        return images.any { it.active }
-    }
-
-    /**
-     * Get total count of active images
-     */
-    fun getImageCount(): Int {
-        return images.count { it.active }
-    }
-
-    /**
-     * Get primary image URL or null if no primary image
-     */
-    fun getPrimaryImageUrl(): String? {
-        return getPrimaryImage()?.storageUrl
-    }
 
 }
 

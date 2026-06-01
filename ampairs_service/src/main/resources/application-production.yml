@@ -176,8 +176,8 @@ spring:
   cloud:
     aws:
       region:
-        static: ${AWS_REGION:ap-south-1}
-        auto: ${AWS_AUTO_REGION:true}
+        static: ${AWS_REGION:default}
+        auto: ${AWS_AUTO_REGION:false}
       credentials:
         access-key: ${AWS_ACCESS_KEY:AWS_ACCESS_KEY}
         secret-key: ${AWS_SECRET_KEY:AWS_SECRET_KEY}
@@ -185,11 +185,11 @@ spring:
         profile-name: ${AWS_PROFILE_NAME:}
         profile-path: ${AWS_PROFILE_PATH:}
       s3:
-        region: ${AWS_S3_REGION:ap-south-1}
+        region: ${AWS_S3_REGION:default}
         endpoint: ${AWS_S3_ENDPOINT:}
-        path-style-access-enabled: ${AWS_S3_PATH_STYLE:false}
-        checksum-validation-enabled: ${AWS_S3_CHECKSUM_VALIDATION:true}
-        chunked-encoding-disabled: ${AWS_S3_CHUNKED_ENCODING_DISABLED:false}
+        path-style-access-enabled: ${AWS_S3_PATH_STYLE:true}
+        checksum-validation-enabled: ${AWS_S3_CHECKSUM_VALIDATION:false}
+        chunked-encoding-disabled: ${AWS_S3_CHUNKED_ENCODING_DISABLED:true}
         accelerate-mode-enabled: ${AWS_S3_ACCELERATE_MODE:false}
         dualstack-enabled: ${AWS_S3_DUALSTACK:false}
       sns:
@@ -205,7 +205,7 @@ ampairs:
   storage:
     # Storage provider: LOCAL, S3, or MINIO
     provider: ${STORAGE_PROVIDER:S3}
-    default-bucket: ${STORAGE_BUCKET:ampairs-prod-app}
+    default-bucket: ${STORAGE_BUCKET:}
     max-file-size: ${STORAGE_MAX_FILE_SIZE:10MB}
     allowed-content-types: ${STORAGE_ALLOWED_CONTENT_TYPES:image/jpeg,image/png,image/gif,image/webp,image/bmp,image/tiff}
     # Image-specific settings
@@ -232,7 +232,7 @@ ampairs:
     max-file-size: 500MB
   aws:
     s3:
-      default-bucket: ${AWS_S3_BUCKET:ampairs-app}
+      default-bucket: ${AWS_S3_BUCKET:}
       upload-folder: ${AWS_S3_UPLOAD_FOLDER:uploads}
       max-file-size: ${AWS_S3_MAX_FILE_SIZE:10MB}
       allowed-content-types: ${AWS_S3_ALLOWED_CONTENT_TYPES:image/jpeg,image/png,image/gif,image/webp,application/pdf,text/plain,application/json}
