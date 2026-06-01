@@ -123,6 +123,20 @@ class ProductController(
         return ApiResponse.success(result)
     }
 
+    @PostMapping("/groups/upload-image")
+    fun uploadGroupImage(
+        @RequestParam("file") file: MultipartFile,
+        @RequestParam("type") type: ProductClassificationType,
+    ): ApiResponse<FileResponse> {
+        val result = fileService.saveFile(
+            bytes = file.inputStream.readAllBytes(),
+            name = file.originalFilename ?: "unnamed_file",
+            contentType = file.contentType ?: "application/octet-stream",
+            folder = "products/${TenantContextHolder.getCurrentTenant()}/${type.name.lowercase()}"
+        ).toFileResponse()
+        return ApiResponse.success(result)
+    }
+
     @GetMapping("/list")
     fun getProductList(
         @RequestParam("search", required = false) search: String?,
