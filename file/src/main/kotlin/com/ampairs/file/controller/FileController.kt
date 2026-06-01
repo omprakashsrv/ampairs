@@ -1,116 +1,130 @@
 package com.ampairs.file.controller
 
+import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.file.config.StorageProperties
+import com.ampairs.file.domain.dto.FileResponse
+import com.ampairs.file.domain.dto.toFileResponse
+import com.ampairs.file.domain.service.FileAccessException
+import com.ampairs.file.domain.service.FileNotFoundException
+import com.ampairs.file.domain.service.FileService
+import com.ampairs.file.service.ImageResizingService
+import com.ampairs.file.service.ImageResizingService.ThumbnailSize
+import com.ampairs.file.service.ImageResizingService.ThumbnailSize.MEDIUM
 import org.slf4j.LoggerFactory
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.core.io.InputStreamResource
+import org.springframework.http.CacheControl
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
+import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
-import java.io.FileNotFoundException
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
-import java.nio.file.Files
-import java.nio.file.Path
-import java.nio.file.Paths
+import org.springframework.web.multipart.MultipartFile
+import java.io.ByteArrayInputStream
+import java.net.URI
+import java.util.concurrent.TimeUnit
 
-/**
- * Controller for serving local files when using LOCAL storage provider.
- */
 @RestController
-@RequestMapping("/files")
-@ConditionalOnProperty(
-    name = ["ampairs.storage.provider"],
-    havingValue = "LOCAL",
-    matchIfMissing = false
-)
+@RequestMapping("/file/v1")
 class FileController(
-    storageProperties: StorageProperties
+    private val fileService: FileService,
+    private val imageResizingService: ImageResizingService,
+    private val storageProperties: StorageProperties,
 ) {
-
     private val logger = LoggerFactory.getLogger(FileController::class.java)
-    private val basePath: Path = Paths.get(storageProperties.local.basePath).toAbsolutePath()
 
-    @GetMapping("/{bucket}/**")
-    fun serveFile(
-        @PathVariable bucket: String,
-        request: jakarta.servlet.http.HttpServletRequest
-    ): ResponseEntity<InputStreamResource> {
+    /**
+     * Universal upload endpoint. Stores the file under {entityType}/{workspaceSlug}/{entityUid}/
+     * and returns a FileResponse with pre-built download_url and thumbnail_url.
+     *
+     * entity_type: free-form label — PRODUCT, BRAND, CATEGORY, GROUP, SUB_CATEGORY, CUSTOMER, etc.
+     * entity_uid:  UID of the owning entity (used as the sub-folder in storage).
+     */
+    @PostMapping("/upload", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
+    @ResponseStatus(HttpStatus.CREATED)
+    fun upload(
+        @RequestParam("file") file: MultipartFile,
+        @RequestParam("entity_type") entityType: String,
+        @RequestParam("entity_uid") entityUid: String,
+    ): ApiResponse<FileResponse> {
+        val workspace = TenantContextHolder.getCurrentTenant()
+            ?: throw IllegalStateException("Workspace context not set")
+        val folder = "${entityType.lowercase().trim()}/$workspace/$entityUid"
+        val result = fileService.saveFile(
+            bytes = file.inputStream.readAllBytes(),
+            name = file.originalFilename ?: "file",
+            contentType = file.contentType ?: "application/octet-stream",
+            folder = folder,
+        ).toFileResponse()
+        logger.info("File uploaded: entityType={}, entityUid={}, file={}", entityType, entityUid, result.id)
+        return ApiResponse.success(result)
+    }
+
+    /**
+     * Redirect to a short-lived presigned URL for the file.
+     * Works for S3, MinIO, and LOCAL (local returns a direct /files/... URL).
+     */
+    @GetMapping("/{fileUid}/download")
+    fun download(@PathVariable fileUid: String): ResponseEntity<Void> {
         return try {
-            val requestUri = request.requestURI
-            val basePattern = "/files/$bucket/"
-            val relativePath = requestUri.substring(requestUri.indexOf(basePattern) + basePattern.length)
-            val decodedPath = URLDecoder.decode(relativePath, StandardCharsets.UTF_8.toString())
-            val filePath = basePath.resolve(bucket).resolve(decodedPath)
-
-            if (!filePath.normalize().startsWith(basePath.normalize())) {
-                logger.warn("Attempted path traversal attack: bucket={}, path={}", bucket, decodedPath)
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).build()
-            }
-
-            if (!Files.exists(filePath) || Files.isDirectory(filePath)) {
-                logger.debug("File not found: {}", filePath)
-                return ResponseEntity.notFound().build()
-            }
-
-            val contentType = Files.probeContentType(filePath) ?: "application/octet-stream"
-            val fileSize = Files.size(filePath)
-            val lastModified = Files.getLastModifiedTime(filePath)
-
-            val headers = HttpHeaders().apply {
-                setContentType(MediaType.parseMediaType(contentType))
-                setContentLength(fileSize)
-                setLastModified(lastModified.toInstant())
-                setCacheControl("public, max-age=3600")
-                set("X-Content-Type-Options", "nosniff")
-                set("X-Frame-Options", "SAMEORIGIN")
-                val fileName = filePath.fileName.toString()
-                if (contentType.startsWith("image/")) {
-                    setContentDispositionFormData("inline", fileName)
-                } else {
-                    setContentDispositionFormData("attachment", fileName)
-                }
-            }
-
-            val inputStream = Files.newInputStream(filePath)
-            val resource = InputStreamResource(inputStream)
-
-            logger.debug("Serving file: bucket={}, path={}, size={}, contentType={}", bucket, decodedPath, fileSize, contentType)
-
-            ResponseEntity.ok().headers(headers).body(resource)
+            val url = fileService.getFileUrl(fileUid, expirationMinutes = 60)
+            ResponseEntity.status(HttpStatus.FOUND)
+                .location(URI.create(url))
+                .build()
         } catch (e: FileNotFoundException) {
-            logger.debug("File not found: bucket={}, error={}", bucket, e.message)
             ResponseEntity.notFound().build()
-        } catch (e: Exception) {
-            logger.error("Error serving file: bucket={}, error={}", bucket, e.message, e)
+        } catch (e: FileAccessException) {
+            logger.error("Failed to redirect file download: fileUid={}, error={}", fileUid, e.message)
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
         }
     }
 
-    @GetMapping("/health")
-    fun health(): ResponseEntity<Map<String, Any>> {
+    /**
+     * Stream a resized thumbnail. Accepts an optional ?size= query param (sm/md/lg suffix or pixel width).
+     * Falls back to md if unrecognised. Cached for the configured max-age.
+     */
+    @GetMapping("/{fileUid}/thumbnail")
+    fun thumbnail(
+        @PathVariable fileUid: String,
+        @RequestParam("size", defaultValue = "md") size: String,
+    ): ResponseEntity<InputStreamResource> {
         return try {
-            val info: Map<String, Any> = mapOf(
-                "status" to "UP",
-                "storage" to mapOf(
-                    "provider" to "LOCAL",
-                    "basePath" to basePath.toString(),
-                    "exists" to Files.exists(basePath),
-                    "writable" to Files.isWritable(basePath)
-                )
-            )
-            ResponseEntity.ok(info)
+            val (file, inputStream) = fileService.getFileContent(fileUid)
+
+            val targetSize = ThumbnailSize.fromSuffix(size)
+                ?: ThumbnailSize.fromPixels(size.toIntOrNull() ?: 0)
+                ?: MEDIUM
+
+            val contentType = file.contentType ?: "image/jpeg"
+            val format = if (contentType.endsWith("png")) "png" else "jpg"
+
+            val thumbnail = imageResizingService.generateThumbnail(inputStream, targetSize, format)
+
+            val cacheControl = CacheControl.maxAge(
+                storageProperties.image.thumbnails.cacheMaxAge, TimeUnit.SECONDS
+            ).cachePublic()
+
+            val headers = HttpHeaders().apply {
+                setContentType(MediaType.parseMediaType(if (format == "png") "image/png" else "image/jpeg"))
+                setContentLength(thumbnail.size.toLong())
+                setCacheControl(cacheControl)
+                set("X-Content-Type-Options", "nosniff")
+            }
+
+            ResponseEntity.ok()
+                .headers(headers)
+                .body(InputStreamResource(ByteArrayInputStream(thumbnail)))
+        } catch (e: FileNotFoundException) {
+            ResponseEntity.notFound().build()
         } catch (e: Exception) {
-            val error: Map<String, Any> = mapOf(
-                "status" to "DOWN",
-                "error" to (e.message ?: "Unknown error")
-            )
-            ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(error)
+            logger.error("Failed to generate thumbnail: fileUid={}, size={}, error={}", fileUid, size, e.message)
+            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
         }
     }
 }
