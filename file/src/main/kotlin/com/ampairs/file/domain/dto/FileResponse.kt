@@ -8,16 +8,18 @@ data class FileResponse(
     val name: String = "",
     val bucket: String = "",
     val objectKey: String = "",
+    val downloadUrl: String = "",
+    val thumbnailUrl: String = "",
 )
 
-fun File.toFileResponse(): FileResponse {
-    return FileResponse(
-        id = this.uid,
-        name = this.name,
-        bucket = this.bucket,
-        objectKey = this.objectKey
-    )
-}
+fun File.toFileResponse(): FileResponse = FileResponse(
+    id = uid,
+    name = name,
+    bucket = bucket,
+    objectKey = objectKey,
+    downloadUrl = "/file/v1/files/$uid/download",
+    thumbnailUrl = "/file/v1/files/$uid/thumbnail",
+)
 
 fun List<File>.toFileResponse(): List<FileResponse> {
     return map { it.toFileResponse() }

@@ -3,6 +3,9 @@ package com.ampairs.file.repository
 import com.ampairs.file.domain.model.File
 import org.springframework.data.repository.CrudRepository
 import org.springframework.stereotype.Repository
+import java.util.Optional
 
 @Repository
-interface FileRepository : CrudRepository<File, Int>
+interface FileRepository : CrudRepository<File, Int> {
+    fun findByUid(uid: String): Optional<File>
+}

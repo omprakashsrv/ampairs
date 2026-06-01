@@ -2,11 +2,9 @@ package com.ampairs.customer.controller
 
 import com.ampairs.file.config.StorageProperties
 import com.ampairs.core.domain.dto.ApiResponse
-import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.customer.domain.dto.*
 import com.ampairs.customer.domain.service.CustomerImageService
 import io.swagger.v3.oas.annotations.Operation
-import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -17,7 +15,6 @@ import org.springframework.core.io.InputStreamResource
 import org.springframework.http.*
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
-import org.springframework.web.multipart.MultipartFile
 import java.util.concurrent.TimeUnit
 import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 
@@ -31,45 +28,6 @@ class CustomerImageController(
 ) {
 
     private val logger = LoggerFactory.getLogger(CustomerImageController::class.java)
-
-    @PostMapping("/upload", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
-    @ResponseStatus(HttpStatus.CREATED)
-    @Operation(summary = "Upload customer image")
-    @SwaggerApiResponse(responseCode = "201", description = "Image uploaded successfully")
-    @SwaggerApiResponse(responseCode = "400", description = "Invalid request or file")
-    @SwaggerApiResponse(responseCode = "413", description = "File too large")
-    fun uploadImage(
-        @Parameter(description = "Image file to upload")
-        @RequestParam("file") file: MultipartFile,
-        @Parameter(description = "Customer UID")
-        @RequestParam("customerUid") customerUid: String,
-        @Parameter(description = "Image UID (optional, generated if not provided)")
-        @RequestParam("uid", required = false) uid: String?,
-        @Parameter(description = "Image description")
-        @RequestParam("description", required = false) description: String?,
-        @Parameter(description = "Set as primary image")
-        @RequestParam("isPrimary", defaultValue = "false") isPrimary: Boolean,
-        @Parameter(description = "Display order")
-        @RequestParam("displayOrder", required = false) displayOrder: Int?
-    ): ApiResponse<CustomerImageResponse> {
-        val workspaceSlug = TenantContextHolder.getCurrentTenant()
-            ?: throw IllegalStateException("Workspace context not set")
-
-        val result = customerImageService.uploadImage(
-            file,
-            CustomerImageUploadRequest(
-                customerUid = customerUid,
-                uid = uid,
-                description = description,
-                isPrimary = isPrimary,
-                displayOrder = displayOrder
-            ),
-            workspaceSlug
-        )
-
-        logger.info("Image uploaded successfully: customer={}, image={}", customerUid, result.image.uid)
-        return ApiResponse.success(result.image)
-    }
 
     @GetMapping("/{customerUid}")
     @Operation(summary = "Get customer images")

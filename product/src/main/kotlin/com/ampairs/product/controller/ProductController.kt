@@ -2,10 +2,6 @@ package com.ampairs.product.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.exception.NotFoundException
-import com.ampairs.file.domain.dto.FileResponse
-import com.ampairs.file.domain.dto.toFileResponse
-import com.ampairs.file.domain.service.FileService
-import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.product.domain.model.Product
 import com.ampairs.product.domain.dto.group.*
 import com.ampairs.product.domain.dto.product.*
@@ -15,14 +11,12 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
-import org.springframework.web.multipart.MultipartFile
 import java.time.Instant
 
 @RestController
 @RequestMapping("/product/v1/products")
 class ProductController(
     val productService: ProductService,
-    val fileService: FileService
 ) {
 
     @GetMapping("")
@@ -107,34 +101,6 @@ class ProductController(
         val productSubCategories =
             productService.updateProductSubCategories(categories.asDatabaseModel())
         return ApiResponse.success(productSubCategories.asResponse())
-    }
-
-    @PostMapping("/upload-image")
-    fun uploadImage(
-        @RequestParam("file") file: MultipartFile,
-        @RequestParam("path") path: String,
-    ): ApiResponse<FileResponse> {
-        val result = fileService.saveFile(
-            bytes = file.inputStream.readAllBytes(),
-            name = file.originalFilename ?: "unnamed_file",
-            contentType = file.contentType ?: "application/octet-stream",
-            folder = "products/${TenantContextHolder.getCurrentTenant()}$path"
-        ).toFileResponse()
-        return ApiResponse.success(result)
-    }
-
-    @PostMapping("/groups/upload-image")
-    fun uploadGroupImage(
-        @RequestParam("file") file: MultipartFile,
-        @RequestParam("type") type: ProductClassificationType,
-    ): ApiResponse<FileResponse> {
-        val result = fileService.saveFile(
-            bytes = file.inputStream.readAllBytes(),
-            name = file.originalFilename ?: "unnamed_file",
-            contentType = file.contentType ?: "application/octet-stream",
-            folder = "products/${TenantContextHolder.getCurrentTenant()}/${type.name.lowercase()}"
-        ).toFileResponse()
-        return ApiResponse.success(result)
     }
 
     @GetMapping("/list")

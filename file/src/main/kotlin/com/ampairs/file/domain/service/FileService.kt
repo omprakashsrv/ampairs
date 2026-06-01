@@ -83,6 +83,31 @@ class FileService(
         }
     }
 
+    fun getFileUrl(fileUid: String, expirationMinutes: Long = 60): String {
+        val file = fileRepository.findByUid(fileUid)
+            .orElseThrow { FileNotFoundException("File not found: $fileUid") }
+        return try {
+            objectStorageService.generatePresignedUrl(file.bucket, file.objectKey, expirationMinutes * 60)
+                .also { logger.debug("Generated URL for file: uid={}", fileUid) }
+        } catch (e: Exception) {
+            logger.error("Failed to generate URL: fileUid={}, error={}", fileUid, e.message, e)
+            throw FileAccessException("Failed to generate file URL: ${e.message}", e)
+        }
+    }
+
+    fun getFileContent(fileUid: String): Pair<com.ampairs.file.domain.model.File, InputStream> {
+        val file = fileRepository.findByUid(fileUid)
+            .orElseThrow { FileNotFoundException("File not found: $fileUid") }
+        return try {
+            val stream = objectStorageService.downloadFile(file.bucket, file.objectKey)
+                .also { logger.debug("Downloaded file: uid={}, key={}", fileUid, file.objectKey) }
+            Pair(file, stream)
+        } catch (e: Exception) {
+            logger.error("Failed to get file content: fileUid={}, error={}", fileUid, e.message, e)
+            throw FileAccessException("Failed to get file content: ${e.message}", e)
+        }
+    }
+
     fun getFileUrl(fileId: Int, expirationMinutes: Long = 60): String {
         val file = fileRepository.findById(fileId)
             .orElseThrow { FileNotFoundException("File not found with id: $fileId") }
