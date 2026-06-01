@@ -61,6 +61,7 @@ class ProductServiceUnitTest {
         whenever(unitService.findByUid("UNIT-10")).thenReturn(
             UnitResponse(
                 uid = "UNIT-10",
+                refId = null,
                 name = "Kilogram",
                 shortName = "kg",
                 decimalPlaces = 3,
@@ -71,7 +72,6 @@ class ProductServiceUnitTest {
                 updatedAt = null
             )
         )
-        whenever(productRepository.findBySku("SKU-123")).thenReturn(Optional.empty())
         whenever(productRepository.save(product)).thenReturn(product)
 
         productService.createProduct(product)

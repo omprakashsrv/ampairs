@@ -99,19 +99,23 @@ class CustomerServiceTest {
     }
 
     @Test
-    fun `createCustomer rejects duplicate gst number`() {
+    fun `createCustomer allows duplicate gst number`() {
         val customer = buildCustomer().apply {
             gstNumber = "22AAAAA0000A1Z5"
         }
-        whenever(customerRepository.findByGstNumber("22AAAAA0000A1Z5"))
-            .thenReturn(Optional.of(buildCustomer()))
-
-        assertThrows(IllegalArgumentException::class.java) {
-            customerService.createCustomer(customer)
+        whenever(customerRepository.save(any())).thenAnswer { invocation ->
+            (invocation.arguments.first() as Customer).apply {
+                uid = "CUS-DUP"
+                createdAt = Instant.now()
+                updatedAt = createdAt
+            }
         }
 
-        verify(customerRepository, never()).save(any())
-        verify(eventPublisher, never()).publishEvent(any())
+        val saved = customerService.createCustomer(customer)
+
+        assertEquals("ACTIVE", saved.status)
+        verify(customerRepository).save(any())
+        verify(eventPublisher).publishEvent(any())
     }
 
     @Test

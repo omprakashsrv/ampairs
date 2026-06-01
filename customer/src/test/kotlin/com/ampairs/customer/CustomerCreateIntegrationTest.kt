@@ -99,7 +99,7 @@ class CustomerCreateIntegrationTest {
             .thenReturn(mockCustomer)
 
         mockMvc.perform(
-            post("/customer/v1/customers/create")
+            post("/customer/v1/create")
                 .header("X-Workspace-ID", "TEST_RETAIL_WS_001")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(customerRequest))
@@ -162,7 +162,7 @@ class CustomerCreateIntegrationTest {
             .thenReturn(mockCustomer)
 
         mockMvc.perform(
-            post("/customer/v1/customers/create")
+            post("/customer/v1/create")
                 .header("X-Workspace-ID", "TEST_KIRANA_WS_001")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(customerRequest))
@@ -185,7 +185,7 @@ class CustomerCreateIntegrationTest {
         """.trimIndent()
 
         mockMvc.perform(
-            post("/customer/v1/customers/create")
+            post("/customer/v1/create")
                 .header("X-Workspace-ID", "TEST_RETAIL_WS_001")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(invalidCustomerRequest)
@@ -218,7 +218,7 @@ class CustomerCreateIntegrationTest {
             .thenThrow(IllegalArgumentException("Customer number already exists"))
 
         mockMvc.perform(
-            post("/customer/v1/customers/create")
+            post("/customer/v1/create")
                 .header("X-Workspace-ID", "TEST_RETAIL_WS_001")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(customerRequest))
