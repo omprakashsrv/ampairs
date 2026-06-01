@@ -28,11 +28,14 @@ data class UnitRequest(
     @field:Size(max = 50, message = "Category must not exceed 50 characters")
     val category: String? = null,
 
-    val active: Boolean = true
+    val active: Boolean = true,
+
+    val refId: String? = null
 )
 
 data class UnitResponse(
     val uid: String,
+    val refId: String?,
     val name: String,
     val shortName: String,
     val decimalPlaces: Int,
@@ -60,10 +63,12 @@ fun Unit.applyRequest(request: UnitRequest): Unit = apply {
     description = request.description?.trim()
     category = request.category?.trim()
     active = request.active
+    refId = request.refId
 }
 
 fun Unit.asUnitResponse(): UnitResponse = UnitResponse(
     uid = uid,
+    refId = refId,
     name = name,
     shortName = shortName,
     decimalPlaces = decimalPlaces,

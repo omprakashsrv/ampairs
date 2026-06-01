@@ -5,6 +5,8 @@ import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.core.security.AuthenticationHelper
 import com.ampairs.event.domain.events.ProductCreatedEvent
 import com.ampairs.event.domain.events.ProductUpdatedEvent
+import com.ampairs.product.domain.dto.product.ProductResponse
+import com.ampairs.product.domain.dto.product.asResponse
 import com.ampairs.product.domain.model.Product
 import com.ampairs.product.domain.model.group.ProductBrand
 import com.ampairs.product.domain.model.group.ProductCategory
@@ -48,46 +50,66 @@ class ProductService(
     private fun getDeviceId(): String = DeviceContextHolder.getCurrentDevice() ?: ""
 
 
-    fun getProducts(updatedAt: Instant?): List<Product> {
+    fun getProducts(updatedAt: Instant?): List<ProductResponse> {
         return productPagingRepository.findAllByUpdatedAtGreaterThanEqual(
             updatedAt ?: Instant.EPOCH,
             PageRequest.of(0, 1000, Sort.by("updatedAt").ascending())
-        )
+        ).asResponse()
     }
 
     @Transactional
-    fun updateProducts(products: List<Product>): List<Product> {
-        // Batch fetch existing products by UID
+    fun updateProducts(products: List<Product>): List<ProductResponse> {
         val uids = products.filter { it.uid.isNotEmpty() }.map { it.uid }
         val byUid = if (uids.isNotEmpty())
             productRepository.findAllByUidIn(uids).associateBy { it.uid }
         else emptyMap()
 
-        // Batch fetch existing products by refId
         val refIds = products.filter { it.refId?.isNotEmpty() == true }.mapNotNull { it.refId }
         val byRefId = if (refIds.isNotEmpty())
             productRepository.findAllByRefIdIn(refIds).associateBy { it.refId }
         else emptyMap()
 
-        // Process each product with pre-fetched data
-        products.forEach {
-            it.unitId?.takeIf { unitId -> unitId.isNotBlank() }?.let { unitId ->
+        val entitiesToSave = products.map { incoming ->
+            incoming.unitId?.takeIf { it.isNotBlank() }?.let { unitId ->
                 unitService.findByUid(unitId)
                     ?: throw IllegalArgumentException("Unit not found for id: $unitId")
             }
-            if (it.uid.isNotEmpty()) {
-                val existing = byUid[it.uid]
-                it.id = existing?.id ?: 0
-                it.refId = existing?.refId ?: ""
-            } else if (it.refId?.isNotEmpty() == true) {
-                val existing = byRefId[it.refId]
-                it.id = existing?.id ?: 0
-                it.uid = existing?.uid ?: ""
+
+            val existing = when {
+                incoming.uid.isNotEmpty() -> byUid[incoming.uid]
+                incoming.refId?.isNotEmpty() == true -> byRefId[incoming.refId]
+                else -> null
+            }
+
+            if (existing != null) {
+                // Update scalar fields on the managed entity so Hibernate never sees the
+                // immutable @OneToOne associations as "changed" (avoids HHH000502).
+                existing.name = incoming.name
+                existing.code = incoming.code
+                existing.sku = incoming.sku
+                existing.description = incoming.description
+                existing.status = incoming.status
+                existing.taxCode = incoming.taxCode
+                existing.taxCodeId = incoming.taxCodeId
+                existing.unitId = incoming.unitId
+                existing.basePrice = incoming.basePrice
+                existing.costPrice = incoming.costPrice
+                existing.groupId = incoming.groupId
+                existing.brandId = incoming.brandId
+                existing.categoryId = incoming.categoryId
+                existing.subCategoryId = incoming.subCategoryId
+                existing.baseUnitId = incoming.baseUnitId
+                existing.attributes = incoming.attributes
+                existing.mrp = incoming.mrp
+                existing.dp = incoming.dp
+                existing.sellingPrice = incoming.sellingPrice
+                existing
+            } else {
+                incoming
             }
         }
 
-        // Batch save all products
-        return productRepository.saveAll(products).toList()
+        return productRepository.saveAll(entitiesToSave).toList().asResponse()
     }
 
 
@@ -173,8 +195,8 @@ class ProductService(
         return productSubCategoryRepository.findAll().toList()
     }
 
-    fun getProducts(groupId: String): List<Product> {
-        return productRepository.getProduct(groupId)
+    fun getProducts(groupId: String): List<ProductResponse> {
+        return productRepository.getProduct(groupId).asResponse()
     }
 
     fun getCategories(ids: Set<String>): List<ProductCategory> {
@@ -196,13 +218,8 @@ class ProductService(
                 ?: throw IllegalArgumentException("Unit not found for id: $unitId")
         }
         // Generate SKU if not provided
-        if (product.sku.isBlank()) {
+        if (product.sku.isNullOrBlank()) {
             product.sku = generateSku(product.name, product.categoryId)
-        }
-
-        // Validate SKU uniqueness
-        if (productRepository.findBySku(product.sku).isPresent) {
-            throw IllegalArgumentException("SKU already exists: ${product.sku}")
         }
 
         product.status = "ACTIVE"

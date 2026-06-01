@@ -1,12 +1,15 @@
 package com.ampairs.unit.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.unit.domain.dto.UnitRequest
 import com.ampairs.unit.domain.dto.UnitResponse
 import com.ampairs.unit.domain.dto.UnitUsageResponse
 import com.ampairs.unit.exception.UnitNotFoundException
 import com.ampairs.unit.service.UnitService
 import jakarta.validation.Valid
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.http.HttpStatus
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
@@ -19,8 +22,25 @@ class UnitController(
 ) {
 
     @GetMapping
-    fun listUnits(@RequestParam(defaultValue = "true") active: Boolean): ApiResponse<List<UnitResponse>> {
-        return ApiResponse.success(unitService.findAll(activeOnly = active))
+    fun listUnits(
+        @RequestParam(defaultValue = "true") active: Boolean,
+        @RequestParam("page", defaultValue = "0") page: Int,
+        @RequestParam("size", defaultValue = "20") size: Int,
+        @RequestParam("sort_by", defaultValue = "name") sortBy: String,
+        @RequestParam("sort_dir", defaultValue = "ASC") sortDir: String
+    ): ApiResponse<PageResponse<UnitResponse>> {
+        val jpaPropertyName = when (sortBy) {
+            "name" -> "name"
+            "shortName" -> "shortName"
+            "category" -> "category"
+            "decimalPlaces" -> "decimalPlaces"
+            "active" -> "active"
+            "createdAt" -> "createdAt"
+            "updatedAt" -> "updatedAt"
+            else -> "name"
+        }
+        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(sortDir), jpaPropertyName))
+        return ApiResponse.success(PageResponse.from(unitService.findAllPaged(active, pageable)))
     }
 
     @PostMapping

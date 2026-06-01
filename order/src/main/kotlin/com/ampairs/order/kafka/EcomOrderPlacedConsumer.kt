@@ -67,7 +67,7 @@ class EcomOrderPlacedConsumer(
             fromCustomerName = event.workspaceId
             toCustomerId = event.customerId
             toCustomerName = event.customerName
-            placeOfSupply = event.deliveryAddress.state
+            placeOfSupply = event.deliveryAddress.state ?: ""
             shippingAddress = event.deliveryAddress
             billingAddress = event.deliveryAddress
             subtotal = event.subtotal.toDouble()

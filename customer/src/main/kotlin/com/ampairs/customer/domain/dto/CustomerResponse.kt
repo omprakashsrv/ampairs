@@ -9,6 +9,7 @@ import java.time.Instant
 
 data class CustomerResponse(
     var uid: String,
+    var refId: String?,
     var name: String,
     var countryCode: Int,
     var phone: String,
@@ -48,6 +49,7 @@ fun List<Customer>.asCustomersResponse(): List<CustomerResponse> {
 fun Customer.asCustomerResponse(): CustomerResponse {
     return CustomerResponse(
         uid = this.uid,
+        refId = this.refId,
         name = this.name,
         countryCode = this.countryCode,
         phone = this.phone,

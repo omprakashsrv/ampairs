@@ -18,9 +18,10 @@ import java.time.Instant
 
 data class ProductResponse(
     val id: String,
+    val refId: String?,
     val name: String,
     val code: String,
-    val sku: String,
+    val sku: String?,
     val description: String?,
     val status: String,
     val taxCode: String,
@@ -55,6 +56,7 @@ fun List<Product>.asResponse(): List<ProductResponse> {
     return map {
         ProductResponse(
             id = it.uid,
+            refId = it.refId,
             name = it.name,
             code = it.code,
             sku = it.sku,
@@ -97,6 +99,7 @@ fun List<Product>.asResponse(): List<ProductResponse> {
 fun Product.asResponse(): ProductResponse {
     return ProductResponse(
         id = uid,
+        refId = refId,
         name = name,
         code = code,
         sku = sku,

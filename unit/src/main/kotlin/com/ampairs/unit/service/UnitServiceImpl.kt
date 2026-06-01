@@ -11,6 +11,8 @@ import com.ampairs.unit.exception.UnitInUseException
 import com.ampairs.unit.exception.UnitNotFoundException
 import com.ampairs.unit.repository.UnitRepository
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -42,6 +44,11 @@ class UnitServiceImpl(
             unitRepository.findAll().toList()
         }
         return units.asUnitResponses()
+    }
+
+    @Transactional(readOnly = true)
+    override fun findAllPaged(activeOnly: Boolean, pageable: Pageable): Page<UnitResponse> {
+        return unitRepository.findByActive(activeOnly, pageable).map { it.asUnitResponse() }
     }
 
     @Transactional

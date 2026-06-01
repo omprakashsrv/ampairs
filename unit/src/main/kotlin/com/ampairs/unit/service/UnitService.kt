@@ -3,11 +3,14 @@ package com.ampairs.unit.service
 import com.ampairs.unit.domain.dto.UnitRequest
 import com.ampairs.unit.domain.dto.UnitResponse
 import com.ampairs.unit.domain.dto.UnitUsageResponse
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 
 interface UnitService {
     fun findByUid(uid: String): UnitResponse?
     fun findByRefId(refId: String): UnitResponse?
     fun findAll(activeOnly: Boolean = true): List<UnitResponse>
+    fun findAllPaged(activeOnly: Boolean, pageable: Pageable): Page<UnitResponse>
     fun create(request: UnitRequest): UnitResponse
     fun update(uid: String, request: UnitRequest): UnitResponse
     fun delete(uid: String)

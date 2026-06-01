@@ -64,7 +64,7 @@ class ProductVariantService(
         }
 
         // Generate SKU if not provided
-        val sku = request.sku ?: generateVariantSku(product.sku, product.uid)
+        val sku = request.sku ?: generateVariantSku(product.sku.orEmpty(), product.uid)
 
         // Create variant entity
         val variant = ProductVariant().apply {

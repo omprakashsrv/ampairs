@@ -24,10 +24,10 @@ data class ProductRequest(
     val subCategoryId: String? = null,
     val baseUnitId: String? = null,
     val attributes: Map<String, Any>? = null,
-    val active: Boolean = true,
-    val mrp: Double = 0.0,
-    val dp: Double = 0.0,
-    val sellingPrice: Double = 0.0,
+    val active: Boolean? = null,
+    val mrp: Double? = null,
+    val dp: Double? = null,
+    val sellingPrice: Double? = null,
     val unitConversions: List<UnitConversionRequest>? = null,
     val lastUpdated: Long? = null,
     val createdAt: String? = null,
@@ -41,7 +41,7 @@ fun List<ProductRequest>.asDatabaseModel(): List<Product> {
         product.refId = it.refId
         product.name = it.name
         product.code = it.code
-        product.sku = it.sku ?: ""
+        product.sku = it.sku?.takeIf { sku -> sku.isNotBlank() }
         product.description = it.description
         product.status = it.status ?: "ACTIVE"
         product.taxCode = it.taxCode ?: ""
@@ -49,15 +49,15 @@ fun List<ProductRequest>.asDatabaseModel(): List<Product> {
         product.unitId = it.unitId
         product.basePrice = it.basePrice ?: 0.0
         product.costPrice = it.costPrice ?: 0.0
-        product.groupId = it.groupId
-        product.categoryId = it.categoryId
-        product.subCategoryId = it.subCategoryId
-        product.brandId = it.brandId
+        product.groupId = it.groupId?.takeIf { id -> id.isNotBlank() }
+        product.categoryId = it.categoryId?.takeIf { id -> id.isNotBlank() }
+        product.subCategoryId = it.subCategoryId?.takeIf { id -> id.isNotBlank() }
+        product.brandId = it.brandId?.takeIf { id -> id.isNotBlank() }
         product.baseUnitId = it.baseUnitId
         product.attributes = it.attributes ?: emptyMap()
-        product.mrp = it.mrp
-        product.dp = it.dp
-        product.sellingPrice = it.sellingPrice
+        product.mrp = it.mrp ?: 0.0
+        product.dp = it.dp ?: 0.0
+        product.sellingPrice = it.sellingPrice ?: 0.0
         product
     }
 }

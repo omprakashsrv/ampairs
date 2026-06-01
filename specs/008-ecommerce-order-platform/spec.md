@@ -58,6 +58,25 @@ A merchant using Ampairs management marks specific products as listed on their e
 
 ---
 
+### User Story 7 - Merchant Restricts Storefront Access to Specific Customers (Priority: P2)
+
+A merchant operates a B2B or invite-only storefront and does not want it open to the public. From the Ampairs management dashboard, they switch their storefront's access mode from `PUBLIC` to `RESTRICTED` and add a list of allowed customers by phone number, email, or user ID. Only those customers can browse products, add to cart, or place orders. Everyone else sees an "access required" response when they visit the URL.
+
+**Why this priority**: Some merchants need private storefronts (wholesale, distributor, loyalty program). Without access control, the storefront cannot serve these use cases, but the feature does not block the core public storefront flow.
+
+**Independent Test**: Can be fully tested by setting a storefront to RESTRICTED, adding one phone number to the access list, then verifying that an unauthenticated visitor is denied, a logged-in user not in the list is denied, and the allowed user (identified by phone) can browse and order normally.
+
+**Acceptance Scenarios**:
+
+1. **Given** a merchant switches their storefront to RESTRICTED mode, **When** an unauthenticated visitor navigates to `store.ampairs.com/{slug}`, **Then** they receive an "access required" response (not "store not found") with a prompt to log in or contact the merchant.
+2. **Given** a storefront is RESTRICTED and User A's email is in the access list, **When** User A logs in and visits the storefront, **Then** they can browse, add to cart, and check out — exactly as on a public storefront.
+3. **Given** a storefront is RESTRICTED and User B's identity (user ID, phone, and email) is NOT in the access list, **When** User B logs in and visits the storefront, **Then** they receive an "access denied" response and cannot view any products or place orders.
+4. **Given** a merchant adds a phone number to the access list before the user has a platform account, **When** that user later registers with the same phone number, **Then** their access is automatically granted without any additional merchant action.
+5. **Given** a storefront is RESTRICTED and a guest (unauthenticated) visits it, **When** the guest logs in or registers and their identity matches an access entry, **Then** they are immediately granted access and redirected to the storefront.
+6. **Given** a merchant switches a storefront from RESTRICTED back to PUBLIC, **When** any visitor navigates to the URL, **Then** the storefront is freely accessible — existing access list entries are retained but not enforced.
+
+---
+
 ### User Story 4 - End Customer Manages Their Account Across Storefronts (Priority: P2)
 
 A customer registers once on any Ampairs-powered storefront. They can log in at any other merchant's storefront using the same credentials, view their order history per storefront, and manage their saved addresses and contact details.
@@ -108,6 +127,11 @@ After placing an order, the customer can view order status updates on their acco
 
 ### Edge Cases
 
+- What happens when a customer visits a RESTRICTED storefront while unauthenticated? → They receive an "access required" response with a login prompt. After login, their identity is checked against the access list — if matched they are let through; if not, they receive "access denied" (FR-031).
+- What happens when a merchant adds an access entry for a phone/email that has no platform account yet? → The entry is stored. When a matching account is created, access is resolved automatically (FR-037).
+- What happens when a merchant removes a user from the access list while that user has an active session or pending cart? → Their next storefront request is denied. Their in-progress cart is not destroyed but is inaccessible until access is restored.
+- What happens when a RESTRICTED storefront is also in Draft state? → Draft-state rules take precedence — only workspace members can preview it regardless of the access list.
+- What happens when a workspace member visits their own RESTRICTED storefront? → The filter detects the workspace role claim in their JWT and bypasses the access list entirely (FR-039). They are always admitted.
 - What happens when a customer adds an item to their cart and it goes out of stock before checkout is completed?
 - What happens if the `EcomOrderPlaced` event fails to deliver to management — is the order retried automatically?
 - What happens when two customers simultaneously purchase the last unit of a product? → First confirmed wins. The ecom module accepts both orders optimistically; the management system rejects the second on inventory deduction. The second customer's order is cancelled and they are notified (FR-017).
@@ -160,6 +184,21 @@ After placing an order, the customer can view order status updates on their acco
 - **FR-021**: Customer order history MUST be scoped to the storefront where orders were placed — cross-merchant order visibility is NOT permitted.
 - **FR-022**: Customers MUST be able to save and manage multiple delivery addresses on their account.
 
+**Storefront Access Control**
+
+- **FR-030**: A storefront MUST support an `accessMode` setting: `PUBLIC` (default — any visitor may browse) or `RESTRICTED` (only allowed identities may access). Merchants MUST be able to toggle this setting at any time.
+- **FR-031**: When a storefront is `RESTRICTED`, every inbound request (authenticated or not) MUST pass an access-control check in the storefront resolution filter — before any catalog, cart, or order handler executes. The filter resolves the caller's principal from the JWT token (if present), extracts all available identifiers, and checks them against the access list. Requests that fail the check MUST receive an "access required / access denied" response and MUST NOT reach any downstream handler. Workspace members (any principal holding a role in the storefront's workspace) are exempt from this check and are always granted access regardless of the access list.
+- **FR-039**: The storefront resolution filter MUST determine whether the authenticated principal is a workspace member (via their workspace role claim in the JWT) before evaluating the access list. If they are a workspace member, the access list check MUST be skipped entirely.
+- **FR-032**: The access list MUST support entries by at least four identifier types: `USER_ID` (platform user ID), `PHONE` (E.164 format), `EMAIL` (case-insensitive), and `EXTERNAL_ID` (merchant-supplied opaque string). A single entry carries one identifier type and value.
+- **FR-033**: For an authenticated end customer, the filter MUST resolve the full principal entity from the JWT, extract all available identifiers (platform user ID, registered phone, registered email, and `external_id` JWT claim if present), and match each against the access list. A match on any one identifier type is sufficient to grant access.
+- **FR-034**: For an unauthenticated visitor hitting a `RESTRICTED` storefront, the platform MUST return an "access required" response (HTTP 403 with a distinct code, not 404) and prompt login or registration. It MUST NOT reveal any product or storefront details.
+- **FR-035**: Merchants MUST be able to add, remove, and list access entries for their storefront from within Ampairs management. Bulk import via CSV MUST be supported. The CSV format is two columns: `identifier_type` (one of `USER_ID` | `PHONE` | `EMAIL` | `EXTERNAL_ID`) and `identifier_value`. The import endpoint validates each row's type and value format, deduplicates against existing entries, inserts valid rows in bulk, and returns per-row errors without aborting the entire import.
+- **FR-036**: Access entries MUST be portable — an entry keyed by phone or email MUST automatically grant access to any platform account whose registered phone or email matches that value, even if the account is created after the entry is added.
+- **FR-037**: When a `RESTRICTED` storefront is switched back to `PUBLIC`, all existing access entries MUST be retained (not deleted) so the merchant can re-enable restriction without reconfiguring the list.
+- **FR-038**: Access control enforcement MUST be implemented as an additional authorization step within the existing storefront/workspace resolution filter — not as a separate middleware — so that a single filter handles workspace scoping, principal resolution from the JWT, and access gating in one pass.
+- **FR-041**: Every access denial on a `RESTRICTED` storefront MUST emit a structured log entry at WARN level containing: storefront ID, attempted identifier type(s), timestamp, and denial reason code (`STORE_ACCESS_DENIED` or `STORE_UNAUTHENTICATED`). No DB write is required in v1. A merchant-facing denial history endpoint is deferred to a future iteration.
+- **FR-040**: Access list lookups MUST be served from an in-process LRU cache (e.g., Caffeine) keyed by storefront ID, with a maximum capacity of 100 storefront entries. Each cache entry holds the complete access list for that storefront. Any write to a storefront's access list (add entry, remove entry, bulk import, or `accessMode` toggle) MUST explicitly evict that storefront's cache entry to prevent stale access decisions.
+
 **Workspace Isolation**
 
 - **FR-023**: All product data, storefront configuration, and orders MUST be isolated per workspace — no cross-merchant data leakage is permitted under any circumstances.
@@ -169,7 +208,8 @@ After placing an order, the customer can view order status updates on their acco
 
 ### Key Entities
 
-- **Storefront**: Represents a merchant's public-facing store. Created explicitly by the merchant as a setup step — not auto-provisioned per workspace. Tied to a single workspace by its slug. Has a lifecycle: Draft (being configured) → Published (publicly accessible) → Unpublished (taken offline). Carries display configuration (name, logo, description).
+- **Storefront**: Represents a merchant's public-facing store. Created explicitly by the merchant as a setup step — not auto-provisioned per workspace. Tied to a single workspace by its slug. Has a lifecycle: Draft (being configured) → Published (publicly accessible) → Unpublished (taken offline). Carries display configuration (name, logo, description) and an `accessMode` (`PUBLIC` | `RESTRICTED`). When `RESTRICTED`, access is gated by the storefront's `StorefrontAccessEntry` list.
+- **StorefrontAccessEntry**: A single row in the storefront's access list. Identifies one allowed user by `identifierType` (`USER_ID` | `PHONE` | `EMAIL` | `EXTERNAL_ID`) and `identifierValue`. Scoped to a storefront (and implicitly to the workspace). Entries survive access-mode toggles and are re-activated whenever the storefront returns to `RESTRICTED` mode.
 - **Listed Product**: A denormalized snapshot of a product as it appears on the storefront. Contains name, brand, category, subcategory, price, stock status, and image references. Kept in sync with the management system via events. Strictly scoped to one workspace.
 - **End Customer**: A shopper with a single platform-wide identity managed by the existing `auth` module (email + password, JWT + refresh token, device session). Distinct user type with no workspace roles. Can interact with multiple merchant storefronts. Owns saved addresses and has a per-storefront order history.
 - **Cart**: A collection of line items linked to a specific storefront and customer (or anonymous session). Each line item holds a product reference, quantity, and a price snapshot at time of addition.
@@ -188,6 +228,7 @@ After placing an order, the customer can view order status updates on their acco
 - **SC-005**: 95% of `EcomOrderPlaced` events are successfully processed by the management system within 30 seconds of order confirmation.
 - **SC-006**: End customers can register once and successfully log in at any merchant storefront using the same credentials — verified by cross-storefront login test.
 - **SC-007**: Zero cross-workspace data leaks — no product, order, or customer data from one merchant is accessible via another merchant's storefront, verified by automated isolation tests.
+- **SC-009**: A RESTRICTED storefront rejects 100% of requests from identities not in the access list — verified by automated access-control tests covering unauthenticated visitors, authenticated but unlisted users, and users matched by each identifier type (user ID, phone, email, external ID).
 - **SC-008**: A customer's cart persists for at least 24 hours, reducing incomplete-session abandonment.
 
 ## Assumptions
@@ -212,3 +253,15 @@ After placing an order, the customer can view order status updates on their acco
 - Q: When two customers simultaneously confirm an order for the last unit, which conflict resolution applies? → A: First confirmed wins (optimistic). Both orders are accepted by the ecom module; the management system rejects the second when it attempts inventory deduction. The customer is notified and the order is cancelled per the existing FR-017 rejection flow. No cart-level reservation is required.
 - Q: How are partially fulfillable orders handled? → A: The merchant can edit the order in management (adjust quantities, remove unavailable line items) and then mark it as fulfilled. The order model MUST be designed for future extension to partial fulfilment with split shipments — line-item level status and shipment grouping must be structurally supported even if not exposed in v1.
 - Q: Should end-customer auth be a standalone system or reuse the existing auth module? → A: Reuse the existing `auth` module — end customers are registered as a distinct user type within the existing auth infrastructure (JWT signing, refresh tokens, device sessions). No separate auth system is needed.
+- Q: Where exactly does access control enforcement live — a new filter or inside the existing storefront resolution filter? → A: Inside the existing storefront/workspace resolution filter as an additional authorization step (FR-038). The filter already resolves the storefront from the slug; it now also checks `accessMode` and, if RESTRICTED, validates the caller's identity against the access list before passing the request to any handler.
+- Q: What response code does a RESTRICTED storefront return to a denied visitor? → A: HTTP 403 with a distinct error code (e.g., `STORE_ACCESS_DENIED`) so clients can differentiate from 404 "store not found". An unauthenticated visitor also receives 403 (not 401) because the storefront's existence should not be confirmed or denied — only access is refused.
+- Q: Can a single access entry cover multiple identifier types (e.g., phone AND email for the same person)? → A: No — one entry, one identifier. A merchant who wants to allow a customer by both phone and email creates two entries. This keeps the model simple and the matching logic straightforward.
+- Q: Is bulk import (CSV) in scope for v1? → A: Yes — FR-035 requires it. The import endpoint accepts a CSV of phone/email values, validates format, deduplicates against existing entries, and inserts in bulk. Errors per-row are returned in the response without aborting the entire import.
+
+### Session 2026-05-31
+
+- Q: How is a caller's `EXTERNAL_ID` presented at runtime so the filter can match it against the access list? → A: The filter resolves the authenticated principal from the JWT token, extracts all available identifiers from the principal entity (user ID, registered phone, registered email, and `external_id` JWT claim if present), then matches each against the access list. No separate request header or query parameter is needed; the token is the sole identity carrier.
+- Q: When a storefront is RESTRICTED, is the merchant (workspace owner) automatically granted access or must they add themselves to the access list? → A: Workspace members (any user with a role in the storefront's workspace) are always allowed through — the access list is not checked for them. This prevents merchant lockout and is consistent with Draft-state preview behaviour.
+- Q: What caching strategy should be applied to access list lookups in the filter hot path? → A: In-process LRU cache (e.g., Caffeine) with a maximum of 100 entries keyed by storefront ID — each entry holds the full access list for that storefront. LRU eviction applies when capacity is exceeded. The cache entry for a storefront MUST be explicitly invalidated on any write to that storefront's access list (add, remove, bulk import, mode toggle) to prevent stale denials or grants.
+- Q: What columns should the bulk CSV import for access entries contain? → A: Two columns — `identifier_type` (one of `USER_ID`, `PHONE`, `EMAIL`, `EXTERNAL_ID`) and `identifier_value`. Explicit type per row; supports all four identifier types in a single upload.
+- Q: Should access denial events be persisted or logged for merchant observability? → A: Structured log entry per denial (attempted identity, storefront ID, timestamp, reason code) at WARN level — no DB write in v1. Queryable via log aggregation. A merchant-facing denial history endpoint is deferred to a future iteration.

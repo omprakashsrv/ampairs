@@ -112,11 +112,11 @@ class CustomerService(
             throw IllegalArgumentException("Invalid GST number format: ${customer.gstNumber}")
         }
 
-        customer.gstNumber?.let {
-            if (customerRepository.findByGstNumber(it).isPresent) {
-                throw IllegalArgumentException("GST number already exists: $it")
-            }
-        }
+        // customer.gstNumber?.let {
+        //     if (customerRepository.findByGstNumber(it).isPresent) {
+        //         throw IllegalArgumentException("GST number already exists: $it")
+        //     }
+        // }
 
         customer.status = "ACTIVE"
         val savedCustomer = customerRepository.save(customer)

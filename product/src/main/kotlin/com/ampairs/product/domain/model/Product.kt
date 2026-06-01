@@ -14,6 +14,16 @@ import org.hibernate.annotations.BatchSize
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 
+@NamedEntityGraph(
+    name = "Product.withCollections",
+    attributeNodes = [
+        NamedAttributeNode("group"),
+        NamedAttributeNode("brand"),
+        NamedAttributeNode("category"),
+        NamedAttributeNode("subCategory"),
+        NamedAttributeNode("baseUnit")
+    ]
+)
 @Entity(name = "product")
 @Table(
     indexes = [
@@ -28,8 +38,8 @@ class Product : OwnableBaseDomain() {
     @Column(name = "code", nullable = false, length = 255)
     var code: String = ""
 
-    @Column(name = "sku", nullable = false, length = 100, unique = true)
-    var sku: String = ""
+    @Column(name = "sku", nullable = true, length = 100)
+    var sku: String? = null
 
     @Column(name = "description", columnDefinition = "TEXT")
     var description: String? = null
@@ -76,23 +86,23 @@ class Product : OwnableBaseDomain() {
     @Column(name = "selling_price", nullable = false)
     var sellingPrice: Double = 0.0
 
-    @OneToOne()
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "group_id", referencedColumnName = "uid", updatable = false, insertable = false)
     var group: ProductGroup? = null
 
-    @OneToOne()
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "brand_id", referencedColumnName = "uid", updatable = false, insertable = false)
     var brand: ProductBrand? = null
 
-    @OneToOne()
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "category_id", referencedColumnName = "uid", updatable = false, insertable = false)
     var category: ProductCategory? = null
 
-    @OneToOne()
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "sub_category_id", referencedColumnName = "uid", updatable = false, insertable = false)
     var subCategory: ProductSubCategory? = null
 
-    @OneToOne()
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "base_unit_id", referencedColumnName = "uid", updatable = false, insertable = false)
     var baseUnit: Unit? = null
 

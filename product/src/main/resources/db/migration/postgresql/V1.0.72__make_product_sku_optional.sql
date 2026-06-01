@@ -1,0 +1,3 @@
+ALTER TABLE product ALTER COLUMN sku DROP NOT NULL;
+ALTER TABLE product DROP CONSTRAINT IF EXISTS product_sku_key;
+DROP INDEX IF EXISTS idx_product_sku;
