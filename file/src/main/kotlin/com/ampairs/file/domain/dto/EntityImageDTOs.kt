@@ -96,11 +96,11 @@ fun EntityImage.asEntityImageResponse(baseUrl: String): EntityImageResponse = En
     fileExtension = fileExtension,
     contentType = contentType,
     fileSize = fileSize,
-    formattedFileSize = getFormattedFileSize(),
+    formattedFileSize = formatEntityFileSize(fileSize),
     storagePath = storagePath,
     storageUrl = storageUrl,
-    imageUrl = "$baseUrl/$uid/download",
-    thumbnailUrl = "$baseUrl/$uid/thumbnail",
+    imageUrl = "$baseUrl/images/$uid/download",
+    thumbnailUrl = "$baseUrl/images/$uid/thumbnail",
     isPrimary = isPrimary,
     displayOrder = displayOrder,
     description = description,
@@ -126,9 +126,12 @@ fun List<EntityImage>.asEntityImageListResponse(baseUrl: String): EntityImageLis
     )
 }
 
-fun formatEntityFileSize(bytes: Long): String = when {
-    bytes < 1024 -> "$bytes B"
-    bytes < 1024 * 1024 -> "${bytes / 1024} KB"
-    bytes < 1024 * 1024 * 1024 -> "${bytes / (1024 * 1024)} MB"
-    else -> "${bytes / (1024 * 1024 * 1024)} GB"
+fun formatEntityFileSize(bytes: Long): String {
+    val kb = 1024.0; val mb = kb * 1024; val gb = mb * 1024
+    return when {
+        bytes >= gb -> "%.2f GB".format(bytes / gb)
+        bytes >= mb -> "%.2f MB".format(bytes / mb)
+        bytes >= kb -> "%.2f KB".format(bytes / kb)
+        else -> "$bytes B"
+    }
 }

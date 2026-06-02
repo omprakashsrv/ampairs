@@ -176,8 +176,11 @@ class FileValidationService(
                 }
             }
 
-            // Scan for embedded scripts or malicious content
-            if (containsMaliciousContent(fileBytes)) {
+            // Malicious content scan only applies to text-based files.
+            // Binary image formats (JPEG, PNG, GIF, WebP) are validated via magic bytes + ImageIO;
+            // their re-encoding through processForStorage also strips all embedded metadata.
+            // Scanning binary bytes as text produces false positives on common byte sequences.
+            if (contentType?.startsWith("image/") != true && containsMaliciousContent(fileBytes)) {
                 errors.add("File contains potentially malicious content")
                 logger.warn("Malicious content detected in file: {}", sanitizedFilename)
                 return FileValidationResult(false, errors)

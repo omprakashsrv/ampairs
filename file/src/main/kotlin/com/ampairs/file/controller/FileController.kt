@@ -2,15 +2,11 @@ package com.ampairs.file.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.multitenancy.TenantContextHolder
-import com.ampairs.file.config.StorageProperties
 import com.ampairs.file.domain.dto.FileResponse
 import com.ampairs.file.domain.dto.toFileResponse
-import com.ampairs.file.domain.service.FileAccessException
 import com.ampairs.file.domain.service.FileNotFoundException
 import com.ampairs.file.domain.service.FileService
-import com.ampairs.file.service.ImageResizingService
-import com.ampairs.file.service.ImageResizingService.ThumbnailSize
-import com.ampairs.file.service.ImageResizingService.ThumbnailSize.MEDIUM
+import com.ampairs.file.storage.ObjectStorageService
 import org.slf4j.LoggerFactory
 import org.springframework.core.io.InputStreamResource
 import org.springframework.http.CacheControl
@@ -26,25 +22,19 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
-import java.io.ByteArrayInputStream
-import java.net.URI
 import java.util.concurrent.TimeUnit
 
 @RestController
 @RequestMapping("/file/v1")
 class FileController(
     private val fileService: FileService,
-    private val imageResizingService: ImageResizingService,
-    private val storageProperties: StorageProperties,
+    private val objectStorageService: ObjectStorageService,
 ) {
     private val logger = LoggerFactory.getLogger(FileController::class.java)
 
     /**
-     * Universal upload endpoint. Stores the file under {entityType}/{workspaceSlug}/{entityUid}/
-     * and returns a FileResponse with pre-built download_url and thumbnail_url.
-     *
-     * entity_type: free-form label — PRODUCT, BRAND, CATEGORY, GROUP, SUB_CATEGORY, CUSTOMER, etc.
-     * entity_uid:  UID of the owning entity (used as the sub-folder in storage).
+     * Universal upload endpoint for non-image files (documents, exports, etc.).
+     * For entity images use POST /file/v1/images/{entityType}/{entityUid} instead.
      */
     @PostMapping("/upload", consumes = [MediaType.MULTIPART_FORM_DATA_VALUE])
     @ResponseStatus(HttpStatus.CREATED)
@@ -67,63 +57,25 @@ class FileController(
     }
 
     /**
-     * Redirect to a short-lived presigned URL for the file.
-     * Works for S3, MinIO, and LOCAL (local returns a direct /files/... URL).
+     * Stream file bytes directly from object storage.
+     * For entity images use GET /file/v1/images/{imageUid}/download instead.
      */
     @GetMapping("/{fileUid}/download")
-    fun download(@PathVariable fileUid: String): ResponseEntity<Void> {
+    fun download(@PathVariable fileUid: String): ResponseEntity<InputStreamResource> {
         return try {
-            val url = fileService.getFileUrl(fileUid, expirationMinutes = 60)
-            ResponseEntity.status(HttpStatus.FOUND)
-                .location(URI.create(url))
-                .build()
-        } catch (e: FileNotFoundException) {
-            ResponseEntity.notFound().build()
-        } catch (e: FileAccessException) {
-            logger.error("Failed to redirect file download: fileUid={}, error={}", fileUid, e.message)
-            ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
-        }
-    }
-
-    /**
-     * Stream a resized thumbnail. Accepts an optional ?size= query param (sm/md/lg suffix or pixel width).
-     * Falls back to md if unrecognised. Cached for the configured max-age.
-     */
-    @GetMapping("/{fileUid}/thumbnail")
-    fun thumbnail(
-        @PathVariable fileUid: String,
-        @RequestParam("size", defaultValue = "md") size: String,
-    ): ResponseEntity<InputStreamResource> {
-        return try {
-            val (file, inputStream) = fileService.getFileContent(fileUid)
-
-            val targetSize = ThumbnailSize.fromSuffix(size)
-                ?: ThumbnailSize.fromPixels(size.toIntOrNull() ?: 0)
-                ?: MEDIUM
-
-            val contentType = file.contentType ?: "image/jpeg"
-            val format = if (contentType.endsWith("png")) "png" else "jpg"
-
-            val thumbnail = imageResizingService.generateThumbnail(inputStream, targetSize, format)
-
-            val cacheControl = CacheControl.maxAge(
-                storageProperties.image.thumbnails.cacheMaxAge, TimeUnit.SECONDS
-            ).cachePublic()
-
+            val file = fileService.getFile(fileUid)
+            val stream = objectStorageService.downloadFile(file.bucket, file.objectKey)
+            val contentType = file.contentType?.let { MediaType.parseMediaType(it) } ?: MediaType.APPLICATION_OCTET_STREAM
             val headers = HttpHeaders().apply {
-                setContentType(MediaType.parseMediaType(if (format == "png") "image/png" else "image/jpeg"))
-                setContentLength(thumbnail.size.toLong())
-                setCacheControl(cacheControl)
-                set("X-Content-Type-Options", "nosniff")
+                setContentType(contentType)
+                set(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"${file.name}\"")
+                setCacheControl(CacheControl.maxAge(1, TimeUnit.HOURS).cachePublic())
             }
-
-            ResponseEntity.ok()
-                .headers(headers)
-                .body(InputStreamResource(ByteArrayInputStream(thumbnail)))
+            ResponseEntity.ok().headers(headers).body(InputStreamResource(stream))
         } catch (e: FileNotFoundException) {
             ResponseEntity.notFound().build()
         } catch (e: Exception) {
-            logger.error("Failed to generate thumbnail: fileUid={}, size={}, error={}", fileUid, size, e.message)
+            logger.error("Failed to download file: fileUid={}, error={}", fileUid, e.message)
             ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build()
         }
     }

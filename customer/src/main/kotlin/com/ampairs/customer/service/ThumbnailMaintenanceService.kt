@@ -75,7 +75,7 @@ class ThumbnailMaintenanceService(
 
             // Get all workspaces and clean up their orphaned thumbnails
             val workspaceSlugs = entityImageRepository.findActiveByEntity(CUSTOMER_ENTITY_TYPE, "")
-                .map { it.workspaceSlug }
+                .map { it.ownerId }
                 .distinct()
 
             workspaceSlugs.forEach { workspaceSlug ->

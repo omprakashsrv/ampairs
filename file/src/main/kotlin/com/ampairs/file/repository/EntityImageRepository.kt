@@ -53,4 +53,7 @@ interface EntityImageRepository : JpaRepository<EntityImage, Long> {
     @Transactional
     @Query("UPDATE entity_image ei SET ei.active = false WHERE ei.entityType = :type AND ei.entityUid = :uid")
     fun softDeleteAllByEntity(@Param("type") entityType: String, @Param("uid") entityUid: String)
+
+    @Query("SELECT ei FROM entity_image ei WHERE ei.uid = :imageUid")
+    fun findByUid(@Param("imageUid") imageUid: String): EntityImage?
 }

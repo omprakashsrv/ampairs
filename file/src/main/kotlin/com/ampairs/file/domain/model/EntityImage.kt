@@ -24,9 +24,6 @@ class EntityImage : OwnableBaseDomain() {
     @Column(name = "entity_uid", nullable = false, length = 200)
     var entityUid: String = ""
 
-    @Column(name = "workspace_slug", nullable = false, length = 100)
-    var workspaceSlug: String = ""
-
     @Column(name = "original_filename", length = 500)
     var originalFilename: String = ""
 
@@ -70,18 +67,8 @@ class EntityImage : OwnableBaseDomain() {
 
     override fun obtainSeqIdPrefix(): String = "EIM"
 
-    fun storagePath(workspaceSlug: String): String =
-        "$workspaceSlug/$entityType/$entityUid/${this.uid}.$fileExtension"
-
-    fun getFormattedFileSize(): String {
-        val kb = 1024.0; val mb = kb * 1024; val gb = mb * 1024
-        return when {
-            fileSize >= gb -> "%.2f GB".format(fileSize / gb)
-            fileSize >= mb -> "%.2f MB".format(fileSize / mb)
-            fileSize >= kb -> "%.2f KB".format(fileSize / kb)
-            else -> "$fileSize bytes"
-        }
-    }
+    fun storagePath(): String =
+        "$ownerId/$entityType/$entityUid/${this.uid}.$fileExtension"
 }
 
 data class EntityImageMetadata(

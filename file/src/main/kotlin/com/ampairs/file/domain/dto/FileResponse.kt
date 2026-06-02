@@ -9,7 +9,6 @@ data class FileResponse(
     val bucket: String = "",
     val objectKey: String = "",
     val downloadUrl: String = "",
-    val thumbnailUrl: String = "",
 )
 
 fun File.toFileResponse(): FileResponse = FileResponse(
@@ -17,8 +16,7 @@ fun File.toFileResponse(): FileResponse = FileResponse(
     name = name,
     bucket = bucket,
     objectKey = objectKey,
-    downloadUrl = "/file/v1/files/$uid/download",
-    thumbnailUrl = "/file/v1/files/$uid/thumbnail",
+    downloadUrl = "/file/v1/$uid/download",
 )
 
 fun List<File>.toFileResponse(): List<FileResponse> {

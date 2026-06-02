@@ -34,7 +34,6 @@ class EntityImageService(
         entityUid: String,
         file: MultipartFile,
         request: EntityImageUploadRequest,
-        workspaceSlug: String,
         baseUrl: String,
     ): EntityImageResponse {
         val start = System.currentTimeMillis()
@@ -67,7 +66,6 @@ class EntityImageService(
             request.uid?.let { uid = it }
             this.entityType = entityType
             this.entityUid = entityUid
-            this.workspaceSlug = workspaceSlug
             originalFilename = file.originalFilename ?: "image.$ext"
             fileExtension = ext
             contentType = file.contentType ?: "image/jpeg"
@@ -79,7 +77,7 @@ class EntityImageService(
             uploadedAt = Instant.now()
             active = true
         }
-        image.storagePath = image.storagePath(workspaceSlug)
+        image.storagePath = image.storagePath()
 
         // 5. Upload to object storage
         val result = objectStorageService.uploadFile(
@@ -90,7 +88,7 @@ class EntityImageService(
             mapOf(
                 "entity-type" to entityType,
                 "entity-uid" to entityUid,
-                "workspace" to workspaceSlug,
+                "workspace" to image.ownerId,
                 "original-filename" to image.originalFilename,
                 "checksum" to checksum
             )
@@ -163,6 +161,30 @@ class EntityImageService(
         return Pair(image, stream)
     }
 
+    @Transactional(readOnly = true)
+    fun downloadByUid(imageUid: String): Pair<EntityImage, InputStream> {
+        val image = entityImageRepository.findByUid(imageUid)
+            ?: throw NotFoundException("Image not found: $imageUid")
+        if (!image.active) throw NotFoundException("Image is not active: $imageUid")
+        val stream = objectStorageService.downloadFile(storageProperties.defaultBucket, image.storagePath)
+        return Pair(image, stream)
+    }
+
+    @Transactional(readOnly = true)
+    fun thumbnailByUid(imageUid: String, size: String): Pair<EntityImage, InputStream> {
+        val image = entityImageRepository.findByUid(imageUid)
+            ?: throw NotFoundException("Image not found: $imageUid")
+        if (!image.active) throw NotFoundException("Image is not active: $imageUid")
+        val thumbnailSize = ImageResizingService.ThumbnailSize.fromAlias(size)
+            ?: ImageResizingService.ThumbnailSize.fromPixels(size.toIntOrNull() ?: 0)
+            ?: ImageResizingService.ThumbnailSize.fromPixels(storageProperties.image.thumbnails.defaultSize)
+            ?: ImageResizingService.ThumbnailSize.MEDIUM
+        val (stream, _) = thumbnailCacheService.getThumbnail(
+            storageProperties.defaultBucket, image.storagePath, thumbnailSize
+        )
+        return Pair(image, stream)
+    }
+
     fun update(
         entityType: String,
         entityUid: String,
@@ -205,6 +227,29 @@ class EntityImageService(
             logger.error("Failed to delete image: entity={}/{}, uid={}, error={}", entityType, entityUid, imageUid, e.message)
             false
         }
+    }
+
+    fun deleteByUid(imageUid: String) {
+        val image = entityImageRepository.findByUid(imageUid)
+            ?: throw NotFoundException("Image not found: $imageUid")
+        if (!image.active) return
+        entityImageRepository.softDelete(imageUid)
+        try {
+            objectStorageService.deleteObject(storageProperties.defaultBucket, image.storagePath)
+            thumbnailCacheService.deleteThumbnails(storageProperties.defaultBucket, image.storagePath)
+        } catch (e: Exception) {
+            logger.error("Storage cleanup failed for image: uid={}, error={}", imageUid, e.message)
+        }
+    }
+
+    fun setPrimaryByUid(imageUid: String, baseUrl: String): EntityImageResponse {
+        val image = entityImageRepository.findByUid(imageUid)
+            ?: throw NotFoundException("Image not found: $imageUid")
+        if (!image.active) throw NotFoundException("Image is not active: $imageUid")
+        entityImageRepository.clearPrimaryStatus(image.entityType, image.entityUid)
+        image.isPrimary = true
+        image.displayOrder = 0
+        return entityImageRepository.save(image).asEntityImageResponse(baseUrl)
     }
 
     fun bulkDelete(entityType: String, entityUid: String, imageUids: List<String>): EntityImageBulkDeleteResponse {

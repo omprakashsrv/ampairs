@@ -16,12 +16,12 @@ class CustomerImageService(private val entityImageService: EntityImageService) {
         private fun baseUrl(customerUid: String) = "/customer/v1/images/$customerUid"
     }
 
-    fun uploadImage(file: MultipartFile, request: CustomerImageUploadRequest, workspaceSlug: String): CustomerImageUploadResponse {
+    fun uploadImage(file: MultipartFile, request: CustomerImageUploadRequest): CustomerImageUploadResponse {
         val start = System.currentTimeMillis()
         val response = entityImageService.upload(
             ENTITY_TYPE, request.customerUid, file,
             EntityImageUploadRequest(ENTITY_TYPE, request.customerUid, request.uid, request.description, request.isPrimary, request.displayOrder),
-            workspaceSlug, baseUrl(request.customerUid)
+            baseUrl(request.customerUid)
         )
         return CustomerImageUploadResponse(response.toCustomerImageResponse(request.customerUid), response.uploadedAt, System.currentTimeMillis() - start)
     }

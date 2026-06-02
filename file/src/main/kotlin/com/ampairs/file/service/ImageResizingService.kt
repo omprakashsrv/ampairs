@@ -30,6 +30,12 @@ class ImageResizingService(
         companion object {
             fun fromPixels(pixels: Int): ThumbnailSize? = values().find { it.pixels == pixels }
             fun fromSuffix(suffix: String): ThumbnailSize? = values().find { it.suffix == suffix }
+            fun fromAlias(alias: String): ThumbnailSize? = when (alias.lowercase()) {
+                "sm", "small" -> SMALL
+                "md", "medium" -> MEDIUM
+                "lg", "large" -> LARGE
+                else -> null
+            }
         }
     }
 
@@ -205,23 +211,6 @@ class ImageResizingService(
             logger.error("Failed to process image for storage: format={}, error={}", format, e.message, e)
             throw ImageResizingException("Failed to process image for storage: ${e.message}", e)
         }
-    }
-
-    private fun resizeImage(originalImage: BufferedImage, maxWidth: Int, maxHeight: Int): BufferedImage {
-        val originalWidth = originalImage.width
-        val originalHeight = originalImage.height
-        val aspectRatio = originalWidth.toDouble() / originalHeight.toDouble()
-        val (newWidth, newHeight) = if (originalWidth > originalHeight) {
-            val width = minOf(maxWidth, originalWidth)
-            val height = (width / aspectRatio).toInt()
-            width to height
-        } else {
-            val height = minOf(maxHeight, originalHeight)
-            val width = (height * aspectRatio).toInt()
-            width to height
-        }
-
-        return resizeImageExactMemoryEfficient(originalImage, newWidth, newHeight)
     }
 
     private fun resizeImageMemoryEfficient(originalImage: BufferedImage, maxWidth: Int, maxHeight: Int): BufferedImage {
