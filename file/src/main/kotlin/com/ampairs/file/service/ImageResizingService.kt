@@ -114,7 +114,9 @@ class ImageResizingService(
                         else -> "jpg"
                     }
 
-                    ImageIO.write(resizedImage, outputFormat, outputStream)
+                    val imageToWrite = stripAlphaIfNeeded(resizedImage, outputFormat)
+                    val written = ImageIO.write(imageToWrite, outputFormat, outputStream)
+                    if (!written) throw ImageResizingException("Failed to write image in format: $outputFormat")
                     outputStream.toByteArray()
                 } finally {
                     originalImage.flush()
@@ -198,7 +200,9 @@ class ImageResizingService(
                     }
                     val outputFormat = if (format.lowercase() == "png") "png" else "jpg"
                     val out = ByteArrayOutputStream()
-                    ImageIO.write(processed, outputFormat, out)
+                    val imageToWrite = stripAlphaIfNeeded(processed, outputFormat)
+                    val written = ImageIO.write(imageToWrite, outputFormat, out)
+                    if (!written) throw ImageResizingException("Failed to write image in format: $outputFormat")
                     if (processed !== original) processed.flush()
                     ProcessedImage(out.toByteArray(), processed.width, processed.height)
                 } finally {
@@ -259,6 +263,14 @@ class ImageResizingService(
         }
 
         return resizedImage
+    }
+
+    private fun stripAlphaIfNeeded(image: BufferedImage, outputFormat: String): BufferedImage {
+        if (outputFormat != "jpg" || !image.colorModel.hasAlpha()) return image
+        val rgb = BufferedImage(image.width, image.height, BufferedImage.TYPE_INT_RGB)
+        val g = rgb.createGraphics()
+        try { g.drawImage(image, 0, 0, null) } finally { g.dispose() }
+        return rgb
     }
 
     private fun progressiveResize(originalImage: BufferedImage, targetWidth: Int, targetHeight: Int): BufferedImage {
