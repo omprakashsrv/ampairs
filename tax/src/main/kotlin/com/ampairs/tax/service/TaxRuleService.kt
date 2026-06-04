@@ -2,6 +2,7 @@ package com.ampairs.tax.service
 
 import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.core.exception.NotFoundException
+import com.ampairs.core.sync.EntityChangePublisher
 import com.ampairs.tax.domain.dto.TaxRuleDto
 import com.ampairs.tax.domain.dto.UpdateTaxRuleRequest
 import com.ampairs.tax.domain.dto.asDto
@@ -18,7 +19,8 @@ import java.time.Instant
 @Service
 @Transactional(readOnly = true)
 class TaxRuleService(
-    private val taxRuleRepository: TaxRuleRepository
+    private val taxRuleRepository: TaxRuleRepository,
+    private val entityChangePublisher: EntityChangePublisher,
 ) {
 
     fun getTaxRules(
@@ -80,7 +82,9 @@ class TaxRuleService(
             request.isActive?.let { isActive = it }
         }
 
-        return taxRuleRepository.save(taxRule).asDto()
+        return taxRuleRepository.save(taxRule)
+            .also { entityChangePublisher.updated("tax", it.uid) }
+            .asDto()
     }
 
     @Transactional
@@ -91,5 +95,6 @@ class TaxRuleService(
         // Soft delete
         taxRule.isActive = false
         taxRuleRepository.save(taxRule)
+        entityChangePublisher.updated("tax", taxRule.uid)
     }
 }

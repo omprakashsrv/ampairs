@@ -1,6 +1,7 @@
 package com.ampairs.customer.domain.service
 
 import com.ampairs.core.multitenancy.TenantContextHolder
+import com.ampairs.core.sync.EntityChangePublisher
 import com.ampairs.customer.domain.model.CustomerType
 import com.ampairs.customer.repository.CustomerTypeRepository
 import org.slf4j.LoggerFactory
@@ -16,7 +17,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional
 class CustomerTypeService(
-    private val customerTypeRepository: CustomerTypeRepository
+    private val customerTypeRepository: CustomerTypeRepository,
+    private val entityChangePublisher: EntityChangePublisher,
 ) {
 
     private val logger = LoggerFactory.getLogger(CustomerTypeService::class.java)
@@ -92,6 +94,7 @@ class CustomerTypeService(
         }
 
         return customerTypeRepository.save(customerType)
+            .also { entityChangePublisher.created("customer_type", it.uid) }
     }
 
     /**
@@ -109,6 +112,7 @@ class CustomerTypeService(
         existingType.metadata = updates.metadata
 
         return customerTypeRepository.save(existingType)
+            .also { entityChangePublisher.updated("customer_type", it.uid) }
     }
 
     /**
@@ -142,11 +146,13 @@ class CustomerTypeService(
                 existing.defaultCreditDays = incoming.defaultCreditDays
                 existing.metadata = incoming.metadata
                 customerTypeRepository.save(existing)
+                    .also { entityChangePublisher.updated("customer_type", it.uid) }
             } else {
                 if (incoming.uid.isNotEmpty() && customerTypeRepository.existsByUid(incoming.uid)) {
                     throw IllegalArgumentException("Customer type with UID '${incoming.uid}' already exists")
                 }
                 customerTypeRepository.save(incoming)
+                    .also { entityChangePublisher.created("customer_type", it.uid) }
             }
         }
     }

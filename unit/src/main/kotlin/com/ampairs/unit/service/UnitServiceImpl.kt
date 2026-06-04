@@ -19,7 +19,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class UnitServiceImpl(
     private val unitRepository: UnitRepository,
-    private val unitUsageProviders: List<UnitUsageProvider>
+    private val unitUsageProviders: List<UnitUsageProvider>,
+    private val entityChangePublisher: com.ampairs.core.sync.EntityChangePublisher,
 ) : UnitService {
 
     private val logger = LoggerFactory.getLogger(UnitServiceImpl::class.java)
@@ -57,6 +58,7 @@ class UnitServiceImpl(
             active = true
         }
         val saved = unitRepository.save(unit)
+        entityChangePublisher.created("unit", saved.uid)
         return saved.asUnitResponse()
     }
 
@@ -67,6 +69,7 @@ class UnitServiceImpl(
 
         existing.applyRequest(request.copy(uid = uid))
         val saved = unitRepository.save(existing)
+        entityChangePublisher.updated("unit", saved.uid)
         return saved.asUnitResponse()
     }
 
@@ -86,6 +89,7 @@ class UnitServiceImpl(
 
         unit.active = false
         unitRepository.save(unit)
+        entityChangePublisher.deleted("unit", unit.uid)
     }
 
     @Transactional(readOnly = true)

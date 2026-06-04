@@ -1,6 +1,7 @@
 package com.ampairs.customer.domain.service
 
 import com.ampairs.core.multitenancy.TenantContextHolder
+import com.ampairs.core.sync.EntityChangePublisher
 import com.ampairs.customer.domain.model.CustomerGroup
 import com.ampairs.customer.repository.CustomerGroupRepository
 import org.slf4j.LoggerFactory
@@ -16,7 +17,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional
 class CustomerGroupService(
-    private val customerGroupRepository: CustomerGroupRepository
+    private val customerGroupRepository: CustomerGroupRepository,
+    private val entityChangePublisher: EntityChangePublisher,
 ) {
 
     private val logger = LoggerFactory.getLogger(CustomerGroupService::class.java)
@@ -101,6 +103,7 @@ class CustomerGroupService(
         }
 
         return customerGroupRepository.save(customerGroup)
+            .also { entityChangePublisher.created("customer_group", it.uid) }
     }
 
     /**
@@ -118,6 +121,7 @@ class CustomerGroupService(
         existingGroup.metadata = updates.metadata
 
         return customerGroupRepository.save(existingGroup)
+            .also { entityChangePublisher.updated("customer_group", it.uid) }
     }
 
     /**
@@ -151,11 +155,13 @@ class CustomerGroupService(
                 existing.priorityLevel = incoming.priorityLevel
                 existing.metadata = incoming.metadata
                 customerGroupRepository.save(existing)
+                    .also { entityChangePublisher.updated("customer_group", it.uid) }
             } else {
                 if (incoming.uid.isNotEmpty() && customerGroupRepository.existsByUid(incoming.uid)) {
                     throw IllegalArgumentException("Customer group with UID '${incoming.uid}' already exists")
                 }
                 customerGroupRepository.save(incoming)
+                    .also { entityChangePublisher.created("customer_group", it.uid) }
             }
         }
     }
