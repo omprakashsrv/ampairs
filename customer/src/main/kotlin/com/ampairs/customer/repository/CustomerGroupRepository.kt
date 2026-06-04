@@ -55,4 +55,12 @@ interface CustomerGroupRepository : JpaRepository<CustomerGroup, String>, JpaSpe
     /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
     @Query("SELECT MAX(g.updatedAt) FROM CustomerGroup g")
     fun findMaxUpdatedAt(): Instant?
+
+    /**
+     * Incremental sync feed: all groups updated at/after lastSync, INCLUDING inactive
+     * (soft-deleted) rows so clients can detect deletions. Does NOT filter on active.
+     * Note: @TenantId automatically filters by current workspace.
+     */
+    @Query("SELECT g FROM CustomerGroup g WHERE g.updatedAt >= :lastSync")
+    fun findByUpdatedAtAfter(lastSync: Instant, pageable: Pageable): Page<CustomerGroup>
 }

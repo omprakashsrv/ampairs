@@ -9,6 +9,9 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
+import java.time.Instant
 
 /**
  * Service for managing workspace customer groups.
@@ -40,6 +43,27 @@ class CustomerGroupService(
     @Transactional(readOnly = true)
     fun getAllActiveCustomerGroups(pageable: Pageable): Page<CustomerGroup> {
         return customerGroupRepository.findByActiveTrue(pageable)
+    }
+
+    /**
+     * Incremental sync feed for customer groups — returns rows with updatedAt >= lastSync,
+     * INCLUDING inactive (soft-deleted) rows so clients can detect deletions.
+     * Blank/null lastSync returns all rows (paginated) including inactive.
+     * Note: @TenantId automatically filters by current workspace.
+     */
+    @Transactional(readOnly = true)
+    fun getCustomerGroupsAfterSync(lastSync: String?, pageable: Pageable): Page<CustomerGroup> {
+        return if (lastSync.isNullOrBlank()) {
+            customerGroupRepository.findAll(pageable)
+        } else {
+            try {
+                val decodedLastSync = URLDecoder.decode(lastSync, StandardCharsets.UTF_8)
+                val lastSyncInstant = Instant.parse(decodedLastSync)
+                customerGroupRepository.findByUpdatedAtAfter(lastSyncInstant, pageable)
+            } catch (e: Exception) {
+                customerGroupRepository.findAll(pageable)
+            }
+        }
     }
 
     /**

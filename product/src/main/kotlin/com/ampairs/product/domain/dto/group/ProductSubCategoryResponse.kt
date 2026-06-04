@@ -9,13 +9,15 @@ data class ProductSubCategoryResponse(
     var image: FileResponse?,
 )
 
+fun ProductSubCategory.asResponse(): ProductSubCategoryResponse {
+    return ProductSubCategoryResponse(
+        id = uid,
+        name = name,
+        refId = refId,
+        image = image?.toFileResponse(),
+    )
+}
+
 fun List<ProductSubCategory>.asResponse(): List<ProductSubCategoryResponse> {
-    return map {
-        ProductSubCategoryResponse(
-            id = it.uid,
-            name = it.name,
-            refId = it.refId,
-            image = it.image?.toFileResponse(),
-        )
-    }
+    return map { it.asResponse() }
 }

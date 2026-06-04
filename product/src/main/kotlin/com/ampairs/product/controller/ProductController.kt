@@ -1,6 +1,7 @@
 package com.ampairs.product.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.core.exception.NotFoundException
 import com.ampairs.product.domain.model.Product
 import com.ampairs.product.domain.dto.group.*
@@ -44,10 +45,41 @@ class ProductController(
         return ApiResponse.success(productService.updateProducts(products.asDatabaseModel()))
     }
 
+    /**
+     * Incremental sync feed: products updated at/after last_sync, INCLUDING soft-deleted
+     * (status = "DELETED") rows, ordered by updatedAt ASC, paginated. Lets mobile clients
+     * do batched incremental pulls and detect deletions.
+     */
+    @GetMapping("/sync")
+    fun getProductsSync(
+        @RequestParam("last_sync", required = false) lastSync: String?,
+        @RequestParam("page", defaultValue = "0") page: Int,
+        @RequestParam("size", defaultValue = "100") size: Int
+    ): ApiResponse<PageResponse<ProductResponse>> {
+        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "updatedAt"))
+        val productsPage = productService.getProductsAfterSync(lastSync, pageable)
+        return ApiResponse.success(PageResponse.from(productsPage) { it.asResponse() })
+    }
+
     @GetMapping("/groups")
     fun getGroups(): ApiResponse<List<ProductGroupResponse>> {
         val groups = productService.getGroups()
         return ApiResponse.success(groups.asResponse())
+    }
+
+    /**
+     * Incremental sync feed: product groups updated at/after last_sync, ordered by
+     * updatedAt ASC, paginated. Catalog entities have no soft-delete flag.
+     */
+    @GetMapping("/groups/sync")
+    fun getGroupsSync(
+        @RequestParam("last_sync", required = false) lastSync: String?,
+        @RequestParam("page", defaultValue = "0") page: Int,
+        @RequestParam("size", defaultValue = "100") size: Int
+    ): ApiResponse<PageResponse<ProductGroupResponse>> {
+        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "updatedAt"))
+        val groupsPage = productService.getGroupsAfterSync(lastSync, pageable)
+        return ApiResponse.success(PageResponse.from(groupsPage) { it.asResponse() })
     }
 
     @GetMapping("/all-groups-category")
@@ -71,10 +103,55 @@ class ProductController(
         return ApiResponse.success(brands.asResponse())
     }
 
+    /**
+     * Incremental sync feed: product brands updated at/after last_sync, ordered by
+     * updatedAt ASC, paginated. Catalog entities have no soft-delete flag.
+     */
+    @GetMapping("/brands/sync")
+    fun getBrandsSync(
+        @RequestParam("last_sync", required = false) lastSync: String?,
+        @RequestParam("page", defaultValue = "0") page: Int,
+        @RequestParam("size", defaultValue = "100") size: Int
+    ): ApiResponse<PageResponse<ProductBrandResponse>> {
+        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "updatedAt"))
+        val brandsPage = productService.getBrandsAfterSync(lastSync, pageable)
+        return ApiResponse.success(PageResponse.from(brandsPage) { it.asResponse() })
+    }
+
     @GetMapping("/sub-categories")
     fun getSubCategories(): ApiResponse<List<ProductSubCategoryResponse>> {
         val categories = productService.getSubCategories()
         return ApiResponse.success(categories.asResponse())
+    }
+
+    /**
+     * Incremental sync feed: product sub-categories updated at/after last_sync, ordered by
+     * updatedAt ASC, paginated. Catalog entities have no soft-delete flag.
+     */
+    @GetMapping("/sub-categories/sync")
+    fun getSubCategoriesSync(
+        @RequestParam("last_sync", required = false) lastSync: String?,
+        @RequestParam("page", defaultValue = "0") page: Int,
+        @RequestParam("size", defaultValue = "100") size: Int
+    ): ApiResponse<PageResponse<ProductSubCategoryResponse>> {
+        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "updatedAt"))
+        val subCategoriesPage = productService.getSubCategoriesAfterSync(lastSync, pageable)
+        return ApiResponse.success(PageResponse.from(subCategoriesPage) { it.asResponse() })
+    }
+
+    /**
+     * Incremental sync feed: product categories updated at/after last_sync, ordered by
+     * updatedAt ASC, paginated. Catalog entities have no soft-delete flag.
+     */
+    @GetMapping("/categories/sync")
+    fun getCategoriesSync(
+        @RequestParam("last_sync", required = false) lastSync: String?,
+        @RequestParam("page", defaultValue = "0") page: Int,
+        @RequestParam("size", defaultValue = "100") size: Int
+    ): ApiResponse<PageResponse<ProductCategoryResponse>> {
+        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "updatedAt"))
+        val categoriesPage = productService.getCategoriesAfterSync(lastSync, pageable)
+        return ApiResponse.success(PageResponse.from(categoriesPage) { it.asResponse() })
     }
 
     @PostMapping("/groups")

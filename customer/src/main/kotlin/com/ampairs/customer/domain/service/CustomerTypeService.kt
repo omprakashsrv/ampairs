@@ -9,6 +9,9 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
+import java.time.Instant
 
 /**
  * Service for managing workspace customer types.
@@ -40,6 +43,27 @@ class CustomerTypeService(
     @Transactional(readOnly = true)
     fun getAllActiveCustomerTypes(pageable: Pageable): Page<CustomerType> {
         return customerTypeRepository.findByActiveTrue(pageable)
+    }
+
+    /**
+     * Incremental sync feed for customer types — returns rows with updatedAt >= lastSync,
+     * INCLUDING inactive (soft-deleted) rows so clients can detect deletions.
+     * Blank/null lastSync returns all rows (paginated) including inactive.
+     * Note: @TenantId automatically filters by current workspace.
+     */
+    @Transactional(readOnly = true)
+    fun getCustomerTypesAfterSync(lastSync: String?, pageable: Pageable): Page<CustomerType> {
+        return if (lastSync.isNullOrBlank()) {
+            customerTypeRepository.findAll(pageable)
+        } else {
+            try {
+                val decodedLastSync = URLDecoder.decode(lastSync, StandardCharsets.UTF_8)
+                val lastSyncInstant = Instant.parse(decodedLastSync)
+                customerTypeRepository.findByUpdatedAtAfter(lastSyncInstant, pageable)
+            } catch (e: Exception) {
+                customerTypeRepository.findAll(pageable)
+            }
+        }
     }
 
     /**

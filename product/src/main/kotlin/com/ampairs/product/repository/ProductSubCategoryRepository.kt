@@ -1,6 +1,8 @@
 package com.ampairs.product.repository
 
 import com.ampairs.product.domain.model.group.ProductSubCategory
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
@@ -16,4 +18,16 @@ interface ProductSubCategoryRepository : CrudRepository<ProductSubCategory, Long
     /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
     @Query("SELECT MAX(psc.updatedAt) FROM product_sub_category psc")
     fun findMaxUpdatedAt(): Instant?
+
+    /**
+     * Incremental sync feed: sub-categories updated at/after lastSync, paginated, ordered by
+     * caller-supplied Pageable. Note: @TenantId filters by current workspace.
+     */
+    @EntityGraph("ProductSubCategory.withImage")
+    @Query("SELECT psc FROM product_sub_category psc WHERE psc.updatedAt >= :lastSync")
+    fun findByUpdatedAtAfter(lastSync: Instant, pageable: Pageable): Page<ProductSubCategory>
+
+    @EntityGraph("ProductSubCategory.withImage")
+    @Query("SELECT psc FROM product_sub_category psc")
+    fun findAllPaged(pageable: Pageable): Page<ProductSubCategory>
 }

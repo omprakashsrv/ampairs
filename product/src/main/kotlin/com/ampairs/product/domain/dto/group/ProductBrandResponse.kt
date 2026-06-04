@@ -9,13 +9,15 @@ data class ProductBrandResponse(
     var image: FileResponse?,
 )
 
+fun ProductBrand.asResponse(): ProductBrandResponse {
+    return ProductBrandResponse(
+        id = uid,
+        name = name,
+        refId = refId,
+        image = image?.toFileResponse(),
+    )
+}
+
 fun List<ProductBrand>.asResponse(): List<ProductBrandResponse> {
-    return map {
-        ProductBrandResponse(
-            id = it.uid,
-            name = it.name,
-            refId = it.refId,
-            image = it.image?.toFileResponse(),
-        )
-    }
+    return map { it.asResponse() }
 }

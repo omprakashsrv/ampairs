@@ -23,6 +23,8 @@ import org.springframework.data.domain.Sort
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 import java.time.Instant
 
 @Service
@@ -57,6 +59,26 @@ class ProductService(
             updatedAt ?: Instant.EPOCH,
             PageRequest.of(0, 1000, Sort.by("updatedAt").ascending())
         ).asResponse()
+    }
+
+    /**
+     * Incremental sync feed for products — returns rows with updatedAt >= lastSync,
+     * INCLUDING soft-deleted (status = "DELETED") rows so clients can detect deletions.
+     * Blank/null lastSync returns all rows (paginated) including soft-deleted.
+     * Note: @TenantId automatically filters by current workspace.
+     */
+    fun getProductsAfterSync(lastSync: String?, pageable: Pageable): Page<Product> {
+        return if (lastSync.isNullOrBlank()) {
+            productPagingRepository.findAllBy(pageable)
+        } else {
+            try {
+                val decodedLastSync = URLDecoder.decode(lastSync, StandardCharsets.UTF_8)
+                val lastSyncInstant = Instant.parse(decodedLastSync)
+                productPagingRepository.findByUpdatedAtGreaterThanEqual(lastSyncInstant, pageable)
+            } catch (e: Exception) {
+                productPagingRepository.findAllBy(pageable)
+            }
+        }
     }
 
     @Transactional
@@ -187,6 +209,55 @@ class ProductService(
         }
         if (productSubCategories.isNotEmpty()) entityChangePublisher.updated("product_catalog", productSubCategories.first().uid)
         return productSubCategories
+    }
+
+    /**
+     * Incremental sync feed for product groups — rows with updatedAt >= lastSync, paginated.
+     * Blank/null lastSync returns all rows (paginated). @TenantId filters by workspace.
+     */
+    fun getGroupsAfterSync(lastSync: String?, pageable: Pageable): Page<ProductGroup> =
+        syncPage(lastSync, pageable,
+            allFn = { productGroupRepository.findAllPaged(it) },
+            afterFn = { ts, p -> productGroupRepository.findByUpdatedAtAfter(ts, p) })
+
+    /** Incremental sync feed for product brands. */
+    fun getBrandsAfterSync(lastSync: String?, pageable: Pageable): Page<ProductBrand> =
+        syncPage(lastSync, pageable,
+            allFn = { productBrandRepository.findAllPaged(it) },
+            afterFn = { ts, p -> productBrandRepository.findByUpdatedAtAfter(ts, p) })
+
+    /** Incremental sync feed for product categories. */
+    fun getCategoriesAfterSync(lastSync: String?, pageable: Pageable): Page<ProductCategory> =
+        syncPage(lastSync, pageable,
+            allFn = { productCategoryRepository.findAllPaged(it) },
+            afterFn = { ts, p -> productCategoryRepository.findByUpdatedAtAfter(ts, p) })
+
+    /** Incremental sync feed for product sub-categories. */
+    fun getSubCategoriesAfterSync(lastSync: String?, pageable: Pageable): Page<ProductSubCategory> =
+        syncPage(lastSync, pageable,
+            allFn = { productSubCategoryRepository.findAllPaged(it) },
+            afterFn = { ts, p -> productSubCategoryRepository.findByUpdatedAtAfter(ts, p) })
+
+    /**
+     * Shared parse-and-dispatch for catalog sync feeds: blank/invalid lastSync → all rows,
+     * otherwise rows updated at/after the parsed ISO-8601 instant.
+     */
+    private fun <T : Any> syncPage(
+        lastSync: String?,
+        pageable: Pageable,
+        allFn: (Pageable) -> Page<T>,
+        afterFn: (Instant, Pageable) -> Page<T>,
+    ): Page<T> {
+        return if (lastSync.isNullOrBlank()) {
+            allFn(pageable)
+        } else {
+            try {
+                val decoded = URLDecoder.decode(lastSync, StandardCharsets.UTF_8)
+                afterFn(Instant.parse(decoded), pageable)
+            } catch (e: Exception) {
+                allFn(pageable)
+            }
+        }
     }
 
     fun getGroups(): List<ProductGroup> {
