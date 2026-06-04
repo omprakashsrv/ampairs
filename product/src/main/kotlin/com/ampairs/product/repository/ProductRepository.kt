@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.PagingAndSortingRepository
+import java.time.Instant
 import java.util.*
 
 interface ProductRepository : CrudRepository<Product, Long>, PagingAndSortingRepository<Product, Long> {
@@ -37,4 +38,8 @@ interface ProductRepository : CrudRepository<Product, Long>, PagingAndSortingRep
 
     @Query("SELECT p FROM product p WHERE p.basePrice BETWEEN :minPrice AND :maxPrice AND p.status = 'ACTIVE'")
     fun findActiveProductsByPriceRange(minPrice: Double, maxPrice: Double, pageable: Pageable): Page<Product>
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(p.updatedAt) FROM product p")
+    fun findMaxUpdatedAt(): Instant?
 }
