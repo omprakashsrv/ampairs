@@ -305,8 +305,8 @@ topological order and pulls **dependencies first**, in waves:
 | file | ✅ | — | ❌ | add events |
 
 > Leaf entities (no deps) — customer_group, customer_type, product_catalog, tax, unit, business,
-> form, file — pull first; dependents follow in topological waves. **Confirm the exact `Depends on`
-> edges against the actual FK/reference fields per entity** (see §12).
+> form, file — pull first; dependents follow in topological waves. **Edges confirmed:** product
+> depends on product_catalog + unit + tax; order depends on customer + product.
 
 ---
 
@@ -379,8 +379,9 @@ topological order and pulls **dependencies first**, in waves:
 3. Confirm all deletable entities already soft-delete on the server (needed for delete propagation).
 4. Should a live signal ever advance `lastSync` without a pull (micro-optimization), or always pull?
    *(Recommend always pull in v1.)*
-5. Confirm the exact `Depends on` edges in §8 against real FK/reference fields (does product truly
-   need unit + tax pulled first, or only product_catalog? does order need product, or just customer?).
+
+*(Resolved: §8 dependency edges — product depends on product_catalog + unit + tax; order depends on
+customer + product.)*
 
 ---
 
