@@ -41,6 +41,10 @@ type** — i.e. "the last event of each entity type."
 - While connected, any create/update/delete publishes a **slim** signal to all connected devices
   of the workspace in near-real-time, flipping the relevant entity to `PENDING_PULL` elsewhere.
 - A client that missed events catches up from bootstrap reconciliation alone — no event-log replay.
+- **Dependency-ordered pulls:** when several entities are `PENDING_PULL`, the client pulls them in
+  topological order — referenced parents before dependents (e.g. customer_group + customer_type
+  before customer; product_catalog before product). A dependent waits for its dependencies' pulls
+  to finish.
 - Correct multi-user / multi-device fan-out; the originating device does not echo-pull.
 - Bounded storage: events are signal-sized; **no full entity rows** in the event stream.
 - **Kafka is optional** — DB persistence + bootstrap guarantees correctness without it.
@@ -238,6 +242,21 @@ Form, File — via the existing manual `ApplicationEventPublisher` pattern.
   `device_id` (a **different device of the same user still pulls**). Add a regression test.
 - Checkpoint comparison makes duplicate/late signals idempotent.
 
+### FR-8 Dependency-ordered pulls (mobile)
+Each entity declares the entities it depends on for a **pull** (its referenced parents). When
+bootstrap (or live signals) leave several entities `PENDING_PULL`, `CentralSyncService` resolves a
+topological order and pulls **dependencies first**, in waves:
+- A wave of entities whose dependencies are all satisfied (already `IDLE`/`SUCCESS`, or have no
+  pending dependency) is pulled; the next wave starts only after the previous wave's pulls reach
+  `SUCCESS`.
+- If a dependency's pull **fails**, its dependents are **held** in `PENDING_PULL` (not pulled with a
+  missing parent) and retried on the next cycle (reconnect / hourly).
+- Reuse and generalize the existing `SyncDelegate.pushDependencies` into a shared dependency
+  declaration (or add a parallel `pullDependencies`). Push already wants the same "dependencies
+  first" order (create parent on server before the child that references it), so a single
+  `dependsOn` list can drive **both** push and pull ordering.
+- The dependency set forms a DAG (see §8). Cycles are not allowed; validate at startup.
+
 ---
 
 ## 6. API & Message Contracts (summary)
@@ -265,23 +284,29 @@ Form, File — via the existing manual `ApplicationEventPublisher` pattern.
 **Decision:** every syncable sub-entity gets its **own** checkpoint and pulls independently
 (matches the existing `SyncEntity` enum).
 
-| SyncEntity | Own checkpoint | Backend events today | Action |
-|---|---|---|---|
-| customer | ✅ | ✅ | slim payload |
-| customer_group | ✅ | ❌ | add events |
-| customer_type | ✅ | ❌ | add events |
-| customer_image | ✅ | ❌ | add events |
-| product | ✅ | ✅ | slim payload |
-| product_catalog | ✅ | ❌ | add events |
-| product_image | ✅ | ❌ | add events |
-| order | ✅ | ✅ (order_item rides along) | slim payload |
-| invoice | ✅ | ✅ (invoice_item rides along) | slim payload |
-| business | ✅ | ❌ | add events |
-| tax | ✅ | ❌ | add events |
-| unit | ✅ | ❌ | add events |
-| inventory | ✅ | ❌ | add events |
-| form | ✅ | ❌ | add events |
-| file | ✅ | ❌ | add events |
+`Depends on` = entities that must be pulled **before** this one (DAG, drives both pull and push order).
+
+| SyncEntity | Own checkpoint | Depends on (pull before) | Backend events today | Action |
+|---|---|---|---|---|
+| customer_group | ✅ | — | ❌ | add events |
+| customer_type | ✅ | — | ❌ | add events |
+| customer | ✅ | customer_group, customer_type | ✅ | slim payload |
+| customer_image | ✅ | customer | ❌ | add events |
+| product_catalog | ✅ | — | ❌ | add events |
+| tax | ✅ | — | ❌ | add events |
+| unit | ✅ | — | ❌ | add events |
+| product | ✅ | product_catalog, unit, tax | ✅ | slim payload |
+| product_image | ✅ | product | ❌ | add events |
+| order | ✅ | customer, product | ✅ (order_item rides along) | slim payload |
+| invoice | ✅ | order, customer, product, tax | ✅ (invoice_item rides along) | slim payload |
+| inventory | ✅ | product | ❌ | add events |
+| business | ✅ | — | ❌ | add events |
+| form | ✅ | — | ❌ | add events |
+| file | ✅ | — | ❌ | add events |
+
+> Leaf entities (no deps) — customer_group, customer_type, product_catalog, tax, unit, business,
+> form, file — pull first; dependents follow in topological waves. **Confirm the exact `Depends on`
+> edges against the actual FK/reference fields per entity** (see §12).
 
 ---
 
@@ -301,7 +326,11 @@ Form, File — via the existing manual `ApplicationEventPublisher` pattern.
 3. `SyncBootstrapService`: run on `Connected`, on reconnect, and on an hourly timer; call checkpoint API; compare vs DataStore `lastSyncTime`; mark laggards `PENDING_PULL`.
 4. `onConnectionRestored()`: also run bootstrap.
 5. Checkpoint API client + DTO (snake_case `@SerialName`).
-6. Validate 3 targets: `shared:compileKotlinIosSimulatorArm64`, `androidApp:compileDebugKotlinAndroid`, `desktopApp:compileKotlin`.
+6. **Dependency ordering:** generalize `SyncDelegate.pushDependencies` into a single `dependsOn`
+   list per delegate; add a topological scheduler in `CentralSyncService` that pulls dependencies
+   before dependents in waves, holding dependents if a dependency pull fails. Validate the DAG
+   (no cycles) at startup.
+7. Validate 3 targets: `shared:compileKotlinIosSimulatorArm64`, `androidApp:compileDebugKotlinAndroid`, `desktopApp:compileKotlin`.
 
 ---
 
@@ -319,6 +348,9 @@ Form, File — via the existing manual `ApplicationEventPublisher` pattern.
 - **Same-user second device:** must still pull (filter is by `device_id`, not `user_id`).
 - **Race: live signal during bootstrap:** idempotent; both converge to one serialized pull (per-entity mutex).
 - **Reconnect storm:** bootstrap debounced/idempotent; pulls serialized by mutex.
+- **Dependency pull fails:** dependents stay `PENDING_PULL` and are **not** pulled with a missing
+  parent; they retry on the next reconnect/hourly cycle. A persistently failing leaf therefore
+  stalls its subtree until it recovers (acceptable — better than inserting orphaned children).
 
 ---
 
@@ -333,6 +365,9 @@ Form, File — via the existing manual `ApplicationEventPublisher` pattern.
 7. Event channel + `workspace_events` rows carry no full record payload (verify wire + row size).
 8. Remote delete (soft-delete) propagates: other devices remove the row after pull.
 9. New-coverage entities (tax, unit, customer_group, …) trigger `PENDING_PULL` on other devices.
+10. **Dependency order:** fresh login where customer_group, customer_type, and customer are all
+    stale → groups+types pull and reach `SUCCESS` **before** customer's pull starts; with a forced
+    failure on customer_type, customer is **held** (not pulled) until the next cycle.
 
 ---
 
@@ -344,6 +379,8 @@ Form, File — via the existing manual `ApplicationEventPublisher` pattern.
 3. Confirm all deletable entities already soft-delete on the server (needed for delete propagation).
 4. Should a live signal ever advance `lastSync` without a pull (micro-optimization), or always pull?
    *(Recommend always pull in v1.)*
+5. Confirm the exact `Depends on` edges in §8 against real FK/reference fields (does product truly
+   need unit + tax pulled first, or only product_catalog? does order need product, or just customer?).
 
 ---
 
