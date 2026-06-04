@@ -2,7 +2,9 @@ package com.ampairs.form.domain.repository
 
 import com.ampairs.form.domain.model.AttributeDefinition
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
+import java.time.Instant
 
 /**
  * Repository for AttributeDefinition entities
@@ -51,4 +53,8 @@ interface AttributeDefinitionRepository : JpaRepository<AttributeDefinition, Str
      * Delete all attribute definitions for an entity type
      */
     fun deleteByEntityType(entityType: String)
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(a.updatedAt) FROM AttributeDefinition a")
+    fun findMaxUpdatedAt(): Instant?
 }

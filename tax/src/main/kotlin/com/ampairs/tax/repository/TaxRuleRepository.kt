@@ -42,4 +42,7 @@ interface TaxRuleRepository : JpaRepository<TaxRule, Long> {
 
     fun findByTaxCodeId(taxCodeId: String): List<TaxRule>
 
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(tr.updatedAt) FROM TaxRule tr")
+    fun findMaxUpdatedAt(): Instant?
 }

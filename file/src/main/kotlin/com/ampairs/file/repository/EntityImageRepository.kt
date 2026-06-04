@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
 import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 
 @Repository
 interface EntityImageRepository : JpaRepository<EntityImage, Long> {
@@ -56,4 +57,8 @@ interface EntityImageRepository : JpaRepository<EntityImage, Long> {
 
     @Query("SELECT ei FROM entity_image ei WHERE ei.uid = :imageUid")
     fun findByUid(@Param("imageUid") imageUid: String): EntityImage?
+
+    /** Sync checkpoint: max updatedAt of images for an entity type in the current workspace. @TenantId-filtered. */
+    @Query("SELECT MAX(ei.updatedAt) FROM entity_image ei WHERE ei.entityType = :type")
+    fun findMaxUpdatedAtByEntityType(@Param("type") entityType: String): Instant?
 }
