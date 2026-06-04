@@ -2,15 +2,13 @@ package com.ampairs.event.kafka
 
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.slf4j.LoggerFactory
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
+import org.springframework.context.annotation.Conditional
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.stereotype.Component
 
 @Component
-@ConditionalOnExpression(
-    "'\${websocket.message-broker.type:AUTO}' == 'KAFKA' or '\${websocket.message-broker.type:AUTO}' == 'AUTO'"
-)
+@Conditional(KafkaAvailableCondition::class)
 class WorkspaceEventKafkaConsumer(
     private val messagingTemplate: SimpMessagingTemplate
 ) {

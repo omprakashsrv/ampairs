@@ -4,17 +4,15 @@ import com.ampairs.event.config.WebSocketConfigProperties
 import com.ampairs.event.domain.dto.WorkspaceEventResponse
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.slf4j.LoggerFactory
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.context.annotation.Conditional
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Component
 
 data class KafkaEventEnvelope(val destination: String, val event: WorkspaceEventResponse)
 
 @Component
-@ConditionalOnExpression(
-    "'\${websocket.message-broker.type:AUTO}' == 'KAFKA' or '\${websocket.message-broker.type:AUTO}' == 'AUTO'"
-)
+@Conditional(KafkaAvailableCondition::class)
 class WorkspaceEventKafkaProducer(
     @Qualifier("workspaceEventKafkaTemplate") private val kafkaTemplate: KafkaTemplate<String, String>,
     private val props: WebSocketConfigProperties

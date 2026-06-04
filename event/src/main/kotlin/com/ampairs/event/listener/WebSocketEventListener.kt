@@ -26,34 +26,27 @@ class WebSocketEventListener(
 
     @EventListener
     fun handleWebSocketConnectEvent(event: SessionConnectEvent) {
+        // SessionConnectEvent wraps the CLIENT's inbound STOMP CONNECT frame.
+        // Spring copies the WebSocket session attributes (set by HandshakeInterceptor)
+        // into inbound message headers, so sessionAttributes is reliably non-null here.
+        // SessionConnectedEvent wraps the SERVER's outbound CONNECTED frame and does NOT
+        // carry session attributes in Spring WebSocket 6 — registration must happen here.
         val accessor = StompHeaderAccessor.wrap(event.message)
-        val sessionAttributes = accessor.sessionAttributes ?: return
-
-        val sessionId = accessor.sessionId ?: return
-        val userId = sessionAttributes["userId"] as? String ?: return
-        val tenantId = sessionAttributes["tenantId"] as? String ?: return
-        val deviceId = sessionAttributes["deviceId"] as? String ?: return
-
-        logger.debug(
-            "WebSocket CONNECT event: session={}, user={}, tenant={}, device={}",
-            sessionId, userId, tenantId, deviceId
-        )
-    }
-
-    @EventListener
-    fun handleWebSocketConnectedEvent(event: SessionConnectedEvent) {
-        val accessor = StompHeaderAccessor.wrap(event.message)
-        val sessionAttributes = accessor.sessionAttributes ?: return
+        val sessionAttributes = accessor.sessionAttributes ?: run {
+            logger.warn("WebSocket CONNECT: no session attributes available")
+            return
+        }
 
         val sessionId = accessor.sessionId ?: return
         val userId = sessionAttributes["userId"] as? String ?: return
         val tenantAttr = sessionAttributes["tenantId"] as? String
         val workspaceAttr = sessionAttributes["workspaceId"] as? String
         val deviceId = sessionAttributes["deviceId"] as? String ?: return
+
         val workspaceIdCandidate = tenantAttr?.takeIf { it.isNotBlank() } ?: workspaceAttr
         if (workspaceIdCandidate.isNullOrBlank()) {
             logger.warn(
-                "Skipping WebSocket CONNECTED processing due to missing workspace. session={}, user={}, tenantAttr={}, workspaceAttr={}",
+                "Skipping WebSocket CONNECT registration due to missing workspace. session={}, user={}, tenantAttr={}, workspaceAttr={}",
                 sessionId, userId, tenantAttr, workspaceAttr
             )
             return
@@ -61,20 +54,18 @@ class WebSocketEventListener(
         val workspaceId = workspaceIdCandidate
 
         logger.info(
-            "WebSocket CONNECTED: session={}, user={}, tenant={}, device={}",
+            "WebSocket CONNECT: session={}, user={}, workspace={}, device={}",
             sessionId, userId, workspaceId, deviceId
         )
 
         TenantContextHolder.setCurrentTenant(workspaceId)
         var registeredDeviceName: String? = null
         try {
-            // Check if session already exists (reconnection)
             val existingSession = webSocketSessionRepository.findByWorkspaceIdAndUserIdAndDeviceId(
                 workspaceId, userId, deviceId
             )
 
             val deviceSession = existingSession ?: WebSocketSession()
-
             deviceSession.apply {
                 this.workspaceId = workspaceId
                 this.userId = userId
@@ -84,10 +75,8 @@ class WebSocketEventListener(
                 lastHeartbeat = Instant.now()
                 if (existingSession == null) {
                     connectedAt = Instant.now()
-                    // Could extract device name from User-Agent header if available
                     deviceName = extractDeviceName(accessor)
                 } else {
-                    // Reconnection
                     disconnectedAt = null
                 }
             }
@@ -99,11 +88,15 @@ class WebSocketEventListener(
                 "Registered device session: uid={}, workspace={}, user={}, device={}",
                 deviceSession.uid, workspaceId, userId, deviceId
             )
+        } catch (e: Exception) {
+            logger.error(
+                "Failed to register device session: session={}, workspace={}, user={}, device={}",
+                sessionId, workspaceId, userId, deviceId, e
+            )
         } finally {
             TenantContextHolder.clearTenantContext()
         }
 
-        // Broadcast status change to workspace
         broadcastStatusChange(
             workspaceId = workspaceId,
             userId = userId,
@@ -114,8 +107,13 @@ class WebSocketEventListener(
     }
 
     @EventListener
-    fun handleWebSocketDisconnectEvent(event: SessionDisconnectEvent) {
+    fun handleWebSocketConnectedEvent(event: SessionConnectedEvent) {
         val accessor = StompHeaderAccessor.wrap(event.message)
+        logger.debug("WebSocket CONNECTED: session={}", accessor.sessionId)
+    }
+
+    @EventListener
+    fun handleWebSocketDisconnectEvent(event: SessionDisconnectEvent) {
         val sessionId = event.sessionId
 
         logger.info(
@@ -124,8 +122,9 @@ class WebSocketEventListener(
             event.closeStatus.code
         )
 
-        // Find and update session
-        val session = webSocketSessionRepository.findBySessionId(sessionId)
+        // Cross-tenant lookup: @TenantId on WebSocketSession means a plain findBySessionId()
+        // would silently return null if no tenant is set in TenantContextHolder at this point.
+        val session = webSocketSessionRepository.findBySessionIdCrossTenant(sessionId)
         if (session != null) {
             TenantContextHolder.setCurrentTenant(session.workspaceId)
             try {
