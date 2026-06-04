@@ -1,6 +1,7 @@
 package com.ampairs.file.domain.service
 
 import com.ampairs.core.exception.NotFoundException
+import com.ampairs.core.sync.EntityChangePublisher
 import com.ampairs.file.config.StorageProperties
 import com.ampairs.file.domain.dto.*
 import com.ampairs.file.domain.model.EntityImage
@@ -26,8 +27,12 @@ class EntityImageService(
     private val imageResizingService: ImageResizingService,
     private val fileValidationService: FileValidationService,
     private val storageProperties: StorageProperties,
+    private val entityChangePublisher: EntityChangePublisher,
 ) {
     private val logger = LoggerFactory.getLogger(EntityImageService::class.java)
+
+    /** Maps the stored (uppercased) entityType to the mobile SyncEntity image code, e.g. "customer_image". */
+    private fun imageCode(entityType: String) = "${entityType.lowercase()}_image"
 
     fun upload(
         entityType: String,
@@ -125,6 +130,7 @@ class EntityImageService(
             processed.width, processed.height, System.currentTimeMillis() - start
         )
 
+        entityChangePublisher.created(imageCode(entityType), entityUid)
         return saved.asEntityImageResponse(baseUrl)
     }
 
@@ -204,7 +210,9 @@ class EntityImageService(
                 image.isPrimary = false
             }
         }
-        return entityImageRepository.save(image).asEntityImageResponse(baseUrl)
+        val saved = entityImageRepository.save(image)
+        entityChangePublisher.updated(imageCode(entityType), entityUid)
+        return saved.asEntityImageResponse(baseUrl)
     }
 
     fun setPrimary(entityType: String, entityUid: String, imageUid: String, baseUrl: String): EntityImageResponse {
@@ -212,7 +220,9 @@ class EntityImageService(
         entityImageRepository.clearPrimaryStatus(entityType, entityUid)
         image.isPrimary = true
         image.displayOrder = 0
-        return entityImageRepository.save(image).asEntityImageResponse(baseUrl)
+        val saved = entityImageRepository.save(image)
+        entityChangePublisher.updated(imageCode(entityType), entityUid)
+        return saved.asEntityImageResponse(baseUrl)
     }
 
     fun delete(entityType: String, entityUid: String, imageUid: String): Boolean {
@@ -222,6 +232,7 @@ class EntityImageService(
             entityImageRepository.softDelete(imageUid)
             objectStorageService.deleteObject(storageProperties.defaultBucket, image.storagePath)
             thumbnailCacheService.deleteThumbnails(storageProperties.defaultBucket, image.storagePath)
+            entityChangePublisher.deleted(imageCode(entityType), entityUid)
             true
         } catch (e: Exception) {
             logger.error("Failed to delete image: entity={}/{}, uid={}, error={}", entityType, entityUid, imageUid, e.message)
@@ -234,6 +245,7 @@ class EntityImageService(
             ?: throw NotFoundException("Image not found: $imageUid")
         if (!image.active) return
         entityImageRepository.softDelete(imageUid)
+        entityChangePublisher.deleted(imageCode(image.entityType), image.entityUid)
         try {
             objectStorageService.deleteObject(storageProperties.defaultBucket, image.storagePath)
             thumbnailCacheService.deleteThumbnails(storageProperties.defaultBucket, image.storagePath)

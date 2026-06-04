@@ -3,6 +3,7 @@ package com.ampairs.product.service
 import com.ampairs.core.multitenancy.DeviceContextHolder
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.core.security.AuthenticationHelper
+import com.ampairs.core.sync.EntityChangePublisher
 import com.ampairs.event.domain.events.ProductCreatedEvent
 import com.ampairs.event.domain.events.ProductUpdatedEvent
 import com.ampairs.product.domain.dto.product.ProductResponse
@@ -34,7 +35,8 @@ class ProductService(
     val productCategoryRepository: ProductCategoryRepository,
     val productSubCategoryRepository: ProductSubCategoryRepository,
     val productRepository: ProductRepository,
-    val eventPublisher: ApplicationEventPublisher
+    val eventPublisher: ApplicationEventPublisher,
+    private val entityChangePublisher: EntityChangePublisher,
 ) {
 
     /**
@@ -127,6 +129,7 @@ class ProductService(
             }
             productGroupRepository.save(it)
         }
+        if (groups.isNotEmpty()) entityChangePublisher.updated("product_catalog", groups.first().uid)
         return groups
     }
 
@@ -144,6 +147,7 @@ class ProductService(
             }
             productBrandRepository.save(it)
         }
+        if (brands.isNotEmpty()) entityChangePublisher.updated("product_catalog", brands.first().uid)
         return brands
     }
 
@@ -162,6 +166,7 @@ class ProductService(
             }
             productCategoryRepository.save(it)
         }
+        if (productCategories.isNotEmpty()) entityChangePublisher.updated("product_catalog", productCategories.first().uid)
         return productCategories
     }
 
@@ -180,6 +185,7 @@ class ProductService(
             }
             productSubCategoryRepository.save(it)
         }
+        if (productSubCategories.isNotEmpty()) entityChangePublisher.updated("product_catalog", productSubCategories.first().uid)
         return productSubCategories
     }
 
