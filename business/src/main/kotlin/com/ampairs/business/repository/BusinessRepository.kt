@@ -75,4 +75,8 @@ interface BusinessRepository : CrudRepository<Business, Long> {
      */
     @Query("SELECT b FROM Business b WHERE b.updatedAt >= :lastSync ORDER BY b.updatedAt ASC")
     fun findBusinessesUpdatedAfter(lastSync: Instant): List<Business>
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(b.updatedAt) FROM Business b")
+    fun findMaxUpdatedAt(): Instant?
 }

@@ -54,4 +54,8 @@ interface OrderRepository : CrudRepository<Order, Long>, PagingAndSortingReposit
     fun sumTotalAmountByCustomerIdAndStatusIn(customerId: String, statuses: List<OrderStatus>): Double?
 
     fun findByEcomOrderRef(ref: String): Order?
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(o.updatedAt) FROM customer_order o")
+    fun findMaxUpdatedAt(): Instant?
 }
