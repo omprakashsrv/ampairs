@@ -98,7 +98,7 @@ type** — i.e. "the last event of each entity type."
 | 4 | No data ⇒ no pull | ⚠️ implicit | explicit "null ⇒ skip" rule |
 | 5 | Reconnect re-reconciles | ❌ (only flushes pushes) | extend `onConnectionRestored()` |
 | 6 | Live change ⇒ slim signal ⇒ `PENDING_PULL` everywhere | ⚠️ partial coverage, heavy payload | slim + broaden coverage |
-| 7 | Late subscriber gets last event per entity type | ❌ | satisfied by bootstrap-from-events |
+| 7 | Late subscriber gets last state per entity type | ❌ | satisfied by data-derived bootstrap (FR-1) |
 | 8 | Don't store full records | ⚠️ full `payload` persisted | stamp only `lastUpdatedAt` |
 | 9 | Multi-user/multi-device, no self-echo | ✅ deviceId filter | verify same-user-other-device |
 | 10 | No migrations | — | derive from `updatedAt`; reuse `workspace_events.payload` |
@@ -107,23 +107,24 @@ type** — i.e. "the last event of each entity type."
 
 ## 4. Target Architecture
 
-### 4.1 Core idea — Checkpoint Reconciliation (event-stamped)
-The sync signal is, per workspace per entity, `lastUpdatedAt` = `max(updatedAt)` of that entity's
-rows. It is produced at **write time**, not by querying modules:
+### 4.1 Core idea — Checkpoint Reconciliation
+`lastUpdatedAt` = per workspace per entity, the `max(updatedAt)` of that entity's rows. `BaseDomain`
+sets `updatedAt` on every persist/update, so it is **never null** — an absent value means only
+"no rows for this entity." Two independent sources feed the same comparison; **neither migrates nor
+seeds existing data/events**:
 
-- **Write path (server):** any create/update/delete (single or bulk) → **post-commit**, the service
-  takes `max(updatedAt)` over the affected rows and publishes one `ApplicationEvent` carrying
-  `{entityType, lastUpdatedAt, eventType, id?}`. (For deletes, use the soft-delete `updatedAt`; see §10.)
-- **Persist (server):** `WorkspaceEventListener` writes a `workspace_events` row, stamping
-  `lastUpdatedAt` into the existing `payload` column (no migration), and broadcasts the slim signal.
-- **Bootstrap (client, on connect / reconnect / hourly):** GET the sync checkpoint = the **latest
-  persisted event per entity type** (`GROUP BY entity_type, MAX(sequence_number)` → its stamped
-  `lastUpdatedAt`). For each entity: `serverLastUpdatedAt > clientLastSync` → `PENDING_PULL`;
-  `null` → `IDLE`; else `IDLE`. `CentralSyncService` auto-pulls laggards incrementally.
-- **Live (client):** on a slim signal, if `signal.lastUpdatedAt > clientLastSync(entity)` →
+- **Bootstrap (client, on connect / reconnect / hourly):** GET the sync checkpoint = the server's
+  `MAX(updatedAt)` per entity, read **directly from each entity's own table**. This covers all
+  pre-existing data with zero seeding. For each entity: `serverLastUpdatedAt > clientLastSync` →
+  `PENDING_PULL`; absent (no rows) → `IDLE`; else `IDLE`. `CentralSyncService` auto-pulls laggards.
+- **Live (server → client, while connected):** any create/update/delete → **post-commit** the
+  service computes `max(updatedAt)` over the affected rows (no query — it is the rows just written;
+  deletes use the soft-delete `updatedAt`, see §10) and publishes a slim signal
+  `{entityType, lastUpdatedAt, eventType, id?}`. Client: `signal.lastUpdatedAt > clientLastSync` →
   `PENDING_PULL`.
-- **Self-healing:** correctness derives from the comparison, so *missed* live events are harmless —
-  the next bootstrap (connect, reconnect, or hourly tick) re-detects the lag.
+- **Self-healing:** correctness derives from the comparison, so *missed* live signals are harmless —
+  the next bootstrap re-detects the lag straight from live data. The `workspace_events` log is **not**
+  the source of truth for checkpoints.
 
 ### 4.2 Lifecycle
 
@@ -186,17 +187,22 @@ path as a config-gated latency optimization for future horizontal scaling.
   }
 }
 ```
-- `null` ⇒ no signal for that entity ⇒ client must **not** pull.
-- Source: `SELECT entity_type, MAX(sequence_number) ...` over `workspace_events`, reading the
-  stamped `lastUpdatedAt` from `payload`. No per-module query, no migration.
+- `null` / absent ⇒ no rows for that entity ⇒ client must **not** pull.
+- Source: server `MAX(updatedAt)` per entity, read from each owning module's table via its public
+  service interface (cross-module access by interface, per module-boundary rules). Covers
+  pre-existing data; **no event seeding, no migration**. Cheap, indexed `MAX` per entity, called
+  only on connect/reconnect/hourly.
 
-### FR-2 Write-time stamping (backend)
+### FR-2 Write-time stamping for the live signal (backend)
 On every create/update/delete (single **and** bulk), **post-commit**, the owning service:
 1. computes `lastUpdatedAt = max(updatedAt)` over the affected rows (delete → soft-delete `updatedAt`);
 2. publishes an `ApplicationEvent` carrying `{entityType, entityId?, lastUpdatedAt, eventType}`.
-`WorkspaceEventListener` stamps `lastUpdatedAt` into `payload` and broadcasts the slim signal.
+`WorkspaceEventListener` broadcasts the slim signal (and may persist a slim `workspace_events` row
+for audit / the existing `/events` replay endpoint — persistence is **not** required for sync
+correctness, since the bootstrap reads live data).
 - Use a post-commit hook (`TransactionSynchronization` / `@TransactionalEventListener(AFTER_COMMIT)`)
   so the stamped time reflects committed state.
+- This feeds the **live** path only; the bootstrap checkpoint (FR-1) is independent and reads data.
 
 ### FR-3 Client bootstrap on connect / reconnect / hourly (mobile, NEW)
 - New `SyncBootstrapService` (or extend `EventConnectionManager`): on `ConnectionState.Connected`,
@@ -228,9 +234,10 @@ On every create/update/delete (single **and** bulk), **post-commit**, the owning
   (the `null` branch preserves today's always-pull fallback).
 
 ### FR-5 Storage minimization (backend)
-- `workspace_events.payload` holds only `{ "last_updated_at": ... }` (or null) — never full records.
-- Keep the existing daily cleanup of consumed events > 30 days; rows are now tiny.
-- No new table.
+- The event log is no longer the source of truth for checkpoints, so persistence is optional/audit.
+- If persisted, `workspace_events.payload` holds only `{ "last_updated_at": ... }` (or null) — never
+  full records. Keep the existing daily cleanup of consumed events > 30 days; rows are tiny.
+- No new table, no migration.
 
 ### FR-6 Event coverage parity (backend)
 Publish create/update/delete events for **every** independent `SyncEntity` (§8). Fill the gaps:
@@ -270,10 +277,14 @@ topological order and pulls **dependencies first**, in waves:
 ---
 
 ## 7. No-Migration Strategy & Key Decisions
-- **No new columns/tables.** `lastUpdatedAt` derives from existing `updatedAt`; it is carried in the
-  existing `workspace_events.payload`. The checkpoint endpoint is a `GROUP BY entity_type` over that table.
+- **No new columns/tables, no data/event seeding.** `lastUpdatedAt` derives from the existing
+  `updatedAt` column. The checkpoint endpoint reads `MAX(updatedAt)` per entity table; the live
+  signal carries the write-time `max(updatedAt)` of the affected rows.
 - **D1 — Bootstrap transport:** REST on connect/reconnect/hourly *(recommended)* vs STOMP push on SUBSCRIBE.
-- **D2 — Checkpoint source:** event-stamped + read-latest-per-entity-type *(chosen, per feedback)* — no per-module `MAX(updatedAt)` query.
+- **D2 — Checkpoint source:** *bootstrap* reads `MAX(updatedAt)` directly from entity tables —
+  covers legacy data with no seeding; *live signal* carries the write-time `max(updatedAt)`. (The
+  per-module `MAX` read is used only for the infrequent bootstrap, **not** as the live change-detection
+  mechanism — live detection is the write-time push, per earlier feedback.)
 - **D3 — Event payload:** signal-only *(chosen)*.
 - **D4 — Kafka:** off / `SIMPLE` broker for now *(chosen)*; keep as optional multi-instance latency optimization.
 - **D5 — Periodic reconcile:** hourly bootstrap *(chosen)*.
@@ -312,13 +323,14 @@ topological order and pulls **dependencies first**, in waves:
 
 ## 9. Implementation Plan
 ### 9.1 Backend (`ampairs`)
-1. Post-commit stamping helper: compute `max(updatedAt)` of affected rows and publish an event.
-2. Wire it into every owning service's create/update/delete (single + bulk).
-3. `WorkspaceEventListener`: stamp `last_updated_at` into `payload`, broadcast slim signal.
-4. `GET /event/v1/sync/checkpoints` controller (`ApiResponse<CheckpointsResponse>`; tenant context set/cleared at controller).
-5. Coverage parity for the entities in §8.
-6. Set `broker = SIMPLE` (Kafka off) in config; keep Kafka beans behind their condition.
-7. Tests: checkpoint accuracy, tenant isolation, slim broadcast, delete propagation, multi-device fan-out.
+1. Per-module `maxUpdatedAt(workspaceId): Instant?` (derived `@Query MAX(updatedAt)`, existing column).
+2. `SyncCheckpointService` (event module) aggregating per-entity `maxUpdatedAt` via public service interfaces.
+3. `GET /event/v1/sync/checkpoints` controller (`ApiResponse<CheckpointsResponse>`; tenant context set/cleared at controller).
+4. Post-commit stamping helper for the **live signal**: compute `max(updatedAt)` of affected rows and publish an `ApplicationEvent`; wire into every owning service's create/update/delete (single + bulk).
+5. `WorkspaceEventListener`: broadcast slim signal (payload empty/slim; persistence optional/audit).
+6. Coverage parity for the entities in §8.
+7. Set `broker = SIMPLE` (Kafka off) in config; keep Kafka beans behind their condition.
+8. Tests: checkpoint accuracy (incl. legacy data), tenant isolation, slim broadcast, delete propagation, multi-device fan-out.
 
 ### 9.2 Mobile (`ampairs-app`)
 1. `WorkspaceEvent`: add nullable `last_updated_at`; update `onBackendEvent` comparison.
@@ -337,12 +349,11 @@ topological order and pulls **dependencies first**, in waves:
 ## 10. Edge Cases & Failure Handling
 - **Bootstrap/checkpoint call fails:** leave states unchanged; retry next reconnect/hourly; never wedge into `SYNCING`.
 - **Delete propagation:** incremental pull (`updatedAt > lastSync`) won't return a hard-deleted row.
-  Server must **soft-delete** (e.g. `active=false`, bump `updatedAt`) so the pull returns the tombstone
-  and the client removes it locally. Required for any entity that can be deleted remotely.
-- **Pre-existing data with no event row:** a brand-new client sees `null` checkpoint for an entity
-  whose data predates stamping → would skip pulling it. Mitigation options (pick one): one-time
-  seed of "latest event per entity type" per workspace; OR a fallback `MAX(updatedAt)` read only when
-  the event-derived checkpoint is null. **Open — see §12.**
+  **Confirmed:** all deletable entities soft-delete server-side (`active=false`, bump `updatedAt`),
+  so the pull returns the tombstone and the client removes it locally.
+- **Pre-existing / legacy data:** resolved — the bootstrap reads `MAX(updatedAt)` **directly from
+  each entity table** (FR-1), so all existing data is covered with no event/data seeding. `updatedAt`
+  is never null (`BaseDomain`), so an absent checkpoint unambiguously means "no rows."
 - **Clock skew:** comparisons use server-authoritative `updatedAt`; client never uses its own clock.
 - **`last_updated_at == null` on a live signal:** treat as pull (safe fallback).
 - **Same-user second device:** must still pull (filter is by `device_id`, not `user_id`).
@@ -372,21 +383,20 @@ topological order and pulls **dependencies first**, in waves:
 ---
 
 ## 12. Open Questions
-1. **Pre-existing data with null checkpoint** (§10): one-time seed, or `MAX(updatedAt)` fallback only
-   when the event-derived checkpoint is null? (The fallback re-introduces a per-module read but only
-   on the null path / first run.)
-2. Hourly interval — fixed 1h, or backoff when app is backgrounded / on cellular?
-3. Confirm all deletable entities already soft-delete on the server (needed for delete propagation).
-4. Should a live signal ever advance `lastSync` without a pull (micro-optimization), or always pull?
+1. Hourly interval — fixed 1h, or backoff when app is backgrounded / on cellular?
+2. Should a live signal ever advance `lastSync` without a pull (micro-optimization), or always pull?
    *(Recommend always pull in v1.)*
 
-*(Resolved: §8 dependency edges — product depends on product_catalog + unit + tax; order depends on
-customer + product.)*
+**Resolved:**
+- §8 dependency edges — product ← product_catalog + unit + tax; order ← customer + product.
+- Delete propagation — all deletable entities soft-delete server-side (pull carries tombstone).
+- Legacy data — bootstrap reads `MAX(updatedAt)` from entity tables; no seeding/migration; `updatedAt` never null.
+- Checkpoint source — data-derived bootstrap + write-time live signal; event log not the source of truth.
 
 ---
 
 ## 13. Rollout Phases
-- **Phase 1 (backend, additive):** post-commit stamping + `GET /sync/checkpoints` + `SIMPLE` broker.
+- **Phase 1 (backend, additive):** data-derived `GET /sync/checkpoints` + post-commit live stamping + `SIMPLE` broker.
 - **Phase 2 (mobile):** bootstrap on connect/reconnect/hourly consuming Phase 1.
 - **Phase 3 (backend):** slim signal payload + `last_updated_at`; mobile reads it.
 - **Phase 4 (backend):** event coverage parity (§8) + soft-delete audit.
