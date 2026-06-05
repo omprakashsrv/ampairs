@@ -4,7 +4,6 @@ import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.unit.domain.dto.UnitRequest
 import com.ampairs.unit.domain.dto.UnitResponse
-import com.ampairs.unit.domain.dto.UnitUsageResponse
 import com.ampairs.unit.exception.UnitNotFoundException
 import com.ampairs.unit.service.UnitService
 import jakarta.validation.Valid
@@ -56,20 +55,10 @@ class UnitController(
         return ApiResponse.success(unit)
     }
 
-    @PutMapping("/{uid}")
-    fun updateUnit(@PathVariable uid: String, @Valid @RequestBody request: UnitRequest): ApiResponse<UnitResponse> {
-        return ApiResponse.success(unitService.update(uid, request))
-    }
-
     @DeleteMapping("/{uid}")
     fun deleteUnit(@PathVariable uid: String): ApiResponse<Unit> {
         unitService.delete(uid)
         return ApiResponse.success(Unit)
-    }
-
-    @GetMapping("/{uid}/usage")
-    fun getUsage(@PathVariable uid: String): ApiResponse<UnitUsageResponse> {
-        return ApiResponse.success(unitService.getUsage(uid))
     }
 
 }

@@ -103,21 +103,5 @@ class Customer : OwnableBaseDomain() {
     fun isValidGstNumber(): Boolean {
         return gstNumber?.matches(Regex("^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$")) ?: true // null is valid (optional field)
     }
-
-    /**
-     * Update outstanding amount
-     */
-    fun addToOutstanding(amount: Double) {
-        outstandingAmount += amount
-    }
-
-    /**
-     * Reduce outstanding amount (payment received)
-     */
-    fun reduceOutstanding(amount: Double) {
-        outstandingAmount = maxOf(0.0, outstandingAmount - amount)
-    }
-
-
 }
 

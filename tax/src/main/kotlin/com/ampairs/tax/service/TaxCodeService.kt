@@ -338,14 +338,6 @@ class TaxCodeService(
         return PageResponse.from(result) { it.asDto() }
     }
 
-    @Transactional(readOnly = true)
-    fun getFavorites(page: Int, size: Int): PageResponse<TaxCodeDto> {
-        val pageable: Pageable = PageRequest.of(page, size)
-        val result = taxCodeRepository.findFavorites(pageable)
-
-        return PageResponse.from(result) { it.asDto() }
-    }
-
     fun unsubscribe(taxCodeId: String) {
         val taxCode = taxCodeRepository.findByUid(taxCodeId)
             ?: throw NotFoundException("Tax code not found: $taxCodeId")
@@ -366,18 +358,6 @@ class TaxCodeService(
         }
 
         return taxCodeRepository.save(taxCode).asDto()
-    }
-
-    fun incrementUsage(taxCodeId: String) {
-        val taxCode = taxCodeRepository.findByUid(taxCodeId)
-            ?: throw NotFoundException("Tax code not found: $taxCodeId")
-
-        taxCode.apply {
-            usageCount += 1
-            lastUsedAt = Instant.now()
-        }
-
-        taxCodeRepository.save(taxCode)
     }
 
     fun bulkSubscribe(request: BulkSubscribeTaxCodesRequest): BulkSubscribeResultDto {
@@ -417,13 +397,5 @@ class TaxCodeService(
         val taxCode = taxCodeRepository.findByUid(taxCodeId)
             ?: throw NotFoundException("Tax code not found: $taxCodeId")
         return taxCode.asDto()
-    }
-
-    fun setFavorite(taxCodeId: String, isFavorite: Boolean): TaxCodeDto {
-        val taxCode = taxCodeRepository.findByUid(taxCodeId)
-            ?: throw NotFoundException("Tax code not found: $taxCodeId")
-
-        taxCode.isFavorite = isFavorite
-        return taxCodeRepository.save(taxCode).asDto()
     }
 }
