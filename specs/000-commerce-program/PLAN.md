@@ -125,41 +125,54 @@ verified) → order state transition. **Store only gateway tokens/refs — never
 ## 3. Dependency-ordered roadmap (speckit features)
 
 Each feature is scoped to **compile and ship independently** and ride the existing speckit pipeline.
-Numbering continues from the real next number **009** (008 = ecom platform is already done).
+
+> **Implementation order ≠ spec number.** Spec numbers are immutable creation order (`009` Pricing was
+> drafted first, `010` Store-Ops second). The **build order** below was reprioritized per the product
+> decision to ship **store-operations order/invoice first** and slot the **pricing layer in
+> afterward**. So `010` is built before `009`.
 
 ```
-009 Pricing engine        ── PREREQUISITE for real wholesale + accurate cart/order totals
-        │                     (PriceList, PriceListItem, MOQ, slab tiers, SalesChannel,
-        │                      resolution service, Kafka projection to ecom)  ← spec drafted
+[NOW] 010 Store-ops Order & Invoice + GST  ── proper offline order/invoice create flow for store
+        │   (spec drafted)                     staff (mobile + desktop), full Indian GST via the
+        │                                      existing TaxCalculationEngine, inline product create,
+        │                                      real Order/Invoice SyncDelegates + backend bulk sync
+        │                                      endpoints. Uses TODAY'S product pricing (sellingPrice).
         ▼
-010 B2B order/invoice sync ── implement the stubbed Order/Invoice SyncDelegates so wholesale
-        │                     order entry works offline on the app (consumes 009 pricing)
+      009 Pricing engine        ── slots UNDER store-ops: PriceList/Item, MOQ, slab tiers,
+        │   (spec drafted)         SalesChannel, resolution service + Kafka projection to ecom.
+        │                          Store-ops order/invoice line entry swaps `sellingPrice` for the
+        │                          resolution call at the seam FR-001/009 leaves open. Storefront
+        │                          consumes the same engine. (Money(minorUnits,currency) migrates here.)
         ▼
-011 Payments              ── PaymentGateway port + Razorpay adapter (India-first; Stripe seam),
-        │                     webhooks, refunds, idempotency; wires into EcomOrder + checkout
+      011 Payments              ── PaymentGateway port + Razorpay adapter (India-first; Stripe seam),
+        │                          webhooks, refunds, idempotency; wires into EcomOrder + checkout
         ▼
-012 Shipping / fulfillment ── zones, rate rules, courier port (Shiprocket/Delhivery), AWB +
-        │                     tracking webhook → order/shipment status → FCM push
+      012 Shipping / fulfillment ── zones, rate rules, courier port (Shiprocket/Delhivery), AWB +
+        │                          tracking webhook → order/shipment status → FCM push
         ▼
-013 Promotions            ── coupons (%/flat/BOGO/free-ship), eligibility (channel, group,
-        │                     min-cart, brand/category), stacking; applied at cart re-resolution
+      013 Promotions            ── coupons (%/flat/BOGO/free-ship), eligibility (channel, group,
+        │                          min-cart, brand/category), stacking; applied at cart re-resolution
         ▼
-014 Reviews / ratings      ── (optional, post-MVP) product reviews on the storefront
+      014 Reviews / ratings      ── (optional, post-MVP) product reviews on the storefront
         ▼
-015 Go-Global             ── multi-currency activation, VAT + US-sales-tax TaxStrategy impls,
-                              i18n catalog, Stripe SCA/3DS, region gateway routing, GDPR/DPDP.
-                              Behind feature flags so India stays unaffected.
+      015 Go-Global             ── multi-currency activation, VAT + US-sales-tax TaxStrategy impls,
+                                   i18n catalog, Stripe SCA/3DS, region gateway routing, GDPR/DPDP.
+                                   Behind feature flags so India stays unaffected.
 ```
 
-**India-first MVP = 009 → 013.** **Truly global = + 015.** 010 can run in parallel with 011 once 009
-lands (different surfaces: app-sync vs storefront-checkout).
+**India-first MVP = 010 → 009 → 013.** **Truly global = + 015.**
+
+> **Why store-ops (010) before pricing (009):** store staff need to take orders and raise GST invoices
+> today against the current flat product price; pricing is a value-add layer, not a prerequisite.
+> Crucially, 010 explicitly leaves a **price-resolution seam** (read `product.sellingPrice` in one
+> place) so 009 plugs in without reworking the order/invoice flow.
 
 ### Per-feature scope sketch
 
-| # | Module(s) | New backend BC | App work | Ships independently because… |
+| # (build order) | Module(s) | New backend BC | App work | Ships independently because… |
 |---|---|---|---|---|
-| 009 | `pricing` (new), projects to `ecom`/`product` | `com.ampairs.pricing` | `feature/pricing` read-model + price display in ecom/order | Resolution falls back to today's flat `price` when no list matches → zero regression |
-| 010 | `order`, `invoice` | — (implement stubs) | `OrderSyncDelegate`/`InvoiceSyncDelegate` real impls + `SyncEntity` already present | Pure sync impl; no storefront dependency |
+| **010 (1st)** | `order`, `invoice`, `tax` (wire), `product` (inline create) | — (add bulk/paginated **sync endpoints** to order+invoice) | **Clean rebuild** of order/invoice create flow: wire `TaxCalculationEngine`, real `Order/InvoiceSyncDelegate`, functional product picker + inline create | Uses today's `sellingPrice`; no pricing/storefront dependency |
+| **009 (2nd)** | `pricing` (new), projects to `ecom`/`product` | `com.ampairs.pricing` | `feature/pricing` read-model + price display in ecom/order | Resolution falls back to flat `sellingPrice` when no list matches → zero regression; plugs into 010's seam |
 | 011 | `payment` (new) | `com.ampairs.payment` | checkout payment screen + status | Behind a per-storefront "payments enabled" flag; COD still works without it |
 | 012 | `shipping` (new) | `com.ampairs.shipping` | tracking screen already exists | Flat-rate fallback works without courier integration |
 | 013 | `promotion` (new) | `com.ampairs.promotion` | coupon entry at cart | No coupon = no change to totals |
