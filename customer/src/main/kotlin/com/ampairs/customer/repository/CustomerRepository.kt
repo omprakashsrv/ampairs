@@ -28,7 +28,6 @@ interface CustomerRepository : CrudRepository<Customer, Long>, PagingAndSortingR
     @EntityGraph("Customer.withImages")
     fun findByEmail(email: String): Optional<Customer>
 
-    fun findByCustomerType(customerType: String): List<Customer>
     fun findByStatus(status: String): List<Customer>
 
     @EntityGraph("Customer.withImages")
@@ -58,8 +57,6 @@ interface CustomerRepository : CrudRepository<Customer, Long>, PagingAndSortingR
     @EntityGraph("Customer.withImages")
     @Query("SELECT c FROM customer c WHERE c.updatedAt >= :lastSync ORDER BY c.updatedAt ASC")
     fun findCustomersUpdatedAfter(lastSync: Instant, pageable: Pageable): Page<Customer>
-
-    fun findByUpdatedAtAfterOrderByUpdatedAtAsc(lastSync: Instant): List<Customer>
 
     /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
     @Query("SELECT MAX(c.updatedAt) FROM customer c")

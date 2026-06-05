@@ -131,35 +131,6 @@ class MasterStateService(
     }
 
     /**
-     * Sync workspace state with master state
-     */
-    @Transactional
-    fun syncWorkspaceStateWithMaster(workspaceStateId: String): State? {
-        val workspaceState = stateRepository.findByUid(workspaceStateId)
-            ?: return null
-
-        val masterState = workspaceState.masterState
-            ?: return null
-
-        // Update workspace state with latest master data
-        workspaceState.importFromMasterState(masterState)
-
-        val updatedState = stateRepository.save(workspaceState)
-        logger.info("Synced workspace state {} with master state {}", workspaceStateId, masterState.stateCode)
-
-        return updatedState
-    }
-
-    /**
-     * Get states that need syncing (out of date with master)
-     */
-    @Transactional(readOnly = true)
-    fun getStatesNeedingSync(workspaceId: String): List<State> {
-        return stateRepository.findByOwnerId(workspaceId)
-            .filter { !it.isSyncedWithMaster() }
-    }
-
-    /**
      * Find states by postal code (pattern matching in service layer)
      */
     @Transactional(readOnly = true)
@@ -189,57 +160,4 @@ class MasterStateService(
         )
     }
 
-    /**
-     * Create or update master state
-     */
-    @Transactional
-    fun saveOrUpdateMasterState(masterState: MasterState): MasterState {
-        val existing = masterStateRepository.findByStateCode(masterState.stateCode)
-
-        return if (existing != null) {
-            // Update existing
-            existing.apply {
-                name = masterState.name
-                shortName = masterState.shortName
-                countryCode = masterState.countryCode
-                countryName = masterState.countryName
-                region = masterState.region
-                timezone = masterState.timezone
-                localName = masterState.localName
-                capital = masterState.capital
-                population = masterState.population
-                areaSqKm = masterState.areaSqKm
-                gstCode = masterState.gstCode
-                postalCodePattern = masterState.postalCodePattern
-                active = masterState.active
-                metadata = masterState.metadata
-            }
-            masterStateRepository.save(existing)
-        } else {
-            // Create new
-            masterStateRepository.save(masterState)
-        }
-    }
-
-    /**
-     * Deactivate master state and handle workspace implications
-     */
-    @Transactional
-    fun deactivateMasterState(stateCode: String): Boolean {
-        val masterState = masterStateRepository.findByStateCode(stateCode)
-            ?: return false
-
-        masterState.active = false
-        masterStateRepository.save(masterState)
-
-        // Optionally handle workspace states that reference this master state
-        // For now, we'll just log the impact
-        val affectedWorkspaceStates = stateRepository.findByMasterStateCode(stateCode)
-        logger.warn(
-            "Deactivated master state {} affects {} workspace states",
-            stateCode, affectedWorkspaceStates.size
-        )
-
-        return true
-    }
 }

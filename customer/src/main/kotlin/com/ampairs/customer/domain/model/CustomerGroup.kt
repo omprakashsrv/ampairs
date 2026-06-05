@@ -78,11 +78,4 @@ class CustomerGroup : OwnableBaseDomain() {
     fun getDisplayName(): String {
         return name
     }
-
-    /**
-     * Check if this group has discount benefits
-     */
-    fun hasDiscount(): Boolean {
-        return defaultDiscountPercentage > 0
-    }
 }

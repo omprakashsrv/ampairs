@@ -105,20 +105,6 @@ class Customer : OwnableBaseDomain() {
     }
 
     /**
-     * Check if customer has available credit
-     */
-    fun hasAvailableCredit(amount: Double): Boolean {
-        return (creditLimit - outstandingAmount) >= amount
-    }
-
-    /**
-     * Get available credit limit
-     */
-    fun getAvailableCredit(): Double {
-        return maxOf(0.0, creditLimit - outstandingAmount)
-    }
-
-    /**
      * Update outstanding amount
      */
     fun addToOutstanding(amount: Double) {

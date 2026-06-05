@@ -242,10 +242,6 @@ class CustomerService(
         return customerRepository.findByGstNumber(gstNumber).orElse(null)
     }
 
-    fun getActiveCustomers(pageable: Pageable): List<Customer> {
-        return customerRepository.findByStatus("ACTIVE")
-    }
-
     @Transactional
     fun updateOutstanding(customerId: String, amount: Double, isPayment: Boolean = false): Customer? {
         val customer = customerRepository.findByUid(customerId) ?: return null

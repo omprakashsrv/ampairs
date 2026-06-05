@@ -78,11 +78,4 @@ class CustomerType : OwnableBaseDomain() {
     fun getDisplayName(): String {
         return name
     }
-
-    /**
-     * Check if this type allows credit
-     */
-    fun allowsCredit(): Boolean {
-        return defaultCreditLimit > 0
-    }
 }

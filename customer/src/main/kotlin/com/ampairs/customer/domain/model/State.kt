@@ -59,14 +59,4 @@ class State : OwnableBaseDomain() {
         this.country = masterState.countryName
         this.active = true
     }
-
-    /**
-     * Check if this state is synced with master state
-     */
-    fun isSyncedWithMaster(): Boolean {
-        return masterState != null &&
-                name == masterState?.name &&
-                shortName == masterState?.shortName &&
-                country == masterState?.countryName
-    }
 }
