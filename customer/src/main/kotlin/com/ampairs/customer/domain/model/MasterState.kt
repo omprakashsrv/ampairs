@@ -133,48 +133,11 @@ class MasterState : BaseDomain() {
     }
 
     /**
-     * Get formatted state code for GST (Indian states only)
-     */
-    fun getGstStateCode(): String? {
-        return if (isIndianState()) gstCode else null
-    }
-
-    /**
      * Check if postal code matches pattern
      */
     fun isValidPostalCode(postalCode: String): Boolean {
         return postalCodePattern?.let { pattern ->
             postalCode.matches(Regex(pattern))
         } ?: true
-    }
-
-    /**
-     * Get timezone or default
-     */
-    fun getTimezoneOrDefault(): String {
-        return timezone ?: when (countryCode) {
-            "IN" -> "Asia/Kolkata"
-            "US" -> "America/New_York"
-            "GB" -> "Europe/London"
-            else -> "UTC"
-        }
-    }
-
-    /**
-     * Check if state is a union territory (Indian specific)
-     */
-    fun isUnionTerritory(): Boolean {
-        return isIndianState() && listOf(
-            "IN-AN", "IN-CH", "IN-DN", "IN-DL", "IN-JK", "IN-LA", "IN-LD", "IN-PY"
-        ).contains(stateCode)
-    }
-
-    /**
-     * Get population density (people per sq km)
-     */
-    fun getPopulationDensity(): Double? {
-        return if (population != null && areaSqKm != null && areaSqKm!! > 0) {
-            population!! / areaSqKm!!
-        } else null
     }
 }

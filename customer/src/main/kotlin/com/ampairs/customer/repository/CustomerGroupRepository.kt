@@ -17,36 +17,6 @@ import java.time.Instant
 interface CustomerGroupRepository : JpaRepository<CustomerGroup, String>, JpaSpecificationExecutor<CustomerGroup> {
 
     /**
-     * Find customer group by unique code
-     * Note: @TenantId automatically filters by current workspace
-     */
-    fun findByGroupCode(groupCode: String): CustomerGroup?
-
-    /**
-     * Find all active customer groups
-     * Note: @TenantId automatically filters by current workspace
-     */
-    fun findByActiveTrue(): List<CustomerGroup>
-
-    /**
-     * Find all active customer groups with pagination
-     * Note: @TenantId automatically filters by current workspace
-     */
-    fun findByActiveTrue(pageable: Pageable): Page<CustomerGroup>
-
-    /**
-     * Check if customer group code exists
-     * Note: @TenantId automatically filters by current workspace
-     */
-    fun existsByGroupCode(groupCode: String): Boolean
-
-    /**
-     * Find customer group by UID
-     * Note: UID uniqueness is global (not workspace-specific)
-     */
-    fun findByUid(uid: String): CustomerGroup?
-
-    /**
      * Check if UID exists
      * Note: UID uniqueness is global (not workspace-specific)
      */

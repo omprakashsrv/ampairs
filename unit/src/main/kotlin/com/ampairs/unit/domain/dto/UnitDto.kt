@@ -46,15 +46,6 @@ data class UnitResponse(
     val updatedAt: Instant?
 )
 
-data class UnitUsageResponse(
-    val unitId: String,
-    val inUse: Boolean,
-    val entityCount: Int,
-    val conversionCount: Int,
-    val entityIds: List<String> = emptyList(),
-    val conversionIds: List<String> = emptyList()
-)
-
 fun Unit.applyRequest(request: UnitRequest): Unit = apply {
     request.uid?.let { uid = it }
     name = request.name.trim()

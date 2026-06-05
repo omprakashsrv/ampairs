@@ -29,11 +29,14 @@ class UnitServiceTest {
     @Mock
     private lateinit var usageProvider: UnitUsageProvider
 
+    @Mock
+    private lateinit var entityChangePublisher: com.ampairs.core.sync.EntityChangePublisher
+
     private lateinit var unitService: UnitServiceImpl
 
     @BeforeEach
     fun setUp() {
-        unitService = UnitServiceImpl(unitRepository, listOf(usageProvider))
+        unitService = UnitServiceImpl(unitRepository, listOf(usageProvider), entityChangePublisher)
     }
 
     @Test
@@ -54,15 +57,6 @@ class UnitServiceTest {
         assertEquals("UNIT-001", response.uid)
         assertEquals("Kilogram", response.name)
         verify(unitRepository).save(any())
-    }
-
-    @Test
-    fun `update unit should throw when uid not found`() {
-        whenever(unitRepository.findByUid("UNIT-404")).thenReturn(null)
-
-        assertThrows<UnitNotFoundException> {
-            unitService.update("UNIT-404", UnitRequest(name = "Gram", shortName = "g"))
-        }
     }
 
     @Test

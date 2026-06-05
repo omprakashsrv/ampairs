@@ -17,36 +17,6 @@ import java.time.Instant
 interface CustomerTypeRepository : JpaRepository<CustomerType, String>, JpaSpecificationExecutor<CustomerType> {
 
     /**
-     * Find customer type by unique code
-     * Note: @TenantId automatically filters by current workspace
-     */
-    fun findByTypeCode(typeCode: String): CustomerType?
-
-    /**
-     * Find all active customer types
-     * Note: @TenantId automatically filters by current workspace
-     */
-    fun findByActiveTrue(): List<CustomerType>
-
-    /**
-     * Find all active customer types with pagination
-     * Note: @TenantId automatically filters by current workspace
-     */
-    fun findByActiveTrue(pageable: Pageable): Page<CustomerType>
-
-    /**
-     * Check if customer type code exists
-     * Note: @TenantId automatically filters by current workspace
-     */
-    fun existsByTypeCode(typeCode: String): Boolean
-
-    /**
-     * Find customer type by UID
-     * Note: UID uniqueness is global (not workspace-specific)
-     */
-    fun findByUid(uid: String): CustomerType?
-
-    /**
      * Check if UID exists
      * Note: UID uniqueness is global (not workspace-specific)
      */

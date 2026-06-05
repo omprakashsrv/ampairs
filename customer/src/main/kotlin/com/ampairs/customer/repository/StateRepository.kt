@@ -8,11 +8,6 @@ import org.springframework.stereotype.Repository
 interface StateRepository : CrudRepository<State, String> {
 
     /**
-     * Find state by UID
-     */
-    fun findByUid(uid: String): State?
-
-    /**
      * Find states by workspace/owner ID
      */
     fun findByOwnerId(ownerId: String): List<State>
@@ -21,24 +16,4 @@ interface StateRepository : CrudRepository<State, String> {
      * Find first state by master state code
      */
     fun findFirstByMasterStateCode(masterStateCode: String): State?
-
-    /**
-     * Find all states by master state code
-     */
-    fun findByMasterStateCode(masterStateCode: String): List<State>
-
-    /**
-     * Find first state by master state code and owner
-     */
-    fun findFirstByMasterStateCodeAndOwnerId(masterStateCode: String, ownerId: String): State?
-
-    /**
-     * Find active states for a workspace
-     */
-    fun findByOwnerIdAndActiveTrue(ownerId: String): List<State>
-
-    /**
-     * Find states by name pattern for a workspace
-     */
-    fun findByOwnerIdAndNameContainingIgnoreCase(ownerId: String, namePattern: String): List<State>
 }

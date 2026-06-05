@@ -37,16 +37,6 @@ class TaxCodeController(
         return ApiResponse.success(result)
     }
 
-    @GetMapping("/favorites")
-    fun getFavorites(
-        @RequestParam(defaultValue = "0") page: Int,
-        @RequestParam(defaultValue = "100") size: Int
-    ): ApiResponse<PageResponse<TaxCodeDto>> {
-        // Multi-tenancy via @TenantId handles workspace scoping automatically
-        val result = taxCodeService.getFavorites(page, size)
-        return ApiResponse.success(result)
-    }
-
     @DeleteMapping("/{taxCodeId}")
     fun unsubscribeFromTaxCode(
         @PathVariable taxCodeId: String
@@ -66,15 +56,6 @@ class TaxCodeController(
         return ApiResponse.success(taxCode)
     }
 
-    @PostMapping("/{taxCodeId}/usage")
-    fun incrementUsageCount(
-        @PathVariable taxCodeId: String
-    ): ApiResponse<Unit> {
-        // Multi-tenancy via @TenantId handles workspace scoping automatically
-        taxCodeService.incrementUsage(taxCodeId)
-        return ApiResponse.success(Unit)
-    }
-
     @PostMapping("/bulk-subscribe")
     fun bulkSubscribeTaxCodes(
         @Valid @RequestBody request: BulkSubscribeTaxCodesRequest
@@ -90,17 +71,6 @@ class TaxCodeController(
     ): ApiResponse<TaxCodeDto> {
         // Multi-tenancy via @TenantId handles workspace scoping automatically
         val taxCode = taxCodeService.getById(taxCodeId)
-        return ApiResponse.success(taxCode)
-    }
-
-    @PostMapping("/{taxCodeId}/favorite")
-    fun toggleFavorite(
-        @PathVariable taxCodeId: String,
-        @Valid @RequestBody request: Map<String, Boolean>
-    ): ApiResponse<TaxCodeDto> {
-        // Multi-tenancy via @TenantId handles workspace scoping automatically
-        val isFavorite = request["isFavorite"] ?: false
-        val taxCode = taxCodeService.setFavorite(taxCodeId, isFavorite)
         return ApiResponse.success(taxCode)
     }
 }

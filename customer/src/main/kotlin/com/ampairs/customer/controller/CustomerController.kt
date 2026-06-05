@@ -4,16 +4,13 @@ import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.core.exception.NotFoundException
 import com.ampairs.customer.domain.dto.*
-import com.ampairs.customer.domain.model.Customer
 import com.ampairs.customer.domain.service.CustomerService
-import com.ampairs.customer.domain.service.CustomerImageService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
-import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -21,7 +18,6 @@ import org.springframework.web.bind.annotation.*
 @Tag(name = "Customer Management", description = "Customer CRUD and management operations")
 class CustomerController(
     private val customerService: CustomerService,
-    private val customerImageService: CustomerImageService,
 ) {
 
     @PostMapping("")
@@ -71,64 +67,11 @@ class CustomerController(
         return ApiResponse.success(result)
     }
 
-    /**
-     * Retail-specific Customer Management API endpoints
-     */
-
-    @PostMapping("/create")
-    @ResponseStatus(HttpStatus.CREATED)
-    fun createCustomer(@RequestBody request: CustomerCreateRequest): ApiResponse<CustomerResponse> {
-        val customer = Customer().apply {
-            name = request.name
-            customerType = request.customerType ?: "RETAIL"
-            phone = request.phone ?: ""
-            email = request.email ?: ""
-            gstNumber = request.gstNumber
-            panNumber = request.panNumber
-            creditLimit = request.creditLimit ?: 0.0
-            creditDays = request.creditDays ?: 0
-            address = request.address?.street ?: ""
-            city = request.address?.city ?: ""
-            state = request.address?.state ?: ""
-            pincode = request.address?.postalCode ?: ""
-            country = request.address?.country ?: "India"
-            attributes = request.attributes ?: emptyMap()
-            refId = request.refId
-            status = "ACTIVE"
-        }
-
-        val createdCustomer = customerService.createCustomer(customer)
-        return ApiResponse.success(createdCustomer.asCustomerResponse())
-    }
-
     @GetMapping("/{customerId}")
     fun getCustomer(@PathVariable customerId: String): ApiResponse<CustomerResponse> {
         val customer = customerService.getCustomerByUid(customerId)
             ?: throw NotFoundException("Customer not found: $customerId")
         return ApiResponse.success(customer.asCustomerResponse())
-    }
-
-    @PutMapping("/{customerId}")
-    fun updateCustomer(
-        @PathVariable customerId: String,
-        @Valid @RequestBody request: CustomerUpdateRequest
-    ): ApiResponse<CustomerResponse> {
-        val updates = Customer().apply {
-            name = request.name
-            phone = request.phone ?: ""
-            email = request.email ?: ""
-            gstNumber = request.gstNumber
-            address = request.address ?: ""
-            city = request.city ?: ""
-            state = request.state ?: ""
-            pincode = request.pincode ?: ""
-            status = request.status ?: "ACTIVE"
-            attributes = request.attributes ?: emptyMap()
-        }
-
-        val updatedCustomer = customerService.updateCustomer(customerId, updates)
-            ?: throw NotFoundException("Customer not found: $customerId")
-        return ApiResponse.success(updatedCustomer.asCustomerResponse())
     }
 
     @DeleteMapping("/{customerId}")
@@ -144,94 +87,5 @@ class CustomerController(
             throw NotFoundException("Customer not found: $customerId")
         }
         return ApiResponse.success(mapOf("deleted" to true, "customer_id" to customerId))
-    }
-
-    @GetMapping("/gst/{gstNumber}")
-    fun getCustomerByGst(@PathVariable gstNumber: String): ApiResponse<CustomerResponse> {
-        val customer = customerService.getCustomerByGstNumber(gstNumber)
-            ?: throw NotFoundException("Customer not found with GST: $gstNumber")
-        return ApiResponse.success(customer.asCustomerResponse())
-    }
-
-    @PostMapping("/validate-gst")
-    fun validateGstNumber(@RequestBody @Valid request: GstValidationRequest): ApiResponse<GstValidationResponse> {
-        val isValid = customerService.validateGstNumber(request.gstNumber)
-        val response = GstValidationResponse(
-            gstNumber = request.gstNumber,
-            isValid = isValid,
-            message = if (isValid) "Valid GST number" else "Invalid GST number format"
-        )
-
-        return ApiResponse.success(response)
-    }
-
-    @PutMapping("/{customerId}/outstanding")
-    fun updateOutstanding(
-        @PathVariable customerId: String,
-        @RequestBody @Valid request: UpdateOutstandingRequest
-    ): ApiResponse<CustomerResponse> {
-        val updatedCustomer = customerService.updateOutstanding(customerId, request.amount, request.isPayment)
-            ?: throw NotFoundException("Customer not found: $customerId")
-        return ApiResponse.success(updatedCustomer.asCustomerResponse())
-    }
-
-    /**
-     * Customer Image Management Endpoints
-     * Convenience endpoints that delegate to CustomerImageController
-     */
-
-    @GetMapping("/{customerId}/images")
-    @Operation(
-        summary = "Get customer images",
-        description = "Retrieve all images for a specific customer"
-    )
-    fun getCustomerImages(
-        @Parameter(description = "Customer UID")
-        @PathVariable customerId: String
-    ): ApiResponse<CustomerImageListResponse> {
-        val images = customerImageService.getCustomerImages(customerId)
-        return ApiResponse.success(images)
-    }
-
-    @GetMapping("/{customerId}/images/primary")
-    @Operation(
-        summary = "Get customer primary image",
-        description = "Retrieve the primary image for a customer"
-    )
-    fun getCustomerPrimaryImage(
-        @Parameter(description = "Customer UID")
-        @PathVariable customerId: String
-    ): ApiResponse<CustomerImageResponse?> {
-        val images = customerImageService.getCustomerImages(customerId)
-        val primaryImage = images.primaryImage
-        return ApiResponse.success(primaryImage)
-    }
-
-    @GetMapping("/{customerId}/images/stats")
-    @Operation(
-        summary = "Get customer image statistics",
-        description = "Retrieve statistics about customer images"
-    )
-    fun getCustomerImageStats(
-        @Parameter(description = "Customer UID")
-        @PathVariable customerId: String
-    ): ApiResponse<CustomerImageStatsResponse> {
-        val stats = customerImageService.getCustomerImageStats(customerId)
-        return ApiResponse.success(stats)
-    }
-
-    @GetMapping("/{customerId}/images/{imageUid}")
-    @Operation(
-        summary = "Get specific customer image",
-        description = "Retrieve metadata for a specific customer image"
-    )
-    fun getCustomerImage(
-        @Parameter(description = "Customer UID")
-        @PathVariable customerId: String,
-        @Parameter(description = "Image UID")
-        @PathVariable imageUid: String
-    ): ApiResponse<CustomerImageResponse> {
-        val image = customerImageService.getCustomerImage(customerId, imageUid)
-        return ApiResponse.success(image)
     }
 }

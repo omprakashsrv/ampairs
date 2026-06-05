@@ -11,7 +11,6 @@ import com.ampairs.customer.repository.CustomerRepository
 import com.ampairs.customer.repository.StateRepository
 import com.ampairs.event.domain.events.CustomerCreatedEvent
 import com.ampairs.event.domain.events.CustomerDeletedEvent
-import com.ampairs.event.domain.events.CustomerUpdatedEvent
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
@@ -23,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.time.Instant
-import java.util.*
 
 @Service
 @Transactional(readOnly = true)
@@ -123,12 +121,6 @@ class CustomerService(
             throw IllegalArgumentException("Invalid GST number format: ${customer.gstNumber}")
         }
 
-        // customer.gstNumber?.let {
-        //     if (customerRepository.findByGstNumber(it).isPresent) {
-        //         throw IllegalArgumentException("GST number already exists: $it")
-        //     }
-        // }
-
         customer.status = "ACTIVE"
         val savedCustomer = customerRepository.save(customer)
 
@@ -148,120 +140,7 @@ class CustomerService(
         return savedCustomer
     }
 
-    @Transactional
-    fun updateCustomer(customerId: String, updates: Customer): Customer? {
-        val existingCustomer = customerRepository.findByUid(customerId) ?: return null
-
-        // Track changes for event
-        val fieldChanges = mutableMapOf<String, Any>()
-
-        // Update fields and track changes
-        if (updates.name.isNotBlank() && updates.name != existingCustomer.name) {
-            fieldChanges["name"] = mapOf("old" to existingCustomer.name, "new" to updates.name)
-            existingCustomer.name = updates.name
-        }
-        if (updates.phone.isNotBlank() && updates.phone != existingCustomer.phone) {
-            fieldChanges["phone"] = mapOf("old" to existingCustomer.phone, "new" to updates.phone)
-            existingCustomer.phone = updates.phone
-        }
-        if (updates.email.isNotBlank() && updates.email != existingCustomer.email) {
-            fieldChanges["email"] = mapOf("old" to existingCustomer.email, "new" to updates.email)
-            existingCustomer.email = updates.email
-        }
-        if (updates.customerType != existingCustomer.customerType) {
-            fieldChanges["customerType"] = mapOf("old" to existingCustomer.customerType, "new" to updates.customerType)
-            existingCustomer.customerType = updates.customerType
-        }
-        if (updates.creditLimit >= 0 && updates.creditLimit != existingCustomer.creditLimit) {
-            fieldChanges["creditLimit"] = mapOf("old" to existingCustomer.creditLimit, "new" to updates.creditLimit)
-            existingCustomer.creditLimit = updates.creditLimit
-        }
-        if (updates.creditDays >= 0 && updates.creditDays != existingCustomer.creditDays) {
-            fieldChanges["creditDays"] = mapOf("old" to existingCustomer.creditDays, "new" to updates.creditDays)
-            existingCustomer.creditDays = updates.creditDays
-        }
-        if (updates.attributes?.isNotEmpty() == true && updates.attributes != existingCustomer.attributes) {
-            val newAttributes = updates.attributes ?: emptyMap()
-            fieldChanges["attributes"] = mapOf("old" to existingCustomer.attributes, "new" to newAttributes)
-            existingCustomer.attributes = newAttributes
-        }
-        if (updates.status.isNotBlank() && updates.status != existingCustomer.status) {
-            fieldChanges["status"] = mapOf("old" to existingCustomer.status, "new" to updates.status)
-            existingCustomer.status = updates.status
-        }
-
-        // Validate GST number if updated
-        if (updates.gstNumber != existingCustomer.gstNumber && !existingCustomer.isValidGstNumber()) {
-            throw IllegalArgumentException("Invalid GST number format: ${updates.gstNumber}")
-        }
-
-        val savedCustomer = customerRepository.save(existingCustomer)
-
-        // Publish CustomerUpdatedEvent only if there were changes
-        if (fieldChanges.isNotEmpty()) {
-            eventPublisher.publishEvent(
-                CustomerUpdatedEvent(
-                    source = this,
-                    workspaceId = getWorkspaceId(),
-                    entityId = savedCustomer.uid,
-                    userId = getUserId(),
-                    deviceId = getDeviceId(),
-                    fieldChanges = fieldChanges
-                )
-            )
-        }
-
-        return savedCustomer
-    }
-
-    fun searchCustomers(
-        searchTerm: String?,
-        customerType: String?,
-        city: String?,
-        state: String?,
-        hasCredit: Boolean?,
-        hasOutstanding: Boolean?,
-        pageable: Pageable
-    ): Page<Customer> {
-        return when {
-            !searchTerm.isNullOrBlank() -> customerRepository.searchCustomers(searchTerm, pageable)
-            customerType != null -> customerRepository.findActiveCustomersByType(customerType, pageable)
-            !city.isNullOrBlank() -> customerRepository.findActiveCustomersByCity(city, pageable)
-            !state.isNullOrBlank() -> customerRepository.findActiveCustomersByState(state, pageable)
-            hasCredit == true -> customerRepository.findCustomersWithCredit(pageable)
-            hasOutstanding == true -> customerRepository.findCustomersWithOutstanding(pageable)
-            else -> customerRepository.findByStatus("ACTIVE").let { 
-                org.springframework.data.domain.PageImpl(it, pageable, it.size.toLong()) 
-            }
-        }
-    }
-
     fun getCustomerByUid(uid: String): Customer? = customerRepository.findByUid(uid)
-
-    fun getCustomerByGstNumber(gstNumber: String): Customer? {
-        return customerRepository.findByGstNumber(gstNumber).orElse(null)
-    }
-
-    fun getActiveCustomers(pageable: Pageable): List<Customer> {
-        return customerRepository.findByStatus("ACTIVE")
-    }
-
-    @Transactional
-    fun updateOutstanding(customerId: String, amount: Double, isPayment: Boolean = false): Customer? {
-        val customer = customerRepository.findByUid(customerId) ?: return null
-        
-        if (isPayment) {
-            customer.reduceOutstanding(amount)
-        } else {
-            customer.addToOutstanding(amount)
-        }
-        
-        return customerRepository.save(customer)
-    }
-
-    fun validateGstNumber(gstNumber: String): Boolean {
-        return gstNumber.matches(Regex("^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$"))
-    }
 
     /**
      * Soft delete a customer by setting status to DELETED
