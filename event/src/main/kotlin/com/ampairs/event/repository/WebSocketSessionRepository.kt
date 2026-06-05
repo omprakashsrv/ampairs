@@ -20,6 +20,16 @@ interface WebSocketSessionRepository : CrudRepository<WebSocketSession, Long>, P
     fun findBySessionId(sessionId: String): WebSocketSession?
 
     /**
+     * Cross-tenant lookup by session ID — bypasses @TenantId filter.
+     * Use this when the workspace/tenant is not yet known (e.g. disconnect handler).
+     */
+    @Query(
+        value = "SELECT * FROM device_sessions WHERE session_id = :sessionId LIMIT 1",
+        nativeQuery = true
+    )
+    fun findBySessionIdCrossTenant(@Param("sessionId") sessionId: String): WebSocketSession?
+
+    /**
      * Find active sessions for a workspace
      */
     fun findByWorkspaceIdAndStatusIn(
@@ -80,11 +90,23 @@ interface WebSocketSessionRepository : CrudRepository<WebSocketSession, Long>, P
     ): List<WebSocketSession>
 
     /**
-     * Find sessions by status and last heartbeat before specified time
+     * Find sessions by status and last heartbeat before specified time.
+     * NOTE: subject to @TenantId filtering — only use when tenant context is set.
      */
     fun findByStatusAndLastHeartbeatBefore(
         status: DeviceStatus,
         cutoffTime: Instant
+    ): List<WebSocketSession>
+
+    /**
+     * Cross-tenant stale-session sweep for the scheduler, which runs without tenant context.
+     */
+    @Query(
+        value = "SELECT * FROM device_sessions WHERE status IN ('ONLINE', 'AWAY') AND last_heartbeat < :cutoffTime",
+        nativeQuery = true
+    )
+    fun findActiveSessionsWithHeartbeatBeforeCrossTenant(
+        @Param("cutoffTime") cutoffTime: Instant
     ): List<WebSocketSession>
 
     /**

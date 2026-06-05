@@ -9,13 +9,15 @@ data class ProductCategoryResponse(
     var image: FileResponse?,
 )
 
+fun ProductCategory.asResponse(): ProductCategoryResponse {
+    return ProductCategoryResponse(
+        id = uid,
+        name = name,
+        refId = refId,
+        image = image?.toFileResponse(),
+    )
+}
+
 fun List<ProductCategory>.asResponse(): List<ProductCategoryResponse> {
-    return map {
-        ProductCategoryResponse(
-            id = it.uid,
-            name = it.name,
-            refId = it.refId,
-            image = it.image?.toFileResponse(),
-        )
-    }
+    return map { it.asResponse() }
 }

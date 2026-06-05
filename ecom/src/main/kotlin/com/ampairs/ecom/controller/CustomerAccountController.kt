@@ -21,7 +21,7 @@ import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/v1/ecom/account")
+@RequestMapping("/v1/ecom/account")
 @PreAuthorize("isAuthenticated()")
 class CustomerAccountController(
     private val addressService: CustomerAddressService,

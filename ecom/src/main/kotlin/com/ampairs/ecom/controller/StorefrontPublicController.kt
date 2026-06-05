@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.*
 import java.time.Instant
 
 @RestController
-@RequestMapping("/api/v1/store/{slug}")
+@RequestMapping("/v1/store/{slug}")
 class StorefrontPublicController(
     private val listedProductRepository: EcomListedProductRepository,
     private val taxonomyImageRepository: EcomTaxonomyImageRepository,

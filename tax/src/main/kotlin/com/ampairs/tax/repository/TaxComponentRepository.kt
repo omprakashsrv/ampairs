@@ -28,4 +28,8 @@ interface TaxComponentRepository : JpaRepository<TaxComponent, Long> {
 
     @Query("SELECT t FROM TaxComponent t WHERE t.jurisdiction = :jurisdiction AND t.isActive = true ORDER BY t.componentName ASC")
     fun findByJurisdiction(jurisdiction: String, pageable: Pageable): Page<TaxComponent>
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(t.updatedAt) FROM TaxComponent t")
+    fun findMaxUpdatedAt(): Instant?
 }

@@ -4,7 +4,6 @@ import com.ampairs.auth.service.JwtService
 import com.ampairs.core.multitenancy.DeviceContextHolder
 import com.ampairs.core.multitenancy.TenantContextHolder
 import org.slf4j.LoggerFactory
-import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.http.server.ServerHttpRequest
 import org.springframework.http.server.ServerHttpResponse
@@ -17,9 +16,6 @@ import org.springframework.messaging.simp.stomp.StompCommand
 import org.springframework.messaging.simp.stomp.StompHeaderAccessor
 import org.springframework.messaging.support.ChannelInterceptor
 import org.springframework.messaging.support.MessageHeaderAccessor
-import org.springframework.scheduling.TaskScheduler
-import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler
-import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.socket.WebSocketHandler
 import org.springframework.web.socket.config.annotation.EnableWebSocketMessageBroker
 import org.springframework.web.socket.config.annotation.StompEndpointRegistry
@@ -36,21 +32,6 @@ class WebSocketConfig(
 ) : WebSocketMessageBrokerConfigurer {
 
     private val logger = LoggerFactory.getLogger(WebSocketConfig::class.java)
-
-    /**
-     * TaskScheduler bean for SimpleBroker heartbeats.
-     * Required to keep WebSocket connections alive when using in-memory broker.
-     *
-     * Note: Named uniquely to avoid conflict with Spring's default messageBrokerTaskScheduler
-     */
-    @Bean
-    fun simpleBrokerHeartbeatScheduler(): TaskScheduler {
-        val scheduler = ThreadPoolTaskScheduler()
-        scheduler.poolSize = 1
-        scheduler.setThreadNamePrefix("websocket-heartbeat-")
-        scheduler.initialize()
-        return scheduler
-    }
 
     override fun configureMessageBroker(registry: MessageBrokerRegistry) {
         val brokerType = webSocketConfigProperties.type
@@ -69,7 +50,10 @@ class WebSocketConfig(
             WebSocketConfigProperties.MessageBrokerType.KAFKA ->
                 logger.info("WebSocket broker: SimpleBroker + Kafka fan-out at {}", kafka.bootstrapServers)
             WebSocketConfigProperties.MessageBrokerType.AUTO ->
-                logger.info("WebSocket broker: SimpleBroker + Kafka fan-out (auto) at {}", kafka.bootstrapServers)
+                // KafkaAvailableCondition has already probed Kafka at startup and conditionally
+                // registered the Kafka beans. The log here reflects configured intent; the actual
+                // broker mode is visible from the KafkaAvailableCondition INFO log during startup.
+                logger.info("WebSocket broker: SimpleBroker (Kafka probe result determines fan-out) at {}", kafka.bootstrapServers)
         }
 
         registry.setApplicationDestinationPrefixes("/app")
@@ -146,7 +130,7 @@ class WebSocketAuthInterceptor(
                 )
             }
 
-            if (username.isNullOrBlank()) {
+            if (username.isBlank()) {
                 logger.warn("Invalid JWT token: no username")
                 return false
             }

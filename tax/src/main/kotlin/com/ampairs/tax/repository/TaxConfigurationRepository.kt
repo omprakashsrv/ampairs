@@ -28,4 +28,8 @@ interface TaxConfigurationRepository : JpaRepository<TaxConfiguration, Long> {
 
     @Query("SELECT t FROM TaxConfiguration t ORDER BY t.createdAt DESC")
     fun findAllOrderByCreatedAtDesc(pageable: Pageable): Page<TaxConfiguration>
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(t.updatedAt) FROM TaxConfiguration t")
+    fun findMaxUpdatedAt(): Instant?
 }

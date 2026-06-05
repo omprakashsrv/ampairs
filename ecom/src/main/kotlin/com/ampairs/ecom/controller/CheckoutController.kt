@@ -21,7 +21,7 @@ class CheckoutController(
     private val storefrontService: StorefrontService,
 ) {
 
-    @PostMapping("/api/v1/store/{slug}/cart/{sessionToken}/checkout")
+    @PostMapping("/v1/store/{slug}/cart/{sessionToken}/checkout")
     @PreAuthorize("isAuthenticated()")
     @ResponseStatus(HttpStatus.CREATED)
     fun checkout(

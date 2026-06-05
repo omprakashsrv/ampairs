@@ -14,7 +14,7 @@ class EcomConfig(
 
     override fun addInterceptors(registry: InterceptorRegistry) {
         registry.addInterceptor(storefrontTenantInterceptor)
-            .addPathPatterns("/api/v1/store/**")
+            .addPathPatterns("/v1/store/**")
             .order(10)
     }
 }

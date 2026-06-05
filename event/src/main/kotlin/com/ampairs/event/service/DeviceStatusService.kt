@@ -1,5 +1,6 @@
 package com.ampairs.event.service
 
+import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.event.config.Constants
 import com.ampairs.event.domain.WebSocketSession
 import com.ampairs.event.domain.DeviceStatus
@@ -27,52 +28,50 @@ class DeviceStatusService(
      * Runs every 30 seconds
      */
     @Scheduled(fixedRate = 30000) // Every 30 seconds
-    @Transactional
     fun detectStaleAndAwaySessions() {
         try {
             val now = Instant.now()
 
-            // Find sessions that haven't sent heartbeat for 30 seconds
-            val idleSessions = webSocketSessionRepository.findByStatusAndLastHeartbeatBefore(
-                DeviceStatus.ONLINE,
+            // Cross-tenant query: @TenantId on WebSocketSession means tenant-scoped queries
+            // return nothing when no tenant is set. The scheduler has no tenant context.
+            val idleSessions = webSocketSessionRepository.findActiveSessionsWithHeartbeatBeforeCrossTenant(
                 now.minusSeconds(30)
             )
 
             idleSessions.forEach { session ->
-                if (session.isStale(2)) {
-                    // No heartbeat for > 2 minutes - mark as OFFLINE
-                    session.markOffline()
-                    webSocketSessionRepository.save(session)
-
-                    broadcastStatusChange(
-                        workspaceId = session.workspaceId,
-                        userId = session.userId,
-                        deviceId = session.deviceId,
-                        status = DeviceStatus.OFFLINE,
-                        deviceName = session.deviceName
-                    )
-
-                    logger.info(
-                        "Marked session as OFFLINE due to inactivity: user={}, device={}",
-                        session.userId, session.deviceId
-                    )
-                } else if (session.isIdle(30)) {
-                    // No heartbeat for 30s-2min - mark as AWAY
-                    session.markAway()
-                    webSocketSessionRepository.save(session)
-
-                    broadcastStatusChange(
-                        workspaceId = session.workspaceId,
-                        userId = session.userId,
-                        deviceId = session.deviceId,
-                        status = DeviceStatus.AWAY,
-                        deviceName = session.deviceName
-                    )
-
-                    logger.debug(
-                        "Marked session as AWAY due to idle: user={}, device={}",
-                        session.userId, session.deviceId
-                    )
+                TenantContextHolder.setCurrentTenant(session.workspaceId)
+                try {
+                    if (session.isStale(2)) {
+                        session.markOffline()
+                        webSocketSessionRepository.save(session)
+                        broadcastStatusChange(
+                            workspaceId = session.workspaceId,
+                            userId = session.userId,
+                            deviceId = session.deviceId,
+                            status = DeviceStatus.OFFLINE,
+                            deviceName = session.deviceName
+                        )
+                        logger.info(
+                            "Marked session as OFFLINE due to inactivity: user={}, device={}",
+                            session.userId, session.deviceId
+                        )
+                    } else if (session.isIdle(30)) {
+                        session.markAway()
+                        webSocketSessionRepository.save(session)
+                        broadcastStatusChange(
+                            workspaceId = session.workspaceId,
+                            userId = session.userId,
+                            deviceId = session.deviceId,
+                            status = DeviceStatus.AWAY,
+                            deviceName = session.deviceName
+                        )
+                        logger.debug(
+                            "Marked session as AWAY due to idle: user={}, device={}",
+                            session.userId, session.deviceId
+                        )
+                    }
+                } finally {
+                    TenantContextHolder.clearTenantContext()
                 }
             }
 

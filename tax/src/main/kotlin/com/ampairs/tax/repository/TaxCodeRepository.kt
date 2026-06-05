@@ -31,4 +31,8 @@ interface TaxCodeRepository : JpaRepository<TaxCode, Long> {
 
     @Query("SELECT t FROM TaxCode t WHERE t.code LIKE CONCAT(:codePrefix, '%') AND t.isActive = true ORDER BY t.code ASC")
     fun findByCodeStartingWith(codePrefix: String, pageable: Pageable): Page<TaxCode>
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(t.updatedAt) FROM TaxCode t")
+    fun findMaxUpdatedAt(): Instant?
 }

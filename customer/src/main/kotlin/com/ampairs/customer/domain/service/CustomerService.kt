@@ -3,6 +3,7 @@ package com.ampairs.customer.domain.service
 import com.ampairs.core.multitenancy.DeviceContextHolder
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.core.security.AuthenticationHelper
+import com.ampairs.core.sync.EntityChangePublisher
 import com.ampairs.customer.domain.model.Customer
 import com.ampairs.customer.domain.model.State
 import com.ampairs.customer.repository.CustomerPagingRepository
@@ -30,7 +31,8 @@ class CustomerService(
     val customerRepository: CustomerRepository,
     val customerPagingRepository: CustomerPagingRepository,
     val stateRepository: StateRepository,
-    val eventPublisher: ApplicationEventPublisher
+    val eventPublisher: ApplicationEventPublisher,
+    private val entityChangePublisher: EntityChangePublisher,
 ) {
 
     /**
@@ -55,16 +57,25 @@ class CustomerService(
         customers.forEach { customer ->
             if (customer.uid.isNotEmpty()) {
                 val existingCustomer = customerRepository.findByUid(customer.uid)
+                customer.id = existingCustomer?.id ?: 0
                 customer.refId = existingCustomer?.refId ?: ""
                 customer.createdAt = existingCustomer?.createdAt ?: Instant.now()
                 customer.updatedAt = existingCustomer?.updatedAt ?: Instant.now()
             } else if (customer.refId?.isNotEmpty() == true) {
                 val existingCustomer = customerRepository.findByRefId(customer.refId)
+                customer.id = existingCustomer?.id ?: 0
                 customer.uid = existingCustomer?.uid ?: ""
                 customer.createdAt = existingCustomer?.createdAt ?: Instant.now()
                 customer.updatedAt = existingCustomer?.updatedAt ?: Instant.now()
             }
-            customerRepository.save(customer)
+            val saved = customerRepository.save(customer)
+            // Broadcast so other devices of this workspace pull the bulk-synced change.
+            entityChangePublisher.publish(
+                "customer",
+                saved.uid,
+                if (saved.status.equals("DELETED", ignoreCase = true)) com.ampairs.core.sync.EntityChangeType.DELETED
+                else com.ampairs.core.sync.EntityChangeType.UPDATED,
+            )
         }
         return customers
     }

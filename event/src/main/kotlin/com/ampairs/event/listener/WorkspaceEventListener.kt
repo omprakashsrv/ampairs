@@ -1,5 +1,7 @@
 package com.ampairs.event.domain.listener
 
+import com.ampairs.core.sync.EntityChangeType
+import com.ampairs.core.sync.EntityChangedEvent
 import com.ampairs.event.config.Constants
 import com.ampairs.event.domain.EventType
 import com.ampairs.event.domain.WorkspaceEvent
@@ -272,6 +274,28 @@ class WorkspaceEventListener(
         )
     }
 
+    // Generic entity change events (from core EntityChangePublisher — any entity type)
+
+    @EventListener
+    @Async
+    @Transactional
+    fun handleEntityChanged(event: EntityChangedEvent) {
+        val eventType = when (event.changeType) {
+            EntityChangeType.CREATED -> EventType.ENTITY_CREATED
+            EntityChangeType.UPDATED -> EventType.ENTITY_UPDATED
+            EntityChangeType.DELETED -> EventType.ENTITY_DELETED
+        }
+        persistAndBroadcast(
+            workspaceId = event.workspaceId,
+            eventType = eventType,
+            entityType = event.entityType,
+            entityId = event.entityId,
+            deviceId = event.deviceId,
+            userId = event.userId,
+            payload = emptyMap(),
+        )
+    }
+
     // Common persist and broadcast logic
 
     private fun persistAndBroadcast(
@@ -287,6 +311,11 @@ class WorkspaceEventListener(
             // Get next sequence number
             val sequenceNumber = eventRepository.getNextSequenceNumber(workspaceId)
 
+            // Slim signal: persist/broadcast only the change watermark, never the full record.
+            // The change time approximates the entity's updatedAt (this runs post-commit); the
+            // authoritative reconciliation path is the data-derived /sync/checkpoints bootstrap.
+            val lastUpdatedAt = java.time.Instant.now()
+
             // Persist event
             val workspaceEvent = WorkspaceEvent().apply {
                 this.workspaceId = workspaceId
@@ -296,7 +325,7 @@ class WorkspaceEventListener(
                 this.deviceId = deviceId
                 this.userId = userId
                 this.sequenceNumber = sequenceNumber
-                this.payload = objectMapper.writeValueAsString(payload)
+                this.payload = objectMapper.writeValueAsString(mapOf("last_updated_at" to lastUpdatedAt.toString()))
             }
             eventRepository.save(workspaceEvent)
 

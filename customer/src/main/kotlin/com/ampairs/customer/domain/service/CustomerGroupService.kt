@@ -1,6 +1,7 @@
 package com.ampairs.customer.domain.service
 
 import com.ampairs.core.multitenancy.TenantContextHolder
+import com.ampairs.core.sync.EntityChangePublisher
 import com.ampairs.customer.domain.model.CustomerGroup
 import com.ampairs.customer.repository.CustomerGroupRepository
 import org.slf4j.LoggerFactory
@@ -8,6 +9,9 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
+import java.time.Instant
 
 /**
  * Service for managing workspace customer groups.
@@ -16,7 +20,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional
 class CustomerGroupService(
-    private val customerGroupRepository: CustomerGroupRepository
+    private val customerGroupRepository: CustomerGroupRepository,
+    private val entityChangePublisher: EntityChangePublisher,
 ) {
 
     private val logger = LoggerFactory.getLogger(CustomerGroupService::class.java)
@@ -38,6 +43,27 @@ class CustomerGroupService(
     @Transactional(readOnly = true)
     fun getAllActiveCustomerGroups(pageable: Pageable): Page<CustomerGroup> {
         return customerGroupRepository.findByActiveTrue(pageable)
+    }
+
+    /**
+     * Incremental sync feed for customer groups — returns rows with updatedAt >= lastSync,
+     * INCLUDING inactive (soft-deleted) rows so clients can detect deletions.
+     * Blank/null lastSync returns all rows (paginated) including inactive.
+     * Note: @TenantId automatically filters by current workspace.
+     */
+    @Transactional(readOnly = true)
+    fun getCustomerGroupsAfterSync(lastSync: String?, pageable: Pageable): Page<CustomerGroup> {
+        return if (lastSync.isNullOrBlank()) {
+            customerGroupRepository.findAll(pageable)
+        } else {
+            try {
+                val decodedLastSync = URLDecoder.decode(lastSync, StandardCharsets.UTF_8)
+                val lastSyncInstant = Instant.parse(decodedLastSync)
+                customerGroupRepository.findByUpdatedAtAfter(lastSyncInstant, pageable)
+            } catch (e: Exception) {
+                customerGroupRepository.findAll(pageable)
+            }
+        }
     }
 
     /**
@@ -101,6 +127,7 @@ class CustomerGroupService(
         }
 
         return customerGroupRepository.save(customerGroup)
+            .also { entityChangePublisher.created("customer_group", it.uid) }
     }
 
     /**
@@ -118,6 +145,7 @@ class CustomerGroupService(
         existingGroup.metadata = updates.metadata
 
         return customerGroupRepository.save(existingGroup)
+            .also { entityChangePublisher.updated("customer_group", it.uid) }
     }
 
     /**
@@ -151,11 +179,13 @@ class CustomerGroupService(
                 existing.priorityLevel = incoming.priorityLevel
                 existing.metadata = incoming.metadata
                 customerGroupRepository.save(existing)
+                    .also { entityChangePublisher.updated("customer_group", it.uid) }
             } else {
                 if (incoming.uid.isNotEmpty() && customerGroupRepository.existsByUid(incoming.uid)) {
                     throw IllegalArgumentException("Customer group with UID '${incoming.uid}' already exists")
                 }
                 customerGroupRepository.save(incoming)
+                    .also { entityChangePublisher.created("customer_group", it.uid) }
             }
         }
     }
