@@ -22,6 +22,10 @@ offline-sync + Metro DI + MVI rules.
 - **Tax**: **Full Indian GST** — CGST+SGST for intra-state, IGST for inter-state, decided by
   place-of-supply (buyer vs seller state), using the workspace's subscribed HSN/SAC tax codes.
 - **Products**: line-item entry can **create a new product inline** (not only pick existing).
+- **Units (UoM)**: each line item records the **unit it is transacted in**. The staffer can transact a
+  product in its **base unit or any defined derived unit** (e.g. BOX where 1 BOX = 12 PCS); the line
+  stores the chosen `unitId`, the entered quantity, and the derived **base-unit quantity** (for
+  stock/inventory), with price scaled by the conversion. Uses the existing `UnitConversionEngine`.
 - **Rebuild posture**: **clean rebuild** of the create flow, sync layer, and tax wiring — keep the
   reusable parts (entity schema, `TaxCalculationEngine`, list/search/paging) per the audit.
 - **Money**: keep the **existing `Double`** price/tax fields for this feature (today's pricing model);
@@ -46,6 +50,13 @@ offline-sync + Metro DI + MVI rules.
   (bulk-upsert `POST` + `PageResponse` `GET`) is the pattern to mirror.
 - **Order→Invoice conversion exists server-side**: `order.toInvoice()`,
   `POST /order/v1/orders/create-invoice`, with `Invoice.orderRefId` ↔ `Order.invoiceRefId`.
+- **Units exist but are unused on lines**: `Unit` (with `decimalPlaces`), product-scoped
+  `UnitConversion` (`baseUnitId`/`derivedUnitId`/`multiplier`), the app `UnitConversionEngine`
+  (direct + inverse) and backend `UnitConversionService` (+ `POST /unit/v1/conversions/convert`) all
+  exist, and `Product` carries `baseUnitId` + `unitConversions` — but **`OrderItem`/`InvoiceItem`
+  (Room and backend) have NO unit field**: `quantity` is a bare `Double` assumed to be the base unit,
+  and the conversion engine is **never called** in the order/invoice path. Product prices
+  (`sellingPrice`/`mrp`/`dp`) are expressed **per base unit**.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -153,8 +164,46 @@ computed from its HSN code.
 
 ---
 
+### User Story 5 — Staff transacts a line in any unit, with conversion (Priority: P1)
+
+A staffer adds a product whose base unit is PCS but sells it as a BOX (1 BOX = 12 PCS). They pick
+"BOX" as the line's unit and enter quantity 5; the line records 5 BOX, derives 60 PCS as the
+base-unit quantity, scales the unit price from the per-PCS price, and computes GST on the resulting
+taxable amount. Quantity input respects the unit's allowed decimal places.
+
+**Why this priority**: Quantity without a unit is ambiguous and breaks both pricing and stock. Most
+real store catalogs transact in multiple units, so this is integral to a correct line — not an add-on.
+
+**Independent Test**: For a product priced ₹10/PCS with a 1 BOX = 12 PCS conversion, add a line of
+5 BOX → unit price shows ₹120/BOX, taxable ₹600, base-unit quantity stored = 60 PCS; switch the unit
+to PCS at qty 60 → identical taxable ₹600.
+
+**Acceptance Scenarios**:
+
+1. **Given** a product with a base unit and at least one derived-unit conversion, **When** the staffer
+   opens the line's unit selector, **Then** they see the base unit plus all active derived units for
+   that product.
+2. **Given** the staffer picks a derived unit (BOX) and quantity 5 (1 BOX = 12 PCS), **When** the line
+   computes, **Then** it stores `unitId = BOX`, `quantity = 5`, `baseQuantity = 60` (via
+   `UnitConversionEngine`), and the unit price = per-base-unit price × 12.
+3. **Given** a product with **no** conversions defined, **When** a line is added, **Then** it
+   transacts in the base unit (multiplier 1, `baseQuantity = quantity`) with no error.
+4. **Given** a unit whose `decimalPlaces = 0`, **When** the staffer tries to enter a fractional
+   quantity, **Then** input is constrained to whole numbers; a `decimalPlaces = 3` unit allows up to
+   3 decimals.
+5. **Given** a line in a derived unit, **When** the order/invoice is saved and synced, **Then** the
+   pushed line carries `unitId` and `baseQuantity` and they round-trip on pull.
+
+---
+
 ### Edge Cases
 
+- **Inverse conversion** (entering base when only a derived→base multiplier exists) → engine divides
+  by the multiplier; guard against divide-by-zero.
+- **Unit changed after quantity entered** → re-derive `baseQuantity`, rescale unit price, and re-run
+  the line's GST reactively.
+- **Inventory deduction** (out of scope to implement here) → must eventually read `baseQuantity`, not
+  the transacted `quantity`; the field is added now so stock work later has the data.
 - **Missing GST number / unregistered buyer** → default to **intra-state** (CGST+SGST) against the
   seller's state; surface a hint that place-of-supply was assumed.
 - **Product with no/blank tax code** → line is treated as 0% (exempt), flagged visibly; never silently
@@ -206,6 +255,12 @@ computed from its HSN code.
   `feature/invoice` aligned 1:1 with the rebuilt order flow.
 - **FR-013**: All flows function on **Desktop (JVM)** and **mobile**; reuse/extend the adaptive
   list-detail pane.
+- **FR-014**: **Unit-of-measure on line items.** Add `unitId` (transacted unit) and `baseQuantity`
+  (quantity in the product's base unit) to `OrderItem`/`InvoiceItem` (Room). On line entry, let the
+  staffer pick the base unit or any active derived unit for that product; compute `baseQuantity` via
+  `UnitConversionEngine.convertQuantity(...)`; scale the per-base-unit price to the chosen unit; and
+  compute GST on the resulting taxable amount. Constrain quantity input to the unit's `decimalPlaces`.
+  Default to the product's base unit (multiplier 1) when no conversion exists.
 
 ### Functional Requirements — Backend (`ampairs`)
 
@@ -221,6 +276,10 @@ computed from its HSN code.
   client-converted pair reconciles correctly.
 - **FR-B06**: No tax recomputation server-side (client is authority); validate `taxInfos` totals are
   internally consistent and reject malformed payloads.
+- **FR-B07**: Add `unitId` + `baseQuantity` columns to `order_item`/`invoice_item` and expose them in
+  the request/response DTOs (`OrderItemResponse` etc.) so the transacted unit and base-unit quantity
+  round-trip through bulk upsert and paginated pull. Server stores them as supplied (no recompute);
+  `baseQuantity` is the field future inventory-deduction work reads.
 
 ### Non-Functional / Constraints
 
@@ -231,9 +290,11 @@ computed from its HSN code.
 - **NFR-002**: Tax math is deterministic and reconciles to the displayed totals; covered by unit tests
   for intra/inter, multi-rate, discount-before-tax, and exempt cases.
 - **NFR-003**: Backend `Instant` timestamps, DTO isolation, `ApiResponse<T>`, no try/catch in
-  controllers, tenant context at controller level; Flyway in **both** `mysql/` and `postgresql/` —
-  next versions **order V1.0.23**, **invoice V1.0.12** (only if schema changes; endpoint additions may
-  need none — record in `NO_MIGRATION_NEEDED.md`).
+  controllers, tenant context at controller level; Flyway in **both** `mysql/` and `postgresql/`.
+  The `unitId`/`baseQuantity` columns (FR-B07) **do** require schema migrations — next versions
+  **order V1.0.23**, **invoice V1.0.12** (back-fill `baseQuantity = quantity`, `unitId = product
+  base unit` for existing rows). Pure endpoint additions need no migration — record in
+  `NO_MIGRATION_NEEDED.md`.
 - **NFR-004**: Money stays `Double` for this feature (today's model); do not introduce the `Money`
   type here.
 
@@ -241,8 +302,11 @@ computed from its HSN code.
 
 - **Order / OrderItem** (`feature/order` + backend `customer_order`/`order_item`): reuse current
   fields (`taxInfos` JSON, `totalTax`, `placeOfSupply`, `fromCustomerGst`, `toCustomerGst`,
-  `invoiceRefId`, line price snapshots). Add **variant reference** fields to the line
-  (`variantSku`/attributes) if not present.
+  `invoiceRefId`, line price snapshots). **Add** to the line: `unitId` + `baseQuantity` (FR-014/B07)
+  and **variant reference** fields (`variantSku`/attributes) if not present.
+- **Unit / UnitConversion** (existing, `unit` module, synced to app): the line's `unitId` references
+  a `Unit`; `UnitConversionEngine`/`UnitConversionService` supply the `multiplier` to derive
+  `baseQuantity`. No change to these entities.
 - **Invoice / InvoiceItem** (`feature/invoice` + backend `invoice`/`invoice_item`): mirror order;
   `orderRefId` link.
 - **TaxInfo** (existing, both repos): `{ id, name, percentage, taxSpec, value, formattedName }` — the
@@ -265,6 +329,9 @@ computed from its HSN code.
 - **SC-006**: No repository makes a network call; `OrderSyncDelegate`/`InvoiceSyncDelegate` own all
   order/invoice API traffic; all three app targets compile.
 - **SC-007**: Existing list/search/paging and saved-order display continue to work (no regression).
+- **SC-008**: A line transacted in a derived unit stores the correct `unitId` + `baseQuantity`, scales
+  the price and GST correctly, respects the unit's decimal places, and round-trips through sync —
+  while products without conversions transact in the base unit with no error.
 
 ## Out of Scope (this feature)
 
@@ -280,13 +347,16 @@ computed from its HSN code.
 - Assumes `feature/tax` `TaxCalculationEngine` and the workspace's subscribed `TaxRule`s (with
   `componentComposition`) are available/synced on the app.
 - Assumes `customer` and `product` modules as they exist (customer GST fields; product
-  `sellingPrice`/`dp`/`mrp`/`taxCode`/variants).
+  `sellingPrice`/`dp`/`mrp`/`taxCode`/variants/`baseUnitId`/`unitConversions`).
+- Assumes the `unit` module + `UnitConversionEngine` (app) / `UnitConversionService` (backend) are
+  available and that unit/conversion data syncs to the app; prices are per the product's base unit.
 - Assumes backend order/invoice modules' single-record + conversion endpoints remain; this feature
   **adds** bulk/paginated sync endpoints alongside them.
 
 ---
 
 *Next steps*: run `/speckit.clarify` (confirm edge-case defaults: tax-exclusive pricing, intra-state
-fallback, rounding half-up), then `/speckit.plan`, `/speckit.tasks`, `/speckit.analyze`, and stop for
+fallback, rounding half-up, and whether the staffer may override the auto-scaled per-unit price on a
+line), then `/speckit.plan`, `/speckit.tasks`, `/speckit.analyze`, and stop for
 review before `/speckit.implement`. Develop on `claude/blissful-goldberg-iuzI6` in both repos; no PR
 unless requested.
