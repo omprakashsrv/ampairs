@@ -2,7 +2,7 @@
 
 **Feature Branch**: `010-store-ops-order-invoice`
 **Created**: 2026-06-05
-**Status**: Clarified (5 questions resolved 2026-06-05 — see Clarifications)
+**Status**: Planned (clarified C1–C5; see `plan.md`, `data-model.md`, `research.md`, `contracts/`, `quickstart.md`)
 **Input**: Build a proper store-operations flow for **store staff** on the KMP app (Android, iOS,
 **and Desktop**) to create **orders and invoices** with correct **Indian GST** tax calculation,
 using **today's product pricing** (`sellingPrice`/`dp`/`mrp` — the pricing layer comes later). Staff
