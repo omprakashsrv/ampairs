@@ -2,6 +2,7 @@ package com.ampairs.customer.domain.service
 
 import com.ampairs.core.multitenancy.DeviceContextHolder
 import com.ampairs.core.multitenancy.TenantContextHolder
+import com.ampairs.core.sync.EntityChangePublisher
 import com.ampairs.customer.domain.model.Customer
 import com.ampairs.customer.repository.CustomerPagingRepository
 import com.ampairs.customer.repository.CustomerRepository
@@ -36,12 +37,13 @@ class CustomerServiceTest {
     private val customerPagingRepository: CustomerPagingRepository = mock()
     private val stateRepository: StateRepository = mock()
     private val eventPublisher: ApplicationEventPublisher = mock()
+    private val entityChangePublisher: EntityChangePublisher = mock()
 
     private lateinit var customerService: CustomerService
 
     @BeforeEach
     fun setUp() {
-        reset(customerRepository, customerPagingRepository, stateRepository, eventPublisher)
+        reset(customerRepository, customerPagingRepository, stateRepository, eventPublisher, entityChangePublisher)
         TenantContextHolder.setCurrentTenant("tenant-123")
         DeviceContextHolder.setCurrentDevice("device-456")
 
@@ -49,7 +51,8 @@ class CustomerServiceTest {
             customerRepository = customerRepository,
             customerPagingRepository = customerPagingRepository,
             stateRepository = stateRepository,
-            eventPublisher = eventPublisher
+            eventPublisher = eventPublisher,
+            entityChangePublisher = entityChangePublisher
         )
     }
 
@@ -62,7 +65,6 @@ class CustomerServiceTest {
     @Test
     fun `createCustomer sets defaults and publishes created event`() {
         val customer = buildCustomer().apply { gstNumber = null }
-        whenever(customerRepository.findByGstNumber(any())).thenReturn(Optional.empty())
         whenever(customerRepository.save(any())).thenAnswer { invocation ->
             (invocation.arguments.first() as Customer).apply {
                 uid = "CUS-001"
@@ -119,58 +121,6 @@ class CustomerServiceTest {
     }
 
     @Test
-    fun `updateCustomer applies changes and publishes updated event`() {
-        val existing = buildCustomer().apply {
-            uid = "CUS-001"
-            name = "Old Name"
-            phone = "1111111111"
-            email = "old@example.com"
-            customerType = "RETAIL"
-            creditLimit = 1000.0
-            creditDays = 10
-        }
-        whenever(customerRepository.findByUid("CUS-001")).thenReturn(existing)
-        whenever(customerRepository.save(existing)).thenReturn(existing)
-
-        val updates = buildCustomer().apply {
-            name = "New Name"
-            phone = "2222222222"
-            email = "new@example.com"
-            customerType = "WHOLESALE"
-            creditLimit = 1500.0
-            creditDays = 20
-            status = "INACTIVE"
-            attributes = mapOf("tier" to "gold")
-        }
-
-        val result = customerService.updateCustomer("CUS-001", updates)
-
-        assertNotNull(result)
-        assertEquals("New Name", existing.name)
-        assertEquals("2222222222", existing.phone)
-        assertEquals("INACTIVE", existing.status)
-
-        val eventCaptor = argumentCaptor<CustomerUpdatedEvent>()
-        verify(eventPublisher).publishEvent(eventCaptor.capture())
-        val event = eventCaptor.firstValue
-        assertEquals("CUS-001", event.entityId)
-        assertTrue(event.fieldChanges.containsKey("name"))
-        assertTrue(event.fieldChanges.containsKey("phone"))
-        assertTrue(event.fieldChanges.containsKey("status"))
-    }
-
-    @Test
-    fun `updateCustomer returns null when customer not found`() {
-        whenever(customerRepository.findByUid("missing")).thenReturn(null)
-
-        val result = customerService.updateCustomer("missing", buildCustomer())
-
-        assertNull(result)
-        verify(customerRepository, never()).save(any())
-        verify(eventPublisher, never()).publishEvent(any())
-    }
-
-    @Test
     fun `getCustomersAfterSync returns filtered results when timestamp valid`() {
         val pageable = PageRequest.of(0, 10)
         val sampleCustomer = buildCustomer().apply { uid = "CUS-100" }
@@ -194,36 +144,6 @@ class CustomerServiceTest {
 
         assertEquals(1, page.totalElements)
         verify(customerRepository).findAll(pageable)
-    }
-
-    @Test
-    fun `updateOutstanding adjusts balance for charges`() {
-        val existing = buildCustomer().apply {
-            uid = "CUS-300"
-            outstandingAmount = 100.0
-        }
-        whenever(customerRepository.findByUid("CUS-300")).thenReturn(existing)
-        whenever(customerRepository.save(existing)).thenReturn(existing)
-
-        val updated = customerService.updateOutstanding("CUS-300", 50.0, isPayment = false)
-
-        assertEquals(150.0, updated?.outstandingAmount)
-        verify(customerRepository).save(existing)
-    }
-
-    @Test
-    fun `updateOutstanding does not allow negative balance`() {
-        val existing = buildCustomer().apply {
-            uid = "CUS-400"
-            outstandingAmount = 40.0
-        }
-        whenever(customerRepository.findByUid("CUS-400")).thenReturn(existing)
-        whenever(customerRepository.save(existing)).thenReturn(existing)
-
-        val updated = customerService.updateOutstanding("CUS-400", 100.0, isPayment = true)
-
-        assertEquals(0.0, updated?.outstandingAmount)
-        verify(customerRepository).save(existing)
     }
 
     private fun buildCustomer(): Customer {

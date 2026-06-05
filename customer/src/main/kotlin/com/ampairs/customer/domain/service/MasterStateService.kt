@@ -22,56 +22,6 @@ class MasterStateService(
     private val logger = LoggerFactory.getLogger(MasterStateService::class.java)
 
     /**
-     * Get all active master states
-     */
-    @Transactional(readOnly = true)
-    fun getAllActiveStates(): List<MasterState> {
-        return masterStateRepository.findByActiveTrueOrderByNameAsc()
-    }
-
-    /**
-     * Get master states by country
-     */
-    @Transactional(readOnly = true)
-    fun getStatesByCountry(countryCode: String): List<MasterState> {
-        return masterStateRepository.findByActiveTrueAndCountryCode(countryCode)
-    }
-
-
-    /**
-     * Search states by keyword
-     */
-    @Transactional(readOnly = true)
-    fun searchStates(searchTerm: String): List<MasterState> {
-        return masterStateRepository.searchActiveStates(searchTerm)
-    }
-
-    /**
-     * Get Indian states with GST codes
-     */
-    @Transactional(readOnly = true)
-    fun getIndianStatesWithGst(): List<MasterState> {
-        return masterStateRepository.findStatesWithGstCodes()
-    }
-
-    /**
-     * Get available countries
-     */
-    @Transactional(readOnly = true)
-    fun getAvailableCountries(): List<Pair<String, String>> {
-        return masterStateRepository.findDistinctCountries()
-            .map { Pair(it[0], it[1]) }
-    }
-
-    /**
-     * Find master state by code
-     */
-    @Transactional(readOnly = true)
-    fun findByStateCode(stateCode: String): MasterState? {
-        return masterStateRepository.findByStateCode(stateCode)
-    }
-
-    /**
      * Import master state to workspace
      */
     @Transactional
@@ -129,35 +79,4 @@ class MasterStateService(
         return masterStateRepository.findByActiveTrueOrderByNameAsc()
             .filter { !importedStateCodes.contains(it.stateCode) }
     }
-
-    /**
-     * Find states by postal code (pattern matching in service layer)
-     */
-    @Transactional(readOnly = true)
-    fun findStatesByPostalCode(postalCode: String): List<MasterState> {
-        val statesWithPatterns = masterStateRepository.findStatesWithPostalCodePatterns()
-        return statesWithPatterns.filter { state ->
-            state.isValidPostalCode(postalCode)
-        }
-    }
-
-    /**
-     * Get master state statistics
-     */
-    @Transactional(readOnly = true)
-    fun getMasterStateStatistics(): Map<String, Any> {
-        val totalStates = masterStateRepository.count()
-        val activeStates = masterStateRepository.findByActiveTrue().size
-        val countries = masterStateRepository.findDistinctCountries().size
-        val indianStates = masterStateRepository.countByActiveTrueAndCountryCode("IN")
-
-        return mapOf(
-            "total_states" to totalStates,
-            "active_states" to activeStates,
-            "countries" to countries,
-            "indian_states" to indianStates,
-            "gst_enabled_states" to masterStateRepository.findStatesWithGstCodes().size
-        )
-    }
-
 }

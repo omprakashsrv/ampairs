@@ -13,8 +13,6 @@ import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
-import org.mockito.kotlin.eq
-import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
@@ -31,12 +29,10 @@ import org.springframework.web.context.WebApplicationContext
 import tools.jackson.databind.ObjectMapper
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
-import java.time.LocalDateTime
 
 @SpringBootTest(classes = [AmpairsApplication::class])
 @ActiveProfiles("test")
@@ -171,156 +167,6 @@ class CustomerControllerIntegrationTest {
             .andExpect(jsonPath("$.success").value(false))
 
         verify(customerService).getCustomerByUid("missing-id")
-    }
-
-    @Test
-    @DisplayName("PUT /customer/v1/{id} - Updates customer")
-    @WithMockUser(username = "testuser", roles = ["USER"])
-    fun `should update customer`() {
-        val request = buildUpdateRequest(uid = "cust-1", name = "Updated Name")
-        val updatedCustomer = buildCustomer(uid = "cust-1", name = "Updated Name")
-        whenever(customerService.updateCustomer(eq("cust-1"), any())).thenReturn(updatedCustomer)
-
-        mockMvc.perform(
-            put("/customer/v1/cust-1")
-                .header("X-Workspace-ID", "TEST_WORKSPACE")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request))
-        )
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.success").value(true))
-
-        verify(customerService).updateCustomer(eq("cust-1"), any())
-    }
-
-    @Test
-    @DisplayName("PUT /customer/v1/{id} - Returns error when missing")
-    @WithMockUser(username = "testuser", roles = ["USER"])
-    fun `should return error when updating missing customer`() {
-        val request = buildUpdateRequest(uid = "cust-404", name = "Missing")
-        whenever(customerService.updateCustomer(eq("cust-404"), any())).thenReturn(null)
-
-        mockMvc.perform(
-            put("/customer/v1/cust-404")
-                .header("X-Workspace-ID", "TEST_WORKSPACE")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request))
-        )
-            .andExpect(status().isNotFound)
-            .andExpect(jsonPath("$.success").value(false))
-
-        verify(customerService).updateCustomer(eq("cust-404"), any())
-    }
-
-    @Test
-    @DisplayName("GET /customer/v1/gst/{gst} - Finds customer by GST number")
-    @WithMockUser(username = "testuser", roles = ["USER"])
-    fun `should return customer by gst number`() {
-        val customer = buildCustomer(uid = "cust-1", name = "GST Customer").apply {
-            gstNumber = "29ABCDE1234F1Z5"
-        }
-        whenever(customerService.getCustomerByGstNumber("29ABCDE1234F1Z5")).thenReturn(customer)
-
-        mockMvc.perform(
-            get("/customer/v1/gst/29ABCDE1234F1Z5")
-                .header("X-Workspace-ID", "TEST_WORKSPACE")
-        )
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.data.gst_number").value("29ABCDE1234F1Z5"))
-
-        verify(customerService).getCustomerByGstNumber("29ABCDE1234F1Z5")
-    }
-
-    @Test
-    @DisplayName("GET /customer/v1/gst/{gst} - Returns error when not found")
-    @WithMockUser(username = "testuser", roles = ["USER"])
-    fun `should return error when gst not found`() {
-        whenever(customerService.getCustomerByGstNumber("29ABCDE1234F1Z5")).thenReturn(null)
-
-        mockMvc.perform(
-            get("/customer/v1/gst/29ABCDE1234F1Z5")
-                .header("X-Workspace-ID", "TEST_WORKSPACE")
-        )
-            .andExpect(status().isNotFound)
-            .andExpect(jsonPath("$.success").value(false))
-
-        verify(customerService).getCustomerByGstNumber("29ABCDE1234F1Z5")
-    }
-
-    @Test
-    @DisplayName("POST /customer/v1/validate-gst - Validates GST number")
-    @WithMockUser(username = "testuser", roles = ["USER"])
-    fun `should validate gst number`() {
-        whenever(customerService.validateGstNumber("29ABCDE1234F1Z5")).thenReturn(true)
-
-        mockMvc.perform(
-            post("/customer/v1/validate-gst")
-                .header("X-Workspace-ID", "TEST_WORKSPACE")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"gst_number":"29ABCDE1234F1Z5"}""")
-        )
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.success").value(true))
-
-        verify(customerService).validateGstNumber("29ABCDE1234F1Z5")
-    }
-
-    @Test
-    @DisplayName("PUT /customer/v1/{id}/outstanding - Updates outstanding balance")
-    @WithMockUser(username = "testuser", roles = ["USER"])
-    fun `should update outstanding amount`() {
-        val updatedCustomer = buildCustomer(uid = "cust-1", name = "Outstanding Customer").apply {
-            outstandingAmount = 150.0
-        }
-        whenever(customerService.updateOutstanding("cust-1", 50.0, false)).thenReturn(updatedCustomer)
-
-        mockMvc.perform(
-            put("/customer/v1/cust-1/outstanding")
-                .header("X-Workspace-ID", "TEST_WORKSPACE")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"amount":50.0,"is_payment":false}""")
-        )
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.success").value(true))
-
-        verify(customerService).updateOutstanding("cust-1", 50.0, false)
-    }
-
-    @Test
-    @DisplayName("PUT /customer/v1/{id}/outstanding - Returns error when customer missing")
-    @WithMockUser(username = "testuser", roles = ["USER"])
-    fun `should return error when updating outstanding for missing customer`() {
-        whenever(customerService.updateOutstanding("cust-404", 25.0, true)).thenReturn(null)
-
-        mockMvc.perform(
-            put("/customer/v1/cust-404/outstanding")
-                .header("X-Workspace-ID", "TEST_WORKSPACE")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"amount":25.0,"is_payment":true}""")
-        )
-            .andExpect(status().isNotFound)
-            .andExpect(jsonPath("$.success").value(false))
-
-        verify(customerService).updateOutstanding("cust-404", 25.0, true)
-    }
-
-    @Test
-    @DisplayName("POST /customer/v1/validate-gst - Requires gst number")
-    @WithMockUser(username = "testuser", roles = ["USER"])
-    fun `should return validation error when gst missing`() {
-        mockMvc.perform(
-            post("/customer/v1/validate-gst")
-                .header("X-Workspace-ID", "TEST_WORKSPACE")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""{}""")
-        )
-            .andDo { result -> println("Response: ${result.response.contentAsString}") }
-            .andExpect(status().isBadRequest)
-            .andExpect(jsonPath("$.success").value(false))
-            .andExpect(jsonPath("$.error.code").value("BAD_REQUEST"))
-
-        verify(customerService, never()).validateGstNumber(any())
     }
 
     private fun buildCustomer(uid: String, name: String): Customer {

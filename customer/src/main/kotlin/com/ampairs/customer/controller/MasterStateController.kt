@@ -4,7 +4,6 @@ import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.exception.NotFoundException
 import com.ampairs.customer.domain.dto.BulkImportRequest
 import com.ampairs.customer.domain.dto.MasterStateResponse
-import com.ampairs.customer.domain.dto.asMasterStateResponse
 import com.ampairs.customer.domain.dto.asMasterStateResponses
 import com.ampairs.customer.domain.service.MasterStateService
 import jakarta.validation.Valid
@@ -18,63 +17,6 @@ import org.springframework.web.bind.annotation.*
 class MasterStateController(
     private val masterStateService: MasterStateService
 ) {
-
-    /**
-     * Get all active master states
-     */
-    @GetMapping("")
-    fun getAllStates(): ApiResponse<List<MasterStateResponse>> {
-        val states = masterStateService.getAllActiveStates()
-        return ApiResponse.success(states.asMasterStateResponses())
-    }
-
-    /**
-     * Get states by country
-     */
-    @GetMapping("/country/{countryCode}")
-    fun getStatesByCountry(@PathVariable countryCode: String): ApiResponse<List<MasterStateResponse>> {
-        val states = masterStateService.getStatesByCountry(countryCode.uppercase())
-        return ApiResponse.success(states.asMasterStateResponses())
-    }
-
-
-    /**
-     * Search states by keyword
-     */
-    @GetMapping("/search")
-    fun searchStates(@RequestParam("q") searchTerm: String): ApiResponse<List<MasterStateResponse>> {
-        val states = masterStateService.searchStates(searchTerm)
-        return ApiResponse.success(states.asMasterStateResponses())
-    }
-
-    /**
-     * Get Indian states with GST codes
-     */
-    @GetMapping("/indian-gst")
-    fun getIndianStatesWithGst(): ApiResponse<List<MasterStateResponse>> {
-        val states = masterStateService.getIndianStatesWithGst()
-        return ApiResponse.success(states.asMasterStateResponses())
-    }
-
-    /**
-     * Get available countries
-     */
-    @GetMapping("/countries")
-    fun getAvailableCountries(): ApiResponse<List<Map<String, String>>> {
-        val countries = masterStateService.getAvailableCountries()
-            .map { mapOf("code" to it.first, "name" to it.second) }
-        return ApiResponse.success(countries)
-    }
-
-    /**
-     * Get master state by code
-     */
-    @GetMapping("/{stateCode}")
-    fun getStateByCode(@PathVariable stateCode: String): ApiResponse<MasterStateResponse> {
-        val state = masterStateService.findByStateCode(stateCode.uppercase())
-            ?: throw NotFoundException("Master state not found: $stateCode")
-        return ApiResponse.success(state.asMasterStateResponse())
-    }
 
     /**
      * Import master state to workspace
@@ -120,23 +62,4 @@ class MasterStateController(
         val states = masterStateService.getAvailableStatesForImport()
         return ApiResponse.success(states.asMasterStateResponses())
     }
-
-    /**
-     * Find states by postal code
-     */
-    @GetMapping("/by-postal-code")
-    fun findStatesByPostalCode(@RequestParam("postal_code") postalCode: String): ApiResponse<List<MasterStateResponse>> {
-        val states = masterStateService.findStatesByPostalCode(postalCode)
-        return ApiResponse.success(states.asMasterStateResponses())
-    }
-
-    /**
-     * Get master state statistics
-     */
-    @GetMapping("/statistics")
-    fun getMasterStateStatistics(): ApiResponse<Map<String, Any>> {
-        val stats = masterStateService.getMasterStateStatistics()
-        return ApiResponse.success(stats)
-    }
-
 }

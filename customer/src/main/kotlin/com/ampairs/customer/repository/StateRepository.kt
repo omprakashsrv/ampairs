@@ -8,11 +8,6 @@ import org.springframework.stereotype.Repository
 interface StateRepository : CrudRepository<State, String> {
 
     /**
-     * Find state by UID
-     */
-    fun findByUid(uid: String): State?
-
-    /**
      * Find states by workspace/owner ID
      */
     fun findByOwnerId(ownerId: String): List<State>
