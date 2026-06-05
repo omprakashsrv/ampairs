@@ -2,7 +2,6 @@ package com.ampairs.unit.service
 
 import com.ampairs.unit.domain.dto.UnitRequest
 import com.ampairs.unit.domain.dto.UnitResponse
-import com.ampairs.unit.domain.dto.UnitUsageResponse
 import com.ampairs.unit.domain.dto.asUnitResponse
 import com.ampairs.unit.domain.dto.asUnitResponses
 import com.ampairs.unit.domain.dto.applyRequest
@@ -63,17 +62,6 @@ class UnitServiceImpl(
     }
 
     @Transactional
-    override fun update(uid: String, request: UnitRequest): UnitResponse {
-        val existing = unitRepository.findByUid(uid)
-            ?: throw UnitNotFoundException("Unit not found for uid: $uid")
-
-        existing.applyRequest(request.copy(uid = uid))
-        val saved = unitRepository.save(existing)
-        entityChangePublisher.updated("unit", saved.uid)
-        return saved.asUnitResponse()
-    }
-
-    @Transactional
     override fun delete(uid: String) {
         val unit = unitRepository.findByUid(uid)
             ?: throw UnitNotFoundException("Unit not found for uid: $uid")
@@ -102,19 +90,6 @@ class UnitServiceImpl(
     override fun findEntitiesUsingUnit(uid: String): List<String> {
         if (uid.isBlank()) return emptyList()
         return aggregateUsage(uid).entityIds
-    }
-
-    @Transactional(readOnly = true)
-    override fun getUsage(uid: String): UnitUsageResponse {
-        val usage = aggregateUsage(uid)
-        return UnitUsageResponse(
-            unitId = uid,
-            inUse = usage.inUse,
-            entityCount = usage.entityCount,
-            conversionCount = usage.conversionCount,
-            entityIds = usage.entityIds,
-            conversionIds = usage.conversionIds
-        )
     }
 
     private fun aggregateUsage(uid: String): UnitUsageSnapshot {
