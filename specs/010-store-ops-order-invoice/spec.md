@@ -2,7 +2,7 @@
 
 **Feature Branch**: `010-store-ops-order-invoice`
 **Created**: 2026-06-05
-**Status**: Draft
+**Status**: Clarified (5 questions resolved 2026-06-05 — see Clarifications)
 **Input**: Build a proper store-operations flow for **store staff** on the KMP app (Android, iOS,
 **and Desktop**) to create **orders and invoices** with correct **Indian GST** tax calculation,
 using **today's product pricing** (`sellingPrice`/`dp`/`mrp` — the pricing layer comes later). Staff
@@ -20,20 +20,48 @@ offline-sync + Metro DI + MVI rules.
 - **Documents**: support **both** Order and Invoice. Each can be created **independently**, and an
   Invoice can also be **generated from an existing Order**.
 - **Tax**: **Full Indian GST** — CGST+SGST for intra-state, IGST for inter-state, decided by
-  place-of-supply (buyer vs seller state), using the workspace's subscribed HSN/SAC tax codes.
+  place-of-supply (buyer vs seller state), using the workspace's subscribed HSN/SAC tax codes. Price
+  is **tax-exclusive or tax-inclusive per a document-level toggle** (see Clarifications C1).
 - **Products**: line-item entry can **create a new product inline** (not only pick existing).
 - **Units (UoM)**: each line item records the **unit it is transacted in**. The staffer can transact a
   product in its **base unit or any defined derived unit** (e.g. BOX where 1 BOX = 12 PCS); the line
   stores the chosen `unitId`, the entered quantity, and the derived **base-unit quantity** (for
   stock/inventory), with price scaled by the conversion. Uses the existing `UnitConversionEngine`.
 - **Discounts**: support **both** a **per-line discount** and an **overall (document-level)
-  discount**, each as a **percentage or a flat amount**. Discounts reduce the **taxable value before
-  GST** (Indian GST treats a discount given at/before supply as reducing taxable value); the overall
-  discount is **apportioned across lines pre-tax** so each line's CGST/SGST/IGST stays correct.
+  discount**, each as a **percentage or a flat amount**. The overall discount's interaction with GST
+  (pre-tax apportioned vs post-tax reduction) is **a business-level configuration; support both**
+  (see Clarifications C2). The line discount is always pre-tax on its own line.
 - **Rebuild posture**: **clean rebuild** of the create flow, sync layer, and tax wiring — keep the
   reusable parts (entity schema, `TaxCalculationEngine`, list/search/paging) per the audit.
 - **Money**: keep the **existing `Double`** price/tax fields for this feature (today's pricing model);
   the `Money(minorUnits,currency)` migration rides with the pricing feature, not this one.
+
+## Clarifications
+
+### Session 2026-06-05
+
+- **C1 — Tax basis (inclusive vs exclusive): toggle per document.** Each order/invoice carries a
+  `priceMode` (`TAX_EXCLUSIVE` | `TAX_INCLUSIVE`). Exclusive → `sellingPrice` is the taxable base and
+  GST is added on top. Inclusive → `sellingPrice` already contains GST and the taxable base + tax are
+  back-calculated (`taxable = inclusivePrice / (1 + rate)`). The default mode comes from a business
+  setting; staff may switch it on a document. Drives FR-003.
+- **C2 — Overall-discount vs GST: business-configurable, support both.** A business setting
+  (`overallDiscountMode = PRE_TAX_APPORTIONED` | `POST_TAX_REDUCTION`) selects behavior.
+  `PRE_TAX_APPORTIONED` (GST-compliant) apportions the document discount across lines proportional to
+  taxable value and recomputes per-line GST; `POST_TAX_REDUCTION` computes full GST then subtracts the
+  discount from the grand total (per-HSN tax unaffected). Drives FR-015. Line-level discount is always
+  pre-tax on its own line regardless of this setting.
+- **C3 — Line unit-price override: allowed.** Staff may edit the auto-filled (unit-scaled)
+  `sellingPrice` on a line; the entered price becomes the snapshot and GST recomputes on it. Drives
+  FR-016.
+- **C4 — Invoice numbering: client-assigned sequential, offline-capable.** The client assigns a GST
+  invoice number at save time (so an offline invoice is legally numbered and immediately printable),
+  not the server-on-push behavior of today. Drives FR-017.
+- **C5 — Numbering collisions across offline devices: per-series prefix.** Each device/counter (and,
+  where configured, branch/financial-year) owns its **own invoice series with a distinct prefix**,
+  each strictly sequential (GST permits multiple series provided each is consecutive and unique).
+  This eliminates offline collisions without requiring online block reservation; the server validates
+  series+number uniqueness on push. Drives FR-017.
 
 ## Current-state findings that shape this spec (from the code audit)
 
@@ -239,9 +267,16 @@ totals reconcile to taxable + tax.
 
 - **Discount + tax ordering** → line discount, then overall-discount apportionment, **then** tax —
   always on the net taxable value (never compute tax then discount).
-- **Overall discount apportionment** → distribute proportional to each line's pre-discount taxable
-  value; assign any rounding remainder to the largest line so the sum of line discounts equals the
-  entered overall discount exactly.
+- **Overall discount apportionment** (PRE_TAX_APPORTIONED mode) → distribute proportional to each
+  line's pre-discount taxable value; assign any rounding remainder to the largest line so the sum of
+  line discounts equals the entered overall discount exactly. (POST_TAX_REDUCTION mode skips
+  apportionment and subtracts from the grand total.)
+- **Tax-inclusive rounding** → when back-calculating taxable from an inclusive price, round the
+  extracted taxable and each component so the components + taxable sum back to the inclusive line
+  amount exactly.
+- **Invoice series rollover** → a new financial year (or a new device) starts a fresh series; the
+  sequence resets per series and the prefix disambiguates, so numbers never collide or appear to go
+  backwards.
 - **Percent vs flat** → both supported at each level; a percent is resolved to a value against the
   applicable base and the resolved value is stored alongside the percent for reproducibility.
 - **Inverse conversion** (entering base when only a derived→base multiplier exists) → engine divides
@@ -277,6 +312,9 @@ totals reconcile to taxable + tax.
   change, load the product's HSN tax code, resolve the workspace `TaxRule.componentComposition`, pick
   the INTRA/INTER scenario from place-of-supply, and populate `OrderItem.taxInfos`/`totalTax`; then
   aggregate order/invoice `taxInfos`/`totalTax`/`totalAmount`. **Replace the `updateTaxInfos()` stub.**
+  Honor the document `priceMode` (C1): in `TAX_EXCLUSIVE` add GST onto the price; in `TAX_INCLUSIVE`
+  back-calculate taxable + GST out of the price (`taxable = price / (1 + Σrate)`). Persist `priceMode`
+  on the order/invoice; its default comes from the business setting.
 - **FR-004**: **Fix the inverted `TaxSpec`** — different states ⇒ `INTER` (IGST), same state ⇒ `INTRA`
   (CGST+SGST).
 - **FR-005**: Make the product picker functional — wire the picker callback to an `addProduct()`
@@ -308,11 +346,24 @@ totals reconcile to taxable + tax.
   compute GST on the resulting taxable amount. Constrain quantity input to the unit's `decimalPlaces`.
   Default to the product's base unit (multiplier 1) when no conversion exists.
 - **FR-015**: **Discounts at line and document level.** Support a per-line discount and an overall
-  discount, each as **percent or flat**. Compute in this order: apply the line discount to the line
-  taxable base; apportion the overall discount across lines **proportional to pre-discount line
-  taxable value**; then run GST on each line's net taxable value and aggregate. Floor line taxable at
-  zero. Persist each `Discount` with both the entered form (percent or flat) and the resolved value
-  for reproducibility, in the existing line/document `discount` JSON.
+  discount, each as **percent or flat**. The line discount always reduces its own line's taxable base
+  pre-tax. The overall discount follows the business `overallDiscountMode` (C2): in
+  `PRE_TAX_APPORTIONED`, apportion it across lines proportional to pre-discount line taxable value,
+  then run GST on each line's net taxable value; in `POST_TAX_REDUCTION`, compute GST on line values
+  then subtract the discount from the grand total (per-HSN tax unaffected). Floor line taxable at
+  zero. Persist each `Discount` with both the entered form (percent or flat) and the resolved value,
+  in the existing line/document `discount` JSON; persist the effective `overallDiscountMode` on the
+  document so the breakdown is reproducible.
+- **FR-016**: **Line unit-price override (C3).** Allow editing the auto-filled (unit-scaled)
+  `sellingPrice` on a line; the entered value becomes the line's price snapshot and GST/discount
+  recompute on it. Keep the original product price snapshot (`productPrice`) for reference.
+- **FR-017**: **Client-assigned sequential invoice numbering (C4/C5).** Assign the GST invoice number
+  on the client at save time from a **per-series sequence** (series = device/counter, optionally
+  branch + financial-year, with a distinct prefix), strictly consecutive per series. An offline
+  invoice is fully numbered and printable. Persist the series id + sequence number; the
+  `InvoiceSyncDelegate` pushes them and the backend validates series+number uniqueness (rejecting
+  duplicates rather than silently renumbering). Order numbers may remain server-assigned (orders are
+  not the legal tax document); only invoices require client sequential numbering.
 
 ### Functional Requirements — Backend (`ampairs`)
 
@@ -332,6 +383,15 @@ totals reconcile to taxable + tax.
   the request/response DTOs (`OrderItemResponse` etc.) so the transacted unit and base-unit quantity
   round-trip through bulk upsert and paginated pull. Server stores them as supplied (no recompute);
   `baseQuantity` is the field future inventory-deduction work reads.
+- **FR-B08**: Add `priceMode` (C1) and `overallDiscountMode` (C2) columns to `customer_order`/`invoice`
+  and their DTOs; store as supplied (client is the calc authority, no server recompute).
+- **FR-B09**: Add invoice **series** + **sequence number** columns to `invoice` and DTOs; enforce a
+  **unique (owner, series, number)** constraint and **reject** a bulk-upsert row that collides with an
+  existing different invoice (return a conflict the client surfaces), rather than renumbering — so a
+  printed offline number is never silently changed. Back-fill existing invoices into a default series.
+- **FR-B10**: Expose the per-document defaults (`priceMode`, `overallDiscountMode`) and the device's
+  invoice **series prefix** config as a **business setting** the app can read/sync (business module);
+  these seed new documents and the numbering series.
 
 ### Non-Functional / Constraints
 
@@ -343,10 +403,13 @@ totals reconcile to taxable + tax.
   for intra/inter, multi-rate, discount-before-tax, and exempt cases.
 - **NFR-003**: Backend `Instant` timestamps, DTO isolation, `ApiResponse<T>`, no try/catch in
   controllers, tenant context at controller level; Flyway in **both** `mysql/` and `postgresql/`.
-  The `unitId`/`baseQuantity` columns (FR-B07) **do** require schema migrations — next versions
-  **order V1.0.23**, **invoice V1.0.12** (back-fill `baseQuantity = quantity`, `unitId = product
-  base unit` for existing rows). Pure endpoint additions need no migration — record in
-  `NO_MIGRATION_NEEDED.md`.
+  Schema migrations are required — next versions **order V1.0.23**, **invoice V1.0.12** (and a follow
+  on version each if needed): `order_item`/`invoice_item` gain `unit_id` + `base_quantity` (back-fill
+  `base_quantity = quantity`, `unit_id = product base unit`); `customer_order`/`invoice` gain
+  `price_mode` + `overall_discount_mode` (back-fill `TAX_EXCLUSIVE` / `POST_TAX_REDUCTION` to match
+  legacy behavior); `invoice` gains `series` + `sequence_number` with a **unique (owner_id, series,
+  sequence_number)** index (back-fill existing rows into a default series). Pure endpoint additions
+  need no migration — record in `NO_MIGRATION_NEEDED.md`.
 - **NFR-004**: Money stays `Double` for this feature (today's model); do not introduce the `Money`
   type here.
 
@@ -363,7 +426,10 @@ totals reconcile to taxable + tax.
   feature defines its semantics (percent-or-flat, pre-tax, apportioned) rather than changing its
   shape. `value` holds the resolved amount; `percent` is 0 for a flat discount.
 - **Invoice / InvoiceItem** (`feature/invoice` + backend `invoice`/`invoice_item`): mirror order;
-  `orderRefId` link.
+  `orderRefId` link. **Add** `series` + `sequenceNumber` (client-assigned, unique per series — C4/C5).
+- **Document settings** (new fields on Order/Invoice): `priceMode` (`TAX_EXCLUSIVE`|`TAX_INCLUSIVE` —
+  C1) and `overallDiscountMode` (`PRE_TAX_APPORTIONED`|`POST_TAX_REDUCTION` — C2), defaulted from a
+  **business setting** (business module) that also holds the device's invoice series prefix.
 - **TaxInfo** (existing, both repos): `{ id, name, percentage, taxSpec, value, formattedName }` — the
   per-component breakdown stored as JSON.
 - **TaxRule / componentComposition** (tax module, synced to app): source of the INTRA/INTER component
@@ -387,9 +453,14 @@ totals reconcile to taxable + tax.
 - **SC-008**: A line transacted in a derived unit stores the correct `unitId` + `baseQuantity`, scales
   the price and GST correctly, respects the unit's decimal places, and round-trips through sync —
   while products without conversions transact in the base unit with no error.
-- **SC-009**: Line and overall discounts (percent or flat) reduce taxable value before GST, the
-  overall discount apportions across lines so per-line CGST/SGST/IGST stays correct, totals reconcile,
-  and the discount breakdown round-trips through sync.
+- **SC-009**: Line and overall discounts (percent or flat) behave per the business
+  `overallDiscountMode` — pre-tax apportionment keeps per-line CGST/SGST/IGST correct, post-tax reduces
+  the grand total — totals reconcile in both modes, and the discount breakdown round-trips through sync.
+- **SC-010**: The same line produces correct GST in both `TAX_EXCLUSIVE` (GST added on top) and
+  `TAX_INCLUSIVE` (GST extracted) modes, with components reconciling to the line amount.
+- **SC-011**: An invoice created offline gets a complete, legally-sequential number from its series and
+  is printable immediately; two offline devices in one workspace never produce the same invoice
+  number, and the backend rejects (does not silently renumber) a colliding push.
 
 ## Out of Scope (this feature)
 
@@ -408,14 +479,15 @@ totals reconcile to taxable + tax.
   `sellingPrice`/`dp`/`mrp`/`taxCode`/variants/`baseUnitId`/`unitConversions`).
 - Assumes the `unit` module + `UnitConversionEngine` (app) / `UnitConversionService` (backend) are
   available and that unit/conversion data syncs to the app; prices are per the product's base unit.
+- Assumes the `business` module can hold the new settings (default `priceMode`, `overallDiscountMode`,
+  invoice series prefix per device/branch) and sync them to the app (FR-B10).
 - Assumes backend order/invoice modules' single-record + conversion endpoints remain; this feature
   **adds** bulk/paginated sync endpoints alongside them.
 
 ---
 
-*Next steps*: run `/speckit.clarify` (confirm edge-case defaults: tax-exclusive pricing, intra-state
-fallback, rounding half-up, whether the staffer may override the auto-scaled per-unit price on a
-line, and confirming discounts are pre-tax/apportioned rather than a post-tax reduction), then
-`/speckit.plan`, `/speckit.tasks`, `/speckit.analyze`, and stop for
+*Next steps*: `/speckit.clarify` is **complete** (C1–C5 above). Remaining minor defaults to confirm
+during `/speckit.plan` if needed: rounding policy (half-up) and the intra-state fallback for a missing
+buyer GSTIN. Proceed to `/speckit.plan`, `/speckit.tasks`, `/speckit.analyze`, and stop for
 review before `/speckit.implement`. Develop on `claude/blissful-goldberg-iuzI6` in both repos; no PR
 unless requested.
