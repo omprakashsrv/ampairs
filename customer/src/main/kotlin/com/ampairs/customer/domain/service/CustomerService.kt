@@ -57,11 +57,13 @@ class CustomerService(
         customers.forEach { customer ->
             if (customer.uid.isNotEmpty()) {
                 val existingCustomer = customerRepository.findByUid(customer.uid)
+                customer.id = existingCustomer?.id ?: 0
                 customer.refId = existingCustomer?.refId ?: ""
                 customer.createdAt = existingCustomer?.createdAt ?: Instant.now()
                 customer.updatedAt = existingCustomer?.updatedAt ?: Instant.now()
             } else if (customer.refId?.isNotEmpty() == true) {
                 val existingCustomer = customerRepository.findByRefId(customer.refId)
+                customer.id = existingCustomer?.id ?: 0
                 customer.uid = existingCustomer?.uid ?: ""
                 customer.createdAt = existingCustomer?.createdAt ?: Instant.now()
                 customer.updatedAt = existingCustomer?.updatedAt ?: Instant.now()
