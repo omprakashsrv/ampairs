@@ -33,7 +33,9 @@ private val PUBLIC_PATHS = arrayOf(
     "/core/v1/app-updates/check",
     "/core/v1/app-updates/download/**",
     "/subscription/v1/webhooks/**",
-    "/error"
+    "/error",
+    "/ws/**",    // WebSocket upgrade (direct path)
+    "/api/ws/**" // WebSocket upgrade via DispatcherServlet (spring.mvc.servlet.path=/api)
 )
 
 @Configuration

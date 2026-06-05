@@ -1,6 +1,7 @@
 package com.ampairs.tax.service
 
 import com.ampairs.core.exception.NotFoundException
+import com.ampairs.core.sync.EntityChangePublisher
 import com.ampairs.tax.domain.dto.TaxConfigurationDto
 import com.ampairs.tax.domain.dto.UpdateTaxConfigurationRequest
 import com.ampairs.tax.domain.dto.asTaxConfigurationDto
@@ -12,7 +13,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional
 class TaxConfigurationServiceV2(
-    private val taxConfigurationRepository: TaxConfigurationRepository
+    private val taxConfigurationRepository: TaxConfigurationRepository,
+    private val entityChangePublisher: EntityChangePublisher,
 ) {
 
     @Transactional(readOnly = true)
@@ -45,7 +47,9 @@ class TaxConfigurationServiceV2(
             autoSubscribeNewCodes = request.autoSubscribeNewCodes ?: false
         }
 
-        return taxConfigurationRepository.save(config).asTaxConfigurationDto()
+        return taxConfigurationRepository.save(config)
+            .also { entityChangePublisher.updated("tax", it.uid) }
+            .asTaxConfigurationDto()
     }
 
     fun updateConfiguration(request: UpdateTaxConfigurationRequest): TaxConfigurationDto {
@@ -62,6 +66,8 @@ class TaxConfigurationServiceV2(
             request.autoSubscribeNewCodes?.let { autoSubscribeNewCodes = it }
         }
 
-        return taxConfigurationRepository.save(config).asTaxConfigurationDto()
+        return taxConfigurationRepository.save(config)
+            .also { entityChangePublisher.updated("tax", it.uid) }
+            .asTaxConfigurationDto()
     }
 }

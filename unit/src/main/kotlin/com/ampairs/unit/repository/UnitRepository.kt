@@ -83,4 +83,8 @@ interface UnitRepository : CrudRepository<Unit, Long> {
 
     @Query("SELECT u FROM unit u WHERE u.active = true ORDER BY u.name")
     fun findAllActive(): List<Unit>
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(u.updatedAt) FROM unit u")
+    fun findMaxUpdatedAt(): Instant?
 }

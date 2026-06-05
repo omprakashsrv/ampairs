@@ -16,7 +16,7 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/v1/ecom/management/orders")
+@RequestMapping("/v1/ecom/management/orders")
 @PreAuthorize("isAuthenticated()")
 class EcomOrderManagementController(
     private val ecomOrderService: EcomOrderService,

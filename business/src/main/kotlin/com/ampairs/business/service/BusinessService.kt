@@ -14,6 +14,7 @@ import com.ampairs.business.model.dto.toBusiness
 import com.ampairs.business.repository.BusinessRepository
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.core.security.AuthenticationHelper
+import com.ampairs.core.sync.EntityChangePublisher
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -33,7 +34,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional(readOnly = true)
 class BusinessService(
-    private val businessRepository: BusinessRepository
+    private val businessRepository: BusinessRepository,
+    private val entityChangePublisher: EntityChangePublisher,
 ) {
 
     /**
@@ -106,6 +108,7 @@ class BusinessService(
 
         // Save and return
         return businessRepository.save(business)
+            .also { entityChangePublisher.updated("business", it.uid) }
     }
 
     /**
@@ -139,6 +142,7 @@ class BusinessService(
 
         // Save and return
         return businessRepository.save(business)
+            .also { entityChangePublisher.updated("business", it.uid) }
     }
 
     /**
@@ -214,6 +218,7 @@ class BusinessService(
 
         business.applyProfileUpdate(request, userId)
         return businessRepository.save(business)
+            .also { entityChangePublisher.updated("business", it.uid) }
     }
 
     /**
@@ -252,6 +257,7 @@ class BusinessService(
         }
 
         return businessRepository.save(business)
+            .also { entityChangePublisher.updated("business", it.uid) }
     }
 
     /**
@@ -281,5 +287,6 @@ class BusinessService(
 
         business.applyTaxConfigUpdate(request, userId)
         return businessRepository.save(business)
+            .also { entityChangePublisher.updated("business", it.uid) }
     }
 }

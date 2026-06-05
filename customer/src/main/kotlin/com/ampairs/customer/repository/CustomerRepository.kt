@@ -60,4 +60,8 @@ interface CustomerRepository : CrudRepository<Customer, Long>, PagingAndSortingR
     fun findCustomersUpdatedAfter(lastSync: Instant, pageable: Pageable): Page<Customer>
 
     fun findByUpdatedAtAfterOrderByUpdatedAtAsc(lastSync: Instant): List<Customer>
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(c.updatedAt) FROM customer c")
+    fun findMaxUpdatedAt(): Instant?
 }

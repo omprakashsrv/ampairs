@@ -14,7 +14,7 @@ import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/v1/store/{slug}/cart")
+@RequestMapping("/v1/store/{slug}/cart")
 class CartController(
     private val cartService: CartService,
     private val storefrontService: StorefrontService,

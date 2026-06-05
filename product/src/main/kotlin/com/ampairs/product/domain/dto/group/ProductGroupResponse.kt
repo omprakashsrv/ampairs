@@ -11,14 +11,16 @@ data class ProductGroupResponse(
     var image: FileResponse?,
 )
 
+fun ProductGroup.asResponse(): ProductGroupResponse {
+    return ProductGroupResponse(
+        id = uid,
+        name = name,
+        refId = refId,
+        imageId = imageId,
+        image = image?.toFileResponse(),
+    )
+}
+
 fun List<ProductGroup>.asResponse(): List<ProductGroupResponse> {
-    return map {
-        ProductGroupResponse(
-            id = it.uid,
-            name = it.name,
-            refId = it.refId,
-            imageId = it.imageId,
-            image = it.image?.toFileResponse(),
-        )
-    }
+    return map { it.asResponse() }
 }

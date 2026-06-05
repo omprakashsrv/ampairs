@@ -20,7 +20,7 @@ import org.springframework.web.bind.annotation.*
 import org.springframework.web.bind.annotation.ResponseStatus
 
 @RestController
-@RequestMapping("/api/v1/ecom/management")
+@RequestMapping("/v1/ecom/management")
 class StorefrontManagementController(
     private val storefrontService: StorefrontService,
     private val taxonomyImageRepository: EcomTaxonomyImageRepository,

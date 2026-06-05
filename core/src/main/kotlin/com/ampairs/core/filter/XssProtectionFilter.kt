@@ -36,7 +36,8 @@ class XssProtectionFilter(
             "/css/",
             "/js/",
             "/images/",
-            "/ws"  // WebSocket endpoint - JWT token in query params must not be sanitized
+            "/ws",    // WebSocket direct path
+            "/api/ws" // WebSocket via DispatcherServlet (spring.mvc.servlet.path=/api)
         )
 
         // Content types that should be checked for XSS

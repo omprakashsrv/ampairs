@@ -5,8 +5,8 @@ import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.serialization.StringSerializer
-import org.springframework.boot.autoconfigure.condition.ConditionalOnExpression
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Conditional
 import org.springframework.context.annotation.Configuration
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory
@@ -15,9 +15,7 @@ import org.springframework.kafka.core.KafkaTemplate
 import java.util.UUID
 
 @Configuration
-@ConditionalOnExpression(
-    "'\${websocket.message-broker.type:AUTO}' == 'KAFKA' or '\${websocket.message-broker.type:AUTO}' == 'AUTO'"
-)
+@Conditional(KafkaAvailableCondition::class)
 class KafkaEventConfig(private val props: WebSocketConfigProperties) {
 
     @Bean

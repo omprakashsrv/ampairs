@@ -7,6 +7,7 @@ import java.awt.Graphics2D
 import java.awt.RenderingHints
 import java.awt.image.BufferedImage
 import java.io.BufferedInputStream
+import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import java.io.InputStream
 import javax.imageio.ImageIO
@@ -29,6 +30,12 @@ class ImageResizingService(
         companion object {
             fun fromPixels(pixels: Int): ThumbnailSize? = values().find { it.pixels == pixels }
             fun fromSuffix(suffix: String): ThumbnailSize? = values().find { it.suffix == suffix }
+            fun fromAlias(alias: String): ThumbnailSize? = when (alias.lowercase()) {
+                "sm", "small" -> SMALL
+                "md", "medium" -> MEDIUM
+                "lg", "large" -> LARGE
+                else -> null
+            }
         }
     }
 
@@ -107,7 +114,9 @@ class ImageResizingService(
                         else -> "jpg"
                     }
 
-                    ImageIO.write(resizedImage, outputFormat, outputStream)
+                    val imageToWrite = stripAlphaIfNeeded(resizedImage, outputFormat)
+                    val written = ImageIO.write(imageToWrite, outputFormat, outputStream)
+                    if (!written) throw ImageResizingException("Failed to write image in format: $outputFormat")
                     outputStream.toByteArray()
                 } finally {
                     originalImage.flush()
@@ -175,21 +184,37 @@ class ImageResizingService(
         return format.lowercase() in listOf("png", "gif", "webp")
     }
 
-    private fun resizeImage(originalImage: BufferedImage, maxWidth: Int, maxHeight: Int): BufferedImage {
-        val originalWidth = originalImage.width
-        val originalHeight = originalImage.height
-        val aspectRatio = originalWidth.toDouble() / originalHeight.toDouble()
-        val (newWidth, newHeight) = if (originalWidth > originalHeight) {
-            val width = minOf(maxWidth, originalWidth)
-            val height = (width / aspectRatio).toInt()
-            width to height
-        } else {
-            val height = minOf(maxHeight, originalHeight)
-            val width = (height * aspectRatio).toInt()
-            width to height
+    fun processForStorage(bytes: ByteArray, format: String = "jpg"): ProcessedImage {
+        return try {
+            ByteArrayInputStream(bytes).use { bais ->
+                val bufferedInput = BufferedInputStream(bais, 8192)
+                val original = ImageIO.read(bufferedInput)
+                    ?: throw ImageResizingException("Unable to read image data")
+                try {
+                    // Resize if over max dimensions; otherwise use original dimensions.
+                    // Either way, re-encode through ImageIO — this strips all EXIF metadata.
+                    val processed = if (shouldResizeForUpload(original.width, original.height)) {
+                        resizeImageMemoryEfficient(original, storageProperties.image.maxWidth, storageProperties.image.maxHeight)
+                    } else {
+                        original
+                    }
+                    val outputFormat = if (format.lowercase() == "png") "png" else "jpg"
+                    val out = ByteArrayOutputStream()
+                    val imageToWrite = stripAlphaIfNeeded(processed, outputFormat)
+                    val written = ImageIO.write(imageToWrite, outputFormat, out)
+                    if (!written) throw ImageResizingException("Failed to write image in format: $outputFormat")
+                    if (processed !== original) processed.flush()
+                    ProcessedImage(out.toByteArray(), processed.width, processed.height)
+                } finally {
+                    original.flush()
+                }
+            }
+        } catch (e: ImageResizingException) {
+            throw e
+        } catch (e: Exception) {
+            logger.error("Failed to process image for storage: format={}, error={}", format, e.message, e)
+            throw ImageResizingException("Failed to process image for storage: ${e.message}", e)
         }
-
-        return resizeImageExactMemoryEfficient(originalImage, newWidth, newHeight)
     }
 
     private fun resizeImageMemoryEfficient(originalImage: BufferedImage, maxWidth: Int, maxHeight: Int): BufferedImage {
@@ -240,6 +265,14 @@ class ImageResizingService(
         return resizedImage
     }
 
+    private fun stripAlphaIfNeeded(image: BufferedImage, outputFormat: String): BufferedImage {
+        if (outputFormat != "jpg" || !image.colorModel.hasAlpha()) return image
+        val rgb = BufferedImage(image.width, image.height, BufferedImage.TYPE_INT_RGB)
+        val g = rgb.createGraphics()
+        try { g.drawImage(image, 0, 0, null) } finally { g.dispose() }
+        return rgb
+    }
+
     private fun progressiveResize(originalImage: BufferedImage, targetWidth: Int, targetHeight: Int): BufferedImage {
         var currentImage = originalImage
         var currentWidth = originalImage.width
@@ -269,5 +302,7 @@ class ImageResizingService(
         return finalImage
     }
 }
+
+data class ProcessedImage(val bytes: ByteArray, val width: Int, val height: Int)
 
 class ImageResizingException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)

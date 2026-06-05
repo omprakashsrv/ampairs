@@ -56,6 +56,23 @@ class CustomerGroupController(
     }
 
     /**
+     * Incremental sync feed: customer groups updated at/after last_sync, INCLUDING
+     * inactive (soft-deleted) rows, ordered by updatedAt ASC, paginated. Lets mobile
+     * clients do batched incremental pulls and detect deletions.
+     */
+    @GetMapping("/sync")
+    fun getCustomerGroupsSync(
+        @RequestParam("last_sync", required = false) lastSync: String?,
+        @RequestParam("page", defaultValue = "0") page: Int,
+        @RequestParam("size", defaultValue = "100") size: Int
+    ): ApiResponse<PageResponse<CustomerGroupResponse>> {
+        val sort = Sort.by(Sort.Direction.ASC, "updatedAt")
+        val pageable = PageRequest.of(page, size, sort)
+        val groupsPage = customerGroupService.getCustomerGroupsAfterSync(lastSync, pageable)
+        return ApiResponse.success(PageResponse.from(groupsPage) { it.asCustomerGroupResponse() })
+    }
+
+    /**
      * Get all customer groups ordered by priority within current workspace
      */
     @GetMapping("/by-priority")

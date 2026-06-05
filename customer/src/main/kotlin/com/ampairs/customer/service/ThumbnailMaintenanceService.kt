@@ -1,16 +1,17 @@
 package com.ampairs.customer.service
 
 import com.ampairs.file.config.StorageProperties
+import com.ampairs.file.repository.EntityImageRepository
 import com.ampairs.file.service.ImageResizingService
 import com.ampairs.file.service.ThumbnailCacheService
-import com.ampairs.customer.domain.model.CustomerImage
-import com.ampairs.customer.domain.repository.CustomerImageRepository
 import org.slf4j.LoggerFactory
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 import java.time.Instant
 import java.time.temporal.ChronoUnit
+
+private const val CUSTOMER_ENTITY_TYPE = "CUSTOMER"
 
 /**
  * Service for thumbnail maintenance and cleanup operations
@@ -22,7 +23,7 @@ import java.time.temporal.ChronoUnit
     matchIfMissing = true
 )
 class ThumbnailMaintenanceService(
-    private val customerImageRepository: CustomerImageRepository,
+    private val entityImageRepository: EntityImageRepository,
     private val thumbnailCacheService: ThumbnailCacheService,
     private val storageProperties: StorageProperties
 ) {
@@ -73,8 +74,8 @@ class ThumbnailMaintenanceService(
             var totalDeleted = 0
 
             // Get all workspaces and clean up their orphaned thumbnails
-            val workspaceSlugs = customerImageRepository.findByActiveTrue()
-                .map { it.workspaceSlug }
+            val workspaceSlugs = entityImageRepository.findActiveByEntity(CUSTOMER_ENTITY_TYPE, "")
+                .map { it.ownerId }
                 .distinct()
 
             workspaceSlugs.forEach { workspaceSlug ->
@@ -103,9 +104,10 @@ class ThumbnailMaintenanceService(
         logger.info("Starting missing thumbnail generation...")
 
         try {
-            val recentImages = customerImageRepository.findImagesWithoutThumbnails(
-                Instant.now().minus(24, ChronoUnit.HOURS)
-            )
+            val since = Instant.now().minus(24, ChronoUnit.HOURS)
+            // Find recent customer images uploaded in the last 24h that might need thumbnails
+            val recentImages = entityImageRepository.findAll()
+                .filter { it.entityType == CUSTOMER_ENTITY_TYPE && it.active && it.uploadedAt.isAfter(since) }
 
             var totalGenerated = 0
 
@@ -141,7 +143,8 @@ class ThumbnailMaintenanceService(
         logger.info("Starting thumbnail cache health check...")
 
         try {
-            val activeImages = customerImageRepository.findByActiveTrue()
+            val activeImages = entityImageRepository.findAll()
+                .filter { it.entityType == CUSTOMER_ENTITY_TYPE && it.active }
             var healthyImages = 0
             var imagesWithIssues = 0
 
@@ -181,7 +184,6 @@ class ThumbnailMaintenanceService(
         logger.info("Starting manual thumbnail cleanup for workspace: {}", workspaceSlug)
 
         return try {
-            // This would need to be implemented with workspace-specific listing
             val deletedCount = thumbnailCacheService.cleanupOldThumbnails(
                 storageProperties.defaultBucket,
                 olderThanDays
@@ -202,7 +204,9 @@ class ThumbnailMaintenanceService(
      */
     fun getThumbnailCacheStats(): ThumbnailCacheStats {
         return try {
-            val activeImages = customerImageRepository.countByActiveTrue()
+            val activeImages = entityImageRepository.findAll()
+                .count { it.entityType == CUSTOMER_ENTITY_TYPE && it.active }
+                .toLong()
             val totalThumbnails = getTotalCachedThumbnails()
             val expectedThumbnails = activeImages * 3 // 3 standard sizes
 
@@ -227,12 +231,10 @@ class ThumbnailMaintenanceService(
         // 1. List all thumbnails for the workspace
         // 2. Check if corresponding original image exists
         // 3. Delete orphaned thumbnails
-        // This is a simplified version
         return 0
     }
 
     private fun hasValidThumbnailCache(imageUid: String, storagePath: String): Boolean {
-        // Check if standard thumbnail sizes exist and are accessible
         return try {
             val standardSizes = listOf(150, 300, 500)
             standardSizes.any { size ->
@@ -247,22 +249,13 @@ class ThumbnailMaintenanceService(
     }
 
     private fun getTotalCachedThumbnails(): Long {
-        // This would need to count thumbnails in object storage
-        // Implementation depends on storage backend
         return 0
     }
 
     private fun getLastCleanupTime(): Instant? {
-        // This could be stored in database or retrieved from logs
         return null
     }
 }
-
-/**
- * Extension function to find images without thumbnails
- */
-fun CustomerImageRepository.findImagesWithoutThumbnails(since: Instant): List<CustomerImage> =
-    findByActiveTrueAndUploadedAtAfter(since)
 
 /**
  * Thumbnail cache statistics

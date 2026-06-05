@@ -1,807 +1,611 @@
 # Ampairs Ecom — Mobile / Frontend API Contract
 
-**Audience**: Compose Multiplatform (Android/iOS/Desktop) and Angular Web  
-**Backend module**: `ecom`  
-**Base URL prefix**: `/api/v1`  
-**Last updated**: 2026-05-31
+Base URL: `https://<host>/api/v1`
 
-> For auth endpoints, token management, and device fingerprinting see `docs/api/mobile-contract.md`.  
-> All responses follow the `ApiResponse<T>` envelope described there.
+All responses are wrapped in `ApiResponse<T>`:
+```json
+{ "success": true, "data": { ... }, "error": null, "timestamp": "...", "path": "...", "traceId": "..." }
+```
 
----
-
-## Table of Contents
-
-1. [Storefront Bootstrap](#1-storefront-bootstrap)
-2. [Catalog — Browsing & Search](#2-catalog--browsing--search)
-3. [Incremental Sync (Offline Mode)](#3-incremental-sync-offline-mode)
-4. [Cart](#4-cart)
-5. [Checkout](#5-checkout)
-6. [Customer Account — Addresses](#6-customer-account--addresses)
-7. [Customer Account — Orders & Tracking](#7-customer-account--orders--tracking)
-8. [Offline Mode — Room DB Schema](#8-offline-mode--room-db-schema)
-9. [Offline Sync Strategy](#9-offline-sync-strategy)
-10. [Error Codes](#10-error-codes)
+Timestamps are ISO-8601 UTC strings (`2025-01-09T14:30:00Z`). Monetary values are decimal strings.  
+JSON keys are `snake_case` throughout.
 
 ---
 
-## 1. Storefront Bootstrap
+## Authentication
 
-### `GET /store/{slug}`
+Storefront customer endpoints that require login use Bearer JWT in the `Authorization` header.  
+Workspace-management endpoints additionally require `X-Workspace-ID: <workspaceId>` header.
 
-Fetch storefront branding and status. Call once on app launch to validate the slug is live.  
-**Auth**: None
+---
 
-**Response `data`**
+## Enums
 
+| Enum | Values |
+|------|--------|
+| `StorefrontStatus` | `DRAFT`, `PUBLISHED`, `UNPUBLISHED` |
+| `StorefrontAccessMode` | `PUBLIC`, `RESTRICTED` |
+| `CartStatus` | `ACTIVE`, `CONVERTED`, `MERGED`, `ABANDONED` |
+| `StockStatus` | `IN_STOCK`, `LIMITED`, `OUT_OF_STOCK` |
+| `EcomOrderStatus` | `PLACED`, `PENDING_MERCHANT_REVIEW`, `CONFIRMED`, `PROCESSING`, `DISPATCHED`, `DELIVERED`, `CANCELLED` |
+| `EcomLineItemStatus` | `ORDERED`, `CONFIRMED`, `CANCELLED` |
+| `StorefrontAccessIdentifierType` | `USER_ID`, `PHONE`, `EMAIL`, `EXTERNAL_ID` |
+| `TaxonomyType` | `CATEGORY`, `SUBCATEGORY`, `BRAND` |
+
+---
+
+## Storefront — Public
+
+These endpoints resolve tenant from the `{slug}` path segment. No auth required unless noted.
+
+### GET `/store/{slug}`
+Returns storefront details.
+
+**Response `StorefrontResponse`:**
 ```json
 {
-  "uid": "SFR2026...",
-  "slug": "green-mart",
-  "name": "Green Mart",
-  "description": "Fresh groceries delivered to your door",
-  "logo_url": "https://cdn.ampairs.com/...",
-  "banner_url": "https://cdn.ampairs.com/...",
-  "status": "PUBLISHED"
+  "uid": "sf_01",
+  "name": "My Shop",
+  "slug": "my-shop",
+  "description": "...",
+  "logo_url": "https://...",
+  "banner_url": "https://...",
+  "status": "PUBLISHED",
+  "access_mode": "PUBLIC",
+  "published_at": "2025-01-01T00:00:00Z",
+  "unpublished_at": null,
+  "created_at": "...",
+  "updated_at": "..."
 }
 ```
 
-| Field | Type | Notes |
-|-------|------|-------|
-| `uid` | string | Stable storefront ID — use as Room FK |
-| `slug` | string | URL slug |
-| `name` | string | Display name |
-| `logo_url` | string \| null | CDN URL |
-| `banner_url` | string \| null | CDN URL |
-| `status` | string | `PUBLISHED` \| `DRAFT` \| `UNPUBLISHED` |
+### GET `/store/{slug}/catalog-meta`
+Returns category, subcategory and brand taxonomy with product counts and optional images.
 
----
-
-## 2. Catalog — Browsing & Search
-
-### `GET /store/{slug}/catalog-meta`
-
-Category tiles, subcategory chips, and brand cards for the home/browse screen.  
-**Auth**: None  
-**Cache**: Safe to cache locally; refresh on each app launch or after product sync.
-
-**Response `data`**
-
+**Response `StorefrontCatalogMetaResponse`:**
 ```json
 {
   "categories": [
     {
-      "name": "Grains",
-      "product_count": 24,
-      "image_url": "https://cdn.ampairs.com/cat/grains.jpg",
+      "name": "Beverages",
+      "product_count": 42,
+      "image_url": "https://...",
       "sort_order": 1,
       "subcategories": [
-        { "name": "Rice",  "product_count": 12, "image_url": null, "sort_order": 0 },
-        { "name": "Atta",  "product_count": 8,  "image_url": null, "sort_order": 0 }
+        { "name": "Juice", "product_count": 10, "image_url": null, "sort_order": 0 }
       ]
     }
   ],
   "brands": [
-    { "name": "India Gate", "product_count": 10, "image_url": "https://cdn.ampairs.com/brand/india-gate.png", "sort_order": 1 }
+    { "name": "Tropicana", "product_count": 5, "image_url": null, "sort_order": 0 }
   ]
 }
 ```
 
-**CategoryMeta**
+### GET `/store/{slug}/products`
+Paginated product listing with optional filters.
 
-| Field | Type | Notes |
-|-------|------|-------|
-| `name` | string | Category name — use as filter param |
-| `product_count` | int | Visible products in this category |
-| `image_url` | string \| null | Merchant-uploaded tile image |
-| `sort_order` | int | Merchant-defined display order |
-| `subcategories` | array | SubcategoryMeta list |
-
-**SubcategoryMeta** — same shape as CategoryMeta minus `subcategories`.  
-**BrandMeta** — same shape as CategoryMeta minus `subcategories`.
-
----
-
-### `GET /store/{slug}/products`
-
-Paginated product listing. Supports category/brand/subcategory drill-down.  
-**Auth**: None
-
-**Query params**
-
+**Query params:**
 | Param | Type | Default | Description |
 |-------|------|---------|-------------|
-| `page` | int | `0` | Zero-based page number |
-| `size` | int | `20` | Page size (max 100) |
-| `category` | string | — | Exact category name |
-| `subcategory` | string | — | Exact subcategory name |
-| `brand` | string | — | Exact brand name |
+| `page` | int | 0 | Page index (0-based) |
+| `size` | int | 20 | Page size |
+| `category` | string | — | Filter by category name |
+| `subcategory` | string | — | Filter by subcategory name |
+| `brand` | string | — | Filter by brand name |
 
-**Response `data`**
-
+**Response `PageResponse<ListedProductResponse>`:**
 ```json
 {
-  "content": [ /* ListedProduct[] */ ],
+  "content": [
+    {
+      "uid": "lp_01",
+      "name": "Mango Juice 1L",
+      "brand": "Tropicana",
+      "category": "Beverages",
+      "subcategory": "Juice",
+      "unit": "1 L",
+      "price": "85.00",
+      "mrp": "99.00",
+      "stock_status": "IN_STOCK",
+      "stock_quantity": 100,
+      "image_urls": ["https://..."],
+      "description": "..."
+    }
+  ],
   "page": 0,
   "size": 20,
-  "total_elements": 154,
-  "total_pages": 8,
-  "first": true,
-  "last": false
+  "total_elements": 42,
+  "total_pages": 3
 }
 ```
 
-**ListedProduct object**
+### GET `/store/{slug}/products/search`
+Full-text product search.
 
-```json
-{
-  "uid": "ELP2026...",
-  "name": "India Gate Basmati Rice",
-  "brand": "India Gate",
-  "category": "Grains",
-  "subcategory": "Rice",
-  "unit": "5 kg",
-  "price": 499.00,
-  "mrp": 549.00,
-  "stock_status": "IN_STOCK",
-  "stock_quantity": 200,
-  "image_urls": ["https://cdn.ampairs.com/p/basmati.jpg"],
-  "description": "Premium aged basmati rice"
-}
-```
+**Query params:** `q` (required), `page` (default 0), `size` (default 20)
 
-| Field | Type | Notes |
-|-------|------|-------|
-| `uid` | string | Stable product ID — Room PK |
-| `unit` | string \| null | Pack size, e.g. `"5 kg"`, `"500 ml"` |
-| `price` | decimal | Selling price |
-| `mrp` | decimal \| null | Maximum retail price — show as strikethrough |
-| `stock_status` | string | `IN_STOCK` \| `LIMITED` \| `OUT_OF_STOCK` |
-| `stock_quantity` | int | Exact units available |
+**Response:** same shape as product listing above.
 
-**Savings**: `mrp - price`. Show only when `mrp != null && mrp > price`.
+### GET `/store/{slug}/products/{productId}`
+Single product detail.
 
----
+**Response:** `ListedProductResponse` (same shape as one item in the listing above).
 
-### `GET /store/{slug}/products/search`
+### GET `/store/{slug}/products/sync`
+Delta sync for offline-capable clients. Returns products updated since the given timestamp.
 
-Full-text search (PostgreSQL `tsvector`).  
-**Auth**: None
+**Query params:**
+| Param | Type | Description |
+|-------|------|-------------|
+| `since` | ISO-8601 | Last sync timestamp |
+| `page` | int (default 0) | Page index |
+| `size` | int (default 100) | Page size |
 
-**Query params**: `q` (required), `page`, `size`
-
-**Response**: same `PageResponse<ListedProduct>` shape as above.
-
----
-
-### `GET /store/{slug}/products/{productId}`
-
-Single product detail.  
-**Auth**: None
-
-**Response `data`**: single **ListedProduct** object (same shape as above).
-
----
-
-## 3. Incremental Sync (Offline Mode)
-
-### `GET /store/{slug}/products/sync`
-
-Returns all products changed since a given timestamp, **including unlisted products** (`is_visible: false`).  
-Use this to keep the local Room DB up to date without a full re-download.  
-**Auth**: None
-
-**Query params**
-
-| Param | Type | Required | Description |
-|-------|------|----------|-------------|
-| `since` | ISO-8601 UTC | **Yes** | e.g. `2026-05-31T10:00:00Z` |
-| `page` | int | No (default `0`) | For large delta pages |
-| `size` | int | No (default `100`) | Max 500 |
-
-**Response `data`**
-
+**Response `SyncPage<ProductSyncItem>`:**
 ```json
 {
   "items": [
     {
-      "uid": "ELP2026...",
-      "name": "Fortune Sunflower Oil",
-      "brand": "Fortune",
-      "category": "Oils",
-      "subcategory": "Cooking Oil",
+      "uid": "lp_01",
+      "name": "Mango Juice 1L",
+      "brand": "Tropicana",
+      "category": "Beverages",
+      "subcategory": "Juice",
       "unit": "1 L",
-      "price": 149.00,
-      "mrp": 165.00,
+      "price": "85.00",
+      "mrp": "99.00",
       "stock_status": "IN_STOCK",
-      "stock_quantity": 50,
-      "image_urls": [],
-      "description": null,
+      "stock_quantity": 100,
+      "image_urls": ["https://..."],
+      "description": "...",
       "is_visible": true,
-      "updated_at": "2026-05-31T10:15:00Z"
-    },
-    {
-      "uid": "ELP2026xxx",
-      "is_visible": false,
-      "updated_at": "2026-05-31T09:00:00Z"
+      "updated_at": "2025-06-01T10:00:00Z"
     }
   ],
-  "total_changes": 3,
+  "total_changes": 5,
   "page": 0,
   "size": 100,
   "has_more": false,
-  "next_since": "2026-05-31T10:20:00Z"
+  "next_since": "2025-06-01T10:00:01Z"
 }
 ```
 
-| Field | Type | Notes |
-|-------|------|-------|
-| `items` | array | **ProductSyncItem** objects |
-| `has_more` | boolean | If `true`, fetch next page with same `since` |
-| `next_since` | ISO-8601 | **Store this as your new sync cursor.** Server captures it before the query to avoid missing any concurrent writes. |
-
-**ProductSyncItem** — same fields as ListedProduct **plus**:
-
-| Field | Type | Notes |
-|-------|------|-------|
-| `is_visible` | boolean | `false` = product was unlisted. **Delete or hide it from your local catalog.** |
-| `updated_at` | ISO-8601 | Last-modified timestamp |
-
-**Protocol**:
-1. First launch: call `/products` (paginated, all pages) to seed the Room DB. Store `next_since` = response envelope `timestamp`.
-2. Subsequent opens: call `/products/sync?since=<stored_cursor>`. Paginate if `has_more: true`.
-3. For each item: upsert into Room DB by `uid`. If `is_visible = false`, mark `is_visible = 0` in Room (do not delete — let the UI filter it out, so cart items still resolve).
-4. After all pages: store `next_since` as the new cursor.
+> **Sync pattern:** store `next_since` from the response and pass it as `since` on the next call.
 
 ---
 
-## 4. Cart
+## Cart
 
-Cart is **session-based** — no auth required for guest shopping. Pass `session_token` in the URL.  
-After login, **claim** the guest cart to merge it into the authenticated customer's cart.
+Cart session is identified by `sessionToken`. Guest carts are created without auth; authenticated customers may claim them.
 
-### `POST /store/{slug}/cart`
+### POST `/store/{slug}/cart`
+Create a new cart.
 
-Create a new cart. Call once per storefront visit (guest or logged-in).  
-**Auth**: Optional. If `Authorization` header is present, the cart is linked to the user immediately.
+**Auth:** optional (pass JWT if logged in to associate cart with customer immediately).
 
-**No request body.**
-
-**Response `data`** — **CartResponse** (see §4.5)
-
----
-
-### `GET /store/{slug}/cart/{sessionToken}`
-
-Fetch the current cart with item list, subtotal, and savings.  
-**Auth**: None
-
-**Response `data`** — **CartResponse** (see §4.5)
-
----
-
-### `POST /store/{slug}/cart/{sessionToken}/items`
-
-Add a product or change its quantity. Send `quantity: 0` to remove.  
-**Auth**: None
-
-**Request**
+**Response:** `CartResponse`
 
 ```json
 {
-  "listed_product_id": "ELP2026...",
-  "quantity": 2
-}
-```
-
-| Field | Type | Constraints |
-|-------|------|-------------|
-| `listed_product_id` | string | Must be a visible, in-stock product for this storefront |
-| `quantity` | int | `0` removes item; max capped at `stock_quantity` |
-
-**Response `data`** — updated **CartResponse**
-
-**Error codes**
-
-| Code | HTTP | When |
-|------|------|------|
-| `PRODUCT_UNAVAILABLE` | 422 | Product not found or not visible |
-| `INSUFFICIENT_STOCK` | 422 | `quantity > stock_quantity` |
-| `CART_EXPIRED` | 410 | Cart session expired — create a new cart |
-
----
-
-### `DELETE /store/{slug}/cart/{sessionToken}/items/{itemId}`
-
-Remove one item by its `uid`.  
-**Auth**: None  
-**Response `data`** — updated **CartResponse**
-
----
-
-### `DELETE /store/{slug}/cart/{sessionToken}`
-
-Clear all items.  
-**Auth**: None  
-**Response `data`** — **CartResponse** with empty `items`
-
----
-
-### `POST /store/{slug}/cart/{sessionToken}/claim`
-
-Merge a guest cart into the authenticated customer's active cart.  
-Call this **immediately after login** before proceeding to checkout.  
-**Auth**: Required
-
-**No request body.**
-
-**Response `data`** — **CartResponse** for the merged customer cart. The guest cart is invalidated (`MERGED` status). Save the new `session_token`.
-
----
-
-### 4.5 CartResponse
-
-```json
-{
-  "uid": "CRT2026...",
-  "session_token": "3f2a1b...",
+  "uid": "cart_01",
+  "session_token": "abc123",
   "status": "ACTIVE",
-  "expires_at": "2026-06-01T10:00:00Z",
-  "items": [
+  "expires_at": "2025-06-08T10:00:00Z",
+  "items": [],
+  "subtotal": "0.00",
+  "item_total_mrp": null,
+  "savings": null
+}
+```
+
+### GET `/store/{slug}/cart/{sessionToken}`
+Fetch current cart state.
+
+**Response:** `CartResponse` (same shape as above, with populated `items`)
+
+`CartItemResponse` shape:
+```json
+{
+  "uid": "ci_01",
+  "listed_product_id": "lp_01",
+  "management_product_id": "mp_01",
+  "product_name": "Mango Juice 1L",
+  "brand": "Tropicana",
+  "unit": "1 L",
+  "unit_price": "85.00",
+  "mrp_at_add": "99.00",
+  "quantity": 2,
+  "primary_image_url": "https://...",
+  "line_total": "170.00",
+  "line_mrp": "198.00"
+}
+```
+
+### POST `/store/{slug}/cart/{sessionToken}/items`
+Add item or update quantity (upsert by `listedProductId`).
+
+**Request:**
+```json
+{ "listed_product_id": "lp_01", "quantity": 2 }
+```
+
+**Response:** `CartResponse`
+
+### DELETE `/store/{slug}/cart/{sessionToken}/items/{itemId}`
+Remove a single item from the cart.
+
+**Response:** `CartResponse`
+
+### POST `/store/{slug}/cart/{sessionToken}/claim`
+Claim a guest cart after login (merges it with any existing authenticated cart).
+
+**Auth:** required.
+
+**Response:** `CartResponse`
+
+### DELETE `/store/{slug}/cart/{sessionToken}`
+Clear all items from the cart.
+
+**Response:** `CartResponse` (empty items, zero totals)
+
+---
+
+## Checkout
+
+### POST `/store/{slug}/cart/{sessionToken}/checkout`
+Place an order from the active cart. Requires authentication.
+
+**Auth:** required.
+
+**Request `CheckoutRequest`** — supply either `delivery_address_id` (saved address UID) **or** an inline `delivery_address` object:
+```json
+{
+  "delivery_address_id": "addr_01",
+  "delivery_address": null,
+  "save_address": false,
+  "notes": "Leave at door"
+}
+```
+
+Inline `delivery_address` shape:
+```json
+{
+  "address_line1": "42 Main St",
+  "address_line2": "Apt 3",
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "pin_code": "400001",
+  "country": "IN",
+  "phone": "9876543210"
+}
+```
+
+**Response `EcomOrderResponse` (201 Created):**
+```json
+{
+  "uid": "ord_01",
+  "ecom_order_ref": "ECM-20250601-0001",
+  "storefront_id": "sf_01",
+  "customer_name": "Ravi Kumar",
+  "customer_email": "ravi@example.com",
+  "customer_phone": "9876543210",
+  "delivery_address": { "address_line1": "42 Main St", "city": "Mumbai", "..." : "..." },
+  "status": "PLACED",
+  "management_order_ref": null,
+  "line_items": [
     {
-      "uid": "CRI2026...",
-      "listed_product_id": "ELP2026...",
-      "management_product_id": "PRD2026...",
-      "product_name": "India Gate Basmati Rice",
-      "brand": "India Gate",
-      "unit": "5 kg",
-      "unit_price": 499.00,
-      "mrp_at_add": 549.00,
-      "quantity": 2,
-      "primary_image_url": "https://cdn.ampairs.com/p/basmati.jpg",
-      "line_total": 998.00,
-      "line_mrp": 1098.00
+      "uid": "li_01",
+      "listed_product_id": "lp_01",
+      "management_product_id": "mp_01",
+      "product_name": "Mango Juice 1L",
+      "unit_price": "85.00",
+      "quantity_ordered": 2,
+      "quantity_confirmed": null,
+      "line_total": "170.00",
+      "status": "ORDERED"
     }
   ],
-  "subtotal": 998.00,
-  "item_total_mrp": 1098.00,
-  "savings": 100.00
+  "subtotal": "170.00",
+  "total_amount": "170.00",
+  "notes": "Leave at door",
+  "placed_at": "2025-06-01T10:00:00Z",
+  "confirmed_at": null
 }
 ```
-
-**CartResponse fields**
-
-| Field | Type | Notes |
-|-------|------|-------|
-| `session_token` | string | **Store in Room DB / SharedPreferences** |
-| `status` | string | `ACTIVE` \| `CHECKED_OUT` \| `ABANDONED` \| `MERGED` |
-| `expires_at` | ISO-8601 | Guest: 24h · Authenticated: 30 days |
-| `items` | array | **CartItemResponse** list |
-| `subtotal` | decimal | Sum of `unit_price × quantity` |
-| `item_total_mrp` | decimal \| null | Sum of `mrp_at_add × quantity` — use for "Item total (MRP)" row |
-| `savings` | decimal \| null | `item_total_mrp - subtotal` — show "You save ₹X" banner |
-
-**CartItemResponse fields**
-
-| Field | Type | Notes |
-|-------|------|-------|
-| `mrp_at_add` | decimal \| null | MRP snapshotted at time of add — stable even if catalog changes |
-| `line_mrp` | decimal \| null | `mrp_at_add × quantity` |
-| `line_total` | decimal | `unit_price × quantity` |
 
 ---
 
-## 5. Checkout
+## Customer Account
 
-### `POST /store/{slug}/cart/{sessionToken}/checkout`
+All endpoints require authentication. No `X-Workspace-ID` header needed.
 
-Places the order. Cart must be `ACTIVE` with at least one item.  
-**Auth**: Required  
+Base path: `/ecom/account`
 
-**Request**
+### GET `/ecom/account/addresses`
+List all saved delivery addresses for the authenticated customer.
 
-```json
-{
-  "delivery_address_id": "ADR2026...",
-  "save_address": false,
-  "notes": "Please leave at the door"
-}
-```
-
-**OR** inline address (when no saved address exists):
-
-```json
-{
-  "delivery_address": {
-    "address_line1": "12 MG Road",
-    "address_line2": "Apt 4B",
-    "city": "Bengaluru",
-    "state": "Karnataka",
-    "pin_code": "560001",
-    "country": "IN",
-    "phone": "9591781662"
-  },
-  "save_address": true,
-  "notes": null
-}
-```
-
-Either `delivery_address_id` or `delivery_address` must be provided (not both).
-
-**Response `201`** — **EcomOrderResponse** (see §7.3)
-
-**Error codes**
-
-| Code | HTTP | When |
-|------|------|------|
-| `CART_EXPIRED` | 410 | Cart expired or already checked out |
-| `INSUFFICIENT_STOCK` | 422 | Stock depleted between cart add and checkout |
-| `VALIDATION_ERROR` | 400 | Address missing or invalid |
-
----
-
-## 6. Customer Account — Addresses
-
-All endpoints require `Authorization: Bearer <access_token>`.
-
-### `GET /ecom/account/addresses`
-
-List all saved delivery addresses.
-
-**Response `data`** — array of **AddressResponse**
-
+**Response:** `List<CustomerAddressResponse>`
 ```json
 [
   {
-    "uid": "ADR2026...",
+    "uid": "addr_01",
     "label": "Home",
-    "address_line1": "12 MG Road",
-    "address_line2": "Apt 4B",
-    "city": "Bengaluru",
-    "state": "Karnataka",
-    "pin_code": "560001",
+    "address_line1": "42 Main St",
+    "address_line2": null,
+    "city": "Mumbai",
+    "state": "Maharashtra",
+    "pin_code": "400001",
     "country": "IN",
-    "phone": "9591781662",
+    "phone": "9876543210",
     "is_default": true
   }
 ]
 ```
 
----
+### POST `/ecom/account/addresses`
+Add a new delivery address.
 
-### `POST /ecom/account/addresses`
-
-Add a new address. Returns `201`.
-
-**Request**
-
+**Request `CustomerAddressRequest`:**
 ```json
 {
   "label": "Home",
-  "address_line1": "12 MG Road",
-  "address_line2": "Apt 4B",
-  "city": "Bengaluru",
-  "state": "Karnataka",
-  "pin_code": "560001",
+  "address_line1": "42 Main St",
+  "address_line2": null,
+  "city": "Mumbai",
+  "state": "Maharashtra",
+  "pin_code": "400001",
   "country": "IN",
-  "phone": "9591781662",
-  "is_default": true
+  "phone": "9876543210",
+  "is_default": false
 }
 ```
 
-| Field | Required | Notes |
-|-------|----------|-------|
-| `address_line1` | **Yes** | |
-| `city` | **Yes** | |
-| `state` | **Yes** | |
-| `pin_code` | **Yes** | |
-| `label` | No | e.g. `"Home"`, `"Office"` |
-| `is_default` | No | Default `false` |
+**Response (201):** `CustomerAddressResponse`
 
-**Response `data`** — **AddressResponse**
+### PUT `/ecom/account/addresses/{addressId}`
+Update an existing address.
 
----
+**Request:** same as POST.  
+**Response:** `CustomerAddressResponse`
 
-### `PUT /ecom/account/addresses/{addressId}`
+### DELETE `/ecom/account/addresses/{addressId}`
+Delete an address.
 
-Update an existing address. Same request shape as POST.
+**Response:** 204 No Content
 
-**Response `data`** — updated **AddressResponse**
+### GET `/ecom/account/orders`
+Paginated order history for the authenticated customer, scoped to a storefront.
 
----
+**Query params:**
+| Param | Type | Required | Description |
+|-------|------|----------|-------------|
+| `storefront_slug` | string | yes | Slug of the storefront |
+| `page` | int | no (default 0) | |
+| `size` | int | no (default 20) | |
 
-### `DELETE /ecom/account/addresses/{addressId}`
+**Response:** `PageResponse<EcomOrderResponse>` (same order shape as checkout response)
 
-Delete an address. Returns `204 No Content`.
+### GET `/ecom/account/orders/{ecomOrderRef}`
+Single order detail for the authenticated customer.
 
----
+**Query params:** `storefront_slug` (required)
 
-## 7. Customer Account — Orders & Tracking
-
-All endpoints require `Authorization: Bearer <access_token>`.
-
-### `GET /ecom/account/orders?storefrontSlug={slug}`
-
-List all orders for this customer on a given storefront, newest first.
-
-**Query params**: `storefront_slug` (required), `page` (default 0), `size` (default 20)
-
-**Response `data`** — `PageResponse<EcomOrderResponse>`
+**Response:** `EcomOrderResponse`
 
 ---
 
-### `GET /ecom/account/orders/{ecomOrderRef}?storefrontSlug={slug}`
+## Management — Storefront (Merchant / Admin)
 
-Single order detail including line items and live status.
+All endpoints require authentication and `X-Workspace-ID` header.
 
-**Response `data`** — **EcomOrderResponse**
+### POST `/ecom/management/storefront`
+Create the storefront for a workspace (one per workspace).
 
----
-
-### 7.3 EcomOrderResponse
-
+**Request `StorefrontRequest`:**
 ```json
 {
-  "uid": "ECO2026...",
-  "ecom_order_ref": "ECO2026050100001",
-  "storefront_id": "SFR2026...",
-  "customer_name": "Rahul Kumar",
-  "customer_email": "rahul@example.com",
-  "customer_phone": "9591781662",
-  "delivery_address": {
-    "address_line1": "12 MG Road",
-    "city": "Bengaluru",
-    "state": "Karnataka",
-    "pin_code": "560001",
-    "country": "IN"
-  },
-  "status": "PROCESSING",
-  "management_order_ref": "ORD2026...",
+  "name": "My Shop",
+  "slug": "my-shop",
+  "description": "...",
+  "logo_url": "https://...",
+  "banner_url": "https://..."
+}
+```
+
+**Response (201):** `StorefrontResponse`
+
+### GET `/ecom/management/storefront`
+Get the workspace's storefront.
+
+**Response:** `StorefrontResponse`
+
+### PUT `/ecom/management/storefront`
+Update storefront details.
+
+**Request `StorefrontUpdateRequest`:** same fields as create (all optional).  
+**Response:** `StorefrontResponse`
+
+### PUT `/ecom/management/storefront/publish`
+Publish the storefront (makes it publicly accessible).
+
+**Response:** `StorefrontResponse` with `status: "PUBLISHED"`
+
+### PUT `/ecom/management/storefront/unpublish`
+Take the storefront offline.
+
+**Response:** `StorefrontResponse` with `status: "UNPUBLISHED"`
+
+---
+
+## Management — Taxonomy Images
+
+### GET `/ecom/management/taxonomy`
+List taxonomy images (category/subcategory/brand display images), optionally filtered by type.
+
+**Query params:** `type` (`CATEGORY` | `SUBCATEGORY` | `BRAND`, optional)
+
+**Response:** `List<TaxonomyImageResponse>`
+```json
+[
+  {
+    "uid": "ti_01",
+    "type": "CATEGORY",
+    "name": "Beverages",
+    "image_url": "https://...",
+    "sort_order": 1
+  }
+]
+```
+
+### PUT `/ecom/management/taxonomy`
+Upsert a taxonomy image (create or update by type+name).
+
+**Request `TaxonomyImageRequest`:**
+```json
+{
+  "type": "CATEGORY",
+  "name": "Beverages",
+  "image_url": "https://...",
+  "sort_order": 1
+}
+```
+
+**Response:** `TaxonomyImageResponse`
+
+### DELETE `/ecom/management/taxonomy/{type}/{name}`
+Delete a taxonomy image by type and name (e.g. `DELETE /ecom/management/taxonomy/CATEGORY/Beverages`).
+
+**Response:** 204 No Content
+
+---
+
+## Management — Storefront Access Control
+
+Controls which customers can access a `RESTRICTED` storefront.
+
+### GET `/ecom/management/storefront/access`
+List access entries (paginated).
+
+**Query params:** `page` (default 0), `size` (default 20)
+
+**Response:** `PageResponse<StorefrontAccessEntryResponse>`
+```json
+{
+  "content": [
+    {
+      "uid": "ae_01",
+      "storefront_id": "sf_01",
+      "identifier_type": "PHONE",
+      "identifier_value": "9876543210",
+      "created_at": "2025-06-01T10:00:00Z"
+    }
+  ]
+}
+```
+
+### POST `/ecom/management/storefront/access`
+Grant access to a customer identifier.
+
+**Request `StorefrontAccessEntryRequest`:**
+```json
+{ "identifier_type": "PHONE", "identifier_value": "9876543210" }
+```
+
+**Response (201):** `StorefrontAccessEntryResponse`
+
+### DELETE `/ecom/management/storefront/access/{entryUid}`
+Revoke an access entry.
+
+**Response:**
+```json
+{ "deleted": true, "uid": "ae_01" }
+```
+
+### POST `/ecom/management/storefront/access/bulk-import`
+Bulk-import access entries from CSV.
+
+**Content-Type:** `text/plain`  
+**Body:** CSV text — one identifier per line in format `IDENTIFIER_TYPE,value` (e.g. `PHONE,9876543210`)
+
+**Response `StorefrontAccessBulkImportResult`:**
+```json
+{ "imported": 45, "skipped": 2, "failed": ["bad_row_3"] }
+```
+
+---
+
+## Management — Orders
+
+### GET `/ecom/management/orders`
+List ecom orders for the workspace, optionally filtered by status. Supports Spring Data pagination.
+
+**Query params:** `status` (optional enum), `page`, `size`, `sort`
+
+**Response:** `PageResponse<EcomOrderManagementResponse>`
+
+`EcomOrderManagementResponse` extends the customer view with merchant-only fields:
+```json
+{
+  "uid": "ord_01",
+  "ecom_order_ref": "ECM-20250601-0001",
+  "status": "PLACED",
+  "storefront_id": "sf_01",
+  "workspace_id": "ws_01",
+  "customer_id": "usr_01",
+  "customer_name": "Ravi Kumar",
+  "customer_email": "ravi@example.com",
+  "customer_phone": "9876543210",
+  "delivery_address": { "..." : "..." },
   "line_items": [
     {
-      "uid": "ELI2026...",
-      "listed_product_id": "ELP2026...",
-      "management_product_id": "PRD2026...",
-      "product_name": "India Gate Basmati Rice",
-      "unit_price": 499.00,
+      "uid": "li_01",
+      "management_product_id": "mp_01",
+      "product_name": "Mango Juice 1L",
+      "unit_price": "85.00",
       "quantity_ordered": 2,
-      "quantity_confirmed": 2,
-      "line_total": 998.00,
-      "status": "CONFIRMED"
+      "quantity_confirmed": null,
+      "line_total": "170.00",
+      "status": "ORDERED"
     }
   ],
-  "subtotal": 998.00,
-  "total_amount": 998.00,
+  "subtotal": "170.00",
+  "total_amount": "170.00",
   "notes": null,
-  "placed_at": "2026-05-31T10:00:00Z",
-  "confirmed_at": "2026-05-31T10:05:00Z"
+  "placed_at": "2025-06-01T10:00:00Z",
+  "confirmed_at": null,
+  "merchant_reviewed_at": null,
+  "management_order_ref": null
 }
 ```
 
-**Order status values** (show in tracking timeline):
+### GET `/ecom/management/orders/{ecomOrderRef}`
+Single order detail (merchant view).
 
-| Status | Customer label | Description |
-|--------|----------------|-------------|
-| `PENDING_MERCHANT_REVIEW` | Reviewing your order | Merchant hasn't acted yet |
-| `CONFIRMED` | Order confirmed | Merchant confirmed all items |
-| `PROCESSING` | Being packed | Warehouse picking |
-| `DISPATCHED` | Out for delivery | In transit |
-| `DELIVERED` | Delivered | Complete |
-| `CANCELLED` | Cancelled | Cancelled by merchant or customer |
+**Response:** `EcomOrderManagementResponse`
 
-**Line item status values**:  
-`PENDING` → `CONFIRMED` → `DISPATCHED` → `DELIVERED` \| `CANCELLED` \| `PARTIALLY_FULFILLED`
+### PUT `/ecom/management/orders/{ecomOrderRef}/line-items`
+Edit line item quantities and statuses before confirmation.
 
----
-
-## 8. Offline Mode — Room DB Schema
-
-```sql
--- Storefront (one row per store the app has loaded)
-CREATE TABLE storefront (
-    uid         TEXT PRIMARY KEY,
-    slug        TEXT NOT NULL UNIQUE,
-    name        TEXT NOT NULL,
-    logo_url    TEXT,
-    banner_url  TEXT,
-    status      TEXT NOT NULL,
-    cached_at   INTEGER NOT NULL  -- epoch ms
-);
-
--- Taxonomy images (from /catalog-meta)
-CREATE TABLE taxonomy_image (
-    uid           TEXT PRIMARY KEY,
-    storefront_id TEXT NOT NULL,
-    type          TEXT NOT NULL,   -- CATEGORY | SUBCATEGORY | BRAND
-    name          TEXT NOT NULL,
-    image_url     TEXT NOT NULL,
-    sort_order    INTEGER NOT NULL DEFAULT 0,
-    UNIQUE(storefront_id, type, name)
-);
-
--- Product catalog (from /products full sync + /products/sync incremental)
-CREATE TABLE listed_product (
-    uid                   TEXT PRIMARY KEY,
-    storefront_id         TEXT NOT NULL,
-    management_product_id TEXT NOT NULL,
-    name                  TEXT NOT NULL,
-    brand                 TEXT,
-    category              TEXT,
-    subcategory           TEXT,
-    unit                  TEXT,
-    price                 REAL NOT NULL,
-    mrp                   REAL,
-    stock_status          TEXT NOT NULL,  -- IN_STOCK | LIMITED | OUT_OF_STOCK
-    stock_quantity        INTEGER NOT NULL DEFAULT 0,
-    image_urls            TEXT NOT NULL DEFAULT '[]',  -- JSON array
-    description           TEXT,
-    is_visible            INTEGER NOT NULL DEFAULT 1,  -- 0 = unlisted
-    updated_at            TEXT,   -- ISO-8601 from server
-    FOREIGN KEY(storefront_id) REFERENCES storefront(uid)
-);
-CREATE INDEX idx_product_storefront_visible  ON listed_product(storefront_id, is_visible);
-CREATE INDEX idx_product_category            ON listed_product(storefront_id, category);
-CREATE INDEX idx_product_brand               ON listed_product(storefront_id, brand);
-
--- Sync cursor (one row per storefront)
-CREATE TABLE sync_cursor (
-    storefront_id TEXT PRIMARY KEY,
-    next_since    TEXT NOT NULL,  -- ISO-8601; use as ?since= on next sync call
-    synced_at     INTEGER NOT NULL  -- epoch ms
-);
-
--- Cart (one active cart per storefront)
-CREATE TABLE cart (
-    uid            TEXT PRIMARY KEY,
-    storefront_id  TEXT NOT NULL,
-    session_token  TEXT NOT NULL UNIQUE,
-    status         TEXT NOT NULL DEFAULT 'ACTIVE',
-    expires_at     TEXT NOT NULL,  -- ISO-8601
-    FOREIGN KEY(storefront_id) REFERENCES storefront(uid)
-);
-
--- Cart items
-CREATE TABLE cart_item (
-    uid                   TEXT PRIMARY KEY,
-    cart_id               TEXT NOT NULL,
-    listed_product_id     TEXT NOT NULL,
-    management_product_id TEXT NOT NULL,
-    product_name          TEXT NOT NULL,
-    brand                 TEXT,
-    unit                  TEXT,
-    unit_price            REAL NOT NULL,
-    mrp_at_add            REAL,
-    quantity              INTEGER NOT NULL,
-    primary_image_url     TEXT,
-    FOREIGN KEY(cart_id) REFERENCES cart(uid),
-    FOREIGN KEY(listed_product_id) REFERENCES listed_product(uid)
-);
-
--- Saved addresses (from /ecom/account/addresses)
-CREATE TABLE customer_address (
-    uid           TEXT PRIMARY KEY,
-    label         TEXT,
-    address_line1 TEXT NOT NULL,
-    address_line2 TEXT,
-    city          TEXT NOT NULL,
-    state         TEXT NOT NULL,
-    pin_code      TEXT NOT NULL,
-    country       TEXT NOT NULL DEFAULT 'IN',
-    phone         TEXT,
-    is_default    INTEGER NOT NULL DEFAULT 0
-);
-
--- Orders (from /ecom/account/orders — cache for order history)
-CREATE TABLE ecom_order (
-    uid                TEXT PRIMARY KEY,
-    ecom_order_ref     TEXT NOT NULL UNIQUE,
-    storefront_id      TEXT NOT NULL,
-    status             TEXT NOT NULL,
-    subtotal           REAL NOT NULL,
-    total_amount       REAL NOT NULL,
-    notes              TEXT,
-    placed_at          TEXT NOT NULL,
-    confirmed_at       TEXT,
-    delivery_address   TEXT NOT NULL  -- JSON blob
-);
-
-CREATE TABLE ecom_order_line_item (
-    uid                   TEXT PRIMARY KEY,
-    order_uid             TEXT NOT NULL,
-    listed_product_id     TEXT NOT NULL,
-    product_name          TEXT NOT NULL,
-    unit_price            REAL NOT NULL,
-    quantity_ordered      INTEGER NOT NULL,
-    quantity_confirmed    INTEGER,
-    line_total            REAL NOT NULL,
-    status                TEXT NOT NULL,
-    FOREIGN KEY(order_uid) REFERENCES ecom_order(uid)
-);
+**Request:** `List<EcomOrderLineItemEditRequest>`
+```json
+[
+  { "uid": "li_01", "quantity_confirmed": 1, "status": "CONFIRMED" }
+]
 ```
 
----
+**Response:** `EcomOrderManagementResponse`
 
-## 9. Offline Sync Strategy
+### POST `/ecom/management/orders/{ecomOrderRef}/confirm`
+Confirm the order (transitions to `CONFIRMED`, creates a management order).
 
-### First launch (seeding)
+**Response:** `EcomOrderManagementResponse`
 
-```
-1. GET /store/{slug}                         → upsert storefront row
-2. GET /store/{slug}/catalog-meta            → upsert taxonomy_image rows
-3. GET /store/{slug}/products?page=0&size=100 (loop until last=true)
-   → upsert listed_product rows (is_visible=1 only)
-4. Store sync_cursor.next_since = last response envelope timestamp
-```
+### PUT `/ecom/management/orders/{ecomOrderRef}/status`
+Advance order status.
 
-### Subsequent opens
+**Query params:** `newStatus` (enum value, e.g. `PROCESSING`)
 
-```
-1. Load storefront + catalog-meta from Room DB immediately (show UI)
-2. Background:
-   a. GET /store/{slug}/catalog-meta         → refresh taxonomy images
-   b. GET /store/{slug}/products/sync?since=<next_since>
-      → loop while has_more = true (page++)
-      → for each item:
-          if is_visible = true  → Room UPSERT (update price, stock, etc.)
-          if is_visible = false → Room UPDATE SET is_visible = 0
-      → store SyncPage.next_since as new cursor
-3. Notify UI to recompose (Flow/StateFlow)
-```
+**Valid transitions:** `CONFIRMED → PROCESSING → DISPATCHED → DELIVERED`; any state `→ CANCELLED`
 
-### Sync triggers
-
-| Trigger | Action |
-|---------|--------|
-| App foreground | Full incremental sync (background) |
-| Pull-to-refresh | Full incremental sync (foreground, show spinner) |
-| Before checkout | Call `/products/{id}` for each cart item to validate live stock |
-| After order placed | Refresh order list |
-
-### Cart session lifecycle
-
-```
-Guest visit:
-  POST /cart              → store session_token in SharedPreferences
-  
-User logs in:
-  POST /cart/{token}/claim → store NEW session_token (old token is MERGED)
-  
-Token key: "ecom_cart_session_{storefrontSlug}"
-```
-
-### Stock validation before checkout
-
-Never trust Room DB stock at checkout time. Before calling `/checkout`:
-
-```kotlin
-for (item in cartItems) {
-    val live = api.getProduct(slug, item.listedProductId)
-    if (live.stockQuantity < item.quantity) {
-        // Show "Only X left" and cap quantity in local cart
-    }
-    if (live.stockStatus == OUT_OF_STOCK) {
-        // Show "No longer available" and remove from cart
-    }
-}
-```
-
-### Offline write — cart
-
-The cart APIs are **online-only** (no local-only write path). However, you can optimistically update the Room `cart_item` table on add/remove and roll back on API error. The server is always the source of truth for quantities (stock cap enforced server-side).
-
----
-
-## 10. Error Codes
-
-| Code | HTTP | Module | When |
-|------|------|--------|------|
-| `CART_EXPIRED` | 410 | ecom | Cart session expired or status != ACTIVE |
-| `PRODUCT_UNAVAILABLE` | 422 | ecom | Product not found, not visible, or out of stock |
-| `INSUFFICIENT_STOCK` | 422 | ecom | Requested quantity > stock_quantity |
-| `STOREFRONT_NOT_FOUND` | 404 | ecom | Slug does not match a PUBLISHED storefront |
-| `ECOM_ORDER_NOT_FOUND` | 404 | ecom | Order ref not found or not owned by this customer |
-| `ADDRESS_NOT_FOUND` | 404 | ecom | Address UID not found or not owned by this customer |
-| `INVALID_ORDER_TRANSITION` | 422 | ecom | Status transition not allowed |
-| `VALIDATION_ERROR` | 400 | — | Request fields failed validation |
-| `AUTH_003` | 401 | auth | Access token expired — refresh it |
-| `AUTH_004` | 401 | auth | Token invalid — re-authenticate |
+**Response:** `EcomOrderManagementResponse`

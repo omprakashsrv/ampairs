@@ -57,7 +57,7 @@ websocket:
     # - SIMPLE: In-memory broker (single instance, no external dependencies)
     # - KAFKA: Kafka-backed fan-out (multi-instance, production)
     # - AUTO: Probe Kafka bootstrap server, fall back to SIMPLE if unavailable
-    type: ${WEBSOCKET_BROKER_TYPE:AUTO}
+    type: ${WEBSOCKET_BROKER_TYPE:SIMPLE}
 
     heartbeat-interval: ${WEBSOCKET_HEARTBEAT_INTERVAL:15000}
 

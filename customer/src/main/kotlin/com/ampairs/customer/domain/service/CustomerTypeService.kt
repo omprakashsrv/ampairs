@@ -1,6 +1,7 @@
 package com.ampairs.customer.domain.service
 
 import com.ampairs.core.multitenancy.TenantContextHolder
+import com.ampairs.core.sync.EntityChangePublisher
 import com.ampairs.customer.domain.model.CustomerType
 import com.ampairs.customer.repository.CustomerTypeRepository
 import org.slf4j.LoggerFactory
@@ -8,6 +9,9 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
+import java.time.Instant
 
 /**
  * Service for managing workspace customer types.
@@ -16,7 +20,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 @Transactional
 class CustomerTypeService(
-    private val customerTypeRepository: CustomerTypeRepository
+    private val customerTypeRepository: CustomerTypeRepository,
+    private val entityChangePublisher: EntityChangePublisher,
 ) {
 
     private val logger = LoggerFactory.getLogger(CustomerTypeService::class.java)
@@ -38,6 +43,27 @@ class CustomerTypeService(
     @Transactional(readOnly = true)
     fun getAllActiveCustomerTypes(pageable: Pageable): Page<CustomerType> {
         return customerTypeRepository.findByActiveTrue(pageable)
+    }
+
+    /**
+     * Incremental sync feed for customer types — returns rows with updatedAt >= lastSync,
+     * INCLUDING inactive (soft-deleted) rows so clients can detect deletions.
+     * Blank/null lastSync returns all rows (paginated) including inactive.
+     * Note: @TenantId automatically filters by current workspace.
+     */
+    @Transactional(readOnly = true)
+    fun getCustomerTypesAfterSync(lastSync: String?, pageable: Pageable): Page<CustomerType> {
+        return if (lastSync.isNullOrBlank()) {
+            customerTypeRepository.findAll(pageable)
+        } else {
+            try {
+                val decodedLastSync = URLDecoder.decode(lastSync, StandardCharsets.UTF_8)
+                val lastSyncInstant = Instant.parse(decodedLastSync)
+                customerTypeRepository.findByUpdatedAtAfter(lastSyncInstant, pageable)
+            } catch (e: Exception) {
+                customerTypeRepository.findAll(pageable)
+            }
+        }
     }
 
     /**
@@ -92,6 +118,7 @@ class CustomerTypeService(
         }
 
         return customerTypeRepository.save(customerType)
+            .also { entityChangePublisher.created("customer_type", it.uid) }
     }
 
     /**
@@ -109,6 +136,7 @@ class CustomerTypeService(
         existingType.metadata = updates.metadata
 
         return customerTypeRepository.save(existingType)
+            .also { entityChangePublisher.updated("customer_type", it.uid) }
     }
 
     /**
@@ -142,11 +170,13 @@ class CustomerTypeService(
                 existing.defaultCreditDays = incoming.defaultCreditDays
                 existing.metadata = incoming.metadata
                 customerTypeRepository.save(existing)
+                    .also { entityChangePublisher.updated("customer_type", it.uid) }
             } else {
                 if (incoming.uid.isNotEmpty() && customerTypeRepository.existsByUid(incoming.uid)) {
                     throw IllegalArgumentException("Customer type with UID '${incoming.uid}' already exists")
                 }
                 customerTypeRepository.save(incoming)
+                    .also { entityChangePublisher.created("customer_type", it.uid) }
             }
         }
     }

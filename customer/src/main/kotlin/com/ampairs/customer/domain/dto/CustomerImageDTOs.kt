@@ -1,6 +1,5 @@
 package com.ampairs.customer.domain.dto
 
-import com.ampairs.customer.domain.model.CustomerImage
 import jakarta.validation.constraints.*
 import java.time.Instant
 
@@ -159,54 +158,6 @@ data class WorkspaceImageStatsResponse(
 }
 
 /**
- * Extension functions to convert between entity and DTOs
- */
-fun CustomerImage.asCustomerImageResponse(): CustomerImageResponse = CustomerImageResponse(
-    uid = uid,
-    customerUid = customerUid,
-    originalFilename = originalFilename,
-    fileExtension = fileExtension,
-    contentType = contentType,
-    fileSize = fileSize,
-    formattedFileSize = getFormattedFileSize(),
-    storagePath = storagePath,
-    storageUrl = storageUrl,
-    imageUrl = "/customer/v1/images/$customerUid/$uid/download",
-    thumbnailUrl = "/customer/v1/images/$customerUid/$uid/thumbnail",
-    isPrimary = isPrimary,
-    displayOrder = displayOrder,
-    description = description,
-    width = metadata.width,
-    height = metadata.height,
-    uploadedAt = uploadedAt,
-    active = active,
-    etag = metadata.etag,
-    lastModified = metadata.lastModified,
-    createdAt = createdAt ?: Instant.now(),
-    updatedAt = updatedAt ?: Instant.now()
-)
-
-fun List<CustomerImage>.asCustomerImageResponses(): List<CustomerImageResponse> =
-    map { it.asCustomerImageResponse() }
-
-/**
- * Create customer image list response with statistics
- */
-fun List<CustomerImage>.asCustomerImageListResponse(): CustomerImageListResponse {
-    val responses = asCustomerImageResponses()
-    val primaryImage = responses.find { it.isPrimary }
-    val totalSize = sumOf { it.fileSize }
-
-    return CustomerImageListResponse(
-        images = responses,
-        totalCount = size,
-        primaryImage = primaryImage,
-        totalSize = totalSize,
-        formattedTotalSize = formatFileSize(totalSize)
-    )
-}
-
-/**
  * Request DTO for thumbnail operations
  */
 data class ThumbnailRequest(
@@ -303,3 +254,10 @@ private fun formatFileSize(bytes: Long): String {
         else -> "${bytes / (1024 * 1024 * 1024)} GB"
     }
 }
+
+// Adapters from EntityImageResponse to CustomerImageResponse
+fun com.ampairs.file.domain.dto.EntityImageResponse.toCustomerImageResponse(customerUid: String): CustomerImageResponse =
+    CustomerImageResponse(uid, customerUid, originalFilename, fileExtension, contentType, fileSize, formattedFileSize, storagePath, storageUrl, imageUrl, thumbnailUrl, isPrimary, displayOrder, description, width, height, uploadedAt, active, etag, lastModified, createdAt, updatedAt)
+
+fun com.ampairs.file.domain.dto.EntityImageListResponse.toCustomerListResponse(customerUid: String): CustomerImageListResponse =
+    CustomerImageListResponse(images.map { it.toCustomerImageResponse(customerUid) }, totalCount, primaryImage?.toCustomerImageResponse(customerUid), totalSize, formattedTotalSize)

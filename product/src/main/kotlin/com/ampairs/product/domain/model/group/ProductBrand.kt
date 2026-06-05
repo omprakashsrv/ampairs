@@ -3,11 +3,12 @@ package com.ampairs.product.domain.model.group
 import com.ampairs.file.domain.model.File
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.product.config.Constants
-import jakarta.persistence.Column
-import jakarta.persistence.Entity
-import jakarta.persistence.JoinColumn
-import jakarta.persistence.OneToOne
+import jakarta.persistence.*
 
+@NamedEntityGraph(
+    name = "ProductBrand.withImage",
+    attributeNodes = [NamedAttributeNode("image")]
+)
 @Entity(name = "product_brand")
 class ProductBrand : OwnableBaseDomain() {
 
@@ -20,7 +21,7 @@ class ProductBrand : OwnableBaseDomain() {
     @Column(name = "index_no", nullable = false)
     var index: Int = 0
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "image_id", referencedColumnName = "uid", updatable = false, insertable = false)
     var image: File? = null
 

@@ -33,5 +33,10 @@ enum class EventType {
     // Device/User status events
     USER_STATUS_CHANGED,
     DEVICE_CONNECTED,
-    DEVICE_DISCONNECTED
+    DEVICE_DISCONNECTED,
+
+    // Generic entity change events (emitted via core EntityChangePublisher for any entity type)
+    ENTITY_CREATED,
+    ENTITY_UPDATED,
+    ENTITY_DELETED
 }

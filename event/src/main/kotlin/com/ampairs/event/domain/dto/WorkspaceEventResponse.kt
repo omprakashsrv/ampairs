@@ -13,6 +13,9 @@ data class WorkspaceEventResponse(
     val entityType: String,
     val entityId: String,
     val payload: Map<String, Any>,
+    // The entity's max(updatedAt) at change time. Clients compare this to their last-synced
+    // watermark to decide whether to pull — no full record is carried on the wire.
+    val lastUpdatedAt: Instant?,
     val deviceId: String,
     val userId: String,
     val sequenceNumber: Long,
@@ -25,12 +28,16 @@ data class WorkspaceEventResponse(
  * Extension function to convert WorkspaceEvent to WorkspaceEventResponse
  */
 fun WorkspaceEvent.asWorkspaceEventResponse(): WorkspaceEventResponse {
+    val payloadMap = this.getPayloadMap()
+    val lastUpdated = (payloadMap["last_updated_at"] as? String)
+        ?.let { runCatching { Instant.parse(it) }.getOrNull() }
     return WorkspaceEventResponse(
         uid = this.uid,
         eventType = this.eventType,
         entityType = this.entityType,
         entityId = this.entityId,
-        payload = this.getPayloadMap(),
+        payload = payloadMap,
+        lastUpdatedAt = lastUpdated,
         deviceId = this.deviceId,
         userId = this.userId,
         sequenceNumber = this.sequenceNumber,

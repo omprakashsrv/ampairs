@@ -5,6 +5,10 @@ import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.product.config.Constants
 import jakarta.persistence.*
 
+@NamedEntityGraph(
+    name = "ProductGroup.withImage",
+    attributeNodes = [NamedAttributeNode("image")]
+)
 @Entity(name = "product_group")
 @Table(
     indexes = [
@@ -22,7 +26,7 @@ class ProductGroup : OwnableBaseDomain() {
     @Column(name = "index_no", nullable = false)
     var index: Int = 0
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "image_id", referencedColumnName = "uid", updatable = false, insertable = false)
     var image: File? = null
 

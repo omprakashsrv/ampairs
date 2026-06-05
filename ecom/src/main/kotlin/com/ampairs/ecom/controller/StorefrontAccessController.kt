@@ -17,7 +17,7 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/v1/ecom/management/storefront/access")
+@RequestMapping("/v1/ecom/management/storefront/access")
 class StorefrontAccessController(
     private val storefrontService: StorefrontService,
     private val storefrontAccessService: StorefrontAccessService,

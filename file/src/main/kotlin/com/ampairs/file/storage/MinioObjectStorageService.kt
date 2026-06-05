@@ -291,19 +291,9 @@ class MinioObjectStorageService(
     }
 
     private fun validateFileSize(size: Long) {
-        val maxSize = parseSize(storageProperties.maxFileSize)
+        val maxSize = parseStorageSize(storageProperties.maxFileSize)
         if (size > maxSize) {
             throw ObjectUploadException("File size exceeds maximum allowed size of $maxSize bytes")
-        }
-    }
-
-    private fun parseSize(sizeStr: String): Long {
-        val size = sizeStr.uppercase()
-        return when {
-            size.endsWith("KB") -> size.dropLast(2).toLong() * 1024
-            size.endsWith("MB") -> size.dropLast(2).toLong() * 1024 * 1024
-            size.endsWith("GB") -> size.dropLast(2).toLong() * 1024 * 1024 * 1024
-            else -> size.toLong()
         }
     }
 }
