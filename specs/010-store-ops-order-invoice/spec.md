@@ -26,6 +26,10 @@ offline-sync + Metro DI + MVI rules.
   product in its **base unit or any defined derived unit** (e.g. BOX where 1 BOX = 12 PCS); the line
   stores the chosen `unitId`, the entered quantity, and the derived **base-unit quantity** (for
   stock/inventory), with price scaled by the conversion. Uses the existing `UnitConversionEngine`.
+- **Discounts**: support **both** a **per-line discount** and an **overall (document-level)
+  discount**, each as a **percentage or a flat amount**. Discounts reduce the **taxable value before
+  GST** (Indian GST treats a discount given at/before supply as reducing taxable value); the overall
+  discount is **apportioned across lines pre-tax** so each line's CGST/SGST/IGST stays correct.
 - **Rebuild posture**: **clean rebuild** of the create flow, sync layer, and tax wiring — keep the
   reusable parts (entity schema, `TaxCalculationEngine`, list/search/paging) per the audit.
 - **Money**: keep the **existing `Double`** price/tax fields for this feature (today's pricing model);
@@ -50,6 +54,11 @@ offline-sync + Metro DI + MVI rules.
   (bulk-upsert `POST` + `PageResponse` `GET`) is the pattern to mirror.
 - **Order→Invoice conversion exists server-side**: `order.toInvoice()`,
   `POST /order/v1/orders/create-invoice`, with `Invoice.orderRefId` ↔ `Order.invoiceRefId`.
+- **Discount model exists, untyped**: `Discount(percent: Double, value: Double)` is stored as a
+  `List<Discount>` JSON on **both** `Order`/`OrderItem` (and invoice equivalents), and the old code
+  aggregates them — but it carries no percent-vs-flat flag and its interaction with the (previously
+  dead) tax math is unspecified. The rebuild must define discount→taxable→GST ordering precisely and
+  apportion the overall discount across lines pre-tax.
 - **Units exist but are unused on lines**: `Unit` (with `decimalPlaces`), product-scoped
   `UnitConversion` (`baseUnitId`/`derivedUnitId`/`multiplier`), the app `UnitConversionEngine`
   (direct + inverse) and backend `UnitConversionService` (+ `POST /unit/v1/conversions/convert`) all
@@ -196,8 +205,45 @@ to PCS at qty 60 → identical taxable ₹600.
 
 ---
 
+### User Story 6 — Staff applies line and overall discounts, GST stays correct (Priority: P1)
+
+A staffer gives one line a 10% discount and the whole bill a flat ₹100 off. Each line's taxable value
+drops by its share of the discounts, GST is computed on the reduced taxable values, and the displayed
+CGST/SGST/IGST and grand total all reconcile.
+
+**Why this priority**: Discounts are routine in store sales and they directly change the taxable value
+— getting the discount→tax ordering wrong produces non-compliant GST. This is core, not optional.
+
+**Independent Test**: Two lines (₹500 @ 18%, ₹500 @ 18%), apply a flat ₹200 overall discount → each
+line's taxable drops to ₹400, GST ₹72/line (CGST ₹36 + SGST ₹36 intra-state), grand total ₹944;
+totals reconcile to taxable + tax.
+
+**Acceptance Scenarios**:
+
+1. **Given** a line of qty 2 @ ₹100 (18%), **When** a 10% line discount is applied, **Then** taxable =
+   ₹180, GST ₹32.40, line total ₹212.40.
+2. **Given** a multi-line bill, **When** an overall discount (percent or flat) is applied, **Then** it
+   is **apportioned across lines proportional to each line's taxable value before tax**, and each
+   line's GST is recomputed on its reduced taxable value.
+3. **Given** both a percent and a flat discount option, **When** the staffer enters either, **Then**
+   the `Discount` records which form was used (percent vs flat) and the resolved value, so the breakdown
+   is reproducible.
+4. **Given** discounts that would drive a line's taxable below zero, **When** computed, **Then** the
+   line taxable floors at zero (no negative tax) and a warning is shown.
+5. **Given** discounts applied, **When** the document is saved and synced, **Then** line and overall
+   `discount` JSON round-trip and the server-stored totals match the client.
+
+---
+
 ### Edge Cases
 
+- **Discount + tax ordering** → line discount, then overall-discount apportionment, **then** tax —
+  always on the net taxable value (never compute tax then discount).
+- **Overall discount apportionment** → distribute proportional to each line's pre-discount taxable
+  value; assign any rounding remainder to the largest line so the sum of line discounts equals the
+  entered overall discount exactly.
+- **Percent vs flat** → both supported at each level; a percent is resolved to a value against the
+  applicable base and the resolved value is stored alongside the percent for reproducibility.
 - **Inverse conversion** (entering base when only a derived→base multiplier exists) → engine divides
   by the multiplier; guard against divide-by-zero.
 - **Unit changed after quantity entered** → re-derive `baseQuantity`, rescale unit price, and re-run
@@ -261,6 +307,12 @@ to PCS at qty 60 → identical taxable ₹600.
   `UnitConversionEngine.convertQuantity(...)`; scale the per-base-unit price to the chosen unit; and
   compute GST on the resulting taxable amount. Constrain quantity input to the unit's `decimalPlaces`.
   Default to the product's base unit (multiplier 1) when no conversion exists.
+- **FR-015**: **Discounts at line and document level.** Support a per-line discount and an overall
+  discount, each as **percent or flat**. Compute in this order: apply the line discount to the line
+  taxable base; apportion the overall discount across lines **proportional to pre-discount line
+  taxable value**; then run GST on each line's net taxable value and aggregate. Floor line taxable at
+  zero. Persist each `Discount` with both the entered form (percent or flat) and the resolved value
+  for reproducibility, in the existing line/document `discount` JSON.
 
 ### Functional Requirements — Backend (`ampairs`)
 
@@ -307,6 +359,9 @@ to PCS at qty 60 → identical taxable ₹600.
 - **Unit / UnitConversion** (existing, `unit` module, synced to app): the line's `unitId` references
   a `Unit`; `UnitConversionEngine`/`UnitConversionService` supply the `multiplier` to derive
   `baseQuantity`. No change to these entities.
+- **Discount** (existing `Discount(percent, value)` JSON on line + document): reused as-is; the
+  feature defines its semantics (percent-or-flat, pre-tax, apportioned) rather than changing its
+  shape. `value` holds the resolved amount; `percent` is 0 for a flat discount.
 - **Invoice / InvoiceItem** (`feature/invoice` + backend `invoice`/`invoice_item`): mirror order;
   `orderRefId` link.
 - **TaxInfo** (existing, both repos): `{ id, name, percentage, taxSpec, value, formattedName }` — the
@@ -332,6 +387,9 @@ to PCS at qty 60 → identical taxable ₹600.
 - **SC-008**: A line transacted in a derived unit stores the correct `unitId` + `baseQuantity`, scales
   the price and GST correctly, respects the unit's decimal places, and round-trips through sync —
   while products without conversions transact in the base unit with no error.
+- **SC-009**: Line and overall discounts (percent or flat) reduce taxable value before GST, the
+  overall discount apportions across lines so per-line CGST/SGST/IGST stays correct, totals reconcile,
+  and the discount breakdown round-trips through sync.
 
 ## Out of Scope (this feature)
 
@@ -356,7 +414,8 @@ to PCS at qty 60 → identical taxable ₹600.
 ---
 
 *Next steps*: run `/speckit.clarify` (confirm edge-case defaults: tax-exclusive pricing, intra-state
-fallback, rounding half-up, and whether the staffer may override the auto-scaled per-unit price on a
-line), then `/speckit.plan`, `/speckit.tasks`, `/speckit.analyze`, and stop for
+fallback, rounding half-up, whether the staffer may override the auto-scaled per-unit price on a
+line, and confirming discounts are pre-tax/apportioned rather than a post-tax reduction), then
+`/speckit.plan`, `/speckit.tasks`, `/speckit.analyze`, and stop for
 review before `/speckit.implement`. Develop on `claude/blissful-goldberg-iuzI6` in both repos; no PR
 unless requested.
