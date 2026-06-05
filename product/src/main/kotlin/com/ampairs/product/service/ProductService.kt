@@ -133,7 +133,17 @@ class ProductService(
             }
         }
 
-        return productRepository.saveAll(entitiesToSave).toList().asResponse()
+        val saved = productRepository.saveAll(entitiesToSave).toList()
+        // Broadcast so other devices of this workspace pull the bulk-synced change.
+        saved.forEach { p ->
+            entityChangePublisher.publish(
+                "product",
+                p.uid,
+                if (p.status.equals("DELETED", ignoreCase = true)) com.ampairs.core.sync.EntityChangeType.DELETED
+                else com.ampairs.core.sync.EntityChangeType.UPDATED,
+            )
+        }
+        return saved.asResponse()
     }
 
 
