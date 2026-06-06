@@ -8,7 +8,8 @@ on:
 
 env:
   # S3 Configuration
-  AWS_REGION: ap-south-1
+  AWS_REGION: default
+  AWS_ENDPOINT_URL: ${{ vars.AWS_ENDPOINT_URL }}
   S3_BUCKET: ampairs-app-updates
   S3_PREFIX: updates
 
@@ -128,9 +129,9 @@ jobs:
 
       - name: Upload to S3
         run: |
-          # Upload to private S3 bucket (no --acl public-read)
           aws s3 cp "${{ steps.artifact.outputs.artifact_path }}" \
             "s3://${{ env.S3_BUCKET }}/${{ steps.artifact.outputs.s3_key }}" \
+            --endpoint-url ${{ env.AWS_ENDPOINT_URL }} \
             --region ${{ env.AWS_REGION }} \
             --metadata "version=${{ steps.version.outputs.version }},platform=${{ matrix.platform }},checksum=${{ steps.checksum.outputs.checksum }}"
 
@@ -191,9 +192,9 @@ jobs:
             ### Download
             Users will be automatically notified of this update through the in-app update checker.
 
-            ### S3 Location
+            ### Download URL
             ```
-            s3://${{ env.S3_BUCKET }}/${{ steps.artifact.outputs.s3_key }}
+            ${{ env.AWS_ENDPOINT_URL }}/${{ env.S3_BUCKET }}/${{ steps.artifact.outputs.s3_key }}
             ```
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
