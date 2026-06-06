@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Ampairs · Order / Invoice editor (prototype)</title>
+<style>
+  :root{
+    --primary:#3a5bd9; --primary-c:#fff; --primary-container:#dbe1ff; --on-primary-container:#0a1a52;
+    --surface:#fdfbff; --surface-1:#f4f3fb; --surface-2:#eceaf6; --surface-3:#e4e1f1;
+    --outline:#c4c6d4; --outline-v:#e1e2ec; --on-surface:#1a1b21; --on-surface-v:#46474f;
+    --success:#1f7a4d; --success-c:#e3f6ec; --warn:#9a4a00; --warn-c:#ffeede; --err:#b3261e;
+    --radius:16px; --radius-sm:10px;
+    --igst:#6d4aff; --cgst:#1f7a4d; --sgst:#0a7ea4;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Segoe UI',Roboto,system-ui,sans-serif;background:var(--surface-1);color:var(--on-surface);font-size:14px}
+  .app{max-width:1340px;margin:0 auto;min-height:100vh;background:var(--surface)}
+  /* top app bar */
+  .bar{display:flex;align-items:center;gap:14px;padding:12px 20px;background:var(--surface);border-bottom:1px solid var(--outline-v);position:sticky;top:0;z-index:30}
+  .bar h1{font-size:17px;margin:0;font-weight:600}
+  .seg{display:inline-flex;background:var(--surface-2);border-radius:999px;padding:3px}
+  .seg button{border:0;background:transparent;padding:7px 16px;border-radius:999px;font-weight:600;color:var(--on-surface-v);cursor:pointer;font-size:13px}
+  .seg button.on{background:var(--primary);color:#fff}
+  .spacer{flex:1}
+  .docnum{font-variant-numeric:tabular-nums;font-weight:700;color:var(--primary);background:var(--primary-container);padding:6px 12px;border-radius:8px;font-size:13px}
+  .sync{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--warn);background:var(--warn-c);padding:6px 10px;border-radius:8px}
+  .sync .dot{width:8px;height:8px;border-radius:50%;background:var(--warn)}
+  /* layout */
+  .grid{display:grid;grid-template-columns:1fr 360px;gap:0}
+  @media(max-width:1000px){ .grid{grid-template-columns:1fr} .totals{position:static!important;border-left:0!important;border-top:1px solid var(--outline-v)} }
+  .main{padding:18px 20px 120px}
+  .totals{background:var(--surface);border-left:1px solid var(--outline-v);padding:18px;position:sticky;top:61px;height:calc(100vh - 61px);overflow:auto}
+  /* header card */
+  .card{background:var(--surface);border:1px solid var(--outline-v);border-radius:var(--radius);padding:16px;margin-bottom:16px}
+  .hdr{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  @media(max-width:560px){ .hdr{grid-template-columns:1fr} }
+  label.fl{display:block;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--on-surface-v);margin:0 0 5px}
+  select,input{font:inherit;color:inherit;background:var(--surface-1);border:1px solid var(--outline);border-radius:var(--radius-sm);padding:9px 10px;width:100%}
+  input:focus,select:focus{outline:2px solid var(--primary);border-color:var(--primary)}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;background:var(--surface-2);border-radius:999px;padding:5px 10px;color:var(--on-surface-v)}
+  .togglerow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:14px}
+  .pill{display:inline-flex;background:var(--surface-2);border-radius:999px;padding:3px}
+  .pill button{border:0;background:transparent;padding:6px 12px;border-radius:999px;font-weight:600;color:var(--on-surface-v);cursor:pointer;font-size:12px}
+  .pill button.on{background:var(--on-surface);color:var(--surface)}
+  .mut{color:var(--on-surface-v)}
+  /* section title */
+  .sect{display:flex;align-items:center;gap:10px;margin:6px 2px 10px}
+  .sect h2{font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--on-surface-v);margin:0}
+  /* line item card */
+  .line{background:var(--surface);border:1px solid var(--outline-v);border-radius:var(--radius);padding:12px 14px;margin-bottom:10px}
+  .line.l1{box-shadow:0 1px 2px rgba(0,0,0,.04)}
+  .line .top{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+  .pname{font-weight:600}
+  .pmeta{font-size:12px;color:var(--on-surface-v);margin-top:2px}
+  .iconbtn{border:0;background:var(--surface-1);border-radius:8px;width:30px;height:30px;cursor:pointer;color:var(--on-surface-v);font-size:15px}
+  .iconbtn:hover{background:var(--surface-3)}
+  .lgrid{display:grid;grid-template-columns:90px 110px 1fr 1fr;gap:10px;margin-top:12px}
+  @media(max-width:560px){ .lgrid{grid-template-columns:1fr 1fr} }
+  .lgrid .fl{margin-bottom:4px}
+  .small{font-size:11px}
+  .taxrow{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:12px;padding-top:10px;border-top:1px dashed var(--outline-v)}
+  .tg{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;color:#fff;font-variant-numeric:tabular-nums}
+  .tg.cgst{background:var(--cgst)} .tg.sgst{background:var(--sgst)} .tg.igst{background:var(--igst)}
+  .tg.exempt{background:#8a8d99}
+  .lt{margin-left:auto;font-weight:700;font-variant-numeric:tabular-nums}
+  .ltx{color:var(--on-surface-v);font-size:12px;font-variant-numeric:tabular-nums}
+  .disc-input{display:flex;gap:6px;align-items:center}
+  .disc-input .pill{flex:none}
+  /* add line */
+  .addbtn{width:100%;border:1.5px dashed var(--outline);background:var(--surface-1);border-radius:var(--radius);padding:14px;font-weight:600;color:var(--primary);cursor:pointer;font-size:14px}
+  .addbtn:hover{background:var(--primary-container)}
+  /* totals */
+  .trow{display:flex;justify-content:space-between;padding:7px 0;font-variant-numeric:tabular-nums}
+  .trow.small{font-size:12.5px;color:var(--on-surface-v)}
+  .trow .lab{display:flex;align-items:center;gap:7px}
+  .swatch{width:9px;height:9px;border-radius:2px;display:inline-block}
+  .divider{height:1px;background:var(--outline-v);margin:8px 0}
+  .grand{display:flex;justify-content:space-between;align-items:baseline;margin-top:6px;padding:14px;background:var(--primary-container);color:var(--on-primary-container);border-radius:var(--radius)}
+  .grand .v{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
+  .savebar{position:sticky;bottom:0;display:flex;gap:10px;padding:14px 18px;background:var(--surface);border-top:1px solid var(--outline-v)}
+  .btn{border:0;border-radius:999px;padding:12px 22px;font-weight:700;cursor:pointer;font-size:14px}
+  .btn.primary{background:var(--primary);color:#fff;flex:1}
+  .btn.tonal{background:var(--surface-2);color:var(--on-surface)}
+  .note{font-size:11.5px;color:var(--on-surface-v);margin-top:10px;line-height:1.5}
+  /* modal */
+  .scrim{position:fixed;inset:0;background:rgba(0,0,0,.32);display:none;align-items:center;justify-content:center;z-index:50;padding:16px}
+  .scrim.show{display:flex}
+  .modal{background:var(--surface);border-radius:24px;max-width:440px;width:100%;padding:20px;max-height:86vh;overflow:auto}
+  .modal h3{margin:0 0 14px;font-size:18px}
+  .prod{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:11px 12px;border:1px solid var(--outline-v);border-radius:12px;margin-bottom:8px;cursor:pointer}
+  .prod:hover{background:var(--surface-1);border-color:var(--primary)}
+  .prod .r{font-weight:700;font-variant-numeric:tabular-nums}
+  .badge{font-size:10.5px;font-weight:700;padding:2px 7px;border-radius:5px;background:var(--surface-2);color:var(--on-surface-v)}
+  .newprod{border:1.5px dashed var(--primary);color:var(--primary);justify-content:center;font-weight:700}
+  .ff{margin-bottom:12px}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .legend{font-size:11px;color:var(--on-surface-v);margin-top:4px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="bar">
+    <h1>Ampairs</h1>
+    <div class="seg" id="docTypeSeg">
+      <button data-type="ORDER" class="on">Order</button>
+      <button data-type="INVOICE">Invoice</button>
+    </div>
+    <span class="docnum" id="docNum" style="display:none"></span>
+    <div class="spacer"></div>
+    <span class="sync"><span class="dot"></span> Saved offline</span>
+  </div>
+
+  <div class="grid">
+    <!-- ============ MAIN ============ -->
+    <div class="main">
+      <!-- header card -->
+      <div class="card">
+        <div class="hdr">
+          <div>
+            <label class="fl">Customer</label>
+            <select id="customer"></select>
+            <div class="legend" id="custMeta"></div>
+          </div>
+          <div>
+            <label class="fl">Seller (place of business)</label>
+            <input value="Ampairs Traders · Karnataka (29)" disabled />
+            <div class="legend">Intra/inter-state GST is decided by buyer state vs seller state.</div>
+          </div>
+        </div>
+        <div class="togglerow">
+          <span class="chip">Price is</span>
+          <span class="pill" id="priceMode">
+            <button data-v="EXCLUSIVE" class="on">Tax-exclusive</button>
+            <button data-v="INCLUSIVE">Tax-inclusive</button>
+          </span>
+          <span class="chip" style="margin-left:auto">Overall discount</span>
+          <span class="pill" id="discMode">
+            <button data-v="PRE" class="on">Pre-tax</button>
+            <button data-v="POST">Post-tax</button>
+          </span>
+        </div>
+      </div>
+
+      <div class="sect"><h2>Line items</h2><span class="mut small" id="lineCount"></span></div>
+      <div id="lines"></div>
+      <button class="addbtn" id="addLine">+  Add product</button>
+
+      <div class="note">
+        Prototype — all GST/discount/unit math is computed live and reconciles. Edit any qty, price, or
+        discount; toggle tax mode; switch the customer to an out-of-state buyer to see CGST/SGST flip to
+        IGST. Resize the window to see the phone vs desktop layout.
+      </div>
+    </div>
+
+    <!-- ============ TOTALS ============ -->
+    <div class="totals">
+      <div class="sect"><h2>Summary</h2></div>
+      <div class="trow small"><span>Taxable value</span><span id="tTaxable">₹0.00</span></div>
+      <div class="trow small"><span>Line discounts</span><span id="tLineDisc">−₹0.00</span></div>
+      <div class="trow small" id="rowOverall"><span class="lab">Overall discount
+          <span class="disc-input" style="display:inline-flex">
+            <span class="pill" id="overallKind" style="transform:scale(.85)">
+              <button data-v="PCT" class="on">%</button><button data-v="FLAT">₹</button>
+            </span>
+            <input id="overallVal" style="width:64px;padding:4px 6px" value="0" />
+          </span></span><span id="tOverall">−₹0.00</span></div>
+      <div class="divider"></div>
+      <div id="taxGroups"></div>
+      <div class="trow"><span>Total tax</span><span id="tTax">₹0.00</span></div>
+      <div class="grand"><span>Grand total</span><span class="v" id="tGrand">₹0.00</span></div>
+
+      <div class="note" id="scenarioNote"></div>
+    </div>
+  </div>
+
+  <div class="savebar">
+    <button class="btn tonal" id="convertBtn" style="display:none">Create Invoice</button>
+    <button class="btn primary" id="saveBtn">Save Order</button>
+  </div>
+</div>
+
+<!-- ===== product picker modal ===== -->
+<div class="scrim" id="pickScrim">
+  <div class="modal">
+    <h3>Add product</h3>
+    <input id="pickSearch" placeholder="Search catalog…" style="margin-bottom:12px" />
+    <div id="pickList"></div>
+    <div class="prod newprod" id="newProdBtn">＋ Create new product</div>
+  </div>
+</div>
+
+<!-- ===== new product modal ===== -->
+<div class="scrim" id="newScrim">
+  <div class="modal">
+    <h3>New product</h3>
+    <div class="ff"><label class="fl">Name</label><input id="np_name" placeholder="e.g. Masala Packet 200g" /></div>
+    <div class="row2">
+      <div class="ff"><label class="fl">Selling price (₹ / base unit)</label><input id="np_price" type="number" value="0" /></div>
+      <div class="ff"><label class="fl">Base unit</label>
+        <select id="np_unit"><option value="PCS">PCS</option><option value="KG">KG</option><option value="LTR">LTR</option></select></div>
+    </div>
+    <div class="ff"><label class="fl">GST rate (HSN)</label>
+      <select id="np_rate"><option value="0">Exempt (0%)</option><option value="5">5%</option><option value="12" selected>12%</option><option value="18">18%</option><option value="28">28%</option></select></div>
+    <div style="display:flex;gap:10px;margin-top:6px">
+      <button class="btn tonal" onclick="closeAll()">Cancel</button>
+      <button class="btn primary" id="np_save">Add to document</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ---------- reference data ---------- */
+const SELLER_STATE = 29; // Karnataka
+const CUSTOMERS = [
+  {id:'walkin', name:'Walk-in customer', gstin:'', state:29, label:'No GSTIN · Karnataka (assumed)'},
+  {id:'c1', name:'Sri Lakshmi Stores', gstin:'29ABCDE1234F1Z5', state:29, label:'29ABCDE1234F1Z5 · Karnataka (intra-state)'},
+  {id:'c2', name:'Mumbai Wholesale Co', gstin:'27ABCDE5678G1Z2', state:27, label:'27ABCDE5678G1Z2 · Maharashtra (inter-state)'},
+];
+const CATALOG = [
+  {id:'p1', name:'Basmati Rice 5kg', hsn:'1006', rate:5, base:'PCS', price:260, conv:[{u:'BOX',m:12}]},
+  {id:'p2', name:'Cooking Oil 1L',  hsn:'1512', rate:5, base:'PCS', price:180, conv:[{u:'CASE',m:9}]},
+  {id:'p3', name:'Steel Bottle 1L', hsn:'7323', rate:18,base:'PCS', price:100, conv:[{u:'BOX',m:12}]},
+  {id:'p4', name:'Notebook A4',     hsn:'4820', rate:12,base:'PCS', price:50,  conv:[{u:'PACK',m:6}]},
+];
+let nextNew = 100;
+
+/* ---------- state ---------- */
+let state = {
+  docType:'ORDER',
+  customerId:'c1',
+  priceMode:'EXCLUSIVE',
+  discMode:'PRE',
+  overallKind:'PCT',
+  overallVal:0,
+  lines:[],      // {key, prod, unit, mult, qty, price, discKind, discVal}
+};
+let keyc = 1;
+
+/* seed two lines */
+addProductToDoc(CATALOG[0]); state.lines[0].qty=10; state.lines[0].unit='BOX'; state.lines[0].mult=12; state.lines[0].price=260*12;
+addProductToDoc(CATALOG[2]); state.lines[1].qty=5;
+
+/* ---------- helpers ---------- */
+const inr = n => '₹'+ n.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+const r2 = n => Math.round((n+Number.EPSILON)*100)/100;
+function customer(){ return CUSTOMERS.find(c=>c.id===state.customerId); }
+function scenario(){ return customer().state===SELLER_STATE ? 'INTRA' : 'INTER'; }
+
+function addProductToDoc(p){
+  state.lines.push({key:keyc++, prod:p, unit:p.base, mult:1, qty:1, price:p.price, discKind:'PCT', discVal:0});
+}
+
+/* ---------- core calculation (mirrors spec 010 §4) ---------- */
+function calc(){
+  const sc = scenario();
+  // step 1-2: gross & line discount
+  const L = state.lines.map(l=>{
+    const gross = l.price * l.qty;
+    const ld = l.discKind==='PCT' ? gross*(l.discVal/100) : Math.min(l.discVal, gross);
+    const netAfterLine = Math.max(0, gross - ld);
+    return {l, gross, ld, netAfterLine};
+  });
+  const sumNet = L.reduce((s,x)=>s+x.netAfterLine,0);
+  // overall discount value
+  let overall = state.overallKind==='PCT' ? sumNet*(state.overallVal/100) : Math.min(state.overallVal, sumNet);
+  overall = r2(overall);
+  // step 3: apportion overall pre-tax (only in PRE mode)
+  let remainder = overall;
+  L.forEach((x,i)=>{
+    if(state.discMode==='PRE' && sumNet>0){
+      let share = i===L.length-1 ? remainder : r2(overall * (x.netAfterLine/sumNet));
+      remainder = r2(remainder - share);
+      x.apportion = share;
+    } else x.apportion = 0;
+    x.netTaxableInput = Math.max(0, x.netAfterLine - x.apportion);
+  });
+  // step 4-5: inclusive/exclusive + components
+  let agg = {CGST:0,SGST:0,IGST:0}, taxableSum=0, taxSum=0, lineSum=0;
+  L.forEach(x=>{
+    const rate = x.l.prod.rate;
+    let taxable, tax;
+    if(state.priceMode==='INCLUSIVE'){
+      taxable = rate>0 ? x.netTaxableInput/(1+rate/100) : x.netTaxableInput;
+      tax = x.netTaxableInput - taxable;
+    } else {
+      taxable = x.netTaxableInput; tax = taxable*(rate/100);
+    }
+    taxable=r2(taxable); tax=r2(tax);
+    x.taxable=taxable; x.tax=tax; x.rate=rate;
+    if(rate===0){ x.comp=[]; }
+    else if(sc==='INTRA'){ const h=r2(tax/2); x.comp=[['CGST',rate/2,h],['SGST',rate/2,r2(tax-h)]]; agg.CGST+=h; agg.SGST+=r2(tax-h); }
+    else { x.comp=[['IGST',rate,tax]]; agg.IGST+=tax; }
+    x.lineTotal = r2(taxable+tax);
+    taxableSum+=taxable; taxSum+=tax; lineSum+=x.lineTotal;
+  });
+  const lineDiscTotal = r2(L.reduce((s,x)=>s+x.ld,0));
+  let grand = lineSum;
+  if(state.discMode==='POST') grand = r2(lineSum - overall);
+  return {L, sc, agg:{CGST:r2(agg.CGST),SGST:r2(agg.SGST),IGST:r2(agg.IGST)},
+          taxableSum:r2(taxableSum), taxSum:r2(taxSum), lineDiscTotal, overall, grand:r2(grand)};
+}
+
+/* ---------- render ---------- */
+function render(){
+  // customer dropdown
+  const cs = document.getElementById('customer');
+  if(cs.options.length===0){ cs.innerHTML = CUSTOMERS.map(c=>`<option value="${c.id}">${c.name}</option>`).join(''); }
+  cs.value = state.customerId;
+  document.getElementById('custMeta').textContent = customer().label;
+
+  const res = calc();
+  // lines
+  document.getElementById('lineCount').textContent = state.lines.length+' item'+(state.lines.length!==1?'s':'');
+  document.getElementById('lines').innerHTML = state.lines.map((l,i)=>{
+    const x = res.L[i];
+    const units = [{u:l.prod.base,m:1}, ...l.prod.conv];
+    const unitOpts = units.map(u=>`<option value="${u.u}" ${l.unit===u.u?'selected':''}>${u.u}${u.m>1?` (×${u.m})`:''}</option>`).join('');
+    const baseQty = l.qty*l.mult;
+    const tags = x.rate===0
+      ? `<span class="tg exempt">EXEMPT 0%</span>`
+      : x.comp.map(c=>`<span class="tg ${c[0].toLowerCase()}">${c[0]} ${c[1]}% · ${inr(c[2])}</span>`).join('');
+    return `<div class="line l${i+1}" data-i="${i}">
+      <div class="top">
+        <div>
+          <div class="pname">${l.prod.name}</div>
+          <div class="pmeta">HSN ${l.prod.hsn} · ${x.rate}% GST · base ${l.prod.base}${l.mult>1?` · ${baseQty} ${l.prod.base}`:''}</div>
+        </div>
+        <button class="iconbtn" data-del="${i}">✕</button>
+      </div>
+      <div class="lgrid">
+        <div><label class="fl small">Qty</label><input type="number" min="0" step="0.001" value="${l.qty}" data-f="qty" data-i="${i}"/></div>
+        <div><label class="fl small">Unit</label><select data-f="unit" data-i="${i}">${unitOpts}</select></div>
+        <div><label class="fl small">Unit price (₹)</label><input type="number" min="0" step="0.01" value="${r2(l.price)}" data-f="price" data-i="${i}"/></div>
+        <div><label class="fl small">Line discount</label>
+          <div class="disc-input">
+            <span class="pill" data-discpill="${i}" style="transform:scale(.9)">
+              <button data-v="PCT" class="${l.discKind==='PCT'?'on':''}">%</button>
+              <button data-v="FLAT" class="${l.discKind==='FLAT'?'on':''}">₹</button>
+            </span>
+            <input type="number" min="0" step="0.01" value="${l.discVal}" data-f="discVal" data-i="${i}"/>
+          </div>
+        </div>
+      </div>
+      <div class="taxrow">
+        ${tags}
+        <span class="lt">${inr(x.lineTotal)}</span>
+      </div>
+      <div class="taxrow" style="border:0;padding-top:4px;margin-top:0">
+        <span class="ltx">Taxable ${inr(x.taxable)}${x.ld>0?` · line disc −${inr(x.ld)}`:''}${x.apportion>0?` · overall −${inr(x.apportion)}`:''}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // totals
+  document.getElementById('tTaxable').textContent = inr(res.taxableSum);
+  document.getElementById('tLineDisc').textContent = '−'+inr(res.lineDiscTotal);
+  document.getElementById('tOverall').textContent = '−'+inr(res.overall);
+  const groups=[];
+  if(res.sc==='INTRA'){ groups.push(['CGST',res.agg.CGST,'var(--cgst)']); groups.push(['SGST',res.agg.SGST,'var(--sgst)']); }
+  else groups.push(['IGST',res.agg.IGST,'var(--igst)']);
+  document.getElementById('taxGroups').innerHTML = groups.map(g=>
+    `<div class="trow small"><span class="lab"><span class="swatch" style="background:${g[2]}"></span>${g[0]}</span><span>${inr(g[1])}</span></div>`).join('');
+  document.getElementById('tTax').textContent = inr(res.taxSum);
+  document.getElementById('tGrand').textContent = inr(res.grand);
+  document.getElementById('scenarioNote').innerHTML =
+    `<b>${res.sc==='INTRA'?'Intra-state':'Inter-state'} supply</b> — buyer ${customer().state===SELLER_STATE?'in':'outside'} seller's state ⇒ `+
+    (res.sc==='INTRA'?'CGST + SGST':'IGST')+`. Price treated as <b>${state.priceMode.toLowerCase()}</b>; overall discount <b>${state.discMode==='PRE'?'pre-tax (apportioned)':'post-tax'}</b>.`;
+
+  // doc type chrome
+  const isInv = state.docType==='INVOICE';
+  document.getElementById('saveBtn').textContent = isInv?'Save & Number Invoice':'Save Order';
+  document.getElementById('convertBtn').style.display = (!isInv)?'inline-block':'none';
+  const dn = document.getElementById('docNum');
+  if(isInv){ dn.style.display='inline-block'; dn.textContent = state._invNo || 'INV-A/25-26/0042'; }
+  else dn.style.display='none';
+}
+
+/* ---------- events ---------- */
+document.getElementById('docTypeSeg').addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  document.querySelectorAll('#docTypeSeg button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  state.docType=b.dataset.type; if(state.docType==='INVOICE' && !state._invNo) state._invNo='INV-A/25-26/0042'; render();
+});
+function pillHandler(id,key){ document.getElementById(id).addEventListener('click',e=>{
+  const b=e.target.closest('button'); if(!b)return;
+  document.querySelectorAll('#'+id+' button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  state[key]=b.dataset.v; render();
+});}
+pillHandler('priceMode','priceMode'); pillHandler('discMode','discMode'); pillHandler('overallKind','overallKind');
+document.getElementById('customer').addEventListener('change',e=>{state.customerId=e.target.value;render();});
+document.getElementById('overallVal').addEventListener('input',e=>{state.overallVal=parseFloat(e.target.value)||0;render();});
+
+document.getElementById('lines').addEventListener('input',e=>{
+  const i=+e.target.dataset.i, f=e.target.dataset.f; if(i==null||!f)return;
+  const l=state.lines[i];
+  if(f==='qty')l.qty=parseFloat(e.target.value)||0;
+  if(f==='price')l.price=parseFloat(e.target.value)||0;
+  if(f==='discVal')l.discVal=parseFloat(e.target.value)||0;
+  // recompute totals only (don't re-render the focused input)
+  liveTotals();
+});
+document.getElementById('lines').addEventListener('change',e=>{
+  const i=+e.target.dataset.i, f=e.target.dataset.f;
+  if(f==='unit'){ const l=state.lines[i]; const u=[{u:l.prod.base,m:1},...l.prod.conv].find(x=>x.u===e.target.value);
+    l.unit=u.u; l.mult=u.m; l.price=r2(l.prod.price*u.m); render(); }
+});
+document.getElementById('lines').addEventListener('click',e=>{
+  const del=e.target.dataset.del; if(del!=null){ state.lines.splice(+del,1); render(); return; }
+  const pill=e.target.closest('[data-discpill]'); if(pill){ const b=e.target.closest('button'); if(!b)return;
+    state.lines[+pill.dataset.discpill].discKind=b.dataset.v; render(); }
+});
+function liveTotals(){ // lightweight: re-render everything (inputs keep focus by value match is fine for prototype)
+  const active=document.activeElement; const i=active?.dataset?.i,f=active?.dataset?.f,ss=active?.selectionStart;
+  render();
+  if(i!=null&&f){ const el=document.querySelector(`[data-f="${f}"][data-i="${i}"]`); if(el){el.focus(); try{el.setSelectionRange(ss,ss)}catch(_){}}}
+}
+
+/* product picker */
+const pickScrim=document.getElementById('pickScrim');
+document.getElementById('addLine').onclick=()=>{ renderPick(''); pickScrim.classList.add('show'); document.getElementById('pickSearch').value=''; document.getElementById('pickSearch').focus(); };
+document.getElementById('pickSearch').addEventListener('input',e=>renderPick(e.target.value));
+function renderPick(q){
+  const list=document.getElementById('pickList');
+  list.innerHTML = CATALOG.filter(p=>p.name.toLowerCase().includes(q.toLowerCase())).map(p=>
+    `<div class="prod" data-pid="${p.id}"><div><div style="font-weight:600">${p.name}</div>
+      <div class="small mut">HSN ${p.hsn} · <span class="badge">${p.rate}% GST</span> · ${p.base}</div></div>
+      <div class="r">${inr(p.price)}</div></div>`).join('') || '<div class="mut small" style="padding:8px">No match.</div>';
+}
+document.getElementById('pickList').addEventListener('click',e=>{
+  const d=e.target.closest('[data-pid]'); if(!d)return;
+  addProductToDoc(CATALOG.find(p=>p.id===d.dataset.pid)); closeAll(); render();
+});
+/* new product */
+document.getElementById('newProdBtn').onclick=()=>{ pickScrim.classList.remove('show'); document.getElementById('newScrim').classList.add('show'); };
+document.getElementById('np_save').onclick=()=>{
+  const p={id:'n'+(nextNew++), name:document.getElementById('np_name').value||'New product',
+    hsn:'—', rate:+document.getElementById('np_rate').value, base:document.getElementById('np_unit').value,
+    price:+document.getElementById('np_price').value||0, conv:[]};
+  CATALOG.push(p); addProductToDoc(p); closeAll(); render();
+};
+function closeAll(){ document.querySelectorAll('.scrim').forEach(s=>s.classList.remove('show')); }
+document.querySelectorAll('.scrim').forEach(s=>s.addEventListener('click',e=>{ if(e.target===s) closeAll(); }));
+
+document.getElementById('saveBtn').onclick=()=>{
+  if(state.docType==='INVOICE'){ state._invNo='INV-A/25-26/0042'; }
+  alert((state.docType==='ORDER'?'Order':'Invoice')+' saved offline · queued for sync (PENDING_PUSH).'+
+        (state.docType==='INVOICE'?'\nNumber assigned locally: '+state._invNo:''));
+};
+document.getElementById('convertBtn').onclick=()=>{
+  state.docType='INVOICE'; state._invNo='INV-A/25-26/0042';
+  document.querySelectorAll('#docTypeSeg button').forEach(x=>x.classList.toggle('on',x.dataset.type==='INVOICE'));
+  render(); alert('Invoice created from this order. Linked both ways · numbered '+state._invNo+'.');
+};
+
+render();
+</script>
+</body>
+</html>
