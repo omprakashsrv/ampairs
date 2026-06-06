@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Order &amp; Invoice — Wireframes</title>
+<link rel="stylesheet" href="wireframe.css">
+</head>
+<body>
+
+<header class="appbar">
+  <div class="brand">
+    <img class="mk" src="ampairs-mark.png" alt="Ampairs">
+    Ampairs
+    <span class="tag">Order &amp; Invoice · GST · low-fi wireframes</span>
+  </div>
+  <nav class="tabs" id="tabs">
+    <button class="tab active" data-tab="overview">Overview</button>
+    <button class="tab" data-tab="flows">Flows</button>
+    <button class="tab" data-tab="inventory">Screen inventory</button>
+    <button class="tab" data-tab="wires">Wireframes</button>
+    <button class="tab" data-tab="states">States</button>
+  </nav>
+</header>
+
+<main class="page">
+
+<!-- ════════════════════════ OVERVIEW ════════════════════════ -->
+<section class="panel active" id="overview">
+  <h1 class="disp">Store Ops — Order &amp; Invoice</h1>
+  <p class="lede">One line-item pattern, two entry points. An <b>Order</b> is the working sales doc; an <b>Invoice</b> is the legal GST document. Same anatomy, same totals math, adaptive across phone / tablet / desktop, offline-first. These are deliberately rough wireframes to agree structure &amp; flow before we go hi-fi M3.</p>
+
+  <div class="callout">Reading these: this is a <b>map of the design space</b>, not pixels. Colour is used only to mark roles — <span style="color:var(--violet);font-weight:700">violet</span> = primary action / focus, <span style="color:var(--amber);font-weight:700">amber</span> = sticky / attention, <span style="color:var(--green);font-weight:700">green</span> = synced/ok, <span style="color:var(--red);font-weight:700">red</span> = error/destructive.</div>
+
+  <h2 class="sec"><span class="no">A</span>The one thing to get right: a line item</h2>
+  <p class="lede tiny">Every screen orbits this. Read left → right; each stage feeds the next and re-runs the math.</p>
+  <div class="flow">
+    <div class="flowrow">
+      <div class="step start"><span class="k">pick</span><span class="t">Product</span><span class="d">search catalog · or create inline</span></div>
+      <div class="arrow">→</div>
+      <div class="step"><span class="k">if any</span><span class="t">Variant</span><span class="d">sku / attributes + its price</span></div>
+      <div class="arrow">→</div>
+      <div class="step"><span class="k">uom</span><span class="t">Unit</span><span class="d">base or derived · 1 BOX=12 PCS · rescales price</span></div>
+      <div class="arrow">→</div>
+      <div class="step"><span class="t">Qty × Price</span><span class="d">price overridable · respects decimals</span></div>
+      <div class="arrow">→</div>
+      <div class="step"><span class="t">Line discount</span><span class="d">% or flat · pre-tax</span></div>
+      <div class="arrow">→</div>
+      <div class="step endd"><span class="k">computed</span><span class="t">GST + line total</span><span class="d">CGST+SGST or IGST · taxable+tax</span></div>
+    </div>
+  </div>
+
+  <h2 class="sec"><span class="no">B</span>Sample catalog (realistic Indian retail — drives the demo numbers)</h2>
+  <p class="lede tiny">Seller is registered in <b>Maharashtra (state code 27)</b>. Same state → CGST+SGST; different state → IGST.</p>
+  <table class="tbl">
+    <thead><tr><th>Product</th><th>HSN</th><th>GST</th><th>Base unit</th><th>Conversion</th><th>Price / base</th></tr></thead>
+    <tbody>
+      <tr><td>UltraTech PPC Cement</td><td class="mono">2523</td><td><span class="chip red" style="font-size:11px">28%</span></td><td class="mono">BAG</td><td class="mono">1 PALLET = 30 BAG</td><td class="mono">₹385.00</td></tr>
+      <tr><td>Fortune Sunflower Oil 1L</td><td class="mono">1512</td><td><span class="chip green" style="font-size:11px">5%</span></td><td class="mono">PCS</td><td class="mono">1 CARTON = 12 PCS</td><td class="mono">₹145.00</td></tr>
+      <tr><td>TMT Steel Bar 12mm</td><td class="mono">7214</td><td><span class="chip" style="font-size:11px">18%</span></td><td class="mono">KG</td><td class="mono">1 BUNDLE = 60 KG</td><td class="mono">₹62.50</td></tr>
+      <tr><td>Parle-G Biscuits 800g</td><td class="mono">1905</td><td><span class="chip" style="font-size:11px">18%</span></td><td class="mono">PCS</td><td class="mono">1 BOX = 24 PCS</td><td class="mono">₹90.00</td></tr>
+      <tr><td>Colgate MaxFresh 150g</td><td class="mono">3306</td><td><span class="chip" style="font-size:11px">18%</span></td><td class="mono">PCS</td><td class="mono">1 BOX = 36 PCS</td><td class="mono">₹98.00</td></tr>
+      <tr><td>Classmate Notebook 200pg</td><td class="mono">4820</td><td><span class="chip amber" style="font-size:11px">12%</span></td><td class="mono">PCS</td><td class="mono">1 PACK = 6 PCS</td><td class="mono">₹55.00</td></tr>
+    </tbody>
+  </table>
+  <div class="callout"><b>Worked example used throughout:</b> 2 BAG cement @ ₹385 (28%) intra-state → taxable ₹770, CGST 14% ₹107.80 + SGST 14% ₹107.80, line ₹985.60. Same line to a Karnataka buyer → IGST 28% ₹215.60. Numbers reconcile to the sticky totals in the prototype.</div>
+
+  <h2 class="sec"><span class="no">C</span>Document-level controls (always reachable)</h2>
+  <div class="grid3">
+    <div class="box"><b>Price mode toggle</b><div class="spacer"></div><div class="seg"><span class="on">Tax-exclusive</span><span>Tax-inclusive</span></div><p class="tiny muted" style="margin:8px 0 0">Changes <i>every</i> number. Inclusive back-calculates taxable = price ÷ (1+rate).</p></div>
+    <div class="box r2"><b>Overall discount</b><div class="spacer"></div><div class="row"><span class="chip on">%</span><span class="chip">Flat ₹</span></div><p class="tiny muted" style="margin:8px 0 0">Mode: apportioned pre-tax (GST-compliant) <i>or</i> post-tax reduction.</p></div>
+    <div class="box r3"><b>Customer / place-of-supply</b><div class="spacer"></div><div class="row"><span class="chip">Registered</span><span class="chip amber">Walk-in</span></div><p class="tiny muted" style="margin:8px 0 0">Buyer state vs seller state decides CGST+SGST vs IGST.</p></div>
+  </div>
+
+  <h2 class="sec"><span class="no">D</span>Legend</h2>
+  <div class="legend">
+    <div class="it"><span class="tagm sticky">STICKY</span> pinned region (never scrolls away)</div>
+    <div class="it"><span class="tagm scroll">scroll</span> scrolls with content</div>
+    <div class="it"><span class="refnum">1</span> numbered annotation, explained beside the frame</div>
+    <div class="it"><span class="btn primary sm">Primary</span> one per screen</div>
+    <div class="it"><span class="btn ghost sm">Secondary</span> low emphasis</div>
+  </div>
+</section>
+
+<!-- ════════════════════════ FLOWS ════════════════════════ -->
+<section class="panel" id="flows">
+  <h1 class="disp">Flows</h1>
+  <p class="lede">The five end-to-end paths. Dashed amber = decision; violet = entry; green = done.</p>
+
+  <h2 class="sec"><span class="no">1</span>Create an order</h2>
+  <div class="flow"><div class="flowrow">
+    <div class="step start"><span class="k">list</span><span class="t">+ New ▾</span><span class="d">choose “Order”</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><span class="t">Editor opens</span><span class="d">today’s date · seller defaults</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><span class="t">Pick customer</span><span class="d">sets place-of-supply</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><span class="t">Add lines</span><span class="d">product→unit→qty→price→disc</span></div>
+    <div class="arrow">→</div>
+    <div class="step dec"><span class="k">opt.</span><span class="t">Doc settings</span><span class="d">incl/excl · overall disc</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><span class="t">Totals reconcile</span><span class="d">sticky panel live</span></div>
+    <div class="arrow">→</div>
+    <div class="step endd"><span class="k">save</span><span class="t">Saved offline</span><span class="d">order # on sync</span></div>
+  </div></div>
+
+  <h2 class="sec"><span class="no">2</span>Create an invoice directly (POS-style, walk-in → numbered invoice)</h2>
+  <div class="flow"><div class="flowrow">
+    <div class="step start"><span class="k">list</span><span class="t">+ New ▾</span><span class="d">choose “Invoice”</span></div>
+    <div class="arrow">→</div>
+    <div class="step dec"><span class="t">Customer?</span><span class="d">registered or walk-in</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><span class="t">Walk-in capture</span><span class="d">name · phone · (GSTIN/state opt.)</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><span class="t">Add lines fast</span><span class="d">repeated entry, keyboard-first</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><span class="t">Review totals</span><span class="d">CGST/SGST grouped</span></div>
+    <div class="arrow">→</div>
+    <div class="step endd"><span class="k">save</span><span class="t">Numbered invoice</span><span class="d">INV-MH27/26-27/0042 · print/share</span></div>
+  </div></div>
+  <div class="callout">Invoice number is assigned <b>at save, on the client, offline</b>, from a per-device series prefix — so the printed copy is legally numbered immediately and two offline devices never collide.</div>
+
+  <h2 class="sec"><span class="no">3</span>Add a product inline, mid-line</h2>
+  <div class="flow"><div class="flowrow">
+    <div class="step start"><span class="t">In product picker</span><span class="d">search “…”, no match</span></div>
+    <div class="arrow">→</div>
+    <div class="step dec"><span class="t">“Create ‘…’”</span><span class="d">tap the create row</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><span class="t">Mini create sheet</span><span class="d">name · price · HSN/GST · base unit</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><span class="t">Save to catalog</span><span class="d">offline · PENDING_PUSH</span></div>
+    <div class="arrow">→</div>
+    <div class="step endd"><span class="t">Added as line</span><span class="d">picker closes · GST computed</span></div>
+  </div></div>
+
+  <h2 class="sec"><span class="no">4</span>Convert order → invoice</h2>
+  <div class="flow"><div class="flowrow">
+    <div class="step start"><span class="t">Open order detail</span><span class="d">a saved order</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><span class="t">“Create invoice”</span><span class="d">action in app bar</span></div>
+    <div class="arrow">→</div>
+    <div class="step dec"><span class="t">Already converted?</span><span class="d">idempotent guard</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><span class="t">Confirm dialog</span><span class="d">copies lines/tax/disc · cross-link</span></div>
+    <div class="arrow">→</div>
+    <div class="step endd"><span class="t">Numbered invoice</span><span class="d">order ⇄ invoice linked</span></div>
+  </div>
+  <div class="row" style="margin-top:10px"><span class="branchnote">If <span class="kbd">invoiceRefId</span> already set →</span><div class="step endd" style="max-width:220px"><span class="t">Open existing invoice</span><span class="d">no duplicate created</span></div></div>
+  </div>
+
+  <h2 class="sec"><span class="no">5</span>Browse / search list → open detail</h2>
+  <div class="flow"><div class="flowrow">
+    <div class="step start"><span class="t">Document list</span><span class="d">orders + invoices</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><span class="t">Search / filter</span><span class="d">status chips · sync chips</span></div>
+    <div class="arrow">→</div>
+    <div class="step dec"><span class="t">Compact vs expanded</span><span class="d">navigate vs select-in-place</span></div>
+    <div class="arrow">→</div>
+    <div class="step"><span class="t">Open detail</span><span class="d">read/print view</span></div>
+    <div class="arrow">→</div>
+    <div class="step endd"><span class="t">Act</span><span class="d">edit · print · share · convert</span></div>
+  </div></div>
+</section>
+
+<!-- ════════════════════════ SCREEN INVENTORY ════════════════════════ -->
+<section class="panel" id="inventory">
+  <h1 class="disp">Screen inventory</h1>
+  <p class="lede">Eleven surfaces. The same document model renders three ways: <b>single-pane</b> (phone), <b>list-detail two-pane</b> (tablet/desktop), with desktop adding keyboard-first line entry. “Compact” = phone; “Expanded” = tablet &amp; desktop.</p>
+
+  <table class="tbl">
+    <thead><tr><th style="width:15%">Screen</th><th style="width:20%">Purpose</th><th style="width:24%">Compact (phone)</th><th style="width:25%">Expanded (tablet / desktop)</th><th style="width:16%">Sticky &amp; primary action</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><b>1 · Document list</b></td>
+        <td>Browse orders + invoices, search, status &amp; sync at a glance</td>
+        <td>Full-width rows; tap → push to detail; FAB “+ New”</td>
+        <td>List rail (left) + detail preview (right); row select highlights in place</td>
+        <td><span class="tagm sticky">search + chips</span><div class="spacer"></div><span class="btn primary sm">+ New ▾</span></td>
+      </tr>
+      <tr>
+        <td><b>2 · Editor — header</b></td>
+        <td>Customer, date, doc settings (price mode, discount)</td>
+        <td>Collapsible header card at top of scroll</td>
+        <td>Pinned header band above the line grid</td>
+        <td><span class="tagm sticky">doc settings</span></td>
+      </tr>
+      <tr>
+        <td><b>3 · Line-items area</b></td>
+        <td>The list of lines + add-line affordance</td>
+        <td>Stacked line cards; tap a line → bottom-sheet editor</td>
+        <td>Editable <b>grid/table</b>; Tab between cells, <span class="kbd">Enter</span> = add line</td>
+        <td><span class="tagm scroll">scrolls</span><div class="spacer"></div><span class="btn primary sm">+ Add line</span></td>
+      </tr>
+      <tr>
+        <td><b>4 · Per-line editor</b></td>
+        <td>Product, variant, unit, qty, price, line discount</td>
+        <td><b>Bottom sheet</b> — one line at a time, big targets</td>
+        <td>Inline expanding row / right side-panel; no modal interruption</td>
+        <td><span class="btn primary sm">Done / next</span></td>
+      </tr>
+      <tr>
+        <td><b>5 · Product picker</b></td>
+        <td>Search catalog, choose product, or create new</td>
+        <td>Full-screen search sheet</td>
+        <td>Popover / inline dropdown under the cell, type-ahead</td>
+        <td><span class="tagm sticky">search field</span><div class="spacer"></div><span class="chip on">+ Create “…”</span></td>
+      </tr>
+      <tr>
+        <td><b>6 · Inline create-product</b></td>
+        <td>Minimal new product (name, price, HSN/GST, base unit)</td>
+        <td>Nested bottom sheet over picker</td>
+        <td>Compact dialog</td>
+        <td><span class="btn primary sm">Create &amp; add</span></td>
+      </tr>
+      <tr>
+        <td><b>7 · Unit selector</b></td>
+        <td>Base or derived unit + live conversion hint</td>
+        <td>Small bottom sheet / menu</td>
+        <td>Dropdown menu on the unit cell</td>
+        <td><span class="callout" style="margin:0;padding:4px 8px">1 BOX = 24 PCS</span></td>
+      </tr>
+      <tr>
+        <td><b>8 · Sticky totals</b></td>
+        <td>Subtotal, grouped CGST/SGST/IGST, discounts, grand total</td>
+        <td><b>Collapsed bar</b> at bottom; tap to expand sheet</td>
+        <td>Pinned right column (desktop) / bottom band (tablet)</td>
+        <td><span class="tagm sticky">always visible</span></td>
+      </tr>
+      <tr>
+        <td><b>9 · Save bar</b></td>
+        <td>Save, plus sync state feedback</td>
+        <td>Sticky bottom action bar</td>
+        <td>Top-right of app bar + keyboard <span class="kbd">⌘S</span></td>
+        <td><span class="tagm sticky">bottom / topbar</span><div class="spacer"></div><span class="btn primary sm">Save</span></td>
+      </tr>
+      <tr>
+        <td><b>10 · Detail / print view</b></td>
+        <td>Read-only; invoice looks like a tax invoice</td>
+        <td>Scroll; action menu in app bar</td>
+        <td>Document on a “paper” surface, actions in rail</td>
+        <td><span class="btn primary sm">Print / Share</span></td>
+      </tr>
+      <tr>
+        <td><b>11 · Order→invoice confirm</b></td>
+        <td>Confirm conversion, surface what copies over</td>
+        <td>Centered dialog</td>
+        <td>Centered dialog</td>
+        <td><span class="btn primary sm">Create invoice</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 class="sub">Adaptive rule of thumb</h3>
+  <div class="grid3">
+    <div class="box"><b>Phone · single-pane</b><p class="tiny muted" style="margin:6px 0 0">Navigate <i>between</i> list → editor → line sheet → picker. One job on screen at a time. Bottom sheets for editing. Sticky totals collapse to a bar.</p></div>
+    <div class="box r2"><b>Tablet · two-pane</b><p class="tiny muted" style="margin:6px 0 0">List-detail. Editing happens in the right pane; line editor expands inline instead of a modal. Totals as a pinned band.</p></div>
+    <div class="box r3"><b>Desktop · two-pane + keyboard</b><p class="tiny muted" style="margin:6px 0 0">Line grid is a spreadsheet: <span class="kbd">Tab</span> across cells, <span class="kbd">Enter</span> adds a line, <span class="kbd">⌘S</span> saves. Totals pinned right.</p></div>
+  </div>
+</section>
+
+<!-- ════════════════════════ WIREFRAMES ════════════════════════ -->
+<section class="panel" id="wires">
+  <h1 class="disp">Wireframes</h1>
+  <p class="lede">Every screen, compact (phone) beside expanded (tablet/desktop). Numbered pins map to the notes underneath each frame. Sticky regions marked <span class="tagm sticky">like this</span>.</p>
+
+  <!-- ───────── 1. DOCUMENT LIST ───────── -->
+  <h2 class="sec"><span class="no">1</span>Document list</h2>
+  <div class="frames">
+    <!-- phone -->
+    <div class="frame" style="flex:0 0 320px">
+      <p class="cap"><b>Compact</b> · phone · single-pane</p>
+      <div class="phone"><div class="screen">
+        <div class="notch"></div>
+        <div class="between"><b style="font-size:16px">Documents</b><span class="ic">⚙</span></div>
+        <div class="field"><span class="ic" style="border:none">🔍</span><span class="lab">Search no. / customer</span><span class="refnum right">1</span></div>
+        <div class="row wrap" style="gap:6px"><span class="chip on">All</span><span class="chip">Orders</span><span class="chip">Invoices</span><span class="chip amber">Draft</span><span class="refnum">2</span></div>
+        <div class="box soft" style="padding:9px 11px"><div class="between"><span class="chip" style="font-size:11px"><span class="ic" style="width:16px;height:16px;border:none">🧾</span>INV-…0042</span><span class="chip green" style="font-size:11px"><span class="dot"></span>synced</span></div><div class="ln d w70" style="margin:7px 0 5px"></div><div class="between"><span class="ln w40"></span><span class="mono">₹985.60</span></div></div>
+        <div class="box soft" style="padding:9px 11px"><div class="between"><span class="chip" style="font-size:11px"><span class="ic" style="width:16px;height:16px;border:none">🛒</span>ORD-0118</span><span class="chip blue" style="font-size:11px"><span class="dot"></span>syncing</span></div><div class="ln d w60" style="margin:7px 0 5px"></div><div class="between"><span class="ln w30"></span><span class="mono">₹12,400</span></div></div>
+        <div class="box soft" style="padding:9px 11px"><div class="between"><span class="chip amber" style="font-size:11px">DRAFT</span><span class="chip red" style="font-size:11px"><span class="dot"></span>failed</span></div><div class="ln d w50" style="margin:7px 0 5px"></div><div class="between"><span class="ln w30"></span><span class="mono">₹2,180</span></div></div>
+        <div class="right" style="margin-top:auto"><span class="fab" style="margin-left:auto">＋</span></div>
+        <span class="refnum" style="position:relative;align-self:flex-end;margin-top:-30px">3</span>
+      </div></div>
+    </div>
+    <!-- desktop -->
+    <div class="frame">
+      <p class="cap"><b>Expanded</b> · tablet / desktop · list-detail two-pane</p>
+      <div class="desktop"><div class="bar"><span class="tl"></span><span class="tl"></span><span class="tl"></span><span class="ln w20" style="margin-left:8px"></span></div>
+        <div class="body" style="padding:0">
+        <div class="row between" style="padding:12px 14px;border-bottom:2px solid var(--ink)"><b style="font-size:17px">Documents</b><span class="btn primary sm">＋ New ▾ <span class="refnum" style="background:#fff;color:var(--violet)">3</span></span></div>
+        <div class="twopane" style="min-height:330px">
+          <div class="left">
+            <div class="field"><span>🔍</span><span class="lab">Search</span></div>
+            <div class="row wrap" style="gap:5px"><span class="chip on">All</span><span class="chip">Orders</span><span class="chip">Invoices</span></div>
+            <div class="row wrap" style="gap:5px"><span class="chip green" style="font-size:11px"><span class="dot"></span>synced</span><span class="chip amber" style="font-size:11px">draft</span><span class="chip red" style="font-size:11px"><span class="dot"></span>failed</span></div>
+            <div class="box" style="border-color:var(--violet);box-shadow:0 0 0 2px var(--violet-soft);padding:8px 10px"><div class="between"><span class="mono tiny">INV-…0042</span><span class="chip green" style="font-size:10px"><span class="dot"></span></span></div><div class="ln d w70" style="margin:5px 0"></div><div class="between"><span class="ln w40"></span><span class="mono tiny">₹985.60</span></div></div>
+            <div class="box soft" style="padding:8px 10px"><div class="between"><span class="mono tiny">ORD-0118</span><span class="chip blue" style="font-size:10px"><span class="dot"></span></span></div><div class="ln w60" style="margin:5px 0"></div><span class="mono tiny">₹12,400</span></div>
+            <div class="box soft" style="padding:8px 10px"><div class="between"><span class="mono tiny">ORD-0117</span><span class="chip green" style="font-size:10px"><span class="dot"></span></span></div><div class="ln w50" style="margin:5px 0"></div><span class="mono tiny">₹7,540</span></div>
+            <span class="refnum">4</span>
+          </div>
+          <div class="rightp">
+            <div class="between"><b>INV-MH27/26-27/0042</b><span class="chip green"><span class="dot"></span>synced</span></div>
+            <div class="ln w40"></div>
+            <div class="box dash" style="flex:1;display:grid;place-items:center;color:var(--ink-3)">read-only detail preview<br>(lines · tax summary · totals)</div>
+            <div class="row"><span class="btn ghost sm">Edit</span><span class="btn ghost sm">Print</span><span class="btn primary sm right">Create invoice</span></div>
+            <span class="refnum">5</span>
+          </div>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="annos">
+    <div class="anno"><span class="pin">1</span><div><b>Search + filter is sticky.</b> Stays pinned while the list scrolls. Searches document number and customer name/phone.</div></div>
+    <div class="anno"><span class="pin">2</span><div><b>Status &amp; sync chips combined.</b> Document status (Draft/Order/Invoice) and sync state (synced / syncing / saved-offline / failed) read at a glance — colour + dot, never noisy text.</div></div>
+    <div class="anno"><span class="pin">3</span><div><b>“New” is the single primary action.</b> A split/▾ menu picks Order or Invoice. FAB on phone, button on desktop.</div></div>
+    <div class="anno"><span class="pin">4</span><div><b>Selected row stays in place</b> on desktop (2px violet ring) — no navigation; the detail loads in the right pane.</div></div>
+    <div class="anno"><span class="pin">5</span><div><b>Detail preview</b> shows the read view with primary action contextual to type (invoice → Print; order → Create invoice).</div></div>
+  </div>
+
+  <hr class="rule">
+
+  <!-- ───────── 2. DOCUMENT EDITOR ───────── -->
+  <h2 class="sec"><span class="no">2</span>Document editor — the core (Order &amp; Invoice share this)</h2>
+  <p class="lede tiny">Desktop is a keyboard-first line grid with totals pinned right. Phone stacks line cards and pushes editing into a bottom sheet; totals collapse to a tap-to-expand bar.</p>
+
+  <!-- DESKTOP editor -->
+  <p class="cap" style="margin:8px 0"><b>Expanded</b> · desktop · two-pane, keyboard-first grid</p>
+  <div class="desktop">
+    <div class="bar"><span class="tl"></span><span class="tl"></span><span class="tl"></span>
+      <b class="mono" style="margin-left:8px;font-size:13px">New Invoice · draft</b>
+      <span class="chip amber right" style="font-size:11px">saved offline ⟲</span>
+      <span class="btn ghost sm">Discard</span><span class="btn primary sm">Save <span class="kbd" style="border-color:#fff;color:#fff;background:transparent">⌘S</span></span>
+      <span class="refnum">8</span>
+    </div>
+    <div class="body" style="padding:0">
+      <!-- header band -->
+      <div class="zsticky" style="padding:12px 16px;border-bottom:2px solid var(--ink);background:var(--paper)">
+        <div class="row wrap" style="gap:14px;align-items:flex-start">
+          <div class="fieldset" style="min-width:210px"><p class="cap">Customer · place of supply</p><div class="field"><span class="avatar">RK</span><div class="grow"><div class="ln d w70"></div><div class="ln w50" style="margin-top:5px"></div></div><span class="ic">▾</span></div></div>
+          <div class="fieldset"><p class="cap">Date</p><div class="field" style="min-width:120px"><span class="mono tiny">06 Jun 2026</span></div></div>
+          <div class="fieldset"><p class="cap">Price mode <span class="refnum">a</span></p><div class="seg"><span class="on">Tax-exclusive</span><span>Tax-inclusive</span></div></div>
+          <div class="fieldset"><p class="cap">Invoice no. (on save)</p><div class="field" style="border-style:dashed;min-width:150px"><span class="mono tiny muted">MH27/26-27/0043</span></div></div>
+          <span class="tagm sticky right">STICKY header</span>
+        </div>
+      </div>
+      <!-- line grid -->
+      <div style="padding:0 16px 8px">
+        <table class="tbl" style="border:none;border-radius:0;background:transparent">
+          <thead><tr><th style="width:26%">Product</th><th>Unit</th><th>Qty</th><th>Unit price</th><th>Disc</th><th>Taxable</th><th>GST</th><th style="text-align:right">Line total</th></tr></thead>
+          <tbody>
+            <tr><td>UltraTech PPC Cement <span class="tiny muted mono">2523</span></td><td class="mono">BAG</td><td class="mono">2</td><td class="mono">₹385.00</td><td class="mono">—</td><td class="mono">₹770.00</td><td><span class="chip" style="font-size:10px">28%</span></td><td class="mono" style="text-align:right">₹985.60</td></tr>
+            <!-- editing row -->
+            <tr style="background:var(--violet-soft)">
+              <td><div class="field focus" style="min-height:32px;padding:4px 8px"><span class="ln d w70"></span><span class="refnum right">6</span></div></td>
+              <td><div class="field" style="min-height:32px;padding:4px 8px"><span class="mono tiny">CARTON</span><span class="ic" style="width:16px;height:16px">▾</span></div></td>
+              <td><div class="field focus" style="min-height:32px;padding:4px 8px"><span class="mono">5</span></div></td>
+              <td><div class="field" style="min-height:32px;padding:4px 8px"><span class="mono tiny">₹1,740</span></div></td>
+              <td><div class="field" style="min-height:32px;padding:4px 8px"><span class="mono tiny">10%</span></div></td>
+              <td class="mono">₹7,830</td><td><span class="chip green" style="font-size:10px">5%</span></td><td class="mono" style="text-align:right">₹8,221.50</td>
+            </tr>
+            <tr><td colspan="8" style="padding:8px 0"><span class="btn ghost sm">＋ Add line <span class="kbd">Enter</span></span> <span class="tiny muted right">Tab across cells · Enter commits + new line</span> <span class="refnum">7</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- totals as pinned footer band on this mock; note says right column on wide desktop -->
+    <div class="zsticky" style="border-top:2px solid var(--ink);background:var(--paper);padding:12px 16px;display:flex;gap:24px;flex-wrap:wrap;align-items:center">
+      <span class="tagm sticky">STICKY totals</span>
+      <div class="grow" style="min-width:220px;max-width:380px">
+        <div class="tot"><span class="muted">Subtotal (taxable)</span><span class="mono">₹8,600.00</span></div>
+        <div class="tot"><span class="muted">Overall discount</span><span class="mono">– ₹0.00</span></div>
+        <div class="tot"><span class="muted">CGST</span><span class="mono">₹107.80</span></div>
+        <div class="tot"><span class="muted">SGST</span><span class="mono">₹107.80</span></div>
+        <div class="tot"><span class="muted">CGST/SGST @2.5%</span><span class="mono">₹391.50</span></div>
+        <div class="tot big"><span>Grand total</span><span class="mono">₹9,207.10</span></div>
+      </div>
+      <div class="grow" style="min-width:180px">
+        <div class="fieldset"><p class="cap">Overall discount <span class="refnum">b</span></p><div class="row"><span class="chip on">%</span><span class="chip">₹</span><div class="field grow" style="min-height:32px;padding:4px 8px"><span class="mono tiny muted">0</span></div></div></div>
+        <p class="tiny muted" style="margin-top:6px">Mode: <b>apportioned pre-tax</b> · GST recomputed per line</p>
+      </div>
+    </div>
+  </div>
+  <div class="annos">
+    <div class="anno"><span class="pin">6</span><div><b>Editing row</b> highlights. Product cell opens the type-ahead picker (screen 5). Every keystroke in qty/price/disc re-runs that line’s GST and re-aggregates totals.</div></div>
+    <div class="anno"><span class="pin">7</span><div><b>Fast repeated entry.</b> <span class="kbd">Tab</span> moves cell→cell, <span class="kbd">Enter</span> commits the line and starts a fresh one focused on Product — the optimisation for desktop order desks.</div></div>
+    <div class="anno"><span class="pin">8</span><div><b>Save + sync state live in the app bar.</b> “Saved offline” while disconnected; flips to syncing → synced. <span class="kbd">⌘S</span> saves.</div></div>
+    <div class="anno"><span class="pin">a</span><div><b>Price-mode toggle is first-class</b> in the header — flipping tax-exclusive ↔ inclusive recomputes every number on the document.</div></div>
+    <div class="anno"><span class="pin">b</span><div><b>Overall discount</b> sits with the totals (the numbers it changes). %/₹ switch; the mode line states whether it apportions pre-tax or reduces post-tax.</div></div>
+  </div>
+
+  <!-- PHONE editor + line sheet -->
+  <div class="frames" style="margin-top:22px">
+    <div class="frame" style="flex:0 0 320px">
+      <p class="cap"><b>Compact</b> · phone · single-pane + collapsed totals</p>
+      <div class="phone"><div class="screen">
+        <div class="between"><span class="row" style="gap:6px"><span class="ic" style="border:none">←</span><b style="font-size:15px">New Invoice</b></span><span class="chip amber" style="font-size:10px">offline ⟲</span></div>
+        <div class="box soft" style="padding:8px 10px"><div class="row"><span class="avatar" style="width:26px;height:26px;font-size:11px">RK</span><div class="grow"><div class="ln d w70"></div><div class="ln w50" style="margin-top:4px"></div></div><span class="ic" style="width:18px;height:18px">▾</span></div><div class="row between" style="margin-top:8px"><span class="seg" style="transform:scale(.85);transform-origin:left"><span class="on">Excl.</span><span>Incl.</span></span><span class="mono tiny muted">06 Jun</span></div></div>
+        <div class="box soft" style="padding:8px 10px"><div class="between"><span class="ln d w60"></span><span class="mono tiny">₹985.60</span></div><div class="row" style="gap:6px;margin-top:5px"><span class="chip" style="font-size:10px">2 BAG</span><span class="chip" style="font-size:10px">28%</span></div></div>
+        <div class="box soft" style="padding:8px 10px"><div class="between"><span class="ln d w50"></span><span class="mono tiny">₹8,221</span></div><div class="row" style="gap:6px;margin-top:5px"><span class="chip" style="font-size:10px">5 CARTON</span><span class="chip green" style="font-size:10px">5%</span></div></div>
+        <span class="btn ghost sm" style="align-self:flex-start">＋ Add line</span>
+        <div style="margin-top:auto"></div>
+        <div class="box" style="border-color:var(--amber);background:var(--amber-soft);padding:8px 10px"><div class="between"><span class="tiny" style="color:#5b3c06">Grand total <span class="ic" style="width:14px;height:14px;border:none">▴</span></span><span class="mono" style="font-weight:700">₹9,207.10</span></div><span class="refnum" style="position:relative;float:right;margin-top:-22px">9</span></div>
+        <span class="btn primary" style="justify-content:center">Save</span>
+      </div></div>
+    </div>
+
+    <!-- per-line bottom sheet -->
+    <div class="frame" style="flex:0 0 320px">
+      <p class="cap"><b>Compact</b> · per-line editor = bottom sheet</p>
+      <div class="phone"><div class="screen" style="justify-content:flex-end;background:rgba(0,0,0,.04)">
+        <div class="sheet">
+          <div class="grab"></div>
+          <div class="between"><b style="font-size:15px">Edit line</b><span class="ic" style="border:none">✕</span></div>
+          <div class="field"><span class="ic v" style="width:16px;height:16px">📦</span><span class="grow"><span class="ln d w70"></span></span><span class="ic" style="width:16px;height:16px">▾</span></div>
+          <div class="tiny muted">Variant: <span class="chip" style="font-size:10px">— none —</span></div>
+          <div class="row" style="gap:8px">
+            <div class="fieldset grow"><p class="cap">Unit <span class="refnum">c</span></p><div class="field" style="min-height:34px"><span class="mono tiny">CARTON</span><span class="ic right" style="width:16px;height:16px">▾</span></div></div>
+            <div class="fieldset grow"><p class="cap">Qty</p><div class="field focus" style="min-height:34px"><span class="mono">5</span></div></div>
+          </div>
+          <div class="callout" style="margin:0;padding:5px 9px">1 CARTON = 12 PCS → <b class="mono">60 PCS</b> base · 0 decimals</div>
+          <div class="row" style="gap:8px">
+            <div class="fieldset grow"><p class="cap">Unit price ✎</p><div class="field" style="min-height:34px"><span class="mono tiny">₹1,740.00</span></div></div>
+            <div class="fieldset grow"><p class="cap">Line discount</p><div class="field" style="min-height:34px"><span class="chip on" style="font-size:10px">%</span><span class="mono tiny">10</span></div></div>
+          </div>
+          <div class="box soft" style="padding:7px 10px;background:var(--paper)"><div class="tot"><span class="muted">Taxable</span><span class="mono">₹7,830.00</span></div><div class="tot"><span class="muted">GST 5%</span><span class="mono">₹391.50</span></div><div class="tot big" style="font-size:16px"><span>Line total</span><span class="mono">₹8,221.50</span></div></div>
+          <div class="row"><span class="btn ghost sm grow" style="justify-content:center">Delete</span><span class="btn primary grow" style="justify-content:center">Done · next ↵</span></div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="frame" style="min-width:240px">
+      <p class="cap"><b>Notes</b></p>
+      <div class="annos" style="margin-top:0">
+        <div class="anno"><span class="pin">9</span><div><b>Totals collapse to one sticky bar</b> on phone — grand total always visible; tap ▴ to expand the full CGST/SGST/IGST + discount breakdown as a sheet.</div></div>
+        <div class="anno"><span class="pin">c</span><div><b>Unit selector + conversion hint</b> are inline in the line sheet (detailed in screen 4). Changing unit rescales price and re-derives the base quantity live.</div></div>
+        <div class="anno"><span class="pin">✎</span><div><b>Unit price is overridable.</b> Auto-filled from catalog × unit multiplier, but staff can type over it; GST recomputes on the entered value.</div></div>
+        <div class="callout">On phone the line editor is a <b>bottom sheet</b> (big targets, one line at a time). On desktop the same fields live <b>inline in the grid row</b> — no modal. Same model, two presentations.</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="rule">
+
+  <!-- ───────── 3. PRODUCT PICKER + INLINE CREATE ───────── -->
+  <h2 class="sec"><span class="no">3</span>Product picker + inline create-product</h2>
+  <div class="frames">
+    <div class="frame" style="flex:0 0 320px">
+      <p class="cap"><b>Compact</b> · product picker (full-screen search)</p>
+      <div class="phone"><div class="screen">
+        <div class="between"><span class="row" style="gap:6px"><span class="ic" style="border:none">←</span><b style="font-size:15px">Add product</b></span></div>
+        <div class="field focus"><span>🔍</span><span class="mono tiny">colg|</span><span class="refnum right">10</span></div>
+        <div class="box soft" style="padding:8px 10px"><div class="between"><span class="ln d w60"></span><span class="mono tiny">₹98.00</span></div><div class="row" style="gap:6px;margin-top:4px"><span class="chip" style="font-size:10px">HSN 3306</span><span class="chip" style="font-size:10px">18%</span><span class="chip" style="font-size:10px">PCS</span></div></div>
+        <div class="box soft" style="padding:8px 10px"><div class="between"><span class="ln d w50"></span><span class="mono tiny">₹54.00</span></div><div class="row" style="gap:6px;margin-top:4px"><span class="chip" style="font-size:10px">HSN 3306</span><span class="chip" style="font-size:10px">18%</span></div></div>
+        <div class="box" style="border-color:var(--violet);border-style:dashed;background:var(--violet-soft);padding:9px 11px"><div class="row"><span class="ic v" style="width:18px;height:18px">＋</span><span style="color:var(--violet);font-weight:700">Create “colg…”</span><span class="refnum right">11</span></div></div>
+        <div style="margin-top:auto"></div>
+      </div></div>
+    </div>
+
+    <div class="frame" style="flex:0 0 320px">
+      <p class="cap"><b>Compact</b> · inline create-product (nested sheet)</p>
+      <div class="phone"><div class="screen" style="justify-content:flex-end;background:rgba(0,0,0,.04)">
+        <div class="sheet">
+          <div class="grab"></div>
+          <b style="font-size:15px">New product</b>
+          <div class="fieldset"><p class="cap">Name</p><div class="field"><span class="mono tiny">Colgate MaxFresh 80g</span></div></div>
+          <div class="row" style="gap:8px">
+            <div class="fieldset grow"><p class="cap">Selling price ₹</p><div class="field"><span class="mono tiny">54.00</span></div></div>
+            <div class="fieldset grow"><p class="cap">Base unit</p><div class="field"><span class="mono tiny">PCS</span><span class="ic right" style="width:16px;height:16px">▾</span></div></div>
+          </div>
+          <div class="fieldset"><p class="cap">HSN / tax code <span class="refnum">d</span></p><div class="field"><span class="mono tiny">3306</span><span class="chip right" style="font-size:10px">→ 18% GST</span></div></div>
+          <div class="callout" style="margin:0;padding:6px 10px">Saves to catalog offline (PENDING_PUSH), then drops in as a line.</div>
+          <div class="row"><span class="btn ghost sm grow" style="justify-content:center">Cancel</span><span class="btn primary grow" style="justify-content:center">Create &amp; add</span></div>
+        </div>
+      </div></div>
+    </div>
+
+    <div class="frame" style="min-width:240px">
+      <p class="cap"><b>Expanded behaviour + notes</b></p>
+      <div class="box" style="margin-bottom:12px"><b>Desktop:</b> the picker is a <b>type-ahead popover under the Product cell</b> — no full-screen takeover. Same “Create ‘…’” row sits at the bottom of the results; choosing it opens a compact dialog with the same four fields.</div>
+      <div class="annos" style="margin-top:0">
+        <div class="anno"><span class="pin">10</span><div><b>Search field is sticky</b> at the top; results filter as you type (name, HSN, sku).</div></div>
+        <div class="anno"><span class="pin">11</span><div><b>“Create ‘…’” is always the last row</b> when there’s no exact match — the inline-create entry point, pre-filled with the typed text.</div></div>
+        <div class="anno"><span class="pin">d</span><div><b>HSN drives GST.</b> Picking the tax code resolves the rate; a blank code is allowed but the line is flagged 0%/exempt, never silently untaxed.</div></div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="rule">
+
+  <!-- ───────── 4. UNIT SELECTOR ───────── -->
+  <h2 class="sec"><span class="no">4</span>Unit selector with conversion hint</h2>
+  <div class="frames">
+    <div class="frame" style="flex:0 0 300px">
+      <p class="cap"><b>Compact / Expanded</b> · menu</p>
+      <div class="box" style="max-width:280px">
+        <p class="cap">Transact in</p>
+        <div class="stack" style="gap:6px">
+          <div class="field" style="justify-content:space-between"><span class="mono tiny">PCS <span class="muted">(base)</span></span><span class="mono tiny muted">×1</span></div>
+          <div class="field on" style="border-color:var(--violet);background:var(--violet-soft);justify-content:space-between"><span class="mono tiny" style="color:var(--violet)">BOX</span><span class="mono tiny" style="color:var(--violet)">×24</span></div>
+          <div class="field" style="justify-content:space-between"><span class="mono tiny">CARTON</span><span class="mono tiny muted">×48</span></div>
+        </div>
+        <div class="callout" style="margin:10px 0 0;padding:6px 10px"><b>1 BOX = 24 PCS</b> · price ₹90 → <b>₹2,160 / BOX</b> · qty allows <b>0 decimals</b> <span class="refnum">e</span></div>
+      </div>
+    </div>
+    <div class="frame" style="min-width:240px">
+      <p class="cap"><b>Notes</b></p>
+      <div class="annos" style="margin-top:0">
+        <div class="anno"><span class="pin">e</span><div><b>Conversion hint is live.</b> Shows the multiplier, the rescaled per-unit price, and the unit’s allowed decimal places — so staff trust the number before committing.</div></div>
+        <div class="callout">Choosing a derived unit stores <span class="kbd">unitId</span> + entered <span class="kbd">quantity</span> + derived <span class="kbd">baseQuantity</span> (for stock). Products with no conversions just show the base unit (×1) — no error, no empty menu.</div>
+        <div class="callout">Decimal places are enforced on the qty field: a <span class="kbd">decimalPlaces=0</span> unit (BAG, BOX) blocks fractions; a <span class="kbd">=3</span> unit (KG, LTR) allows up to 3.</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="rule">
+
+  <!-- ───────── 5. DETAIL / PRINTABLE INVOICE + CONVERT ───────── -->
+  <h2 class="sec"><span class="no">5</span>Document detail (printable) &amp; order→invoice confirm</h2>
+  <div class="frames">
+    <div class="frame">
+      <p class="cap"><b>Expanded</b> · invoice read view — looks like a GST tax invoice</p>
+      <div class="box" style="border-width:2px;background:#fff;max-width:520px">
+        <div class="between"><div><b style="font-size:18px">TAX INVOICE</b><div class="ln w40" style="margin-top:6px"></div><div class="tiny muted mono" style="margin-top:4px">Seller GSTIN 27ABCDE1234F1Z5 · Maharashtra</div></div><img src="ampairs-mark.png" style="width:38px;height:38px"></div>
+        <hr class="rule" style="margin:12px 0">
+        <div class="row between"><div><p class="cap">Bill to</p><div class="ln d w60"></div><div class="ln w40" style="margin-top:5px"></div><div class="tiny muted mono" style="margin-top:4px">GSTIN 27PQRS… · MH (27)</div></div><div style="text-align:right"><p class="cap">Invoice no.</p><b class="mono" style="font-size:15px">MH27/26-27/0042</b><div class="tiny muted mono" style="margin-top:4px">06 Jun 2026</div><span class="refnum">12</span></div></div>
+        <table class="tbl" style="margin-top:12px;font-size:12px;border-width:2px">
+          <thead><tr><th>Item / HSN</th><th>Qty</th><th>Rate</th><th>Taxable</th><th>CGST</th><th>SGST</th><th style="text-align:right">Amount</th></tr></thead>
+          <tbody>
+            <tr><td>Cement <span class="muted mono">2523</span></td><td class="mono">2 BAG</td><td class="mono">385</td><td class="mono">770.00</td><td class="mono">107.80</td><td class="mono">107.80</td><td class="mono" style="text-align:right">985.60</td></tr>
+            <tr><td>Sunflower Oil <span class="muted mono">1512</span></td><td class="mono">5 CTN</td><td class="mono">1,566</td><td class="mono">7,830</td><td class="mono">195.75</td><td class="mono">195.75</td><td class="mono" style="text-align:right">8,221.50</td></tr>
+          </tbody>
+        </table>
+        <div class="row between" style="margin-top:12px;align-items:flex-end">
+          <div class="box soft" style="padding:8px 10px"><p class="cap" style="margin:0 0 4px">Tax summary (by rate)</p><div class="tot tiny"><span class="muted">CGST 14% + SGST 14%</span><span class="mono">215.60</span></div><div class="tot tiny"><span class="muted">CGST 2.5% + SGST 2.5%</span><span class="mono">391.50</span></div><span class="refnum">13</span></div>
+          <div style="min-width:170px"><div class="tot"><span class="muted">Taxable</span><span class="mono">₹8,600.00</span></div><div class="tot"><span class="muted">Total GST</span><span class="mono">₹607.10</span></div><div class="tot big"><span>Grand total</span><span class="mono">₹9,207.10</span></div></div>
+        </div>
+        <div class="tiny muted" style="margin-top:8px">Rupees nine thousand two hundred seven and ten paise only.</div>
+        <div class="row" style="margin-top:12px"><span class="btn ghost sm">Share</span><span class="btn ghost sm">Edit</span><span class="btn primary sm right">Print</span></div>
+      </div>
+    </div>
+
+    <div class="frame" style="min-width:300px">
+      <p class="cap"><b>Order → invoice confirmation</b> · dialog (all sizes)</p>
+      <div class="box" style="max-width:360px;border-width:3px">
+        <b style="font-size:16px">Create invoice from this order?</b>
+        <p class="tiny muted" style="margin:6px 0">ORD-0118 → a new GST invoice.</p>
+        <div class="stack" style="gap:6px;margin:8px 0">
+          <div class="row tiny"><span class="ic" style="width:18px;height:18px;border:none">✓</span>Copies 4 lines · units · prices</div>
+          <div class="row tiny"><span class="ic" style="width:18px;height:18px;border:none">✓</span>Copies tax breakdown &amp; discounts</div>
+          <div class="row tiny"><span class="ic" style="width:18px;height:18px;border:none">✓</span>Cross-links order ⇄ invoice</div>
+          <div class="row tiny"><span class="ic" style="width:18px;height:18px;border:none">✓</span>Assigns invoice no. on save</div>
+        </div>
+        <div class="callout" style="margin:0 0 10px;padding:6px 10px">Already converted once → this opens the <b>existing</b> invoice. No duplicates. <span class="refnum">14</span></div>
+        <div class="row"><span class="btn ghost sm grow" style="justify-content:center">Cancel</span><span class="btn primary grow" style="justify-content:center">Create invoice</span></div>
+      </div>
+      <div class="annos">
+        <div class="anno"><span class="pin">12</span><div><b>Invoice number is prominent &amp; printable</b> — client-assigned at save from the device series, valid offline.</div></div>
+        <div class="anno"><span class="pin">13</span><div><b>Tax grouped by rate</b> (and CGST/SGST vs IGST) for the legal summary — reconciles to the grand total.</div></div>
+        <div class="anno"><span class="pin">14</span><div><b>Conversion is idempotent</b> — the guard prevents a second invoice from one order.</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════════════════════ STATES ════════════════════════ -->
+<section class="panel" id="states">
+  <h1 class="disp">Key states</h1>
+  <p class="lede">The states each screen has to handle gracefully — empty through to a fully-synced numbered invoice. These drive the prototype’s tweaks.</p>
+
+  <h3 class="sub">Tax &amp; money states (same line, different rules)</h3>
+  <div class="states">
+    <div class="statecard"><div class="hd"><span class="num">S1</span>Intra-state · CGST + SGST</div><div class="box soft" style="padding:8px 10px"><div class="tot tiny"><span class="muted">Taxable</span><span class="mono">₹770.00</span></div><div class="tot tiny"><span class="muted">CGST 14%</span><span class="mono">₹107.80</span></div><div class="tot tiny"><span class="muted">SGST 14%</span><span class="mono">₹107.80</span></div><div class="tot tiny big" style="font-size:13px"><span>Line</span><span class="mono">₹985.60</span></div></div><p class="tiny muted">Buyer in Maharashtra (27) = seller state → tax splits in two.</p></div>
+
+    <div class="statecard"><div class="hd"><span class="num">S2</span>Inter-state · IGST</div><div class="box soft" style="padding:8px 10px"><div class="tot tiny"><span class="muted">Taxable</span><span class="mono">₹770.00</span></div><div class="tot tiny"><span class="muted">IGST 28%</span><span class="mono">₹215.60</span></div><div class="tot tiny big" style="font-size:13px"><span>Line</span><span class="mono">₹985.60</span></div></div><p class="tiny muted">Buyer in Karnataka (29) → single IGST line. Same total, different breakdown.</p></div>
+
+    <div class="statecard"><div class="hd"><span class="num">S3</span>Tax-exclusive</div><div class="box soft" style="padding:8px 10px"><div class="row" style="margin-bottom:6px"><span class="seg" style="transform:scale(.8);transform-origin:left"><span class="on">Excl.</span><span>Incl.</span></span></div><div class="tot tiny"><span class="muted">Price</span><span class="mono">₹385.00</span></div><div class="tot tiny"><span class="muted">+ GST 28%</span><span class="mono">₹107.80</span></div></div><p class="tiny muted">Price is the taxable base; GST added on top.</p></div>
+
+    <div class="statecard"><div class="hd"><span class="num">S4</span>Tax-inclusive</div><div class="box soft" style="padding:8px 10px"><div class="row" style="margin-bottom:6px"><span class="seg" style="transform:scale(.8);transform-origin:left"><span>Excl.</span><span class="on">Incl.</span></span></div><div class="tot tiny"><span class="muted">Price (incl.)</span><span class="mono">₹385.00</span></div><div class="tot tiny"><span class="muted">Taxable ÷1.28</span><span class="mono">₹300.78</span></div><div class="tot tiny"><span class="muted">GST in price</span><span class="mono">₹84.22</span></div></div><p class="tiny muted">GST back-calculated out of the price; components reconcile to ₹385.</p></div>
+
+    <div class="statecard"><div class="hd"><span class="num">S5</span>Line discount</div><div class="box soft" style="padding:8px 10px"><div class="tot tiny"><span class="muted">2 × ₹100</span><span class="mono">₹200.00</span></div><div class="tot tiny"><span class="muted">– 10%</span><span class="mono">– ₹20.00</span></div><div class="tot tiny"><span class="muted">Taxable</span><span class="mono">₹180.00</span></div><div class="tot tiny"><span class="muted">GST 18%</span><span class="mono">₹32.40</span></div></div><p class="tiny muted">Always pre-tax on its own line.</p></div>
+
+    <div class="statecard"><div class="hd"><span class="num">S6</span>Overall discount · apportioned</div><div class="box soft" style="padding:8px 10px"><div class="tot tiny"><span class="muted">2 lines × ₹500</span><span class="mono">₹1,000</span></div><div class="tot tiny"><span class="muted">– flat ₹200</span><span class="mono">→ ₹400/line</span></div><div class="tot tiny"><span class="muted">GST/line 18%</span><span class="mono">₹72.00</span></div><div class="tot tiny big" style="font-size:13px"><span>Grand</span><span class="mono">₹944.00</span></div></div><p class="tiny muted">Split proportional to taxable, GST recomputed per line.</p></div>
+  </div>
+
+  <h3 class="sub">Sync &amp; lifecycle states (quiet, never noisy)</h3>
+  <div class="states">
+    <div class="statecard"><div class="hd"><span class="num">S7</span>Empty list</div><div class="box dash" style="display:grid;place-items:center;color:var(--ink-3);min-height:90px;text-align:center"><div><div style="font-size:28px">🧾</div><div class="tiny">No documents yet.<br>Tap + New to start.</div></div></div><p class="tiny muted">Icon + copy only (no illustration), per system.</p></div>
+
+    <div class="statecard"><div class="hd"><span class="num">S8</span>Calculating</div><div class="box soft" style="padding:8px 10px"><div class="tot tiny"><span class="muted">Subtotal</span><span class="ln w30" style="height:11px"></span></div><div class="tot tiny"><span class="muted">GST</span><span class="ln w20" style="height:11px"></span></div><div class="tot tiny big" style="font-size:13px"><span>Total</span><span class="ln w30" style="height:13px;background:var(--violet);opacity:.4"></span></div></div><p class="tiny muted">Brief shimmer on totals as a line recomputes — sub-frame, not a spinner.</p></div>
+
+    <div class="statecard"><div class="hd"><span class="num">S9</span>Validation · missing tax code</div><div class="box" style="border-color:var(--red);background:var(--red-soft);padding:8px 10px"><div class="row tiny" style="color:var(--red)"><span class="ic" style="border-color:var(--red);color:var(--red);width:18px;height:18px">!</span>No HSN — line treated as 0% / exempt</div><div class="ln w70" style="margin-top:6px"></div></div><p class="tiny muted">Flagged visibly; never silently drops tax.</p></div>
+
+    <div class="statecard"><div class="hd"><span class="num">S10</span>Saved offline</div><div class="box soft" style="padding:8px 10px"><span class="chip amber"><span class="dot"></span>Saved offline ⟲</span><div class="ln w60" style="margin-top:8px"></div></div><p class="tiny muted">Persisted locally, PENDING_PUSH, appears in list immediately.</p></div>
+
+    <div class="statecard"><div class="hd"><span class="num">S11</span>Syncing</div><div class="box soft" style="padding:8px 10px"><span class="chip blue"><span class="dot"></span>Syncing…</span><div class="ln w50" style="margin-top:8px"></div></div><p class="tiny muted">Pushing to server; non-blocking.</p></div>
+
+    <div class="statecard"><div class="hd"><span class="num">S12</span>Sync failed</div><div class="box" style="border-color:var(--red);padding:8px 10px"><div class="row between"><span class="chip red"><span class="dot"></span>Failed</span><span class="btn ghost sm">Retry</span></div><div class="ln w50" style="margin-top:8px"></div></div><p class="tiny muted">Quiet inline retry; no destructive blocking modal.</p></div>
+
+    <div class="statecard"><div class="hd"><span class="num">S13</span>Fully-synced numbered invoice</div><div class="box" style="border-color:var(--green);padding:8px 10px"><div class="between"><b class="mono tiny">MH27/26-27/0042</b><span class="chip green"><span class="dot"></span>synced</span></div><div class="ln w60" style="margin-top:6px"></div></div><p class="tiny muted">Legal number visible, reconciled with server, printable.</p></div>
+
+    <div class="statecard"><div class="hd"><span class="num">S14</span>Discount floors at zero</div><div class="box" style="border-color:var(--amber);background:var(--amber-soft);padding:8px 10px"><div class="row tiny" style="color:#5b3c06"><span class="ic" style="border-color:var(--amber);color:var(--amber);width:18px;height:18px">!</span>Discount &gt; line value → taxable floored ₹0.00</div></div><p class="tiny muted">No negative tax; warning shown.</p></div>
+  </div>
+
+  <hr class="rule">
+  <h3 class="sub">→ Next: the interactive prototype</h3>
+  <div class="callout">Once we pick a direction here, the hi-fi M3 prototype makes the editor live: add a line, pick a unit, override price, add line + overall discount, flip <b>tax-exclusive ↔ inclusive</b>, switch the customer <b>intra ↔ inter-state</b>, toggle the <b>discount mode</b>, and watch GST + grand total reconcile — with a phone / tablet / desktop layout switch and an example numbered invoice. Those become the prototype’s tweaks.</div>
+</section>
+
+
+</main>
+
+<script>
+  const tabs = document.getElementById('tabs');
+  const panels = [...document.querySelectorAll('.panel')];
+  tabs.addEventListener('click', e => {
+    const b = e.target.closest('.tab'); if(!b) return;
+    document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t===b));
+    panels.forEach(p=>p.classList.toggle('active', p.id===b.dataset.tab));
+    window.scrollTo({top:0});
+  });
+</script>
+</body>
+</html>
