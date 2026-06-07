@@ -79,7 +79,7 @@ fun MasterTaxCode.asDto(): MasterTaxCodeDto {
         defaultTaxRate = this.defaultTaxRate,
         defaultTaxSlabId = this.defaultTaxSlabId,
         isActive = this.isActive,
-        metadata = this.metadata,
+        metadata = (this.metadata as Map<String, String>?) ?: emptyMap(),
         createdAt = this.createdAt ?: Instant.now(),
         updatedAt = this.updatedAt ?: Instant.now()
     )
