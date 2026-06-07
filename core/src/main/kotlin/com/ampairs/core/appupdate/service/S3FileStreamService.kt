@@ -4,6 +4,7 @@ import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import software.amazon.awssdk.core.ResponseBytes
+import software.amazon.awssdk.core.exception.SdkClientException
 import software.amazon.awssdk.services.s3.S3Client
 import software.amazon.awssdk.services.s3.model.GetObjectRequest
 import software.amazon.awssdk.services.s3.model.GetObjectResponse
@@ -69,6 +70,17 @@ class S3FileStreamService(
         } catch (e: NoSuchKeyException) {
             logger.warn("File does not exist in S3: bucket=$bucket, key=$s3Key")
             false
+        } catch (e: SdkClientException) {
+            // S3-compatible providers (e.g. ExCloud) may return ISO-8601 dates in Last-Modified
+            // instead of RFC-822, causing the AWS SDK to fail unmarshalling a successful 200 response.
+            // If the error references a 200 response, the file exists — only the header format differs.
+            if (e.message?.contains("Response Code: 200") == true) {
+                logger.warn("S3 response header parse error on HTTP 200 — file exists: $s3Key")
+                true
+            } else {
+                logger.error("Error checking file existence in S3: bucket=$bucket, key=$s3Key", e)
+                false
+            }
         } catch (e: Exception) {
             logger.error("Error checking file existence in S3: bucket=$bucket, key=$s3Key", e)
             false
