@@ -51,6 +51,16 @@ class InvoiceItem : OwnableBaseDomain() {
     @Column(name = "total_tax", nullable = false)
     var totalTax: Double = 0.0
 
+    // spec 010 FR-014: unit of measure + base-unit quantity, and selected variant
+    @Column(name = "unit_id", nullable = false, length = 255)
+    var unitId: String = ""
+
+    @Column(name = "base_quantity", nullable = false)
+    var baseQuantity: Double = 0.0
+
+    @Column(name = "variant_sku", nullable = true, length = 255)
+    var variantSku: String? = null
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "tax_info", length = 255)
     var taxInfos: List<TaxInfo> = listOf()

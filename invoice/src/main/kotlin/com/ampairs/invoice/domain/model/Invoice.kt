@@ -22,13 +22,21 @@ import java.util.*
 @Table(
     indexes = [
         Index(name = "idx_invoice_uid", columnList = "uid", unique = true),
-        Index(name = "invoice_ref_idx", columnList = "ref_id", unique = true)
+        Index(name = "invoice_ref_idx", columnList = "ref_id", unique = true),
+        Index(name = "idx_invoice_series_seq", columnList = "owner_id, series, sequence_number", unique = true)
     ]
 )
 class Invoice : OwnableBaseDomain() {
 
     @Column(name = "invoice_number", nullable = false, length = 255)
     var invoiceNumber: String = ""
+
+    // Client-assigned sequential numbering with per-series prefix (spec 010 C5/FR-B09)
+    @Column(name = "series", nullable = false, length = 50)
+    var series: String = "INV"
+
+    @Column(name = "sequence_number", nullable = false)
+    var sequenceNumber: Long = 0
 
     @Column(name = "order_ref_id", nullable = true, length = 255)
     var orderRefId: String? = null
@@ -65,6 +73,12 @@ class Invoice : OwnableBaseDomain() {
 
     @Column(name = "total_tax", nullable = false)
     var totalTax: Double = 0.0
+
+    @Column(name = "price_mode", nullable = false, length = 20)
+    var priceMode: String = "TAX_EXCLUSIVE"
+
+    @Column(name = "overall_discount_mode", nullable = false, length = 30)
+    var overallDiscountMode: String = "POST_TAX_REDUCTION"
 
     @Column(name = "status", nullable = false)
     @Enumerated(EnumType.STRING)

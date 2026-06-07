@@ -16,7 +16,7 @@ GST-compliant invoices. Created directly or converted from orders.
 `/invoice/v1/**`
 
 ## Migrations
-`V1.0.11`
+`V1.0.11`, `V1.0.78` (unit/variant, price_mode/overall_discount_mode, client series + sequence_number)
 
 ## Full docs
 `docs/modules/invoice.md`
