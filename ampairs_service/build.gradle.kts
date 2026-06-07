@@ -159,21 +159,29 @@ fun runFlyway(command: String) {
         cfg = cfg.javaClass.getMethod("baselineVersion", String::class.java)
             .invoke(cfg, "1")!!
         val flyway: Any = cfg.javaClass.getMethod("load").invoke(cfg)!!
-        when (command) {
-            "migrate"  -> flyway.javaClass.getMethod("migrate").invoke(flyway)
-            "validate" -> flyway.javaClass.getMethod("validate").invoke(flyway)
-            "repair"   -> flyway.javaClass.getMethod("repair").invoke(flyway)
-            "info"     -> {
-                val info: Any = flyway.javaClass.getMethod("info").invoke(flyway)!!
-                val all = info.javaClass.getMethod("all").invoke(info) as Array<*>
-                all.forEach { m ->
-                    if (m != null) {
-                        val state = m.javaClass.getMethod("getState").invoke(m)
-                        val desc  = m.javaClass.getMethod("getDescription").invoke(m)
-                        println("  [$state] $desc")
+        try {
+            when (command) {
+                "migrate"  -> flyway.javaClass.getMethod("migrate").invoke(flyway)
+                "validate" -> flyway.javaClass.getMethod("validate").invoke(flyway)
+                "repair"   -> flyway.javaClass.getMethod("repair").invoke(flyway)
+                "info"     -> {
+                    val info: Any = flyway.javaClass.getMethod("info").invoke(flyway)!!
+                    val all = info.javaClass.getMethod("all").invoke(info) as Array<*>
+                    all.forEach { m ->
+                        if (m != null) {
+                            val version = runCatching { m.javaClass.getMethod("getVersion").invoke(m) }.getOrNull()
+                            val state   = m.javaClass.getMethod("getState").invoke(m)
+                            val desc    = m.javaClass.getMethod("getDescription").invoke(m)
+                            println("  [$state] ${version ?: "?"} $desc")
+                        }
                     }
                 }
             }
+        } catch (e: java.lang.reflect.InvocationTargetException) {
+            val cause = e.cause ?: e
+            System.err.println("Flyway $command failed: ${cause.message}")
+            cause.printStackTrace(System.err)
+            throw cause
         }
     } finally {
         Thread.currentThread().contextClassLoader = saved
