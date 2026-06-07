@@ -11,8 +11,8 @@ import org.hibernate.type.SqlTypes
     name = "tax_rule",
     indexes = [
         Index(name = "idx_tax_rule", columnList = "owner_id"),
-        Index(name = "idx_tax_rule_tax_code", columnList = "tax_code_id"),
-        Index(name = "idx_tax_rule_tax_code", columnList = "tax_code"),
+        Index(name = "idx_tax_rule_tax_code_id", columnList = "tax_code_id"),
+        Index(name = "idx_tax_rule_tax_code_val", columnList = "tax_code"),
         Index(name = "idx_tax_rule_country", columnList = "country_code"),
         Index(name = "idx_tax_rule_jurisdiction", columnList = "jurisdiction"),
         Index(name = "idx_tax_rule_updated", columnList = "updated_at"),
