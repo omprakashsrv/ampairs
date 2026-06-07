@@ -129,9 +129,12 @@ class InvoiceService(
     @Transactional
     fun bulkUpsertInvoices(requests: List<InvoiceUpdateRequest>): List<InvoiceResponse> {
         val results = mutableListOf<InvoiceResponse>()
+        val seenInBatch = mutableSetOf<String>()
         for (request in requests) {
             val invoice = request.toInvoice()
             if (invoice.sequenceNumber > 0) {
+                val key = "${invoice.series}|${invoice.sequenceNumber}"
+                if (!seenInBatch.add(key)) continue // duplicate within this batch — skip
                 val clash = invoiceRepository.findBySeriesAndSequenceNumber(invoice.series, invoice.sequenceNumber)
                 if (clash != null && clash.uid != invoice.uid) continue // conflict — skip, do not renumber
             }
