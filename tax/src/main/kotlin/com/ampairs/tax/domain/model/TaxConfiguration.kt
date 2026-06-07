@@ -48,7 +48,7 @@ class TaxConfiguration : OwnableBaseDomain() {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata", columnDefinition = "jsonb")
-    var metadata: Map<String, String> = emptyMap()
+    var metadata: Map<String, String>? = null
 
     override fun obtainSeqIdPrefix(): String {
         return Constants.TAX_CONFIG_PREFIX

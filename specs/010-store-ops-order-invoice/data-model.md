@@ -75,8 +75,8 @@ DocumentCalcResult{ lines: List<LineCalcResult>, basePrice, taxInfos, totalTax, 
 
 | Module | Version | Change | Back-fill |
 |---|---|---|---|
-| order | V1.0.23 | `order_item`: +`unit_id`,+`base_quantity`,+`variant_sku`; `customer_order`: +`price_mode`,+`overall_discount_mode` | `base_quantity=quantity`; `unit_id`=product base unit; `price_mode=TAX_EXCLUSIVE`; `overall_discount_mode=POST_TAX_REDUCTION` |
-| invoice | V1.0.12 | same item/doc cols; `invoice`: +`series`,+`sequence_number` + UNIQUE(owner,series,seq) | items as above; existing invoices → `series='DEFAULT'`, `sequence_number`=existing `invoiceNumber` numeric or row order |
+| order | V1.0.77 | `order_item`: +`unit_id`,+`base_quantity`,+`variant_sku`; `customer_order`: +`price_mode`,+`overall_discount_mode` | `base_quantity=quantity`; `unit_id`=product base unit; `price_mode=TAX_EXCLUSIVE`; `overall_discount_mode=POST_TAX_REDUCTION` |
+| invoice | V1.0.78 | same item/doc cols; `invoice`: +`series`,+`sequence_number` + UNIQUE(owner,series,seq) | items as above; existing invoices → `series='DEFAULT'`, `sequence_number`=existing `invoiceNumber` numeric or row order |
 | business | (next) | default price/discount mode + invoice series prefix settings | defaults as above; one series prefix per existing device/branch |
 
 Both `mysql/` and `postgresql/`. Confirm next numbers with `./gradlew :ampairs_service:flywayInfo`.

@@ -39,7 +39,7 @@ fun TaxConfiguration.asDto(): TaxConfigurationDto {
         industry = this.industry,
         autoSubscribeNewCodes = this.autoSubscribeNewCodes,
         syncedAt = this.syncedAt,
-        metadata = this.metadata
+        metadata = this.metadata ?: emptyMap()
     )
 }
 
@@ -79,7 +79,7 @@ fun MasterTaxCode.asDto(): MasterTaxCodeDto {
         defaultTaxRate = this.defaultTaxRate,
         defaultTaxSlabId = this.defaultTaxSlabId,
         isActive = this.isActive,
-        metadata = this.metadata,
+        metadata = this.metadata ?: emptyMap(),
         createdAt = this.createdAt ?: Instant.now(),
         updatedAt = this.updatedAt ?: Instant.now()
     )

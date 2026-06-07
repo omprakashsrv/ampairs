@@ -58,7 +58,7 @@ class ProductController(
     ): ApiResponse<PageResponse<ProductResponse>> {
         val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "updatedAt"))
         val productsPage = productService.getProductsAfterSync(lastSync, pageable)
-        return ApiResponse.success(PageResponse.from(productsPage) { it.asResponse() })
+        return ApiResponse.success(PageResponse.from(productsPage))
     }
 
     @GetMapping("/groups")
@@ -198,7 +198,7 @@ class ProductController(
         val productPage = productService.searchProducts(search, category, brand, minPrice, maxPrice, pageable)
         
         val response = mapOf(
-            "products" to productPage.content.map { it.asResponse() },
+            "products" to productPage.content,
             "pagination" to mapOf(
                 "page" to page,
                 "size" to size,

@@ -26,6 +26,10 @@ data class InvoiceUpdateRequest(
     var invoiceItems: List<InvoiceItemRequest> = arrayListOf(),
     val taxInfos: List<TaxInfo> = arrayListOf(),
     val discount: List<Discount>? = null,
+    var priceMode: String = "TAX_EXCLUSIVE",
+    var overallDiscountMode: String = "POST_TAX_REDUCTION",
+    var series: String = "INV",
+    var sequenceNumber: Long = 0,
 )
 
 fun InvoiceUpdateRequest.toInvoice(): Invoice {
@@ -49,5 +53,10 @@ fun InvoiceUpdateRequest.toInvoice(): Invoice {
     invoice.taxInfos = this.taxInfos
     invoice.totalTax = this.totalTax
     invoice.discount = this.discount
+    invoice.priceMode = this.priceMode
+    invoice.overallDiscountMode = this.overallDiscountMode
+    invoice.series = this.series.ifBlank { "INV" }
+    invoice.sequenceNumber = this.sequenceNumber
+    if (this.invoiceDate != null) invoice.invoiceDate = this.invoiceDate
     return invoice
 }

@@ -11,8 +11,13 @@ import java.time.Instant
 import java.util.*
 
 interface ProductRepository : CrudRepository<Product, Long>, PagingAndSortingRepository<Product, Long> {
+    @EntityGraph("Product.withAll")
     fun findByUid(uid: String?): Product?
+
+    @EntityGraph("Product.withAll")
     fun findByRefId(refId: String?): Product?
+
+    @EntityGraph("Product.withAll")
     fun findBySku(sku: String): Optional<Product>
     fun findByStatus(status: String): List<Product>
     fun findByNameContainingIgnoreCase(name: String, pageable: Pageable): Page<Product>

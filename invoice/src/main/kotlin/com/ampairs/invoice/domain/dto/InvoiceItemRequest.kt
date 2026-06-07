@@ -17,6 +17,9 @@ data class InvoiceItemRequest(
     var invoiceId: String = "",
     var productId: String = "",
     var taxCode: String = "",
+    var unitId: String = "",
+    var baseQuantity: Double = 0.0,
+    var variantSku: String? = null,
     val taxInfos: List<TaxInfo> = arrayListOf(),
     val active: Boolean = true,
     val softDeleted: Boolean = false,
@@ -40,6 +43,9 @@ fun List<InvoiceItemRequest>.toInvoiceItems(): List<InvoiceItem> {
         invoiceItem.invoiceId = it.invoiceId
         invoiceItem.productId = it.productId
         invoiceItem.taxCode = it.taxCode
+        invoiceItem.unitId = it.unitId
+        invoiceItem.baseQuantity = it.baseQuantity
+        invoiceItem.variantSku = it.variantSku
         invoiceItem.taxInfos = it.taxInfos
         invoiceItem.discount = it.discount
         invoiceItem

@@ -67,8 +67,8 @@ class ProductService(
      * Blank/null lastSync returns all rows (paginated) including soft-deleted.
      * Note: @TenantId automatically filters by current workspace.
      */
-    fun getProductsAfterSync(lastSync: String?, pageable: Pageable): Page<Product> {
-        return if (lastSync.isNullOrBlank()) {
+    fun getProductsAfterSync(lastSync: String?, pageable: Pageable): Page<ProductResponse> {
+        val page = if (lastSync.isNullOrBlank()) {
             productPagingRepository.findAllBy(pageable)
         } else {
             try {
@@ -79,6 +79,7 @@ class ProductService(
                 productPagingRepository.findAllBy(pageable)
             }
         }
+        return page.map { it.asResponse() }
     }
 
     @Transactional
@@ -385,18 +386,18 @@ class ProductService(
     fun searchProducts(
         searchTerm: String?, category: String?, brand: String?,
         minPrice: Double?, maxPrice: Double?, pageable: Pageable
-    ): Page<Product> {
-        return when {
+    ): Page<ProductResponse> {
+        val page = when {
             !searchTerm.isNullOrBlank() -> productRepository.searchProducts(searchTerm, pageable)
             !category.isNullOrBlank() -> productRepository.findActiveProductsByCategory(category, pageable)
             !brand.isNullOrBlank() -> productRepository.findActiveProductsByBrand(brand, pageable)
             minPrice != null && maxPrice != null ->
                 productRepository.findActiveProductsByPriceRange(minPrice, maxPrice, pageable)
-
             else -> productRepository.findByStatus("ACTIVE").let {
                 org.springframework.data.domain.PageImpl(it, pageable, it.size.toLong())
             }
         }
+        return page.map { it.asResponse() }
     }
 
     fun getProductByUid(uid: String): Product? = productRepository.findByUid(uid)

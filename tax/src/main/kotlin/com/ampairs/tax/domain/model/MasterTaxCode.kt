@@ -65,7 +65,7 @@ class MasterTaxCode : BaseDomain() {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "metadata", columnDefinition = "jsonb")
-    var metadata: Map<String, String> = emptyMap()
+    var metadata: Map<String, String>? = null
 
     override fun obtainSeqIdPrefix(): String {
         return Constants.MASTER_TAX_CODE_PREFIX

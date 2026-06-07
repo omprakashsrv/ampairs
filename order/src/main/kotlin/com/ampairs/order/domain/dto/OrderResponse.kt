@@ -30,6 +30,8 @@ data class OrderResponse(
     val active: Boolean = true,
     val softDeleted: Boolean = false,
     val discount: List<Discount>? = null,
+    var priceMode: String = "TAX_EXCLUSIVE",
+    var overallDiscountMode: String = "POST_TAX_REDUCTION",
 )
 
 fun List<Order>.toResponse(): List<OrderResponse> {
@@ -60,7 +62,9 @@ fun Order.toResponse(orderItems: List<OrderItem>): OrderResponse {
         shippingAddress = this.shippingAddress,
         taxInfos = this.taxInfos,
         orderItems = orderItems.toResponse(),
-        discount = this.discount
+        discount = this.discount,
+        priceMode = this.priceMode,
+        overallDiscountMode = this.overallDiscountMode
     )
 }
 

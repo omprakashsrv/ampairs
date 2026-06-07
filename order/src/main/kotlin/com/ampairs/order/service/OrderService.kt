@@ -8,8 +8,11 @@ import com.ampairs.event.domain.events.OrderStatusChangedEvent
 import com.ampairs.event.domain.events.OrderUpdatedEvent
 import com.ampairs.invoice.service.InvoiceService
 import com.ampairs.order.domain.dto.OrderResponse
+import com.ampairs.order.domain.dto.OrderUpdateRequest
 import com.ampairs.order.domain.dto.toInvoice
 import com.ampairs.order.domain.dto.toInvoiceItems
+import com.ampairs.order.domain.dto.toOrder
+import com.ampairs.order.domain.dto.toOrderItems
 import com.ampairs.order.domain.dto.toResponse
 import com.ampairs.order.domain.model.Order
 import com.ampairs.order.domain.model.OrderItem
@@ -17,11 +20,15 @@ import com.ampairs.order.repository.OrderItemRepository
 import com.ampairs.order.repository.OrderPagingRepository
 import com.ampairs.order.repository.OrderRepository
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 import java.time.Instant
 
 
@@ -144,6 +151,54 @@ class OrderService(
         }
 
         return savedOrder.toResponse(orderItems)
+    }
+
+    /**
+     * Offline-sync bulk upsert (spec 010). Client UID is authoritative — preserved on insert and
+     * matched on update. No tax/total recomputation: values are stored exactly as supplied.
+     * Assigns a server orderNumber when blank. Does not publish per-row events (sync is bulk).
+     */
+    @Transactional
+    fun bulkUpsertOrders(requests: List<OrderUpdateRequest>): List<OrderResponse> =
+        requests.map { upsertOrder(it.toOrder(), it.orderItems.toOrderItems()) }
+
+    private fun upsertOrder(order: Order, orderItems: List<OrderItem>): OrderResponse {
+        val existing = if (order.uid.isNotEmpty()) orderRepository.findByUid(order.uid).getOrNull() else null
+        if (existing != null) {
+            order.id = existing.id
+            order.uid = existing.uid
+            order.createdAt = existing.createdAt
+            if (order.orderNumber.isEmpty()) order.orderNumber = existing.orderNumber
+        }
+        if (order.orderNumber.isEmpty()) {
+            val maxOrderNumber = orderRepository.findMaxOrderNumber().getOrDefault("0").toIntOrNull() ?: 0
+            order.orderNumber = (maxOrderNumber + 1).toString()
+        }
+        val savedOrder = orderRepository.save(order)
+        val savedItems = orderItems.map { item ->
+            val existingItem = if (item.uid.isNotEmpty()) orderItemRepository.findByUid(item.uid).getOrNull() else null
+            if (existingItem != null) {
+                item.id = existingItem.id
+                item.createdAt = existingItem.createdAt
+            }
+            item.orderId = savedOrder.uid
+            orderItemRepository.save(item)
+        }
+        return savedOrder.toResponse(savedItems)
+    }
+
+    /**
+     * Incremental sync feed: orders updated at/after [lastSync] (ISO-8601), INCLUDING cancelled rows,
+     * ordered by updatedAt ASC, paginated. Falls back to the full feed when the cursor is absent/invalid.
+     */
+    fun getOrdersAfterSync(lastSync: String?, pageable: Pageable): Page<Order> {
+        if (lastSync.isNullOrBlank()) return orderPagingRepository.findAllBy(pageable)
+        return try {
+            val decoded = URLDecoder.decode(lastSync, StandardCharsets.UTF_8)
+            orderPagingRepository.findByUpdatedAtGreaterThanEqual(Instant.parse(decoded), pageable)
+        } catch (e: Exception) {
+            orderPagingRepository.findAllBy(pageable)
+        }
     }
 
     fun getOrders(lastUpdated: Instant?): List<Order> {

@@ -28,7 +28,7 @@ The client is the **tax/calculation authority** (the backend stores `taxInfos`/t
 | Money | **Stay `Double`** for this feature (today's model); `Money(minorUnits)` rides with pricing (009) |
 | Tax authority | **Client computes**, server stores as-supplied; reuse `TaxCalculationEngine` + `TaxRule.componentComposition` |
 | Reused infra | `TaxCalculationEngine` (feature/tax), `UnitConversionEngine` (feature/unit), product picker, list/paging |
-| New backend migrations | order **V1.0.23**, invoice **V1.0.12** (+ follow-ons as needed) |
+| New backend migrations | order **V1.0.77**, invoice **V1.0.78** (+ follow-ons as needed) |
 | Modules touched | app: `feature/order`, `feature/invoice`, `feature/tax`, `feature/product`, `feature/unit`, `feature/business`; backend: `order`, `invoice`, `business` (settings), reuse `tax`/`unit` |
 
 ## 3. Constitution / Project-Rules Check
@@ -139,11 +139,11 @@ PHASE B1 — Backend
   order/    + bulk-upsert POST /order/v1/orders/sync (List<OrderUpdateRequest>)
             + paginated  GET  /order/v1/orders/sync?last_sync=&page=&size= (PageResponse, hasNext)
             + columns: order_item.unit_id, base_quantity, variant_sku; customer_order.price_mode,
-              overall_discount_mode ; migration V1.0.23 (+ back-fill)
+              overall_discount_mode ; migration V1.0.77 (+ back-fill)
   invoice/  + same sync endpoints
             + columns: invoice_item.{unit_id,base_quantity,variant_sku}; invoice.{price_mode,
               overall_discount_mode, series, sequence_number} + UNIQUE(owner_id, series, sequence_number)
-            migration V1.0.12 (+ back-fill default series)
+            migration V1.0.78 (+ back-fill default series)
   business/ + settings: default price_mode, overall_discount_mode, invoice series prefix (per device/branch)
             + expose via existing business settings sync
   DTOs: add fields to OrderUpdateRequest/OrderItem(Request|Response) + Invoice equivalents (per contracts/)

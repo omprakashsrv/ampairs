@@ -98,6 +98,12 @@ class Order : OwnableBaseDomain() {
     @Column(name = "total_tax", nullable = false)
     var totalTax: Double = 0.0
 
+    @Column(name = "price_mode", nullable = false, length = 20)
+    var priceMode: String = "TAX_EXCLUSIVE"
+
+    @Column(name = "overall_discount_mode", nullable = false, length = 30)
+    var overallDiscountMode: String = "POST_TAX_REDUCTION"
+
     @Column(name = "notes", columnDefinition = "TEXT")
     var notes: String? = null
 
