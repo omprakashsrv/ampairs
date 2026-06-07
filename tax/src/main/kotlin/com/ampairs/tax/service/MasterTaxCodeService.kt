@@ -1,0 +1,57 @@
+package com.ampairs.tax.service
+
+import com.ampairs.core.domain.dto.PageResponse
+import com.ampairs.core.exception.NotFoundException
+import com.ampairs.tax.domain.dto.MasterTaxCodeDto
+import com.ampairs.tax.domain.dto.asDto
+import com.ampairs.tax.repository.MasterTaxCodeRepository
+import org.springframework.data.domain.PageRequest
+import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+
+@Service
+@Transactional(readOnly = true)
+class MasterTaxCodeService(
+    private val masterTaxCodeRepository: MasterTaxCodeRepository
+) {
+
+    fun search(
+        query: String,
+        countryCode: String,
+        codeType: String?,
+        category: String?,
+        page: Int,
+        size: Int
+    ): PageResponse<MasterTaxCodeDto> {
+        val pageable = PageRequest.of(page, size)
+        val result = masterTaxCodeRepository.searchCodes(
+            query = query,
+            countryCode = countryCode,
+            codeType = codeType,
+            category = category,
+            pageable = pageable
+        )
+        return PageResponse.from(result) { it.asDto() }
+    }
+
+    fun getPopular(
+        countryCode: String,
+        industry: String?,
+        page: Int,
+        size: Int
+    ): PageResponse<MasterTaxCodeDto> {
+        val pageable = PageRequest.of(page, size)
+        val result = masterTaxCodeRepository.findPopularCodes(
+            countryCode = countryCode,
+            industry = industry,
+            pageable = pageable
+        )
+        return PageResponse.from(result) { it.asDto() }
+    }
+
+    fun getById(id: String): MasterTaxCodeDto {
+        val code = masterTaxCodeRepository.findByUid(id)
+            ?: throw NotFoundException("Master tax code not found: $id")
+        return code.asDto()
+    }
+}

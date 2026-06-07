@@ -3,6 +3,7 @@ package com.ampairs.tax.service
 import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.core.exception.NotFoundException
 import com.ampairs.tax.domain.dto.MasterTaxComponentDto
+import com.ampairs.tax.domain.dto.TaxComponentTypeDto
 import com.ampairs.tax.domain.dto.asMasterComponentDtos
 import com.ampairs.tax.domain.dto.asDto
 import com.ampairs.tax.domain.model.MasterTaxComponent
@@ -53,5 +54,22 @@ class MasterTaxComponentService(
             pageable = pageable
         )
         return result.content.asMasterComponentDtos()
+    }
+
+    fun getComponentTypesForCountry(countryCode: String): List<TaxComponentTypeDto> = when (countryCode.uppercase()) {
+        "IN" -> listOf(
+            TaxComponentTypeDto("CGST", "CGST", "Central GST", "IN", "GST", false, "PERCENTAGE", "Central Goods and Services Tax"),
+            TaxComponentTypeDto("SGST", "SGST", "State GST", "IN", "GST", false, "PERCENTAGE", "State Goods and Services Tax"),
+            TaxComponentTypeDto("IGST", "IGST", "Integrated GST", "IN", "GST", false, "PERCENTAGE", "Integrated Goods and Services Tax"),
+            TaxComponentTypeDto("UTGST", "UTGST", "Union Territory GST", "IN", "GST", false, "PERCENTAGE", "Union Territory Goods and Services Tax"),
+            TaxComponentTypeDto("CESS", "CESS", "Cess", "IN", "CESS", false, "PERCENTAGE", "Additional cess on specific goods")
+        )
+        "US" -> listOf(
+            TaxComponentTypeDto("SALES_TAX", "SALES_TAX", "Sales Tax", "US", "SALES_TAX", false, "PERCENTAGE", "State and Local Sales Tax")
+        )
+        "GB" -> listOf(
+            TaxComponentTypeDto("VAT", "VAT", "Value Added Tax", "GB", "VAT", false, "PERCENTAGE", "UK Value Added Tax")
+        )
+        else -> emptyList()
     }
 }

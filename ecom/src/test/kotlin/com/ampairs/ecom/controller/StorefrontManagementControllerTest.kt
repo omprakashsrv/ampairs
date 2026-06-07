@@ -80,7 +80,7 @@ class StorefrontManagementControllerTest {
         whenever(storefrontService.createStorefront(any(), eq("ws-1"))).thenReturn(makeStorefront("sf-1", "ws-1", "my-shop"))
 
         mockMvc.perform(
-            post("/api/v1/ecom/management/storefront")
+            post("/v1/ecom/management/storefront")
                 .header("X-Workspace-ID", "ws-1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
@@ -95,7 +95,7 @@ class StorefrontManagementControllerTest {
     fun `should reject unauthenticated create storefront`() {
         val request = StorefrontRequest(name = "My Shop", slug = "my-shop")
         mockMvc.perform(
-            post("/api/v1/ecom/management/storefront")
+            post("/v1/ecom/management/storefront")
                 .header("X-Workspace-ID", "ws-1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
@@ -111,7 +111,7 @@ class StorefrontManagementControllerTest {
             .thenThrow(StorefrontSlugConflictException("Slug 'my-shop' is already taken"))
 
         mockMvc.perform(
-            post("/api/v1/ecom/management/storefront")
+            post("/v1/ecom/management/storefront")
                 .header("X-Workspace-ID", "ws-1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"name":"My Shop","slug":"my-shop"}""")
@@ -128,7 +128,7 @@ class StorefrontManagementControllerTest {
             .thenThrow(StorefrontAlreadyExistsException("Workspace already has a storefront"))
 
         mockMvc.perform(
-            post("/api/v1/ecom/management/storefront")
+            post("/v1/ecom/management/storefront")
                 .header("X-Workspace-ID", "ws-1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"name":"My Shop","slug":"my-shop"}""")
@@ -142,7 +142,7 @@ class StorefrontManagementControllerTest {
     @WithMockUser(username = "ws-1", roles = ["USER"])
     fun `should reject invalid slug format`() {
         mockMvc.perform(
-            post("/api/v1/ecom/management/storefront")
+            post("/v1/ecom/management/storefront")
                 .header("X-Workspace-ID", "ws-1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"name":"My Shop","slug":"My Invalid Slug!!"}""")
@@ -160,7 +160,7 @@ class StorefrontManagementControllerTest {
         whenever(storefrontService.getStorefront("ws-1")).thenReturn(makeStorefront("sf-1", "ws-1", "my-shop"))
 
         mockMvc.perform(
-            get("/api/v1/ecom/management/storefront")
+            get("/v1/ecom/management/storefront")
                 .header("X-Workspace-ID", "ws-1")
         )
             .andExpect(status().isOk)
@@ -176,7 +176,7 @@ class StorefrontManagementControllerTest {
             .thenThrow(StorefrontNotFoundException("No storefront found"))
 
         mockMvc.perform(
-            get("/api/v1/ecom/management/storefront")
+            get("/v1/ecom/management/storefront")
                 .header("X-Workspace-ID", "ws-1")
         )
             .andExpect(status().isNotFound)
@@ -193,7 +193,7 @@ class StorefrontManagementControllerTest {
         whenever(storefrontService.updateStorefront(any(), eq("ws-1"))).thenReturn(updated)
 
         mockMvc.perform(
-            put("/api/v1/ecom/management/storefront")
+            put("/v1/ecom/management/storefront")
                 .header("X-Workspace-ID", "ws-1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(StorefrontUpdateRequest(name = "Updated Shop")))
@@ -216,7 +216,7 @@ class StorefrontManagementControllerTest {
         whenever(storefrontService.publishStorefront("ws-1")).thenReturn(published)
 
         mockMvc.perform(
-            put("/api/v1/ecom/management/storefront/publish")
+            put("/v1/ecom/management/storefront/publish")
                 .header("X-Workspace-ID", "ws-1")
         )
             .andExpect(status().isOk)
@@ -237,7 +237,7 @@ class StorefrontManagementControllerTest {
         whenever(storefrontService.unpublishStorefront("ws-1")).thenReturn(unpublished)
 
         mockMvc.perform(
-            put("/api/v1/ecom/management/storefront/unpublish")
+            put("/v1/ecom/management/storefront/unpublish")
                 .header("X-Workspace-ID", "ws-1")
         )
             .andExpect(status().isOk)
@@ -257,7 +257,7 @@ class StorefrontManagementControllerTest {
         whenever(taxonomyImageRepository.findByStorefrontIdOrderBySortOrderAsc("sf-1")).thenReturn(listOf(image))
 
         mockMvc.perform(
-            get("/api/v1/ecom/management/taxonomy")
+            get("/v1/ecom/management/taxonomy")
                 .header("X-Workspace-ID", "ws-1")
         )
             .andExpect(status().isOk)
@@ -276,7 +276,7 @@ class StorefrontManagementControllerTest {
             .thenReturn(listOf(image))
 
         mockMvc.perform(
-            get("/api/v1/ecom/management/taxonomy")
+            get("/v1/ecom/management/taxonomy")
                 .header("X-Workspace-ID", "ws-1")
                 .param("type", "BRAND")
         )
@@ -305,7 +305,7 @@ class StorefrontManagementControllerTest {
             sortOrder = 1,
         )
         mockMvc.perform(
-            put("/api/v1/ecom/management/taxonomy")
+            put("/v1/ecom/management/taxonomy")
                 .header("X-Workspace-ID", "ws-1")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
@@ -328,7 +328,7 @@ class StorefrontManagementControllerTest {
             .thenReturn(image)
 
         mockMvc.perform(
-            delete("/api/v1/ecom/management/taxonomy/CATEGORY/Electronics")
+            delete("/v1/ecom/management/taxonomy/CATEGORY/Electronics")
                 .header("X-Workspace-ID", "ws-1")
         )
             .andExpect(status().isNoContent)
@@ -344,7 +344,7 @@ class StorefrontManagementControllerTest {
             .thenReturn(null)
 
         mockMvc.perform(
-            delete("/api/v1/ecom/management/taxonomy/CATEGORY/Missing")
+            delete("/v1/ecom/management/taxonomy/CATEGORY/Missing")
                 .header("X-Workspace-ID", "ws-1")
         )
             .andExpect(status().isNotFound)

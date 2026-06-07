@@ -11,23 +11,15 @@ import java.time.Instant
 @Repository
 interface TaxConfigurationRepository : JpaRepository<TaxConfiguration, Long> {
 
-    @Query("SELECT t FROM TaxConfiguration t WHERE t.uid = :uid")
     fun findByUid(uid: String): TaxConfiguration?
 
-    @Query("SELECT t FROM TaxConfiguration t WHERE t.ownerId = :ownerId")
     fun findByOwnerId(ownerId: String): TaxConfiguration?
 
-    @Query("SELECT t FROM TaxConfiguration t WHERE t.countryCode = :countryCode")
     fun findByCountryCode(countryCode: String, pageable: Pageable): Page<TaxConfiguration>
 
-    @Query("SELECT t FROM TaxConfiguration t WHERE t.taxStrategy = :taxStrategy")
     fun findByTaxStrategy(taxStrategy: String, pageable: Pageable): Page<TaxConfiguration>
 
-    @Query("SELECT t FROM TaxConfiguration t WHERE t.updatedAt > :modifiedAfter ORDER BY t.updatedAt ASC")
     fun findByUpdatedAtAfter(modifiedAfter: Instant, pageable: Pageable): Page<TaxConfiguration>
-
-    @Query("SELECT t FROM TaxConfiguration t ORDER BY t.createdAt DESC")
-    fun findAllOrderByCreatedAtDesc(pageable: Pageable): Page<TaxConfiguration>
 
     /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
     @Query("SELECT MAX(t.updatedAt) FROM TaxConfiguration t")

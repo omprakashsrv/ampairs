@@ -197,7 +197,7 @@ class TaxCodeService(
         val componentComposition = gstRuleTemplateService.generateStandardGstComposition(taxRate)
 
         // Create workspace components for generated composition
-        val componentIds = extractComponentIds(componentComposition)
+        val componentIds = componentComposition.values.flatMap { it.components.map { c -> c.id } }.toSet()
         componentIds.forEach { componentId ->
             val existing = taxComponentRepository.findByUid(componentId)
             if (existing == null) {
@@ -238,64 +238,17 @@ class TaxCodeService(
         taxRuleRepository.save(taxRule)
     }
 
-    /**
-     * Extracts all unique component IDs from component_composition JSON.
-     */
-    private fun extractComponentIds(composition: Map<String, Any>): Set<String> {
-        val componentIds = mutableSetOf<String>()
+    private fun extractComponentIds(composition: Map<String, ComponentCompositionDto>): Set<String> =
+        composition.values.flatMap { it.components.map { comp -> comp.id } }.toSet()
 
-        composition.values.forEach { scenario ->
-            if (scenario is Map<*, *>) {
-                val components = scenario["components"]
-                if (components is List<*>) {
-                    components.forEach { component ->
-                        if (component is Map<*, *>) {
-                            val id = component["id"] as? String
-                            if (id != null) {
-                                componentIds.add(id)
-                            }
-                        }
-                    }
-                }
-            }
+    private fun convertToComponentComposition(composition: Map<String, ComponentCompositionDto>): Map<String, ComponentComposition> =
+        composition.mapValues { (_, dto) ->
+            ComponentComposition(
+                scenario = dto.scenario,
+                components = dto.components.map { ComponentReference(id = it.id, name = it.name, rate = it.rate, order = it.order) },
+                totalRate = dto.totalRate
+            )
         }
-
-        return componentIds
-    }
-
-    /**
-     * Converts Map<String, Any> from master rule to Map<String, ComponentComposition>.
-     */
-    private fun convertToComponentComposition(composition: Map<String, Any>): Map<String, ComponentComposition> {
-        return composition.mapValues { (_, value) ->
-            if (value is Map<*, *>) {
-                val scenario = value["scenario"] as? String ?: ""
-                val totalRate = (value["totalRate"] as? Number)?.toDouble() ?: 0.0
-                val componentsData = value["components"] as? List<*> ?: emptyList<Any>()
-
-                val components = componentsData.mapNotNull { comp ->
-                    if (comp is Map<*, *>) {
-                        ComponentReference(
-                            id = comp["id"] as? String ?: "",
-                            name = comp["name"] as? String ?: "",
-                            rate = (comp["rate"] as? Number)?.toDouble() ?: 0.0,
-                            order = (comp["order"] as? Number)?.toInt() ?: 0
-                        )
-                    } else {
-                        null
-                    }
-                }
-
-                ComponentComposition(
-                    scenario = scenario,
-                    components = components,
-                    totalRate = totalRate
-                )
-            } else {
-                ComponentComposition("", emptyList(), 0.0)
-            }
-        }
-    }
 
     /**
      * Reactivates an existing inactive tax rule or creates a new one if it doesn't exist.

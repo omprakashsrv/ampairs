@@ -83,7 +83,7 @@ class CartControllerTest {
         whenever(storefrontService.getPublishedStorefrontBySlug("my-shop")).thenReturn(storefront)
         whenever(cartService.createCart(eq("sf-1"), any())).thenReturn(cart)
 
-        mockMvc.perform(post("/api/v1/store/my-shop/cart"))
+        mockMvc.perform(post("/v1/store/my-shop/cart"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.session_token").value("tok-1"))
@@ -98,7 +98,7 @@ class CartControllerTest {
         whenever(storefrontService.getPublishedStorefrontBySlug("my-shop")).thenReturn(storefront)
         whenever(cartService.createCart(eq("sf-1"), any())).thenReturn(cart)
 
-        mockMvc.perform(post("/api/v1/store/my-shop/cart"))
+        mockMvc.perform(post("/v1/store/my-shop/cart"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
     }
@@ -110,7 +110,7 @@ class CartControllerTest {
         whenever(storefrontService.getPublishedStorefrontBySlug("unknown-slug"))
             .thenThrow(StorefrontNotFoundException("No published storefront with slug 'unknown-slug'"))
 
-        mockMvc.perform(post("/api/v1/store/unknown-slug/cart"))
+        mockMvc.perform(post("/v1/store/unknown-slug/cart"))
             .andExpect(status().isNotFound)
             .andExpect(jsonPath("$.success").value(false))
     }
@@ -126,7 +126,7 @@ class CartControllerTest {
         whenever(storefrontService.getPublishedStorefrontBySlug("my-shop")).thenReturn(storefront)
         whenever(cartService.getCart("tok-1")).thenReturn(cart)
 
-        mockMvc.perform(get("/api/v1/store/my-shop/cart/tok-1"))
+        mockMvc.perform(get("/v1/store/my-shop/cart/tok-1"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.uid").value("c-1"))
@@ -141,7 +141,7 @@ class CartControllerTest {
         whenever(cartService.getCart("expired-tok"))
             .thenThrow(CartExpiredException("Cart has expired"))
 
-        mockMvc.perform(get("/api/v1/store/my-shop/cart/expired-tok"))
+        mockMvc.perform(get("/v1/store/my-shop/cart/expired-tok"))
             .andExpect(status().isNotFound)
             .andExpect(jsonPath("$.success").value(false))
     }
@@ -159,7 +159,7 @@ class CartControllerTest {
 
         val request = CartItemRequest(listedProductId = "lp-1", quantity = 2)
         mockMvc.perform(
-            post("/api/v1/store/my-shop/cart/tok-1/items")
+            post("/v1/store/my-shop/cart/tok-1/items")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
         )
@@ -178,7 +178,7 @@ class CartControllerTest {
 
         val request = CartItemRequest(listedProductId = "lp-1", quantity = 50)
         mockMvc.perform(
-            post("/api/v1/store/my-shop/cart/tok-1/items")
+            post("/v1/store/my-shop/cart/tok-1/items")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
         )
@@ -197,7 +197,7 @@ class CartControllerTest {
 
         val request = CartItemRequest(listedProductId = "lp-hidden", quantity = 1)
         mockMvc.perform(
-            post("/api/v1/store/my-shop/cart/tok-1/items")
+            post("/v1/store/my-shop/cart/tok-1/items")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))
         )
@@ -213,7 +213,7 @@ class CartControllerTest {
         whenever(storefrontService.getPublishedStorefrontBySlug("my-shop")).thenReturn(storefront)
 
         mockMvc.perform(
-            post("/api/v1/store/my-shop/cart/tok-1/items")
+            post("/v1/store/my-shop/cart/tok-1/items")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"listed_product_id":"lp-1","quantity":0}""")
         )
@@ -232,7 +232,7 @@ class CartControllerTest {
         whenever(storefrontService.getPublishedStorefrontBySlug("my-shop")).thenReturn(storefront)
         whenever(cartService.removeItem("tok-1", "item-1")).thenReturn(cart)
 
-        mockMvc.perform(delete("/api/v1/store/my-shop/cart/tok-1/items/item-1"))
+        mockMvc.perform(delete("/v1/store/my-shop/cart/tok-1/items/item-1"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
     }
@@ -248,7 +248,7 @@ class CartControllerTest {
         whenever(storefrontService.getPublishedStorefrontBySlug("my-shop")).thenReturn(storefront)
         whenever(cartService.clearCart("tok-1")).thenReturn(emptyCart)
 
-        mockMvc.perform(delete("/api/v1/store/my-shop/cart/tok-1"))
+        mockMvc.perform(delete("/v1/store/my-shop/cart/tok-1"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.items").isArray)
@@ -265,7 +265,7 @@ class CartControllerTest {
         whenever(storefrontService.getPublishedStorefrontBySlug("my-shop")).thenReturn(storefront)
         whenever(cartService.claimGuestCart(eq("guest-tok"), any(), eq("sf-1"))).thenReturn(merged)
 
-        mockMvc.perform(post("/api/v1/store/my-shop/cart/guest-tok/claim"))
+        mockMvc.perform(post("/v1/store/my-shop/cart/guest-tok/claim"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
     }
@@ -273,7 +273,7 @@ class CartControllerTest {
     @Test
     @DisplayName("POST /cart/{token}/claim - requires authentication")
     fun `should reject unauthenticated cart claim`() {
-        mockMvc.perform(post("/api/v1/store/my-shop/cart/guest-tok/claim"))
+        mockMvc.perform(post("/v1/store/my-shop/cart/guest-tok/claim"))
             .andExpect(status().isUnauthorized)
     }
 

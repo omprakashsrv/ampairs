@@ -1,6 +1,9 @@
 package com.ampairs.tax.domain.dto
 
 import com.ampairs.tax.domain.model.*
+import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotEmpty
+import jakarta.validation.constraints.Size
 import java.time.Instant
 
 // ==================== Tax Configuration DTOs ====================
@@ -13,7 +16,7 @@ data class TaxConfigurationDto(
     val taxJurisdictions: List<String>,
     val industry: String?,
     val autoSubscribeNewCodes: Boolean,
-    val syncedAt: Long,
+    val syncedAt: Instant,
     val metadata: Map<String, String>
 )
 
@@ -35,7 +38,7 @@ fun TaxConfiguration.asDto(): TaxConfigurationDto {
         taxJurisdictions = this.taxJurisdictions,
         industry = this.industry,
         autoSubscribeNewCodes = this.autoSubscribeNewCodes,
-        syncedAt = this.syncedAt.toEpochMilli(),
+        syncedAt = this.syncedAt,
         metadata = this.metadata
     )
 }
@@ -57,8 +60,8 @@ data class MasterTaxCodeDto(
     val defaultTaxSlabId: String? = null,
     val isActive: Boolean = true,
     val metadata: Map<String, String> = emptyMap(),
-    val createdAt: Long,
-    val updatedAt: Long
+    val createdAt: Instant,
+    val updatedAt: Instant
 )
 
 fun MasterTaxCode.asDto(): MasterTaxCodeDto {
@@ -77,8 +80,8 @@ fun MasterTaxCode.asDto(): MasterTaxCodeDto {
         defaultTaxSlabId = this.defaultTaxSlabId,
         isActive = this.isActive,
         metadata = this.metadata,
-        createdAt = this.createdAt?.toEpochMilli() ?: Instant.now().toEpochMilli(),
-        updatedAt = this.updatedAt?.toEpochMilli() ?: Instant.now().toEpochMilli()
+        createdAt = this.createdAt ?: Instant.now(),
+        updatedAt = this.updatedAt ?: Instant.now()
     )
 }
 
@@ -96,8 +99,8 @@ data class MasterTaxComponentDto(
     val jurisdictionLevel: String,
     val ratePercentage: Double,
     val isActive: Boolean,
-    val createdAt: Long,
-    val updatedAt: Long
+    val createdAt: Instant,
+    val updatedAt: Instant
 )
 
 fun MasterTaxComponent.asDto(): MasterTaxComponentDto {
@@ -111,8 +114,8 @@ fun MasterTaxComponent.asDto(): MasterTaxComponentDto {
         jurisdictionLevel = this.jurisdictionLevel,
         ratePercentage = this.ratePercentage,
         isActive = this.isActive,
-        createdAt = this.createdAt?.toEpochMilli() ?: Instant.now().toEpochMilli(),
-        updatedAt = this.updatedAt?.toEpochMilli() ?: Instant.now().toEpochMilli()
+        createdAt = this.createdAt ?: Instant.now(),
+        updatedAt = this.updatedAt ?: Instant.now()
     )
 }
 
@@ -129,10 +132,10 @@ data class MasterTaxRuleDto(
     val taxRate: Double,
     val jurisdiction: String,
     val jurisdictionLevel: String,
-    val componentComposition: Map<String, Any>,
+    val componentComposition: Map<String, ComponentCompositionDto>,
     val isActive: Boolean,
-    val createdAt: Long,
-    val updatedAt: Long
+    val createdAt: Instant,
+    val updatedAt: Instant
 )
 
 fun MasterTaxRule.asDto(): MasterTaxRuleDto {
@@ -145,18 +148,18 @@ fun MasterTaxRule.asDto(): MasterTaxRuleDto {
         taxRate = this.taxRate,
         jurisdiction = this.jurisdiction,
         jurisdictionLevel = this.jurisdictionLevel,
-        componentComposition = this.componentComposition,
+        componentComposition = this.componentComposition.toCompositionDtos(),
         isActive = this.isActive,
-        createdAt = this.createdAt?.toEpochMilli() ?: Instant.now().toEpochMilli(),
-        updatedAt = this.updatedAt?.toEpochMilli() ?: Instant.now().toEpochMilli()
+        createdAt = this.createdAt ?: Instant.now(),
+        updatedAt = this.updatedAt ?: Instant.now()
     )
 }
 
 fun List<MasterTaxRule>.asMasterRuleDtos(): List<MasterTaxRuleDto> = this.map { it.asDto() }
 
-// ==================== Workspace Tax Code DTOs ====================
+// ==================== Tax Code DTOs ====================
 
-data class WorkspaceTaxCodeDto(
+data class TaxCodeDto(
     val id: String,
     val masterTaxCodeId: String,
     val code: String,
@@ -166,17 +169,17 @@ data class WorkspaceTaxCodeDto(
     val customName: String?,
     val customTaxRuleId: String?,
     val usageCount: Int = 0,
-    val lastUsedAt: Long?,
+    val lastUsedAt: Instant?,
     val isFavorite: Boolean,
     val notes: String?,
     val isActive: Boolean,
-    val addedAt: Long,
-    val updatedAt: Long,
+    val addedAt: Instant,
+    val updatedAt: Instant,
     val syncStatus: String = "SYNCED"
 )
 
 data class SubscribeTaxCodeRequest(
-    val masterTaxCodeId: String,
+    @field:NotBlank val masterTaxCodeId: String,
     val customTaxRuleId: String? = null,
     val isFavorite: Boolean = false,
     val notes: String? = null,
@@ -184,14 +187,14 @@ data class SubscribeTaxCodeRequest(
 )
 
 data class BulkSubscribeTaxCodesRequest(
-    val masterTaxCodeIds: List<String>,
+    @field:NotEmpty @field:Size(max = 100) val masterTaxCodeIds: List<String>,
     val applyDefaultRules: Boolean = true
 )
 
 data class BulkSubscribeResultDto(
     val successCount: Int,
     val failureCount: Int,
-    val subscribedCodes: List<WorkspaceTaxCodeDto>,
+    val subscribedCodes: List<TaxCodeDto>,
     val errors: List<BulkOperationErrorDto>
 )
 
@@ -210,8 +213,8 @@ data class IncrementUsageRequest(
     val timestamp: Long
 )
 
-fun TaxCode.asDto(): WorkspaceTaxCodeDto {
-    return WorkspaceTaxCodeDto(
+fun TaxCode.asDto(): TaxCodeDto {
+    return TaxCodeDto(
         id = this.uid,
         masterTaxCodeId = this.masterTaxCodeId,
         code = this.code,
@@ -221,17 +224,17 @@ fun TaxCode.asDto(): WorkspaceTaxCodeDto {
         customName = this.customName,
         customTaxRuleId = this.customTaxRuleId,
         usageCount = this.usageCount,
-        lastUsedAt = this.lastUsedAt?.toEpochMilli(),
+        lastUsedAt = this.lastUsedAt,
         isFavorite = this.isFavorite,
         notes = this.notes,
         isActive = this.isActive,
-        addedAt = this.addedAt.toEpochMilli(),
-        updatedAt = this.updatedAt?.toEpochMilli() ?: Instant.now().toEpochMilli(),
+        addedAt = this.addedAt,
+        updatedAt = this.updatedAt ?: Instant.now(),
         syncStatus = this.syncStatus
     )
 }
 
-fun List<TaxCode>.asWorkspaceTaxCodeDtos(): List<WorkspaceTaxCodeDto> = this.map { it.asDto() }
+fun List<TaxCode>.asTaxCodeDtos(): List<TaxCodeDto> = this.map { it.asDto() }
 
 // ==================== Tax Rule DTOs ====================
 
@@ -246,8 +249,8 @@ data class TaxRuleDto(
     val jurisdictionLevel: String,
     val componentComposition: Map<String, ComponentCompositionDto>,
     val isActive: Boolean,
-    val createdAt: Long,
-    val updatedAt: Long
+    val createdAt: Instant,
+    val updatedAt: Instant
 )
 
 data class ComponentCompositionDto(
@@ -263,40 +266,31 @@ data class ComponentReferenceDto(
     val order: Int
 )
 
-fun ComponentComposition.asDto(): ComponentCompositionDto {
-    return ComponentCompositionDto(
-        scenario = this.scenario,
-        components = this.components.map { it.asDto() },
-        totalRate = this.totalRate
-    )
-}
+fun ComponentComposition.asDto(): ComponentCompositionDto = ComponentCompositionDto(
+    scenario = this.scenario,
+    components = this.components.map { it.asDto() },
+    totalRate = this.totalRate
+)
 
-fun ComponentReference.asDto(): ComponentReferenceDto {
-    return ComponentReferenceDto(
-        id = this.id,
-        name = this.name,
-        rate = this.rate,
-        order = this.order
-    )
-}
+fun ComponentReference.asDto(): ComponentReferenceDto = ComponentReferenceDto(
+    id = this.id,
+    name = this.name,
+    rate = this.rate,
+    order = this.order
+)
 
-// Extension functions to convert from DTO to entity
-fun ComponentCompositionDto.toEntity(): ComponentComposition {
-    return ComponentComposition(
-        scenario = this.scenario,
-        components = this.components.map { it.toEntity() },
-        totalRate = this.totalRate
-    )
-}
+fun ComponentCompositionDto.toEntity(): ComponentComposition = ComponentComposition(
+    scenario = this.scenario,
+    components = this.components.map { it.toEntity() },
+    totalRate = this.totalRate
+)
 
-fun ComponentReferenceDto.toEntity(): ComponentReference {
-    return ComponentReference(
-        id = this.id,
-        name = this.name,
-        rate = this.rate,
-        order = this.order
-    )
-}
+fun ComponentReferenceDto.toEntity(): ComponentReference = ComponentReference(
+    id = this.id,
+    name = this.name,
+    rate = this.rate,
+    order = this.order
+)
 
 fun TaxRule.asDto(): TaxRuleDto {
     return TaxRuleDto(
@@ -310,8 +304,8 @@ fun TaxRule.asDto(): TaxRuleDto {
         jurisdictionLevel = this.jurisdictionLevel,
         componentComposition = this.componentComposition.mapValues { it.value.asDto() },
         isActive = this.isActive,
-        createdAt = this.createdAt?.toEpochMilli() ?: Instant.now().toEpochMilli(),
-        updatedAt = this.updatedAt?.toEpochMilli() ?: Instant.now().toEpochMilli()
+        createdAt = this.createdAt ?: Instant.now(),
+        updatedAt = this.updatedAt ?: Instant.now()
     )
 }
 
@@ -319,7 +313,7 @@ fun List<TaxRule>.asTaxRuleDtos(): List<TaxRuleDto> = this.map { it.asDto() }
 
 // ==================== Tax Component DTOs ====================
 
-data class WorkspaceTaxComponentDto(
+data class TaxComponentDto(
     val id: String,
     val componentTypeId: String,
     val componentName: String,
@@ -331,12 +325,12 @@ data class WorkspaceTaxComponentDto(
     val isCompound: Boolean,
     val calculationMethod: String,
     val isActive: Boolean,
-    val createdAt: Long,
-    val updatedAt: Long
+    val createdAt: Instant,
+    val updatedAt: Instant
 )
 
-fun TaxComponent.asDto(): WorkspaceTaxComponentDto {
-    return WorkspaceTaxComponentDto(
+fun TaxComponent.asDto(): TaxComponentDto {
+    return TaxComponentDto(
         id = this.uid,
         componentTypeId = this.componentTypeId,
         componentName = this.componentName,
@@ -348,12 +342,12 @@ fun TaxComponent.asDto(): WorkspaceTaxComponentDto {
         isCompound = this.isCompound,
         calculationMethod = this.calculationMethod,
         isActive = this.isActive,
-        createdAt = this.createdAt?.toEpochMilli() ?: Instant.now().toEpochMilli(),
-        updatedAt = this.updatedAt?.toEpochMilli() ?: Instant.now().toEpochMilli()
+        createdAt = this.createdAt ?: Instant.now(),
+        updatedAt = this.updatedAt ?: Instant.now()
     )
 }
 
-fun List<TaxComponent>.asComponentDtos(): List<WorkspaceTaxComponentDto> = this.map { it.asDto() }
+fun List<TaxComponent>.asTaxComponentDtos(): List<TaxComponentDto> = this.map { it.asDto() }
 
 // ==================== Tax Calculation DTOs ====================
 
@@ -407,20 +401,8 @@ data class TaxComponentResultDto(
     val isCompound: Boolean
 )
 
-// ==================== Additional DTOs for V2 Controllers ====================
+// ==================== Update Request DTOs ====================
 
-// Type alias for backward compatibility with guide naming
-typealias TaxCodeDto = WorkspaceTaxCodeDto
-typealias TaxComponentDto = WorkspaceTaxComponentDto
-
-// Extension functions for TaxCode
-fun TaxConfiguration.asTaxConfigurationDto(): TaxConfigurationDto = this.asDto()
-
-fun List<TaxCode>.asTaxCodeDtos(): List<TaxCodeDto> = this.asWorkspaceTaxCodeDtos()
-
-fun List<TaxComponent>.asTaxComponentDtos(): List<TaxComponentDto> = this.asComponentDtos()
-
-// Update/Patch request DTOs
 data class UpdateTaxConfigurationRequest(
     val countryCode: String? = null,
     val taxStrategy: String? = null,
@@ -436,8 +418,6 @@ data class UpdateTaxCodeRequest(
     val customName: String? = null
 )
 
-// ==================== Tax Rule Update DTOs ====================
-
 data class UpdateTaxRuleRequest(
     val jurisdiction: String? = null,
     val jurisdictionLevel: String? = null,
@@ -449,12 +429,34 @@ data class UpdateTaxRuleRequest(
 
 data class TaxComponentTypeDto(
     val id: String,
-    val name: String,              // "CGST", "SGST", "IGST"
-    val displayName: String,       // "Central GST", "State GST"
-    val countryCode: String,       // "IN"
-    val taxType: String,           // "GST"
+    val name: String,
+    val displayName: String,
+    val countryCode: String,
+    val taxType: String,
     val isCompound: Boolean,
     val calculationMethod: String,
     val description: String?
 )
 
+// ==================== Helpers ====================
+
+fun TaxConfiguration.asTaxConfigurationDto(): TaxConfigurationDto = this.asDto()
+
+private fun Map<String, Any>.toCompositionDtos(): Map<String, ComponentCompositionDto> =
+    mapValues { (_, value) ->
+        val v = value as? Map<*, *> ?: return@mapValues ComponentCompositionDto("", emptyList(), 0.0)
+        ComponentCompositionDto(
+            scenario = v["scenario"] as? String ?: "",
+            totalRate = (v["totalRate"] as? Number)?.toDouble() ?: 0.0,
+            components = (v["components"] as? List<*>)?.mapNotNull { comp ->
+                (comp as? Map<*, *>)?.let {
+                    ComponentReferenceDto(
+                        id = it["id"] as? String ?: "",
+                        name = it["name"] as? String ?: "",
+                        rate = (it["rate"] as? Number)?.toDouble() ?: 0.0,
+                        order = (it["order"] as? Number)?.toInt() ?: 0
+                    )
+                }
+            } ?: emptyList()
+        )
+    }
