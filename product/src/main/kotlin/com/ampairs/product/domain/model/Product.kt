@@ -14,15 +14,31 @@ import org.hibernate.annotations.BatchSize
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 
-@NamedEntityGraph(
-    name = "Product.withCollections",
-    attributeNodes = [
-        NamedAttributeNode("group"),
-        NamedAttributeNode("brand"),
-        NamedAttributeNode("category"),
-        NamedAttributeNode("subCategory"),
-        NamedAttributeNode("baseUnit")
-    ]
+@NamedEntityGraphs(
+    NamedEntityGraph(
+        name = "Product.withCollections",
+        attributeNodes = [
+            NamedAttributeNode("group"),
+            NamedAttributeNode("brand"),
+            NamedAttributeNode("category"),
+            NamedAttributeNode("subCategory"),
+            NamedAttributeNode("baseUnit")
+        ]
+    ),
+    NamedEntityGraph(
+        name = "Product.withAll",
+        attributeNodes = [
+            NamedAttributeNode("group"),
+            NamedAttributeNode("brand"),
+            NamedAttributeNode("category"),
+            NamedAttributeNode("subCategory"),
+            NamedAttributeNode("baseUnit"),
+            NamedAttributeNode("unitConversions"),
+            NamedAttributeNode("images"),
+            NamedAttributeNode("inventory"),
+            NamedAttributeNode("variants")
+        ]
+    )
 )
 @Entity(name = "product")
 @Table(
