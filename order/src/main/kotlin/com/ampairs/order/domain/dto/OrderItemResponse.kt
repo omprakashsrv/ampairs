@@ -17,6 +17,9 @@ data class OrderItemResponse(
     var orderId: String = "",
     var productId: String = "",
     var taxCode: String = "",
+    var unitId: String = "",
+    var baseQuantity: Double = 0.0,
+    var variantSku: String? = null,
     val taxInfos: List<TaxInfo> = arrayListOf(),
     val active: Boolean = true,
     val softDeleted: Boolean = false,
@@ -40,6 +43,9 @@ fun List<OrderItem>.toResponse(): List<OrderItemResponse> {
             orderId = it.orderId,
             productId = it.productId,
             taxCode = it.taxCode,
+            unitId = it.unitId,
+            baseQuantity = it.baseQuantity,
+            variantSku = it.variantSku,
             taxInfos = it.taxInfos,
             discount = it.discount
         )

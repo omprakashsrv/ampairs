@@ -403,7 +403,7 @@ totals reconcile to taxable + tax.
   for intra/inter, multi-rate, discount-before-tax, and exempt cases.
 - **NFR-003**: Backend `Instant` timestamps, DTO isolation, `ApiResponse<T>`, no try/catch in
   controllers, tenant context at controller level; Flyway in **both** `mysql/` and `postgresql/`.
-  Schema migrations are required — next versions **order V1.0.23**, **invoice V1.0.12** (and a follow
+  Schema migrations are required — next versions **order V1.0.77**, **invoice V1.0.78** (and a follow
   on version each if needed): `order_item`/`invoice_item` gain `unit_id` + `base_quantity` (back-fill
   `base_quantity = quantity`, `unit_id = product base unit`); `customer_order`/`invoice` gain
   `price_mode` + `overall_discount_mode` (back-fill `TAX_EXCLUSIVE` / `POST_TAX_REDUCTION` to match

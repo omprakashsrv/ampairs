@@ -13,7 +13,7 @@ Full order lifecycle — draft → confirmed → delivered. Supports B2B (GST su
 `/order/v1/**`
 
 ## Migrations
-`V1.0.0`, `V1.0.22` (indexes)
+`V1.0.0`, `V1.0.22` (indexes), `V1.0.77` (unit/variant + price_mode/overall_discount_mode for offline sync)
 
 ## Full docs
 `docs/modules/order.md`

@@ -126,11 +126,11 @@ and **I1 (integration)** are listed but **deferred** until the app side is compl
 - **T039** order: `POST /order/v1/orders/sync` (bulk upsert, `List<OrderUpdateRequest>`, no recompute) +
   `GET /order/v1/orders/sync` (`PageResponse`, `hasNext`) — `order/.../controller/OrderController.kt`,
   `OrderService.kt`.
-- **T040** order migration **V1.0.23** (mysql+postgresql): `order_item.{unit_id,base_quantity,variant_sku}`,
+- **T040** order migration **V1.0.77** (mysql+postgresql): `order_item.{unit_id,base_quantity,variant_sku}`,
   `customer_order.{price_mode,overall_discount_mode}` + back-fill.
 - **T041** [P] invoice: same `/sync` endpoints; columns `invoice_item.{unit_id,base_quantity,variant_sku}`,
   `invoice.{price_mode,overall_discount_mode,series,sequence_number}` + **UNIQUE(owner_id,series,sequence_number)**;
-  migration **V1.0.12** + back-fill default series. Reject (not renumber) colliding pushes.
+  migration **V1.0.78** + back-fill default series. Reject (not renumber) colliding pushes.
 - **T042** [P] business: settings for default `price_mode`, `overall_discount_mode`, invoice series prefix
   (per device/branch); expose via the existing business-settings response.
 - **T043** Backend DTO additions (per `contracts/sync-api.md`) + validation (taxInfos consistency,

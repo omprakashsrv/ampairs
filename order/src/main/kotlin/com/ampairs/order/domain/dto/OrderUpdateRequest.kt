@@ -28,6 +28,8 @@ data class OrderUpdateRequest(
     var orderItems: List<OrderItemRequest> = arrayListOf(),
     val taxInfos: List<TaxInfo> = arrayListOf(),
     val discount: List<Discount>? = null,
+    var priceMode: String = "TAX_EXCLUSIVE",
+    var overallDiscountMode: String = "POST_TAX_REDUCTION",
 )
 
 fun OrderUpdateRequest.toOrder(): Order {
@@ -51,6 +53,9 @@ fun OrderUpdateRequest.toOrder(): Order {
     order.taxInfos = this.taxInfos
     order.totalTax = this.totalTax
     order.discount = this.discount
+    order.priceMode = this.priceMode
+    order.overallDiscountMode = this.overallDiscountMode
+    if (this.orderDate != null) order.orderDate = this.orderDate
     return order
 }
 
@@ -75,6 +80,8 @@ fun Order.toInvoice(): Invoice {
     invoice.taxInfos = this.taxInfos.toInvoiceTaxInfos()
     invoice.totalTax = this.totalTax
     invoice.discount = this.discount?.toInvoiceDiscount()
+    invoice.priceMode = this.priceMode
+    invoice.overallDiscountMode = this.overallDiscountMode
     return invoice
 }
 

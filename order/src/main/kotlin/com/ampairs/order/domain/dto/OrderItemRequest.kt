@@ -18,6 +18,9 @@ data class OrderItemRequest(
     var orderId: String = "",
     var productId: String = "",
     var taxCode: String = "",
+    var unitId: String = "",
+    var baseQuantity: Double = 0.0,
+    var variantSku: String? = null,
     val taxInfos: List<TaxInfo> = arrayListOf(),
     val active: Boolean = true,
     val softDeleted: Boolean = false,
@@ -41,6 +44,9 @@ fun List<OrderItemRequest>.toOrderItems(): List<OrderItem> {
         orderItem.orderId = it.orderId
         orderItem.productId = it.productId
         orderItem.taxCode = it.taxCode
+        orderItem.unitId = it.unitId
+        orderItem.baseQuantity = it.baseQuantity
+        orderItem.variantSku = it.variantSku
         orderItem.taxInfos = it.taxInfos
         orderItem.discount = it.discount
         orderItem
@@ -64,6 +70,9 @@ fun List<OrderItem>.toInvoiceItems(): List<InvoiceItem> {
         orderItem.invoiceId = ""
         orderItem.productId = it.productId
         orderItem.taxCode = it.taxCode
+        orderItem.unitId = it.unitId
+        orderItem.baseQuantity = it.baseQuantity
+        orderItem.variantSku = it.variantSku
         orderItem.taxInfos = it.taxInfos.toInvoiceTaxInfos()
         orderItem.discount = it.discount?.toInvoiceDiscount()
         orderItem
