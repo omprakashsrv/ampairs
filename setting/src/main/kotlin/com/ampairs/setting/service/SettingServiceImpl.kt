@@ -1,11 +1,11 @@
 package com.ampairs.setting.service
 
 import com.ampairs.core.exception.BusinessException
+import com.ampairs.core.setting.SettingDefinition
+import com.ampairs.core.setting.SettingDefinitionProvider
 import com.ampairs.core.sync.EntityChangePublisher
 import com.ampairs.core.sync.EntityChangeType
 import com.ampairs.setting.config.Constants
-import com.ampairs.setting.domain.definition.SettingDefinition
-import com.ampairs.setting.domain.definition.SettingDefinitionProvider
 import com.ampairs.setting.domain.dto.SettingRequest
 import com.ampairs.setting.domain.model.StoreSetting
 import com.ampairs.setting.repository.StoreSettingRepository

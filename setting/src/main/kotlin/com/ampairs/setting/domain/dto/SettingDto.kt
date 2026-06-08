@@ -1,6 +1,6 @@
 package com.ampairs.setting.domain.dto
 
-import com.ampairs.setting.domain.SettingValueType
+import com.ampairs.core.setting.SettingValueType
 import com.ampairs.setting.domain.model.StoreSetting
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size

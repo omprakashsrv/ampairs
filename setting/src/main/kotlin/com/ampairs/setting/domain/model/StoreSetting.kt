@@ -1,8 +1,8 @@
 package com.ampairs.setting.domain.model
 
 import com.ampairs.core.domain.model.OwnableBaseDomain
+import com.ampairs.core.setting.SettingValueType
 import com.ampairs.setting.config.Constants
-import com.ampairs.setting.domain.SettingValueType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
