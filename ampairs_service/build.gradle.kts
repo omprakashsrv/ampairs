@@ -42,6 +42,7 @@ dependencies {
     implementation(project(mapOf("path" to ":customer")))
     implementation(project(mapOf("path" to ":file")))
     implementation(project(mapOf("path" to ":unit")))
+    implementation(project(mapOf("path" to ":setting")))
     implementation(project(mapOf("path" to ":product")))
     implementation(project(mapOf("path" to ":order")))
     implementation(project(mapOf("path" to ":invoice")))
