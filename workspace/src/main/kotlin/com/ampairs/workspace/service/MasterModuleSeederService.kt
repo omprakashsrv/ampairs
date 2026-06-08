@@ -74,6 +74,7 @@ class MasterModuleSeederService(
             createInvoiceModule(),
             createInventoryModule(),
             createTaxCodeModule(),
+            createUnitModule(),
             createNotificationModule(),
             createUserManagementModule(),
             createReportingModule(),
@@ -343,6 +344,49 @@ class MasterModuleSeederService(
         sizeMb = 20
         featured = false
         displayOrder = 50
+        active = true
+    }
+
+    private fun createUnitModule() = MasterModule().apply {
+        moduleCode = "unit-management"
+        name = "Unit of Measure"
+        description = "Manage units of measurement and conversion rules for products — supports weight, volume, length, count, and custom units with automatic conversion calculations"
+        tagline = "Define and convert units across your product catalog"
+        category = ModuleCategory.INVENTORY_MANAGEMENT
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.FREE
+        requiredRole = UserRole.EMPLOYEE
+        complexity = ModuleComplexity.STANDARD
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 8, true, "Essential for selling products in multiple units (kg, g, piece, pack)"),
+            createBusinessRelevance(BusinessType.WHOLESALE, 9, true, "Critical for bulk quantity management and unit conversions"),
+            createBusinessRelevance(BusinessType.MANUFACTURING, 10, true, "Mandatory for raw material and production unit tracking")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = listOf("UNIT_READ", "UNIT_WRITE"),
+            optionalPermissions = listOf("UNIT_DELETE"),
+            dependencies = listOf("product-management")
+        )
+        uiMetadata = createUIMetadata(
+            icon = "straighten",
+            primaryColor = "#0097A7",
+            tags = listOf("Units", "Conversions", "Measurement", "Weight", "Volume")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/units",
+            displayName = "Units",
+            iconName = "straighten",
+            menuItems = listOf(
+                createMenuItem("unit-list", "All Units", "/units", "straighten", 1, true),
+                createMenuItem("unit-conversions", "Conversions", "/units/conversions", "swap_horiz", 2)
+            )
+        )
+        navigationIndex = 65
+        provider = "Ampairs"
+        sizeMb = 3
+        featured = false
+        displayOrder = 55
         active = true
     }
 
