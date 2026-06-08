@@ -163,11 +163,10 @@ jobs:
         echo "Key file size: $FILE_SIZE bytes"
 
     - name: Prepare Google Play Service Account Key
+      env:
+        GOOGLE_PLAY_KEY: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_KEY }}
       run: |
         set -e  # Exit on any error
-
-        # Load secret from environment variable
-        GOOGLE_PLAY_KEY="${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_KEY }}"
 
         # Check if secret exists and is not empty
         if [ -z "$GOOGLE_PLAY_KEY" ]; then
@@ -250,8 +249,8 @@ jobs:
         echo "SSH key validated successfully"
 
         # Add server to known_hosts with timeout
-        echo "Scanning SSH host keys for ${{ vars.SERVER_HOST }}..."
-        if ! timeout 10 ssh-keyscan -H ${{ vars.SERVER_HOST }} >> ~/.ssh/known_hosts 2>&1; then
+        echo "Scanning SSH host keys for ${{ secrets.SERVER_HOST }}..."
+        if ! timeout 10 ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts 2>&1; then
           echo "WARNING: ssh-keyscan failed or timed out"
           echo "Attempting connection anyway (may prompt for host verification)"
         fi
@@ -268,7 +267,7 @@ jobs:
 
     - name: Run database migrations
       env:
-        DB_USERNAME: ${{ vars.DB_USERNAME }}
+        DB_USERNAME: ${{ secrets.DB_USERNAME }}
         DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
       run: |
         chmod +x gradlew
@@ -276,8 +275,8 @@ jobs:
 
         # Open tunnel: CI runner :15432 → DB server :5432 (via app server)
         ssh $SSH_OPTS -N \
-          -L 15432:${{ vars.DB_HOST }}:5432 \
-          ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} &
+          -L 15432:${{ secrets.DB_HOST }}:5432 \
+          ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }} &
         TUNNEL_PID=$!
 
         # Wait up to 10s for tunnel to become ready
@@ -328,37 +327,37 @@ jobs:
         SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=10"
 
         # Test SSH connection first
-        echo "Testing SSH connection to ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}..."
-        if ! ssh $SSH_OPTS ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} 'echo "SSH connection successful"'; then
+        echo "Testing SSH connection to ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }}..."
+        if ! ssh $SSH_OPTS ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }} 'echo "SSH connection successful"'; then
           echo "ERROR: SSH connection failed"
           echo "Please check:"
           echo "1. SSH_PRIVATE_KEY secret is correct"
-          echo "2. Server ${{ vars.SERVER_HOST }} is reachable"
-          echo "3. User ${{ vars.SSH_USER }} has SSH access"
+          echo "2. Server ${{ secrets.SERVER_HOST }} is reachable"
+          echo "3. User ${{ secrets.SSH_USER }} has SSH access"
           exit 1
         fi
 
         # Remove any existing files/directories on server
         echo "Cleaning up old files on server..."
-        ssh $SSH_OPTS ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} 'rm -rf ~/ampairs-service.jar ~/ampairs-production.service ~/ampairs-firebase-key.json'
+        ssh $SSH_OPTS ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }} 'rm -rf ~/ampairs-service.jar ~/ampairs-production.service ~/ampairs-firebase-key.json'
 
         # Copy JAR to server
         echo "Copying JAR to server..."
-        scp $SSH_OPTS "$JAR_FILE" ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-service.jar
+        scp $SSH_OPTS "$JAR_FILE" ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }}:~/ampairs-service.jar
 
         # Copy service file to server
         echo "Copying service file to server..."
-        scp $SSH_OPTS ./scripts/ampairs-production.service ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-production.service
+        scp $SSH_OPTS ./scripts/ampairs-production.service ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }}:~/ampairs-production.service
 
         # Copy Firebase key to server
         echo "Copying Firebase service account key to server..."
-        scp $SSH_OPTS ./firebase-key/ampairs-firebase-adminsdk.json ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }}:~/ampairs-firebase-key.json
+        scp $SSH_OPTS ./firebase-key/ampairs-firebase-adminsdk.json ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }}:~/ampairs-firebase-key.json
 
         echo "Files copied successfully!"
 
         # Verify files were uploaded
         echo "Verifying files on server..."
-        ssh $SSH_OPTS ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'VERIFY_EOF'
+        ssh $SSH_OPTS ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }} << 'VERIFY_EOF'
           echo "Files in home directory:"
           ls -lh ~/ampairs* 2>/dev/null || echo "ERROR: No ampairs files found after upload!"
         VERIFY_EOF
@@ -366,7 +365,7 @@ jobs:
     - name: Deploy application
       run: |
         SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=10"
-        ssh $SSH_OPTS ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
+        ssh $SSH_OPTS ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
           # Debug: Show what files are in home directory
           echo "=== Files in home directory ==="
           ls -lha ~/
@@ -445,7 +444,7 @@ jobs:
     - name: Health check
       run: |
         SSH_OPTS="-o StrictHostKeyChecking=accept-new -o ConnectTimeout=10"
-        ssh $SSH_OPTS ${{ vars.SSH_USER }}@${{ vars.SERVER_HOST }} << 'EOF'
+        ssh $SSH_OPTS ${{ secrets.SSH_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
           echo "Waiting for application to start..."
           sleep 30
 
