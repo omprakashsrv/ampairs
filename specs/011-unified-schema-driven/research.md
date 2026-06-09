@@ -66,7 +66,7 @@ intent. Central hardcoded list in `form` — recreates the coupling we're removi
 
 ## D4 — Dynamic choice options via named source bindings
 
-**Decision**: A CHOICE field's options come from a `ChoiceOptionSource`: either `STATIC` (an
+**Decision**: A `CHOICE` / `MULTI_CHOICE` field's options come from a `ChoiceOptionSource`: either `STATIC` (an
 admin-entered `enumValues` list) or `DYNAMIC` (a `sourceKey` string, e.g. `customer_types`,
 `tax_codes`, `units`). On the app, a `DynamicOptionProvider` registry maps `sourceKey →
 Flow<List<Option>>`; each owning domain registers its providers (Metro multibinding). The backend stores

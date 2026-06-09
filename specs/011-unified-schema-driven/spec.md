@@ -21,6 +21,7 @@ This feature unifies that model into a single notion of a "form field", makes ev
 - Q: Migrate existing form configuration into the unified model? → A: No — this is a fresh setup. The unified store provisions empty and seeds defaults from the standard field registry; no legacy data is migrated or backfilled.
 - Q: Maintain backward-compatible legacy form endpoints for older clients / the web app? → A: No — the Angular web client is deprecated and the app does a clean cutover to the unified feed. No legacy `/sync` adapters or legacy CRUD endpoints are retained.
 - Q: Should the form schema be a DDD aggregate (Section owns Field), and what is the sync unit? → A: Yes — model it as a `FormSchema` aggregate (every field belongs to exactly one section; a default `General` section always exists; invariants enforced atomically on save) for the domain/editing/consistency layer, while keeping **row-level** distribution (sections + fields feeds) so concurrent admin edits still merge (FR-018 preserved).
+- Q: Support multi-select choice fields, and how? → A: Yes — a separate `MULTI_CHOICE` data type alongside single `CHOICE` (both reuse the same static/dynamic option source). Single = one value; multi = a list of values. Multi-select moves into scope.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -126,8 +127,9 @@ The customer, product, order, invoice, and business entry screens all render fro
 
 - **FR-001**: The system MUST represent every configurable form field — whether backed by built-in data or workspace-defined — as a single kind of "field", distinguished only by whether its value is stored as built-in data or as workspace-added data.
 - **FR-002**: Each field MUST carry: a stable identifier, a display label, a data type, whether it is built-in or custom, visibility, required, and enabled states, a section grouping, a display order, an optional default value, and optional validation rules.
-- **FR-003**: The system MUST support these field data types at minimum: single-line text, multi-line text, number, true/false, date, and single-choice selection.
-- **FR-003a**: A single-choice field's options MUST be definable EITHER as a static list entered by the administrator OR as a binding to a named live workspace data source (e.g. customer types, tax codes, units), so the renderer can reproduce existing dynamic dropdowns. The administrator selects the option source through guided controls without entering technical syntax.
+- **FR-003**: The system MUST support these field data types at minimum: single-line text, multi-line text, number, true/false, date, single-choice selection, and multi-choice (multi-select) selection.
+- **FR-003a**: A choice field's options (single- or multi-select) MUST be definable EITHER as a static list entered by the administrator OR as a binding to a named live workspace data source (e.g. customer types, tax codes, units), so the renderer can reproduce existing dynamic dropdowns. The administrator selects the option source through guided controls without entering technical syntax.
+- **FR-003b**: Single-choice stores one value; multi-choice stores a list of values. Validation rules (e.g. allowed choices, required) MUST apply per selection; "required" on a multi-choice means at least one selection.
 - **FR-004**: Validation rules MUST be expressed as structured, typed rules (e.g. required, text length range, numeric range, allowed format such as email/phone, allowed choice set) — not as free-form technical expressions entered by administrators.
 
 **Form rendering (runtime)**
@@ -212,7 +214,7 @@ The customer, product, order, invoice, and business entry screens all render fro
 
 - Conditional/branching fields (show field B only when field A has a certain value).
 - Computed or formula fields whose values derive from other fields.
-- Multi-select choice fields. (Complex inputs such as image gallery, structured address, location/map, and business hours are supported via the custom-widget escape hatch of FR-008a — they are configurable and renderer-placed, but their input controls are domain-provided and are not reimplemented generically by this feature.)
+- Complex inputs such as image gallery, structured address, location/map, and business hours are supported via the custom-widget escape hatch of FR-008a — they are configurable and renderer-placed, but their input controls are domain-provided and are not reimplemented generically by this feature.
 - Per-user or per-role form variations within a single workspace (configuration is per workspace, per entity).
 - Form configuration for domains outside the five named targets.
 - Public/external-facing form rendering (e.g. customer-facing web forms) — this feature concerns internal staff entry screens.

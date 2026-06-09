@@ -11,12 +11,14 @@ Field names below are camelCase (Kotlin); DB/JSON are snake_case automatically.
 ```
 EntityType    = CUSTOMER | PRODUCT | ORDER | INVOICE | BUSINESS
 FieldSource   = STANDARD | CUSTOM
-FieldDataType = TEXT | TEXTAREA | NUMBER | BOOLEAN | DATE | CHOICE | CUSTOM
-OptionSource  = STATIC | DYNAMIC          # for CHOICE fields
+FieldDataType = TEXT | TEXTAREA | NUMBER | BOOLEAN | DATE | CHOICE | MULTI_CHOICE | CUSTOM
+OptionSource  = STATIC | DYNAMIC          # for CHOICE and MULTI_CHOICE fields
 ```
 
 - `EntityType` replaces all magic `"customer"`/`"product"` strings (FR-024). Unknown values rejected at
   the API boundary.
+- `CHOICE` = single selection (value is one option); `MULTI_CHOICE` = multi-select (value is a list of
+  options). Both share the same option config (`optionSource` + `enumValues`/`dynamicSourceKey`).
 - `FieldDataType.CUSTOM` is the escape hatch (D5) — pairs with `widgetKey`.
 
 ---
@@ -68,9 +70,9 @@ The single unified field model. Replaces `FieldConfig` **and** `AttributeDefinit
 | `enabled` | Boolean = true | Editable vs read-only. |
 | `displayOrder` | Int = 0 | Order within section. |
 | `defaultValue` | String(255)? | |
-| `optionSource` | `OptionSource`? | CHOICE only. |
-| `enumValues` | JSON (List<String>)? | CHOICE + STATIC: the static options. |
-| `dynamicSourceKey` | String(100)? | CHOICE + DYNAMIC: e.g. `customer_types`, `tax_codes`, `units`. |
+| `optionSource` | `OptionSource`? | CHOICE / MULTI_CHOICE only. |
+| `enumValues` | JSON (List<String>)? | CHOICE/MULTI_CHOICE + STATIC: the static options. |
+| `dynamicSourceKey` | String(100)? | CHOICE/MULTI_CHOICE + DYNAMIC: e.g. `customer_types`, `tax_codes`, `units`. |
 | `validationRules` | JSON (List<ValidationRule>)? | Typed rules (see below). |
 | `placeholder` | String(255)? | |
 | `helpText` | TEXT? | |
@@ -85,7 +87,7 @@ The single unified field model. Replaces `FieldConfig` **and** `AttributeDefinit
 - Every field MUST reference an existing `FormSection` in the same aggregate (mandatory ownership; the `General` section is the default home).
 - STANDARD field: `fieldKey` MUST exist in the registry for `entityType`; cannot be soft-deleted; cannot be made `visible=false` if registry marks it structurally essential (FR-015).
 - CUSTOM field: freely creatable/deletable; value lives in the entity's `attributes` JSON.
-- `dataType=CHOICE` ⇒ `optionSource` set; STATIC ⇒ `enumValues` non-empty; DYNAMIC ⇒ `dynamicSourceKey` set.
+- `dataType ∈ {CHOICE, MULTI_CHOICE}` ⇒ `optionSource` set; STATIC ⇒ `enumValues` non-empty; DYNAMIC ⇒ `dynamicSourceKey` set. `MULTI_CHOICE` value is a list (stored as JSON in the entity's `attributes` for CUSTOM; a STANDARD field may be `MULTI_CHOICE` only if its bound column is a collection — registry-declared).
 - `dataType=CUSTOM` ⇒ `widgetKey` set.
 
 ---

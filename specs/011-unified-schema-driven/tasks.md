@@ -17,8 +17,8 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-- [ ] T001 [P] `BE:` Add shared enums `EntityType`, `FieldSource`, `FieldDataType`, `OptionSource` in `form/src/main/kotlin/com/ampairs/form/domain/model/` (replace magic entityType strings; reject unknown at API boundary).
-- [ ] T002 [P] `APP:` Add mirror enums (same names, `@SerialName` snake_case) in `feature/form-api/src/commonMain/kotlin/com/ampairs/form/domain/`.
+- [ ] T001 [P] `BE:` Add shared enums `EntityType`, `FieldSource`, `FieldDataType` (incl. `CHOICE` and `MULTI_CHOICE`), `OptionSource` in `form/src/main/kotlin/com/ampairs/form/domain/model/` (replace magic entityType strings; reject unknown at API boundary).
+- [ ] T002 [P] `APP:` Add mirror enums (same names incl. `CHOICE`/`MULTI_CHOICE`, `@SerialName` snake_case) in `feature/form-api/src/commonMain/kotlin/com/ampairs/form/domain/`.
 - [ ] T003 [P] `BE:` Confirm `form` is in `migrationModules` (`ampairs_service/build.gradle.kts`) and run `./gradlew :ampairs_service:flywayInfo` to fix the next migration version (record it for T010).
 - [ ] T004 [P] `APP:` Add `FormLogger` (Kermit, `w/e/i/d` 3-param signature) in `feature/form/src/commonMain/kotlin/com/ampairs/form/FormLogger.kt`; add a `BATCH_SIZE = 100` constant for sync.
 
@@ -36,7 +36,7 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 - [ ] T008 [P] `BE:` `FormFieldRepository` + `FormSectionRepository` (sync queries INCLUDE soft-deleted rows; `findUpdatedAfter`, `findAllForSync`, `findByUid`, by `(entityType)`).
 - [ ] T009 `BE:` `ValidationEngine` (evaluates `ValidationRule` list against a value; reject contradictory rules) in `form/.../domain/service/validation/ValidationEngine.kt`.
 - [ ] T010 `BE:` Flyway migration `V1.0.x__create_unified_form_model.sql` in BOTH `form/src/main/resources/db/migration/mysql/` and `postgresql/`: create **empty** `form_field` + `form_section` (indexes + uniqueness per data-model.md) and **drop** the legacy `field_config` + `attribute_definition` tables. Fresh setup — no backfill. (Depends T005–T007.)
-- [ ] T011 [P] `BE:` `StandardFieldProvider` SPI + `StandardFieldSpec` + `FormFieldRegistry` (aggregates `@Component` providers; validates STANDARD `fieldKey`/`entityType`; marks essential fields) in `form/.../domain/service/registry/`.
+- [ ] T011 [P] `BE:` `StandardFieldProvider` SPI + `StandardFieldSpec` (carries dataType incl. `CHOICE`/`MULTI_CHOICE` — a standard field is `MULTI_CHOICE` only where its bound column is a collection) + `FormFieldRegistry` (aggregates `@Component` providers; validates STANDARD `fieldKey`/`entityType`; marks essential fields) in `form/.../domain/service/registry/`.
 - [ ] T012 `BE:` DTOs in `form/.../domain/dto/` (DTO isolation; SNAKE_CASE): `FormFieldResponse`/`FormFieldSyncRequest`, `FormSectionResponse`/`FormSectionSyncRequest`, `EntityConfigSchemaResponse` (fields+sections for the UI read) + entity↔DTO mappers. (Depends T005–T007.)
 - [ ] T013 `BE:` `FormConfigService` — loads/saves the `FormSchema` aggregate atomically; registry-driven default seeding/merge (non-destructive) **including a default `General` section per entityType**; `bulkUpsert` per feed (UID-keyed, in-band soft-delete, sections-before-fields); `getAfterSync`; **validates aggregate invariants on save AND after applying each `/sync` push** (every field has a section; STANDARD not deletable; essential not hideable; non-empty section not deletable; CHOICE/CUSTOM invariants). (Depends T008, T009, T011, T012.)
 - [ ] T014 `BE:` `ConfigController` — two canonical feeds `GET/POST /form/v1/config/sections/sync` and `GET/POST /form/v1/config/fields/sync` (feed includes soft-deleted rows; stable `(updatedAt, uid)` sort) + `GET /form/v1/config/schema?entity_type=` (active-only aggregate, seeds defaults); tenant set at controller; `ApiResponse`/`PageResponse`. (Depends T013.)
@@ -68,15 +68,15 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 **Independent Test**: Hide a standard customer field + mark one required + add a custom choice field in config; open the customer entry screen → hidden field gone, required field blocks save, custom field shows in its section/order and its value persists; email/format validation blocks bad input inline.
 
 - [ ] T028 [P] [US1] `BE:` `CustomerStandardFieldProvider` implementing the SPI (full customer field set incl. sections Basics/Contact/Addresses/Tax/Status, essential flags, default validation) in `customer/.../domain/service/`. Delete customer seeding from old `ConfigService`.
-- [ ] T029 [P] [US1] `APP:` Choice field renderer in `FieldRenderers` — STATIC (enumValues) and DYNAMIC (`dynamicSourceKey` via `DynamicOptionProvider`) dropdowns. (Depends T027.)
+- [ ] T029 [P] [US1] `APP:` Choice field renderers in `FieldRenderers` — `CHOICE` single-select dropdown and `MULTI_CHOICE` multi-select (chips/checklist), each supporting STATIC (`enumValues`) and DYNAMIC (`dynamicSourceKey` via `DynamicOptionProvider`) options; multi value binds as `List<String>`, "required" = at least one selected. (Depends T027.)
 - [ ] T030 [P] [US1] `APP:` Register customer `DynamicOptionProvider`s (`customer_types`, `customer_groups`, `tax_codes`, `units`) bound to their repositories (Metro `@ContributesIntoMap(WorkspaceScope::class)` + `@OptionSourceKey`).
 - [ ] T031 [P] [US1] `APP:` `ImageGalleryWidget : CustomFieldWidget` (`@WidgetKey("image_gallery")`) reusing the existing customer image control; registered in the widget map.
-- [ ] T032 [US1] `APP:` Customer value mapping — `Customer.toValueMap()` (standard→columns, custom→`attributes`) and `applyValues()`; ensure UID generation stays in the ViewModel. (Depends T019.)
+- [ ] T032 [US1] `APP:` Customer value mapping — `Customer.toValueMap()` (standard→columns, custom→`attributes`) and `applyValues()`, handling `MULTI_CHOICE` values as `List<String>` (JSON in `attributes`); ensure UID generation stays in the ViewModel. (Depends T019.)
 - [ ] T033 [US1] `APP:` Rewrite `CustomerFormViewModel` to expose `observeConfigSchema(CUSTOMER)` + `FormValueState`; drop ad-hoc per-field visibility logic. (Depends T023, T026, T032.)
 - [ ] T034 [US1] `APP:` Replace `CustomerForm` screen body with `DynamicFormRenderer(schema, state)`; save path runs `state.validateAll()` then repository save. (Depends T027, T029, T031, T033.)
 - [ ] T035 [P] [US1] `APP:` Customer detail/read view honors field visibility via the same schema (read-only render path).
 - [ ] T036 [P] [US1] `BE:` Integration test: customer schema seeds from registry, `/schema?entity_type=customer` returns sectioned fields, hidden/required honored — `customer`/`form` test.
-- [ ] T037 [P] [US1] `APP:` Renderer test: given a schema, `DynamicFormRenderer` shows only visible fields in order, enforces required + format rules, binds static & dynamic choice values — `feature/form-api` commonTest.
+- [ ] T037 [P] [US1] `APP:` Renderer test: given a schema, `DynamicFormRenderer` shows only visible fields in order, enforces required + format rules, binds static & dynamic single-`CHOICE` and `MULTI_CHOICE` (list) values — `feature/form-api` commonTest.
 
 **Checkpoint**: Customer form is fully config-driven end-to-end (MVP). Validates SC-001 for customer.
 
@@ -94,7 +94,7 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 - [ ] T041 [P] [US2] `APP:` Live preview pane rendering `DynamicFormRenderer` in read-only/preview mode from the in-progress (unsaved) schema. (Depends T027, T038.)
 - [ ] T042 [P] [US2] `APP:` Section management UI — create/rename/reorder/hide/delete; the default `General` section cannot be deleted; deleting a non-empty section requires reassigning its fields first (or auto-move to `General`) per edge case. (Depends T038.)
 - [ ] T043 [P] [US2] `APP:` Guided validation builder — typed rule pickers (Required, length range, number range, format from curated list, allowed choices); no free-form regex/JSON. (Depends T038.)
-- [ ] T044 [P] [US2] `APP:` Choice option-source editor — toggle STATIC (list builder) vs DYNAMIC (pick a registered `dynamicSourceKey`); replaces hardcoded datatype dropdown with `FieldDataType` enum. (Depends T038.)
+- [ ] T044 [P] [US2] `APP:` Choice editor — pick data type `CHOICE` vs `MULTI_CHOICE`, then option source STATIC (list builder) vs DYNAMIC (pick a registered `dynamicSourceKey`); replaces the hardcoded datatype dropdown with the `FieldDataType` enum. (Depends T038.)
 - [ ] T045 [P] [US2] `APP:` Add/edit/remove custom field flow with client-side validation (non-empty key/label, no duplicate key, dataType-appropriate options); stable UID via `UidGenerator`. (Depends T038.)
 - [ ] T046 [P] [US2] `APP:` Unsaved-changes guard on navigation; move all editor strings to `composeResources/values/strings.xml`; success/error via resources (no hardcoded text).
 - [ ] T047 [P] [US2] `BE:` Service test: integrity rules reject hiding/deleting essential STANDARD fields and contradictory validation rules with proper `ApiResponse` errors.

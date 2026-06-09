@@ -59,7 +59,7 @@ fields too.
 
 `FormFieldResponse` / `FormFieldSyncRequest` — the field columns from data-model.md (`uid`, `source`,
 `field_key`, `display_name`, `data_type`, `widget_key`, `section_uid`, `visible`, `mandatory`, `enabled`,
-`display_order`, `default_value`, `option_source`, `enum_values`, `dynamic_source_key`,
+`display_order`, `default_value` (`data_type` ∈ text|textarea|number|boolean|date|choice|multi_choice|custom), `option_source`, `enum_values`, `dynamic_source_key`,
 `validation_rules`, `placeholder`, `help_text`, `active`, `created_at`, `updated_at`).
 `FormSectionResponse` / `FormSectionSyncRequest` — (`uid`, `entity_type`, `name`, `display_order`,
 `visible`, `active`, `created_at`, `updated_at`). Sync requests drop server-managed audit fields; `uid`
