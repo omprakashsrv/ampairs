@@ -8,7 +8,6 @@ import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.web.bind.annotation.*
-import java.time.Instant
 
 @RestController
 @RequestMapping("/order/v1/orders")
@@ -16,25 +15,11 @@ class OrderController(
     private val orderService: OrderService,
 ) {
 
-    @PostMapping("")
-    fun updateOrder(@RequestBody @Valid orderUpdateRequest: OrderUpdateRequest): ApiResponse<OrderResponse> {
-        val order = orderUpdateRequest.toOrder()
-        val orderItems = orderUpdateRequest.orderItems.toOrderItems()
-        val result = orderService.updateOrder(order, orderItems)
-        return ApiResponse.success(result)
-    }
-
     @PostMapping("/create-invoice")
     fun createInvoice(@RequestBody @Valid orderUpdateRequest: OrderUpdateRequest): ApiResponse<OrderResponse> {
         val order = orderUpdateRequest.toOrder()
         val orderItems = orderUpdateRequest.orderItems.toOrderItems()
         val result = orderService.createInvoice(order, orderItems)
-        return ApiResponse.success(result)
-    }
-
-    @GetMapping("")
-    fun getOrders(@RequestParam("last_updated") lastUpdated: Instant?): ApiResponse<List<OrderResponse>> {
-        val result = orderService.getOrders(lastUpdated).toResponse()
         return ApiResponse.success(result)
     }
 
@@ -55,9 +40,12 @@ class OrderController(
     fun getOrdersSync(
         @RequestParam("last_sync", required = false) lastSync: String?,
         @RequestParam("page", defaultValue = "0") page: Int,
-        @RequestParam("size", defaultValue = "100") size: Int
+        @RequestParam("size", defaultValue = "100") size: Int,
+        @RequestParam("sort_by", defaultValue = "updatedAt") sortBy: String,
+        @RequestParam("sort_dir", defaultValue = "ASC") sortDir: String
     ): ApiResponse<PageResponse<OrderResponse>> {
-        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "updatedAt"))
+        val direction = Sort.Direction.fromString(sortDir)
+        val pageable = PageRequest.of(page, size, Sort.by(direction, sortBy))
         val ordersPage = orderService.getOrdersAfterSync(lastSync, pageable)
         return ApiResponse.success(PageResponse.from(ordersPage) { it.toResponse(it.orderItems) })
     }

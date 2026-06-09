@@ -9,7 +9,6 @@ import com.ampairs.unit.service.UnitService
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
-import org.springframework.http.HttpStatus
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.*
 
@@ -20,12 +19,17 @@ class UnitController(
     private val unitService: UnitService
 ) {
 
-    @GetMapping
-    fun listUnits(
-        @RequestParam(defaultValue = "true") active: Boolean,
+    /**
+     * Incremental sync feed: units updated at/after last_sync, INCLUDING inactive
+     * (soft-deleted) rows, ordered by updatedAt ASC, paginated. Lets mobile clients
+     * do batched incremental pulls and detect deletions.
+     */
+    @GetMapping("/sync")
+    fun getUnitsSync(
+        @RequestParam("last_sync", required = false) lastSync: String?,
         @RequestParam("page", defaultValue = "0") page: Int,
-        @RequestParam("size", defaultValue = "20") size: Int,
-        @RequestParam("sort_by", defaultValue = "name") sortBy: String,
+        @RequestParam("size", defaultValue = "100") size: Int,
+        @RequestParam("sort_by", defaultValue = "updatedAt") sortBy: String,
         @RequestParam("sort_dir", defaultValue = "ASC") sortDir: String
     ): ApiResponse<PageResponse<UnitResponse>> {
         val jpaPropertyName = when (sortBy) {
@@ -36,16 +40,21 @@ class UnitController(
             "active" -> "active"
             "createdAt" -> "createdAt"
             "updatedAt" -> "updatedAt"
-            else -> "name"
+            else -> "updatedAt"
         }
         val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(sortDir), jpaPropertyName))
-        return ApiResponse.success(PageResponse.from(unitService.findAllPaged(active, pageable)))
+        return ApiResponse.success(PageResponse.from(unitService.getUnitsAfterSync(lastSync, pageable)))
     }
 
-    @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
-    fun createUnit(@Valid @RequestBody request: UnitRequest): ApiResponse<UnitResponse> {
-        return ApiResponse.success(unitService.create(request))
+    /**
+     * Bulk upsert units keyed by uid (create if absent, update if present). Soft-deleted
+     * rows (active = false) are accepted in-band so deletions propagate without a per-row DELETE.
+     */
+    @PostMapping("/sync")
+    fun bulkUpsertUnits(
+        @Valid @RequestBody requests: List<UnitRequest>
+    ): ApiResponse<List<UnitResponse>> {
+        return ApiResponse.success(unitService.bulkUpsert(requests))
     }
 
     @GetMapping("/{uid}")

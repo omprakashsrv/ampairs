@@ -20,8 +20,8 @@ clients. It is the single place to get and customize settings across modules.
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/setting/v1/settings?last_sync=&page=&size=` | Incremental pull. Includes inactive rows so soft-deletes propagate. Returns `PageResponse<SettingResponse>`. |
-| POST | `/setting/v1/settings` | Bulk upsert of `List<SettingRequest>`. Validates each value against its definition; soft-delete via `active=false`. Returns reconciled `List<SettingResponse>`. |
+| GET | `/setting/v1/settings/sync?last_sync=&page=&size=&sort_by=updatedAt&sort_dir=ASC` | Incremental pull. Includes inactive rows so soft-deletes propagate. Returns `PageResponse<SettingResponse>`. |
+| POST | `/setting/v1/settings/sync` | Bulk upsert of `List<SettingRequest>`. Validates each value against its definition; soft-delete via `active=false`. Returns reconciled `List<SettingResponse>`. |
 | GET | `/setting/v1/settings/definitions` | Definition catalog filtered to the current workspace's installed modules. |
 
 Tenant context is set by `SessionUserFilter` from `X-Workspace-ID`.

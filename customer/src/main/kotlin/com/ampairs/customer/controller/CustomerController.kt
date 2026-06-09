@@ -20,25 +20,27 @@ class CustomerController(
     private val customerService: CustomerService,
 ) {
 
-    @PostMapping("")
-    fun updateUser(@RequestBody @Valid customerUpdateRequest: CustomerUpdateRequest): ApiResponse<CustomerResponse> {
-        val customer = customerUpdateRequest.toCustomer()
-        val result = customerService.upsertCustomer(customer).asCustomerResponse()
-        return ApiResponse.success(result)
-    }
-
-    @PostMapping("/customers")
+    /**
+     * Bulk upsert (push) endpoint of the unified sync contract. The body MAY contain
+     * soft-deleted rows (status = DELETED) so deletions propagate in-band — there is no
+     * separate per-row DELETE call in the sync push path.
+     */
+    @PostMapping("/customers/sync")
     fun updateCustomers(@RequestBody @Valid customerUpdateRequest: List<CustomerUpdateRequest>): ApiResponse<List<CustomerResponse>> {
         val customers = customerUpdateRequest.toCustomers()
         val result = customerService.updateCustomers(customers).asCustomersResponse()
         return ApiResponse.success(result)
     }
 
-    @GetMapping("/customers")
+    /**
+     * Incremental sync feed (pull): customers updated at/after last_sync, INCLUDING
+     * soft-deleted rows (status = DELETED) so clients can detect and propagate deletions.
+     */
+    @GetMapping("/customers/sync")
     fun getCustomers(
         @RequestParam("last_sync", required = false) lastSync: String?,
         @RequestParam("page", defaultValue = "0") page: Int,
-        @RequestParam("size", defaultValue = "20") size: Int,
+        @RequestParam("size", defaultValue = "100") size: Int,
         @RequestParam("sort_by", defaultValue = "updatedAt") sortBy: String,
         @RequestParam("sort_dir", defaultValue = "ASC") sortDir: String
     ): ApiResponse<PageResponse<CustomerResponse>> {
