@@ -18,9 +18,9 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 ## Phase 1: Setup (Shared Infrastructure)
 
 - [X] T001 [P] `BE:` Add shared enums `EntityType`, `FieldSource`, `FieldDataType` (incl. `CHOICE` and `MULTI_CHOICE`), `OptionSource` in `form/src/main/kotlin/com/ampairs/form/domain/model/` (replace magic entityType strings; reject unknown at API boundary).
-- [ ] T002 [P] `APP:` Add mirror enums (same names incl. `CHOICE`/`MULTI_CHOICE`, `@SerialName` snake_case) in `feature/form-api/src/commonMain/kotlin/com/ampairs/form/domain/`.
+- [X] T002 [P] `APP:` Add mirror enums (same names incl. `CHOICE`/`MULTI_CHOICE`, `@SerialName` snake_case) in `feature/form-api/src/commonMain/kotlin/com/ampairs/form/domain/`.
 - [X] T003 [P] `BE:` Confirm `form` is in `migrationModules` (`ampairs_service/build.gradle.kts`) and run `./gradlew :ampairs_service:flywayInfo` to fix the next migration version (record it for T010).
-- [ ] T004 [P] `APP:` Add `FormLogger` (Kermit, `w/e/i/d` 3-param signature) in `feature/form/src/commonMain/kotlin/com/ampairs/form/FormLogger.kt`; add a `BATCH_SIZE = 100` constant for sync.
+- [X] T004 [P] `APP:` Add `FormLogger` (Kermit, `w/e/i/d` 3-param signature) in `feature/form/src/commonMain/kotlin/com/ampairs/form/FormLogger.kt`; add a `BATCH_SIZE = 100` constant for sync.
 
 ---
 
