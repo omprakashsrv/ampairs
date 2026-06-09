@@ -36,7 +36,7 @@ Collapse the backend's two parallel form-config concepts (`FieldConfig` + `Attri
 | Flyway | ✅ | Paired mysql+postgresql migrations; new version via `flywayInfo`; add `form` already in `migrationModules`. |
 | Offline-sync canonical contract | ✅ | Single unified `/sync` follows the contract incl. soft-delete. Legacy two-feed form endpoints are removed (no adapters) — a clean cutover, not a deviation. |
 
-**Result: PASS.** No violations; Complexity Tracking not required. Fresh setup with a clean cutover (no migration, no legacy adapters) — the old form module is replaced, simplifying the contract to the single unified feed.
+**Result: PASS.** No violations; Complexity Tracking not required. Fresh setup with a clean cutover (no migration, no legacy adapters) — the old form module is replaced; the contract is two canonical feeds (`sections` + `fields`) under one `SyncEntity.FORM` checkpoint.
 
 ## Project Structure
 
@@ -76,7 +76,7 @@ specs/011-unified-schema-driven/
 │   └── registry/                 # NEW Standard Field Registry SPI
 │       ├── StandardFieldProvider.kt   # interface (one per domain implements)
 │       └── FormFieldRegistry.kt       # aggregates providers, validates fieldName/entityType
-├── controller/ConfigController.kt     # unified /config/schema/sync + /schema read; legacy endpoints removed
+├── controller/ConfigController.kt     # /config/sections/sync + /config/fields/sync + /config/schema read; legacy endpoints removed
 ├── sync/FormCheckpointContributor.kt  # checkpoint key "form" over form_field+form_section
 └── src/main/resources/db/migration/{mysql,postgresql}/
     └── V1.0.x__create_unified_form_model.sql   # NEW: create empty form_field/form_section; drop legacy tables
@@ -105,7 +105,7 @@ order/.../...   invoice/.../...   workspace/.../service/BusinessStandardFieldPro
 ├── data/db/  FormField/Section entities, DAOs, FormDatabase (v2 + migration)
 ├── data/api/ ConfigApi(+Impl)    # unified /sync feed methods
 ├── data/repository/ConfigRepository.kt   # local-only writes, markPendingPush(FORM)
-├── sync/FormSyncDelegate.kt      # single unified feed, soft-delete aware
+├── sync/FormSyncDelegate.kt      # two feeds (sections then fields), one FORM checkpoint, soft-delete aware
 └── ui/   FormConfigScreen + sub-screens (Field settings | Advanced) + FormConfigViewModel
 ```
 
@@ -118,7 +118,7 @@ See [research.md](./research.md). All Technical Context items are known; researc
 ## Phase 1 — Design & Contracts
 
 - [data-model.md](./data-model.md) — `FormField`, `FormSection`, enums, `ValidationRule`, `ChoiceOptionSource`, `EntityConfigSchema`; backend ↔ app field parity; soft-delete + sync columns; migration/backfill rules; state transitions.
-- [contracts/form-sync-api.md](./contracts/form-sync-api.md) — unified `GET/POST /form/v1/config/schema/sync`; legacy `field-configs/sync` & `attribute-definitions/sync` retained as read/write adapters during rollout; request/response shapes; in-band soft-delete.
+- [contracts/form-sync-api.md](./contracts/form-sync-api.md) — two canonical feeds `GET/POST /form/v1/config/sections/sync` + `/config/fields/sync` under one `SyncEntity.FORM` checkpoint (stable `(updatedAt, uid)` paging, in-band soft-delete, sections-before-fields), plus the read-only `/config/schema`; legacy endpoints removed.
 - [quickstart.md](./quickstart.md) — step-by-step to put a new domain on the system (register standard fields → render via `DynamicFormRenderer` → wire dynamic options + custom widgets).
 
 ## Complexity Tracking

@@ -6,71 +6,64 @@ auto-filter). All responses are `ApiResponse<T>`. JSON is global SNAKE_CASE. Con
 
 ---
 
-## 1. Unified sync feed (NEW — primary going forward)
+## 1. Sync feeds (NEW — primary going forward)
 
-One feed for the whole schema (fields **and** sections), replacing the two legacy feeds.
-
-### Pull
-
-```
-GET /form/v1/config/schema/sync
-    ?last_sync={ISO-8601}&page={int}&size={int}&sort_by=updatedAt&sort_dir=ASC
-→ ApiResponse<PageResponse<FormConfigRecordResponse>>
-```
-
-- Feed is the **union** of fields and sections as `FormConfigRecordResponse` items, discriminated by
-  `record_type` (`FIELD` | `SECTION`), so one paged feed + one client checkpoint covers both.
-- **Ordering tolerance**: items are paged by `updated_at`, so a FIELD may arrive before the SECTION its
-  `section_uid` references. The client MUST NOT treat a dangling `section_uid` as an error — render the
-  field in the default/unsectioned group until the section row arrives, then re-group. No FK ordering is
-  guaranteed across pages.
-- **Includes soft-deleted rows** (`active = false`) — this is how deletes propagate. No active filter.
-- `last_sync` optional; absent/blank ⇒ full feed. Defaults `page=0,size=100,sort_by=updatedAt,sort_dir=ASC`.
-
-### Push
+`form` syncs **two feeds under one logical entity** `SyncEntity.FORM` — `sections` and `fields` — each a
+plain canonical `/sync` resource (no discriminated mega-record). This matches the proven pattern the
+form module already used (it synced two feeds before) and keeps each DTO clean. **One checkpoint** for
+`SyncEntity.FORM` = `max(updated_at)` across **both** `form_field` and `form_section`
+(`FormCheckpointContributor`).
 
 ```
-POST /form/v1/config/schema/sync
-     body: List<FormConfigRecordRequest>     (UID-keyed; active upserts AND soft-deletes in-band)
-→ ApiResponse<List<FormConfigRecordResponse>>
+GET  /form/v1/config/sections/sync   ?last_sync&page&size&sort_by=updatedAt&sort_dir=ASC
+POST /form/v1/config/sections/sync   body: List<FormSectionSyncRequest>
+     → ApiResponse<PageResponse<FormSectionResponse>>  /  ApiResponse<List<FormSectionResponse>>
+
+GET  /form/v1/config/fields/sync     ?last_sync&page&size&sort_by=updatedAt&sort_dir=ASC
+POST /form/v1/config/fields/sync     body: List<FormFieldSyncRequest>
+     → ApiResponse<PageResponse<FormFieldResponse>>    /  ApiResponse<List<FormFieldResponse>>
 ```
 
-- UID-keyed bulk upsert (`uid` exists → update, else create). Honors `active=false` (in-band delete).
-- Server validates: STANDARD `field_key`/`entity_type` exist in the registry; STANDARD fields not
-  soft-deletable and essential ones not hideable; CHOICE/CUSTOM invariants (data-model). Violations bubble
-  to the global handler as `ApiResponse` errors (no per-row silent drop).
-- Returns server-resolved rows; client reconciles by `uid`.
+### Incremental (diff) semantics — both feeds
 
-### `FormConfigRecordResponse` (discriminated)
+- **Row-level diff keyed on `updated_at`.** Pull returns every row with `updated_at >= last_sync` (whole
+  row, not a column delta). Boundary uses `>=` (idempotent upsert tolerates the re-sent edge row).
+- **Stable pagination**: sort is `(updated_at ASC, uid ASC)` — the `uid` tiebreaker prevents skip/dup at
+  page boundaries when many rows share a timestamp (e.g. a bulk save stamps them identically).
+- **Includes soft-deleted rows** (`active = false`) so deletes propagate. No active filter on the feed.
+- `last_sync` optional; absent/blank ⇒ full feed. Defaults `page=0, size=100`.
+- **Pull order = sections, then fields.** The delegate pulls `sections/sync` first so a field's
+  `section_uid` usually resolves immediately; the I3 tolerance (render dangling `section_uid` in the
+  default group, then re-group) still covers the rare cross-cycle gap. After both feeds drain, advance
+  the single `SyncEntity.FORM` checkpoint to `max(updated_at)` seen across both.
 
-```jsonc
-{
-  "record_type": "FIELD",            // or "SECTION"
-  "uid": "FF20260609...",
-  "entity_type": "customer",
-  // --- when record_type = FIELD ---
-  "source": "standard",              // standard | custom
-  "field_key": "phone",
-  "display_name": "Phone",
-  "data_type": "text",               // text|textarea|number|boolean|date|choice|custom
-  "widget_key": null,                // set iff data_type=custom
-  "section_uid": "FS2026...",        // nullable
-  "visible": true, "mandatory": true, "enabled": true, "display_order": 2,
-  "default_value": null,
-  "option_source": null,             // choice only: static|dynamic
-  "enum_values": null,               // choice+static
-  "dynamic_source_key": null,        // choice+dynamic, e.g. "customer_types"
-  "validation_rules": [ { "type": "required" }, { "type": "format", "kind": "phone" } ],
-  "placeholder": null, "help_text": null,
-  // --- when record_type = SECTION ---
-  // "name": "Contact", "display_order": 1, "visible": true,
-  "active": true,
-  "created_at": "2026-06-09T10:00:00Z",
-  "updated_at": "2026-06-09T10:00:00Z"
-}
-```
+### Section-detail updates (the common case)
 
-`FormConfigRecordRequest` mirrors this minus server-managed audit fields; `uid` optional on create.
+Renaming / reordering / hiding a section bumps only that **section row's** `updated_at`. It comes down
+on the `sections/sync` feed and the client upserts it; **fields are untouched** — they reference the
+section by `uid`, so the form simply re-groups under the new name/order. Reassigning a field to another
+section bumps the **field's** `section_uid` + `updated_at` (it re-syncs on `fields/sync`). Deleting a
+section sends `active=false` on `sections/sync`; the normal reassignment of its fields re-syncs those
+fields too.
+
+### Push — both feeds
+
+- UID-keyed bulk upsert per feed (`uid` exists → update, else create), honoring `active=false` in-band.
+- **Push order = sections, then fields** (so a field's `section_uid` target exists server-side first).
+- Server validates on the fields feed: STANDARD `field_key`/`entity_type` exist in the registry; STANDARD
+  fields not soft-deletable and essential ones not hideable; CHOICE/CUSTOM invariants (data-model).
+  Violations bubble to the global handler as `ApiResponse` errors (no per-row silent drop).
+- Returns server-resolved rows; client reconciles by `uid`. Client batches at 100 per feed.
+
+### DTO shapes
+
+`FormFieldResponse` / `FormFieldSyncRequest` — the field columns from data-model.md (`uid`, `source`,
+`field_key`, `display_name`, `data_type`, `widget_key`, `section_uid`, `visible`, `mandatory`, `enabled`,
+`display_order`, `default_value`, `option_source`, `enum_values`, `dynamic_source_key`,
+`validation_rules`, `placeholder`, `help_text`, `active`, `created_at`, `updated_at`).
+`FormSectionResponse` / `FormSectionSyncRequest` — (`uid`, `entity_type`, `name`, `display_order`,
+`visible`, `active`, `created_at`, `updated_at`). Sync requests drop server-managed audit fields; `uid`
+optional on create.
 
 ---
 
@@ -98,25 +91,29 @@ POST /form/v1/config/field-config | /attribute-definition | /config   # removed
 DELETE /form/v1/config/field-config | /attribute-definition           # removed
 ```
 
-The unified `/config/schema/sync` (push/pull) plus the read-only `/config/schema` are the entire
-target contract. The new app build uses only the unified feed; older installs simply re-provision
-from defaults on update (no legacy data to preserve).
+The two feeds `/config/sections/sync` + `/config/fields/sync` (push/pull) plus the read-only
+`/config/schema` are the entire target contract. The new app build uses only these; older installs
+simply re-provision from defaults on update (no legacy data to preserve).
 
 ---
 
 ## Client (app) API surface
 
-`ConfigApi` (app) gains:
+`ConfigApi` (app) exposes the two feeds + the UI read:
 
 ```
-suspend fun getSchemaSync(lastSync: String, page: Int, size: Int,
-                          sortBy: String = "updatedAt", sortDir: String = "ASC"
-): PageResponse<FormConfigRecord>
-suspend fun pushSchema(records: List<FormConfigRecord>): List<FormConfigRecord>
+suspend fun getSectionsSync(lastSync: String, page: Int, size: Int,
+                            sortBy: String = "updatedAt", sortDir: String = "ASC"): PageResponse<FormSection>
+suspend fun pushSections(sections: List<FormSection>): List<FormSection>
+
+suspend fun getFieldsSync(lastSync: String, page: Int, size: Int,
+                          sortBy: String = "updatedAt", sortDir: String = "ASC"): PageResponse<FormField>
+suspend fun pushFields(fields: List<FormField>): List<FormField>
+
 suspend fun getConfigSchema(entityType: String): EntityConfigSchema     // UI read (unchanged role)
 ```
 
-`FormSyncDelegate` drives the single feed under `SyncEntity.FORM` (one checkpoint), soft-delete aware,
-batched 100, local-unsynced-wins. The two legacy `getFieldConfigsSync`/`getAttributeDefinitionsSync`
-methods are removed from the new app build (the new build uses only the unified feed; legacy endpoints
-exist solely for older installs).
+`FormSyncDelegate` drives both feeds under one `SyncEntity.FORM` checkpoint (sections before fields on
+both pull and push), soft-delete aware, batched 100 per feed, local-unsynced-wins. The single checkpoint
+advances to `max(updated_at)` across both feeds after both drain. The old
+`getFieldConfigsSync`/`getAttributeDefinitionsSync` methods are removed.

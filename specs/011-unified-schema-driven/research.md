@@ -117,20 +117,27 @@ unsafe, untestable. Client-only validation — backend would accept invalid push
 
 ---
 
-## D7 — App Room migration & sync delegate
+## D7 — App storage & sync delegate (fresh schema, two feeds, one checkpoint)
 
-**Decision**: Bump `FormDatabase` to v2: add `form_field`/`form_section` tables, migrate existing
-`entity_field_configs` + `entity_attribute_definitions` rows into the unified table (Room
-`Migration(1,2)`), then drop the old tables in a later release. `FormSyncDelegate` switches to the single
-unified `/sync` feed (still `SyncEntity.FORM`, one checkpoint), soft-delete aware, batches of 100, local-
-unsynced-wins. Repository stays local-only (`markPendingPush(FORM)`); `getConfigSchema` read remains the
-allowed UI-invoked exception.
+**Decision**: `FormDatabase` is introduced with the unified `form_field`/`form_section` schema directly
+(fresh setup — the old `entity_field_configs`/`entity_attribute_definitions` tables are removed, no row
+copy; see D1). `FormSyncDelegate` drives **two feeds — `sections/sync` then `fields/sync` — under one
+`SyncEntity.FORM` checkpoint** (= `max(updatedAt)` across both tables, what `FormCheckpointContributor`
+already computes). Soft-delete aware, batches of 100 per feed, local-unsynced-wins. Repository stays
+local-only (`markPendingPush(FORM)`); `getConfigSchema` read remains the allowed UI-invoked exception.
 
-**Rationale**: Preserves the proven offline-first architecture (CLAUDE.md / `/offline-sync`) while moving
-to one feed. Single checkpoint avoids the dual-feed bookkeeping.
+**Why two feeds, not one record stream**: sections and fields are genuinely different shapes; a
+discriminated union record forces half-null payloads and an awkward `record_type`. Two clean canonical
+feeds under one logical entity is the pattern the form module already used (it synced two feeds), keeps
+each DTO clean, and lets each feed be a plain `updated_at >= last_sync` paged query. Pagination uses a
+stable `(updated_at, uid)` sort so equal-timestamp bulk saves don't skip rows at page boundaries.
+**Section-detail updates** only bump the section row (fields reference it by `uid` and re-group on the
+client) — see contract §1.
 
-**Alternatives rejected**: Keep two app feeds — perpetuates the split on the client. Wipe-and-repull —
-loses unsynced local edits.
+**Alternatives rejected**: *Single discriminated `/schema/sync` feed* — half-null mega-record, ugly and
+error-prone. *Two `SyncEntity` checkpoints (one per feed)* — unnecessary; one `FORM` checkpoint over both
+tables is simpler and already supported. *Wipe-and-repull on every change* — loses unsynced local edits.
+(Note: "two feeds" here means sections vs fields — NOT the old standard-vs-custom split, which is gone.)
 
 ---
 

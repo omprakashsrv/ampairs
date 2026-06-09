@@ -114,7 +114,9 @@ EntityConfigSchema(
 ```
 
 Helpers (app): `visibleFields()`, `mandatoryFields()`, `fieldsBySection()`, `isFieldVisible(key)`.
-This is what the unified `/sync` feed materializes and what `DynamicFormRenderer` consumes.
+On the app this aggregate is assembled locally by joining the synced `form_section` + `form_field`
+Room tables (the two `/sync` feeds feed those tables); the read-only `GET /config/schema` returns the
+same shape server-side for the UI. It is what `DynamicFormRenderer` consumes.
 
 ---
 
