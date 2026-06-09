@@ -21,6 +21,33 @@ OptionSource  = STATIC | DYNAMIC          # for CHOICE fields
 
 ---
 
+## Aggregate model (DDD)
+
+The schema is a **`FormSchema` aggregate**, one per `(workspace, entityType)`:
+
+```
+FormSchema (aggregate root — identity = workspace + entityType)
+└── Section (ordered)        owns its fields
+      └── Field (ordered)    belongs to exactly one section
+```
+
+- **Aggregate root** = the per-entityType schema. `Section` and `Field` are members; **every `Field`
+  belongs to exactly one `Section`** (mandatory ownership — no orphan fields).
+- **Invariants enforced at the aggregate boundary** (on save and on every `/sync` push, applied to the
+  resulting state for that entityType): unique `fieldKey` per `(source)`; unique `displayOrder` within a
+  section; a `Section` cannot be removed while it still owns fields (reassign first); a STANDARD field
+  cannot be soft-deleted and an essential STANDARD field cannot be hidden; CHOICE/CUSTOM field invariants.
+- **A default `General` section is always present** (seeded from the registry) so the registry can place
+  every standard field and every new custom field has a home.
+- **Persistence is relational** — `form_section` + `form_field` rows (mandatory section FK) — but loaded
+  and saved as one aggregate (validated together, atomic write).
+- **Distribution is row-level** (two `/sync` feeds, soft-delete, merge) so concurrent admin edits on
+  different fields/sections reconcile without losing unrelated changes (FR-018). The aggregate is the
+  **consistency/editing** boundary, not the transfer unit. `EntityConfigSchema` (below) is the read
+  projection of the aggregate.
+
+---
+
 ## Entity: FormField
 
 The single unified field model. Replaces `FieldConfig` **and** `AttributeDefinition` (FR-001).
@@ -35,7 +62,7 @@ The single unified field model. Replaces `FieldConfig` **and** `AttributeDefinit
 | `displayName` | String(255) | UI label. |
 | `dataType` | `FieldDataType` | |
 | `widgetKey` | String(100)? | Required iff `dataType = CUSTOM` (e.g. `image_gallery`, `address`, `location`, `business_hours`). |
-| `sectionUid` | String(200)? | FK→`FormSection.uid`. Nullable = default/unsectioned group. A **dangling** `sectionUid` (section not yet synced/arrived) is treated as the default group until the section appears — never an error. |
+| `sectionUid` | String(200) | FK→`FormSection.uid`, **required** — every field belongs to exactly one section (a seeded default `General` section always exists). The server never persists a field without a section. During incremental sync a field row may still land before its section row; the client renders it under the default group **transiently** until the section arrives — a sync-timing safeguard, not a real orphan. |
 | `visible` | Boolean = true | |
 | `mandatory` | Boolean = false | |
 | `enabled` | Boolean = true | Editable vs read-only. |
@@ -54,7 +81,8 @@ The single unified field model. Replaces `FieldConfig` **and** `AttributeDefinit
 **Uniqueness**: `(owner_id, entity_type, source, field_key)`.
 **Indexes**: `(owner_id, entity_type)`; unique `(uid)`; `(entity_type, section_uid, display_order)`.
 
-**Invariants** (service-enforced):
+**Invariants** (enforced at the aggregate boundary — on save and on `/sync` push):
+- Every field MUST reference an existing `FormSection` in the same aggregate (mandatory ownership; the `General` section is the default home).
 - STANDARD field: `fieldKey` MUST exist in the registry for `entityType`; cannot be soft-deleted; cannot be made `visible=false` if registry marks it structurally essential (FR-015).
 - CUSTOM field: freely creatable/deletable; value lives in the entity's `attributes` JSON.
 - `dataType=CHOICE` ⇒ `optionSource` set; STATIC ⇒ `enumValues` non-empty; DYNAMIC ⇒ `dynamicSourceKey` set.
@@ -79,10 +107,13 @@ First-class, configurable, syncable grouping (clarified — D/Q3, FR-010a).
 
 **Uniqueness**: `(owner_id, entity_type, uid)`. **Index**: `(owner_id, entity_type, display_order)`.
 
-**Lifecycle / transitions**:
+**Lifecycle / transitions** (as a member of the `FormSchema` aggregate):
+- A default `General` section is seeded per entityType and is the fallback home for fields; it cannot be
+  deleted (an aggregate must always have at least one section so every field has a home).
 - Create → Active. Rename/reorder/hide → in place (`updatedAt` bumped).
-- Soft-delete: only when empty, OR fields are reassigned first; otherwise the service reassigns orphaned
-  fields to the default/unsectioned group (FR edge case "Deleting a non-empty section").
+- Soft-delete: only after its fields are reassigned (the aggregate rejects deleting a non-empty section);
+  the editor moves the fields to another section — or the `General` section — first, which re-syncs those
+  fields (FR edge case "Deleting a non-empty section").
 
 ---
 

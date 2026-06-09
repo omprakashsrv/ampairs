@@ -146,10 +146,34 @@ tables is simpler and already supported. *Wipe-and-repull on every change* — l
 **Decision**: Customer is the reference implementation (full renderer + registry + dynamic options +
 at least one custom widget — the image gallery). Then product, order, invoice, business. Each domain is
 shippable independently; the backend serves all entity types regardless of which app screens have
-migrated, and legacy adapters cover un-migrated clients.
+migrated (fresh setup, clean cutover — no legacy adapters).
 
 **Rationale**: Proves the model and renderer end-to-end on the richest existing form before broad
 rollout (FR-023/026); de-risks via one vertical slice.
+
+---
+
+## D9 — `FormSchema` DDD aggregate, row-level distribution
+
+**Decision**: Model the per-`(workspace, entityType)` schema as a **`FormSchema` aggregate root**:
+`Section` owns `Field`, every field belongs to exactly one section (mandatory ownership; a seeded default
+`General` section), and all invariants (unique keys, order, section-not-empty-on-delete, essential-not-
+hideable, CHOICE/CUSTOM rules) are enforced at the aggregate boundary — on the editor save **and** on
+every `/sync` push (validate the resulting state for that entityType after applying the batch).
+Persistence stays relational (`form_section` + `form_field`, mandatory section FK), loaded/saved as one
+aggregate. **Distribution stays row-level** (the two feeds from D7) so concurrent admin edits on
+different fields/sections merge without losing unrelated changes.
+
+**Rationale**: The aggregate is the natural domain + editing + consistency boundary (matches the UI: "a
+form is sections of fields") and eliminates orphan/dangling fields *by construction* in the model. Keeping
+the aggregate as the **consistency** boundary but NOT the **transfer** boundary preserves FR-018 (row-level
+merge) and the canonical row-level `/sync` contract — best of both. Push order sections-before-fields means
+a field's mandatory section already exists server-side when the field push is validated.
+
+**Alternatives rejected**: *Aggregate as the sync/transfer unit* (one schema document per entityType) —
+simplest and makes deletes free, but whole-form last-write-wins loses unrelated concurrent edits (violates
+FR-018); reconsider only if concurrent admin editing proves a non-issue. *No aggregate (flat rows, nullable
+section)* — pushes invariant enforcement into scattered row upserts and allows orphan fields.
 
 ---
 

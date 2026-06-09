@@ -20,6 +20,7 @@ This feature unifies that model into a single notion of a "form field", makes ev
 - Q: Form sections — free-form label on each field, a separate first-class entity, or a fixed per-domain catalog? → A: First-class entity — sections are configurable records per entity type (own name, order, visibility) that fields reference, with their own configuration and sync lifecycle.
 - Q: Migrate existing form configuration into the unified model? → A: No — this is a fresh setup. The unified store provisions empty and seeds defaults from the standard field registry; no legacy data is migrated or backfilled.
 - Q: Maintain backward-compatible legacy form endpoints for older clients / the web app? → A: No — the Angular web client is deprecated and the app does a clean cutover to the unified feed. No legacy `/sync` adapters or legacy CRUD endpoints are retained.
+- Q: Should the form schema be a DDD aggregate (Section owns Field), and what is the sync unit? → A: Yes — model it as a `FormSchema` aggregate (every field belongs to exactly one section; a default `General` section always exists; invariants enforced atomically on save) for the domain/editing/consistency layer, while keeping **row-level** distribution (sections + fields feeds) so concurrent admin edits still merge (FR-018 preserved).
 
 ## User Scenarios & Testing *(mandatory)*
 

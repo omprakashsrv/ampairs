@@ -58,8 +58,9 @@ specs/011-unified-schema-driven/
 ```
 # BACKEND  /home/user/ampairs/form/src/main/kotlin/com/ampairs/form/
 ├── domain/model/
-│   ├── FormField.kt              # NEW unified entity (replaces FieldConfig+AttributeDefinition)
-│   ├── FormSection.kt            # NEW first-class section entity
+│   ├── FormSchema.kt             # NEW aggregate root (per workspace+entityType): Section owns Field; invariants
+│   ├── FormField.kt              # NEW unified entity (replaces FieldConfig+AttributeDefinition); mandatory section FK
+│   ├── FormSection.kt            # NEW first-class section entity (aggregate member; default "General" seeded)
 │   ├── EntityType.kt             # NEW enum (customer/product/order/invoice/business)
 │   ├── FieldDataType.kt          # NEW enum (TEXT/TEXTAREA/NUMBER/BOOLEAN/DATE/CHOICE/CUSTOM)
 │   ├── FieldSource.kt            # NEW enum (STANDARD/CUSTOM)
@@ -72,7 +73,7 @@ specs/011-unified-schema-driven/
 │   ├── FormFieldRepository.kt
 │   └── FormSectionRepository.kt
 ├── domain/service/
-│   ├── FormConfigService.kt      # unified CRUD + bulk upsert + registry-driven defaults
+│   ├── FormConfigService.kt      # loads/saves the FormSchema aggregate atomically; validates invariants on save + on every /sync push; registry-driven defaults
 │   └── registry/                 # NEW Standard Field Registry SPI
 │       ├── StandardFieldProvider.kt   # interface (one per domain implements)
 │       └── FormFieldRegistry.kt       # aggregates providers, validates fieldName/entityType
