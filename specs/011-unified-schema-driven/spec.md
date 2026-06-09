@@ -20,8 +20,9 @@ This feature unifies that model into a single notion of a "form field", makes ev
 - Q: Form sections — free-form label on each field, a separate first-class entity, or a fixed per-domain catalog? → A: First-class entity — sections are configurable records per entity type (own name, order, visibility) that fields reference, with their own configuration and sync lifecycle.
 - Q: Migrate existing form configuration into the unified model? → A: No — this is a fresh setup. The unified store provisions empty and seeds defaults from the standard field registry; no legacy data is migrated or backfilled.
 - Q: Maintain backward-compatible legacy form endpoints for older clients / the web app? → A: No — the Angular web client is deprecated and the app does a clean cutover to the unified feed. No legacy `/sync` adapters or legacy CRUD endpoints are retained.
-- Q: Should the form schema be a DDD aggregate (Section owns Field), and what is the sync unit? → A: Yes — model it as a `FormSchema` aggregate (every field belongs to exactly one section; a default `General` section always exists; invariants enforced atomically on save) for the domain/editing/consistency layer, while keeping **row-level** distribution (sections + fields feeds) so concurrent admin edits still merge (FR-018 preserved).
+- Q: Should the form schema be a DDD aggregate (Section owns Field), and what is the sync unit? → A: Yes — a `FormSchema` aggregate (every field belongs to exactly one section; a default `General` section always exists; invariants enforced atomically) is the consistency boundary **and** the sync unit: one record per entityType, transferred whole over a single feed. Deletions propagate by absence (no soft-delete). Concurrency on the same form is whole-form last-write-wins guarded by an optimistic version stamp (FR-018 relaxed accordingly).
 - Q: Support multi-select choice fields, and how? → A: Yes — a separate `MULTI_CHOICE` data type alongside single `CHOICE` (both reuse the same static/dynamic option source). Single = one value; multi = a list of values. Multi-select moves into scope.
+- Q: If the schema is a DDD aggregate, why multiple sync endpoints? → A: It shouldn't have them — collapse to a single aggregate `/config/schema/sync` (one GET + one POST), one record per entityType. This supersedes the earlier two-feed (sections + fields) design; soft-delete is dropped (delete-by-absence) and FR-018 becomes aggregate-level last-write-wins + optimistic version.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -114,7 +115,7 @@ The customer, product, order, invoice, and business entry screens all render fro
 - **Standard field tied to required data**: A field that is structurally essential to a record (e.g. the field that identifies the record) cannot be hidden or made optional; the system prevents the configuration that would break record integrity.
 - **Unknown or unsupported entity type**: If a configuration references an entity type the application does not support, the configuration screen surfaces this clearly instead of failing silently.
 - **Validation rule that no value can satisfy**: If an administrator sets contradictory rules (e.g. minimum length greater than maximum length), the configuration screen warns before saving.
-- **Conflicting offline edits**: When the same field is edited on two devices while offline, reconciliation produces one consistent result and never leaves a half-applied configuration.
+- **Conflicting offline edits**: When the same entity-type form is edited on two devices while offline, reconciliation produces one consistent form (whole-form last-write-wins). The later device detects via the version stamp that the form changed under it and re-applies its edits onto the latest version rather than blindly overwriting; the configuration is never left half-applied.
 - **Required custom field added after records exist**: Existing records missing the newly-required value are not retroactively invalidated; the requirement applies to new edits going forward.
 - **Empty configuration**: When a workspace has never customized a form, the entry screen renders a sensible default set of fields and sections derived from the domain's standard fields.
 - **Deleting a non-empty section**: When a section that still contains fields is removed, the configuration screen requires the administrator to first reassign those fields to another section (or the system reassigns them to a default/unsectioned group) so no field is left orphaned or hidden unintentionally.
@@ -155,7 +156,7 @@ The customer, product, order, invoice, and business entry screens all render fro
 
 - **FR-016**: Configuration changes — including additions, edits, and deletions — MUST propagate to every device in the workspace.
 - **FR-017**: Deleting a field MUST remove it on all devices while retaining any previously stored values for removed custom fields.
-- **FR-018**: The system MUST resolve concurrent multi-device configuration edits into a single consistent result without losing unrelated changes.
+- **FR-018**: The system MUST resolve concurrent multi-device edits to the **same** entity-type form by whole-form last-write-wins, guarded by an optimistic version stamp: if the form changed under an editor since they loaded it, the system MUST detect this and re-apply their edits onto the latest version rather than silently discarding either side. Edits to **different** entity-type forms never conflict.
 - **FR-019**: Configuration MUST be scoped per workspace, so one workspace's customizations never affect another.
 
 **Standardization across domains**

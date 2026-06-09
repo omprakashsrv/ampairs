@@ -5,7 +5,7 @@
 
 ## Summary
 
-Collapse the backend's two parallel form-config concepts (`FieldConfig` + `AttributeDefinition`) and the app's mirror of them into **one unified field model** plus a **first-class section model**, expose them over a **single canonical `/sync` feed with soft-delete**, derive standard fields from a **per-domain registry** (one source of truth, replacing ~700 lines of hardcoded backend seeding and the app's 530-line duplicate), and build the **missing runtime**: a `DynamicFormRenderer` in the app's `commonMain` that every domain's entry screen renders through. Choice fields support static *and* dynamic (workspace-data-bound) options; complex inputs use a config-driven **custom-widget escape hatch**. Rollout is incremental (customer reference first → product, order, invoice, business). This is a **fresh setup** — the unified store provisions empty and seeds from the registry on first access; the old form tables/endpoints are removed outright (no migration, no legacy adapters — the web client is deprecated and the app cuts over cleanly).
+Collapse the backend's two parallel form-config concepts (`FieldConfig` + `AttributeDefinition`) and the app's mirror of them into **one unified field model** plus a **first-class section model**, organized as a **`FormSchema` DDD aggregate** (Section owns Field) that is also the sync unit — exposed over a **single `/config/schema/sync` feed** (one record per entityType; delete-by-absence, no soft-delete; whole-form last-write-wins + optimistic `version`), derive standard fields from a **per-domain registry** (one source of truth, replacing ~700 lines of hardcoded backend seeding and the app's 530-line duplicate), and build the **missing runtime**: a `DynamicFormRenderer` in the app's `commonMain` that every domain's entry screen renders through. Choice fields support static *and* dynamic (workspace-data-bound) options; complex inputs use a config-driven **custom-widget escape hatch**. Rollout is incremental (customer reference first → product, order, invoice, business). This is a **fresh setup** — the unified store provisions empty and seeds from the registry on first access; the old form tables/endpoints are removed outright (no migration, no legacy adapters — the web client is deprecated and the app cuts over cleanly).
 
 ## Technical Context
 
@@ -34,9 +34,9 @@ Collapse the backend's two parallel form-config concepts (`FieldConfig` + `Attri
 | VII. Efficient Data Loading | ✅ | Schema read is per-`entityType` indexed query; `@NamedEntityGraph` only if relationships added (sections referenced by id, no eager graph needed). |
 | VIII–IX. Web M3 / Compose | ✅ | App: Material 3, `commonMain` shared, launchers thin. Renderer lives in shared. |
 | Flyway | ✅ | Paired mysql+postgresql migrations; new version via `flywayInfo`; add `form` already in `migrationModules`. |
-| Offline-sync canonical contract | ✅ | Single unified `/sync` follows the contract incl. soft-delete. Legacy two-feed form endpoints are removed (no adapters) — a clean cutover, not a deviation. |
+| Offline-sync contract | ✅ | One `/config/schema/sync` feed, UID-keyed by `entityType` — conforms to the contract's GET/POST `/sync` + `ApiResponse<PageResponse>`/`<List>` shape. Coarse-grained by design: the `form` aggregate is the sync unit (documented nuance, like `tax`/`file` are documented as off the row-level norm). Deletes-by-absence ⇒ no soft-delete column. Legacy endpoints removed. |
 
-**Result: PASS.** No violations; Complexity Tracking not required. Fresh setup with a clean cutover (no migration, no legacy adapters) — the old form module is replaced; the contract is two canonical feeds (`sections` + `fields`) under one `SyncEntity.FORM` checkpoint.
+**Result: PASS.** No violations; Complexity Tracking not required. Fresh setup, clean cutover. The form schema is a DDD aggregate that is also the sync unit — one `FormSchema` record per entityType over a single feed; whole-form last-write-wins guarded by an optimistic `version`.
 
 ## Project Structure
 
@@ -58,17 +58,16 @@ specs/011-unified-schema-driven/
 ```
 # BACKEND  /home/user/ampairs/form/src/main/kotlin/com/ampairs/form/
 ├── domain/model/
-│   ├── FormSchema.kt             # NEW aggregate root (per workspace+entityType): Section owns Field; invariants
-│   ├── FormField.kt              # NEW unified entity (replaces FieldConfig+AttributeDefinition); mandatory section FK
-│   ├── FormSection.kt            # NEW first-class section entity (aggregate member; default "General" seeded)
+│   ├── FormSchema.kt             # NEW aggregate root + `form_schema` header entity (per workspace+entityType; version); Section owns Field; invariants
+│   ├── FormField.kt              # NEW unified entity (replaces FieldConfig+AttributeDefinition); mandatory section FK; no soft-delete
+│   ├── FormSection.kt            # NEW first-class section entity (aggregate member; default "General" seeded; no soft-delete)
 │   ├── EntityType.kt             # NEW enum (customer/product/order/invoice/business)
-│   ├── FieldDataType.kt          # NEW enum (TEXT/TEXTAREA/NUMBER/BOOLEAN/DATE/CHOICE/CUSTOM)
+│   ├── FieldDataType.kt          # NEW enum (TEXT/TEXTAREA/NUMBER/BOOLEAN/DATE/CHOICE/MULTI_CHOICE/CUSTOM)
 │   ├── FieldSource.kt            # NEW enum (STANDARD/CUSTOM)
 │   └── validation/ValidationRule.kt  # NEW typed rule model (+ ChoiceOptionSource)
 ├── domain/dto/
-│   ├── FormFieldDTOs.kt          # Request/Response/Sync + mappers
-│   ├── FormSectionDTOs.kt
-│   └── EntityConfigSchemaResponse.kt   # reshaped (fields+sections)
+│   ├── FormSchemaDTOs.kt         # FormSchemaRequest/Response (nested sections+fields, version, base_version) + mappers
+│   └── (FormSection / FormField member DTOs nested within the schema DTO)
 ├── domain/repository/
 │   ├── FormFieldRepository.kt
 │   └── FormSectionRepository.kt
@@ -77,10 +76,10 @@ specs/011-unified-schema-driven/
 │   └── registry/                 # NEW Standard Field Registry SPI
 │       ├── StandardFieldProvider.kt   # interface (one per domain implements)
 │       └── FormFieldRegistry.kt       # aggregates providers, validates fieldName/entityType
-├── controller/ConfigController.kt     # /config/sections/sync + /config/fields/sync + /config/schema read; legacy endpoints removed
-├── sync/FormCheckpointContributor.kt  # checkpoint key "form" over form_field+form_section
+├── controller/ConfigController.kt     # single /config/schema/sync (GET+POST) + /config/schema read; legacy endpoints removed
+├── sync/FormCheckpointContributor.kt  # checkpoint key "form" = max(form_schema.updated_at)
 └── src/main/resources/db/migration/{mysql,postgresql}/
-    └── V1.0.x__create_unified_form_model.sql   # NEW: create empty form_field/form_section; drop legacy tables
+    └── V1.0.x__create_unified_form_model.sql   # NEW: create empty form_schema/form_section/form_field (no soft-delete); drop legacy tables
 
 # Per-domain registry contributions (each domain module, respecting module boundaries):
 customer/.../service/CustomerStandardFieldProvider.kt   # implements StandardFieldProvider
@@ -89,11 +88,12 @@ order/.../...   invoice/.../...   workspace/.../service/BusinessStandardFieldPro
 
 # APP  /home/user/ampairs-app/feature/form-api/  (shared domain, consumed by domains)
 ├── domain/
-│   ├── FormField.kt              # @Serializable unified model (replaces EntityFieldConfig + EntityAttributeDefinition)
+│   ├── FormSchema.kt             # @Serializable aggregate (entityType, version, sections+fields) — the sync record
+│   ├── FormField.kt              # @Serializable member model (replaces EntityFieldConfig + EntityAttributeDefinition)
 │   ├── FormSection.kt
-│   ├── EntityType.kt  FieldDataType.kt  FieldSource.kt
+│   ├── EntityType.kt  FieldDataType.kt (incl. MULTI_CHOICE)  FieldSource.kt
 │   ├── validation/ValidationRule.kt + ValidationEngine.kt   # shared client validation
-│   └── EntityConfigSchema.kt     # fields + sections + helpers
+│   └── EntityConfigSchema.kt     # alias/projection of FormSchema (helpers: fieldsBySection, …)
 ├── render/                       # NEW — the runtime
 │   ├── DynamicFormRenderer.kt    # @Composable: schema + value map → full form
 │   ├── FieldRenderers.kt         # text/number/date/boolean/choice composables
@@ -103,10 +103,10 @@ order/.../...   invoice/.../...   workspace/.../service/BusinessStandardFieldPro
 └── repository/ConfigLookup.kt    # observeConfigSchema/refresh (unchanged surface)
 
 # APP  /home/user/ampairs-app/feature/form/
-├── data/db/  FormField/Section entities, DAOs, FormDatabase (v2 + migration)
-├── data/api/ ConfigApi(+Impl)    # unified /sync feed methods
+├── data/db/  FormSchema/Section/Field entities, DAOs, FormDatabase (fresh schema; no soft-delete)
+├── data/api/ ConfigApi(+Impl)    # single aggregate /config/schema/sync methods
 ├── data/repository/ConfigRepository.kt   # local-only writes, markPendingPush(FORM)
-├── sync/FormSyncDelegate.kt      # two feeds (sections then fields), one FORM checkpoint, soft-delete aware
+├── sync/FormSyncDelegate.kt      # single aggregate feed; pull replaces aggregate, push w/ base_version; one FORM checkpoint
 └── ui/   FormConfigScreen + sub-screens (Field settings | Advanced) + FormConfigViewModel
 ```
 
@@ -114,12 +114,12 @@ order/.../...   invoice/.../...   workspace/.../service/BusinessStandardFieldPro
 
 ## Phase 0 — Research
 
-See [research.md](./research.md). All Technical Context items are known; research captures the **design decisions** (storage unification strategy, soft-delete flag, backward-compat for the sync contract, registry SPI, dynamic-option binding, custom-widget escape hatch, validation engine sharing) with rationale and rejected alternatives.
+See [research.md](./research.md). All Technical Context items are known; research captures the **design decisions** (clean-slate provisioning, delete-by-absence at aggregate grain, the `FormSchema` aggregate as the sync unit, registry SPI, dynamic-option binding, custom-widget escape hatch, validation engine sharing) with rationale and rejected alternatives.
 
 ## Phase 1 — Design & Contracts
 
-- [data-model.md](./data-model.md) — `FormField`, `FormSection`, enums, `ValidationRule`, `ChoiceOptionSource`, `EntityConfigSchema`; backend ↔ app field parity; soft-delete + sync columns; migration/backfill rules; state transitions.
-- [contracts/form-sync-api.md](./contracts/form-sync-api.md) — two canonical feeds `GET/POST /form/v1/config/sections/sync` + `/config/fields/sync` under one `SyncEntity.FORM` checkpoint (stable `(updatedAt, uid)` paging, in-band soft-delete, sections-before-fields), plus the read-only `/config/schema`; legacy endpoints removed.
+- [data-model.md](./data-model.md) — `FormSchema` aggregate root (+ `version`), `FormField`, `FormSection`, enums, `ValidationRule`, `ChoiceOptionSource`, `EntityConfigSchema`; backend ↔ app parity; no soft-delete (delete-by-absence); fresh provisioning; aggregate invariants.
+- [contracts/form-sync-api.md](./contracts/form-sync-api.md) — single aggregate feed `GET/POST /form/v1/config/schema/sync` (one `FormSchema` record per entityType, uid=entityType, optimistic `version`, replace-on-pull / replace-aggregate-on-push) under one `SyncEntity.FORM` checkpoint, plus the read-only `/config/schema`; legacy endpoints removed.
 - [quickstart.md](./quickstart.md) — step-by-step to put a new domain on the system (register standard fields → render via `DynamicFormRenderer` → wire dynamic options + custom widgets).
 
 ## Complexity Tracking

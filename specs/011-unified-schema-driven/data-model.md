@@ -38,15 +38,37 @@ FormSchema (aggregate root — identity = workspace + entityType)
 - **Invariants enforced at the aggregate boundary** (on save and on every `/sync` push, applied to the
   resulting state for that entityType): unique `fieldKey` per `(source)`; unique `displayOrder` within a
   section; a `Section` cannot be removed while it still owns fields (reassign first); a STANDARD field
-  cannot be soft-deleted and an essential STANDARD field cannot be hidden; CHOICE/CUSTOM field invariants.
+  cannot be removed and an essential STANDARD field cannot be hidden; CHOICE/CUSTOM field invariants.
 - **A default `General` section is always present** (seeded from the registry) so the registry can place
   every standard field and every new custom field has a home.
-- **Persistence is relational** — `form_section` + `form_field` rows (mandatory section FK) — but loaded
-  and saved as one aggregate (validated together, atomic write).
-- **Distribution is row-level** (two `/sync` feeds, soft-delete, merge) so concurrent admin edits on
-  different fields/sections reconcile without losing unrelated changes (FR-018). The aggregate is the
-  **consistency/editing** boundary, not the transfer unit. `EntityConfigSchema` (below) is the read
-  projection of the aggregate.
+- **Persistence is relational** — a `form_schema` header row (per workspace+entityType, holds `version`)
+  + `form_section` + `form_field` rows (mandatory section FK) — loaded and saved as one aggregate
+  (validated together, atomic write).
+- **The aggregate is also the sync unit.** One `FormSchema` record per entityType (uid = entityType) is
+  transferred whole over a single `/sync` feed. Deletions propagate by **absence** — a removed field or
+  section simply isn't in the next aggregate — so there is **no soft-delete flag** on any form row.
+  Concurrency is whole-form last-write-wins guarded by an optimistic `version` stamp (FR-018). Editing
+  different entityTypes never conflicts. `EntityConfigSchema` / `FormSchemaResponse` (below) is the
+  read/transfer projection of the aggregate.
+
+---
+
+## Entity: FormSchema (aggregate root)
+
+The aggregate header — one per `(workspace, entityType)` — and the unit of sync.
+
+| Field | Type | Notes |
+|---|---|---|
+| `uid` | String(200), unique | Sync key = the `entityType` value (workspace-scoped). |
+| `ownerId` | String(200) | `@TenantId`. |
+| `entityType` | `EntityType` | Unique per workspace. |
+| `version` | Long = 0 | Optimistic-concurrency stamp; bumped on every aggregate save. |
+| `createdAt` | `Instant` | |
+| `updatedAt` | `Instant` | `max(updatedAt)` across the aggregate's members (the sync `last_sync` key). |
+
+**Uniqueness**: `(owner_id, entity_type)`. The aggregate's `sections` and `fields` are the `FormSection`
+/ `FormField` rows with the same `(owner_id, entity_type)`. Loaded/saved/transferred as one unit; no
+soft-delete on members (removal = absence on the next save).
 
 ---
 
@@ -64,7 +86,7 @@ The single unified field model. Replaces `FieldConfig` **and** `AttributeDefinit
 | `displayName` | String(255) | UI label. |
 | `dataType` | `FieldDataType` | |
 | `widgetKey` | String(100)? | Required iff `dataType = CUSTOM` (e.g. `image_gallery`, `address`, `location`, `business_hours`). |
-| `sectionUid` | String(200) | FK→`FormSection.uid`, **required** — every field belongs to exactly one section (a seeded default `General` section always exists). The server never persists a field without a section. During incremental sync a field row may still land before its section row; the client renders it under the default group **transiently** until the section arrives — a sync-timing safeguard, not a real orphan. |
+| `sectionUid` | String(200) | FK→`FormSection.uid`, **required** — every field belongs to exactly one section (a seeded default `General` section always exists). Always resolvable: the whole aggregate (sections + fields) is transferred together, so there is no dangling/partial-arrival case. |
 | `visible` | Boolean = true | |
 | `mandatory` | Boolean = false | |
 | `enabled` | Boolean = true | Editable vs read-only. |
@@ -76,16 +98,15 @@ The single unified field model. Replaces `FieldConfig` **and** `AttributeDefinit
 | `validationRules` | JSON (List<ValidationRule>)? | Typed rules (see below). |
 | `placeholder` | String(255)? | |
 | `helpText` | TEXT? | |
-| `active` | Boolean = true | **Soft-delete** flag (D2). `false` = deleted; carried in-band on `/sync`. |
 | `createdAt` | `Instant` | |
-| `updatedAt` | `Instant` | Sync ordering / checkpoint. |
+| `updatedAt` | `Instant` | Feeds the aggregate's `updated_at`. (No soft-delete flag — removal = absence from the aggregate.) |
 
 **Uniqueness**: `(owner_id, entity_type, source, field_key)`.
 **Indexes**: `(owner_id, entity_type)`; unique `(uid)`; `(entity_type, section_uid, display_order)`.
 
 **Invariants** (enforced at the aggregate boundary — on save and on `/sync` push):
 - Every field MUST reference an existing `FormSection` in the same aggregate (mandatory ownership; the `General` section is the default home).
-- STANDARD field: `fieldKey` MUST exist in the registry for `entityType`; cannot be soft-deleted; cannot be made `visible=false` if registry marks it structurally essential (FR-015).
+- STANDARD field: `fieldKey` MUST exist in the registry for `entityType`; cannot be removed; cannot be made `visible=false` if registry marks it structurally essential (FR-015).
 - CUSTOM field: freely creatable/deletable; value lives in the entity's `attributes` JSON.
 - `dataType ∈ {CHOICE, MULTI_CHOICE}` ⇒ `optionSource` set; STATIC ⇒ `enumValues` non-empty; DYNAMIC ⇒ `dynamicSourceKey` set. `MULTI_CHOICE` value is a list (stored as JSON in the entity's `attributes` for CUSTOM; a STANDARD field may be `MULTI_CHOICE` only if its bound column is a collection — registry-declared).
 - `dataType=CUSTOM` ⇒ `widgetKey` set.
@@ -104,8 +125,7 @@ First-class, configurable, syncable grouping (clarified — D/Q3, FR-010a).
 | `name` | String(255) | Section title. |
 | `displayOrder` | Int = 0 | Section order on the form. |
 | `visible` | Boolean = true | Hidden section ⇒ its fields are not rendered. |
-| `active` | Boolean = true | Soft-delete. |
-| `createdAt` / `updatedAt` | `Instant` | |
+| `createdAt` / `updatedAt` | `Instant` | (No soft-delete flag — removal = absence from the aggregate.) |
 
 **Uniqueness**: `(owner_id, entity_type, uid)`. **Index**: `(owner_id, entity_type, display_order)`.
 
@@ -113,9 +133,9 @@ First-class, configurable, syncable grouping (clarified — D/Q3, FR-010a).
 - A default `General` section is seeded per entityType and is the fallback home for fields; it cannot be
   deleted (an aggregate must always have at least one section so every field has a home).
 - Create → Active. Rename/reorder/hide → in place (`updatedAt` bumped).
-- Soft-delete: only after its fields are reassigned (the aggregate rejects deleting a non-empty section);
-  the editor moves the fields to another section — or the `General` section — first, which re-syncs those
-  fields (FR edge case "Deleting a non-empty section").
+- Delete: only after its fields are reassigned (the aggregate rejects deleting a non-empty section);
+  the editor moves the fields to another section — or the `General` section — first. On the next push the
+  removed section is simply absent from the aggregate (delete-by-absence; no soft-delete row).
 
 ---
 
@@ -135,11 +155,12 @@ Contradictory rules (e.g. `LengthRange(min>max)`) are rejected by the editor bef
 
 ---
 
-## Aggregate: EntityConfigSchema (transport + render unit)
+## Aggregate projection: EntityConfigSchema / FormSchemaResponse (transport + render unit)
 
 ```
-EntityConfigSchema(
+EntityConfigSchema(           # == the FormSchema aggregate, serialized
   entityType: EntityType,
+  version:    Long,           # optimistic-concurrency stamp
   sections:   List<FormSection>,     # ordered, visible-aware
   fields:     List<FormField>,       # ordered within section
   lastUpdated: Instant?              # max(updatedAt) across fields+sections
@@ -147,9 +168,9 @@ EntityConfigSchema(
 ```
 
 Helpers (app): `visibleFields()`, `mandatoryFields()`, `fieldsBySection()`, `isFieldVisible(key)`.
-On the app this aggregate is assembled locally by joining the synced `form_section` + `form_field`
-Room tables (the two `/sync` feeds feed those tables); the read-only `GET /config/schema` returns the
-same shape server-side for the UI. It is what `DynamicFormRenderer` consumes.
+This **is** the aggregate transferred whole over the single `/config/schema/sync` feed and returned by
+the read-only `GET /config/schema`. On the app it is assembled from / written back to the relational
+`form_schema` + `form_section` + `form_field` Room tables. It is what `DynamicFormRenderer` consumes.
 
 ---
 
@@ -158,8 +179,8 @@ same shape server-side for the UI. It is what `DynamicFormRenderer` consumes.
 - **STANDARD** field values bind to the owning entity's real columns (e.g. `Customer.name`).
 - **CUSTOM** field values are stored in the owning entity's existing `attributes: Map<String, Any>` JSON
   column (e.g. `Customer.attributes`). No new per-value tables (FR-008, transparent to staff).
-- Deleting a CUSTOM field soft-deletes the definition; **stored values in `attributes` are retained**
-  (Assumptions / edge case) — not purged.
+- Deleting a CUSTOM field removes it from the aggregate (absent on the next save); **stored values in
+  `attributes` are retained** (Assumptions / edge case) — not purged.
 
 ---
 
@@ -169,15 +190,18 @@ This is a clean-slate setup. There is **no backfill** of the old `field_config` 
 `attribute_definition` data and **no legacy compatibility layer**.
 
 **Backend** (`V1.0.x__create_unified_form_model.sql`, mysql + postgresql):
-1. Create `form_section` and `form_field` (with `active`, indexes, uniqueness above). Tables start empty.
+1. Create `form_schema`, `form_section`, and `form_field` (no soft-delete column; indexes + uniqueness
+   above). Tables start empty.
 2. The legacy `field_config` / `attribute_definition` tables and their endpoints are **dropped/removed**
    (the old form module is replaced, not adapted). No data is carried over.
-3. A workspace's initial fields/sections are produced lazily by `FormConfigService` from the
-   `FormFieldRegistry` on first access (seed-on-read), then persisted — not by a data migration.
+3. A workspace's initial schema (sections + fields + a `form_schema` header) is produced lazily by
+   `FormConfigService` from the `FormFieldRegistry` on first access (seed-on-read), then persisted — not
+   by a data migration.
 
-**App** (`FormDatabase`): introduced with the unified `form_field` / `form_section` schema directly.
-The old `entity_field_configs` / `entity_attribute_definitions` tables are removed (a fresh schema /
-destructive recreate on first launch of the new build) — no row copy. `synced` flags start clean.
+**App** (`FormDatabase`): introduced with the unified `form_schema` / `form_section` / `form_field`
+schema directly. The old `entity_field_configs` / `entity_attribute_definitions` tables are removed (a
+fresh schema / destructive recreate on first launch of the new build) — no row copy. Dirtiness is
+tracked per entityType aggregate (no per-row `synced`/`active`).
 
 > Because we provision fresh, FR-025/SC-008 are about *good defaults on first use*, not data
 > preservation. Standard field defaults live only in the registry (SC-004).

@@ -27,21 +27,24 @@ unifying (vs a logical view over two tables) removes the duplication permanently
 
 ---
 
-## D2 — Soft-delete via `active: Boolean` (in-band delete on `/sync`)
+## D2 — Deletions propagate by aggregate replacement (no soft-delete column)
 
-**Decision**: `form_field` and `form_section` carry `active: Boolean = true` (soft-delete flag) plus
-`updated_at: Instant`. The unified `/sync` pull feed **includes** `active = false` rows; push carries
-them in-band; the client hard-deletes locally on pull. This closes the documented "known gap".
+**Decision**: Because the schema syncs as a whole aggregate (D9), there is **no `active`/soft-delete
+column** on any form row. A removed field/section is simply **absent** from the next aggregate; on pull
+the client replaces its local schema for that entityType and drops absent members; on push the server
+replaces the aggregate (upsert present, delete absent) in one transaction. This closes the documented
+"known gap" (deletes didn't round-trip) trivially.
 
-**Rationale**: Matches the canonical offline-sync contract exactly (guide §Rules 3–4) and the rest of the
-syncable entities, so the client's generic `SyncDelegate` drives it unchanged. `active` (not a new
-`status` enum) matches the app's existing soft-delete idiom (`active = false, synced = false`).
+**Rationale**: At aggregate grain, delete-by-absence is simpler and more robust than per-row soft-delete
++ in-band delete + "include deleted rows" feeds. It removes a whole class of machinery and the
+field/section ordering and dangling-reference concerns.
 
-**Alternatives rejected**: `status = DELETED` string column — heavier than needed and inconsistent with
-sibling entities. Hard delete only — cannot propagate deletions (the original bug).
+**Alternatives rejected**: Row-level soft-delete (`active` flag, in-band delete) — the canonical row-level
+pattern; correct, but unnecessary once the aggregate is the transfer unit, and it carried the ordering /
+dangling-ref complexity. (This reverses an earlier draft that added an `active` column.)
 
-**Constraint from spec**: STANDARD fields cannot be deleted (Assumptions); only CUSTOM fields and
-sections may be soft-deleted. Enforced in the service.
+**Constraint from spec**: STANDARD fields cannot be removed (Assumptions); only CUSTOM fields and
+non-`General` sections may be removed. Enforced as an aggregate invariant in the service.
 
 ---
 
@@ -117,27 +120,26 @@ unsafe, untestable. Client-only validation — backend would accept invalid push
 
 ---
 
-## D7 — App storage & sync delegate (fresh schema, two feeds, one checkpoint)
+## D7 — App storage & sync delegate (fresh schema, single aggregate feed)
 
-**Decision**: `FormDatabase` is introduced with the unified `form_field`/`form_section` schema directly
-(fresh setup — the old `entity_field_configs`/`entity_attribute_definitions` tables are removed, no row
-copy; see D1). `FormSyncDelegate` drives **two feeds — `sections/sync` then `fields/sync` — under one
-`SyncEntity.FORM` checkpoint** (= `max(updatedAt)` across both tables, what `FormCheckpointContributor`
-already computes). Soft-delete aware, batches of 100 per feed, local-unsynced-wins. Repository stays
-local-only (`markPendingPush(FORM)`); `getConfigSchema` read remains the allowed UI-invoked exception.
+**Decision**: `FormDatabase` is introduced with the unified `form_schema`/`form_section`/`form_field`
+schema directly (fresh setup — old tables removed, no row copy; see D1). `FormSyncDelegate` drives the
+**single aggregate feed** under one `SyncEntity.FORM` checkpoint (= `max(updated_at)` across aggregates).
+**Pull replaces** each local aggregate — local members absent from the server copy are deleted; **push**
+sends the dirty aggregate(s) with `base_version`; on a version conflict the delegate re-pulls, re-applies
+the local edits, and retries. Dirtiness is tracked **per entityType aggregate** (no per-row `synced`).
+Repository stays local-only (`markPendingPush(FORM)`); `getConfigSchema` read remains the allowed
+UI-invoked exception. Persistence is relational; the aggregate is assembled/serialized at the sync
+boundary.
 
-**Why two feeds, not one record stream**: sections and fields are genuinely different shapes; a
-discriminated union record forces half-null payloads and an awkward `record_type`. Two clean canonical
-feeds under one logical entity is the pattern the form module already used (it synced two feeds), keeps
-each DTO clean, and lets each feed be a plain `updated_at >= last_sync` paged query. Pagination uses a
-stable `(updated_at, uid)` sort so equal-timestamp bulk saves don't skip rows at page boundaries.
-**Section-detail updates** only bump the section row (fields reference it by `uid` and re-group on the
-client) — see contract §1.
+**Why one aggregate feed**: the schema is one DDD aggregate, so it transfers as one unit (D9). This
+removes the soft-delete machinery, the sections-before-fields ordering, and the dangling-`section_uid`
+window — the whole aggregate always arrives together.
 
-**Alternatives rejected**: *Single discriminated `/schema/sync` feed* — half-null mega-record, ugly and
-error-prone. *Two `SyncEntity` checkpoints (one per feed)* — unnecessary; one `FORM` checkpoint over both
-tables is simpler and already supported. *Wipe-and-repull on every change* — loses unsynced local edits.
-(Note: "two feeds" here means sections vs fields — NOT the old standard-vs-custom split, which is gone.)
+**Alternatives rejected**: *Two row-level feeds (sections + fields)* — preserves field-level merge but
+needs soft-delete, ordering, and dangling tolerance; unnecessary once the aggregate is the transfer unit.
+*Single discriminated record stream* — half-null mega-record. *Wipe-and-repull on every change* — loses
+unsynced local edits (the replace is per-aggregate, and local unsynced aggregates win until pushed).
 
 ---
 
@@ -153,27 +155,29 @@ rollout (FR-023/026); de-risks via one vertical slice.
 
 ---
 
-## D9 — `FormSchema` DDD aggregate, row-level distribution
+## D9 — `FormSchema` DDD aggregate is the consistency AND the sync unit
 
 **Decision**: Model the per-`(workspace, entityType)` schema as a **`FormSchema` aggregate root**:
 `Section` owns `Field`, every field belongs to exactly one section (mandatory ownership; a seeded default
 `General` section), and all invariants (unique keys, order, section-not-empty-on-delete, essential-not-
-hideable, CHOICE/CUSTOM rules) are enforced at the aggregate boundary — on the editor save **and** on
-every `/sync` push (validate the resulting state for that entityType after applying the batch).
-Persistence stays relational (`form_section` + `form_field`, mandatory section FK), loaded/saved as one
-aggregate. **Distribution stays row-level** (the two feeds from D7) so concurrent admin edits on
-different fields/sections merge without losing unrelated changes.
+hideable, CHOICE/MULTI_CHOICE/CUSTOM rules) are enforced at the aggregate boundary — on the editor save
+**and** on every push. **The aggregate is also the transfer unit**: one `FormSchema` record per
+entityType (uid = entityType) over a single `/config/schema/sync` GET+POST. Persistence stays relational
+(`form_schema` header with `version` + `form_section` + `form_field`), assembled into/from the aggregate
+at the sync/read boundary.
 
-**Rationale**: The aggregate is the natural domain + editing + consistency boundary (matches the UI: "a
-form is sections of fields") and eliminates orphan/dangling fields *by construction* in the model. Keeping
-the aggregate as the **consistency** boundary but NOT the **transfer** boundary preserves FR-018 (row-level
-merge) and the canonical row-level `/sync` contract — best of both. Push order sections-before-fields means
-a field's mandatory section already exists server-side when the field push is validated.
+**Rationale**: True to DDD — the aggregate is the natural domain, editing, consistency, **and** transfer
+boundary. One feed instead of four endpoints; deletions are free (absence, D2); no orphan/dangling fields
+by construction; no ordering concerns. Concurrency is whole-form last-write-wins guarded by an optimistic
+`version` stamp: a stale push (client `base_version` < server `version`) is rejected so the client
+re-pulls and re-applies — no silent lost update. For an admin-only, low-frequency config this is the right
+trade vs. field-level merge.
 
-**Alternatives rejected**: *Aggregate as the sync/transfer unit* (one schema document per entityType) —
-simplest and makes deletes free, but whole-form last-write-wins loses unrelated concurrent edits (violates
-FR-018); reconsider only if concurrent admin editing proves a non-issue. *No aggregate (flat rows, nullable
-section)* — pushes invariant enforcement into scattered row upserts and allows orphan fields.
+**Alternatives rejected**: *Aggregate for editing but row-level distribution* (two feeds) — preserves
+field-level merge but reintroduces soft-delete, ordering, and dangling tolerance; rejected for the extra
+machinery once concurrent same-form editing was deemed rare. *No aggregate (flat rows)* — scatters
+invariant enforcement and allows orphan fields. (This supersedes an earlier draft that kept row-level
+distribution; FR-018 is correspondingly relaxed to aggregate-level LWW + optimistic version.)
 
 ---
 
