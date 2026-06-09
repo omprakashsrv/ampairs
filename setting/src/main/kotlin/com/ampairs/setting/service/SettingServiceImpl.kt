@@ -78,7 +78,7 @@ class SettingServiceImpl(
             settingKey = key
             value = request.value
             valueType = definition.valueType
-            active = request.active
+            active = request.active ?: true
             request.refId?.let { refId = it }
         }
 
