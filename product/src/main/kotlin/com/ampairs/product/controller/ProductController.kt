@@ -20,17 +20,6 @@ class ProductController(
     val productService: ProductService,
 ) {
 
-    @GetMapping("")
-    fun getProducts(
-        @RequestParam("last_updated") lastUpdated: Instant?,
-        @RequestParam("group_id") groupId: String?,
-    ): ApiResponse<List<ProductResponse>> {
-        if (!groupId.isNullOrEmpty()) {
-            return ApiResponse.success(productService.getProducts(groupId))
-        }
-        return ApiResponse.success(productService.getProducts(lastUpdated))
-    }
-
     @GetMapping("/product-category")
     fun getProductsWithCategory(@RequestParam("group_id") groupId: String): ApiResponse<ProductsCategoryResponse> {
         val products = productService.getProducts(groupId)
@@ -40,31 +29,29 @@ class ProductController(
         return ApiResponse.success(result)
     }
 
-    @PostMapping("")
-    fun updateProducts(@RequestBody products: List<ProductRequest>): ApiResponse<List<ProductResponse>> {
-        return ApiResponse.success(productService.updateProducts(products.asDatabaseModel()))
-    }
-
     /**
      * Incremental sync feed: products updated at/after last_sync, INCLUDING soft-deleted
-     * (status = "DELETED") rows, ordered by updatedAt ASC, paginated. Lets mobile clients
-     * do batched incremental pulls and detect deletions.
+     * (status = "DELETED") rows, paginated. Lets mobile clients do batched incremental pulls
+     * and detect deletions.
      */
     @GetMapping("/sync")
     fun getProductsSync(
         @RequestParam("last_sync", required = false) lastSync: String?,
         @RequestParam("page", defaultValue = "0") page: Int,
-        @RequestParam("size", defaultValue = "100") size: Int
+        @RequestParam("size", defaultValue = "100") size: Int,
+        @RequestParam("sort_by", defaultValue = "updatedAt") sortBy: String,
+        @RequestParam("sort_dir", defaultValue = "ASC") sortDir: String
     ): ApiResponse<PageResponse<ProductResponse>> {
-        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "updatedAt"))
+        val direction = if (sortDir.uppercase() == "DESC") Sort.Direction.DESC else Sort.Direction.ASC
+        val pageable = PageRequest.of(page, size, Sort.by(direction, sortBy))
         val productsPage = productService.getProductsAfterSync(lastSync, pageable)
         return ApiResponse.success(PageResponse.from(productsPage))
     }
 
-    @GetMapping("/groups")
-    fun getGroups(): ApiResponse<List<ProductGroupResponse>> {
-        val groups = productService.getGroups()
-        return ApiResponse.success(groups.asResponse())
+    /** Bulk push of products (creates/updates + in-band soft-deletes via status = "DELETED"). */
+    @PostMapping("/sync")
+    fun updateProductsSync(@RequestBody products: List<ProductRequest>): ApiResponse<List<ProductResponse>> {
+        return ApiResponse.success(productService.updateProducts(products.asDatabaseModel()))
     }
 
     /**
@@ -97,12 +84,6 @@ class ProductController(
         return ApiResponse.success(result)
     }
 
-    @GetMapping("/brands")
-    fun getBrands(): ApiResponse<List<ProductBrandResponse>> {
-        val brands = productService.getBrands()
-        return ApiResponse.success(brands.asResponse())
-    }
-
     /**
      * Incremental sync feed: product brands updated at/after last_sync, ordered by
      * updatedAt ASC, paginated. Catalog entities have no soft-delete flag.
@@ -116,12 +97,6 @@ class ProductController(
         val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "updatedAt"))
         val brandsPage = productService.getBrandsAfterSync(lastSync, pageable)
         return ApiResponse.success(PageResponse.from(brandsPage) { it.asResponse() })
-    }
-
-    @GetMapping("/sub-categories")
-    fun getSubCategories(): ApiResponse<List<ProductSubCategoryResponse>> {
-        val categories = productService.getSubCategories()
-        return ApiResponse.success(categories.asResponse())
     }
 
     /**
@@ -154,27 +129,31 @@ class ProductController(
         return ApiResponse.success(PageResponse.from(categoriesPage) { it.asResponse() })
     }
 
-    @PostMapping("/groups")
-    fun updateGroups(@RequestBody groups: List<ProductGroupRequest>): ApiResponse<List<ProductGroupResponse>> {
+    /** Bulk push of product groups. Catalog entities have no soft-delete — upsert only. */
+    @PostMapping("/groups/sync")
+    fun updateGroupsSync(@RequestBody groups: List<ProductGroupRequest>): ApiResponse<List<ProductGroupResponse>> {
         val productGroups = productService.updateProductGroups(groups.asDatabaseModel())
         return ApiResponse.success(productGroups.asResponse())
     }
 
-    @PostMapping("/brands")
-    fun updateBrands(@RequestBody groups: List<ProductBrandRequest>): ApiResponse<List<ProductBrandResponse>> {
+    /** Bulk push of product brands. Catalog entities have no soft-delete — upsert only. */
+    @PostMapping("/brands/sync")
+    fun updateBrandsSync(@RequestBody groups: List<ProductBrandRequest>): ApiResponse<List<ProductBrandResponse>> {
         val productGroups = productService.updateProductBrands(groups.asDatabaseModel())
         return ApiResponse.success(productGroups.asResponse())
     }
 
-    @PostMapping("/categories")
-    fun updateCategories(@RequestBody categories: List<ProductCategoryRequest>): ApiResponse<List<ProductCategoryResponse>> {
+    /** Bulk push of product categories. Catalog entities have no soft-delete — upsert only. */
+    @PostMapping("/categories/sync")
+    fun updateCategoriesSync(@RequestBody categories: List<ProductCategoryRequest>): ApiResponse<List<ProductCategoryResponse>> {
         val productCategories =
             productService.updateProductCategories(categories.asDatabaseModel())
         return ApiResponse.success(productCategories.asResponse())
     }
 
-    @PostMapping("/sub-categories")
-    fun updateSubCategories(@RequestBody categories: List<ProductSubCategoryRequest>): ApiResponse<List<ProductSubCategoryResponse>> {
+    /** Bulk push of product sub-categories. Catalog entities have no soft-delete — upsert only. */
+    @PostMapping("/sub-categories/sync")
+    fun updateSubCategoriesSync(@RequestBody categories: List<ProductSubCategoryRequest>): ApiResponse<List<ProductSubCategoryResponse>> {
         val productSubCategories =
             productService.updateProductSubCategories(categories.asDatabaseModel())
         return ApiResponse.success(productSubCategories.asResponse())

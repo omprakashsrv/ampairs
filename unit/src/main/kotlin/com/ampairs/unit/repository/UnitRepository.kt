@@ -87,4 +87,21 @@ interface UnitRepository : CrudRepository<Unit, Long> {
     /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
     @Query("SELECT MAX(u.updatedAt) FROM unit u")
     fun findMaxUpdatedAt(): Instant?
+
+    /**
+     * Incremental sync feed: all units updated at/after lastSync, INCLUDING inactive
+     * (soft-deleted) rows so clients can detect deletions. Does NOT filter on active.
+     * Note: @TenantId automatically filters by current workspace.
+     */
+    @EntityGraph("Unit.basic")
+    @Query("SELECT u FROM unit u WHERE u.updatedAt >= :lastSync")
+    fun findByUpdatedAtAfter(@Param("lastSync") lastSync: Instant, pageable: Pageable): Page<Unit>
+
+    /**
+     * All units for the current workspace, INCLUDING inactive — used by the sync feed when no
+     * lastSync checkpoint is supplied. Note: @TenantId automatically filters by current workspace.
+     */
+    @EntityGraph("Unit.basic")
+    @Query("SELECT u FROM unit u")
+    fun findAllForSync(pageable: Pageable): Page<Unit>
 }

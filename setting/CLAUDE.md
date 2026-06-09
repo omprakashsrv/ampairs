@@ -14,8 +14,8 @@ to the mobile/web clients.
 
 ## API (offline-first: bulk sync only — no per-record CRUD)
 `/setting/v1/settings/**`
-- `GET /setting/v1/settings?last_sync=&page=&size=` — incremental pull (includes inactive rows so deletes propagate)
-- `POST /setting/v1/settings` — bulk upsert (validates each value against its definition; soft-delete via `active=false`)
+- `GET /setting/v1/settings/sync?last_sync=&page=&size=&sort_by=&sort_dir=` — incremental pull (includes inactive rows so deletes propagate)
+- `POST /setting/v1/settings/sync` — bulk upsert (validates each value against its definition; soft-delete via `active=false`)
 - `GET /setting/v1/settings/definitions` — definition catalog filtered to the workspace's installed modules
 
 ## Cross-module reads

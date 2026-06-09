@@ -1,6 +1,8 @@
 package com.ampairs.form.domain.repository
 
 import com.ampairs.form.domain.model.AttributeDefinition
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
@@ -57,4 +59,14 @@ interface AttributeDefinitionRepository : JpaRepository<AttributeDefinition, Str
     /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
     @Query("SELECT MAX(a.updatedAt) FROM AttributeDefinition a")
     fun findMaxUpdatedAt(): Instant?
+
+    /**
+     * Incremental sync feed (pull): attribute definitions updated at/after [lastSync], paginated.
+     * @TenantId-filtered (workspace-scoped). NOTE: AttributeDefinition has no soft-delete column, so
+     * this feed never carries DELETED rows — physical deletions do not propagate to clients.
+     */
+    @Query("SELECT a FROM AttributeDefinition a WHERE a.updatedAt >= :lastSync")
+    fun findAttributeDefinitionsUpdatedAfter(lastSync: Instant, pageable: Pageable): Page<AttributeDefinition>
+
+    fun findByUid(uid: String): AttributeDefinition?
 }

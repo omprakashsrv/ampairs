@@ -8,11 +8,9 @@ import com.ampairs.customer.domain.model.State
 import com.ampairs.customer.domain.service.CustomerService
 import com.ampairs.workspace.service.WorkspaceMemberService
 import org.junit.jupiter.api.BeforeEach
-import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.DisplayName
 import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
-import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.springframework.beans.factory.annotation.Autowired
@@ -63,30 +61,7 @@ class CustomerControllerIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /customer/v1 - Upsert customer")
-    @WithMockUser(username = "testuser", roles = ["USER"])
-    fun `should upsert customer`() {
-        val request = buildUpdateRequest(uid = "cust-1", name = "Updated Name")
-        val savedCustomer = buildCustomer(uid = "cust-1", name = "Updated Name")
-        whenever(customerService.upsertCustomer(any())).thenReturn(savedCustomer)
-
-        mockMvc.perform(
-            post("/customer/v1")
-                .header("X-Workspace-ID", "TEST_WORKSPACE")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(request))
-        )
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.success").value(true))
-
-        val customerCaptor = argumentCaptor<Customer>()
-        verify(customerService).upsertCustomer(customerCaptor.capture())
-        assertEquals("Updated Name", customerCaptor.firstValue.name)
-        assertEquals("cust-1", customerCaptor.firstValue.uid)
-    }
-
-    @Test
-    @DisplayName("POST /customer/v1/customers - Bulk update customers")
+    @DisplayName("POST /customer/v1/customers/sync - Bulk upsert customers")
     @WithMockUser(username = "testuser", roles = ["USER"])
     fun `should bulk update customers`() {
         val request = listOf(
@@ -101,7 +76,7 @@ class CustomerControllerIntegrationTest {
         whenever(customerService.updateCustomers(any())).thenReturn(updatedEntities)
 
         mockMvc.perform(
-            post("/customer/v1/customers")
+            post("/customer/v1/customers/sync")
                 .header("X-Workspace-ID", "TEST_WORKSPACE")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request))

@@ -8,27 +8,12 @@ import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.web.bind.annotation.*
-import java.time.Instant
 
 @RestController
 @RequestMapping("/invoice/v1/invoices")
 class InvoiceController(
     private val invoiceService: InvoiceService,
 ) {
-
-    @PostMapping("")
-    fun updateInvoice(@RequestBody @Valid invoiceUpdateRequest: InvoiceUpdateRequest): ApiResponse<InvoiceResponse> {
-        val invoice = invoiceUpdateRequest.toInvoice()
-        val invoiceItems = invoiceUpdateRequest.invoiceItems.toInvoiceItems()
-        val result = invoiceService.updateInvoice(invoice, invoiceItems)
-        return ApiResponse.success(result)
-    }
-
-    @GetMapping("")
-    fun getInvoices(@RequestParam("last_updated") lastUpdated: Instant?): ApiResponse<List<InvoiceResponse>> {
-        val result = invoiceService.getInvoices(lastUpdated).toResponse()
-        return ApiResponse.success(result)
-    }
 
     /**
      * Offline-sync bulk upsert (spec 010). Client UID-keyed; carries series + sequenceNumber.
@@ -48,9 +33,12 @@ class InvoiceController(
     fun getInvoicesSync(
         @RequestParam("last_sync", required = false) lastSync: String?,
         @RequestParam("page", defaultValue = "0") page: Int,
-        @RequestParam("size", defaultValue = "100") size: Int
+        @RequestParam("size", defaultValue = "100") size: Int,
+        @RequestParam("sort_by", defaultValue = "updatedAt") sortBy: String,
+        @RequestParam("sort_dir", defaultValue = "ASC") sortDir: String
     ): ApiResponse<PageResponse<InvoiceResponse>> {
-        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "updatedAt"))
+        val direction = Sort.Direction.fromString(sortDir)
+        val pageable = PageRequest.of(page, size, Sort.by(direction, sortBy))
         val invoicesPage = invoiceService.getInvoicesAfterSync(lastSync, pageable)
         return ApiResponse.success(PageResponse.from(invoicesPage) { it.toResponse(it.invoiceItems) })
     }

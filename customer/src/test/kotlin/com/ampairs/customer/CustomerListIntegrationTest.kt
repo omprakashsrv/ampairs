@@ -63,7 +63,7 @@ class CustomerListIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /customer/v1 - Returns paginated customers")
+    @DisplayName("GET /customer/v1/customers/sync - Returns paginated customers")
     @WithMockUser(username = "testuser", roles = ["USER"])
     fun `should return paginated customers`() {
         val customers = listOf(
@@ -76,7 +76,7 @@ class CustomerListIntegrationTest {
         whenever(customerService.getCustomersAfterSync(anyOrNull(), any())).thenReturn(customerPage)
 
         mockMvc.perform(
-            get("/customer/v1/customers")
+            get("/customer/v1/customers/sync")
                 .header("X-Workspace-ID", "TEST_WORKSPACE")
                 .param("page", "0")
                 .param("size", "20")
@@ -92,7 +92,7 @@ class CustomerListIntegrationTest {
     }
 
     @Test
-    @DisplayName("GET /customer/v1 - Passes last_sync to service")
+    @DisplayName("GET /customer/v1/customers/sync - Passes last_sync to service")
     @WithMockUser(username = "testuser", roles = ["USER"])
     fun `should forward last sync parameter`() {
         val pageable = PageRequest.of(0, 10, Sort.by("updatedAt").ascending())
@@ -102,7 +102,7 @@ class CustomerListIntegrationTest {
         whenever(customerService.getCustomersAfterSync(eq(lastSync), any())).thenReturn(emptyPage)
 
         mockMvc.perform(
-            get("/customer/v1/customers")
+            get("/customer/v1/customers/sync")
                 .header("X-Workspace-ID", "TEST_WORKSPACE")
                 .param("last_sync", lastSync)
                 .param("page", "0")

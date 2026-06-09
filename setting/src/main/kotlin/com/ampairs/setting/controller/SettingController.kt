@@ -33,20 +33,21 @@ class SettingController(
 ) {
 
     /** Incremental pull. `last_sync` is an ISO-8601 instant; omit it for a full snapshot. */
-    @GetMapping
+    @GetMapping("/sync")
     fun pull(
         @RequestParam("last_sync", required = false) lastSync: String?,
         @RequestParam("page", defaultValue = "0") page: Int,
         @RequestParam("size", defaultValue = "100") size: Int,
+        @RequestParam("sort_by", defaultValue = "updatedAt") sortBy: String,
         @RequestParam("sort_dir", defaultValue = "ASC") sortDir: String,
     ): ApiResponse<PageResponse<SettingResponse>> {
-        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(sortDir), "updatedAt"))
+        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(sortDir), sortBy))
         val settings = settingService.getSettingsAfterSync(lastSync, pageable)
         return ApiResponse.success(PageResponse.from(settings) { it.asSettingResponse() })
     }
 
     /** Bulk push: upsert (and soft-delete via `active = false`) a batch of setting overrides. */
-    @PostMapping
+    @PostMapping("/sync")
     fun push(@RequestBody @Valid requests: List<@Valid SettingRequest>): ApiResponse<List<SettingResponse>> {
         return ApiResponse.success(settingService.upsertSettings(requests).asSettingResponses())
     }

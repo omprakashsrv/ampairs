@@ -14,6 +14,9 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
+import java.time.Instant
 
 @Service
 class UnitServiceImpl(
@@ -49,6 +52,41 @@ class UnitServiceImpl(
     @Transactional(readOnly = true)
     override fun findAllPaged(activeOnly: Boolean, pageable: Pageable): Page<UnitResponse> {
         return unitRepository.findByActive(activeOnly, pageable).map { it.asUnitResponse() }
+    }
+
+    @Transactional(readOnly = true)
+    override fun getUnitsAfterSync(lastSync: String?, pageable: Pageable): Page<UnitResponse> {
+        val page: Page<Unit> = if (lastSync.isNullOrBlank()) {
+            unitRepository.findAllForSync(pageable)
+        } else {
+            try {
+                val decoded = URLDecoder.decode(lastSync, StandardCharsets.UTF_8)
+                val lastSyncInstant = Instant.parse(decoded)
+                unitRepository.findByUpdatedAtAfter(lastSyncInstant, pageable)
+            } catch (e: Exception) {
+                logger.warn("Invalid last_sync '{}', falling back to full sync feed", lastSync, e)
+                unitRepository.findAllForSync(pageable)
+            }
+        }
+        return page.map { it.asUnitResponse() }
+    }
+
+    @Transactional
+    override fun bulkUpsert(requests: List<UnitRequest>): List<UnitResponse> {
+        return requests.map { request ->
+            val existing = request.uid?.takeIf { it.isNotBlank() }?.let { unitRepository.findByUid(it) }
+            if (existing != null) {
+                existing.applyRequest(request)
+                unitRepository.save(existing)
+                    .also { entityChangePublisher.updated("unit", it.uid) }
+                    .asUnitResponse()
+            } else {
+                val unit = Unit().applyRequest(request)
+                unitRepository.save(unit)
+                    .also { entityChangePublisher.created("unit", it.uid) }
+                    .asUnitResponse()
+            }
+        }
     }
 
     @Transactional

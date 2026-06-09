@@ -31,15 +31,21 @@ class CustomerTypeController(
     fun getCustomerTypesSync(
         @RequestParam("last_sync", required = false) lastSync: String?,
         @RequestParam("page", defaultValue = "0") page: Int,
-        @RequestParam("size", defaultValue = "100") size: Int
+        @RequestParam("size", defaultValue = "100") size: Int,
+        @RequestParam("sort_by", defaultValue = "updatedAt") sortBy: String,
+        @RequestParam("sort_dir", defaultValue = "ASC") sortDir: String
     ): ApiResponse<PageResponse<CustomerTypeResponse>> {
-        val sort = Sort.by(Sort.Direction.ASC, "updatedAt")
+        val sort = Sort.by(Sort.Direction.fromString(sortDir), sortBy)
         val pageable = PageRequest.of(page, size, sort)
         val typesPage = customerTypeService.getCustomerTypesAfterSync(lastSync, pageable)
         return ApiResponse.success(PageResponse.from(typesPage) { it.asCustomerTypeResponse() })
     }
 
-    @PostMapping("")
+    /**
+     * Bulk upsert (push) endpoint of the unified sync contract. The body MAY contain
+     * soft-deleted rows (active = false) so deletions propagate in-band.
+     */
+    @PostMapping("/sync")
     fun bulkUpsertCustomerTypes(
         @RequestBody @Valid request: List<CustomerTypeUpdateRequest>
     ): ApiResponse<List<CustomerTypeResponse>> {
