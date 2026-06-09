@@ -5,7 +5,7 @@
 
 ## Summary
 
-Collapse the backend's two parallel form-config concepts (`FieldConfig` + `AttributeDefinition`) and the app's mirror of them into **one unified field model** plus a **first-class section model**, expose them over a **single canonical `/sync` feed with soft-delete**, derive standard fields from a **per-domain registry** (one source of truth, replacing ~700 lines of hardcoded backend seeding and the app's 530-line duplicate), and build the **missing runtime**: a `DynamicFormRenderer` in the app's `commonMain` that every domain's entry screen renders through. Choice fields support static *and* dynamic (workspace-data-bound) options; complex inputs use a config-driven **custom-widget escape hatch**. Rollout is incremental (customer reference first → product, order, invoice, business) and backward-compatible: the legacy two `/sync` feeds keep serving older app builds as adapters over the unified store during transition.
+Collapse the backend's two parallel form-config concepts (`FieldConfig` + `AttributeDefinition`) and the app's mirror of them into **one unified field model** plus a **first-class section model**, expose them over a **single canonical `/sync` feed with soft-delete**, derive standard fields from a **per-domain registry** (one source of truth, replacing ~700 lines of hardcoded backend seeding and the app's 530-line duplicate), and build the **missing runtime**: a `DynamicFormRenderer` in the app's `commonMain` that every domain's entry screen renders through. Choice fields support static *and* dynamic (workspace-data-bound) options; complex inputs use a config-driven **custom-widget escape hatch**. Rollout is incremental (customer reference first → product, order, invoice, business). This is a **fresh setup** — the unified store provisions empty and seeds from the registry on first access; the old form tables/endpoints are removed outright (no migration, no legacy adapters — the web client is deprecated and the app cuts over cleanly).
 
 ## Technical Context
 
@@ -34,9 +34,9 @@ Collapse the backend's two parallel form-config concepts (`FieldConfig` + `Attri
 | VII. Efficient Data Loading | ✅ | Schema read is per-`entityType` indexed query; `@NamedEntityGraph` only if relationships added (sections referenced by id, no eager graph needed). |
 | VIII–IX. Web M3 / Compose | ✅ | App: Material 3, `commonMain` shared, launchers thin. Renderer lives in shared. |
 | Flyway | ✅ | Paired mysql+postgresql migrations; new version via `flywayInfo`; add `form` already in `migrationModules`. |
-| Offline-sync canonical contract | ✅ | New unified `/sync` follows contract incl. soft-delete; legacy feeds retained as adapters (documented compatibility, not a deviation). |
+| Offline-sync canonical contract | ✅ | Single unified `/sync` follows the contract incl. soft-delete. Legacy two-feed form endpoints are removed (no adapters) — a clean cutover, not a deviation. |
 
-**Result: PASS.** No violations; Complexity Tracking not required. One deliberate, contract-compliant addition — temporary backward-compatible legacy `/sync` adapters — is justified under FR-026 (no break for un-migrated clients) and removed at end of rollout.
+**Result: PASS.** No violations; Complexity Tracking not required. Fresh setup with a clean cutover (no migration, no legacy adapters) — the old form module is replaced, simplifying the contract to the single unified feed.
 
 ## Project Structure
 
@@ -76,10 +76,10 @@ specs/011-unified-schema-driven/
 │   └── registry/                 # NEW Standard Field Registry SPI
 │       ├── StandardFieldProvider.kt   # interface (one per domain implements)
 │       └── FormFieldRegistry.kt       # aggregates providers, validates fieldName/entityType
-├── controller/ConfigController.kt     # +unified /config/schema/sync; legacy feeds → adapters
-├── sync/FormCheckpointContributor.kt  # unchanged checkpoint key "form"
+├── controller/ConfigController.kt     # unified /config/schema/sync + /schema read; legacy endpoints removed
+├── sync/FormCheckpointContributor.kt  # checkpoint key "form" over form_field+form_section
 └── src/main/resources/db/migration/{mysql,postgresql}/
-    └── V1.0.x__unify_form_field_model.sql   # NEW: create form_field/form_section, backfill, soft-delete
+    └── V1.0.x__create_unified_form_model.sql   # NEW: create empty form_field/form_section; drop legacy tables
 
 # Per-domain registry contributions (each domain module, respecting module boundaries):
 customer/.../service/CustomerStandardFieldProvider.kt   # implements StandardFieldProvider

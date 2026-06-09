@@ -128,21 +128,24 @@ This is what the unified `/sync` feed materializes and what `DynamicFormRenderer
 
 ---
 
-## Migration & backfill (FR-025, SC-008)
+## Fresh provisioning (FR-025, SC-008) — no migration
 
-**Backend** (`V1.0.x__unify_form_field_model.sql`, mysql + postgresql):
-1. Create `form_section` and `form_field` (with `active`, indexes, uniqueness above).
-2. Backfill `form_field` from `field_config` → rows with `source=STANDARD`, `field_key=field_name`.
-3. Backfill `form_field` from `attribute_definition` → rows with `source=CUSTOM`,
-   `field_key=attribute_key`, carrying `data_type`, `enum_values`, `category`→ (seed a `form_section`
-   per distinct non-null `category`, link via `section_uid`).
-4. Preserve `uid`, `display_order`, validation (translate legacy `validation_type`+`validation_params`
-   into typed `validation_rules`), timestamps. `active=true` for all backfilled rows.
-5. Legacy tables retained (read by adapter endpoints) — dropped in a later cleanup migration.
+This is a clean-slate setup. There is **no backfill** of the old `field_config` /
+`attribute_definition` data and **no legacy compatibility layer**.
 
-**App** (`FormDatabase` v1→v2 Room migration): create unified tables, copy
-`entity_field_configs`+`entity_attribute_definitions` into `form_field`/`form_section` with the same
-mapping; keep `synced` flags; drop old tables in a later version.
+**Backend** (`V1.0.x__create_unified_form_model.sql`, mysql + postgresql):
+1. Create `form_section` and `form_field` (with `active`, indexes, uniqueness above). Tables start empty.
+2. The legacy `field_config` / `attribute_definition` tables and their endpoints are **dropped/removed**
+   (the old form module is replaced, not adapted). No data is carried over.
+3. A workspace's initial fields/sections are produced lazily by `FormConfigService` from the
+   `FormFieldRegistry` on first access (seed-on-read), then persisted — not by a data migration.
+
+**App** (`FormDatabase`): introduced with the unified `form_field` / `form_section` schema directly.
+The old `entity_field_configs` / `entity_attribute_definitions` tables are removed (a fresh schema /
+destructive recreate on first launch of the new build) — no row copy. `synced` flags start clean.
+
+> Because we provision fresh, FR-025/SC-008 are about *good defaults on first use*, not data
+> preservation. Standard field defaults live only in the registry (SC-004).
 
 ---
 

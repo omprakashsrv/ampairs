@@ -82,29 +82,21 @@ workspace (FR-022, non-destructive). This is the app's allowed UI-invoked read (
 
 ---
 
-## 3. Legacy feeds (RETAINED as adapters during rollout — FR-026)
+## 3. Removed (no legacy compatibility)
 
-These keep older app builds working. They read/write the **same `form_field` store** via adapters and
-are removed in a later cleanup once all clients update.
+Fresh setup, and the Angular web client is deprecated, so **no legacy endpoints are retained**. The
+following are deleted outright (not adapted):
 
 ```
-GET/POST /form/v1/config/field-configs/sync           # source=STANDARD ⇄ legacy FieldConfig shape
-GET/POST /form/v1/config/attribute-definitions/sync   # source=CUSTOM  ⇄ legacy AttributeDefinition shape
+GET/POST /form/v1/config/field-configs/sync           # removed
+GET/POST /form/v1/config/attribute-definitions/sync   # removed
+POST /form/v1/config/field-config | /attribute-definition | /config   # removed
+DELETE /form/v1/config/field-config | /attribute-definition           # removed
 ```
 
-- GET projects `form_field` rows of the matching `source` into the legacy DTO shape (legacy clients have
-  no section concept — `section`/`category` is flattened to the legacy `category` string).
-- POST upserts into `form_field` with the correct `source`. Legacy clients cannot soft-delete (their
-  contract never could) — unchanged behavior.
-- New `active=false` rows are still surfaced to legacy GET so deletes at least disappear for them too.
-
----
-
-## 4. Deprecated / removed
-
-- Legacy single-record CRUD (`POST /field-config`, `POST /attribute-definition`, `DELETE ...`) and the
-  bulk `POST /config` are superseded by the unified `/schema/sync` push. They MAY be kept read-compatible
-  short-term but are not part of the target contract.
+The unified `/config/schema/sync` (push/pull) plus the read-only `/config/schema` are the entire
+target contract. The new app build uses only the unified feed; older installs simply re-provision
+from defaults on update (no legacy data to preserve).
 
 ---
 

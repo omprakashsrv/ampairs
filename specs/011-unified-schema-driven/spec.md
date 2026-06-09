@@ -18,6 +18,8 @@ This feature unifies that model into a single notion of a "form field", makes ev
 - Q: Choice fields — static option lists only, or also dynamic options bound to live workspace data? → A: Both — a choice field's options may be a static admin-entered list OR bound to a named workspace data source (e.g. customer types, tax codes, units).
 - Q: Complex fields the generic renderer can't express (image gallery, address block, map/location, business hours) — excluded, or delegated to native widgets? → A: Custom-widget escape hatch — such fields are still placed/ordered/gated by configuration, but their input control is supplied by the owning domain as a native widget; the whole form remains renderer-assembled.
 - Q: Form sections — free-form label on each field, a separate first-class entity, or a fixed per-domain catalog? → A: First-class entity — sections are configurable records per entity type (own name, order, visibility) that fields reference, with their own configuration and sync lifecycle.
+- Q: Migrate existing form configuration into the unified model? → A: No — this is a fresh setup. The unified store provisions empty and seeds defaults from the standard field registry; no legacy data is migrated or backfilled.
+- Q: Maintain backward-compatible legacy form endpoints for older clients / the web app? → A: No — the Angular web client is deprecated and the app does a clean cutover to the unified feed. No legacy `/sync` adapters or legacy CRUD endpoints are retained.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -161,10 +163,10 @@ The customer, product, order, invoice, and business entry screens all render fro
 - **FR-023**: The customer, product, order, invoice, and business domains MUST all render from and be configurable through this unified system, with customer serving as the reference implementation delivered first.
 - **FR-024**: Entity types MUST be referenced through a defined, validated set of values rather than free-form text, so unsupported entities are detected rather than silently accepted.
 
-**Migration & continuity**
+**Provisioning & rollout**
 
-- **FR-025**: Existing workspace customizations MUST be carried forward into the unified model without loss when this feature is rolled out.
-- **FR-026**: Rollout MUST be incremental (domain by domain) and MUST NOT break configuration distribution for domains not yet migrated.
+- **FR-025**: This is a fresh setup — the unified configuration store provisions empty and derives each workspace's initial fields and sections from the standard field registry on first access. No legacy form data is migrated or backfilled.
+- **FR-026**: Rollout MUST be incremental domain by domain (customer first), and the unified configuration feed MUST work for a domain as soon as it is added without requiring all domains to be migrated together. No backward-compatible legacy endpoints are retained (the web client is deprecated; the app cuts over cleanly to the unified feed).
 
 ### Key Entities *(include if feature involves data)*
 
@@ -187,7 +189,7 @@ The customer, product, order, invoice, and business entry screens all render fro
 - **SC-005**: Field deletions propagate to all devices in 100% of cases (eliminating the current inability to remove fields across devices).
 - **SC-006**: Entry forms render correctly from the last-synced configuration while offline in 100% of tested offline scenarios.
 - **SC-007**: Following rollout, the amount of bespoke per-domain form code is reduced by at least 70% relative to before, measured across the target domains.
-- **SC-008**: Zero workspace customizations are lost during migration to the unified model, verified against a pre-migration snapshot.
+- **SC-008**: A workspace that has never customized a form sees a complete, sensible default form (all registry-defined standard fields, correctly sectioned) on first use, with no manual setup required.
 
 ## Assumptions
 

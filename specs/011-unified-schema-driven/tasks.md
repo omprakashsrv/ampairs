@@ -35,21 +35,21 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 - [ ] T007 [P] `BE:` Typed `ValidationRule` sealed model (Required/LengthRange/NumberRange/Format/AllowedChoices) + `ChoiceOptionSource` in `form/.../domain/model/validation/`.
 - [ ] T008 [P] `BE:` `FormFieldRepository` + `FormSectionRepository` (sync queries INCLUDE soft-deleted rows; `findUpdatedAfter`, `findAllForSync`, `findByUid`, by `(entityType)`).
 - [ ] T009 `BE:` `ValidationEngine` (evaluates `ValidationRule` list against a value; reject contradictory rules) in `form/.../domain/service/validation/ValidationEngine.kt`.
-- [ ] T010 `BE:` Flyway migration `V1.0.x__unify_form_field_model.sql` in BOTH `form/src/main/resources/db/migration/mysql/` and `postgresql/`: create `form_field` + `form_section` (indexes + uniqueness per data-model.md), then **backfill** from `field_config` (→ source=STANDARD) and `attribute_definition` (→ source=CUSTOM, distinct `category` → a `form_section`), translating legacy validation into typed `validation_rules`. Keep legacy tables. (Depends T005–T007.)
+- [ ] T010 `BE:` Flyway migration `V1.0.x__create_unified_form_model.sql` in BOTH `form/src/main/resources/db/migration/mysql/` and `postgresql/`: create **empty** `form_field` + `form_section` (indexes + uniqueness per data-model.md) and **drop** the legacy `field_config` + `attribute_definition` tables. Fresh setup — no backfill. (Depends T005–T007.)
 - [ ] T011 [P] `BE:` `StandardFieldProvider` SPI + `StandardFieldSpec` + `FormFieldRegistry` (aggregates `@Component` providers; validates STANDARD `fieldKey`/`entityType`; marks essential fields) in `form/.../domain/service/registry/`.
 - [ ] T012 `BE:` `FormFieldDTOs`, `FormSectionDTOs`, discriminated `FormConfigRecordRequest/Response`, `EntityConfigSchemaResponse` (fields+sections) + entity↔DTO mappers in `form/.../domain/dto/` (DTO isolation; SNAKE_CASE). (Depends T005–T007.)
 - [ ] T013 `BE:` `FormConfigService` — unified CRUD, registry-driven default seeding/merge (non-destructive), `bulkUpsert` (UID-keyed, in-band soft-delete), `getAfterSync`, integrity rules (STANDARD not deletable; essential not hideable; CHOICE/CUSTOM invariants). (Depends T008, T009, T011, T012.)
 - [ ] T014 `BE:` `ConfigController` — unified `GET/POST /form/v1/config/schema/sync` + `GET /form/v1/config/schema?entity_type=` (active-only, seeds defaults); tenant set at controller; `ApiResponse`/`PageResponse`. (Depends T013.)
-- [ ] T015 `BE:` Legacy adapter endpoints — keep `GET/POST /config/field-configs/sync` & `/attribute-definitions/sync` projecting `form_field` by `source` into legacy shapes (FR-026 backward compat). (Depends T013.)
+- [ ] T015 `BE:` Remove the old form module artifacts — delete `FieldConfig`/`AttributeDefinition` entities, their DTOs, repositories, the legacy seeding in the old `ConfigService`, and all legacy endpoints (`field-configs/sync`, `attribute-definitions/sync`, `field-config`, `attribute-definition`, `config`). Clean cutover, no adapters. (Depends T013, T014.)
 - [ ] T016 [P] `BE:` Update `FormCheckpointContributor` to compute `"form"` checkpoint as `max(updatedAt)` across `form_field` + `form_section`.
 - [ ] T017 [P] `BE:` Contract test: unified `/schema/sync` GET includes soft-deleted rows, POST upserts + honors `active=false`, snake_case params, `ApiResponse<PageResponse>` shape — `form/src/test/.../ConfigSyncContractTest.kt`.
-- [ ] T018 [P] `BE:` Migration/backfill test: legacy `field_config`+`attribute_definition` rows land in `form_field` with correct source/section/validation, no data loss — `form/src/test/.../FormBackfillMigrationTest.kt`.
+- [ ] T018 [P] `BE:` Fresh-provision test: with empty tables, `getConfigSchema(entityType)` seeds-on-read from `FormFieldRegistry` and returns the complete default schema (all standard fields, correctly sectioned); a second call does not duplicate — `form/src/test/.../FormSeedOnReadTest.kt`.
 
 ### App — shared model, storage, sync, renderer scaffolding
 
 - [ ] T019 [P] `APP:` Unified `@Serializable` `FormField`, `FormSection`, `EntityConfigSchema` (+helpers), `ValidationRule`, `ValidationEngine` in `feature/form-api/src/commonMain/.../domain/` (+ `validation/`). Remove old `EntityFieldConfig`/`EntityAttributeDefinition`/`DefaultFormConfigs` usages from this module.
 - [ ] T020 [P] `APP:` Room entities `FormFieldEntity` + `FormSectionEntity` (with `synced`, `active`, JSON columns) + DAOs (`getUnsynced*`, reactive `Flow` by entityType, by section) in `feature/form/.../data/db/`.
-- [ ] T021 `APP:` `FormDatabase` v1→v2 Room `Migration` — create unified tables, copy `entity_field_configs`+`entity_attribute_definitions` into `form_field`/`form_section`, preserve `synced`. (Depends T020.)
+- [ ] T021 `APP:` `FormDatabase` with the fresh unified `form_field`/`form_section` schema — remove the old `entity_field_configs`/`entity_attribute_definitions` tables (destructive recreate on first launch; no row copy — fresh setup). Schema re-populates via the initial pull/seed-on-read. (Depends T020.)
 - [ ] T022 `APP:` `ConfigApi`(+`ConfigApiImpl`) unified feed (`getSchemaSync`, `pushSchema`, `getConfigSchema`); remove the two legacy feed methods from the new build. (Depends T019.)
 - [ ] T023 `APP:` `ConfigRepository` local-only writes (`saveConfigSchema` → `synced=false` + `markPendingPush(FORM)`; soft-delete = `active=false, synced=false`); `getConfigSchema` UI read retained; delete legacy `syncFormConfigs()` pull. (Depends T020, T022.)
 - [ ] T024 `APP:` `FormSyncDelegate` single unified feed under `SyncEntity.FORM` (one checkpoint, soft-delete aware, batches of `BATCH_SIZE`, local-unsynced-wins, hard-delete on server-deleted). (Depends T020, T022.)
@@ -57,7 +57,7 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 - [ ] T026 [P] `APP:` Renderer scaffolding in `feature/form-api/src/commonMain/.../render/`: `FormValueState` (two-way binding + per-field validation state via `ValidationEngine`), `DynamicOptionProvider` interface + `@OptionSourceKey` map key, `CustomFieldWidget` interface + `@WidgetKey` map key. (Depends T019.)
 - [ ] T027 `APP:` `DynamicFormRenderer` composable skeleton + `FieldRenderers` for TEXT/TEXTAREA/NUMBER/BOOLEAN/DATE (sectioned, ordered, inline errors, `stringResource` only). Choice + custom delegated to providers/registry from T026. (Depends T026.)
 
-**Checkpoint**: Backend serves the unified schema for any entity type (legacy clients still work); app stores/syncs/renders the unified model generically. Stories can begin.
+**Checkpoint**: Backend serves the unified schema for any entity type (old form module removed, no legacy endpoints); app stores/syncs/renders the unified model generically. Stories can begin.
 
 ---
 
@@ -166,7 +166,7 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 - [ ] T073 [P] `BE:` Coverage pass — bring `form` module to constitution gates (service ≥80%, endpoints ≥90%); `./gradlew :form:test ciBuild`.
 - [ ] T074 `APP:` Compile-gate all targets: `./gradlew :feature:form:check androidApp:compileDebugKotlinAndroid shared:compileKotlinIosSimulatorArm64 desktopApp:compileKotlin`.
 - [ ] T075 `APP:`+`BE:` Run `quickstart.md` validation end-to-end on customer; confirm SC-001..SC-008 checkpoints.
-- [ ] T076 (Deferred follow-up — separate feature) Plan removal of legacy `field-configs/sync` & `attribute-definitions/sync` adapters + drop legacy tables once all clients update. Do NOT execute here.
+- [ ] T076 [P] `BE:`+`APP:` Confirm no legacy form artifacts remain — grep both repos for `FieldConfig`/`AttributeDefinition`/`field-configs`/`attribute-definitions`/`DefaultFormConfigs`; assert removed (legacy cutover done in T010/T015/T019/T021, not deferred).
 
 ---
 
@@ -191,10 +191,10 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 - **Usable product** = + Phase 4 (US2): admins self-serve with live preview. Demo the full loop.
 - **Cleanup & reliability** = + Phases 5–6 (US3/US4): unification complete, deletions/offline solid.
 - **Standardization** = + Phase 7 (US5): all domains. Then Phase 8 polish.
-- Commit per task/logical group on `claude/clever-cori-71tjo5` in each repo; legacy adapters keep older installs working throughout (T015), so rollout never breaks existing clients.
+- Commit per task/logical group on `claude/clever-cori-71tjo5` in each repo. Fresh setup with a clean cutover — the old form module/tables/endpoints are removed (T010/T015/T019/T021); old installs simply re-provision from defaults on update.
 
 ## Notes
 
 - Backend and app live in separate repos — each task's `BE:`/`APP:` prefix tells you which; commit/push to `claude/clever-cori-71tjo5` in the corresponding repo.
-- T076 is intentionally NOT executed in this feature (legacy removal is a follow-up once client adoption is confirmed).
+- Legacy form removal is part of THIS feature (fresh setup, clean cutover) — not deferred.
 - Keep UID generation in ViewModels; repositories local-only; the API lives only in `FormSyncDelegate` (+ the allowed UI `getConfigSchema` read).
