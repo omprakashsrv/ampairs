@@ -11,6 +11,14 @@ Today, the application lets a workspace configure which fields appear on its dat
 
 This feature unifies that model into a single notion of a "form field", makes every domain's data-entry screen render directly from the workspace's configuration, and turns the configuration screen into a self-serve tool that business owners can actually use — with a live preview, drag-to-reorder, and guided validation rules instead of raw technical input.
 
+## Clarifications
+
+### Session 2026-06-09
+
+- Q: Choice fields — static option lists only, or also dynamic options bound to live workspace data? → A: Both — a choice field's options may be a static admin-entered list OR bound to a named workspace data source (e.g. customer types, tax codes, units).
+- Q: Complex fields the generic renderer can't express (image gallery, address block, map/location, business hours) — excluded, or delegated to native widgets? → A: Custom-widget escape hatch — such fields are still placed/ordered/gated by configuration, but their input control is supplied by the owning domain as a native widget; the whole form remains renderer-assembled.
+- Q: Form sections — free-form label on each field, a separate first-class entity, or a fixed per-domain catalog? → A: First-class entity — sections are configurable records per entity type (own name, order, visibility) that fields reference, with their own configuration and sync lifecycle.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Staff see the form their workspace configured (Priority: P1)
@@ -104,7 +112,8 @@ The customer, product, order, invoice, and business entry screens all render fro
 - **Validation rule that no value can satisfy**: If an administrator sets contradictory rules (e.g. minimum length greater than maximum length), the configuration screen warns before saving.
 - **Conflicting offline edits**: When the same field is edited on two devices while offline, reconciliation produces one consistent result and never leaves a half-applied configuration.
 - **Required custom field added after records exist**: Existing records missing the newly-required value are not retroactively invalidated; the requirement applies to new edits going forward.
-- **Empty configuration**: When a workspace has never customized a form, the entry screen renders a sensible default set of fields derived from the domain's standard fields.
+- **Empty configuration**: When a workspace has never customized a form, the entry screen renders a sensible default set of fields and sections derived from the domain's standard fields.
+- **Deleting a non-empty section**: When a section that still contains fields is removed, the configuration screen requires the administrator to first reassign those fields to another section (or the system reassigns them to a default/unsectioned group) so no field is left orphaned or hidden unintentionally.
 
 ## Requirements *(mandatory)*
 
@@ -114,7 +123,8 @@ The customer, product, order, invoice, and business entry screens all render fro
 
 - **FR-001**: The system MUST represent every configurable form field — whether backed by built-in data or workspace-defined — as a single kind of "field", distinguished only by whether its value is stored as built-in data or as workspace-added data.
 - **FR-002**: Each field MUST carry: a stable identifier, a display label, a data type, whether it is built-in or custom, visibility, required, and enabled states, a section grouping, a display order, an optional default value, and optional validation rules.
-- **FR-003**: The system MUST support these field data types at minimum: single-line text, multi-line text, number, true/false, date, and single-choice selection from a defined list.
+- **FR-003**: The system MUST support these field data types at minimum: single-line text, multi-line text, number, true/false, date, and single-choice selection.
+- **FR-003a**: A single-choice field's options MUST be definable EITHER as a static list entered by the administrator OR as a binding to a named live workspace data source (e.g. customer types, tax codes, units), so the renderer can reproduce existing dynamic dropdowns. The administrator selects the option source through guided controls without entering technical syntax.
 - **FR-004**: Validation rules MUST be expressed as structured, typed rules (e.g. required, text length range, numeric range, allowed format such as email/phone, allowed choice set) — not as free-form technical expressions entered by administrators.
 
 **Form rendering (runtime)**
@@ -123,11 +133,13 @@ The customer, product, order, invoice, and business entry screens all render fro
 - **FR-006**: The rendered form MUST show only visible fields, in their configured order, grouped under their configured sections.
 - **FR-007**: The rendered form MUST enforce required fields and validation rules at the point of entry, showing inline, field-level error messages and blocking save until resolved.
 - **FR-008**: The rendered form MUST read existing values and write entered values for both built-in and custom fields transparently, so the staff member experiences no difference between the two.
+- **FR-008a**: The renderer MUST support a "custom widget" field type for inputs the generic types cannot express (e.g. image gallery, structured address, location/map, business hours). Such fields' visibility, required state, order, and section MUST remain driven by configuration, while their input control is provided by the owning domain. The complete form MUST still be assembled by the renderer (no domain appends hand-built fields outside it).
 - **FR-009**: The rendered form MUST function using the last-synced configuration when the device is offline.
 
 **Admin configuration experience**
 
 - **FR-010**: Administrators MUST be able to toggle a field's visibility and required state, change its label and default value, assign it to a section, and reorder fields (including by dragging).
+- **FR-010a**: Sections MUST be first-class configurable records per entity type, each with its own name, display order, and visibility. Administrators MUST be able to create, rename, reorder, hide, and remove sections, and assign fields to them. Section changes MUST distribute and sync across devices on the same lifecycle as field changes (additions, edits, deletions, offline support).
 - **FR-011**: Administrators MUST be able to add, edit, and remove custom fields for an entity.
 - **FR-012**: The configuration screen MUST present a live preview of the resulting entry form that updates as changes are made.
 - **FR-013**: Advanced settings (data type and validation rules) MUST be presented through guided controls, separated from everyday settings, and MUST NOT require entering raw technical syntax.
@@ -158,7 +170,8 @@ The customer, product, order, invoice, and business entry screens all render fro
 
 - **Field Definition**: A single configurable field on an entity's form. Holds identity, label, data type, origin (built-in vs custom), visibility/required/enabled flags, section, order, default value, and validation rules. Replaces the two prior separate concepts.
 - **Validation Rule**: A structured constraint attached to a field (e.g. required, length range, numeric range, format, allowed choices), interpretable both when an administrator configures it and when a staff member fills the form.
-- **Form Section**: A named grouping of fields used to organize an entity's form into logical blocks.
+- **Choice Option Source**: For single-choice fields, the origin of the selectable options — either a static list of values defined by the administrator, or a reference to a named live workspace data source whose entries populate the choices at render time.
+- **Form Section**: A first-class configurable record, per entity type, that groups fields into a logical block. Holds its own name, display order, and visibility, and has its own configuration and sync lifecycle (created, renamed, reordered, hidden, removed). Fields reference the section they belong to.
 - **Entity Configuration Schema**: The complete, ordered set of field definitions (and their sections) for one entity type within one workspace — the unit that is distributed to devices and rendered.
 - **Entity Type**: The defined, validated set of supported domains (customer, product, order, invoice, business) that a configuration can target.
 - **Standard Field Registry**: The single authoritative source describing which built-in fields each domain offers, used to generate defaults and validate configurations.
@@ -196,7 +209,7 @@ The customer, product, order, invoice, and business entry screens all render fro
 
 - Conditional/branching fields (show field B only when field A has a certain value).
 - Computed or formula fields whose values derive from other fields.
-- Multi-select choice fields, file/image upload fields, and rich relational pickers beyond what each domain already supports natively.
+- Multi-select choice fields. (Complex inputs such as image gallery, structured address, location/map, and business hours are supported via the custom-widget escape hatch of FR-008a — they are configurable and renderer-placed, but their input controls are domain-provided and are not reimplemented generically by this feature.)
 - Per-user or per-role form variations within a single workspace (configuration is per workspace, per entity).
 - Form configuration for domains outside the five named targets.
 - Public/external-facing form rendering (e.g. customer-facing web forms) — this feature concerns internal staff entry screens.
