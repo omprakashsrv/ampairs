@@ -118,7 +118,7 @@ The customer, product, order, invoice, and business entry screens all render fro
 - **Conflicting offline edits**: When the same entity-type form is edited on two devices while offline, reconciliation produces one consistent form (whole-form last-write-wins). The later device detects via the version stamp that the form changed under it and re-applies its edits onto the latest version rather than blindly overwriting; the configuration is never left half-applied.
 - **Required custom field added after records exist**: Existing records missing the newly-required value are not retroactively invalidated; the requirement applies to new edits going forward.
 - **Empty configuration**: When a workspace has never customized a form, the entry screen renders a sensible default set of fields and sections derived from the domain's standard fields.
-- **Deleting a non-empty section**: When a section that still contains fields is removed, the configuration screen requires the administrator to first reassign those fields to another section (or the system reassigns them to a default/unsectioned group) so no field is left orphaned or hidden unintentionally.
+- **Deleting a non-empty section**: When a section that still contains fields is removed, the configuration screen requires the administrator to first reassign those fields to another section (or the system moves them to the default `General` section) so no field is left orphaned or hidden unintentionally.
 
 ## Requirements *(mandatory)*
 
@@ -176,7 +176,7 @@ The customer, product, order, invoice, and business entry screens all render fro
 
 - **Field Definition**: A single configurable field on an entity's form. Holds identity, label, data type, origin (built-in vs custom), visibility/required/enabled flags, section, order, default value, and validation rules. Replaces the two prior separate concepts.
 - **Validation Rule**: A structured constraint attached to a field (e.g. required, length range, numeric range, format, allowed choices), interpretable both when an administrator configures it and when a staff member fills the form.
-- **Choice Option Source**: For single-choice fields, the origin of the selectable options — either a static list of values defined by the administrator, or a reference to a named live workspace data source whose entries populate the choices at render time.
+- **Choice Option Source**: For single- or multi-select choice fields, the origin of the selectable options — either a static list of values defined by the administrator, or a reference to a named live workspace data source whose entries populate the choices at render time.
 - **Form Section**: A first-class configurable record, per entity type, that groups fields into a logical block. Holds its own name, display order, and visibility, and has its own configuration and sync lifecycle (created, renamed, reordered, hidden, removed). Fields reference the section they belong to.
 - **Entity Configuration Schema**: The complete, ordered set of field definitions (and their sections) for one entity type within one workspace — the unit that is distributed to devices and rendered.
 - **Entity Type**: The defined, validated set of supported domains (customer, product, order, invoice, business) that a configuration can target.
@@ -200,9 +200,9 @@ The customer, product, order, invoice, and business entry screens all render fro
 - **Who may configure forms**: Form configuration is restricted to workspace administrators/owners; ordinary staff can fill forms but not change configuration. (Existing workspace roles govern this.)
 - **Standard fields cannot be deleted, only hidden/disabled**: Because built-in fields map to structural data, administrators may hide, disable, reorder, relabel, or make them optional/required, but only custom fields may be deleted outright.
 - **Deleted custom field values are retained, not purged**: Removing a custom field hides it but preserves historical values, so deletion is non-destructive to existing records.
-- **Conflict resolution favors local unsynced edits during reconciliation**, consistent with the application's established offline behavior.
+- **Conflict resolution is aggregate-level last-write-wins guarded by an optimistic version stamp** (FR-018): a push made against a stale version is rejected, so the editor re-pulls the latest form and re-applies its edits rather than silently overwriting. Edits to different entity-type forms never conflict.
 - **Default configuration is derived automatically** from each domain's standard field registry when a workspace has not customized a form.
-- **The existing offline distribution mechanism and per-workspace scoping are retained**; this feature changes the configuration model and the screens, not the underlying distribution approach.
+- **The offline engine (CentralSyncService / SyncDelegate) and per-workspace scoping are retained**; the distribution *granularity* changes to an aggregate-grained `/sync` (one `FormSchema` per entityType, delete-by-absence), and the screens are rebuilt — but the underlying offline-first sync infrastructure is reused.
 - **The reference rollout order** is customer first, then product, order, invoice, and business.
 
 ## Dependencies

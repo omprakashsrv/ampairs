@@ -6,6 +6,13 @@ auto-filter). All responses are `ApiResponse<T>`. JSON is global SNAKE_CASE.
 The form schema is a **DDD aggregate**, and the aggregate is **also the sync unit** — so there is exactly
 **one** sync feed (one GET + one POST). One record = the whole `FormSchema` for one `entityType`.
 
+> **Documented deviation from the canonical row-level `/sync` norm.** The house contract
+> (CLAUDE.md rule #9 / `docs/guides/offline-sync-contract.md`) is row-level UID-keyed upsert with in-band
+> soft-delete. `form` is intentionally **aggregate-grained** (uid = entityType; delete-by-absence;
+> optimistic `version`) — a recorded exception alongside `tax` (subscribe model) and `file` (multipart).
+> It still uses `GET`/`POST /sync` with `ApiResponse<PageResponse>` / `ApiResponse<List>`. The guide is
+> updated to list this exception (task T070); a reviewer should bless it as such.
+
 ---
 
 ## 1. Aggregate sync feed (the entire sync contract)
