@@ -34,6 +34,7 @@ ampairs/
 ├── event/              # Domain event streaming, WebSocket/STOMP delivery
 ├── notification/       # Multi-channel notifications (SMS, email, push, WhatsApp)
 ├── unit/               # Unit of measure definitions and conversions
+├── setting/            # Central workspace settings registry (cross-module toggles, offline bulk-sync)
 ├── form/               # Dynamic form builder, configurable entity schemas
 ├── file/               # File storage, upload/download, AWS S3 integration
 │
@@ -97,7 +98,7 @@ docker-compose up -d
 
 ### Backend
 
-- **Modular monolith**: 15 domain modules + `ampairs_service` aggregator
+- **Modular monolith**: 16 domain modules + `ampairs_service` aggregator
 - **Multi-tenancy**: Workspace-based isolation via `@TenantId` on `OwnableBaseDomain`
 - **Auth**: Device-aware JWT with concurrent multi-device login support
 - **API**: Versioned REST endpoints (`/api/v1/{resource}`), all responses wrapped in `ApiResponse<T>`
