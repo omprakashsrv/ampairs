@@ -8,24 +8,12 @@ import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.web.bind.annotation.*
-import java.time.Instant
 
 @RestController
 @RequestMapping("/invoice/v1/invoices")
 class InvoiceController(
     private val invoiceService: InvoiceService,
 ) {
-
-    /**
-     * Legacy incremental list pull (last_updated). Superseded by GET /sync; retained only because the
-     * mobile app's InvoiceRepository.getInvoiceResource() still calls it. Remove once the app migrates
-     * its list pull to the /sync contract.
-     */
-    @GetMapping("")
-    fun getInvoices(@RequestParam("last_updated") lastUpdated: Instant?): ApiResponse<List<InvoiceResponse>> {
-        val result = invoiceService.getInvoices(lastUpdated).toResponse()
-        return ApiResponse.success(result)
-    }
 
     /**
      * Offline-sync bulk upsert (spec 010). Client UID-keyed; carries series + sequenceNumber.

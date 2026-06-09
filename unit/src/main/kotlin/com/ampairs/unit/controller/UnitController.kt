@@ -64,10 +64,4 @@ class UnitController(
         return ApiResponse.success(unit)
     }
 
-    @DeleteMapping("/{uid}")
-    fun deleteUnit(@PathVariable uid: String): ApiResponse<Unit> {
-        unitService.delete(uid)
-        return ApiResponse.success(Unit)
-    }
-
 }

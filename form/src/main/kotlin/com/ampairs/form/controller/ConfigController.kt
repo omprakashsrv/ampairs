@@ -1,9 +1,12 @@
 package com.ampairs.form.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
+import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.form.domain.dto.*
 import com.ampairs.form.domain.service.ConfigService
 import jakarta.validation.Valid
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -74,6 +77,72 @@ class ConfigController(
         val saved = configService.saveAttributeDefinition(request)
         return ApiResponse.success(saved)
     }
+
+    // ----------------------------------------------------------------------------------------
+    // Unified sync contract — two feeds (one per record type), pull + push share the same URL.
+    //
+    // PULL  GET  /form/v1/config/{field-configs|attribute-definitions}/sync
+    //            ?last_sync&page&size&sort_by=updatedAt&sort_dir=ASC → ApiResponse<PageResponse<T>>
+    // PUSH  POST /form/v1/config/{field-configs|attribute-definitions}/sync
+    //            body List<...SyncRequest> → ApiResponse<List<...Response>> (UID-keyed bulk upsert)
+    //
+    // LIMITATION: the form tables have no soft-delete column, so the pull feed never returns DELETED
+    // rows and the push cannot delete. See ConfigService sync section.
+    // ----------------------------------------------------------------------------------------
+
+    /** Incremental sync feed (pull) for field configs, INCLUDING all rows updated at/after last_sync. */
+    @GetMapping("/field-configs/sync")
+    fun getFieldConfigsSync(
+        @RequestParam("last_sync", required = false) lastSync: String?,
+        @RequestParam("page", defaultValue = "0") page: Int,
+        @RequestParam("size", defaultValue = "100") size: Int,
+        @RequestParam("sort_by", defaultValue = "updatedAt") sortBy: String,
+        @RequestParam("sort_dir", defaultValue = "ASC") sortDir: String
+    ): ApiResponse<PageResponse<FieldConfigResponse>> {
+        val jpaPropertyName = when (sortBy) {
+            "createdAt" -> "createdAt"
+            "updatedAt" -> "updatedAt"
+            "displayOrder" -> "displayOrder"
+            else -> "updatedAt"
+        }
+        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(sortDir), jpaPropertyName))
+        val result = configService.getFieldConfigsAfterSync(lastSync, pageable)
+        return ApiResponse.success(PageResponse.from(result))
+    }
+
+    /** Bulk upsert (push) of field configs. UID-keyed; the server upserts each row. */
+    @PostMapping("/field-configs/sync")
+    fun pushFieldConfigsSync(
+        @RequestBody requests: List<FieldConfigSyncRequest>
+    ): ApiResponse<List<FieldConfigResponse>> =
+        ApiResponse.success(configService.bulkUpsertFieldConfigs(requests))
+
+    /** Incremental sync feed (pull) for attribute definitions, INCLUDING all rows updated at/after last_sync. */
+    @GetMapping("/attribute-definitions/sync")
+    fun getAttributeDefinitionsSync(
+        @RequestParam("last_sync", required = false) lastSync: String?,
+        @RequestParam("page", defaultValue = "0") page: Int,
+        @RequestParam("size", defaultValue = "100") size: Int,
+        @RequestParam("sort_by", defaultValue = "updatedAt") sortBy: String,
+        @RequestParam("sort_dir", defaultValue = "ASC") sortDir: String
+    ): ApiResponse<PageResponse<AttributeDefinitionResponse>> {
+        val jpaPropertyName = when (sortBy) {
+            "createdAt" -> "createdAt"
+            "updatedAt" -> "updatedAt"
+            "displayOrder" -> "displayOrder"
+            else -> "updatedAt"
+        }
+        val pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.fromString(sortDir), jpaPropertyName))
+        val result = configService.getAttributeDefinitionsAfterSync(lastSync, pageable)
+        return ApiResponse.success(PageResponse.from(result))
+    }
+
+    /** Bulk upsert (push) of attribute definitions. UID-keyed; the server upserts each row. */
+    @PostMapping("/attribute-definitions/sync")
+    fun pushAttributeDefinitionsSync(
+        @RequestBody requests: List<AttributeDefinitionSyncRequest>
+    ): ApiResponse<List<AttributeDefinitionResponse>> =
+        ApiResponse.success(configService.bulkUpsertAttributeDefinitions(requests))
 
     /**
      * Delete field configuration

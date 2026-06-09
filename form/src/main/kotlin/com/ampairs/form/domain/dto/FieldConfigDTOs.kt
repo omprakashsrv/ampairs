@@ -44,6 +44,32 @@ data class FieldConfigRequest(
 )
 
 /**
+ * Field configuration bulk sync (push) request DTO.
+ * Carries the client-generated [uid] so the server can match-and-update by UID (UID-keyed upsert),
+ * falling back to entityType+fieldName when uid is blank/unknown.
+ *
+ * NOTE: FieldConfig has no soft-delete column, so there is no `active`/`deleted` flag here — the
+ * sync push cannot delete rows. See ConfigService sync section.
+ */
+data class FieldConfigSyncRequest(
+    val uid: String? = null,
+    val entityType: String,
+    val fieldName: String,
+    val displayName: String,
+    val visible: Boolean = true,
+    val mandatory: Boolean = false,
+    val enabled: Boolean = true,
+    val displayOrder: Int = 0,
+    val validationType: String? = null,
+    val validationParams: Map<String, String>? = null,
+    val placeholder: String? = null,
+    val helpText: String? = null,
+    val defaultValue: String? = null,
+    val createdAt: String? = null,
+    val updatedAt: String? = null
+)
+
+/**
  * Extension functions for FieldConfig entity
  */
 private val objectMapper = jacksonObjectMapper()

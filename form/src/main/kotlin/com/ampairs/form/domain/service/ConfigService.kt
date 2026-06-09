@@ -6,8 +6,12 @@ import com.ampairs.form.domain.model.FieldConfig
 import com.ampairs.form.domain.repository.AttributeDefinitionRepository
 import com.ampairs.form.domain.repository.FieldConfigRepository
 import org.slf4j.LoggerFactory
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 import java.time.Instant
 
 /**
@@ -20,6 +24,8 @@ class ConfigService(
 ) {
 
     private val logger = LoggerFactory.getLogger(ConfigService::class.java)
+
+    private val objectMapper = com.fasterxml.jackson.module.kotlin.jacksonObjectMapper()
 
     /**
      * Get complete configuration schema for an entity type
@@ -207,6 +213,109 @@ class ConfigService(
             attributeDefinitions = savedAttributeDefinitions,
             lastUpdated = lastUpdated
         )
+    }
+
+    // ----------------------------------------------------------------------------------------
+    // Unified sync contract (paginated incremental pull + bulk upsert push)
+    //
+    // Two separate feeds — one per record type — because FieldConfig and AttributeDefinition are
+    // distinct tables with distinct unique keys. Both are @TenantId-filtered (workspace-scoped).
+    //
+    // LIMITATION: Neither FieldConfig nor AttributeDefinition (nor BaseDomain) has a soft-delete
+    // column. The pull feed therefore NEVER carries DELETED rows, and the push bulk-upsert cannot
+    // mark a row deleted. Deletions still happen through the legacy entity-type/key DELETE endpoints
+    // and do NOT propagate to other devices via /sync. Adding in-band soft-delete needs a Flyway
+    // migration (a `deleted`/`status` column) which is intentionally out of scope here.
+    // ----------------------------------------------------------------------------------------
+
+    /** Incremental sync feed (pull) of field configs updated at/after [lastSync]. */
+    @Transactional(readOnly = true)
+    fun getFieldConfigsAfterSync(lastSync: String?, pageable: Pageable): Page<FieldConfigResponse> {
+        val instant = parseLastSync(lastSync)
+        val page = if (instant == null) {
+            fieldConfigRepository.findAll(pageable)
+        } else {
+            fieldConfigRepository.findFieldConfigsUpdatedAfter(instant, pageable)
+        }
+        return page.map { it.asFieldConfigResponse() }
+    }
+
+    /** Incremental sync feed (pull) of attribute definitions updated at/after [lastSync]. */
+    @Transactional(readOnly = true)
+    fun getAttributeDefinitionsAfterSync(lastSync: String?, pageable: Pageable): Page<AttributeDefinitionResponse> {
+        val instant = parseLastSync(lastSync)
+        val page = if (instant == null) {
+            attributeDefinitionRepository.findAll(pageable)
+        } else {
+            attributeDefinitionRepository.findAttributeDefinitionsUpdatedAfter(instant, pageable)
+        }
+        return page.map { it.asAttributeDefinitionResponse() }
+    }
+
+    /**
+     * Bulk upsert (push) of field configs, UID-keyed. Existing rows (matched by uid, falling back to
+     * entityType+fieldName) are updated in place; unknown rows are inserted.
+     */
+    @Transactional
+    fun bulkUpsertFieldConfigs(requests: List<FieldConfigSyncRequest>): List<FieldConfigResponse> =
+        requests.map { req ->
+            val existing = req.uid?.takeIf { it.isNotBlank() }?.let { fieldConfigRepository.findByUid(it) }
+                ?: fieldConfigRepository.findByEntityTypeAndFieldName(req.entityType, req.fieldName)
+            val entity = (existing ?: FieldConfig()).apply {
+                entityType = req.entityType
+                fieldName = req.fieldName
+                displayName = req.displayName
+                visible = req.visible
+                mandatory = req.mandatory
+                enabled = req.enabled
+                displayOrder = req.displayOrder
+                validationType = req.validationType
+                validationParams = req.validationParams?.let { objectMapper.writeValueAsString(it) }
+                placeholder = req.placeholder
+                helpText = req.helpText
+                defaultValue = req.defaultValue
+            }
+            fieldConfigRepository.save(entity).asFieldConfigResponse()
+        }
+
+    /**
+     * Bulk upsert (push) of attribute definitions, UID-keyed. Existing rows (matched by uid, falling
+     * back to entityType+attributeKey) are updated in place; unknown rows are inserted.
+     */
+    @Transactional
+    fun bulkUpsertAttributeDefinitions(requests: List<AttributeDefinitionSyncRequest>): List<AttributeDefinitionResponse> =
+        requests.map { req ->
+            val existing = req.uid?.takeIf { it.isNotBlank() }?.let { attributeDefinitionRepository.findByUid(it) }
+                ?: attributeDefinitionRepository.findByEntityTypeAndAttributeKey(req.entityType, req.attributeKey)
+            val entity = (existing ?: AttributeDefinition()).apply {
+                entityType = req.entityType
+                attributeKey = req.attributeKey
+                displayName = req.displayName
+                dataType = req.dataType
+                visible = req.visible
+                mandatory = req.mandatory
+                enabled = req.enabled
+                displayOrder = req.displayOrder
+                category = req.category
+                defaultValue = req.defaultValue
+                validationType = req.validationType
+                validationParams = req.validationParams?.let { objectMapper.writeValueAsString(it) }
+                enumValues = req.enumValues?.let { objectMapper.writeValueAsString(it) }
+                placeholder = req.placeholder
+                helpText = req.helpText
+            }
+            attributeDefinitionRepository.save(entity).asAttributeDefinitionResponse()
+        }
+
+    /** Parse the ISO-8601 `last_sync` query param; null/blank or unparseable → null (= full feed). */
+    private fun parseLastSync(lastSync: String?): Instant? {
+        if (lastSync.isNullOrBlank()) return null
+        return try {
+            Instant.parse(URLDecoder.decode(lastSync, StandardCharsets.UTF_8))
+        } catch (e: Exception) {
+            logger.warn("Unparseable last_sync '{}' — falling back to full feed", lastSync)
+            null
+        }
     }
 
     /**

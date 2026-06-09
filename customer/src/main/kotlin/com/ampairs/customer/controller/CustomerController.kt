@@ -5,8 +5,6 @@ import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.core.exception.NotFoundException
 import com.ampairs.customer.domain.dto.*
 import com.ampairs.customer.domain.service.CustomerService
-import io.swagger.v3.oas.annotations.Operation
-import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
@@ -74,20 +72,5 @@ class CustomerController(
         val customer = customerService.getCustomerByUid(customerId)
             ?: throw NotFoundException("Customer not found: $customerId")
         return ApiResponse.success(customer.asCustomerResponse())
-    }
-
-    @DeleteMapping("/{customerId}")
-    @Operation(
-        summary = "Delete customer",
-        description = "Soft delete a customer by setting status to DELETED"
-    )
-    fun deleteCustomer(
-        @Parameter(description = "Customer UID")
-        @PathVariable customerId: String
-    ): ApiResponse<Map<String, Any>> {
-        if (!customerService.deleteCustomer(customerId)) {
-            throw NotFoundException("Customer not found: $customerId")
-        }
-        return ApiResponse.success(mapOf("deleted" to true, "customer_id" to customerId))
     }
 }

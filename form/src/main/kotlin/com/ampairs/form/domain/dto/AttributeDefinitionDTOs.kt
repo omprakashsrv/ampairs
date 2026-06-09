@@ -50,6 +50,35 @@ data class AttributeDefinitionRequest(
 )
 
 /**
+ * Attribute definition bulk sync (push) request DTO.
+ * Carries the client-generated [uid] so the server can match-and-update by UID (UID-keyed upsert),
+ * falling back to entityType+attributeKey when uid is blank/unknown.
+ *
+ * NOTE: AttributeDefinition has no soft-delete column, so there is no `active`/`deleted` flag here —
+ * the sync push cannot delete rows. See ConfigService sync section.
+ */
+data class AttributeDefinitionSyncRequest(
+    val uid: String? = null,
+    val entityType: String,
+    val attributeKey: String,
+    val displayName: String,
+    val dataType: String = "STRING",
+    val visible: Boolean = true,
+    val mandatory: Boolean = false,
+    val enabled: Boolean = true,
+    val displayOrder: Int = 0,
+    val category: String? = null,
+    val defaultValue: String? = null,
+    val validationType: String? = null,
+    val validationParams: Map<String, String>? = null,
+    val enumValues: List<String>? = null,
+    val placeholder: String? = null,
+    val helpText: String? = null,
+    val createdAt: String? = null,
+    val updatedAt: String? = null
+)
+
+/**
  * Extension functions for AttributeDefinition entity
  */
 private val objectMapper = jacksonObjectMapper()
