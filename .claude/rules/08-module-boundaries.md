@@ -18,3 +18,4 @@
 | `order` | Order processing, fulfillment |
 | `invoice` | Invoices, payments |
 | `subscription` | Plans, billing |
+| `setting` | Central workspace settings registry (cross-module toggles, offline-sync) |

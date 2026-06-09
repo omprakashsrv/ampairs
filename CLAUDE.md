@@ -4,7 +4,7 @@
 
 Ampairs — business management SaaS. Backend (Spring Boot 4.0 + Kotlin 2.3 + Java 21), Web (Angular 20 + M3, separate repo), Mobile (Compose Multiplatform, separate repo).
 
-- 15 domain modules at root + `ampairs_service` aggregator
+- 16 domain modules at root + `ampairs_service` aggregator
 - Package convention: `com.ampairs.{module}.{domain|repository|service|controller}`
 - Each module has its own `CLAUDE.md` — read it when working in that directory
 - Full module docs: `docs/modules/`
