@@ -55,7 +55,7 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 - [ ] T024 `APP:` `FormSyncDelegate` single unified feed under `SyncEntity.FORM` (one checkpoint, soft-delete aware, batches of `BATCH_SIZE`, local-unsynced-wins, hard-delete on server-deleted). (Depends T020, T022.)
 - [ ] T025 [P] `APP:` Metro DI wiring — `FormDaoModule` provide new DAOs + `ConfigLookup`; ensure `WorkspaceScope` DB providers (android/ios/desktop) target unified `FormDatabase`. (Depends T020.)
 - [ ] T026 [P] `APP:` Renderer scaffolding in `feature/form-api/src/commonMain/.../render/`: `FormValueState` (two-way binding + per-field validation state via `ValidationEngine`), `DynamicOptionProvider` interface + `@OptionSourceKey` map key, `CustomFieldWidget` interface + `@WidgetKey` map key. (Depends T019.)
-- [ ] T027 `APP:` `DynamicFormRenderer` composable skeleton + `FieldRenderers` for TEXT/TEXTAREA/NUMBER/BOOLEAN/DATE (sectioned, ordered, inline errors, `stringResource` only). Choice + custom delegated to providers/registry from T026. (Depends T026.)
+- [ ] T027 `APP:` `DynamicFormRenderer` composable skeleton + `FieldRenderers` for TEXT/TEXTAREA/NUMBER/BOOLEAN/DATE (sectioned, ordered, inline errors, `stringResource` only). Choice + custom delegated to providers/registry from T026. Group fields by `sectionUid`, ordering sections then fields by `displayOrder`; a field with a **dangling/null `sectionUid`** (section not yet synced) renders in a default/unsectioned group — never an error. (Depends T026.)
 
 **Checkpoint**: Backend serves the unified schema for any entity type (old form module removed, no legacy endpoints); app stores/syncs/renders the unified model generically. Stories can begin.
 
@@ -145,7 +145,7 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 - [ ] T059 [P] [US5] `BE:` `ProductStandardFieldProvider` (+ remove product seeding) in `product/...`.
 - [ ] T060 [P] [US5] `BE:` `OrderStandardFieldProvider` (+ remove seeding) in `order/...`.
 - [ ] T061 [P] [US5] `BE:` `InvoiceStandardFieldProvider` (+ remove seeding) in `invoice/...`.
-- [ ] T062 [P] [US5] `BE:` `BusinessStandardFieldProvider` (+ remove seeding) in `workspace`/business module.
+- [ ] T062 [P] [US5] `BE:` `BusinessStandardFieldProvider` for `EntityType.BUSINESS` (+ remove seeding) in the **`workspace`** module (no separate `business` backend module exists).
 - [ ] T063 [P] [US5] `APP:` Address, location/map, and business-hours `CustomFieldWidget`s (`@WidgetKey`) registered for the domains that need them.
 - [ ] T064 [US5] `APP:` Rewire Product entry screen + ViewModel to `DynamicFormRenderer` (+ product dynamic option providers). (Depends T027, T059.)
 - [ ] T065 [US5] `APP:` Rewire Order entry screen + ViewModel; add `onFormConfig` nav for order. (Depends T027, T060.)
@@ -167,6 +167,8 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 - [ ] T074 `APP:` Compile-gate all targets: `./gradlew :feature:form:check androidApp:compileDebugKotlinAndroid shared:compileKotlinIosSimulatorArm64 desktopApp:compileKotlin`.
 - [ ] T075 `APP:`+`BE:` Run `quickstart.md` validation end-to-end on customer; confirm SC-001..SC-008 checkpoints.
 - [ ] T076 [P] `BE:`+`APP:` Confirm no legacy form artifacts remain — grep both repos for `FieldConfig`/`AttributeDefinition`/`field-configs`/`attribute-definitions`/`DefaultFormConfigs`; assert removed (legacy cutover done in T010/T015/T019/T021, not deferred).
+- [ ] T077 [P] [US3] `BE:` FR-022 seed-on-read merge test: a workspace customizes a field (hide + relabel), then a new registry standard field is introduced → next `getConfigSchema` adds ONLY the new field, leaving the customized field's visibility/label/order/section/validation untouched. `form/src/test/.../FormSeedMergePreservationTest.kt`.
+- [ ] T078 `BE:`+`APP:` SC-007 verification: measure bespoke per-domain form code (hand-built form composables/field wiring) before vs after across the five domains; record the reduction (target ≥70%) in `specs/011-unified-schema-driven/quickstart.md` validation notes. If the metric proves impractical to quantify exactly, record the qualitative outcome (which bespoke forms were retired) instead.
 
 ---
 

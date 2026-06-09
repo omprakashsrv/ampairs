@@ -84,7 +84,7 @@ specs/011-unified-schema-driven/
 # Per-domain registry contributions (each domain module, respecting module boundaries):
 customer/.../service/CustomerStandardFieldProvider.kt   # implements StandardFieldProvider
 product/.../service/ProductStandardFieldProvider.kt
-order/.../...   invoice/.../...   workspace(business)/.../...
+order/.../...   invoice/.../...   workspace/.../service/BusinessStandardFieldProvider.kt   # BUSINESS lives in `workspace` (no separate business module)
 
 # APP  /home/user/ampairs-app/feature/form-api/  (shared domain, consumed by domains)
 ├── domain/

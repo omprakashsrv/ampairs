@@ -20,6 +20,10 @@ GET /form/v1/config/schema/sync
 
 - Feed is the **union** of fields and sections as `FormConfigRecordResponse` items, discriminated by
   `record_type` (`FIELD` | `SECTION`), so one paged feed + one client checkpoint covers both.
+- **Ordering tolerance**: items are paged by `updated_at`, so a FIELD may arrive before the SECTION its
+  `section_uid` references. The client MUST NOT treat a dangling `section_uid` as an error — render the
+  field in the default/unsectioned group until the section row arrives, then re-group. No FK ordering is
+  guaranteed across pages.
 - **Includes soft-deleted rows** (`active = false`) — this is how deletes propagate. No active filter.
 - `last_sync` optional; absent/blank ⇒ full feed. Defaults `page=0,size=100,sort_by=updatedAt,sort_dir=ASC`.
 

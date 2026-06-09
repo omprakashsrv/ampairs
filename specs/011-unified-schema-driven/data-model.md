@@ -35,7 +35,7 @@ The single unified field model. Replaces `FieldConfig` **and** `AttributeDefinit
 | `displayName` | String(255) | UI label. |
 | `dataType` | `FieldDataType` | |
 | `widgetKey` | String(100)? | Required iff `dataType = CUSTOM` (e.g. `image_gallery`, `address`, `location`, `business_hours`). |
-| `sectionUid` | String(200)? | FK→`FormSection.uid` (nullable = default/unsectioned group). |
+| `sectionUid` | String(200)? | FK→`FormSection.uid`. Nullable = default/unsectioned group. A **dangling** `sectionUid` (section not yet synced/arrived) is treated as the default group until the section appears — never an error. |
 | `visible` | Boolean = true | |
 | `mandatory` | Boolean = false | |
 | `enabled` | Boolean = true | Editable vs read-only. |
@@ -159,6 +159,14 @@ interface StandardFieldProvider {
 }
 ```
 
-Each domain module implements it; `FormFieldRegistry` aggregates. Used to seed defaults, merge new
-fields on read without overwriting customizations (FR-022), and validate STANDARD `fieldKey`/`entityType`
-(FR-020). This is the single source of truth that removes both hardcoded lists (FR-021).
+Each domain module implements it (`customer`, `product`, `order`, `invoice`, and **`workspace`** for the
+`BUSINESS` entity type — there is no separate `business` backend module); `FormFieldRegistry` aggregates.
+Used to seed defaults, merge new fields on read without overwriting customizations (FR-022), and validate
+STANDARD `fieldKey`/`entityType` (FR-020). This is the single source of truth that removes both hardcoded
+lists (FR-021).
+
+**Seed-on-read merge contract (FR-022)**: on `getConfigSchema`, for the workspace's `entityType`, add any
+registry standard field whose `fieldKey` has no existing row (create as a new `FormField`), and create any
+registry section that is missing — but **never overwrite** an existing row's visibility, order, label,
+section assignment, or validation. New releases that add registry fields thus appear without erasing
+workspace customizations.
