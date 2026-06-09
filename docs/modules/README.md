@@ -19,6 +19,7 @@ Each module is an independent Spring Boot domain bounded context. All share `cor
 | [event](event.md) | `/api/v1/events/`, WebSocket | Domain event streaming, device presence |
 | [notification](notification.md) | `/notification/v1/` | SMS, push notifications, retry queue |
 | [unit](unit.md) | `/api/v1/unit/` | Units of measure and conversions |
+| [setting](setting.md) | `/setting/v1/settings/` | Central workspace settings registry (cross-module toggles, offline-sync) |
 | [form](form.md) | `/form/v1/` | Dynamic field config and custom attributes |
 | [file](file.md) | `/files/` | Object storage — S3, MinIO, local |
 
