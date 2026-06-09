@@ -42,6 +42,7 @@ dependencies {
     implementation(project(mapOf("path" to ":customer")))
     implementation(project(mapOf("path" to ":file")))
     implementation(project(mapOf("path" to ":unit")))
+    implementation(project(mapOf("path" to ":setting")))
     implementation(project(mapOf("path" to ":product")))
     implementation(project(mapOf("path" to ":order")))
     implementation(project(mapOf("path" to ":invoice")))
@@ -113,7 +114,7 @@ tasks.withType<Test> {
 
 val migrationModules = listOf(
     "auth", "business", "core", "customer", "ecom", "event", "file", "form",
-    "invoice", "notification", "order", "product", "subscription",
+    "invoice", "notification", "order", "product", "setting", "subscription",
     "tax", "unit", "user", "workspace"
 )
 
