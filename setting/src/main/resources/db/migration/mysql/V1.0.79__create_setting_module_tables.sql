@@ -1,5 +1,5 @@
 -- Setting Module Database Migration Script
--- Version: 1.0.80
+-- Version: 1.0.79
 -- Description: Create workspace-scoped store_setting table (central key-value settings registry)
 -- Dependencies: V1.0.0__create_core_tables.sql
 

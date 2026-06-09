@@ -114,7 +114,7 @@ tasks.withType<Test> {
 
 val migrationModules = listOf(
     "auth", "business", "core", "customer", "ecom", "event", "file", "form",
-    "invoice", "notification", "order", "product", "subscription",
+    "invoice", "notification", "order", "product", "setting", "subscription",
     "tax", "unit", "user", "workspace"
 )
 
