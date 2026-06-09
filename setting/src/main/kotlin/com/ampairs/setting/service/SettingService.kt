@@ -1,5 +1,6 @@
 package com.ampairs.setting.service
 
+import com.ampairs.core.setting.SettingDefinition
 import com.ampairs.setting.domain.dto.SettingRequest
 import com.ampairs.setting.domain.model.StoreSetting
 import org.springframework.data.domain.Page
@@ -17,6 +18,9 @@ interface SettingService {
 
     /** Bulk push: validate each request against its definition and upsert by uid or (module, key). */
     fun upsertSettings(requests: List<SettingRequest>): List<StoreSetting>
+
+    /** Declared setting definitions applicable to the current workspace's installed modules. */
+    fun listDefinitions(): List<SettingDefinition>
 
     /** Effective string value for the current workspace, or the declared default when no override. */
     fun getString(module: String, key: String): String?

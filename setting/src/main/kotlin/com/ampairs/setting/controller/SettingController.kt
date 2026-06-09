@@ -2,8 +2,10 @@ package com.ampairs.setting.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
+import com.ampairs.setting.domain.dto.SettingDefinitionResponse
 import com.ampairs.setting.domain.dto.SettingRequest
 import com.ampairs.setting.domain.dto.SettingResponse
+import com.ampairs.setting.domain.dto.asDefinitionResponses
 import com.ampairs.setting.domain.dto.asSettingResponse
 import com.ampairs.setting.domain.dto.asSettingResponses
 import com.ampairs.setting.service.SettingService
@@ -47,5 +49,11 @@ class SettingController(
     @PostMapping
     fun push(@RequestBody @Valid requests: List<@Valid SettingRequest>): ApiResponse<List<SettingResponse>> {
         return ApiResponse.success(settingService.upsertSettings(requests).asSettingResponses())
+    }
+
+    /** Setting definition catalog for the current workspace's installed modules (read-only). */
+    @GetMapping("/definitions")
+    fun definitions(): ApiResponse<List<SettingDefinitionResponse>> {
+        return ApiResponse.success(settingService.listDefinitions().asDefinitionResponses())
     }
 }

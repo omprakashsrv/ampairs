@@ -17,6 +17,7 @@ class InvoiceSettingDefinitions : SettingDefinitionProvider {
             defaultValue = "true",
             label = "Show discount options on invoices",
             description = "Controls whether discount fields are displayed while creating an invoice.",
+            requiresModule = "invoice-billing",
         ),
     )
 }

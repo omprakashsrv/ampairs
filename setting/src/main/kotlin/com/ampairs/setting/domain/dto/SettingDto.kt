@@ -1,5 +1,6 @@
 package com.ampairs.setting.domain.dto
 
+import com.ampairs.core.setting.SettingDefinition
 import com.ampairs.core.setting.SettingValueType
 import com.ampairs.setting.domain.model.StoreSetting
 import jakarta.validation.constraints.NotBlank
@@ -53,3 +54,31 @@ fun StoreSetting.asSettingResponse(): SettingResponse = SettingResponse(
 )
 
 fun List<StoreSetting>.asSettingResponses(): List<SettingResponse> = map { it.asSettingResponse() }
+
+/**
+ * Definition catalog entry returned to clients so they can render a generic settings UI (label,
+ * type, default, allowed values) without hard-coding it. Filtered server-side to the workspace's
+ * installed modules.
+ */
+data class SettingDefinitionResponse(
+    val module: String,
+    val key: String,
+    val valueType: SettingValueType,
+    val defaultValue: String,
+    val allowedValues: List<String>,
+    val label: String,
+    val description: String?,
+)
+
+fun SettingDefinition.asDefinitionResponse(): SettingDefinitionResponse = SettingDefinitionResponse(
+    module = module,
+    key = key,
+    valueType = valueType,
+    defaultValue = defaultValue,
+    allowedValues = allowedValues,
+    label = label,
+    description = description,
+)
+
+fun List<SettingDefinition>.asDefinitionResponses(): List<SettingDefinitionResponse> =
+    map { it.asDefinitionResponse() }

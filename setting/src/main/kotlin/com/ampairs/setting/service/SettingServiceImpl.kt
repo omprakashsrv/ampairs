@@ -1,6 +1,7 @@
 package com.ampairs.setting.service
 
 import com.ampairs.core.exception.BusinessException
+import com.ampairs.core.setting.InstalledModulesProvider
 import com.ampairs.core.setting.SettingDefinition
 import com.ampairs.core.setting.SettingDefinitionProvider
 import com.ampairs.core.sync.EntityChangePublisher
@@ -21,6 +22,7 @@ import java.time.Instant
 class SettingServiceImpl(
     private val repository: StoreSettingRepository,
     private val definitionProviders: List<SettingDefinitionProvider>,
+    private val installedModulesProvider: InstalledModulesProvider,
     private val entityChangePublisher: EntityChangePublisher,
 ) : SettingService {
 
@@ -45,6 +47,12 @@ class SettingServiceImpl(
     @Transactional
     override fun upsertSettings(requests: List<SettingRequest>): List<StoreSetting> =
         requests.map { upsertOne(it) }
+
+    @Transactional(readOnly = true)
+    override fun listDefinitions(): List<SettingDefinition> {
+        val enabled = installedModulesProvider.enabledModuleCodes()
+        return definitions.values.filter { it.requiresModule == null || it.requiresModule in enabled }
+    }
 
     private fun upsertOne(request: SettingRequest): StoreSetting {
         val module = request.module.trim()

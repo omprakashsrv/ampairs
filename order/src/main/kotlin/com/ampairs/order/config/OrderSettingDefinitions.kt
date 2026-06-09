@@ -17,6 +17,7 @@ class OrderSettingDefinitions : SettingDefinitionProvider {
             defaultValue = "true",
             label = "Show discount options on orders",
             description = "Controls whether discount fields are displayed while creating an order.",
+            requiresModule = "order-management",
         ),
     )
 }

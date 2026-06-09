@@ -10,6 +10,9 @@ package com.ampairs.core.setting
  *
  * Lives in `core` (like `SyncCheckpointContributor`) so any domain module can declare its own
  * settings without depending on the `setting` module.
+ *
+ * @property requiresModule the installed module code (e.g. "invoice-billing") that must be enabled
+ *   for this setting to apply to a workspace. `null` means always applicable (cross-cutting).
  */
 data class SettingDefinition(
     val module: String,
@@ -19,6 +22,7 @@ data class SettingDefinition(
     val allowedValues: List<String> = emptyList(),
     val label: String,
     val description: String? = null,
+    val requiresModule: String? = null,
 ) {
     /** Composite identity used to match a stored setting row. */
     fun identity(): String = "$module/$key"
