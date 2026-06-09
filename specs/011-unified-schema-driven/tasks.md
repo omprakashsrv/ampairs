@@ -1,0 +1,200 @@
+# Tasks: Unified Schema-Driven Dynamic Forms
+
+**Input**: Design documents from `/home/user/ampairs/specs/011-unified-schema-driven/`
+**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/form-sync-api.md
+
+**Repos**: Backend `BE` = `/home/user/ampairs` · App `APP` = `/home/user/ampairs-app`
+**Branch (both repos)**: `claude/clever-cori-71tjo5`
+
+**Tests**: Included because the project constitution mandates coverage gates (backend critical ≥80%,
+API endpoints ≥90%). They are not strict TDD-first; write them alongside each slice.
+
+## Format: `[ID] [P?] [Story] Description`
+- **[P]** = parallelizable (different files, no dependency). **[Story]** = US1–US5.
+- `BE:` / `APP:` prefix on every path indicates the repository.
+
+---
+
+## Phase 1: Setup (Shared Infrastructure)
+
+- [ ] T001 [P] `BE:` Add shared enums `EntityType`, `FieldSource`, `FieldDataType`, `OptionSource` in `form/src/main/kotlin/com/ampairs/form/domain/model/` (replace magic entityType strings; reject unknown at API boundary).
+- [ ] T002 [P] `APP:` Add mirror enums (same names, `@SerialName` snake_case) in `feature/form-api/src/commonMain/kotlin/com/ampairs/form/domain/`.
+- [ ] T003 [P] `BE:` Confirm `form` is in `migrationModules` (`ampairs_service/build.gradle.kts`) and run `./gradlew :ampairs_service:flywayInfo` to fix the next migration version (record it for T010).
+- [ ] T004 [P] `APP:` Add `FormLogger` (Kermit, `w/e/i/d` 3-param signature) in `feature/form/src/commonMain/kotlin/com/ampairs/form/FormLogger.kt`; add a `BATCH_SIZE = 100` constant for sync.
+
+---
+
+## Phase 2: Foundational (Blocking Prerequisites)
+
+**⚠️ Both US1 and US2 depend on the entire unified model, the `/sync` contract, and renderer scaffolding. No story work starts until this phase is green.**
+
+### Backend — unified model, migration, registry, sync
+
+- [ ] T005 [P] `BE:` `FormField` entity (`OwnableBaseDomain`, `Instant`, `active` soft-delete, all columns per data-model.md) in `form/.../domain/model/FormField.kt`.
+- [ ] T006 [P] `BE:` `FormSection` entity (first-class, `active`, order, visible) in `form/.../domain/model/FormSection.kt`.
+- [ ] T007 [P] `BE:` Typed `ValidationRule` sealed model (Required/LengthRange/NumberRange/Format/AllowedChoices) + `ChoiceOptionSource` in `form/.../domain/model/validation/`.
+- [ ] T008 [P] `BE:` `FormFieldRepository` + `FormSectionRepository` (sync queries INCLUDE soft-deleted rows; `findUpdatedAfter`, `findAllForSync`, `findByUid`, by `(entityType)`).
+- [ ] T009 `BE:` `ValidationEngine` (evaluates `ValidationRule` list against a value; reject contradictory rules) in `form/.../domain/service/validation/ValidationEngine.kt`.
+- [ ] T010 `BE:` Flyway migration `V1.0.x__unify_form_field_model.sql` in BOTH `form/src/main/resources/db/migration/mysql/` and `postgresql/`: create `form_field` + `form_section` (indexes + uniqueness per data-model.md), then **backfill** from `field_config` (→ source=STANDARD) and `attribute_definition` (→ source=CUSTOM, distinct `category` → a `form_section`), translating legacy validation into typed `validation_rules`. Keep legacy tables. (Depends T005–T007.)
+- [ ] T011 [P] `BE:` `StandardFieldProvider` SPI + `StandardFieldSpec` + `FormFieldRegistry` (aggregates `@Component` providers; validates STANDARD `fieldKey`/`entityType`; marks essential fields) in `form/.../domain/service/registry/`.
+- [ ] T012 `BE:` `FormFieldDTOs`, `FormSectionDTOs`, discriminated `FormConfigRecordRequest/Response`, `EntityConfigSchemaResponse` (fields+sections) + entity↔DTO mappers in `form/.../domain/dto/` (DTO isolation; SNAKE_CASE). (Depends T005–T007.)
+- [ ] T013 `BE:` `FormConfigService` — unified CRUD, registry-driven default seeding/merge (non-destructive), `bulkUpsert` (UID-keyed, in-band soft-delete), `getAfterSync`, integrity rules (STANDARD not deletable; essential not hideable; CHOICE/CUSTOM invariants). (Depends T008, T009, T011, T012.)
+- [ ] T014 `BE:` `ConfigController` — unified `GET/POST /form/v1/config/schema/sync` + `GET /form/v1/config/schema?entity_type=` (active-only, seeds defaults); tenant set at controller; `ApiResponse`/`PageResponse`. (Depends T013.)
+- [ ] T015 `BE:` Legacy adapter endpoints — keep `GET/POST /config/field-configs/sync` & `/attribute-definitions/sync` projecting `form_field` by `source` into legacy shapes (FR-026 backward compat). (Depends T013.)
+- [ ] T016 [P] `BE:` Update `FormCheckpointContributor` to compute `"form"` checkpoint as `max(updatedAt)` across `form_field` + `form_section`.
+- [ ] T017 [P] `BE:` Contract test: unified `/schema/sync` GET includes soft-deleted rows, POST upserts + honors `active=false`, snake_case params, `ApiResponse<PageResponse>` shape — `form/src/test/.../ConfigSyncContractTest.kt`.
+- [ ] T018 [P] `BE:` Migration/backfill test: legacy `field_config`+`attribute_definition` rows land in `form_field` with correct source/section/validation, no data loss — `form/src/test/.../FormBackfillMigrationTest.kt`.
+
+### App — shared model, storage, sync, renderer scaffolding
+
+- [ ] T019 [P] `APP:` Unified `@Serializable` `FormField`, `FormSection`, `EntityConfigSchema` (+helpers), `ValidationRule`, `ValidationEngine` in `feature/form-api/src/commonMain/.../domain/` (+ `validation/`). Remove old `EntityFieldConfig`/`EntityAttributeDefinition`/`DefaultFormConfigs` usages from this module.
+- [ ] T020 [P] `APP:` Room entities `FormFieldEntity` + `FormSectionEntity` (with `synced`, `active`, JSON columns) + DAOs (`getUnsynced*`, reactive `Flow` by entityType, by section) in `feature/form/.../data/db/`.
+- [ ] T021 `APP:` `FormDatabase` v1→v2 Room `Migration` — create unified tables, copy `entity_field_configs`+`entity_attribute_definitions` into `form_field`/`form_section`, preserve `synced`. (Depends T020.)
+- [ ] T022 `APP:` `ConfigApi`(+`ConfigApiImpl`) unified feed (`getSchemaSync`, `pushSchema`, `getConfigSchema`); remove the two legacy feed methods from the new build. (Depends T019.)
+- [ ] T023 `APP:` `ConfigRepository` local-only writes (`saveConfigSchema` → `synced=false` + `markPendingPush(FORM)`; soft-delete = `active=false, synced=false`); `getConfigSchema` UI read retained; delete legacy `syncFormConfigs()` pull. (Depends T020, T022.)
+- [ ] T024 `APP:` `FormSyncDelegate` single unified feed under `SyncEntity.FORM` (one checkpoint, soft-delete aware, batches of `BATCH_SIZE`, local-unsynced-wins, hard-delete on server-deleted). (Depends T020, T022.)
+- [ ] T025 [P] `APP:` Metro DI wiring — `FormDaoModule` provide new DAOs + `ConfigLookup`; ensure `WorkspaceScope` DB providers (android/ios/desktop) target unified `FormDatabase`. (Depends T020.)
+- [ ] T026 [P] `APP:` Renderer scaffolding in `feature/form-api/src/commonMain/.../render/`: `FormValueState` (two-way binding + per-field validation state via `ValidationEngine`), `DynamicOptionProvider` interface + `@OptionSourceKey` map key, `CustomFieldWidget` interface + `@WidgetKey` map key. (Depends T019.)
+- [ ] T027 `APP:` `DynamicFormRenderer` composable skeleton + `FieldRenderers` for TEXT/TEXTAREA/NUMBER/BOOLEAN/DATE (sectioned, ordered, inline errors, `stringResource` only). Choice + custom delegated to providers/registry from T026. (Depends T026.)
+
+**Checkpoint**: Backend serves the unified schema for any entity type (legacy clients still work); app stores/syncs/renders the unified model generically. Stories can begin.
+
+---
+
+## Phase 3: User Story 1 — Staff see the form their workspace configured (Priority: P1) 🎯 MVP
+
+**Goal**: The customer entry screen is produced entirely from configuration (visibility, order, sections, required, validation, custom fields), replacing the hand-built form. Dynamic dropdowns and the image gallery work through the renderer.
+
+**Independent Test**: Hide a standard customer field + mark one required + add a custom choice field in config; open the customer entry screen → hidden field gone, required field blocks save, custom field shows in its section/order and its value persists; email/format validation blocks bad input inline.
+
+- [ ] T028 [P] [US1] `BE:` `CustomerStandardFieldProvider` implementing the SPI (full customer field set incl. sections Basics/Contact/Addresses/Tax/Status, essential flags, default validation) in `customer/.../domain/service/`. Delete customer seeding from old `ConfigService`.
+- [ ] T029 [P] [US1] `APP:` Choice field renderer in `FieldRenderers` — STATIC (enumValues) and DYNAMIC (`dynamicSourceKey` via `DynamicOptionProvider`) dropdowns. (Depends T027.)
+- [ ] T030 [P] [US1] `APP:` Register customer `DynamicOptionProvider`s (`customer_types`, `customer_groups`, `tax_codes`, `units`) bound to their repositories (Metro `@ContributesIntoMap(WorkspaceScope::class)` + `@OptionSourceKey`).
+- [ ] T031 [P] [US1] `APP:` `ImageGalleryWidget : CustomFieldWidget` (`@WidgetKey("image_gallery")`) reusing the existing customer image control; registered in the widget map.
+- [ ] T032 [US1] `APP:` Customer value mapping — `Customer.toValueMap()` (standard→columns, custom→`attributes`) and `applyValues()`; ensure UID generation stays in the ViewModel. (Depends T019.)
+- [ ] T033 [US1] `APP:` Rewrite `CustomerFormViewModel` to expose `observeConfigSchema(CUSTOMER)` + `FormValueState`; drop ad-hoc per-field visibility logic. (Depends T023, T026, T032.)
+- [ ] T034 [US1] `APP:` Replace `CustomerForm` screen body with `DynamicFormRenderer(schema, state)`; save path runs `state.validateAll()` then repository save. (Depends T027, T029, T031, T033.)
+- [ ] T035 [P] [US1] `APP:` Customer detail/read view honors field visibility via the same schema (read-only render path).
+- [ ] T036 [P] [US1] `BE:` Integration test: customer schema seeds from registry, `/schema?entity_type=customer` returns sectioned fields, hidden/required honored — `customer`/`form` test.
+- [ ] T037 [P] [US1] `APP:` Renderer test: given a schema, `DynamicFormRenderer` shows only visible fields in order, enforces required + format rules, binds static & dynamic choice values — `feature/form-api` commonTest.
+
+**Checkpoint**: Customer form is fully config-driven end-to-end (MVP). Validates SC-001 for customer.
+
+---
+
+## Phase 4: User Story 2 — Administrators configure forms without technical knowledge (Priority: P1)
+
+**Goal**: Productized admin editor: everyday settings (visibility/required/label/section/drag-reorder/add custom field) with a **live preview**, advanced settings (data type + guided validation builder + choice option source) in a separate area, no raw JSON/regex typing.
+
+**Independent Test**: Hide a field, drag-reorder two fields, add a custom dropdown with 3 options and a length-range rule, create a new section — confirm the live preview updates and the result persists after save/reopen; leaving with unsaved edits warns.
+
+- [ ] T038 [US2] `APP:` Rework `FormConfigViewModel` for the unified model — fields+sections lists, intents for toggle/relabel/reorder/assign-section/add-custom/delete-custom, section CRUD, dirty tracking, save via `ConfigRepository.saveConfigSchema`. (Depends T023.)
+- [ ] T039 [US2] `APP:` `FormConfigScreen` split into **Field settings** tab (per-section grouped list, visibility/required toggles, inline relabel, drag handle) and **Advanced** tab; remove raw-property card dump. (Depends T038.)
+- [ ] T040 [P] [US2] `APP:` Drag-to-reorder within/between sections updating `displayOrder` + `sectionUid`. (Depends T039.)
+- [ ] T041 [P] [US2] `APP:` Live preview pane rendering `DynamicFormRenderer` in read-only/preview mode from the in-progress (unsaved) schema. (Depends T027, T038.)
+- [ ] T042 [P] [US2] `APP:` Section management UI — create/rename/reorder/hide/delete; on delete-non-empty, require reassignment (or move to default group) per edge case. (Depends T038.)
+- [ ] T043 [P] [US2] `APP:` Guided validation builder — typed rule pickers (Required, length range, number range, format from curated list, allowed choices); no free-form regex/JSON. (Depends T038.)
+- [ ] T044 [P] [US2] `APP:` Choice option-source editor — toggle STATIC (list builder) vs DYNAMIC (pick a registered `dynamicSourceKey`); replaces hardcoded datatype dropdown with `FieldDataType` enum. (Depends T038.)
+- [ ] T045 [P] [US2] `APP:` Add/edit/remove custom field flow with client-side validation (non-empty key/label, no duplicate key, dataType-appropriate options); stable UID via `UidGenerator`. (Depends T038.)
+- [ ] T046 [P] [US2] `APP:` Unsaved-changes guard on navigation; move all editor strings to `composeResources/values/strings.xml`; success/error via resources (no hardcoded text).
+- [ ] T047 [P] [US2] `BE:` Service test: integrity rules reject hiding/deleting essential STANDARD fields and contradictory validation rules with proper `ApiResponse` errors.
+
+**Checkpoint**: US1 + US2 deliver the full usable loop on customer (configure → preview → render). Validates SC-003.
+
+---
+
+## Phase 5: User Story 3 — One consistent field model across the workspace (Priority: P2)
+
+**Goal**: Standard and custom fields are one unified, freely-interleaved list with identical controls; the duplicate default-field sources are removed.
+
+**Independent Test**: In the editor, standard and custom fields appear in one orderable list with the same controls and can be interleaved; a custom value round-trips on a record identical to a standard value.
+
+- [ ] T048 [P] [US3] `APP:` Delete `feature/form/.../domain/DefaultFormConfigs.kt` and all references; defaults now come only from the backend registry/sync. (SC-004)
+- [ ] T049 [P] [US3] `BE:` Remove any remaining hardcoded default-field construction from old `ConfigService`; all defaults flow through `FormFieldRegistry`. (SC-004)
+- [ ] T050 [US3] `APP:` Ensure the editor field list interleaves STANDARD/CUSTOM by `displayOrder` within section (no source-based separation) and offers identical controls where applicable. (Depends T039.)
+- [ ] T051 [P] [US3] `APP:` Parity test: a STANDARD and a CUSTOM field with the same dataType render and validate identically; custom value persists to `attributes` and reloads. — commonTest.
+- [ ] T052 [P] [US3] `BE:` Audit test asserting no entity-specific hardcoded field lists remain outside `StandardFieldProvider` implementations.
+
+**Checkpoint**: The split-brain model is fully gone; one field abstraction everywhere. Validates SC-004.
+
+---
+
+## Phase 6: User Story 4 — Configuration changes sync everywhere and work offline (Priority: P2)
+
+**Goal**: Additions/edits/deletions of fields and sections propagate to all devices; deletions retain stored custom values; forms render offline; concurrent edits reconcile.
+
+**Independent Test**: Delete a custom field on device A → gone on device B after a sync cycle (stored values retained). Edit config while B is offline → form still renders; change applies on reconnect.
+
+- [ ] T053 [US4] `APP:` Wire editor delete → repository soft-delete (`active=false, synced=false`) → in-band push; confirm `FormSyncDelegate` hard-deletes locally on server-deleted pull. (Depends T024, T038.)
+- [ ] T054 [P] [US4] `APP:` Section soft-delete propagation + reassignment-on-delete consistency across sync. (Depends T024, T042.)
+- [ ] T055 [P] [US4] `APP:` Verify offline render path uses last-synced schema (no network in `DynamicFormRenderer`/`getConfigSchema` cache fallback); add offline render test.
+- [ ] T056 [P] [US4] `APP:` Conflict test — local unsynced edit wins over server row on pull; multi-record concurrent upsert stays consistent. — commonTest.
+- [ ] T057 [P] [US4] `BE:` Sync test — soft-deleted field/section appears in `/schema/sync` pull feed and round-trips via push (deletion reaches other devices). (Closes the documented known gap.)
+- [ ] T058 [P] [US4] `BE:` Confirm deleting a CUSTOM field definition does not purge values stored in owning entities' `attributes` (retention test).
+
+**Checkpoint**: Deletions propagate (SC-005); offline render verified (SC-006).
+
+---
+
+## Phase 7: User Story 5 — Every domain uses the same form system (Priority: P3)
+
+**Goal**: Product, order, invoice, business all render from and are configurable through the unified system; their standard fields come from registries; remaining bespoke forms retired.
+
+**Independent Test**: For each domain, the entry screen renders via `DynamicFormRenderer` and its config screen lists exactly the registry-defined standard fields.
+
+- [ ] T059 [P] [US5] `BE:` `ProductStandardFieldProvider` (+ remove product seeding) in `product/...`.
+- [ ] T060 [P] [US5] `BE:` `OrderStandardFieldProvider` (+ remove seeding) in `order/...`.
+- [ ] T061 [P] [US5] `BE:` `InvoiceStandardFieldProvider` (+ remove seeding) in `invoice/...`.
+- [ ] T062 [P] [US5] `BE:` `BusinessStandardFieldProvider` (+ remove seeding) in `workspace`/business module.
+- [ ] T063 [P] [US5] `APP:` Address, location/map, and business-hours `CustomFieldWidget`s (`@WidgetKey`) registered for the domains that need them.
+- [ ] T064 [US5] `APP:` Rewire Product entry screen + ViewModel to `DynamicFormRenderer` (+ product dynamic option providers). (Depends T027, T059.)
+- [ ] T065 [US5] `APP:` Rewire Order entry screen + ViewModel; add `onFormConfig` nav for order. (Depends T027, T060.)
+- [ ] T066 [US5] `APP:` Rewire Invoice entry screen + ViewModel; add `onFormConfig` nav for invoice. (Depends T027, T061.)
+- [ ] T067 [US5] `APP:` Rewire Business overview/custom-attributes screens to the unified renderer. (Depends T027, T062, T063.)
+- [ ] T068 [P] [US5] `APP:` Per-domain smoke test: each entry screen renders from config and lists exactly registry fields.
+
+**Checkpoint**: All five domains config-driven (SC-001/SC-007 across the board).
+
+---
+
+## Phase 8: Polish & Cross-Cutting
+
+- [ ] T069 [P] `BE:` Update `form/CLAUDE.md` + `docs/modules/form.md` for the unified model, sections, registry SPI, unified `/sync`.
+- [ ] T070 [P] `BE:` Update `docs/guides/offline-sync-contract.md` — move `form` to the canonical single-feed list and **remove the "known gap"** note (soft-delete now supported).
+- [ ] T071 [P] `APP:` Update `feature/form` docs + `.claude/skills/offline-sync` Form note (now full soft-delete round-trip, single feed).
+- [ ] T072 `APP:` Replace any remaining silent JSON-parse `catch → emptyMap()` with `FormLogger` warnings; audit no hardcoded UI strings remain.
+- [ ] T073 [P] `BE:` Coverage pass — bring `form` module to constitution gates (service ≥80%, endpoints ≥90%); `./gradlew :form:test ciBuild`.
+- [ ] T074 `APP:` Compile-gate all targets: `./gradlew :feature:form:check androidApp:compileDebugKotlinAndroid shared:compileKotlinIosSimulatorArm64 desktopApp:compileKotlin`.
+- [ ] T075 `APP:`+`BE:` Run `quickstart.md` validation end-to-end on customer; confirm SC-001..SC-008 checkpoints.
+- [ ] T076 (Deferred follow-up — separate feature) Plan removal of legacy `field-configs/sync` & `attribute-definitions/sync` adapters + drop legacy tables once all clients update. Do NOT execute here.
+
+---
+
+## Dependencies & Execution Order
+
+- **Setup (P1)** → **Foundational (P2, blocks everything)** → **US1 (P3)** → **US2 (P4)** → **US3 (P5)** → **US4 (P6)** → **US5 (P7)** → **Polish (P8)**.
+- US1 and US2 are both P1 and both depend only on Foundational — they can run in parallel by two developers after Phase 2, integrating on the customer screen.
+- US3 depends on the editor (US2) for the interleaved-list assertion; US4 depends on the editor delete flow (US2) and the sync delegate (Foundational); US5 depends on the renderer (Foundational) + per-domain registries.
+- Within Foundational: backend (T005–T018) and app (T019–T027) are largely independent tracks and can proceed in parallel; T010 depends on T005–T007; T013 depends on T008/T009/T011/T012; app T021/T023/T024 depend on T020/T022.
+
+## Parallel Opportunities
+
+- **Setup**: T001–T004 all [P].
+- **Foundational**: backend track {T005,T006,T007,T008,T011,T016,T017,T018} and app track {T019,T020,T025,T026} run in parallel; converge at T013/T027.
+- **US1**: T028,T029,T030,T031,T035,T036,T037 are [P] before the screen rewire (T033/T034) integrates them.
+- **US2**: T040–T047 are [P] feature areas of the editor once T038/T039 land.
+- **US5**: per-domain providers/widgets T059–T063,T068 are [P]; screen rewires T064–T067 are sequential per domain but independent across domains.
+
+## Implementation Strategy
+
+- **MVP** = Phase 1 + Phase 2 + Phase 3 (US1): the customer form fully config-driven, dynamic dropdowns + image gallery via the renderer. Stop, validate SC-001 on customer, demo.
+- **Usable product** = + Phase 4 (US2): admins self-serve with live preview. Demo the full loop.
+- **Cleanup & reliability** = + Phases 5–6 (US3/US4): unification complete, deletions/offline solid.
+- **Standardization** = + Phase 7 (US5): all domains. Then Phase 8 polish.
+- Commit per task/logical group on `claude/clever-cori-71tjo5` in each repo; legacy adapters keep older installs working throughout (T015), so rollout never breaks existing clients.
+
+## Notes
+
+- Backend and app live in separate repos — each task's `BE:`/`APP:` prefix tells you which; commit/push to `claude/clever-cori-71tjo5` in the corresponding repo.
+- T076 is intentionally NOT executed in this feature (legacy removal is a follow-up once client adoption is confirmed).
+- Keep UID generation in ViewModels; repositories local-only; the API lives only in `FormSyncDelegate` (+ the allowed UI `getConfigSchema` read).
