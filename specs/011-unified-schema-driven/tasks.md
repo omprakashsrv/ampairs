@@ -67,7 +67,7 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 
 **Independent Test**: Hide a standard customer field + mark one required + add a custom choice field in config; open the customer entry screen → hidden field gone, required field blocks save, custom field shows in its section/order and its value persists; email/format validation blocks bad input inline.
 
-- [ ] T028 [P] [US1] `BE:` `CustomerStandardFieldProvider` implementing the SPI (full customer field set incl. sections Basics/Contact/Addresses/Tax/Status, essential flags, default validation) in `customer/.../domain/service/`. Delete customer seeding from old `ConfigService`.
+- [X] T028 [P] [US1] `BE:` `CustomerStandardFieldProvider` implementing the SPI (full customer field set incl. sections Basics/Contact/Addresses/Tax/Status, essential flags, default validation) in `customer/.../domain/service/`. Delete customer seeding from old `ConfigService`.
 - [ ] T029 [P] [US1] `APP:` Choice field renderers in `FieldRenderers` — `CHOICE` single-select dropdown and `MULTI_CHOICE` multi-select (chips/checklist), each supporting STATIC (`enumValues`) and DYNAMIC (`dynamicSourceKey` via `DynamicOptionProvider`) options; multi value binds as `List<String>`, "required" = at least one selected. (Depends T027.)
 - [ ] T030 [P] [US1] `APP:` Register customer `DynamicOptionProvider`s (`customer_types`, `customer_groups`, `tax_codes`, `units`) bound to their repositories (Metro `@ContributesIntoMap(WorkspaceScope::class)` + `@OptionSourceKey`).
 - [ ] T031 [P] [US1] `APP:` `ImageGalleryWidget : CustomFieldWidget` (`@WidgetKey("image_gallery")`) reusing the existing customer image control; registered in the widget map.
