@@ -49,6 +49,12 @@ Define `@NamedEntityGraph` on entity. Use `@EntityGraph("Entity.graph")` on repo
 ### 8. Spring Data derived queries over `@Query`
 Use `@Query` only when method name cannot express intent.
 
+### 9. Offline-sync endpoints — one canonical `/sync` contract
+Every syncable resource exposes `GET` + `POST /{module}/v1/{resource}/sync` (snake_case params,
+pull feed includes soft-deleted rows, in-band delete, UID-keyed bulk upsert). Full spec +
+controller/service skeleton + checklist: `docs/guides/offline-sync-contract.md`. Off-contract by
+design: `tax` (subscribe model), `file` (multipart).
+
 ## Feature development workflow (speckit)
 ```
 /speckit.specify → /speckit.clarify → /speckit.plan → /speckit.tasks → /speckit.analyze → /speckit.implement
