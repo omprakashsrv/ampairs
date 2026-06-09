@@ -24,7 +24,10 @@ data class SettingRequest(
 
     val value: String? = null,
 
-    val active: Boolean = true,
+    // Nullable on purpose: offline clients omit defaults (encodeDefaults=false), and Jackson does
+    // not apply Kotlin default values to primitives inside a collection body. Coerced to true in the
+    // service. A non-null `Boolean` here would 400 with "Cannot map null into type boolean".
+    val active: Boolean? = null,
 
     val refId: String? = null,
 )
