@@ -70,7 +70,7 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 - [X] T028 [P] [US1] `BE:` `CustomerStandardFieldProvider` implementing the SPI (full customer field set incl. sections Basics/Contact/Addresses/Tax/Status, essential flags, default validation) in `customer/.../domain/service/`. Delete customer seeding from old `ConfigService`.
 - [X] T029 [P] [US1] `APP:` Choice field renderers in `FieldRenderers` — `CHOICE` single-select dropdown and `MULTI_CHOICE` multi-select (chips/checklist), each supporting STATIC (`enumValues`) and DYNAMIC (`dynamicSourceKey` via `DynamicOptionProvider`) options; multi value binds as `List<String>`, "required" = at least one selected. (Depends T027.)
 - [X] T030 [P] [US1] `APP:` Register customer `DynamicOptionProvider`s (`customer_types`, `customer_groups`, `tax_codes`, `units`) bound to their repositories (Metro `@ContributesIntoMap(WorkspaceScope::class)` + `@OptionSourceKey`).
-- [ ] T031 [P] [US1] `APP:` `ImageGalleryWidget : CustomFieldWidget` (`@WidgetKey("image_gallery")`) reusing the existing customer image control; registered in the widget map.
+- [X] T031 [P] [US1] `APP:` `ImageGalleryWidget : CustomFieldWidget` (`@WidgetKey("image_gallery")`) reusing the existing customer image control; registered in the widget map.
 - [ ] T032 [US1] `APP:` Customer value mapping — `Customer.toValueMap()` (standard→columns, custom→`attributes`) and `applyValues()`, handling `MULTI_CHOICE` values as `List<String>` (JSON in `attributes`); ensure UID generation stays in the ViewModel. (Depends T019.)
 - [ ] T033 [US1] `APP:` Rewrite `CustomerFormViewModel` to expose `observeConfigSchema(CUSTOMER)` + `FormValueState`; drop ad-hoc per-field visibility logic. (Depends T023, T026, T032.)
 - [ ] T034 [US1] `APP:` Replace `CustomerForm` screen body with `DynamicFormRenderer(schema, state)`; save path runs `state.validateAll()` then repository save. (Depends T027, T029, T031, T033.)
@@ -96,8 +96,8 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 - [X] T043 [P] [US2] `APP:` Guided validation builder — typed rule pickers (Required, length range, number range, format from curated list, allowed choices); no free-form regex/JSON. (Depends T038.)
 - [X] T044 [P] [US2] `APP:` Choice editor — pick data type `CHOICE` vs `MULTI_CHOICE`, then option source STATIC (list builder) vs DYNAMIC (pick a registered `dynamicSourceKey`); replaces the hardcoded datatype dropdown with the `FieldDataType` enum. (Depends T038.)
 - [X] T045 [P] [US2] `APP:` Add/edit/remove custom field flow with client-side validation (non-empty label via disabled confirm; auto-unique non-blank `fieldKey` via `uniqueFieldKey`/`slugKey` — no duplicate key); stable UID via `UidGenerator`. (Depends T038.)
-- [ ] T046 [P] [US2] `APP:` Unsaved-changes guard on navigation; move all editor strings to `composeResources/values/strings.xml`; success/error via resources (no hardcoded text).
-- [ ] T047 [P] [US2] `BE:` Service test: integrity rules reject hiding/deleting essential STANDARD fields and contradictory validation rules with proper `ApiResponse` errors.
+- [ ] T046 [P] [US2] `APP:` Unsaved-changes guard on navigation; move all editor strings to `composeResources/values/strings.xml`; success/error via resources (no hardcoded text). _(PARTIAL: nav guard done with resourced dialog strings; full extraction of remaining inlined editor strings pending.)_
+- [ ] T047 [P] [US2] `BE:` Service test: integrity rules reject hiding/deleting essential STANDARD fields and contradictory validation rules with proper `ApiResponse` errors. _(PARTIAL: ValidationEngineTest covers contradictory-rule rejection; the FormConfigService essential-field integrity path still needs a mocked-repo test.)_
 
 **Checkpoint**: US1 + US2 deliver the full usable loop on customer (configure → preview → render). Validates SC-003.
 
@@ -109,7 +109,7 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 
 **Independent Test**: In the editor, standard and custom fields appear in one orderable list with the same controls and can be interleaved; a custom value round-trips on a record identical to a standard value.
 
-- [ ] T048 [P] [US3] `APP:` Delete `feature/form/.../domain/DefaultFormConfigs.kt` and all references; defaults now come only from the backend registry/sync. (SC-004)
+- [X] T048 [P] [US3] `APP:` Delete `feature/form/.../domain/DefaultFormConfigs.kt` and all references; defaults now come only from the backend registry/sync. (SC-004)
 - [ ] T049 [P] [US3] `BE:` Remove any remaining hardcoded default-field construction from old `ConfigService`; all defaults flow through `FormFieldRegistry`. (SC-004)
 - [ ] T050 [US3] `APP:` Ensure the editor field list interleaves STANDARD/CUSTOM by `displayOrder` within section (no source-based separation) and offers identical controls where applicable. (Depends T039.)
 - [ ] T051 [P] [US3] `APP:` Parity test: a STANDARD and a CUSTOM field with the same dataType render and validate identically; custom value persists to `attributes` and reloads. — commonTest.
@@ -142,11 +142,11 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 
 **Independent Test**: For each domain, the entry screen renders via `DynamicFormRenderer` and its config screen lists exactly the registry-defined standard fields.
 
-- [ ] T059 [P] [US5] `BE:` `ProductStandardFieldProvider` (+ remove product seeding) in `product/...`.
-- [ ] T060 [P] [US5] `BE:` `OrderStandardFieldProvider` (+ remove seeding) in `order/...`.
-- [ ] T061 [P] [US5] `BE:` `InvoiceStandardFieldProvider` (+ remove seeding) in `invoice/...`.
-- [ ] T062 [P] [US5] `BE:` `BusinessStandardFieldProvider` for `EntityType.BUSINESS` (+ remove seeding) in the **`workspace`** module (no separate `business` backend module exists).
-- [ ] T063 [P] [US5] `APP:` Address, location/map, and business-hours `CustomFieldWidget`s (`@WidgetKey`) registered for the domains that need them.
+- [X] T059 [P] [US5] `BE:` `ProductStandardFieldProvider` (+ remove product seeding) in `product/...`.
+- [X] T060 [P] [US5] `BE:` `OrderStandardFieldProvider` (+ remove seeding) in `order/...`.
+- [X] T061 [P] [US5] `BE:` `InvoiceStandardFieldProvider` (+ remove seeding) in `invoice/...`.
+- [X] T062 [P] [US5] `BE:` `BusinessStandardFieldProvider` for `EntityType.BUSINESS` (+ remove seeding) in the **`workspace`** module (no separate `business` backend module exists).
+- [X] T063 [P] [US5] `APP:` Address, location/map, and business-hours `CustomFieldWidget`s (`@WidgetKey`) registered for the domains that need them.
 - [ ] T064 [US5] `APP:` Rewire Product entry screen + ViewModel to `DynamicFormRenderer` (+ product dynamic option providers). (Depends T027, T059.)
 - [ ] T065 [US5] `APP:` Rewire Order entry screen + ViewModel; add `onFormConfig` nav for order. (Depends T027, T060.)
 - [ ] T066 [US5] `APP:` Rewire Invoice entry screen + ViewModel; add `onFormConfig` nav for invoice. (Depends T027, T061.)
@@ -159,9 +159,9 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 
 ## Phase 8: Polish & Cross-Cutting
 
-- [ ] T069 [P] `BE:` Update `form/CLAUDE.md` + `docs/modules/form.md` for the unified model, sections, registry SPI, unified `/sync`.
-- [ ] T070 [P] `BE:` Update `docs/guides/offline-sync-contract.md` — document `form` as an **aggregate-grained** `/sync` resource (one `FormSchema` per entityType; uid=entityType; delete-by-absence; optimistic `version`), a documented nuance alongside `tax`/`file`; **remove the "known gap"** note (deletions now round-trip via absence).
-- [ ] T071 [P] `APP:` Update `feature/form` docs + `.claude/skills/offline-sync` Form note (single aggregate feed under one `SyncEntity.FORM` checkpoint; delete-by-absence; aggregate-level last-write-wins + optimistic version).
+- [X] T069 [P] `BE:` Update `form/CLAUDE.md` + `docs/modules/form.md` for the unified model, sections, registry SPI, unified `/sync`.
+- [X] T070 [P] `BE:` Update `docs/guides/offline-sync-contract.md` — document `form` as an **aggregate-grained** `/sync` resource (one `FormSchema` per entityType; uid=entityType; delete-by-absence; optimistic `version`), a documented nuance alongside `tax`/`file`; **remove the "known gap"** note (deletions now round-trip via absence).
+- [X] T071 [P] `APP:` Update `feature/form` docs + `.claude/skills/offline-sync` Form note (single aggregate feed under one `SyncEntity.FORM` checkpoint; delete-by-absence; aggregate-level last-write-wins + optimistic version).
 - [ ] T072 `APP:` Replace any remaining silent JSON-parse `catch → emptyMap()` with `FormLogger` warnings; audit no hardcoded UI strings remain.
 - [ ] T073 [P] `BE:` Coverage pass — bring `form` module to constitution gates (service ≥80%, endpoints ≥90%); `./gradlew :form:test ciBuild`.
 - [ ] T074 `APP:` Compile-gate all targets: `./gradlew :feature:form:check androidApp:compileDebugKotlinAndroid shared:compileKotlinIosSimulatorArm64 desktopApp:compileKotlin`.
