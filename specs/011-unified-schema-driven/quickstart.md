@@ -102,3 +102,19 @@ How to make a domain (e.g. `product`) configurable and schema-driven once the co
 ./gradlew :ampairs_service:flywayInfo     # pick next migration version
 ./gradlew :form:test && ./gradlew ciBuild
 ```
+
+
+## Validation notes (SC-007, recorded 2026-06-10)
+
+Qualitative outcome — bespoke form code retired by the unified system:
+- Backend: the entire legacy form stack (`FieldConfig` + `AttributeDefinition` entities, DTOs,
+  repositories, seeding `ConfigService`, and five legacy endpoints) was deleted; defaults now flow
+  exclusively through five `StandardFieldProvider`s + `FormFieldRegistry`.
+- App: `DefaultFormConfigs` deleted; the form-config editor, customer entry form (standard +
+  custom fields), product attributes, and the business custom-attributes screen all render from the
+  synced `FormSchema` through one renderer + one shared `ConfigAttributesSection`.
+- Customer/product custom values round-trip Room + `/sync` end-to-end (verified on device);
+  optimistic-version conflicts self-heal (regression-tested in both repos).
+- Not yet on the renderer: order/invoice entry bodies (transactional document builders pending an
+  `attributes` column end-to-end) and the customer form's bespoke address/autocomplete controls
+  (kept deliberately, fed by the same schema).
