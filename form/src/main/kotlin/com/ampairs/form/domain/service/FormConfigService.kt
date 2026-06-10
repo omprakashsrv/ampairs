@@ -108,8 +108,8 @@ class FormConfigService(
                 ?: FormSection().apply { dto.uid?.let { uid = it } }
             entity.entityType = entityType.value
             entity.name = dto.name
-            entity.displayOrder = dto.displayOrder
-            entity.visible = dto.visible
+            entity.displayOrder = dto.displayOrder ?: 0
+            entity.visible = dto.visible ?: true
             val saved = sectionRepository.save(entity)
             keptSectionUids += saved.uid
         }
@@ -208,7 +208,7 @@ class FormConfigService(
         essentialKeys.forEach { key ->
             val field = request.fields.firstOrNull { it.fieldKey == key && it.source == FieldSource.STANDARD.value }
                 ?: throw badRequest("Essential standard field '$key' for '${entityType.value}' cannot be removed")
-            if (!field.visible) throw badRequest("Essential standard field '$key' cannot be hidden")
+            if (field.visible == false) throw badRequest("Essential standard field '$key' cannot be hidden")
         }
 
         request.fields.forEach { dto ->
@@ -248,10 +248,10 @@ class FormConfigService(
         entity.dataType = dto.dataType
         entity.widgetKey = dto.widgetKey
         entity.sectionUid = dto.sectionUid
-        entity.visible = dto.visible
-        entity.mandatory = dto.mandatory
-        entity.enabled = dto.enabled
-        entity.displayOrder = dto.displayOrder
+        entity.visible = dto.visible ?: true
+        entity.mandatory = dto.mandatory ?: false
+        entity.enabled = dto.enabled ?: true
+        entity.displayOrder = dto.displayOrder ?: 0
         entity.defaultValue = dto.defaultValue
         entity.optionSource = dto.optionSource
         entity.enumValues = dto.enumValues

@@ -30,8 +30,10 @@ data class FormSchemaRequest(
 data class FormSectionDto(
     val uid: String? = null,
     val name: String,
-    val displayOrder: Int = 0,
-    val visible: Boolean = true,
+    // Nullable primitives: the client omits default-valued fields (encodeDefaults=false), so the
+    // request may not carry these — the service coerces null → the default.
+    val displayOrder: Int? = 0,
+    val visible: Boolean? = true,
 )
 
 data class FormFieldDto(
@@ -42,10 +44,10 @@ data class FormFieldDto(
     val dataType: String,
     val widgetKey: String? = null,
     val sectionUid: String,
-    val visible: Boolean = true,
-    val mandatory: Boolean = false,
-    val enabled: Boolean = true,
-    val displayOrder: Int = 0,
+    val visible: Boolean? = true,
+    val mandatory: Boolean? = false,
+    val enabled: Boolean? = true,
+    val displayOrder: Int? = 0,
     val defaultValue: String? = null,
     val optionSource: String? = null,
     val enumValues: List<String>? = null,
