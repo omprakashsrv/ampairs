@@ -88,13 +88,13 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 
 **Independent Test**: Hide a field, drag-reorder two fields, add a custom dropdown with 3 options and a length-range rule, create a new section — confirm the live preview updates and the result persists after save/reopen; leaving with unsaved edits warns.
 
-- [ ] T038 [US2] `APP:` Rework `FormConfigViewModel` to edit the `FormSchema` aggregate (sections each owning ordered fields) — intents for toggle/relabel/reorder/assign-section/add-custom/delete-custom, section CRUD, dirty tracking; client-side aggregate invariant checks; save the whole aggregate via `ConfigRepository.saveConfigSchema`. (Depends T023.)
-- [ ] T039 [US2] `APP:` `FormConfigScreen` split into **Field settings** tab (per-section grouped list, visibility/required toggles, inline relabel, drag handle) and **Advanced** tab; remove raw-property card dump. (Depends T038.)
-- [ ] T040 [P] [US2] `APP:` Drag-to-reorder within/between sections updating `displayOrder` + `sectionUid`. (Depends T039.)
-- [ ] T041 [P] [US2] `APP:` Live preview pane rendering `DynamicFormRenderer` in read-only/preview mode from the in-progress (unsaved) schema. (Depends T027, T038.)
-- [ ] T042 [P] [US2] `APP:` Section management UI — create/rename/reorder/hide/delete; the default `General` section cannot be deleted; deleting a non-empty section requires reassigning its fields first (or auto-move to `General`) per edge case. (Depends T038.)
-- [ ] T043 [P] [US2] `APP:` Guided validation builder — typed rule pickers (Required, length range, number range, format from curated list, allowed choices); no free-form regex/JSON. (Depends T038.)
-- [ ] T044 [P] [US2] `APP:` Choice editor — pick data type `CHOICE` vs `MULTI_CHOICE`, then option source STATIC (list builder) vs DYNAMIC (pick a registered `dynamicSourceKey`); replaces the hardcoded datatype dropdown with the `FieldDataType` enum. (Depends T038.)
+- [X] T038 [US2] `APP:` Rework `FormConfigViewModel` to edit the `FormSchema` aggregate (sections each owning ordered fields) — intents for toggle/relabel/reorder/assign-section/add-custom/delete-custom, section CRUD, dirty tracking; client-side aggregate invariant checks; save the whole aggregate via `ConfigRepository.saveConfigSchema`. (Depends T023.)
+- [X] T039 [US2] `APP:` `FormConfigScreen` split into **Field settings** tab (per-section grouped list, visibility/required toggles, inline relabel, drag handle) and **Advanced** tab; remove raw-property card dump. (Depends T038.)
+- [X] T040 [P] [US2] `APP:` Drag-to-reorder within/between sections updating `displayOrder` + `sectionUid`. (Depends T039.)
+- [X] T041 [P] [US2] `APP:` Live preview pane rendering `DynamicFormRenderer` in read-only/preview mode from the in-progress (unsaved) schema. (Depends T027, T038.)
+- [X] T042 [P] [US2] `APP:` Section management UI — create/rename/reorder/hide/delete; the default `General` section cannot be deleted; deleting a non-empty section requires reassigning its fields first (or auto-move to `General`) per edge case. (Depends T038.)
+- [X] T043 [P] [US2] `APP:` Guided validation builder — typed rule pickers (Required, length range, number range, format from curated list, allowed choices); no free-form regex/JSON. (Depends T038.)
+- [X] T044 [P] [US2] `APP:` Choice editor — pick data type `CHOICE` vs `MULTI_CHOICE`, then option source STATIC (list builder) vs DYNAMIC (pick a registered `dynamicSourceKey`); replaces the hardcoded datatype dropdown with the `FieldDataType` enum. (Depends T038.)
 - [ ] T045 [P] [US2] `APP:` Add/edit/remove custom field flow with client-side validation (non-empty key/label, no duplicate key, dataType-appropriate options); stable UID via `UidGenerator`. (Depends T038.)
 - [ ] T046 [P] [US2] `APP:` Unsaved-changes guard on navigation; move all editor strings to `composeResources/values/strings.xml`; success/error via resources (no hardcoded text).
 - [ ] T047 [P] [US2] `BE:` Service test: integrity rules reject hiding/deleting essential STANDARD fields and contradictory validation rules with proper `ApiResponse` errors.
