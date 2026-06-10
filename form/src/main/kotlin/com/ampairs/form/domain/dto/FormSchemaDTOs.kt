@@ -38,10 +38,12 @@ data class FormSectionDto(
 
 data class FormFieldDto(
     val uid: String? = null,
-    val source: String,
+    // Nullable: the client omits these when they hold the default (source=custom, dataType=text)
+    // because it serializes with encodeDefaults=false. The service coerces null → the default.
+    val source: String? = null,
     val fieldKey: String,
     val displayName: String,
-    val dataType: String,
+    val dataType: String? = null,
     val widgetKey: String? = null,
     val sectionUid: String,
     val visible: Boolean? = true,

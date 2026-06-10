@@ -216,8 +216,8 @@ class FormConfigService(
             if (dto.uid == null && dto.sectionUid !in sectionUids && request.sections.none { it.uid == dto.sectionUid }) {
                 throw badRequest("Field '${dto.fieldKey}' references unknown section '${dto.sectionUid}'")
             }
-            val source = FieldSource.fromValue(dto.source)
-            val dataType = FieldDataType.fromValue(dto.dataType)
+            val source = FieldSource.fromValue(dto.source ?: FieldSource.CUSTOM.value)
+            val dataType = FieldDataType.fromValue(dto.dataType ?: FieldDataType.TEXT.value)
             if (source == FieldSource.STANDARD && !registry.isKnownStandardField(entityType, dto.fieldKey)) {
                 throw badRequest("Unknown standard field '${dto.fieldKey}' for '${entityType.value}'")
             }
@@ -242,10 +242,10 @@ class FormConfigService(
 
     private fun applyFieldDto(entity: FormField, entityType: EntityType, dto: FormFieldDto) {
         entity.entityType = entityType.value
-        entity.source = dto.source
+        entity.source = dto.source ?: FieldSource.CUSTOM.value
         entity.fieldKey = dto.fieldKey
         entity.displayName = dto.displayName
-        entity.dataType = dto.dataType
+        entity.dataType = dto.dataType ?: FieldDataType.TEXT.value
         entity.widgetKey = dto.widgetKey
         entity.sectionUid = dto.sectionUid
         entity.visible = dto.visible ?: true
