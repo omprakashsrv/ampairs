@@ -1,0 +1,3 @@
+-- MySQL counterpart of postgresql/V1.0.73.
+ALTER TABLE ecom_storefront
+    ADD COLUMN access_mode VARCHAR(20) NOT NULL DEFAULT 'PUBLIC';
