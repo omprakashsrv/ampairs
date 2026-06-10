@@ -9,4 +9,7 @@ data class OtpProperties(
     var developmentMode: Boolean = false,
     var hardcodedOtp: String = "",
     var allowHardcoded: Boolean = false,
+    // Explicit opt-in required to run the hardcoded-OTP bypass under the production profile
+    // (e.g. a dedicated app-store-review account). Guarded by OtpSecurityStartupCheck.
+    var allowHardcodedInProduction: Boolean = false,
 )

@@ -37,6 +37,17 @@ data class RecaptchaConfiguration(
     var enabled: Boolean = true,
 
     /**
+     * Enforce reCAPTCHA on POST /auth/v1/verify/firebase.
+     *
+     * Default false: the mobile clients' FirebaseAuthRequest sends no recaptcha_token, and
+     * Firebase Phone Auth already attests the device (Play Integrity / DeviceCheck); the
+     * endpoint is also covered by the strict "verify" rate-limit bucket. Set
+     * RECAPTCHA_ENFORCE_FIREBASE=true only once all clients send a token on this flow —
+     * enabling it earlier breaks mobile Firebase login.
+     */
+    var enforceOnFirebase: Boolean = false,
+
+    /**
      * Timeout for reCAPTCHA API requests (in milliseconds)
      */
     var timeoutMs: Long = 5000,

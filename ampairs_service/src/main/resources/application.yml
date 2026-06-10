@@ -425,6 +425,9 @@ debug: ${DEBUG_MODE:false}
 google:
   recaptcha:
     enabled: ${RECAPTCHA_ENABLED:true}
+    # Enforce reCAPTCHA on /auth/v1/verify/firebase. Off until clients send recaptcha_token
+    # on the Firebase flow (see RecaptchaConfiguration.enforceOnFirebase).
+    enforce-on-firebase: ${RECAPTCHA_ENFORCE_FIREBASE:false}
     secret-key: ${RECAPTCHA_SECRET_KEY:RECAPTCHA_SECRET_KEY}  # Test secret key for development
     site-key: ${RECAPTCHA_SITE_KEY:RECAPTCHA_SITE_KEY}    # Reference only - used by frontend
     verify-url: ${RECAPTCHA_VERIFY_URL:https://www.google.com/recaptcha/api/siteverify}
