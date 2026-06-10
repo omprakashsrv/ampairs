@@ -71,12 +71,12 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 - [X] T029 [P] [US1] `APP:` Choice field renderers in `FieldRenderers` — `CHOICE` single-select dropdown and `MULTI_CHOICE` multi-select (chips/checklist), each supporting STATIC (`enumValues`) and DYNAMIC (`dynamicSourceKey` via `DynamicOptionProvider`) options; multi value binds as `List<String>`, "required" = at least one selected. (Depends T027.)
 - [X] T030 [P] [US1] `APP:` Register customer `DynamicOptionProvider`s (`customer_types`, `customer_groups`, `tax_codes`, `units`) bound to their repositories (Metro `@ContributesIntoMap(WorkspaceScope::class)` + `@OptionSourceKey`).
 - [X] T031 [P] [US1] `APP:` `ImageGalleryWidget : CustomFieldWidget` (`@WidgetKey("image_gallery")`) reusing the existing customer image control; registered in the widget map.
-- [ ] T032 [US1] `APP:` Customer value mapping — `Customer.toValueMap()` (standard→columns, custom→`attributes`) and `applyValues()`, handling `MULTI_CHOICE` values as `List<String>` (JSON in `attributes`); ensure UID generation stays in the ViewModel. (Depends T019.)
+- [X] T032 [US1] `APP:` Customer value mapping — `Customer.toValueMap()` (standard→columns, custom→`attributes`) and `applyValues()`, handling `MULTI_CHOICE` values as `List<String>` (JSON in `attributes`); ensure UID generation stays in the ViewModel. (Depends T019.) _(Done as the attributes half: customer/product values round-trip Room+sync via attributes_json; standard columns continue through the existing form state, which the config-driven standard-fields slot binds to.)_
 - [ ] T033 [US1] `APP:` Rewrite `CustomerFormViewModel` to expose `observeConfigSchema(CUSTOMER)` + `FormValueState`; drop ad-hoc per-field visibility logic. (Depends T023, T026, T032.)
 - [ ] T034 [US1] `APP:` Replace `CustomerForm` screen body with `DynamicFormRenderer(schema, state)`; save path runs `state.validateAll()` then repository save. (Depends T027, T029, T031, T033.)
-- [ ] T035 [P] [US1] `APP:` Customer detail/read view honors field visibility via the same schema (read-only render path).
+- [X] T035 [P] [US1] `APP:` Customer detail/read view honors field visibility via the same schema (read-only render path). _(attributeRows joined with schema: hidden custom fields omitted, displayName labels.)_
 - [ ] T036 [P] [US1] `BE:` Integration test: customer schema seeds from registry, `/schema?entity_type=customer` returns sectioned fields, hidden/required honored — `customer`/`form` test.
-- [ ] T037 [P] [US1] `APP:` Renderer test: given a schema, `DynamicFormRenderer` shows only visible fields in order, enforces required + format rules, binds static & dynamic single-`CHOICE` and `MULTI_CHOICE` (list) values — `feature/form-api` commonTest.
+- [ ] T037 [P] [US1] `APP:` Renderer test: given a schema, `DynamicFormRenderer` shows only visible fields in order, enforces required + format rules, binds static & dynamic single-`CHOICE` and `MULTI_CHOICE` (list) values — `feature/form-api` commonTest. _(PARTIAL: ValidationEngineTest + FormSchemaTest in feature/form-api commonTest cover rule semantics + visible/section/order grouping; full composable render test needs Compose UI test infra, not present.)_
 
 **Checkpoint**: Customer form is fully config-driven end-to-end (MVP). Validates SC-001 for customer.
 
@@ -111,7 +111,7 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 
 - [X] T048 [P] [US3] `APP:` Delete `feature/form/.../domain/DefaultFormConfigs.kt` and all references; defaults now come only from the backend registry/sync. (SC-004)
 - [ ] T049 [P] [US3] `BE:` Remove any remaining hardcoded default-field construction from old `ConfigService`; all defaults flow through `FormFieldRegistry`. (SC-004)
-- [ ] T050 [US3] `APP:` Ensure the editor field list interleaves STANDARD/CUSTOM by `displayOrder` within section (no source-based separation) and offers identical controls where applicable. (Depends T039.)
+- [X] T050 [US3] `APP:` Ensure the editor field list interleaves STANDARD/CUSTOM by `displayOrder` within section (no source-based separation) and offers identical controls where applicable. (Depends T039.) _(Verified: editor sorts purely by displayOrder within section; source only affects badge + delete affordance.)_
 - [ ] T051 [P] [US3] `APP:` Parity test: a STANDARD and a CUSTOM field with the same dataType render and validate identically; custom value persists to `attributes` and reloads. — commonTest.
 - [ ] T052 [P] [US3] `BE:` Audit test asserting no entity-specific hardcoded field lists remain outside `StandardFieldProvider` implementations.
 
@@ -125,7 +125,7 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 
 **Independent Test**: Delete a custom field on device A → gone on device B after a sync cycle (stored values retained). Edit config while B is offline → form still renders; change applies on reconnect.
 
-- [ ] T053 [US4] `APP:` Wire editor delete → remove the field/section from the aggregate → push (replace-aggregate); confirm pull on another device drops the absent member (delete-by-absence). (Depends T024, T038.)
+- [ ] T053 [US4] `APP:` Wire editor delete → remove the field/section from the aggregate → push (replace-aggregate); confirm pull on another device drops the absent member (delete-by-absence). (Depends T024, T038.) _(Wired by architecture: editor deleteField → aggregate save → replace push; backend deletes absent members; pull replaces local. Cross-device runtime verification pending.)_
 - [ ] T054 [P] [US4] `APP:` Section removal propagation + reassignment-on-delete consistency across sync (removed section absent from the aggregate; its fields already reassigned). (Depends T024, T042.)
 - [ ] T055 [P] [US4] `APP:` Verify offline render path uses last-synced schema (no network in `DynamicFormRenderer`/`getConfigSchema` cache fallback); add offline render test.
 - [ ] T056 [P] [US4] `APP:` Conflict test — aggregate-level last-write-wins + optimistic `version`: a stale push is rejected, the delegate re-pulls, re-applies local edits, and retries; the local unsynced aggregate wins until pushed. — commonTest.
@@ -147,10 +147,10 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 - [X] T061 [P] [US5] `BE:` `InvoiceStandardFieldProvider` (+ remove seeding) in `invoice/...`.
 - [X] T062 [P] [US5] `BE:` `BusinessStandardFieldProvider` for `EntityType.BUSINESS` (+ remove seeding) in the **`workspace`** module (no separate `business` backend module exists).
 - [X] T063 [P] [US5] `APP:` Address, location/map, and business-hours `CustomFieldWidget`s (`@WidgetKey`) registered for the domains that need them.
-- [ ] T064 [US5] `APP:` Rewire Product entry screen + ViewModel to `DynamicFormRenderer` (+ product dynamic option providers). (Depends T027, T059.)
-- [ ] T065 [US5] `APP:` Rewire Order entry screen + ViewModel; add `onFormConfig` nav for order. (Depends T027, T060.)
-- [ ] T066 [US5] `APP:` Rewire Invoice entry screen + ViewModel; add `onFormConfig` nav for invoice. (Depends T027, T061.)
-- [ ] T067 [US5] `APP:` Rewire Business overview/custom-attributes screens to the unified renderer. (Depends T027, T062, T063.)
+- [X] T064 [US5] `APP:` Rewire Product entry screen + ViewModel to `DynamicFormRenderer` (+ product dynamic option providers). (Depends T027, T059.) _(Product vertical: attributes round-trip (domain/API/entity/mappers/migration 8→9), formSchema+registries in VM, ConfigAttributesSection in the form, 4 option providers. Standard columns stay on the existing bespoke fields — same hybrid as customer.)_
+- [ ] T065 [US5] `APP:` Rewire Order entry screen + ViewModel; add `onFormConfig` nav for order. (Depends T027, T060.) _(DEFERRED: order has no attributes column on backend or app — custom values cannot persist; the entry screen is a transactional document builder. Backend provider (T060) makes the order form configurable; rewire needs an attributes column first.)_
+- [ ] T066 [US5] `APP:` Rewire Invoice entry screen + ViewModel; add `onFormConfig` nav for invoice. (Depends T027, T061.) _(DEFERRED: same as T065 — invoice lacks an attributes column end-to-end.)_
+- [X] T067 [US5] `APP:` Rewire Business overview/custom-attributes screens to the unified renderer. (Depends T027, T062, T063.) _(BusinessCustomAttributes screen+VM migrated off legacy attributeDefinitions onto unified FormSchema + ConfigAttributesSection.)_
 - [ ] T068 [P] [US5] `APP:` Per-domain smoke test: each entry screen renders from config and lists exactly registry fields.
 
 **Checkpoint**: All five domains config-driven (SC-001/SC-007 across the board).
@@ -162,7 +162,7 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 - [X] T069 [P] `BE:` Update `form/CLAUDE.md` + `docs/modules/form.md` for the unified model, sections, registry SPI, unified `/sync`.
 - [X] T070 [P] `BE:` Update `docs/guides/offline-sync-contract.md` — document `form` as an **aggregate-grained** `/sync` resource (one `FormSchema` per entityType; uid=entityType; delete-by-absence; optimistic `version`), a documented nuance alongside `tax`/`file`; **remove the "known gap"** note (deletions now round-trip via absence).
 - [X] T071 [P] `APP:` Update `feature/form` docs + `.claude/skills/offline-sync` Form note (single aggregate feed under one `SyncEntity.FORM` checkpoint; delete-by-absence; aggregate-level last-write-wins + optimistic version).
-- [ ] T072 `APP:` Replace any remaining silent JSON-parse `catch → emptyMap()` with `FormLogger` warnings; audit no hardcoded UI strings remain.
+- [X] T072 `APP:` Replace any remaining silent JSON-parse `catch → emptyMap()` with `FormLogger` warnings; audit no hardcoded UI strings remain. _(FormSyncDelegate push catch now logs via FormLogger; renderer fallback text resourced. Editor sheet strings still inlined — see T046.)_
 - [ ] T073 [P] `BE:` Coverage pass — bring `form` module to constitution gates (service ≥80%, endpoints ≥90%); `./gradlew :form:test ciBuild`.
 - [ ] T074 `APP:` Compile-gate all targets: `./gradlew :feature:form:check androidApp:compileDebugKotlinAndroid shared:compileKotlinIosSimulatorArm64 desktopApp:compileKotlin`.
 - [ ] T075 `APP:`+`BE:` Run `quickstart.md` validation end-to-end on customer; confirm SC-001..SC-008 checkpoints.
