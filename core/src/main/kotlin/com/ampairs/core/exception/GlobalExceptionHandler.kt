@@ -20,6 +20,7 @@ import org.springframework.web.method.annotation.HandlerMethodValidationExceptio
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.web.multipart.MaxUploadSizeExceededException
 import org.springframework.web.servlet.NoHandlerFoundException
+import org.springframework.web.server.ResponseStatusException
 
 @RestControllerAdvice
 @Order(Ordered.LOWEST_PRECEDENCE) // Execute last, after module-specific handlers
@@ -261,6 +262,34 @@ class GlobalExceptionHandler : BaseExceptionHandler() {
         response.headers.add("X-RateLimit-Reset", ex.resetTime.toString())
 
         return response
+    }
+
+    /**
+     * Services signal intentional HTTP outcomes (400 invalid aggregate, 409 optimistic-version
+     * conflict, …) by throwing [ResponseStatusException]. Honor the carried status instead of
+     * falling through to the generic 500 — clients (e.g. the app's form sync conflict recovery)
+     * depend on receiving the real status code.
+     */
+    @ExceptionHandler(ResponseStatusException::class)
+    fun handleResponseStatusException(
+        ex: ResponseStatusException,
+        request: HttpServletRequest,
+    ): ResponseEntity<ApiResponse<Any>> {
+        val status = HttpStatus.resolve(ex.statusCode.value()) ?: HttpStatus.INTERNAL_SERVER_ERROR
+        logger.warn("Request {} rejected with {}: {}", request.requestURI, status.value(), ex.reason)
+        return createErrorResponse(
+            httpStatus = status,
+            errorCode = when (status) {
+                HttpStatus.CONFLICT -> ErrorCodes.DUPLICATE_ENTRY
+                HttpStatus.NOT_FOUND -> ErrorCodes.NOT_FOUND
+                HttpStatus.BAD_REQUEST -> ErrorCodes.BAD_REQUEST
+                else -> ErrorCodes.INTERNAL_SERVER_ERROR
+            },
+            message = ex.reason ?: status.reasonPhrase,
+            details = null,
+            request = request,
+            moduleName = "global"
+        )
     }
 
     // Generic Exception Handler - catches all other exceptions

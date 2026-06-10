@@ -37,7 +37,6 @@ allOpen {
 
 dependencies {
     api(project(":core"))
-    implementation(project(":workspace"))
 
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework:spring-web")
@@ -48,6 +47,7 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:6.0.0")
 }
 
 tasks.withType<Test> {

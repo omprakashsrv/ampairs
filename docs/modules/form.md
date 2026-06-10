@@ -1,97 +1,87 @@
 # form module
 
-Dynamic form configuration system. Stores field visibility, ordering, validation rules, and custom attribute definitions per entity type. Web and mobile clients read this to render configurable UI.
+Unified, schema-driven dynamic forms (spec 011). One configurable field model per entity type —
+visibility, ordering, sections, labels, validation, and custom attributes — consumed by the mobile
+client to render entry forms and the admin form-configuration editor.
 
 ## REST Endpoints
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/form/v1/schema` | Get config schema for an entity type (`?entity_type=customer`) |
-| GET | `/form/v1/schemas` | Get all configuration schemas |
-| POST | `/form/v1/config` | Bulk create or update schema |
-| POST | `/form/v1/field-config` | Create or update a field config |
-| POST | `/form/v1/attribute-definition` | Create or update an attribute definition |
-| DELETE | `/form/v1/field-config` | Delete a field config |
-| DELETE | `/form/v1/attribute-definition` | Delete an attribute definition |
+| GET | `/form/v1/config/schema` | Current schema for one entity type (`?entity_type=customer`); seeds registry defaults + merges new standard fields on read |
+| GET | `/form/v1/config/schema/sync` | Aggregate sync pull — one `FormSchema` record per entityType updated since `last_sync` (full feed seeds defaults for every provider-backed entity type) |
+| POST | `/form/v1/config/schema/sync` | Aggregate push — replace each `FormSchema` (upsert present members, **delete absent**), optimistic `base_version` |
 
-## Key Entities
+Supported entity types (`EntityType`, rejected otherwise): `customer`, `product`, `order`,
+`invoice`, `business`.
 
-### FieldConfig
+## Aggregate Model
 
-Controls visibility and behaviour of standard entity fields:
+```
+FormSchema  (1 per workspace × entityType; uid = entityType; version for optimistic concurrency)
+ └── FormSection  (ordered, hideable; "General" fallback always exists)
+      └── FormField (ordered within section)
+```
+
+### FormField (unified — no separate FieldConfig/AttributeDefinition)
 
 ```kotlin
-class FieldConfig : OwnableBaseDomain() {
-    val entityType: String         // "customer", "product", "order", etc.
-    val fieldName: String          // maps to entity property name
-    val displayName: String
-    val visible: Boolean
-    val mandatory: Boolean
-    val enabled: Boolean
-    val displayOrder: Int
-    val validationType: String?    // "phone", "email", "gst", etc.
-    val validationParams: String?  // JSON — e.g. min/max length
-    val placeholder: String?
-    val helpText: String?          // TEXT column
-    val defaultValue: String?
+class FormField : OwnableBaseDomain() {
+    var entityType: String        // "customer", "product", …
+    var source: String            // "standard" (binds to entity column) | "custom" (entity attributes JSON)
+    var fieldKey: String          // column name for STANDARD; attributes key for CUSTOM
+    var displayName: String
+    var dataType: String          // text|textarea|number|boolean|date|choice|multi_choice|custom
+    var widgetKey: String?        // for dataType=custom: client widget (location, contact, address, …)
+    var sectionUid: String        // mandatory — every field lives in a section
+    var visible/mandatory/enabled: Boolean
+    var displayOrder: Int
+    var optionSource: String?     // choice: "static" (enumValues) | "dynamic" (dynamicSourceKey)
+    var enumValues: List<String>?         // @JdbcTypeCode(SqlTypes.JSON)
+    var validationRules: List<ValidationRule>?  // typed: required|length_range|number_range|format|allowed_choices
 }
 ```
 
-### AttributeDefinition
+No soft-delete column anywhere in the aggregate — **removal is by absence** from the pushed schema.
 
-Defines custom/extra fields that can be attached to entities:
+## Standard fields via SPI
 
-```kotlin
-class AttributeDefinition : OwnableBaseDomain() {
-    val entityType: String
-    val attributeKey: String       // unique per entity type in workspace
-    val displayName: String
-    val dataType: String           // STRING, NUMBER, BOOLEAN, DATE, ENUM
-    val visible: Boolean
-    val mandatory: Boolean
-    val enabled: Boolean
-    val displayOrder: Int
-    val category: String?          // groups related attributes in UI
-    val defaultValue: String?
-    val validationType: String?
-    val validationParams: String?  // JSON
-    val enumValues: String?        // JSON array — for ENUM data type
-    val placeholder: String?
-    val helpText: String?          // TEXT
-}
-```
+Domains declare their built-in fields by implementing `StandardFieldProvider` (`@Component`);
+`FormFieldRegistry` aggregates providers to seed defaults, merge new fields non-destructively, and
+validate STANDARD keys. Essential fields (`essential = true`) cannot be removed or hidden.
 
-## Entity Types
+Providers: `CustomerStandardFieldProvider` (customer), `ProductStandardFieldProvider` (product),
+`OrderStandardFieldProvider` (order), `InvoiceStandardFieldProvider` (invoice),
+`BusinessStandardFieldProvider` (workspace module, `EntityType.BUSINESS`).
 
-Common values for `entityType`:
-- `customer` — Customer fields
-- `product` — Product catalog fields
-- `order` — Order fields
-- `invoice` — Invoice fields
-- `business` — Business profile fields
+## Sync semantics
 
-## Usage Pattern
+- **Pull** pages whole aggregates (`ApiResponse<PageResponse<FormSchemaResponse>>`); a full pull
+  (no `last_sync`) first seeds defaults for the workspace, so a fresh client never sees an empty feed.
+- **Push** (`List<FormSchemaRequest>` with `base_version`) replaces each aggregate atomically inside
+  one transaction: upsert members present, delete members absent, `version += 1`. A stale
+  `base_version` is rejected with **409** (clean `ApiResponse` via the global
+  `ResponseStatusException` handler); the client re-pulls the version, rebases its local edits, and
+  retries (aggregate-level last-write-wins).
+- Invariants validated on every push: ≥1 section; every field references a section in the aggregate;
+  essential STANDARD fields present + visible; STANDARD keys must exist in the registry; choice
+  fields need a complete option source; `custom` needs a `widget_key`; validation rules must be
+  internally consistent (`ValidationEngine`).
 
-1. On workspace setup, `ConfigService` auto-seeds default schemas for each entity type.
-2. Clients fetch schema via `GET /form/v1/schema?entity_type=customer` and render fields accordingly.
-3. Workspace admins can customize via the API — hide fields, change order, add custom attributes.
-4. Custom attribute values are stored as JSON in the entity's `attributes` column.
+See `docs/guides/offline-sync-contract.md` — form is the documented *aggregate-grained* `/sync`
+resource.
 
-## Database Migrations
+## Tests
 
-| File | Description |
-|------|-------------|
-| `V1.0.7__create_form_module_tables.sql` | field_config, attribute_definition tables |
+`form/src/test/...`: `FormConfigServiceTest` (seed-on-read, merge preservation, integrity rules,
+optimistic conflict, delete-by-absence), `FormFieldRegistryTest`, `ValidationEngineTest`.
 
-## Package Structure
+## Migrations
 
-```
-com.ampairs.form
-├── controller/     — ConfigController
-├── domain/
-│   ├── dto/        — FieldConfigRequest/Response, AttributeDefinitionRequest/Response,
-│   │                  EntityConfigSchemaRequest/Response
-│   ├── model/      — FieldConfig, AttributeDefinition
-│   └── repository/ — FieldConfigRepository, AttributeDefinitionRepository
-└── domain/service/ — ConfigService
-```
+`V1.0.7` (legacy tables, superseded), `V1.0.80` creates `form_schema` + `form_section` +
+`form_field` and drops the legacy `field_config` + `attribute_definition` tables (clean cutover,
+no backfill).
+
+## Base path
+
+`/form/v1/**`
