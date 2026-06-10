@@ -1,0 +1,70 @@
+name: PR Checks
+
+# Validates every pull request BEFORE merge. Complements deploy.yml, which only runs on
+# pushes to main. The migrate job applies all Flyway migrations against a fresh PostgreSQL
+# in dependency order — this catches version collisions and vendor-parity breaks that unit
+# tests (H2, Flyway disabled) cannot.
+on:
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+concurrency:
+  group: pr-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+      - run: chmod +x gradlew
+      - name: Run tests
+        run: ./gradlew test --console=plain
+
+  migrations:
+    name: Flyway migrate + validate (PostgreSQL)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        # PostGIS image: customer V1.0.6 does CREATE EXTENSION postgis.
+        image: postgis/postgis:17-3.5
+        env:
+          POSTGRES_DB: springdb
+          POSTGRES_USER: springuser
+          POSTGRES_PASSWORD: springpass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U springuser -d springdb"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+      - run: chmod +x gradlew
+      - name: Apply migrations to a fresh database
+        run: ./gradlew :ampairs_service:dbMigrate --console=plain
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/springdb
+          DB_USERNAME: springuser
+          DB_PASSWORD: springpass
+      - name: Validate migration checksums & ordering
+        run: ./gradlew :ampairs_service:dbValidate --console=plain
+        env:
+          DB_URL: jdbc:postgresql://localhost:5432/springdb
+          DB_USERNAME: springuser
+          DB_PASSWORD: springpass
