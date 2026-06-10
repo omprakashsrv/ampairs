@@ -37,7 +37,6 @@ allOpen {
 
 dependencies {
     api(project(":core"))
-    implementation(project(":workspace"))
 
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework:spring-web")

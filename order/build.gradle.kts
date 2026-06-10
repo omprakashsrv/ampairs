@@ -37,6 +37,7 @@ repositories {
 
 dependencies {
     api(project(mapOf("path" to ":core")))
+    implementation(project(":form"))
     api(project(mapOf("path" to ":invoice")))
     api(project(mapOf("path" to ":event")))
     implementation("org.jetbrains.kotlin:kotlin-reflect")

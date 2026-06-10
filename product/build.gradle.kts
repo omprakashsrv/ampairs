@@ -37,6 +37,7 @@ repositories {
 
 dependencies {
     api(project(mapOf("path" to ":core")))
+    implementation(project(":form"))
     api(project(mapOf("path" to ":file")))
     api(project(mapOf("path" to ":event")))
     api(project(mapOf("path" to ":unit")))
