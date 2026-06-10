@@ -100,8 +100,18 @@ fun bulkUpsert(requests: List<XRequest>): List<XResponse> = requests.map { req -
 
 `customer`, `customer_group` (`/groups/sync`), `customer_type` (`/types/sync`), `product`,
 `product` catalog (`/groups/sync`, `/categories/sync`, `/brands/sync`, `/sub-categories/sync`),
-`unit`, `setting` (store), `order`, `invoice`, and `form` (two feeds —
-`/config/field-configs/sync` and `/config/attribute-definitions/sync`).
+`unit`, `setting` (store), `order`, `invoice`.
+
+## Aggregate-grained on the contract
+
+- **form** — a single feed `GET/POST /form/v1/config/schema/sync` carries **one `FormSchema`
+  aggregate per entityType** (uid = entityType; each aggregate bundles its ordered sections + fields).
+  It is on the canonical `/sync` contract with two aggregate-specific nuances:
+  - **Delete-by-absence**: there is no per-row soft-delete; a section/field omitted from a pushed
+    `FormSchema` is deleted server-side and disappears on the next pull on every device.
+  - **Optimistic concurrency**: the push carries `base_version`; a stale push (`base_version` <
+    current `version`) is rejected, and the client re-pulls, re-applies local edits, and retries
+    (aggregate-level last-write-wins).
 
 ## Intentionally **off** the contract
 
@@ -110,12 +120,6 @@ fun bulkUpsert(requests: List<XRequest>): List<XResponse> = requests.map { req -
   UID-keyed rows, so a bulk `/sync` push does not apply.
 - **file** — binary image upload via multipart `POST /images/{type}/{uid}`, entity-scoped `GET`, per-image
   `DELETE`. Binary can't ride a JSON `List<T>` body, and it's UI-invoked, not central-sync.
-
-## Known gap
-
-- **form** has no soft-delete column on `FieldConfig` / `AttributeDefinition` (both extend `BaseDomain`,
-  which has no `deleted`/`status`). Its `/sync` feed therefore cannot carry deletions — deletes do **not**
-  round-trip between devices. Closing this needs a new column + a Flyway migration.
 
 ---
 
