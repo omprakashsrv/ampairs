@@ -75,6 +75,8 @@ ecom:
 server:
   compression:
     enabled: true
+  # Drain in-flight requests on SIGTERM instead of dropping them (rolling deploys / k8s).
+  shutdown: graceful
   tomcat:
     max-connections: 50
     accesslog:
@@ -117,6 +119,9 @@ logging:
     console: "%highlight(%-5level) [%date{HH:mm:ss.SSS}] [%thread] [%cyan(%logger{36})]: %message%n"
 
 spring:
+  # Cap how long graceful shutdown waits for in-flight requests to finish (see server.shutdown).
+  lifecycle:
+    timeout-per-shutdown-phase: 25s
   autoconfigure:
     exclude:
       - org.springdoc.webmvc.ui.SwaggerConfig

@@ -1,0 +1,11 @@
+# Default owner for everything in this repo.
+* @omprakashsrv
+
+# Cross-cutting / high-blast-radius areas — keep an explicit owner so changes here
+# always get a deliberate review.
+/core/                       @omprakashsrv
+/auth/                       @omprakashsrv
+/ampairs_service/            @omprakashsrv
+/**/db/migration/            @omprakashsrv
+/.github/                    @omprakashsrv
+/.claude/                    @omprakashsrv
