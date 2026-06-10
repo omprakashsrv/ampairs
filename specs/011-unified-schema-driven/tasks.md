@@ -95,7 +95,7 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 - [X] T042 [P] [US2] `APP:` Section management UI — create/rename/reorder/hide/delete; the default `General` section cannot be deleted; deleting a non-empty section requires reassigning its fields first (or auto-move to `General`) per edge case. (Depends T038.)
 - [X] T043 [P] [US2] `APP:` Guided validation builder — typed rule pickers (Required, length range, number range, format from curated list, allowed choices); no free-form regex/JSON. (Depends T038.)
 - [X] T044 [P] [US2] `APP:` Choice editor — pick data type `CHOICE` vs `MULTI_CHOICE`, then option source STATIC (list builder) vs DYNAMIC (pick a registered `dynamicSourceKey`); replaces the hardcoded datatype dropdown with the `FieldDataType` enum. (Depends T038.)
-- [ ] T045 [P] [US2] `APP:` Add/edit/remove custom field flow with client-side validation (non-empty key/label, no duplicate key, dataType-appropriate options); stable UID via `UidGenerator`. (Depends T038.)
+- [X] T045 [P] [US2] `APP:` Add/edit/remove custom field flow with client-side validation (non-empty label via disabled confirm; auto-unique non-blank `fieldKey` via `uniqueFieldKey`/`slugKey` — no duplicate key); stable UID via `UidGenerator`. (Depends T038.)
 - [ ] T046 [P] [US2] `APP:` Unsaved-changes guard on navigation; move all editor strings to `composeResources/values/strings.xml`; success/error via resources (no hardcoded text).
 - [ ] T047 [P] [US2] `BE:` Service test: integrity rules reject hiding/deleting essential STANDARD fields and contradictory validation rules with proper `ApiResponse` errors.
 
