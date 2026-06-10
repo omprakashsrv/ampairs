@@ -14,9 +14,11 @@ new migration (or that remove migration artifacts) are documented here.
 
 - **`fix-tax-rule-code-ids.sql` (deleted, converted to a migration).** The data repair
   (backfilling empty `tax_rule.tax_code_id` from the workspace's `tax_code` rows) now ships as
-  `tax/src/main/resources/db/migration/{postgresql,mysql}/V1.0.80__backfill_tax_rule_tax_code_id.sql`
-  so it runs once, everywhere, under Flyway's control. The diagnostic SELECTs from the old script
-  were dropped; only the idempotent UPDATE was kept.
+  `tax/src/main/resources/db/migration/{postgresql,mysql}/V1.0.81__backfill_tax_rule_tax_code_id.sql`
+  so it runs once, everywhere, under Flyway's control. (Originally authored as V1.0.80, renumbered
+  to V1.0.81 to avoid colliding with `form/.../V1.0.80__create_unified_form_model.sql`, which
+  landed on main in parallel.) The diagnostic SELECTs from the old script were dropped; only the
+  idempotent UPDATE was kept.
 
 - **`workspace/src/main/resources/db/migration/V2.0.0__add_retail_modules.sql` (deleted, dead file).**
   It sat *outside* the vendor directories, and every Flyway location in use
