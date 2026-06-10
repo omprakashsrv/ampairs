@@ -58,11 +58,23 @@ class FormConfigService(
 
     // ---- Sync feed -------------------------------------------------------------------------------
 
-    /** Incremental pull: aggregates updated at/after [lastSync] (full feed when null/blank). */
-    @Transactional(readOnly = true)
+    /**
+     * Incremental pull: aggregates updated at/after [lastSync] (full feed when null/blank).
+     *
+     * On a **full** pull (no `last_sync` — the client bootstrap) we seed registry defaults for every
+     * provider-backed entity type in the current workspace first, so a fresh workspace gets the
+     * standard fields instead of an empty feed. Seeding is tenant-scoped (`@TenantId`) and idempotent
+     * (`seedAndMerge` only adds what's missing), so it is a no-op on subsequent full syncs.
+     */
+    @Transactional
     fun getAfterSync(lastSync: String?, page: Int, size: Int): PageResponse<FormSchemaResponse> {
-        val pageable: Pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "updatedAt", "uid"))
         val parsed = parseLastSync(lastSync)
+        if (parsed == null) {
+            EntityType.entries
+                .filter { registry.standardFieldsFor(it).isNotEmpty() }
+                .forEach { seedAndMerge(it) }
+        }
+        val pageable: Pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.ASC, "updatedAt", "uid"))
         val result: Page<FormSchema> =
             if (parsed == null) schemaRepository.findAllForSync(pageable)
             else schemaRepository.findUpdatedAfter(parsed, pageable)
