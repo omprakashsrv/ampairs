@@ -159,7 +159,7 @@ API endpoints ≥90%). They are not strict TDD-first; write them alongside each 
 
 ## Phase 8: Polish & Cross-Cutting
 
-- [X] T069 [P] `BE:` Update `form/CLAUDE.md` + `docs/modules/form.md` for the unified model, sections, registry SPI, unified `/sync`.
+- [X] T069 [P] `BE:` Update `form/CLAUDE.md` + `docs/modules/form.md` for the unified model, sections, registry SPI, unified `/sync`. _(form/CLAUDE.md + docs/modules/form.md both rewritten for the unified aggregate model.)_
 - [X] T070 [P] `BE:` Update `docs/guides/offline-sync-contract.md` — document `form` as an **aggregate-grained** `/sync` resource (one `FormSchema` per entityType; uid=entityType; delete-by-absence; optimistic `version`), a documented nuance alongside `tax`/`file`; **remove the "known gap"** note (deletions now round-trip via absence).
 - [X] T071 [P] `APP:` Update `feature/form` docs + `.claude/skills/offline-sync` Form note (single aggregate feed under one `SyncEntity.FORM` checkpoint; delete-by-absence; aggregate-level last-write-wins + optimistic version).
 - [X] T072 `APP:` Replace any remaining silent JSON-parse `catch → emptyMap()` with `FormLogger` warnings; audit no hardcoded UI strings remain. _(FormSyncDelegate push catch now logs via FormLogger; renderer fallback text resourced. Editor sheet strings still inlined — see T046.)_
