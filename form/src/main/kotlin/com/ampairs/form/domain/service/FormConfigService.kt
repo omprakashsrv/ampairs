@@ -20,8 +20,6 @@ import com.ampairs.form.domain.service.registry.FormFieldRegistry
 import com.ampairs.form.domain.service.registry.GENERAL_SECTION
 import com.ampairs.form.domain.service.registry.StandardFieldSpec
 import com.ampairs.form.domain.service.validation.ValidationEngine
-import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
@@ -46,7 +44,6 @@ class FormConfigService(
     private val fieldRepository: FormFieldRepository,
     private val registry: FormFieldRegistry,
     private val validationEngine: ValidationEngine,
-    private val objectMapper: ObjectMapper,
 ) {
 
     // ---- Read (UI) -------------------------------------------------------------------------------
@@ -180,9 +177,9 @@ class FormConfigService(
             mandatory = spec.mandatory
             defaultValue = spec.defaultValue
             optionSource = spec.optionSource?.value
-            enumValues = spec.enumValues?.let { objectMapper.writeValueAsString(it) }
+            enumValues = spec.enumValues
             dynamicSourceKey = spec.dynamicSourceKey
-            validationRules = spec.validationRules.takeIf { it.isNotEmpty() }?.let { objectMapper.writeValueAsString(it) }
+            validationRules = spec.validationRules.takeIf { it.isNotEmpty() }
             placeholder = spec.placeholder
             helpText = spec.helpText
         }
@@ -245,9 +242,9 @@ class FormConfigService(
         entity.displayOrder = dto.displayOrder
         entity.defaultValue = dto.defaultValue
         entity.optionSource = dto.optionSource
-        entity.enumValues = dto.enumValues?.let { objectMapper.writeValueAsString(it) }
+        entity.enumValues = dto.enumValues
         entity.dynamicSourceKey = dto.dynamicSourceKey
-        entity.validationRules = dto.validationRules?.let { objectMapper.writeValueAsString(it) }
+        entity.validationRules = dto.validationRules
         entity.placeholder = dto.placeholder
         entity.helpText = dto.helpText
     }
@@ -283,9 +280,9 @@ class FormConfigService(
         displayOrder = displayOrder,
         defaultValue = defaultValue,
         optionSource = optionSource,
-        enumValues = enumValues?.let { objectMapper.readValue(it, object : TypeReference<List<String>>() {}) },
+        enumValues = enumValues,
         dynamicSourceKey = dynamicSourceKey,
-        validationRules = validationRules?.let { objectMapper.readValue(it, object : TypeReference<List<ValidationRule>>() {}) },
+        validationRules = validationRules,
         placeholder = placeholder,
         helpText = helpText,
     )

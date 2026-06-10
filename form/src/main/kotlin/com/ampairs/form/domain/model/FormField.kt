@@ -1,6 +1,7 @@
 package com.ampairs.form.domain.model
 
 import com.ampairs.core.domain.model.OwnableBaseDomain
+import com.ampairs.form.domain.model.validation.ValidationRule
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Index
@@ -70,14 +71,14 @@ class FormField : OwnableBaseDomain() {
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "enum_values")
-    var enumValues: String? = null
+    var enumValues: List<String>? = null
 
     @Column(name = "dynamic_source_key", length = 100)
     var dynamicSourceKey: String? = null
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "validation_rules")
-    var validationRules: String? = null
+    var validationRules: List<ValidationRule>? = null
 
     @Column(name = "placeholder")
     var placeholder: String? = null
