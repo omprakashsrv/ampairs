@@ -24,7 +24,12 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: gradle
+      - name: Set up Gradle (with cache)
+        # Caches the Gradle home (deps, wrapper) and the build cache (task outputs — used because
+        # org.gradle.caching=true). cache-read-only=false so PR re-runs reuse earlier builds.
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
       - run: chmod +x gradlew
       - name: Run tests
         run: ./gradlew test --console=plain
@@ -54,7 +59,10 @@ jobs:
         with:
           java-version: '21'
           distribution: 'temurin'
-          cache: gradle
+      - name: Set up Gradle (with cache)
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          cache-read-only: false
       - run: chmod +x gradlew
       - name: Apply migrations to a fresh database
         run: ./gradlew :ampairs_service:dbMigrate --console=plain
