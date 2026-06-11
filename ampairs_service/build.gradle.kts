@@ -84,6 +84,8 @@ dependencies {
     // Spring Boot 4.x requires the starter for Flyway auto-configuration (flyway-core alone is not enough)
     implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.flywaydb:flyway-database-postgresql")
+    // Flyway 10+ split MySQL support into its own module — without it a MySQL DB_URL fails at startup
+    implementation("org.flywaydb:flyway-mysql")
 
     // Spring Cloud AWS
     implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:4.0.2"))
@@ -132,7 +134,9 @@ val flywayRuntime by configurations.creating {
 dependencies {
     flywayRuntime("org.flywaydb:flyway-core:11.14.1")
     flywayRuntime("org.flywaydb:flyway-database-postgresql:11.14.1")
+    flywayRuntime("org.flywaydb:flyway-mysql:11.14.1")
     flywayRuntime("org.postgresql:postgresql:42.7.10")
+    flywayRuntime("com.mysql:mysql-connector-j:9.4.0")
     flywayRuntime("org.slf4j:slf4j-simple:2.0.13")
 }
 
@@ -140,8 +144,10 @@ fun runFlyway(command: String) {
     val dbUrl      = System.getenv("DB_URL")      ?: "jdbc:postgresql://localhost:5432/springdb"
     val dbUser     = System.getenv("DB_USERNAME") ?: "springuser"
     val dbPassword = System.getenv("DB_PASSWORD") ?: "springpass"
+    // Pick the vendor migration directory from the JDBC URL (mirrors Spring's {vendor} placeholder).
+    val vendor = if (dbUrl.startsWith("jdbc:mysql:")) "mysql" else "postgresql"
     val locations: Array<String> = migrationModules
-        .map { "filesystem:${rootDir}/$it/src/main/resources/db/migration/postgresql" }
+        .map { "filesystem:${rootDir}/$it/src/main/resources/db/migration/$vendor" }
         .toTypedArray()
 
     val urls = flywayRuntime.map { it.toURI().toURL() }.toTypedArray()

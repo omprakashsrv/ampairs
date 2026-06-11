@@ -262,9 +262,13 @@ ampairs:
 application:
   auth:
     otp:
-      development-mode: ${OTP_DEV_MODE:true}
-      hardcoded-otp: ${OTP_HARDCODED_VALUE:123456}
-      allow-hardcoded: ${OTP_ALLOW_HARDCODED:true}
+      # Secure by default in production: the hardcoded-OTP bypass must be explicitly opted
+      # into via env vars. With these defaults only real OTPs delivered via SMS are accepted.
+      development-mode: ${OTP_DEV_MODE:false}
+      hardcoded-otp: ${OTP_HARDCODED_VALUE:}
+      allow-hardcoded: ${OTP_ALLOW_HARDCODED:false}
+      # Required acknowledgment to run the bypass in production (see OtpSecurityStartupCheck)
+      allow-hardcoded-in-production: ${OTP_ALLOW_HARDCODED_IN_PRODUCTION:false}
     admin-user-ids: ${ADMIN_USER_IDS:UID20251106140814442AYOYEOEQU7F2LV}
   security:
     jwt:
@@ -395,6 +399,9 @@ debug: ${DEBUG_MODE:false}
 google:
   recaptcha:
     enabled: ${RECAPTCHA_ENABLED:true}
+    # Enforce reCAPTCHA on /auth/v1/verify/firebase. Off until clients send recaptcha_token
+    # on the Firebase flow (see RecaptchaConfiguration.enforceOnFirebase).
+    enforce-on-firebase: ${RECAPTCHA_ENFORCE_FIREBASE:false}
     secret-key: ${RECAPTCHA_SECRET_KEY:6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJWe}  # Test secret key for development
     site-key: ${RECAPTCHA_SITE_KEY:6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI}    # Reference only - used by frontend
     verify-url: ${RECAPTCHA_VERIFY_URL:https://www.google.com/recaptcha/api/siteverify}

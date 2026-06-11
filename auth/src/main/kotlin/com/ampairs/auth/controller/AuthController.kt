@@ -1,5 +1,6 @@
 package com.ampairs.auth.controller
 
+import com.ampairs.auth.config.RecaptchaConfiguration
 import com.ampairs.auth.exception.RecaptchaValidationException
 import com.ampairs.auth.model.dto.*
 import com.ampairs.auth.service.AuthService
@@ -26,6 +27,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 class AuthController(
     private val authService: AuthService,
     private val recaptchaValidationService: RecaptchaValidationService,
+    private val recaptchaConfiguration: RecaptchaConfiguration,
 ) {
 
     private val logger = LoggerFactory.getLogger(AuthController::class.java)
@@ -302,8 +304,13 @@ class AuthController(
     ): ApiResponse<AuthenticationResponse> {
         logger.info("Firebase auth verification request for phone: {}", firebaseAuthRequest.phone)
 
-        // Validate reCAPTCHA if token is provided
-//        validateRecaptcha(firebaseAuthRequest.recaptchaToken, "firebase_verify", getClientIp(request))
+        // Explicitly configurable instead of a commented-out check: mobile clients send no
+        // recaptcha_token on this flow (Firebase Phone Auth already attests the device, and the
+        // endpoint sits in the strict "verify" rate-limit bucket), so enforcement defaults off.
+        // See RecaptchaConfiguration.enforceOnFirebase before flipping RECAPTCHA_ENFORCE_FIREBASE.
+        if (recaptchaConfiguration.enforceOnFirebase) {
+            validateRecaptcha(firebaseAuthRequest.recaptchaToken, "firebase_verify", getClientIp(request))
+        }
 
         return ApiResponse.success(authService.authenticateWithFirebase(firebaseAuthRequest, request))
     }

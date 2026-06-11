@@ -162,13 +162,21 @@ class Order : OwnableBaseDomain() {
     }
 
     /**
-     * Calculate totals based on order items
+     * Calculate totals based on order items.
+     *
+     * `subtotal` is the sum of line totals, and each `OrderItem.lineTotal` is already net of that
+     * line's `discountAmount` (see [OrderItem.calculateLineTotal]). Therefore item discounts must
+     * NOT be subtracted again here — only the order-level `discountAmount` applies on top of the
+     * (already net) subtotal. Subtracting `itemDiscounts` a second time double-counted every line
+     * discount (a 100 item with a 10 line discount yielded 80 instead of 90).
+     *
+     * Note: this helper is not on the persistence path today — the /sync upsert trusts the totals
+     * the client computes and sends — but it stays correct for any in-process order assembly.
      */
     fun calculateTotals() {
         subtotal = orderItems.sumOf { it.lineTotal }
-        val itemDiscounts = orderItems.sumOf { it.discountAmount }
         taxAmount = orderItems.sumOf { it.totalTax }
-        totalAmount = subtotal - (discountAmount + itemDiscounts) + taxAmount
+        totalAmount = subtotal - discountAmount + taxAmount
     }
 
     /**

@@ -8,10 +8,15 @@ import com.ampairs.subscription.provider.StripeService
 import jakarta.annotation.PostConstruct
 import org.slf4j.LoggerFactory
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.env.Environment
 
 /**
- * Configuration for registering payment provider services with the orchestration service.
- * All payment provider services are automatically registered on application startup.
+ * Registers payment provider services with the orchestration service on startup.
+ *
+ * A provider is only registered when its credentials are actually configured. Providers left on
+ * the PLACEHOLDER_* defaults (or blank) are skipped, so any attempt to use them fails immediately
+ * with "Provider not configured" (PaymentOrchestrationService.getProviderService) instead of
+ * silently failing at charge time with an invalid-credential error from the provider.
  */
 @Configuration
 class PaymentProviderConfiguration(
@@ -19,7 +24,8 @@ class PaymentProviderConfiguration(
     private val googlePlayService: GooglePlayBillingService,
     private val appleService: AppleAppStoreService,
     private val razorpayService: RazorpayService,
-    private val stripeService: StripeService
+    private val stripeService: StripeService,
+    private val environment: Environment,
 ) {
     private val logger = LoggerFactory.getLogger(PaymentProviderConfiguration::class.java)
 
@@ -27,18 +33,36 @@ class PaymentProviderConfiguration(
     fun registerProviders() {
         logger.info("Registering payment provider services...")
 
-        orchestrationService.registerProvider(googlePlayService)
-        logger.info("Registered Google Play Billing service")
+        registerIfConfigured("Google Play Billing", "google-play.service-account-json-path") {
+            orchestrationService.registerProvider(googlePlayService)
+        }
+        registerIfConfigured("Apple App Store", "apple-app-store.shared-secret") {
+            orchestrationService.registerProvider(appleService)
+        }
+        registerIfConfigured("Razorpay", "razorpay.key-secret", "razorpay.key-id") {
+            orchestrationService.registerProvider(razorpayService)
+        }
+        registerIfConfigured("Stripe", "stripe.secret-key") {
+            orchestrationService.registerProvider(stripeService)
+        }
+    }
 
-        orchestrationService.registerProvider(appleService)
-        logger.info("Registered Apple App Store service")
-
-        orchestrationService.registerProvider(razorpayService)
-        logger.info("Registered Razorpay service")
-
-        orchestrationService.registerProvider(stripeService)
-        logger.info("Registered Stripe service")
-
-        logger.info("All payment provider services registered successfully")
+    private fun registerIfConfigured(name: String, vararg requiredProperties: String, register: () -> Unit) {
+        val unconfigured = requiredProperties.filter { property ->
+            val value = environment.getProperty(property)
+            value.isNullOrBlank() || value.contains("PLACEHOLDER", ignoreCase = true)
+        }
+        if (unconfigured.isEmpty()) {
+            register()
+            logger.info("Registered {} service", name)
+        } else {
+            val message = "$name NOT registered — unconfigured/placeholder properties: $unconfigured. " +
+                    "Payments via this provider will fail with 'Provider not configured'."
+            if (environment.activeProfiles.contains("production")) {
+                logger.error(message)
+            } else {
+                logger.warn(message)
+            }
+        }
     }
 }

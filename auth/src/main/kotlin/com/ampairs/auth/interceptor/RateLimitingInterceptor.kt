@@ -74,7 +74,11 @@ class RateLimitingInterceptor(
         return when {
             requestUri.endsWith("/init") -> "init"
             requestUri.endsWith("/verify") -> "verify"
-            requestUri.endsWith("/refresh_token") -> "refresh_token"
+            // Firebase verification is a login attempt — share the strict verify bucket.
+            requestUri.endsWith("/verify/firebase") -> "verify"
+            // Controller maps /refresh-token (hyphen); the old underscore match never hit,
+            // silently demoting refreshes to the much stricter verify limits.
+            requestUri.endsWith("/refresh-token") -> "refresh_token"
             requestUri.endsWith("/logout") -> "logout"
             requestUri.endsWith("/logout/all") -> "logout"
             requestUri.contains("/devices") -> "devices"
