@@ -30,6 +30,9 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           cache-read-only: false
+          # Repo has vestigial/empty per-module gradle-wrapper.jar files and uses a very new
+          # Gradle whose checksum the action does not yet know; the build uses the root wrapper.
+          validate-wrappers: false
       - run: chmod +x gradlew
       - name: Run tests
         run: ./gradlew test --console=plain
@@ -63,6 +66,9 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           cache-read-only: false
+          # Repo has vestigial/empty per-module gradle-wrapper.jar files and uses a very new
+          # Gradle whose checksum the action does not yet know; the build uses the root wrapper.
+          validate-wrappers: false
       - run: chmod +x gradlew
       - name: Apply migrations to a fresh database
         run: ./gradlew :ampairs_service:dbMigrate --console=plain
