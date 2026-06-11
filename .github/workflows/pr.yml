@@ -27,7 +27,7 @@ jobs:
       - name: Set up Gradle (with cache)
         # Caches the Gradle home (deps, wrapper) and the build cache (task outputs — used because
         # org.gradle.caching=true). cache-read-only=false so PR re-runs reuse earlier builds.
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: false
           # Repo has vestigial/empty per-module gradle-wrapper.jar files and uses a very new
@@ -63,7 +63,7 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
       - name: Set up Gradle (with cache)
-        uses: gradle/actions/setup-gradle@v4
+        uses: gradle/actions/setup-gradle@v6
         with:
           cache-read-only: false
           # Repo has vestigial/empty per-module gradle-wrapper.jar files and uses a very new
