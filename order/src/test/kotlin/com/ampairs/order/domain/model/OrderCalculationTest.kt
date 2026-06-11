@@ -4,14 +4,13 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 /**
- * Pure-arithmetic characterization tests for the order/line-item money math. These ran with no
- * coverage before; the totals feed invoicing, so a silent regression here is a billing bug.
+ * Pure-arithmetic tests for the order/line-item money math. These ran with no coverage before;
+ * the totals feed invoicing, so a silent regression here is a billing bug.
  *
- * NOTE (flagged for review, not asserted as "correct"): `Order.calculateTotals()` subtracts each
- * item's discount TWICE — once inside `OrderItem.calculateLineTotal()` (which nets the discount
- * into `lineTotal`) and again via the `itemDiscounts` term. The
- * `item discount is currently applied twice` test pins this observable behavior so the team can
- * decide intentionally whether it is a bug. See that test for the worked example.
+ * Previously `Order.calculateTotals()` subtracted each item's discount TWICE — once inside
+ * `OrderItem.calculateLineTotal()` (which nets the discount into `lineTotal`) and again via an
+ * `itemDiscounts` term — so a $100 item with a $10 line discount produced 80 instead of 90. That
+ * double-count was removed; `applies each line discount exactly once` locks in the fix.
  */
 class OrderCalculationTest {
 
@@ -76,15 +75,24 @@ class OrderCalculationTest {
     }
 
     @Test
-    fun `item discount is currently applied twice (regression guard - see class note)`() {
+    fun `applies each line discount exactly once`() {
         val order = Order()
         // A single $100 item with a $10 line discount and no order-level discount or tax.
         val i = item(qty = 1.0, unitPrice = 100.0, discount = 10.0).also { it.calculateLineTotal() }
-        assertEquals(90.0, i.lineTotal, 1e-9) // discount already netted here
+        assertEquals(90.0, i.lineTotal, 1e-9) // discount already netted into the line total
 
         order.addItem(i)
-        // calculateTotals(): subtotal(90) - (orderDiscount 0 + itemDiscounts 10) + tax 0 = 80
-        // The $10 discount has effectively been taken twice (90 net, then -10 again).
-        assertEquals(80.0, order.totalAmount, 1e-9)
+        // calculateTotals(): subtotal(90, already net) - orderDiscount 0 + tax 0 = 90.
+        // The $10 line discount is reflected once (in lineTotal), not subtracted a second time.
+        assertEquals(90.0, order.totalAmount, 1e-9)
+    }
+
+    @Test
+    fun `line and order-level discounts both apply, each once`() {
+        val order = Order().apply { discountAmount = 15.0 } // order-level discount on top
+        val i = item(qty = 1.0, unitPrice = 100.0, discount = 10.0).also { it.calculateLineTotal() }
+        order.addItem(i)
+        // subtotal 90 (net of the 10 line discount) - 15 order discount + 0 tax = 75
+        assertEquals(75.0, order.totalAmount, 1e-9)
     }
 }
