@@ -1,6 +1,6 @@
 # business module
 
-Manages the business profile for a workspace — legal details, address, operating hours, branding (logo + gallery images), and tax settings. One business profile per workspace.
+Manages the business profile for a workspace — legal details, address, operating hours, and branding (logo + gallery images). One business profile per workspace. Tax identity/configuration lives in the tax module (`TaxConfiguration` / `/tax/v1/configurations`), not here.
 
 ## REST Endpoints
 
@@ -51,10 +51,7 @@ class Business : OwnableBaseDomain() {
     // Branding
     val logoUrl: String?
     val logoThumbnailUrl: String?
-    // Tax / Legal
-    val taxId: String?              // GSTIN
-    val registrationNumber: String?
-    val taxSettings: Map<String, Any>?
+    // Tax identity/config moved to the tax module (TaxConfiguration / /tax/v1/configurations)
     val customAttributes: Map<String, Any>?
     // Locale
     val timezone: String            // IANA timezone e.g. "Asia/Kolkata"
@@ -125,7 +122,7 @@ com.ampairs.business
 │   ├── Business.kt, BusinessImage.kt
 │   ├── dto/        — BusinessResponse, BusinessCreateRequest, BusinessUpdateRequest,
 │   │                  BusinessProfileResponse, BusinessOverviewResponse,
-│   │                  BusinessImageDto, TaxConfigurationResponse
+│   │                  BusinessImageDto
 │   └── enums/      — BusinessType
 ├── repository/     — BusinessRepository, BusinessImageRepository
 └── service/        — BusinessService, BusinessImageService

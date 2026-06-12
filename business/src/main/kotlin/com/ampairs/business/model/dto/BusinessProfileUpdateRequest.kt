@@ -52,12 +52,6 @@ data class BusinessProfileUpdateRequest(
     @field:Size(max = 500, message = "Website must not exceed 500 characters")
     val website: String? = null,
 
-    @field:Size(max = 50, message = "Tax ID must not exceed 50 characters")
-    val taxId: String? = null,
-
-    @field:Size(max = 100, message = "Registration number must not exceed 100 characters")
-    val registrationNumber: String? = null,
-
     val customAttributes: Map<String, Any>? = null,
 
     val active: Boolean = true

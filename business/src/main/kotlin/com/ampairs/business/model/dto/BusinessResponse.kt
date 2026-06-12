@@ -43,10 +43,6 @@ data class BusinessResponse(
     val logoUrl: String?,
     val logoThumbnailUrl: String?,
 
-    // Tax/Regulatory
-    val taxId: String?,
-    val registrationNumber: String?,
-
     // Custom Attributes
     val customAttributes: Map<String, Any>?,
 
