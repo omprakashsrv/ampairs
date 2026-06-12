@@ -72,13 +72,6 @@ data class BusinessCreateRequest(
     @field:Size(max = 500, message = "Website URL cannot exceed 500 characters")
     val website: String? = null,
 
-    // Tax/Regulatory
-    @field:Size(max = 50, message = "Tax ID cannot exceed 50 characters")
-    val taxId: String? = null,
-
-    @field:Size(max = 100, message = "Registration number cannot exceed 100 characters")
-    val registrationNumber: String? = null,
-
     // Custom Attributes
     val customAttributes: Map<String, Any>? = null,
 

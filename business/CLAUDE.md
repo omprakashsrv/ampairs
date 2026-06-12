@@ -3,7 +3,7 @@
 One business profile per workspace — legal details, address, hours, branding (logo + gallery).
 
 ## Key entities
-- `Business` — name, businessType (RETAIL/WHOLESALE/SERVICE/MANUFACTURING/ECOMMERCE), address, phone, email, taxId (GSTIN), timezone, currency, openingHours, operatingDays (JSON)
+- `Business` — name, businessType (RETAIL/WHOLESALE/SERVICE/MANUFACTURING/ECOMMERCE), address, phone, email, timezone, currency, openingHours, operatingDays (JSON). Tax identity/config lives in the **tax module** (`TaxConfiguration` / `/tax/v1/configurations`), not here.
 - `BusinessImage` — storageUrl, thumbnailUrl, imageType (LOGO/GALLERY/BANNER), isPrimary, displayOrder
 
 ## Base path

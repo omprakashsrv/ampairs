@@ -22,8 +22,6 @@ data class BusinessProfileResponse(
     val phone: String?,
     val email: String?,
     val website: String?,
-    val taxId: String?,
-    val registrationNumber: String?,
     val customAttributes: Map<String, Any>?,
     val active: Boolean,
     val createdAt: Instant,
