@@ -53,7 +53,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
 
     // OpenAPI/Swagger Documentation
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.17")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
 
     // JWT for webhook signature verification
     implementation("io.jsonwebtoken:jjwt-api:0.13.0")
@@ -62,7 +62,7 @@ dependencies {
 
     // Google Play Billing verification
     implementation("com.google.apis:google-api-services-androidpublisher:v3-rev20241217-2.0.0")
-    implementation("com.google.auth:google-auth-library-oauth2-http:1.30.0")
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.48.0")
 
     // Stripe
     implementation("com.stripe:stripe-java:32.1.0")
@@ -74,7 +74,7 @@ dependencies {
     implementation("commons-codec:commons-codec:1.17.2")
 
     // JSON processing
-    implementation("org.json:json:20240303")
+    implementation("org.json:json:20260522")
 
     runtimeOnly("com.mysql:mysql-connector-j")
     developmentOnly("org.springframework.boot:spring-boot-devtools")

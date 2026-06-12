@@ -29,7 +29,7 @@ import java.util.concurrent.TimeUnit
  * 1. Overview - Dashboard summary
  * 2. Profile - Company profile and registration
  * 3. Operations - Operational settings
- * 4. Tax Configuration - Tax and compliance settings
+ *   (Tax identity/configuration now lives in the tax module — /tax/v1/configurations)
  *
  * **Multi-Tenancy**:
  * - All operations scoped to current workspace (from X-Workspace-ID header)
