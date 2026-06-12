@@ -11,12 +11,17 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 import java.time.Instant
 
+/**
+ * Defaulted fields are nullable so clients that omit them (e.g. kotlinx serializers with
+ * encodeDefaults = false) don't fail FAIL_ON_NULL_FOR_PRIMITIVES at deserialization. Null
+ * means "keep existing value" on update, entity default on create.
+ */
 data class SequenceDefinitionRequest(
     val uid: String? = null,
     @field:NotBlank
     @field:Size(max = 64)
     val entityType: String = "",
-    val scope: SequenceScope = SequenceScope.WORKSPACE,
+    val scope: SequenceScope? = null,
     val userId: String? = null,
     @field:Size(max = 32)
     val prefix: String? = null,
@@ -24,18 +29,18 @@ data class SequenceDefinitionRequest(
     val suffix: String? = null,
     @field:Min(0)
     @field:Max(18)
-    val paddingLength: Int = 0,
+    val paddingLength: Int? = null,
     @field:Min(1)
-    val startValue: Long = 1,
+    val startValue: Long? = null,
     @field:Min(1)
-    val incrementStep: Int = 1,
+    val incrementStep: Int? = null,
     /**
      * Optional counter fast-forward. Ignored when lower than the server's current value
      * on bulk sync upserts; rejected on direct create/update (counter never moves backwards).
      */
     @field:Min(0)
     val currentValue: Long? = null,
-    val active: Boolean = true,
+    val active: Boolean? = null,
     val refId: String? = null,
 )
 
@@ -86,14 +91,14 @@ data class SequenceAllocationRequest(
     val deviceId: String = "",
     @field:Min(1)
     @field:Max(1000)
-    val blockSize: Int = 50,
+    val blockSize: Int? = null,
 )
 
 data class SequenceAllocationReportRequest(
     @field:NotBlank
     val uid: String = "",
     @field:Min(0)
-    val nextAvailable: Long = 0,
+    val nextAvailable: Long? = null,
 )
 
 data class SequenceAllocationResponse(

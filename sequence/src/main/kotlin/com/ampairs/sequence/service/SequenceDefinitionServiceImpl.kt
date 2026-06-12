@@ -139,27 +139,33 @@ class SequenceDefinitionServiceImpl(
         request: SequenceDefinitionRequest,
         strictCounter: Boolean,
     ): SequenceDefinition {
-        if (request.scope == SequenceScope.USER && request.userId.isNullOrBlank()) {
+        // Null request fields keep the entity value (defaults on a fresh entity, existing on update)
+        val scope = request.scope ?: definition.scope
+        val userId = (request.userId ?: definition.userId)?.takeIf { it.isNotBlank() }
+        val paddingLength = request.paddingLength ?: definition.paddingLength
+        val active = request.active ?: definition.active
+
+        if (scope == SequenceScope.USER && userId.isNullOrBlank()) {
             throw InvalidSequenceRequestException("user_id is required for USER-scoped sequence definitions")
         }
-        if (request.paddingLength > Constants.MAX_PADDING_LENGTH) {
+        if (paddingLength > Constants.MAX_PADDING_LENGTH) {
             throw InvalidSequenceRequestException("padding_length must be <= ${Constants.MAX_PADDING_LENGTH}")
         }
-        if (request.active) {
-            assertNoDuplicateActive(request, definition.uid)
+        if (active) {
+            assertNoDuplicateActive(request.entityType, scope, userId, definition.uid)
         }
 
         // Preserve the client-generated UID on offline-first creates (UID-keyed sync contract)
         request.uid?.takeIf { it.isNotBlank() }?.let { definition.uid = it }
         definition.entityType = request.entityType
-        definition.scope = request.scope
-        definition.userId = request.userId?.takeIf { it.isNotBlank() }
+        definition.scope = scope
+        definition.userId = if (scope == SequenceScope.USER) userId else null
         definition.prefix = request.prefix?.takeIf { it.isNotBlank() }
         definition.suffix = request.suffix?.takeIf { it.isNotBlank() }
-        definition.paddingLength = request.paddingLength
-        definition.startValue = request.startValue
-        definition.incrementStep = request.incrementStep
-        definition.active = request.active
+        definition.paddingLength = paddingLength
+        definition.startValue = request.startValue ?: definition.startValue
+        definition.incrementStep = request.incrementStep ?: definition.incrementStep
+        definition.active = active
         definition.refId = request.refId
 
         val requestedCounter = request.currentValue
@@ -176,19 +182,24 @@ class SequenceDefinitionServiceImpl(
         return definition
     }
 
-    private fun assertNoDuplicateActive(request: SequenceDefinitionRequest, selfUid: String) {
-        val duplicate = if (request.scope == SequenceScope.USER) {
+    private fun assertNoDuplicateActive(
+        entityType: String,
+        scope: SequenceScope,
+        userId: String?,
+        selfUid: String,
+    ) {
+        val duplicate = if (scope == SequenceScope.USER) {
             definitionRepository.existsByEntityTypeAndScopeAndUserIdAndActiveTrueAndUidNot(
-                request.entityType, SequenceScope.USER, request.userId!!, selfUid
+                entityType, SequenceScope.USER, userId!!, selfUid
             )
         } else {
             definitionRepository.existsByEntityTypeAndScopeAndActiveTrueAndUidNot(
-                request.entityType, SequenceScope.WORKSPACE, selfUid
+                entityType, SequenceScope.WORKSPACE, selfUid
             )
         }
         if (duplicate) {
             throw DuplicateSequenceDefinitionException(
-                "An active ${request.scope} sequence definition already exists for entity_type '${request.entityType}'"
+                "An active $scope sequence definition already exists for entity_type '$entityType'"
             )
         }
     }

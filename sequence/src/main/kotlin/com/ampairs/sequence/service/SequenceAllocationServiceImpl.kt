@@ -1,5 +1,6 @@
 package com.ampairs.sequence.service
 
+import com.ampairs.sequence.config.Constants
 import com.ampairs.sequence.domain.dto.SequenceAllocationReportRequest
 import com.ampairs.sequence.domain.dto.SequenceAllocationRequest
 import com.ampairs.sequence.domain.dto.SequenceAllocationResponse
@@ -23,7 +24,8 @@ class SequenceAllocationServiceImpl(
     @Transactional
     override fun allocate(request: SequenceAllocationRequest, userId: String?): SequenceAllocationResponse {
         val resolved = counterService.resolveOrProvision(request.entityType, userId)
-        val issued = counterService.advance(resolved.uid, request.blockSize)
+        val blockSize = request.blockSize ?: Constants.DEFAULT_BLOCK_SIZE
+        val issued = counterService.advance(resolved.uid, blockSize)
         val definition = issued.definition
 
         val allocation = SequenceAllocation().apply {
@@ -55,8 +57,9 @@ class SequenceAllocationServiceImpl(
                 ?: throw SequenceAllocationNotFoundException("Sequence allocation not found for uid: ${request.uid}")
 
             // Forward-only, clamped to one step past the end of the range (= fully consumed)
+            val reported = request.nextAvailable ?: allocation.nextAvailable
             val ceiling = allocation.rangeEnd + allocation.incrementStep
-            val newNext = request.nextAvailable.coerceAtMost(ceiling)
+            val newNext = reported.coerceAtMost(ceiling)
             if (newNext > allocation.nextAvailable) {
                 allocation.nextAvailable = newNext
                 if (newNext > allocation.rangeEnd) {
