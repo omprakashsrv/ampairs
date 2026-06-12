@@ -65,7 +65,7 @@ class CustomerServiceTest {
     @Test
     fun `createCustomer sets defaults and publishes created event`() {
         val customer = buildCustomer().apply { gstNumber = null }
-        whenever(customerRepository.save(any())).thenAnswer { invocation ->
+        whenever(customerRepository.save(any<Customer>())).thenAnswer { invocation ->
             (invocation.arguments.first() as Customer).apply {
                 uid = "CUS-001"
                 createdAt = Instant.now()
@@ -105,7 +105,7 @@ class CustomerServiceTest {
         val customer = buildCustomer().apply {
             gstNumber = "22AAAAA0000A1Z5"
         }
-        whenever(customerRepository.save(any())).thenAnswer { invocation ->
+        whenever(customerRepository.save(any<Customer>())).thenAnswer { invocation ->
             (invocation.arguments.first() as Customer).apply {
                 uid = "CUS-DUP"
                 createdAt = Instant.now()
