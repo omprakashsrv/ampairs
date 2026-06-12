@@ -1,104 +1,105 @@
-# Implementation Plan: [FEATURE]
+# Implementation Plan: Sequence Number Generation Module
 
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
-
-**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
+**Branch**: `claude/jolly-gates-2mu6f0` (feature id `012-sequence-number-generation`) | **Date**: 2026-06-12 | **Spec**: [spec.md](spec.md)
+**Input**: Feature specification from `/specs/012-sequence-number-generation/spec.md`
 
 ## Summary
 
-[Extract from feature spec: primary requirement + technical approach from research]
+Centralized, workspace-tenant sequence numbering: a new backend `sequence` module owns `SequenceDefinition` (configurable scheme + atomic counter) and `SequenceAllocation` (exclusive device blocks), exposing the canonical `/sync` contract for definitions plus an off-contract allocation RPC. A new mobile `feature/sequence` module stores definitions + allocations in a workspace-scoped Room DB, exposes `SequenceNumberProvider` for ViewModels (offline-first local block consumption), and a `SequenceSyncDelegate` reports consumption / syncs definitions. Atomicity via pessimistic row lock on the definition counter (research R1); duplicates impossible across devices because granted ranges are disjoint.
 
 ## Technical Context
 
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
-
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+**Language/Version**: Backend Kotlin 2.3 / Java 21 / Spring Boot 4.0; Mobile Kotlin 2.4 KMP (Android/iOS/Desktop/Wasm)
+**Primary Dependencies**: Backend Spring Data JPA, Flyway, Jackson (global snake_case); Mobile Room KMP 2.8.4, Ktor 3.5, Metro DI 1.1.1
+**Storage**: MySQL + PostgreSQL (both migration vendors) on backend; Room (`workspace_{slug}_sequence.db`) on mobile
+**Testing**: Backend JUnit5 + Mockito (`unit` module convention); Mobile compilation gates for all 3 targets
+**Target Platform**: Spring Boot service + Android/iOS/Desktop apps
+**Project Type**: Web service + mobile (two repos: `ampairs`, `ampairs-app`)
+**Performance Goals**: <50ms next-number/grant at service layer; on-device generation with zero network calls
+**Constraints**: offline-capable, zero duplicate numbers, counter monotonicity, multi-tenant isolation via `@TenantId`
+**Scale/Scope**: 100k+ generations/day, thousands of concurrent users
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+| Gate | Status |
+|---|---|
+| I. `Instant` timestamps only, TIMESTAMPTZ on Postgres | PASS — entities inherit `BaseDomain` Instants; migrations use TIMESTAMP/TIMESTAMPTZ |
+| II. DTO isolation, validation annotations | PASS — `domain/dto/` Request/Response + `asResponse()` extensions |
+| III. Global snake_case, no `@JsonProperty` | PASS |
+| IV. Multi-tenancy via `OwnableBaseDomain` + filter-set context | PASS — both entities extend `OwnableBaseDomain`; no service-level tenant mutation |
+| V. `ApiResponse<T>` everywhere, `PageResponse` for pages | PASS |
+| VI. Exceptions bubble to module `@RestControllerAdvice` | PASS — typed exceptions + `SequenceExceptionHandler` |
+| VII. `@EntityGraph`/derived queries | PASS — flat entities, derived queries only; one `@Lock` query justified (R1) |
+| Offline-sync canonical contract | PASS for definitions; allocations off-contract with documented justification (R3) |
+| Mobile: Metro WorkspaceScope DB + closable registry + local-only repository | PASS — single allowed API exception documented (R6) |
 
-[Gates determined based on constitution file]
+No violations → Complexity Tracking not required.
 
 ## Project Structure
 
 ### Documentation (this feature)
 
 ```
-specs/[###-feature]/
-├── plan.md              # This file (/speckit.plan command output)
-├── research.md          # Phase 0 output (/speckit.plan command)
-├── data-model.md        # Phase 1 output (/speckit.plan command)
-├── quickstart.md        # Phase 1 output (/speckit.plan command)
-├── contracts/           # Phase 1 output (/speckit.plan command)
-└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
+specs/012-sequence-number-generation/
+├── spec.md
+├── plan.md              # this file
+├── research.md          # decisions R1–R8
+├── data-model.md
+├── quickstart.md
+├── contracts/sequence-api.md
+└── tasks.md             # /speckit.tasks output
 ```
 
-### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
+### Source Code
 
 ```
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
+# Backend repo (ampairs)
+sequence/
+├── build.gradle.kts                          # copy of unit module template
+└── src/main/kotlin/com/ampairs/sequence/
+    ├── domain/model/SequenceDefinition.kt    # + SequenceScope, AllocationStatus enums
+    ├── domain/model/SequenceAllocation.kt
+    ├── domain/dto/SequenceDto.kt             # requests/responses + extensions
+    ├── repository/SequenceDefinitionRepository.kt
+    ├── repository/SequenceAllocationRepository.kt
+    ├── service/SequenceFormatter.kt          # single formatting source of truth
+    ├── service/SequenceDefinitionService(.Impl).kt
+    ├── service/SequenceAllocationService(.Impl).kt
+    ├── controller/SequenceDefinitionController.kt   # /sequence/v1/definitions(+/sync,/next,/preview)
+    ├── controller/SequenceAllocationController.kt   # /sequence/v1/allocations(+/report)
+    └── exception/…                            # typed exceptions + SequenceExceptionHandler
+sequence/src/main/resources/db/migration/{mysql,postgresql}/V1.0.83__create_sequence_module_tables.sql
+sequence/src/test/kotlin/com/ampairs/sequence/…   # Mockito service tests
+settings.gradle.kts                            # + include("sequence")
+ampairs_service/build.gradle.kts               # + project dep + migrationModules entry
 
-tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+# Mobile repo (ampairs-app)
+feature/sequence/
+├── build.gradle.kts                           # copy of feature/unit template
+├── schemas/                                   # Room schema v1
+└── src/
+    ├── commonMain/kotlin/com/ampairs/sequence/
+    │   ├── data/api/SequenceApi(.Impl).kt
+    │   ├── data/db/SequenceDatabase.kt + entities + DAOs
+    │   ├── data/repository/SequenceRepository.kt          # definitions, local-only
+    │   ├── data/repository/SequenceAllocationRepository.kt # local consumption + on-demand grant (allowed exception)
+    │   ├── domain/SequenceNumberProvider.kt   # cross-feature entry point
+    │   ├── domain/SequenceFormatter.kt
+    │   ├── di/SequenceModule.kt               # common DAO providers
+    │   └── sync/SequenceSyncDelegate.kt       # @SyncEntityKey(SyncEntity.SEQUENCE)
+    ├── androidMain/…/SequenceModule.android.kt
+    ├── iosMain/…/SequenceModule.ios.kt
+    └── desktopMain/…/SequenceModule.desktop.kt
+data/sync/…/SyncEntity.kt                      # + SEQUENCE("sequence")
+data/common/…/ApiUrlBuilder.kt                 # + sequenceUrl()
+settings.gradle.kts                            # + :feature:sequence
+shared/build.gradle.kts                        # + api(projects.feature.sequence)
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Structure Decision**: Two-repo delivery following each repo's module conventions; no UI screens on mobile in v1 (configuration is admin/web-side; mobile consumes). Wiring individual entity creation flows to the provider is deferred per spec assumption.
 
-## Complexity Tracking
+## Phase summaries
 
-*Fill ONLY if Constitution Check has violations that must be justified*
-
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+- **Phase 0** (research.md): all unknowns resolved — locking strategy, contract placement, device identity, provisional-number behavior, Flyway `V1.0.83`.
+- **Phase 1** (data-model.md, contracts/): two backend tables + two Room tables with format snapshot on allocations; full endpoint + DTO contract.
+- **Phase 2**: tasks via `/speckit.tasks`.

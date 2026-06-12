@@ -1,0 +1,65 @@
+-- Sequence Module Database Migration Script (PostgreSQL)
+-- Version: 1.0.83
+-- Description: Create workspace-scoped sequence_definition and sequence_allocation tables
+-- Dependencies: V1.0.0__create_core_tables.sql
+
+-- =====================================================
+-- Sequence Definition Table
+-- One configurable numbering scheme per (owner_id, entity_type, scope, user_id).
+-- current_value is the monotonic high-water mark (last issued/allocated value).
+-- At most one active row per key — enforced at the service layer (kept consistent
+-- with the MySQL variant; inactive history rows are kept).
+-- =====================================================
+CREATE TABLE sequence_definition (
+    id BIGSERIAL PRIMARY KEY,
+    uid VARCHAR(200) NOT NULL UNIQUE,
+    owner_id VARCHAR(200) NOT NULL,
+    ref_id VARCHAR(255),
+    entity_type VARCHAR(64) NOT NULL,
+    scope VARCHAR(16) NOT NULL DEFAULT 'WORKSPACE',
+    user_id VARCHAR(200),
+    prefix VARCHAR(32),
+    suffix VARCHAR(32),
+    padding_length INT NOT NULL DEFAULT 0,
+    start_value BIGINT NOT NULL DEFAULT 1,
+    increment_step INT NOT NULL DEFAULT 1,
+    current_value BIGINT NOT NULL DEFAULT 0,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_sequence_definition_owner_entity ON sequence_definition (owner_id, entity_type);
+CREATE INDEX idx_sequence_definition_owner_updated ON sequence_definition (owner_id, updated_at);
+
+-- =====================================================
+-- Sequence Allocation Table
+-- Exclusive contiguous number blocks granted to devices. Ranges for one definition
+-- never overlap; abandoned remainders are never reissued (gaps OK, duplicates never).
+-- prefix/suffix/padding_length/increment_step snapshot the definition format at grant
+-- time so devices format offline without the definition row.
+-- =====================================================
+CREATE TABLE sequence_allocation (
+    id BIGSERIAL PRIMARY KEY,
+    uid VARCHAR(200) NOT NULL UNIQUE,
+    owner_id VARCHAR(200) NOT NULL,
+    ref_id VARCHAR(255),
+    definition_uid VARCHAR(200) NOT NULL,
+    entity_type VARCHAR(64) NOT NULL,
+    device_id VARCHAR(200) NOT NULL,
+    user_id VARCHAR(200),
+    range_start BIGINT NOT NULL,
+    range_end BIGINT NOT NULL,
+    next_available BIGINT NOT NULL,
+    status VARCHAR(16) NOT NULL DEFAULT 'ACTIVE',
+    prefix VARCHAR(32),
+    suffix VARCHAR(32),
+    padding_length INT NOT NULL DEFAULT 0,
+    increment_step INT NOT NULL DEFAULT 1,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_sequence_allocation_owner_device ON sequence_allocation (owner_id, device_id, status);
+CREATE INDEX idx_sequence_allocation_owner_definition ON sequence_allocation (owner_id, definition_uid);
