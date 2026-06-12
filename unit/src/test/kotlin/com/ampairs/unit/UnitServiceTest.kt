@@ -50,7 +50,7 @@ class UnitServiceTest {
             active = true
         }
 
-        whenever(unitRepository.save(any())).thenReturn(savedUnit)
+        whenever(unitRepository.save(any<Unit>())).thenReturn(savedUnit)
 
         val response = unitService.create(request)
 
