@@ -149,6 +149,8 @@ class SequenceDefinitionServiceImpl(
             assertNoDuplicateActive(request, definition.uid)
         }
 
+        // Preserve the client-generated UID on offline-first creates (UID-keyed sync contract)
+        request.uid?.takeIf { it.isNotBlank() }?.let { definition.uid = it }
         definition.entityType = request.entityType
         definition.scope = request.scope
         definition.userId = request.userId?.takeIf { it.isNotBlank() }
