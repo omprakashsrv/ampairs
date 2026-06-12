@@ -62,7 +62,7 @@ dependencies {
 
     // Google Play Billing verification
     implementation("com.google.apis:google-api-services-androidpublisher:v3-rev20241217-2.0.0")
-    implementation("com.google.auth:google-auth-library-oauth2-http:1.30.0")
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.48.0")
 
     // Stripe
     implementation("com.stripe:stripe-java:32.1.0")
