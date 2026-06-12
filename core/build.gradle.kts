@@ -50,8 +50,12 @@ dependencies {
     // AWS S3 for presigned URLs (app update downloads)
     implementation("io.awspring.cloud:spring-cloud-aws-starter-s3")
 
-    // Jackson Kotlin support for data class deserialization
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    // Jackson Kotlin support for data class deserialization.
+    // Spring Boot 4 runs Jackson 3 (tools.jackson) — the module MUST use the tools.jackson
+    // coordinates or it never registers, Kotlin constructor defaults are ignored for missing
+    // JSON fields, and requests fail with "Cannot map null into type int/long"
+    // (Jackson 3 enables FAIL_ON_NULL_FOR_PRIMITIVES by default).
+    implementation("tools.jackson.module:jackson-module-kotlin")
 
     // JWT
     implementation("io.jsonwebtoken:jjwt-api:0.13.0")
