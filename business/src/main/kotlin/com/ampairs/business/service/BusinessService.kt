@@ -9,7 +9,6 @@ import com.ampairs.business.model.dto.BusinessUpdateRequest
 import com.ampairs.business.model.dto.applyUpdate
 import com.ampairs.business.model.dto.applyProfileUpdate
 import com.ampairs.business.model.dto.applyOperationsUpdate
-import com.ampairs.business.model.dto.applyTaxConfigUpdate
 import com.ampairs.business.model.dto.toBusiness
 import com.ampairs.business.repository.BusinessRepository
 import com.ampairs.core.multitenancy.TenantContextHolder
@@ -256,36 +255,6 @@ class BusinessService(
             throw InvalidBusinessDataException(e.message ?: "Invalid business hours")
         }
 
-        return businessRepository.save(business)
-            .also { entityChangePublisher.updated("business", it.uid) }
-    }
-
-    /**
-     * Get tax configuration settings.
-     *
-     * @return Business with tax configuration
-     * @throws BusinessNotFoundException if business not found
-     */
-    fun getTaxConfiguration(): Business {
-        return getBusinessProfile()
-    }
-
-    /**
-     * Update tax configuration settings only.
-     *
-     * @param request The tax configuration update request
-     * @return Updated business
-     * @throws BusinessNotFoundException if business not found
-     */
-    @Transactional
-    fun updateTaxConfiguration(request: com.ampairs.business.model.dto.TaxConfigurationUpdateRequest): Business {
-        val workspaceId = getWorkspaceId()
-        val userId = getCurrentUserId()
-
-        val business = businessRepository.findByOwnerId(workspaceId)
-            ?: throw BusinessNotFoundException(workspaceId)
-
-        business.applyTaxConfigUpdate(request, userId)
         return businessRepository.save(business)
             .also { entityChangePublisher.updated("business", it.uid) }
     }

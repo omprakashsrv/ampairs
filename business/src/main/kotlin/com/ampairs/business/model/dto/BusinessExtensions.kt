@@ -52,10 +52,6 @@ fun Business.asBusinessResponse(): BusinessResponse {
         logoUrl = this.logoUrl?.let { "/business/v1/businesses/logo" },
         logoThumbnailUrl = this.logoThumbnailUrl?.let { "/business/v1/businesses/logo/thumbnail" },
 
-        // Tax/Regulatory
-        taxId = this.taxId,
-        registrationNumber = this.registrationNumber,
-
         // Custom Attributes
         customAttributes = this.customAttributes,
 
@@ -121,10 +117,6 @@ fun BusinessCreateRequest.toBusiness(ownerId: String, createdBy: String? = null)
         this.email = this@toBusiness.email
         this.website = this@toBusiness.website
 
-        // Tax/Regulatory
-        this.taxId = this@toBusiness.taxId
-        this.registrationNumber = this@toBusiness.registrationNumber
-
         // Custom Attributes
         this.customAttributes = this@toBusiness.customAttributes
 
@@ -181,10 +173,6 @@ fun Business.applyUpdate(request: BusinessUpdateRequest, updatedBy: String? = nu
     request.phone?.let { this.phone = it }
     request.email?.let { this.email = it }
     request.website?.let { this.website = it }
-
-    // Tax/Regulatory
-    request.taxId?.let { this.taxId = it }
-    request.registrationNumber?.let { this.registrationNumber = it }
 
     // Custom Attributes
     request.customAttributes?.let { this.customAttributes = it }
@@ -257,8 +245,6 @@ fun Business.asBusinessProfileResponse(): BusinessProfileResponse {
         phone = this.phone,
         email = this.email,
         website = this.website,
-        taxId = this.taxId,
-        registrationNumber = this.registrationNumber,
         customAttributes = this.customAttributes,
         active = this.active,
         createdAt = this.createdAt ?: Instant.now(),
@@ -285,22 +271,6 @@ fun Business.asBusinessOperationsResponse(): BusinessOperationsResponse {
     )
 }
 
-/**
- * Convert Business entity to TaxConfigurationResponse DTO.
- * Contains tax-related configuration.
- */
-fun Business.asTaxConfigurationResponse(): TaxConfigurationResponse {
-    return TaxConfigurationResponse(
-        uid = this.uid,
-        taxId = this.taxId,
-        registrationNumber = this.registrationNumber,
-        taxSettings = this.taxSettings,
-        country = this.country,
-        state = this.state,
-        updatedAt = this.updatedAt ?: Instant.now()
-    )
-}
-
 // ==================== Apply Specific Updates ====================
 
 /**
@@ -322,8 +292,6 @@ fun Business.applyProfileUpdate(request: BusinessProfileUpdateRequest, updatedBy
     this.phone = request.phone
     this.email = request.email
     this.website = request.website
-    this.taxId = request.taxId
-    this.registrationNumber = request.registrationNumber
     this.customAttributes = request.customAttributes
     this.active = request.active
     this.updatedBy = updatedBy
@@ -342,17 +310,6 @@ fun Business.applyOperationsUpdate(request: BusinessOperationsUpdateRequest, upd
     this.openingHours = request.openingHours
     this.closingHours = request.closingHours
     this.operatingDays = request.operatingDays
-    this.updatedBy = updatedBy
-    return this
-}
-
-/**
- * Apply TaxConfigurationUpdateRequest to existing Business entity.
- */
-fun Business.applyTaxConfigUpdate(request: TaxConfigurationUpdateRequest, updatedBy: String? = null): Business {
-    request.taxId?.let { this.taxId = it }
-    request.registrationNumber?.let { this.registrationNumber = it }
-    request.taxSettings?.let { this.taxSettings = it }
     this.updatedBy = updatedBy
     return this
 }

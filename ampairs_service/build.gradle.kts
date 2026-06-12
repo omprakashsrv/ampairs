@@ -96,7 +96,7 @@ dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")
 
     // OpenAPI/Swagger
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.17")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
 
     // Development
     developmentOnly("org.springframework.boot:spring-boot-devtools")
@@ -135,7 +135,7 @@ dependencies {
     flywayRuntime("org.flywaydb:flyway-core:11.14.1")
     flywayRuntime("org.flywaydb:flyway-database-postgresql:11.14.1")
     flywayRuntime("org.flywaydb:flyway-mysql:11.14.1")
-    flywayRuntime("org.postgresql:postgresql:42.7.10")
+    flywayRuntime("org.postgresql:postgresql:42.7.11")
     flywayRuntime("com.mysql:mysql-connector-j:9.4.0")
     flywayRuntime("org.slf4j:slf4j-simple:2.0.13")
 }

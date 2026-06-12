@@ -23,7 +23,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Set up JDK 21
       uses: actions/setup-java@v4
@@ -76,7 +76,7 @@ jobs:
         echo "✅ JAR file is valid and ready for deployment"
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ampairs-service-jar
         path: |
@@ -92,7 +92,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v6
 
     - name: Download build artifacts
       uses: actions/download-artifact@v4

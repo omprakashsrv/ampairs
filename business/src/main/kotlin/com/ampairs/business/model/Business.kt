@@ -141,27 +141,8 @@ class Business : OwnableBaseDomain() {
     @Column(name = "logo_updated_at")
     var logoUpdatedAt: Instant? = null
 
-    // ==================== Tax & Regulatory ====================
-
-    /**
-     * Tax identification number (GST, VAT, etc.)
-     */
-    @Column(name = "tax_id", length = 50)
-    var taxId: String? = null
-
-    /**
-     * Business registration number
-     */
-    @Column(name = "registration_number", length = 100)
-    var registrationNumber: String? = null
-
-    /**
-     * Tax settings by region (JSON)
-     * Example: {"default_tax_code": "GST-18", "interstate_tax": "IGST"}
-     */
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "tax_settings")
-    var taxSettings: Map<String, Any>? = null
+    // Tax identity and configuration (tax_id, registration_number, tax_settings) moved to the
+    // tax module — see TaxConfiguration and /tax/v1/configurations. Columns dropped in V1.0.82.
 
     /**
      * Custom attributes for flexible data storage (JSON)
