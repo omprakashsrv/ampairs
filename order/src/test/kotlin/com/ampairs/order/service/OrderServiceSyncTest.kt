@@ -3,6 +3,7 @@ package com.ampairs.order.service
 import com.ampairs.order.domain.dto.OrderItemRequest
 import com.ampairs.order.domain.dto.OrderUpdateRequest
 import com.ampairs.order.domain.model.Order
+import com.ampairs.order.domain.model.OrderItem
 import com.ampairs.order.repository.OrderItemRepository
 import com.ampairs.order.repository.OrderPagingRepository
 import com.ampairs.order.repository.OrderRepository
@@ -85,7 +86,7 @@ class OrderServiceSyncTest {
         whenever(orderRepository.findMaxOrderNumber()).thenReturn(Optional.of("5"))
         whenever(orderRepository.save(any<Order>())).thenAnswer { it.getArgument(0) }
         whenever(orderItemRepository.findByUid(any())).thenReturn(Optional.empty())
-        whenever(orderItemRepository.save(any())).thenAnswer { it.getArgument(0) }
+        whenever(orderItemRepository.save(any<OrderItem>())).thenAnswer { it.getArgument(0) }
 
         val request = OrderUpdateRequest(
             id = "ORD-3",
