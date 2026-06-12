@@ -53,7 +53,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-webflux")
 
     // OpenAPI/Swagger Documentation
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.17")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
 
     // JWT for webhook signature verification
     implementation("io.jsonwebtoken:jjwt-api:0.13.0")
