@@ -76,7 +76,7 @@ jobs:
         echo "✅ JAR file is valid and ready for deployment"
 
     - name: Upload build artifacts
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: ampairs-service-jar
         path: |
