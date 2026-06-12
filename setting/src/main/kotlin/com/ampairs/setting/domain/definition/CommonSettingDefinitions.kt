@@ -23,5 +23,14 @@ class CommonSettingDefinitions : SettingDefinitionProvider {
             label = "Prices include tax",
             description = "When enabled, product prices are treated as tax-inclusive across ordering and invoicing.",
         ),
+        SettingDefinition(
+            module = "common",
+            key = "overall_discount_mode",
+            valueType = SettingValueType.ENUM,
+            defaultValue = "POST_TAX_REDUCTION",
+            allowedValues = listOf("POST_TAX_REDUCTION", "PRE_TAX_APPORTIONED"),
+            label = "Overall discount mode",
+            description = "How a document-level discount is applied on orders and invoices: reduce the tax-inclusive grand total (post-tax) or apportion across lines before tax (pre-tax).",
+        ),
     )
 }
