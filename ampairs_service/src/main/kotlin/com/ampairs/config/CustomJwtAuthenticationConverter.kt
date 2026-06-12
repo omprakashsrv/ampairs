@@ -30,7 +30,7 @@ class CustomJwtAuthenticationConverter(
         var authorities: Collection<GrantedAuthority> = roles.map { SimpleGrantedAuthority("ROLE_$it") }
 
         val tokenValue = jwt.tokenValue
-        val username = jwt.subject
+        val username = jwt.subject ?: throw IllegalArgumentException("JWT subject is missing")
 
         val userDetails: User = userDetailsService.loadUserByUsername(username) as User
         if (adminService.isAdmin(userDetails.uid)) {
