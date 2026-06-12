@@ -52,7 +52,7 @@ class SequenceDefinitionController(
      */
     @PostMapping("/sync")
     fun bulkUpsertDefinitions(
-        @Valid @RequestBody requests: List<SequenceDefinitionRequest>,
+        @RequestBody requests: List<@Valid SequenceDefinitionRequest>,
     ): ApiResponse<List<SequenceDefinitionResponse>> {
         return ApiResponse.success(definitionService.bulkUpsert(requests))
     }

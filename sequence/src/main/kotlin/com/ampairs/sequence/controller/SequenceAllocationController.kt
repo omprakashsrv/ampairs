@@ -30,7 +30,7 @@ class SequenceAllocationController(
     /** Bulk consumption report from a device on reconnect (FR-010). */
     @PostMapping("/report")
     fun reportConsumption(
-        @Valid @RequestBody requests: List<SequenceAllocationReportRequest>,
+        @RequestBody requests: List<@Valid SequenceAllocationReportRequest>,
     ): ApiResponse<List<SequenceAllocationResponse>> {
         return ApiResponse.success(allocationService.report(requests))
     }

@@ -52,7 +52,7 @@ class UnitController(
      */
     @PostMapping("/sync")
     fun bulkUpsertUnits(
-        @Valid @RequestBody requests: List<UnitRequest>
+        @RequestBody requests: List<@Valid UnitRequest>
     ): ApiResponse<List<UnitResponse>> {
         return ApiResponse.success(unitService.bulkUpsert(requests))
     }
