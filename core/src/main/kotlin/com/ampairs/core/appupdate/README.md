@@ -179,8 +179,8 @@ Authorization: Bearer <admin_token>
 ampairs:
   app-updates:
     storage:
-      bucket: ampairs-app-updates
-      base-url: https://ampairs-app-updates.s3.amazonaws.com
+      bucket: ampairs-artifacts
+      base-url: https://ampairs-artifacts.s3.amazonaws.com
       folder: updates
     max-file-size: 500MB
 ```
@@ -190,8 +190,8 @@ ampairs:
 ampairs:
   app-updates:
     storage:
-      bucket: ${APP_UPDATES_BUCKET:ampairs-app-updates}
-      base-url: ${APP_UPDATES_BASE_URL:https://ampairs-app-updates.s3.ap-south-1.amazonaws.com}
+      bucket: ${APP_UPDATES_BUCKET:ampairs-artifacts}
+      base-url: ${APP_UPDATES_BASE_URL:https://ampairs-artifacts.s3.ap-south-1.amazonaws.com}
       folder: updates
     max-file-size: 500MB
 ```
@@ -217,7 +217,7 @@ ampairs:
 ### 2. Upload to S3
 ```bash
 aws s3 cp Ampairs-1.0.0.10-macos.dmg \
-  s3://ampairs-app-updates/updates/macos-1.0.0.10.dmg \
+  s3://ampairs-artifacts/updates/macos-1.0.0.10.dmg \
   --acl public-read
 ```
 
@@ -423,7 +423,7 @@ class AppUpdateIntegrationTest {
 
 ## Deployment Checklist
 
-- [ ] Create **private** S3 bucket: `ampairs-app-updates`
+- [ ] Create **private** S3 bucket: `ampairs-artifacts`
 - [ ] Configure AWS credentials for backend access to S3
 - [ ] Enable S3 versioning
 - [ ] Enable S3 bucket logging

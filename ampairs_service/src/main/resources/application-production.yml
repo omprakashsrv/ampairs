@@ -227,7 +227,7 @@ ampairs:
   # App Update Configuration (Desktop apps: macOS, Windows, Linux)
   app-updates:
     storage:
-      bucket: ${APP_UPDATES_BUCKET:ampairs-app-updates}
+      bucket: ${APP_UPDATES_BUCKET:ampairs-artifacts}
     # File size limits for desktop app binaries (larger than regular uploads)
     max-file-size: 500MB
   aws:

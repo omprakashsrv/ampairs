@@ -111,7 +111,7 @@ The CI/CD pipeline automates the following tasks:
            "s3:PutObjectAcl",
            "s3:GetObject"
          ],
-         "Resource": "arn:aws:s3:::ampairs-app-updates/updates/*"
+         "Resource": "arn:aws:s3:::ampairs-artifacts/updates/*"
        }
      ]
    }
@@ -164,7 +164,7 @@ For each platform (macOS, Windows, Linux):
 ### Expected Output
 
 After successful run:
-- ✅ 3 binaries in S3: `s3://ampairs-app-updates/updates/macos-1.0.0.10.dmg` (etc.)
+- ✅ 3 binaries in S3: `s3://ampairs-artifacts/updates/macos-1.0.0.10.dmg` (etc.)
 - ✅ 3 database entries with status `is_active=true`
 - ✅ 1 GitHub release with 3 assets
 - ✅ Users receive update notifications immediately
@@ -243,7 +243,7 @@ pipeline {
 
     environment {
         AWS_REGION = 'ap-south-1'
-        S3_BUCKET = 'ampairs-app-updates'
+        S3_BUCKET = 'ampairs-artifacts'
         API_BASE_URL = 'https://api.ampairs.in'
         AMPAIRS_ADMIN_TOKEN = credentials('ampairs-admin-token')
         AWS_ACCESS_KEY_ID = credentials('aws-access-key-id')
@@ -311,7 +311,7 @@ stages:
 
 variables:
   AWS_REGION: ap-south-1
-  S3_BUCKET: ampairs-app-updates
+  S3_BUCKET: ampairs-artifacts
   API_BASE_URL: https://api.ampairs.in
 
 # Build jobs for each platform
@@ -446,10 +446,10 @@ dd if=/dev/zero of=test.dmg bs=1M count=10
   MACOS
 
 # Verify in S3
-aws s3 ls s3://ampairs-app-updates/updates/
+aws s3 ls s3://ampairs-artifacts/updates/
 
 # Clean up
-aws s3 rm s3://ampairs-app-updates/updates/macos-1.0.0.999.dmg
+aws s3 rm s3://ampairs-artifacts/updates/macos-1.0.0.999.dmg
 ```
 
 ### 3. Test Database Registration
@@ -490,7 +490,7 @@ java -version
 **Error:** `Access Denied (S3)`
 ```bash
 # Fix: Check IAM policy
-aws s3 ls s3://ampairs-app-updates/ --debug
+aws s3 ls s3://ampairs-artifacts/ --debug
 ```
 
 **Error:** `Invalid credentials`
