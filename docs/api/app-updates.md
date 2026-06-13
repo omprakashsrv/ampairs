@@ -109,7 +109,7 @@ GET /api/v1/app-updates/check?platform=MACOS&currentVersion=1.0.0.9&versionCode=
 
 ### 1. Create S3 Bucket
 ```bash
-aws s3 mb s3://ampairs-app-updates --region ap-south-1
+aws s3 mb s3://ampairs-artifacts --region ap-south-1
 ```
 
 ### 2. Configure Bucket Policy (Public Read)
@@ -122,7 +122,7 @@ aws s3 mb s3://ampairs-app-updates --region ap-south-1
       "Effect": "Allow",
       "Principal": "*",
       "Action": "s3:GetObject",
-      "Resource": "arn:aws:s3:::ampairs-app-updates/updates/*"
+      "Resource": "arn:aws:s3:::ampairs-artifacts/updates/*"
     }
   ]
 }
@@ -130,8 +130,8 @@ aws s3 mb s3://ampairs-app-updates --region ap-south-1
 
 ### 3. Set Environment Variables
 ```bash
-export APP_UPDATES_BUCKET=ampairs-app-updates
-export APP_UPDATES_BASE_URL=https://ampairs-app-updates.s3.ap-south-1.amazonaws.com
+export APP_UPDATES_BUCKET=ampairs-artifacts
+export APP_UPDATES_BASE_URL=https://ampairs-artifacts.s3.ap-south-1.amazonaws.com
 ```
 
 ### 4. Run Database Migration
@@ -156,7 +156,7 @@ export APP_UPDATES_BASE_URL=https://ampairs-app-updates.s3.ap-south-1.amazonaws.
 
 # Upload to S3
 aws s3 cp Ampairs-1.0.0.10-macos.dmg \
-  s3://ampairs-app-updates/updates/macos-1.0.0.10.dmg \
+  s3://ampairs-artifacts/updates/macos-1.0.0.10.dmg \
   --acl public-read
 
 # Calculate checksum
@@ -173,7 +173,7 @@ curl -X POST https://api.ampairs.in/api/v1/app-updates \
     "version_code": 10,
     "platform": "MACOS",
     "is_mandatory": false,
-    "download_url": "https://ampairs-app-updates.s3.ap-south-1.amazonaws.com/updates/macos-1.0.0.10.dmg",
+    "download_url": "https://ampairs-artifacts.s3.ap-south-1.amazonaws.com/updates/macos-1.0.0.10.dmg",
     "file_size_mb": 125.5,
     "release_notes": "- New features\n- Bug fixes\n- Performance improvements",
     "min_supported_version": "1.0.0.5",
@@ -235,7 +235,7 @@ CREATE TABLE app_versions (
       "version_code": 10,
       "release_date": "2025-01-15T10:00:00Z",
       "is_mandatory": false,
-      "download_url": "https://ampairs-app-updates.s3.amazonaws.com/updates/macos-1.0.0.10.dmg",
+      "download_url": "https://ampairs-artifacts.s3.amazonaws.com/updates/macos-1.0.0.10.dmg",
       "file_size_mb": 125.5,
       "platform": "MACOS",
       "release_notes": "- Bug fixes\n- Performance improvements",
