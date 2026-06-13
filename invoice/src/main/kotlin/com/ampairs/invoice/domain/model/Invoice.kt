@@ -58,7 +58,18 @@ class Invoice : OwnableBaseDomain() {
     @Column(name = "customer_gst", nullable = false, length = 30)
     var customerGst: String = ""
 
-    // Place of supply (buyer's state) — drives the GST scenario via the tax module.
+    // Seller (issuing business) identity snapshotted at issue time so the tax invoice is
+    // self-contained and frozen. Name/address from the business profile; GSTIN from the tax registration.
+    @Column(name = "seller_name", length = 255)
+    var sellerName: String? = null
+
+    @Column(name = "seller_address", length = 1000)
+    var sellerAddress: String? = null
+
+    @Column(name = "seller_gst", length = 30)
+    var sellerGst: String? = null
+
+    // Place of supply (buyer's state) — with seller GSTIN this fixes the intra/inter-state scenario.
     @Column(name = "place_of_supply", nullable = false, length = 255)
     var placeOfSupply: String = ""
 

@@ -27,6 +27,11 @@ class TaxConfiguration : OwnableBaseDomain() {
     @Column(name = "country_code", nullable = false, length = 2)
     var countryCode: String = ""
 
+    // Workspace's own tax registration (e.g. GSTIN). Its first two digits are the supplier's state
+    // code, which drives the intra/inter-state (CGST+SGST vs IGST) scenario for orders/invoices.
+    @Column(name = "gstin", length = 20)
+    var gstin: String? = null
+
     @Column(name = "tax_strategy", nullable = false, length = 50)
     var taxStrategy: String = "" // INDIA_GST, USA_SALES_TAX, UK_VAT, etc.
 

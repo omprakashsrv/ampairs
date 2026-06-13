@@ -13,6 +13,9 @@ data class InvoiceUpdateRequest(
     var customerName: String? = null,
     var customerPhone: String? = null,
     var customerGst: String = "",
+    var sellerName: String? = null,
+    var sellerAddress: String? = null,
+    var sellerGst: String? = null,
     var placeOfSupply: String = "",
     var totalCost: Double = 0.0,
     var basePrice: Double = 0.0,
@@ -40,6 +43,9 @@ fun InvoiceUpdateRequest.toInvoice(): Invoice {
     invoice.customerName = this.customerName
     invoice.customerPhone = this.customerPhone
     invoice.customerGst = this.customerGst
+    invoice.sellerName = this.sellerName
+    invoice.sellerAddress = this.sellerAddress
+    invoice.sellerGst = this.sellerGst
     invoice.placeOfSupply = this.placeOfSupply
     invoice.basePrice = this.basePrice
     invoice.totalItems = this.totalItems

@@ -11,6 +11,7 @@ import java.time.Instant
 data class TaxConfigurationDto(
     val id: String,
     val countryCode: String,
+    val gstin: String?,
     val taxStrategy: String,
     val defaultTaxCodeSystem: String,
     val taxJurisdictions: List<String>,
@@ -22,6 +23,7 @@ data class TaxConfigurationDto(
 
 data class TaxConfigurationRequest(
     val countryCode: String,
+    val gstin: String? = null,
     val taxStrategy: String,
     val defaultTaxCodeSystem: String,
     val taxJurisdictions: List<String>,
@@ -33,6 +35,7 @@ fun TaxConfiguration.asDto(): TaxConfigurationDto {
     return TaxConfigurationDto(
         id = this.uid,
         countryCode = this.countryCode,
+        gstin = this.gstin,
         taxStrategy = this.taxStrategy,
         defaultTaxCodeSystem = this.defaultTaxCodeSystem,
         taxJurisdictions = this.taxJurisdictions,
@@ -405,6 +408,7 @@ data class TaxComponentResultDto(
 
 data class UpdateTaxConfigurationRequest(
     val countryCode: String? = null,
+    val gstin: String? = null,
     val taxStrategy: String? = null,
     val defaultTaxCodeSystem: String? = null,
     val taxJurisdictions: List<String>? = null,

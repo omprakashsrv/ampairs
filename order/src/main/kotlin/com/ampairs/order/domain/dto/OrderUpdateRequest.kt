@@ -16,6 +16,9 @@ data class OrderUpdateRequest(
     var customerPhone: String? = null,
     var customerGst: String = "",
     var isWalkIn: Boolean = false,
+    var sellerName: String? = null,
+    var sellerAddress: String? = null,
+    var sellerGst: String? = null,
     var placeOfSupply: String = "",
     var totalCost: Double = 0.0,
     var basePrice: Double = 0.0,
@@ -42,6 +45,9 @@ fun OrderUpdateRequest.toOrder(): Order {
     order.customerPhone = this.customerPhone
     order.customerGst = this.customerGst
     order.isWalkIn = this.isWalkIn
+    order.sellerName = this.sellerName
+    order.sellerAddress = this.sellerAddress
+    order.sellerGst = this.sellerGst
     order.placeOfSupply = this.placeOfSupply
     order.basePrice = this.basePrice
     order.totalItems = this.totalItems
@@ -68,6 +74,9 @@ fun Order.toInvoice(): Invoice {
     invoice.customerName = this.customerName
     invoice.customerPhone = this.customerPhone
     invoice.customerGst = this.customerGst
+    invoice.sellerName = this.sellerName
+    invoice.sellerAddress = this.sellerAddress
+    invoice.sellerGst = this.sellerGst
     invoice.placeOfSupply = this.placeOfSupply
     invoice.basePrice = this.basePrice
     invoice.totalItems = this.totalItems
