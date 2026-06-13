@@ -63,10 +63,7 @@ class EcomOrderPlacedConsumer(
             customerName = event.customerName
             customerPhone = event.customerPhone
             status = OrderStatus.PENDING_MERCHANT_REVIEW
-            fromCustomerId = event.workspaceId
-            fromCustomerName = event.workspaceId
-            toCustomerId = event.customerId
-            toCustomerName = event.customerName
+            // Buyer is the ecom customer (set above); seller is the implicit workspace.
             placeOfSupply = event.deliveryAddress.state ?: ""
             shippingAddress = event.deliveryAddress
             billingAddress = event.deliveryAddress

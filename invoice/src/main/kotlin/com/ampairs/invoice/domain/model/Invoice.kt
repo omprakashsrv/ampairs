@@ -44,26 +44,23 @@ class Invoice : OwnableBaseDomain() {
     @Column(name = "invoice_date", nullable = false)
     var invoiceDate: Instant = Instant.now()
 
-    @Column(name = "from_customer_id", nullable = false, length = 255)
-    var fromCustomerId: String = ""
+    // Single buyer reference (the seller is the implicit current workspace). The name/GSTIN are
+    // snapshotted on the document so a tax invoice keeps the buyer details frozen at issue time.
+    @Column(name = "customer_id", length = 36)
+    var customerId: String? = null
 
-    @Column(name = "from_customer_name", nullable = false, length = 255)
-    var fromCustomerName: String = ""
+    @Column(name = "customer_name", length = 255)
+    var customerName: String? = null
 
-    @Column(name = "to_customer_id", nullable = false, length = 255)
-    var toCustomerId: String = ""
+    @Column(name = "customer_phone", length = 20)
+    var customerPhone: String? = null
 
-    @Column(name = "to_customer_name", nullable = false, length = 255)
-    var toCustomerName: String = ""
+    @Column(name = "customer_gst", nullable = false, length = 30)
+    var customerGst: String = ""
 
+    // Place of supply (buyer's state) — drives the GST scenario via the tax module.
     @Column(name = "place_of_supply", nullable = false, length = 255)
     var placeOfSupply: String = ""
-
-    @Column(name = "from_customer_gst", nullable = false, length = 30)
-    var fromCustomerGst: String = ""
-
-    @Column(name = "to_customer_gst", nullable = false, length = 30)
-    var toCustomerGst: String = ""
 
     @Column(name = "total_cost", nullable = false)
     var totalCost: Double = 0.0

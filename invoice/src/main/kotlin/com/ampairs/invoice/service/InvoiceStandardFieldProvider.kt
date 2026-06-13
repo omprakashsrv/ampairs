@@ -34,9 +34,9 @@ class InvoiceStandardFieldProvider : StandardFieldProvider {
         ),
         // --- Parties ---
         StandardFieldSpec(
-            key = "toCustomerId", label = "Customer", dataType = FieldDataType.CHOICE, section = "Parties",
+            key = "customerId", label = "Customer", dataType = FieldDataType.CHOICE, section = "Parties",
             order = 0, optionSource = OptionSource.DYNAMIC, dynamicSourceKey = "customers",
         ),
-        StandardFieldSpec(key = "toCustomerGst", label = "Customer GST", dataType = FieldDataType.TEXT, section = "Parties", order = 1),
+        StandardFieldSpec(key = "customerGst", label = "Customer GST", dataType = FieldDataType.TEXT, section = "Parties", order = 1),
     )
 }

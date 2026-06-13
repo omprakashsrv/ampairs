@@ -56,26 +56,13 @@ class Order : OwnableBaseDomain() {
     @Column(name = "delivery_date")
     var deliveryDate: Instant? = null
 
-    @Column(name = "from_customer_id", nullable = false, length = 255)
-    var fromCustomerId: String = ""
+    @Column(name = "customer_gst", nullable = false, length = 30)
+    var customerGst: String = ""
 
-    @Column(name = "from_customer_name", nullable = false, length = 255)
-    var fromCustomerName: String = ""
-
-    @Column(name = "to_customer_id", nullable = false, length = 255)
-    var toCustomerId: String = ""
-
-    @Column(name = "to_customer_name", nullable = false, length = 255)
-    var toCustomerName: String = ""
-
+    // Place of supply (buyer's state) — drives the GST scenario via the tax module. The seller is
+    // the implicit current workspace; there is no stored from/to customer party.
     @Column(name = "place_of_supply", nullable = false, length = 255)
     var placeOfSupply: String = ""
-
-    @Column(name = "from_customer_gst", nullable = false, length = 30)
-    var fromCustomerGst: String = ""
-
-    @Column(name = "to_customer_gst", nullable = false, length = 30)
-    var toCustomerGst: String = ""
 
     @Column(name = "subtotal", nullable = false)
     var subtotal: Double = 0.0

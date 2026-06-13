@@ -84,7 +84,7 @@ class InvoiceService(
                     userId = getUserId(),
                     deviceId = getDeviceId(),
                     invoiceNumber = updatedInvoice.invoiceNumber,
-                    customerName = updatedInvoice.toCustomerName,
+                    customerName = updatedInvoice.customerName ?: "",
                     totalAmount = updatedInvoice.totalCost
                 )
             )
