@@ -56,26 +56,28 @@ class Order : OwnableBaseDomain() {
     @Column(name = "delivery_date")
     var deliveryDate: Instant? = null
 
-    @Column(name = "from_customer_id", nullable = false, length = 255)
-    var fromCustomerId: String = ""
+    @Column(name = "customer_gst", nullable = false, length = 30)
+    var customerGst: String = ""
 
-    @Column(name = "from_customer_name", nullable = false, length = 255)
-    var fromCustomerName: String = ""
+    // Seller (issuing business) identity snapshotted at issue time so the document is self-contained
+    // and immutable. Name/address come from the business profile; GSTIN from the tax registration.
+    @Column(name = "seller_name", length = 255)
+    var sellerName: String? = null
 
-    @Column(name = "to_customer_id", nullable = false, length = 255)
-    var toCustomerId: String = ""
+    @Column(name = "seller_address", length = 1000)
+    var sellerAddress: String? = null
 
-    @Column(name = "to_customer_name", nullable = false, length = 255)
-    var toCustomerName: String = ""
+    @Column(name = "seller_gst", length = 30)
+    var sellerGst: String? = null
 
+    // Place of supply (buyer/destination state) and the seller's (origin state). IGST applies iff
+    // they differ; otherwise CGST+SGST. Both are snapshotted so the scenario is a pure compare at
+    // edit — no GSTIN diff, no business-module access.
     @Column(name = "place_of_supply", nullable = false, length = 255)
     var placeOfSupply: String = ""
 
-    @Column(name = "from_customer_gst", nullable = false, length = 30)
-    var fromCustomerGst: String = ""
-
-    @Column(name = "to_customer_gst", nullable = false, length = 30)
-    var toCustomerGst: String = ""
+    @Column(name = "seller_place_of_supply", length = 255)
+    var sellerPlaceOfSupply: String? = null
 
     @Column(name = "subtotal", nullable = false)
     var subtotal: Double = 0.0

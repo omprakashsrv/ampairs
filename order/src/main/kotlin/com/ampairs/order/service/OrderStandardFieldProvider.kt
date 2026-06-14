@@ -39,7 +39,7 @@ class OrderStandardFieldProvider : StandardFieldProvider {
         StandardFieldSpec(key = "placeOfSupply", label = "Place of Supply", dataType = FieldDataType.TEXT, section = "Order Details", order = 4),
         // --- Parties ---
         StandardFieldSpec(
-            key = "toCustomerId", label = "Customer", dataType = FieldDataType.CHOICE, section = "Parties",
+            key = "customerId", label = "Customer", dataType = FieldDataType.CHOICE, section = "Parties",
             order = 0, optionSource = OptionSource.DYNAMIC, dynamicSourceKey = "customers",
         ),
         StandardFieldSpec(key = "isWalkIn", label = "Walk-in", dataType = FieldDataType.BOOLEAN, section = "Parties", order = 1),

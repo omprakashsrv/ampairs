@@ -44,26 +44,39 @@ class Invoice : OwnableBaseDomain() {
     @Column(name = "invoice_date", nullable = false)
     var invoiceDate: Instant = Instant.now()
 
-    @Column(name = "from_customer_id", nullable = false, length = 255)
-    var fromCustomerId: String = ""
+    // Single buyer reference (the seller is the implicit current workspace). The name/GSTIN are
+    // snapshotted on the document so a tax invoice keeps the buyer details frozen at issue time.
+    @Column(name = "customer_id", length = 36)
+    var customerId: String? = null
 
-    @Column(name = "from_customer_name", nullable = false, length = 255)
-    var fromCustomerName: String = ""
+    @Column(name = "customer_name", length = 255)
+    var customerName: String? = null
 
-    @Column(name = "to_customer_id", nullable = false, length = 255)
-    var toCustomerId: String = ""
+    @Column(name = "customer_phone", length = 20)
+    var customerPhone: String? = null
 
-    @Column(name = "to_customer_name", nullable = false, length = 255)
-    var toCustomerName: String = ""
+    @Column(name = "customer_gst", nullable = false, length = 30)
+    var customerGst: String = ""
 
+    // Seller (issuing business) identity snapshotted at issue time so the tax invoice is
+    // self-contained and frozen. Name/address from the business profile; GSTIN from the tax registration.
+    @Column(name = "seller_name", length = 255)
+    var sellerName: String? = null
+
+    @Column(name = "seller_address", length = 1000)
+    var sellerAddress: String? = null
+
+    @Column(name = "seller_gst", length = 30)
+    var sellerGst: String? = null
+
+    // Place of supply (buyer/destination state) and the seller's (origin state). IGST applies iff
+    // they differ; otherwise CGST+SGST. Both are snapshotted so the scenario is a pure compare at
+    // edit — no GSTIN diff, no business-module access.
     @Column(name = "place_of_supply", nullable = false, length = 255)
     var placeOfSupply: String = ""
 
-    @Column(name = "from_customer_gst", nullable = false, length = 30)
-    var fromCustomerGst: String = ""
-
-    @Column(name = "to_customer_gst", nullable = false, length = 30)
-    var toCustomerGst: String = ""
+    @Column(name = "seller_place_of_supply", length = 255)
+    var sellerPlaceOfSupply: String? = null
 
     @Column(name = "total_cost", nullable = false)
     var totalCost: Double = 0.0

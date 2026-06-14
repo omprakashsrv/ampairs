@@ -37,6 +37,7 @@ class TaxConfigurationServiceV2(
 
         val config = TaxConfiguration().apply {
             countryCode = request.countryCode
+            gstin = request.gstin
             taxStrategy = request.taxStrategy
             defaultTaxCodeSystem = request.defaultTaxCodeSystem
             taxJurisdictions = request.taxJurisdictions ?: emptyList()
@@ -56,6 +57,7 @@ class TaxConfigurationServiceV2(
 
         config.apply {
             request.countryCode?.let { countryCode = it }
+            request.gstin?.let { gstin = it }
             request.taxStrategy?.let { taxStrategy = it }
             request.defaultTaxCodeSystem?.let { defaultTaxCodeSystem = it }
             request.taxJurisdictions?.let { taxJurisdictions = it }
