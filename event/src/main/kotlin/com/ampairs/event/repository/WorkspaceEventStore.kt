@@ -9,6 +9,9 @@ import jakarta.persistence.PersistenceContext
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
 
 /**
  * Native-SQL upsert path for `workspace_events`.
@@ -51,9 +54,20 @@ class WorkspaceEventStore(
             .singleResult as Array<*>
         return UpsertResult(
             uid = row[0] as String,
-            createdAt = (row[1] as java.sql.Timestamp).toInstant(),
+            createdAt = toInstant(row[1]),
             sequenceNumber = (row[2] as Number).toLong(),
         )
+    }
+
+    // The `created_at` column was declared TIMESTAMP WITHOUT TIME ZONE in V1.0.3 (predates the
+    // project-wide TIMESTAMPTZ rule), so the driver hands back a LocalDateTime; older code paths
+    // could also surface a Timestamp or OffsetDateTime depending on the column type encountered.
+    private fun toInstant(value: Any?): Instant = when (value) {
+        is Instant -> value
+        is java.sql.Timestamp -> value.toInstant()
+        is OffsetDateTime -> value.toInstant()
+        is LocalDateTime -> value.toInstant(ZoneOffset.UTC)
+        else -> error("Unexpected created_at type: ${value?.let { it::class.java.name } ?: "null"}")
     }
 
     data class UpsertResult(val uid: String, val createdAt: Instant, val sequenceNumber: Long)
