@@ -109,6 +109,9 @@ class ProductService(
             if (existing != null) {
                 // Update scalar fields on the managed entity so Hibernate never sees the
                 // immutable @OneToOne associations as "changed" (avoids HHH000502).
+                // Persist client ref_id (e.g. Tally GUID) so it round-trips and dedupe survives;
+                // never overwrite an existing ref_id with a blank one.
+                incoming.refId?.takeIf { it.isNotBlank() }?.let { existing.refId = it }
                 existing.name = incoming.name
                 existing.code = incoming.code
                 existing.sku = incoming.sku
