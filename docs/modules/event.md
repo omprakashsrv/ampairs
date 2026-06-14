@@ -126,7 +126,7 @@ Note: For SimpleBroker, set to 0 — application-level heartbeat is used instead
 |------|-------------|
 | `V1.0.3__create_event_system_tables.sql` | workspace_events, websocket_sessions tables |
 | `V1.0.57__fix_websocket_session_timestamp_types.sql` | TIMESTAMP → TIMESTAMPTZ on device_sessions |
-| `V1.0.58__collapse_events_to_entity_type_watermark.sql` | Drop per-row uk_workspace_sequence, truncate workspace_events, add unique (workspace_id, entity_type), create workspace_event_seq SEQUENCE |
+| `V1.0.91__collapse_events_to_entity_type_watermark.sql` | Drop per-row uk_workspace_sequence, truncate workspace_events, add unique (workspace_id, entity_type), create workspace_event_seq SEQUENCE |
 
 ## Package Structure
 
