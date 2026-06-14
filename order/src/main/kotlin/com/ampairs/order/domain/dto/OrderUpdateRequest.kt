@@ -20,6 +20,7 @@ data class OrderUpdateRequest(
     var sellerAddress: String? = null,
     var sellerGst: String? = null,
     var placeOfSupply: String = "",
+    var sellerPlaceOfSupply: String? = null,
     var totalCost: Double = 0.0,
     var basePrice: Double = 0.0,
     var totalTax: Double = 0.0,
@@ -49,6 +50,7 @@ fun OrderUpdateRequest.toOrder(): Order {
     order.sellerAddress = this.sellerAddress
     order.sellerGst = this.sellerGst
     order.placeOfSupply = this.placeOfSupply
+    order.sellerPlaceOfSupply = this.sellerPlaceOfSupply
     order.basePrice = this.basePrice
     order.totalItems = this.totalItems
     order.totalCost = this.totalCost
@@ -78,6 +80,7 @@ fun Order.toInvoice(): Invoice {
     invoice.sellerAddress = this.sellerAddress
     invoice.sellerGst = this.sellerGst
     invoice.placeOfSupply = this.placeOfSupply
+    invoice.sellerPlaceOfSupply = this.sellerPlaceOfSupply
     invoice.basePrice = this.basePrice
     invoice.totalItems = this.totalItems
     invoice.totalCost = this.totalCost

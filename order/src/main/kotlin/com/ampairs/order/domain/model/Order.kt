@@ -70,9 +70,14 @@ class Order : OwnableBaseDomain() {
     @Column(name = "seller_gst", length = 30)
     var sellerGst: String? = null
 
-    // Place of supply (buyer's state) — with seller GSTIN this fixes the intra/inter-state scenario.
+    // Place of supply (buyer/destination state) and the seller's (origin state). IGST applies iff
+    // they differ; otherwise CGST+SGST. Both are snapshotted so the scenario is a pure compare at
+    // edit — no GSTIN diff, no business-module access.
     @Column(name = "place_of_supply", nullable = false, length = 255)
     var placeOfSupply: String = ""
+
+    @Column(name = "seller_place_of_supply", length = 255)
+    var sellerPlaceOfSupply: String? = null
 
     @Column(name = "subtotal", nullable = false)
     var subtotal: Double = 0.0
