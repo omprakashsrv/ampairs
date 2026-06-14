@@ -12,8 +12,10 @@ import jakarta.persistence.UniqueConstraint
  *
  * The aggregate (this header + its [FormSection] and [FormField] rows, joined on
  * `owner_id` + `entity_type`) is the unit of sync: one record per entityType, transferred whole.
- * `uid` is set to the [entityType] value (workspace-scoped natural key). [version] is the
- * optimistic-concurrency stamp, bumped on every aggregate save.
+ * Per-workspace identity is enforced by `uk_form_schema_owner_entity` on
+ * `(owner_id, entity_type)`; `uid` is the standard prefixed nanoid from [BaseDomain] (globally
+ * unique system-wide), so clients key the aggregate on [entityType], not on `uid`. [version] is
+ * the optimistic-concurrency stamp, bumped on every aggregate save.
  */
 @Entity
 @Table(
