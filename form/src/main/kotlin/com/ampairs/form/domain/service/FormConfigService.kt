@@ -89,7 +89,7 @@ class FormConfigService(
     private fun replaceAggregate(request: FormSchemaRequest): FormSchemaResponse {
         val entityType = EntityType.fromValue(request.entityType)
         val schema = schemaRepository.findByEntityType(entityType.value)
-            ?: FormSchema().apply { this.entityType = entityType.value; uid = entityType.value; version = 0 }
+            ?: FormSchema().apply { this.entityType = entityType.value; version = 0 }
 
         if (request.baseVersion != null && schema.id != 0L && request.baseVersion < schema.version) {
             throw ResponseStatusException(
@@ -143,7 +143,7 @@ class FormConfigService(
     private fun seedAndMerge(entityType: EntityType): FormSchema {
         val schema = schemaRepository.findByEntityType(entityType.value)
             ?: schemaRepository.save(
-                FormSchema().apply { this.entityType = entityType.value; uid = entityType.value; version = 0 }
+                FormSchema().apply { this.entityType = entityType.value; version = 0 }
             )
 
         // Sections: add any registry section missing by name.
