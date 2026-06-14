@@ -464,3 +464,49 @@ private fun Map<String, Any>.toCompositionDtos(): Map<String, ComponentCompositi
             } ?: emptyList()
         )
     }
+
+// ==================== Workspace Tax Component DTOs ====================
+
+/**
+ * Workspace tax component, shaped for the mobile `WorkspaceTaxComponent` model.
+ *
+ * `jurisdictionLevel` is normalised to the client enum (FEDERAL/STATE/COUNTY/CITY/SPECIAL);
+ * the workspace entity stores "COUNTRY" for country-level components, which maps to FEDERAL.
+ * `effectiveFrom` has no entity column, so it mirrors `createdAt`.
+ */
+data class WorkspaceTaxComponentDto(
+    val id: String,
+    val componentTypeId: String,
+    val jurisdiction: String,
+    val jurisdictionLevel: String,
+    val ratePercentage: Double,
+    val isCompoundTax: Boolean,
+    val effectiveFrom: Instant,
+    val isActive: Boolean,
+    val createdAt: Instant,
+    val updatedAt: Instant
+)
+
+private fun normaliseJurisdictionLevel(level: String): String = when (level.uppercase()) {
+    "STATE" -> "STATE"
+    "COUNTY" -> "COUNTY"
+    "CITY" -> "CITY"
+    "SPECIAL" -> "SPECIAL"
+    else -> "FEDERAL" // COUNTRY and any unknown/empty value map to the client's top-level enum
+}
+
+fun TaxComponent.asWorkspaceComponentDto(): WorkspaceTaxComponentDto {
+    val created = this.createdAt ?: Instant.now()
+    return WorkspaceTaxComponentDto(
+        id = this.uid,
+        componentTypeId = this.componentTypeId,
+        jurisdiction = this.jurisdiction,
+        jurisdictionLevel = normaliseJurisdictionLevel(this.jurisdictionLevel),
+        ratePercentage = this.ratePercentage,
+        isCompoundTax = this.isCompound,
+        effectiveFrom = created,
+        isActive = this.isActive,
+        createdAt = created,
+        updatedAt = this.updatedAt ?: Instant.now()
+    )
+}
