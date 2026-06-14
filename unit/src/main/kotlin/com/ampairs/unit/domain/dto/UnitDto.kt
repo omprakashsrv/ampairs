@@ -54,7 +54,8 @@ fun Unit.applyRequest(request: UnitRequest): Unit = apply {
     description = request.description?.trim()
     category = request.category?.trim()
     active = request.active
-    refId = request.refId
+    // Keep the client ref_id (e.g. Tally GUID); never wipe a stored one with a blank.
+    request.refId?.takeIf { it.isNotBlank() }?.let { refId = it }
 }
 
 fun Unit.asUnitResponse(): UnitResponse = UnitResponse(

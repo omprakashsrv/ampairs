@@ -157,7 +157,7 @@ class ProductService(
             if (it.uid.isNotEmpty()) {
                 val group = productGroupRepository.findByUid(it.uid)
                 it.id = group?.id ?: 0
-                it.refId = group?.refId ?: ""
+                it.refId = it.refId?.takeIf { v -> v.isNotBlank() } ?: group?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val group = productGroupRepository.findByRefId(it.refId)
                 it.id = group?.id ?: 0
@@ -175,7 +175,7 @@ class ProductService(
             if (it.uid.isNotEmpty()) {
                 val group = productBrandRepository.findByUid(it.uid)
                 it.id = group?.id ?: 0
-                it.refId = group?.refId ?: ""
+                it.refId = it.refId?.takeIf { v -> v.isNotBlank() } ?: group?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val group = productBrandRepository.findByRefId(it.refId)
                 it.id = group?.id ?: 0
@@ -194,7 +194,7 @@ class ProductService(
             if (it.uid.isNotEmpty()) {
                 val productCategory = productCategoryRepository.findByUid(it.uid)
                 it.id = productCategory?.id ?: 0
-                it.refId = productCategory?.refId ?: ""
+                it.refId = it.refId?.takeIf { v -> v.isNotBlank() } ?: productCategory?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val productCategory = productCategoryRepository.findByRefId(it.refId)
                 it.id = productCategory?.id ?: 0
@@ -213,7 +213,7 @@ class ProductService(
             if (it.uid.isNotEmpty()) {
                 val productCategory = productSubCategoryRepository.findByUid(it.uid)
                 it.id = productCategory?.id ?: 0
-                it.refId = productCategory?.refId ?: ""
+                it.refId = it.refId?.takeIf { v -> v.isNotBlank() } ?: productCategory?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val productCategory = productSubCategoryRepository.findByRefId(it.refId)
                 it.id = productCategory?.id ?: 0
