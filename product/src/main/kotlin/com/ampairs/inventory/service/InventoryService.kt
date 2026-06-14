@@ -21,7 +21,7 @@ class InventoryService(
             if (it.id?.isNotEmpty() == true) {
                 val group = inventoryRepository.findByUid(it.id)
                 inventory.id = group?.id ?: 0
-                inventory.refId = group?.refId ?: ""
+                inventory.refId = it.refId?.takeIf { v -> v.isNotBlank() } ?: group?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val group = inventoryRepository.findByRefId(it.refId)
                 inventory.id = group?.id ?: 0

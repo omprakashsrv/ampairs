@@ -48,7 +48,7 @@ class SettingController(
 
     /** Bulk push: upsert (and soft-delete via `active = false`) a batch of setting overrides. */
     @PostMapping("/sync")
-    fun push(@RequestBody @Valid requests: List<@Valid SettingRequest>): ApiResponse<List<SettingResponse>> {
+    fun push(@RequestBody requests: List<@Valid SettingRequest>): ApiResponse<List<SettingResponse>> {
         return ApiResponse.success(settingService.upsertSettings(requests).asSettingResponses())
     }
 

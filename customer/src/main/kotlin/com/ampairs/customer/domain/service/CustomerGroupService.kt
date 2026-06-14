@@ -67,6 +67,7 @@ class CustomerGroupService(
                 existing.defaultDiscountPercentage = incoming.defaultDiscountPercentage
                 existing.priorityLevel = incoming.priorityLevel
                 existing.metadata = incoming.metadata
+                incoming.refId?.takeIf { it.isNotBlank() }?.let { existing.refId = it }
                 customerGroupRepository.save(existing)
                     .also { entityChangePublisher.updated("customer_group", it.uid) }
             } else {

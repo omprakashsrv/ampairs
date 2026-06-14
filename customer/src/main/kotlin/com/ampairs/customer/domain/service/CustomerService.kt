@@ -56,7 +56,9 @@ class CustomerService(
             if (customer.uid.isNotEmpty()) {
                 val existingCustomer = customerRepository.findByUid(customer.uid)
                 customer.id = existingCustomer?.id ?: 0
-                customer.refId = existingCustomer?.refId ?: ""
+                // Prefer the client-sent ref_id (e.g. Tally GUID); fall back to the existing one
+                // so a blank incoming value never wipes a stored ref_id.
+                customer.refId = customer.refId?.takeIf { it.isNotBlank() } ?: existingCustomer?.refId ?: ""
                 customer.createdAt = existingCustomer?.createdAt ?: Instant.now()
                 customer.updatedAt = existingCustomer?.updatedAt ?: Instant.now()
             } else if (customer.refId?.isNotEmpty() == true) {

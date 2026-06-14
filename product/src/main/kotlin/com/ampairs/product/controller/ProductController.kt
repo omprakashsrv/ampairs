@@ -195,7 +195,7 @@ class ProductController(
     fun getProduct(@PathVariable productId: String): ApiResponse<ProductResponse> {
         val product = productService.getProductByUid(productId)
             ?: throw NotFoundException("Product not found: $productId")
-        return ApiResponse.success(product.asResponse())
+        return ApiResponse.success(product)
     }
 
     @PutMapping("/{productId}")
@@ -214,7 +214,7 @@ class ProductController(
         
         val updatedProduct = productService.updateProduct(productId, updates)
             ?: throw NotFoundException("Product not found: $productId")
-        return ApiResponse.success(updatedProduct.asResponse())
+        return ApiResponse.success(updatedProduct)
     }
 
     @PutMapping("/{productId}/inventory")
@@ -238,6 +238,6 @@ class ProductController(
     fun getProductBySku(@PathVariable sku: String): ApiResponse<ProductResponse> {
         val product = productService.getProductBySku(sku)
             ?: throw NotFoundException("Product not found with SKU: $sku")
-        return ApiResponse.success(product.asResponse())
+        return ApiResponse.success(product)
     }
 }

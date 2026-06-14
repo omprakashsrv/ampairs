@@ -67,6 +67,7 @@ class CustomerTypeService(
                 existing.defaultCreditLimit = incoming.defaultCreditLimit
                 existing.defaultCreditDays = incoming.defaultCreditDays
                 existing.metadata = incoming.metadata
+                incoming.refId?.takeIf { it.isNotBlank() }?.let { existing.refId = it }
                 customerTypeRepository.save(existing)
                     .also { entityChangePublisher.updated("customer_type", it.uid) }
             } else {

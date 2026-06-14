@@ -109,6 +109,9 @@ class ProductService(
             if (existing != null) {
                 // Update scalar fields on the managed entity so Hibernate never sees the
                 // immutable @OneToOne associations as "changed" (avoids HHH000502).
+                // Persist client ref_id (e.g. Tally GUID) so it round-trips and dedupe survives;
+                // never overwrite an existing ref_id with a blank one.
+                incoming.refId?.takeIf { it.isNotBlank() }?.let { existing.refId = it }
                 existing.name = incoming.name
                 existing.code = incoming.code
                 existing.sku = incoming.sku
@@ -154,7 +157,7 @@ class ProductService(
             if (it.uid.isNotEmpty()) {
                 val group = productGroupRepository.findByUid(it.uid)
                 it.id = group?.id ?: 0
-                it.refId = group?.refId ?: ""
+                it.refId = it.refId?.takeIf { v -> v.isNotBlank() } ?: group?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val group = productGroupRepository.findByRefId(it.refId)
                 it.id = group?.id ?: 0
@@ -172,7 +175,7 @@ class ProductService(
             if (it.uid.isNotEmpty()) {
                 val group = productBrandRepository.findByUid(it.uid)
                 it.id = group?.id ?: 0
-                it.refId = group?.refId ?: ""
+                it.refId = it.refId?.takeIf { v -> v.isNotBlank() } ?: group?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val group = productBrandRepository.findByRefId(it.refId)
                 it.id = group?.id ?: 0
@@ -191,7 +194,7 @@ class ProductService(
             if (it.uid.isNotEmpty()) {
                 val productCategory = productCategoryRepository.findByUid(it.uid)
                 it.id = productCategory?.id ?: 0
-                it.refId = productCategory?.refId ?: ""
+                it.refId = it.refId?.takeIf { v -> v.isNotBlank() } ?: productCategory?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val productCategory = productCategoryRepository.findByRefId(it.refId)
                 it.id = productCategory?.id ?: 0
@@ -210,7 +213,7 @@ class ProductService(
             if (it.uid.isNotEmpty()) {
                 val productCategory = productSubCategoryRepository.findByUid(it.uid)
                 it.id = productCategory?.id ?: 0
-                it.refId = productCategory?.refId ?: ""
+                it.refId = it.refId?.takeIf { v -> v.isNotBlank() } ?: productCategory?.refId ?: ""
             } else if (it.refId?.isNotEmpty() == true) {
                 val productCategory = productSubCategoryRepository.findByRefId(it.refId)
                 it.id = productCategory?.id ?: 0
@@ -330,7 +333,7 @@ class ProductService(
     }
 
     @Transactional
-    fun updateProduct(productId: String, updates: Product): Product? {
+    fun updateProduct(productId: String, updates: Product): ProductResponse? {
         val existingProduct = productRepository.findByUid(productId) ?: return null
 
         // Track changes for event
@@ -380,7 +383,7 @@ class ProductService(
             )
         }
 
-        return savedProduct
+        return savedProduct.asResponse()
     }
 
     fun searchProducts(
@@ -400,10 +403,10 @@ class ProductService(
         return page.map { it.asResponse() }
     }
 
-    fun getProductByUid(uid: String): Product? = productRepository.findByUid(uid)
+    fun getProductByUid(uid: String): ProductResponse? = productRepository.findByUid(uid)?.asResponse()
 
-    fun getProductBySku(sku: String): Product? {
-        return productRepository.findBySku(sku).orElse(null)
+    fun getProductBySku(sku: String): ProductResponse? {
+        return productRepository.findBySku(sku).orElse(null)?.asResponse()
     }
 
     fun getActiveProducts(pageable: Pageable): List<Product> {
