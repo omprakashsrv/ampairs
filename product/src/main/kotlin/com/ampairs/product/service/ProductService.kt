@@ -333,7 +333,7 @@ class ProductService(
     }
 
     @Transactional
-    fun updateProduct(productId: String, updates: Product): Product? {
+    fun updateProduct(productId: String, updates: Product): ProductResponse? {
         val existingProduct = productRepository.findByUid(productId) ?: return null
 
         // Track changes for event
@@ -383,7 +383,7 @@ class ProductService(
             )
         }
 
-        return savedProduct
+        return savedProduct.asResponse()
     }
 
     fun searchProducts(
@@ -403,10 +403,10 @@ class ProductService(
         return page.map { it.asResponse() }
     }
 
-    fun getProductByUid(uid: String): Product? = productRepository.findByUid(uid)
+    fun getProductByUid(uid: String): ProductResponse? = productRepository.findByUid(uid)?.asResponse()
 
-    fun getProductBySku(sku: String): Product? {
-        return productRepository.findBySku(sku).orElse(null)
+    fun getProductBySku(sku: String): ProductResponse? {
+        return productRepository.findBySku(sku).orElse(null)?.asResponse()
     }
 
     fun getActiveProducts(pageable: Pageable): List<Product> {
