@@ -11,10 +11,13 @@ import com.ampairs.tax.repository.MasterTaxCodeRepository
 import com.ampairs.tax.repository.TaxCodeRepository
 import com.ampairs.tax.repository.TaxComponentRepository
 import com.ampairs.tax.repository.TaxRuleRepository
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.context.annotation.Lazy
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
 
@@ -30,6 +33,16 @@ class TaxCodeService(
     private val gstRuleTemplateService: GstRuleTemplateService
 ) {
 
+    /**
+     * Self-reference (via the Spring proxy) so that [bulkSubscribe] can invoke [subscribe] through
+     * the proxy and get a fresh per-code transaction. A plain `this.subscribe(...)` call would
+     * bypass the proxy and run inside the caller's transaction, defeating the isolation.
+     */
+    @Autowired
+    @Lazy
+    private lateinit var self: TaxCodeService
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun subscribe(request: SubscribeTaxCodeRequest): TaxCodeDto {
         // 1. Fetch master tax code
         val masterCode = masterTaxCodeRepository.findByUid(request.masterTaxCodeId)
@@ -313,6 +326,16 @@ class TaxCodeService(
         return taxCodeRepository.save(taxCode).asDto()
     }
 
+    /**
+     * Bulk subscribe runs OUTSIDE a surrounding transaction so each code is committed in its own
+     * [subscribe] transaction (REQUIRES_NEW via the [self] proxy). This is essential because
+     * GST components are shared across all codes of the same rate (e.g. `COMP_CGST_9`): the
+     * `findByUid` dedup in component creation only sees a previously created component once that
+     * code's transaction has committed. With a single enclosing transaction the second code of the
+     * same rate would re-insert `COMP_CGST_9`, hit the unique constraint, and roll back the entire
+     * batch. Per-code commits also isolate failures so one bad code can't fail the rest.
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     fun bulkSubscribe(request: BulkSubscribeTaxCodesRequest): BulkSubscribeResultDto {
         val subscribedCodes = mutableListOf<TaxCodeDto>()
         val errors = mutableListOf<BulkOperationErrorDto>()
@@ -325,7 +348,7 @@ class TaxCodeService(
                     notes = null,
                     customName = null
                 )
-                val taxCode = subscribe(subscribeRequest)
+                val taxCode = self.subscribe(subscribeRequest)
                 subscribedCodes.add(taxCode)
             } catch (e: Exception) {
                 errors.add(
