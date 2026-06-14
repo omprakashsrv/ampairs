@@ -9,7 +9,10 @@
 --
 -- After this migration each workspace holds at most one row per entity type;
 -- new events upsert that row (latest entity_id / event_type / sequence_number).
--- Sequence numbers are vended atomically from workspace_event_sequence.
+-- Sequence numbers come from a single global Postgres SEQUENCE — atomic by
+-- definition, no race. Numbers are sparse per workspace (gaps when other
+-- workspaces consume the sequence) but strictly monotonic within a workspace,
+-- which is all the `?sinceSequence=N` catch-up contract requires.
 
 TRUNCATE TABLE workspace_events;
 
@@ -24,11 +27,4 @@ ALTER TABLE workspace_events DROP COLUMN IF EXISTS consumed;
 
 CREATE UNIQUE INDEX uk_workspace_entity_type ON workspace_events (workspace_id, entity_type);
 
-CREATE TABLE workspace_event_sequence
-(
-    workspace_id VARCHAR(40)  PRIMARY KEY,
-    current_seq  BIGINT       NOT NULL DEFAULT 0,
-    updated_at   TIMESTAMPTZ  NOT NULL DEFAULT now()
-);
-
-COMMENT ON TABLE workspace_event_sequence IS 'Atomic per-workspace event sequence counter; one row per workspace, incremented by UPDATE … RETURNING.';
+CREATE SEQUENCE workspace_event_seq AS BIGINT START WITH 1 INCREMENT BY 1 NO CYCLE;

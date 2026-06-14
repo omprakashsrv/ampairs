@@ -72,18 +72,16 @@ class WorkspaceEvent : OwnableBaseDomain() {
 }
 ```
 
-### WorkspaceEventSequence
+### Sequence generation
 
-Single-row-per-workspace counter table backing atomic sequence number generation. Replaces the
-prior racy `MAX(sequence_number) + 1` lookup that was tripping `uk_workspace_sequence` under
-concurrent writes.
+A single global Postgres `SEQUENCE workspace_event_seq` vends `sequence_number`. Atomic by
+definition — replaces the prior racy `MAX(sequence_number) + 1` lookup that was tripping
+`uk_workspace_sequence` under concurrent writes. Sequence numbers are sparse per workspace (gaps
+where other workspaces consumed the sequence) but strictly monotonic within a workspace, which
+is all the `?sinceSequence=N` catch-up contract requires.
 
 ```sql
-workspace_event_sequence (
-    workspace_id VARCHAR(40) PRIMARY KEY,
-    current_seq  BIGINT NOT NULL DEFAULT 0,
-    updated_at   TIMESTAMPTZ NOT NULL DEFAULT now()
-)
+CREATE SEQUENCE workspace_event_seq AS BIGINT START WITH 1 INCREMENT BY 1 NO CYCLE;
 ```
 
 ### WebSocketSession
@@ -128,7 +126,7 @@ Note: For SimpleBroker, set to 0 — application-level heartbeat is used instead
 |------|-------------|
 | `V1.0.3__create_event_system_tables.sql` | workspace_events, websocket_sessions tables |
 | `V1.0.57__fix_websocket_session_timestamp_types.sql` | TIMESTAMP → TIMESTAMPTZ on device_sessions |
-| `V1.0.58__collapse_events_to_entity_type_watermark.sql` | Drop per-row uk_workspace_sequence, truncate workspace_events, add unique (workspace_id, entity_type), introduce workspace_event_sequence counter |
+| `V1.0.58__collapse_events_to_entity_type_watermark.sql` | Drop per-row uk_workspace_sequence, truncate workspace_events, add unique (workspace_id, entity_type), create workspace_event_seq SEQUENCE |
 
 ## Package Structure
 

@@ -172,7 +172,6 @@ class WorkspaceEventListener(
             val payloadJson = objectMapper.writeValueAsString(
                 mapOf("last_updated_at" to lastUpdatedAt.toString())
             )
-            val sequenceNumber = eventStore.nextSequence(workspaceId)
             val upsert = eventStore.upsertWatermark(
                 workspaceId = workspaceId,
                 eventType = eventType,
@@ -181,12 +180,11 @@ class WorkspaceEventListener(
                 payload = payloadJson,
                 deviceId = deviceId,
                 userId = userId,
-                sequenceNumber = sequenceNumber,
             )
 
             logger.debug(
                 "Upserted watermark: workspace={}, entityType={}, entityId={}, seq={}",
-                workspaceId, entityType, entityId, sequenceNumber,
+                workspaceId, entityType, entityId, upsert.sequenceNumber,
             )
 
             val response = WorkspaceEventResponse(
@@ -198,7 +196,7 @@ class WorkspaceEventListener(
                 lastUpdatedAt = lastUpdatedAt,
                 deviceId = deviceId,
                 userId = userId,
-                sequenceNumber = sequenceNumber,
+                sequenceNumber = upsert.sequenceNumber,
                 workspaceId = workspaceId,
                 createdAt = upsert.createdAt,
             )
