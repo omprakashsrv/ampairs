@@ -33,9 +33,6 @@ class WorkspaceEvent : OwnableBaseDomain() {
     @Column(name = "sequence_number", nullable = false)
     var sequenceNumber: Long = 0 // For ordering and catch-up
 
-    @Column(name = "consumed", nullable = false)
-    var consumed: Boolean = false // Mark when all devices synced
-
     @Column(name = "workspace_id", nullable = false, length = 200)
     var workspaceId: String = "" // Workspace context
 
@@ -43,23 +40,6 @@ class WorkspaceEvent : OwnableBaseDomain() {
         return Constants.WORKSPACE_EVENT_PREFIX
     }
 
-    /**
-     * Check if event is recent (within last 24 hours)
-     */
-    fun isRecent(): Boolean {
-        return createdAt?.isAfter(java.time.Instant.now().minusSeconds(86400)) ?: false
-    }
-
-    /**
-     * Mark event as consumed
-     */
-    fun markConsumed() {
-        consumed = true
-    }
-
-    /**
-     * Get payload as map
-     */
     fun getPayloadMap(): Map<String, Any> {
         return if (payload.isBlank()) {
             emptyMap()

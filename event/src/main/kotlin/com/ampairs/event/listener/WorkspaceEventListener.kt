@@ -4,23 +4,22 @@ import com.ampairs.core.sync.EntityChangeType
 import com.ampairs.core.sync.EntityChangedEvent
 import com.ampairs.event.config.Constants
 import com.ampairs.event.domain.EventType
-import com.ampairs.event.domain.WorkspaceEvent
-import com.ampairs.event.domain.dto.asWorkspaceEventResponse
+import com.ampairs.event.domain.dto.WorkspaceEventResponse
 import com.ampairs.event.domain.events.*
 import com.ampairs.event.kafka.WorkspaceEventKafkaProducer
-import com.ampairs.event.repository.WorkspaceEventRepository
+import com.ampairs.event.repository.WorkspaceEventStore
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.messaging.simp.SimpMessagingTemplate
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
-import org.springframework.transaction.annotation.Transactional
+import java.time.Instant
 
 @Component
 class WorkspaceEventListener(
-    private val eventRepository: WorkspaceEventRepository,
+    private val eventStore: WorkspaceEventStore,
     private val webSocketPublisher: SimpMessagingTemplate?,
-    private val kafkaProducer: WorkspaceEventKafkaProducer? = null
+    private val kafkaProducer: WorkspaceEventKafkaProducer? = null,
 ) {
 
     private val logger = LoggerFactory.getLogger(WorkspaceEventListener::class.java)
@@ -30,273 +29,135 @@ class WorkspaceEventListener(
 
     @EventListener
     @Async
-    @Transactional
     fun handleCustomerCreated(event: CustomerCreatedEvent) {
-        persistAndBroadcast(
-            workspaceId = event.workspaceId,
-            eventType = EventType.CUSTOMER_CREATED,
-            entityType = "customer",
-            entityId = event.entityId,
-            deviceId = event.deviceId,
-            userId = event.userId,
-            payload = event.getChanges()
-        )
+        persistAndBroadcast(event.workspaceId, EventType.CUSTOMER_CREATED, "customer",
+            event.entityId, event.deviceId, event.userId)
     }
 
     @EventListener
     @Async
-    @Transactional
     fun handleCustomerUpdated(event: CustomerUpdatedEvent) {
-        persistAndBroadcast(
-            workspaceId = event.workspaceId,
-            eventType = EventType.CUSTOMER_UPDATED,
-            entityType = "customer",
-            entityId = event.entityId,
-            deviceId = event.deviceId,
-            userId = event.userId,
-            payload = event.getChanges()
-        )
+        persistAndBroadcast(event.workspaceId, EventType.CUSTOMER_UPDATED, "customer",
+            event.entityId, event.deviceId, event.userId)
     }
 
     @EventListener
     @Async
-    @Transactional
     fun handleCustomerDeleted(event: CustomerDeletedEvent) {
-        persistAndBroadcast(
-            workspaceId = event.workspaceId,
-            eventType = EventType.CUSTOMER_DELETED,
-            entityType = "customer",
-            entityId = event.entityId,
-            deviceId = event.deviceId,
-            userId = event.userId,
-            payload = event.getChanges()
-        )
+        persistAndBroadcast(event.workspaceId, EventType.CUSTOMER_DELETED, "customer",
+            event.entityId, event.deviceId, event.userId)
     }
 
     // Product Events
 
     @EventListener
     @Async
-    @Transactional
     fun handleProductCreated(event: ProductCreatedEvent) {
-        persistAndBroadcast(
-            workspaceId = event.workspaceId,
-            eventType = EventType.PRODUCT_CREATED,
-            entityType = "product",
-            entityId = event.entityId,
-            deviceId = event.deviceId,
-            userId = event.userId,
-            payload = event.getChanges()
-        )
+        persistAndBroadcast(event.workspaceId, EventType.PRODUCT_CREATED, "product",
+            event.entityId, event.deviceId, event.userId)
     }
 
     @EventListener
     @Async
-    @Transactional
     fun handleProductUpdated(event: ProductUpdatedEvent) {
-        persistAndBroadcast(
-            workspaceId = event.workspaceId,
-            eventType = EventType.PRODUCT_UPDATED,
-            entityType = "product",
-            entityId = event.entityId,
-            deviceId = event.deviceId,
-            userId = event.userId,
-            payload = event.getChanges()
-        )
+        persistAndBroadcast(event.workspaceId, EventType.PRODUCT_UPDATED, "product",
+            event.entityId, event.deviceId, event.userId)
     }
 
     @EventListener
     @Async
-    @Transactional
     fun handleProductDeleted(event: ProductDeletedEvent) {
-        persistAndBroadcast(
-            workspaceId = event.workspaceId,
-            eventType = EventType.PRODUCT_DELETED,
-            entityType = "product",
-            entityId = event.entityId,
-            deviceId = event.deviceId,
-            userId = event.userId,
-            payload = event.getChanges()
-        )
+        persistAndBroadcast(event.workspaceId, EventType.PRODUCT_DELETED, "product",
+            event.entityId, event.deviceId, event.userId)
     }
 
     @EventListener
     @Async
-    @Transactional
     fun handleProductStockChanged(event: ProductStockChangedEvent) {
-        persistAndBroadcast(
-            workspaceId = event.workspaceId,
-            eventType = EventType.PRODUCT_STOCK_CHANGED,
-            entityType = "product",
-            entityId = event.entityId,
-            deviceId = event.deviceId,
-            userId = event.userId,
-            payload = event.getChanges()
-        )
+        persistAndBroadcast(event.workspaceId, EventType.PRODUCT_STOCK_CHANGED, "product",
+            event.entityId, event.deviceId, event.userId)
     }
 
     // Order Events
 
     @EventListener
     @Async
-    @Transactional
     fun handleOrderCreated(event: OrderCreatedEvent) {
-        persistAndBroadcast(
-            workspaceId = event.workspaceId,
-            eventType = EventType.ORDER_CREATED,
-            entityType = "order",
-            entityId = event.entityId,
-            deviceId = event.deviceId,
-            userId = event.userId,
-            payload = event.getChanges()
-        )
+        persistAndBroadcast(event.workspaceId, EventType.ORDER_CREATED, "order",
+            event.entityId, event.deviceId, event.userId)
     }
 
     @EventListener
     @Async
-    @Transactional
     fun handleOrderUpdated(event: OrderUpdatedEvent) {
-        persistAndBroadcast(
-            workspaceId = event.workspaceId,
-            eventType = EventType.ORDER_UPDATED,
-            entityType = "order",
-            entityId = event.entityId,
-            deviceId = event.deviceId,
-            userId = event.userId,
-            payload = event.getChanges()
-        )
+        persistAndBroadcast(event.workspaceId, EventType.ORDER_UPDATED, "order",
+            event.entityId, event.deviceId, event.userId)
     }
 
     @EventListener
     @Async
-    @Transactional
     fun handleOrderStatusChanged(event: OrderStatusChangedEvent) {
-        persistAndBroadcast(
-            workspaceId = event.workspaceId,
-            eventType = EventType.ORDER_STATUS_CHANGED,
-            entityType = "order",
-            entityId = event.entityId,
-            deviceId = event.deviceId,
-            userId = event.userId,
-            payload = event.getChanges()
-        )
+        persistAndBroadcast(event.workspaceId, EventType.ORDER_STATUS_CHANGED, "order",
+            event.entityId, event.deviceId, event.userId)
     }
 
     @EventListener
     @Async
-    @Transactional
     fun handleOrderDeleted(event: OrderDeletedEvent) {
-        persistAndBroadcast(
-            workspaceId = event.workspaceId,
-            eventType = EventType.ORDER_DELETED,
-            entityType = "order",
-            entityId = event.entityId,
-            deviceId = event.deviceId,
-            userId = event.userId,
-            payload = event.getChanges()
-        )
+        persistAndBroadcast(event.workspaceId, EventType.ORDER_DELETED, "order",
+            event.entityId, event.deviceId, event.userId)
     }
 
     // Invoice Events
 
     @EventListener
     @Async
-    @Transactional
     fun handleInvoiceCreated(event: InvoiceCreatedEvent) {
-        persistAndBroadcast(
-            workspaceId = event.workspaceId,
-            eventType = EventType.INVOICE_CREATED,
-            entityType = "invoice",
-            entityId = event.entityId,
-            deviceId = event.deviceId,
-            userId = event.userId,
-            payload = event.getChanges()
-        )
+        persistAndBroadcast(event.workspaceId, EventType.INVOICE_CREATED, "invoice",
+            event.entityId, event.deviceId, event.userId)
     }
 
     @EventListener
     @Async
-    @Transactional
     fun handleInvoiceUpdated(event: InvoiceUpdatedEvent) {
-        persistAndBroadcast(
-            workspaceId = event.workspaceId,
-            eventType = EventType.INVOICE_UPDATED,
-            entityType = "invoice",
-            entityId = event.entityId,
-            deviceId = event.deviceId,
-            userId = event.userId,
-            payload = event.getChanges()
-        )
+        persistAndBroadcast(event.workspaceId, EventType.INVOICE_UPDATED, "invoice",
+            event.entityId, event.deviceId, event.userId)
     }
 
     @EventListener
     @Async
-    @Transactional
     fun handleInvoicePaid(event: InvoicePaidEvent) {
-        persistAndBroadcast(
-            workspaceId = event.workspaceId,
-            eventType = EventType.INVOICE_PAID,
-            entityType = "invoice",
-            entityId = event.entityId,
-            deviceId = event.deviceId,
-            userId = event.userId,
-            payload = event.getChanges()
-        )
+        persistAndBroadcast(event.workspaceId, EventType.INVOICE_PAID, "invoice",
+            event.entityId, event.deviceId, event.userId)
     }
 
     @EventListener
     @Async
-    @Transactional
     fun handleInvoiceStatusChanged(event: InvoiceStatusChangedEvent) {
-        persistAndBroadcast(
-            workspaceId = event.workspaceId,
-            eventType = EventType.INVOICE_UPDATED,
-            entityType = "invoice",
-            entityId = event.entityId,
-            deviceId = event.deviceId,
-            userId = event.userId,
-            payload = event.getChanges()
-        )
+        persistAndBroadcast(event.workspaceId, EventType.INVOICE_UPDATED, "invoice",
+            event.entityId, event.deviceId, event.userId)
     }
 
     @EventListener
     @Async
-    @Transactional
     fun handleInvoiceDeleted(event: InvoiceDeletedEvent) {
-        persistAndBroadcast(
-            workspaceId = event.workspaceId,
-            eventType = EventType.INVOICE_DELETED,
-            entityType = "invoice",
-            entityId = event.entityId,
-            deviceId = event.deviceId,
-            userId = event.userId,
-            payload = event.getChanges()
-        )
+        persistAndBroadcast(event.workspaceId, EventType.INVOICE_DELETED, "invoice",
+            event.entityId, event.deviceId, event.userId)
     }
 
     // Generic entity change events (from core EntityChangePublisher — any entity type)
 
     @EventListener
     @Async
-    @Transactional
     fun handleEntityChanged(event: EntityChangedEvent) {
         val eventType = when (event.changeType) {
             EntityChangeType.CREATED -> EventType.ENTITY_CREATED
             EntityChangeType.UPDATED -> EventType.ENTITY_UPDATED
             EntityChangeType.DELETED -> EventType.ENTITY_DELETED
         }
-        persistAndBroadcast(
-            workspaceId = event.workspaceId,
-            eventType = eventType,
-            entityType = event.entityType,
-            entityId = event.entityId,
-            deviceId = event.deviceId,
-            userId = event.userId,
-            payload = emptyMap(),
-        )
+        persistAndBroadcast(event.workspaceId, eventType, event.entityType,
+            event.entityId, event.deviceId, event.userId)
     }
-
-    // Common persist and broadcast logic
 
     private fun persistAndBroadcast(
         workspaceId: String,
@@ -305,43 +166,47 @@ class WorkspaceEventListener(
         entityId: String,
         deviceId: String,
         userId: String,
-        payload: Map<String, Any>
     ) {
         try {
-            // Get next sequence number
-            val sequenceNumber = eventRepository.getNextSequenceNumber(workspaceId)
-
-            // Slim signal: persist/broadcast only the change watermark, never the full record.
-            // The change time approximates the entity's updatedAt (this runs post-commit); the
-            // authoritative reconciliation path is the data-derived /sync/checkpoints bootstrap.
-            val lastUpdatedAt = java.time.Instant.now()
-
-            // Persist event
-            val workspaceEvent = WorkspaceEvent().apply {
-                this.workspaceId = workspaceId
-                this.eventType = eventType
-                this.entityType = entityType
-                this.entityId = entityId
-                this.deviceId = deviceId
-                this.userId = userId
-                this.sequenceNumber = sequenceNumber
-                this.payload = objectMapper.writeValueAsString(mapOf("last_updated_at" to lastUpdatedAt.toString()))
-            }
-            eventRepository.save(workspaceEvent)
-
-            logger.debug(
-                "Persisted event: type={}, entity={}, id={}, seq={}",
-                eventType, entityType, entityId, sequenceNumber
+            val lastUpdatedAt = Instant.now()
+            val payloadJson = objectMapper.writeValueAsString(
+                mapOf("last_updated_at" to lastUpdatedAt.toString())
+            )
+            val sequenceNumber = eventStore.nextSequence(workspaceId)
+            val upsert = eventStore.upsertWatermark(
+                workspaceId = workspaceId,
+                eventType = eventType,
+                entityType = entityType,
+                entityId = entityId,
+                payload = payloadJson,
+                deviceId = deviceId,
+                userId = userId,
+                sequenceNumber = sequenceNumber,
             )
 
-            val response = workspaceEvent.asWorkspaceEventResponse()
+            logger.debug(
+                "Upserted watermark: workspace={}, entityType={}, entityId={}, seq={}",
+                workspaceId, entityType, entityId, sequenceNumber,
+            )
+
+            val response = WorkspaceEventResponse(
+                uid = upsert.uid,
+                eventType = eventType,
+                entityType = entityType,
+                entityId = entityId,
+                payload = mapOf("last_updated_at" to lastUpdatedAt.toString()),
+                lastUpdatedAt = lastUpdatedAt,
+                deviceId = deviceId,
+                userId = userId,
+                sequenceNumber = sequenceNumber,
+                workspaceId = workspaceId,
+                createdAt = upsert.createdAt,
+            )
             val destination = Constants.WORKSPACE_EVENTS_TOPIC_PREFIX + workspaceId
 
             if (kafkaProducer != null) {
-                // Kafka mode: publish to Kafka; KafkaWorkspaceEventConsumer broadcasts on each server instance.
                 kafkaProducer.publish(destination, response)
             } else {
-                // Simple mode: broadcast directly to local WebSocket subscribers.
                 webSocketPublisher?.let { publisher ->
                     try {
                         publisher.convertAndSend(destination, response)
@@ -351,7 +216,6 @@ class WorkspaceEventListener(
                     }
                 }
             }
-
         } catch (e: Exception) {
             logger.error("Error persisting/broadcasting event", e)
         }

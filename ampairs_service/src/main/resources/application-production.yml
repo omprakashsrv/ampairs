@@ -48,9 +48,11 @@ springdoc:
         - '/invoice/v1/**'
 
 # WebSocket & Real-time Messaging Configuration
+# Kafka is not yet provisioned in production — keep the SimpleBroker fan-out for now.
+# Flip WEBSOCKET_BROKER_TYPE back to KAFKA (or AUTO) once the broker + topic exist.
 websocket:
   message-broker:
-    type: ${WEBSOCKET_BROKER_TYPE:KAFKA}
+    type: ${WEBSOCKET_BROKER_TYPE:SIMPLE}
 
     heartbeat-interval: ${WEBSOCKET_HEARTBEAT_INTERVAL:15000}
 

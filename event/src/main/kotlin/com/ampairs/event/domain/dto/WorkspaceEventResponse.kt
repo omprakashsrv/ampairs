@@ -4,9 +4,6 @@ import com.ampairs.event.domain.EventType
 import com.ampairs.event.domain.WorkspaceEvent
 import java.time.Instant
 
-/**
- * Response DTO for WorkspaceEvent
- */
 data class WorkspaceEventResponse(
     val uid: String,
     val eventType: EventType,
@@ -19,14 +16,10 @@ data class WorkspaceEventResponse(
     val deviceId: String,
     val userId: String,
     val sequenceNumber: Long,
-    val consumed: Boolean,
     val workspaceId: String,
-    val createdAt: Instant?
+    val createdAt: Instant?,
 )
 
-/**
- * Extension function to convert WorkspaceEvent to WorkspaceEventResponse
- */
 fun WorkspaceEvent.asWorkspaceEventResponse(): WorkspaceEventResponse {
     val payloadMap = this.getPayloadMap()
     val lastUpdated = (payloadMap["last_updated_at"] as? String)
@@ -41,15 +34,11 @@ fun WorkspaceEvent.asWorkspaceEventResponse(): WorkspaceEventResponse {
         deviceId = this.deviceId,
         userId = this.userId,
         sequenceNumber = this.sequenceNumber,
-        consumed = this.consumed,
         workspaceId = this.workspaceId,
-        createdAt = this.createdAt
+        createdAt = this.createdAt,
     )
 }
 
-/**
- * Extension function to convert list of WorkspaceEvent to list of WorkspaceEventResponse
- */
 fun List<WorkspaceEvent>.asWorkspaceEventResponses(): List<WorkspaceEventResponse> {
     return this.map { it.asWorkspaceEventResponse() }
 }
