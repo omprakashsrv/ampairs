@@ -4,11 +4,14 @@ Captures domain events from all modules, persists them to the database, and deli
 
 ## Responsibilities
 
-- Capture and persist domain events (orders, invoices, products, customers, members)
-- Stream events to workspace clients over WebSocket
-- Event acknowledgement and replay
+- Capture domain change events from all modules and collapse them to a per-(workspace, entity_type)
+  watermark — one row per entity type, replaced on every new event
+- Stream the latest watermark to workspace clients over WebSocket
 - Device presence tracking (ONLINE / AWAY / OFFLINE)
 - Heartbeat endpoint for connection keep-alive
+
+The watermark model is intentional: the client uses it as a nudge to refetch via the per-module
+`/sync` endpoint, which is the authoritative source. The event row never carries the entity payload.
 
 ## REST Endpoints
 
@@ -16,15 +19,9 @@ Captures domain events from all modules, persists them to the database, and deli
 
 | Method | Path | Description |
 |--------|------|-------------|
-| GET | `/api/v1/events` | Events since a sequence number (for sync) |
-| GET | `/api/v1/events/all` | All events with pagination |
-| GET | `/api/v1/events/unconsumed` | Unconsumed events |
-| GET | `/api/v1/events/unconsumed/count` | Count of unconsumed events |
+| GET | `/api/v1/events` | Watermarks newer than `sinceSequence` (catch-up) |
+| GET | `/api/v1/events/all` | All current watermarks for the workspace |
 | GET | `/api/v1/events/{eventId}` | Get event by UID |
-| GET | `/api/v1/events/entity/{entityType}/{entityId}` | Events for a specific entity |
-| GET | `/api/v1/events/type/{eventType}` | Events by type |
-| POST | `/api/v1/events/{eventId}/acknowledge` | Mark single event as consumed |
-| POST | `/api/v1/events/acknowledge` | Mark multiple events as consumed |
 
 ### Device Status (`/api/v1/devices`)
 
@@ -58,18 +55,33 @@ Events are Spring `ApplicationEvent` objects published by domain services and ca
 
 ### WorkspaceEvent
 
+Holds **one row per `(workspace_id, entity_type)`** — the latest change watermark for that type
+in that workspace. UPSERT on every event: overwrite `entity_id`, `event_type`, `sequence_number`,
+and `payload` (a `last_updated_at` stamp); preserve the original `uid` and `created_at`.
+
 ```kotlin
-class WorkspaceEvent : BaseDomain() {
-    val eventType: EventType           // ORDER_CREATED, INVOICE_PAID, etc.
-    val entityType: String             // "order", "invoice", "product", etc.
-    val entityId: String               // UID of the changed entity
-    val payload: String                // JSON snapshot of the change
-    val deviceId: String               // device that triggered the event
+class WorkspaceEvent : OwnableBaseDomain() {
+    val eventType: EventType           // latest change kind (ORDER_CREATED, INVOICE_PAID, …)
+    val entityType: String             // "order", "invoice", "product", … — part of the unique key
+    val entityId: String               // UID of the most recently changed entity of this type
+    val payload: String                // {"last_updated_at": "<ISO instant>"} — no entity payload
+    val deviceId: String               // device that triggered the latest change
     val userId: String
-    val workspaceId: String
-    val sequenceNumber: Long           // monotonically increasing per workspace
-    val consumed: Boolean              // acknowledged by client
+    val workspaceId: String            // part of the unique key
+    val sequenceNumber: Long           // vended atomically from workspace_event_sequence
 }
+```
+
+### Sequence generation
+
+A single global Postgres `SEQUENCE workspace_event_seq` vends `sequence_number`. Atomic by
+definition — replaces the prior racy `MAX(sequence_number) + 1` lookup that was tripping
+`uk_workspace_sequence` under concurrent writes. Sequence numbers are sparse per workspace (gaps
+where other workspaces consumed the sequence) but strictly monotonic within a workspace, which
+is all the `?sinceSequence=N` catch-up contract requires.
+
+```sql
+CREATE SEQUENCE workspace_event_seq AS BIGINT START WITH 1 INCREMENT BY 1 NO CYCLE;
 ```
 
 ### WebSocketSession
@@ -113,6 +125,8 @@ Note: For SimpleBroker, set to 0 — application-level heartbeat is used instead
 | File | Description |
 |------|-------------|
 | `V1.0.3__create_event_system_tables.sql` | workspace_events, websocket_sessions tables |
+| `V1.0.57__fix_websocket_session_timestamp_types.sql` | TIMESTAMP → TIMESTAMPTZ on device_sessions |
+| `V1.0.91__collapse_events_to_entity_type_watermark.sql` | Drop per-row uk_workspace_sequence, truncate workspace_events, add unique (workspace_id, entity_type), create workspace_event_seq SEQUENCE |
 
 ## Package Structure
 
