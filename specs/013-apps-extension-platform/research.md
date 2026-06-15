@@ -29,9 +29,9 @@ All decisions below resolve the spec's clarified requirements against the existi
 
 ## R5. Record identity across multiple connectors
 
-- **Decision**: The entity's single `refId` (on `OwnableBaseDomain`) is the identity key, owned by the first/owning connector. A second connector reconciles to that record by business keys when possible, else maintains its own separate record; it never overwrites another connector's `refId`. Field mapping is per connector installation; overlapping fields across connectors resolve by last-write-wins (timestamp).
-- **Rationale**: FR-019/FR-019a/FR-019b — chosen "single refId, one owner" + "allow overlap, last-write-wins" in clarification, consistent with the project's last-write-wins conflict semantics.
-- **Alternatives considered**: Per-connector external-reference table (rejected by stakeholder in favour of single refId); field ownership / priority order (rejected in favour of last-write-wins).
+- **Decision**: The entity's `refId` (on `OwnableBaseDomain`), or the client-authored `uid`, is the identity key — and the **only** match key. Matching is by `refId`/`uid` alone; **no business-key reconciliation**. A row that matches updates the record; a non-matching row creates a new one. A connector never overwrites another connector's `refId`. Field mapping is per connector installation; overlapping fields across connectors resolve by last-write-wins (timestamp).
+- **Rationale**: FR-019/FR-019a/FR-019b — chosen "single refId/uid, one owner" + "allow overlap, last-write-wins"; the analysis-remediation decision dropped business-key reconciliation to keep matching deterministic and simple.
+- **Alternatives considered**: Per-connector external-reference table (rejected — single refId); business-key reconciliation (rejected in remediation — refId/uid only); field ownership / priority order (rejected in favour of last-write-wins).
 
 ## R6. Entitlement / catalogue gating
 

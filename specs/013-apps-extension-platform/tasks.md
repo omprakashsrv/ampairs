@@ -83,6 +83,8 @@
 - [ ] T026 [US2] `controller/ConnectorConfigController.kt` (`GET/PUT /installations/{uid}/config`, `POST .../config/test`) + `controller/ConnectorMappingController.kt` (`GET/PUT /installations/{uid}/mappings`); tenant context per method.
 - [ ] T027 [US2] Transition installation `NEEDS_CONFIG → ENABLED` once a valid config + at least one mapping exist (FR-006).
 - [ ] T028 [P] [US2] [TEST] Contract test `ConfigAndMappingContractTest.kt`: config round-trips with secrets masked; mapping persists; invalid `ampairs_field` rejected (FR-013).
+- [ ] T028a [CLIENT ampairs-app] [US2] Client-side **connection/reachability test** (FR-009, G2): the desktop app tests reachability of the local external system (Tally host:port) and reports the result to the backend `POST /connector/v1/installations/{uid}/config/test`; backend records `last_validated_at`. Server never reaches a client-side connector's external system.
+- [ ] T028b [CLIENT ampairs-app] [US2] (also [WEB ampairs-web] T050) **Data-mapping + formatting/converter UI** (FR-014, G1): non-developer editor to map external↔Ampairs fields per entity, mark unmapped, AND define value formatting/conversion (transformation) rules (phone/GSTIN sanitisation, unit conversion, date/number formatting); persists via `PUT /connector/v1/installations/{uid}/mappings`.
 
 **Checkpoint**: US1+US2 work — a connector can be installed, configured, mapped.
 
@@ -98,7 +100,7 @@
 - [ ] T030 [US3] Flyway `V1.0.2__connector_sync_state.sql` (both vendors): `connector_sync_checkpoint` (unique `(installation_uid, entity_type, direction)`), `connector_sync_run`.
 - [ ] T031 [P] [US3] Repositories `ConnectorSyncCheckpointRepository.kt`, `ConnectorSyncRunRepository.kt`.
 - [ ] T032 [US3] **Sparse upsert request/result model**: `SparseUpsertRow` carrying `ref_id`, `entity_type`, and `values: Map<String, JsonNode?>` (or `Map<String, Any?>`) where **key presence is the signal** (FR-018c) — do NOT use a fixed nullable DTO. `SparseUpsertResult` (ref_id, ampairs_uid?, outcome, applied_columns). (research.md R4)
-- [ ] T033 [US3] `service/ConnectorSparseUpsertService.kt` (the core, reuse `ProductService.updateProducts()` merge pattern): for each row → `writable = values.keys ∩ mappingAllowlist(installation, entityType)`; dispatch to `ConnectorEntityWriter` for `entityType` with the present, in-allowlist columns; key present ⇒ write (incl. explicit null = clear), key absent ⇒ leave untouched; keys outside allowlist ignored (FR-018/FR-018b/FR-019).
+- [ ] T033 [US3] `service/ConnectorSparseUpsertService.kt` (the core, reuse `ProductService.updateProducts()` merge pattern): match the existing record by `refId` (or `uid`) **only** — no business-key reconciliation; a non-matching row creates a new record (FR-019). For each row → `writable = values.keys ∩ mappingAllowlist(installation, entityType)`; dispatch to `ConnectorEntityWriter` for `entityType` with the present, in-allowlist columns; key present ⇒ write (incl. explicit null = clear), key absent ⇒ leave untouched; keys outside allowlist ignored (FR-018/FR-018b). Overlapping-connector writes to the same field resolve last-write-wins (FR-019b).
 - [ ] T034 [US3] `controller/ConnectorDataController.kt`: `POST /installations/{uid}/data/{entity_type}/upsert` (body `List<SparseUpsertRow>`) → `ApiResponse<List<SparseUpsertResult>>`; tenant context; this is SEPARATE from global `/{module}/v1/{resource}/sync` (FR-018a — leave that untouched).
 - [ ] T035 [P] [US3] Implement `ConnectorEntityWriter` in the **customer** module (`customer/.../ConnectorCustomerWriter.kt`) and **product** module (`product/.../ConnectorProductWriter.kt`), applying present columns by `refId` via their existing services (Principle IX). Cover Tally entities: customer, customer_group, product, product_catalog, unit, stock_balance (unit in `unit` module).
 - [ ] T036 [US3] `service/ConnectorCheckpointService.kt` + endpoint `PUT /installations/{uid}/checkpoints` (advance watermark, FR-017); incremental semantics (FR-016).
@@ -119,6 +121,7 @@
 
 - [ ] T041 [US4] Backend `controller`/`service`: `POST /installations/{uid}/pause` + `/resume` (FR-025) toggling status PAUSED⇄ENABLED; honor `autoStart`/`scheduleSeconds`.
 - [ ] T042 [CLIENT ampairs-app] [US4] `shared/src/desktopMain/com/ampairs/tallysync/TallySyncScheduler`: auto-start background sync when an `ENABLED` connector is discovered from pulled config; resume from backend checkpoint on app start (FR-023/FR-024); stop when PAUSED.
+- [ ] T042a [CLIENT ampairs-app] [US4] **Connector status UI** (FR-H04, G3): show connector state (NEEDS_CONFIG/ENABLED/PAUSED/ERROR) and last sync run result (time, counts, error) in the client; surface pause/resume and on-demand sync trigger (FR-025).
 
 **Checkpoint**: Configured connectors run hands-free.
 

@@ -100,7 +100,7 @@ Audit record per sync execution (FR-020).
 
 ## External Record Identity (no new table)
 
-The entity's single `refId` (already on `OwnableBaseDomain` for customer/product/etc.) holds the owning connector's external id and is the sparse-upsert match key (R5/FR-019). No per-connector reference table.
+The entity's `refId` (already on `OwnableBaseDomain` for customer/product/etc.), or the client-authored `uid`, holds the owning connector's external id and is the **sole** sparse-upsert match key (R5/FR-019) — no business-key reconciliation; a non-matching row creates a new record. No per-connector reference table.
 
 ## Client-side mirror (KMP `ampairs-app`)
 
