@@ -74,14 +74,14 @@
 
 **Independent Test**: Save config + edit mapping for `customer`; reload → returned unchanged with secrets masked; invalid mapping target rejected.
 
-- [ ] T020 [US2] `domain/model/ConnectorConfig.kt` (installationUid, nonSecretValues map, secretValuesEncrypted text, lastValidatedAt) + `domain/model/ConnectorFieldMapping.kt` (installationUid, entityType, rules JSON, version). (data-model.md §§Config, FieldMapping)
-- [ ] T021 [US2] Flyway `V1.0.1__connector_config_mapping.sql` (both vendors): `connector_config`, `connector_field_mapping`; unique `(installation_uid, entity_type)` on mapping.
-- [ ] T022 [P] [US2] `repository/ConnectorConfigRepository.kt` + `repository/ConnectorFieldMappingRepository.kt`.
-- [ ] T023 [P] [US2] DTOs in `domain/dto/`: `ConfigRequest`/`ConfigResponse` (response excludes secrets, exposes `secret_keys_set` masked, FR-008), `FieldMapping`/`FieldMappingRule` DTOs + converters.
-- [ ] T024 [US2] `service/ConnectorConfigService.kt`: upsert config (encrypt secrets via `ConnectorSecretCipher`), get (mask), `testConnection` (validate w/o echoing secrets, FR-009 — for client-side connectors this records intent/last_validated; actual reachability is client-tested).
-- [ ] T025 [US2] `service/ConnectorMappingService.kt`: upsert mapping, get; **validate each `ampairs_field` against the live target-entity schema and type** (FR-013) → `InvalidMappingException` on bad target; bump `version`.
-- [ ] T026 [US2] `controller/ConnectorConfigController.kt` (`GET/PUT /installations/{uid}/config`, `POST .../config/test`) + `controller/ConnectorMappingController.kt` (`GET/PUT /installations/{uid}/mappings`); tenant context per method.
-- [ ] T027 [US2] Transition installation `NEEDS_CONFIG → ENABLED` once a valid config + at least one mapping exist (FR-006).
+- [X] T020 [US2] `domain/model/ConnectorConfig.kt` (installationUid, nonSecretValues map, secretValuesEncrypted text, lastValidatedAt) + `domain/model/ConnectorFieldMapping.kt` (installationUid, entityType, rules JSON, version). (data-model.md §§Config, FieldMapping)
+- [X] T021 [US2] Flyway `V1.0.1__connector_config_mapping.sql` (both vendors): `connector_config`, `connector_field_mapping`; unique `(installation_uid, entity_type)` on mapping.
+- [X] T022 [P] [US2] `repository/ConnectorConfigRepository.kt` + `repository/ConnectorFieldMappingRepository.kt`.
+- [X] T023 [P] [US2] DTOs in `domain/dto/`: `ConfigRequest`/`ConfigResponse` (response excludes secrets, exposes `secret_keys_set` masked, FR-008), `FieldMapping`/`FieldMappingRule` DTOs + converters.
+- [X] T024 [US2] `service/ConnectorConfigService.kt`: upsert config (encrypt secrets via `ConnectorSecretCipher`), get (mask), `testConnection` (validate w/o echoing secrets, FR-009 — for client-side connectors this records intent/last_validated; actual reachability is client-tested).
+- [X] T025 [US2] `service/ConnectorMappingService.kt`: upsert mapping, get; **validate each `ampairs_field` against the live target-entity schema and type** (FR-013) → `InvalidMappingException` on bad target; bump `version`.
+- [X] T026 [US2] `controller/ConnectorConfigController.kt` (`GET/PUT /installations/{uid}/config`, `POST .../config/test`) + `controller/ConnectorMappingController.kt` (`GET/PUT /installations/{uid}/mappings`); tenant context per method.
+- [X] T027 [US2] Transition installation `NEEDS_CONFIG → ENABLED` once a valid config + at least one mapping exist (FR-006).
 - [ ] T028 [P] [US2] [TEST] Contract test `ConfigAndMappingContractTest.kt`: config round-trips with secrets masked; mapping persists; invalid `ampairs_field` rejected (FR-013).
 - [ ] T028a [CLIENT ampairs-app] [US2] Client-side **connection/reachability test** (FR-009, G2): the desktop app tests reachability of the local external system (Tally host:port) and reports the result to the backend `POST /connector/v1/installations/{uid}/config/test`; backend records `last_validated_at`. Server never reaches a client-side connector's external system.
 - [ ] T028b [CLIENT ampairs-app] [US2] (also [WEB ampairs-web] T050) **Data-mapping + formatting/converter UI** (FR-014, G1): non-developer editor to map external↔Ampairs fields per entity, mark unmapped, AND define value formatting/conversion (transformation) rules (phone/GSTIN sanitisation, unit conversion, date/number formatting); persists via `PUT /connector/v1/installations/{uid}/mappings`.
@@ -96,17 +96,17 @@
 
 **Independent Test**: Sparse-upsert row1 `{ref_id:1, values:{column1,column2}}` and row2 `{ref_id:2, values:{column3,column4}}` → each writes only its columns, all others preserved; omit a previously-set column → preserved; explicit null → cleared; re-sync unchanged data → 0 writes.
 
-- [ ] T029 [US3] `domain/model/ConnectorSyncCheckpoint.kt` (installationUid, entityType, direction, watermark, lastSyncedAt) + `domain/model/ConnectorSyncRun.kt` (installationUid, entityType?, trigger, startedAt, finishedAt?, status, processed/created/updated/failed, errorDetail). (data-model.md §§Checkpoint, Run)
-- [ ] T030 [US3] Flyway `V1.0.2__connector_sync_state.sql` (both vendors): `connector_sync_checkpoint` (unique `(installation_uid, entity_type, direction)`), `connector_sync_run`.
-- [ ] T031 [P] [US3] Repositories `ConnectorSyncCheckpointRepository.kt`, `ConnectorSyncRunRepository.kt`.
-- [ ] T032 [US3] **Sparse upsert request/result model**: `SparseUpsertRow` carrying `ref_id`, `entity_type`, and `values: Map<String, JsonNode?>` (or `Map<String, Any?>`) where **key presence is the signal** (FR-018c) — do NOT use a fixed nullable DTO. `SparseUpsertResult` (ref_id, ampairs_uid?, outcome, applied_columns). (research.md R4)
-- [ ] T033 [US3] `service/ConnectorSparseUpsertService.kt` (the core, reuse `ProductService.updateProducts()` merge pattern): match the existing record by `refId` (or `uid`) **only** — no business-key reconciliation; a non-matching row creates a new record (FR-019). For each row → `writable = values.keys ∩ mappingAllowlist(installation, entityType)`; dispatch to `ConnectorEntityWriter` for `entityType` with the present, in-allowlist columns; key present ⇒ write (incl. explicit null = clear), key absent ⇒ leave untouched; keys outside allowlist ignored (FR-018/FR-018b). Overlapping-connector writes to the same field resolve last-write-wins (FR-019b).
-- [ ] T034 [US3] `controller/ConnectorDataController.kt`: `POST /installations/{uid}/data/{entity_type}/upsert` (body `List<SparseUpsertRow>`) → `ApiResponse<List<SparseUpsertResult>>`; tenant context; this is SEPARATE from global `/{module}/v1/{resource}/sync` (FR-018a — leave that untouched).
-- [ ] T035 [P] [US3] Implement `ConnectorEntityWriter` in the **customer** module (`customer/.../ConnectorCustomerWriter.kt`) and **product** module (`product/.../ConnectorProductWriter.kt`), applying present columns by `refId` via their existing services (Principle IX). Cover Tally entities: customer, customer_group, product, product_catalog, unit, stock_balance (unit in `unit` module).
-- [ ] T036 [US3] `service/ConnectorCheckpointService.kt` + endpoint `PUT /installations/{uid}/checkpoints` (advance watermark, FR-017); incremental semantics (FR-016).
-- [ ] T037 [US3] `service/ConnectorSyncRunService.kt` + endpoints `GET/POST /installations/{uid}/runs` (record + list run history, FR-020); admin visibility (FR-007).
-- [ ] T038 [US3] `controller/ConnectorSyncController.kt`: `GET /connector/v1/sync` metadata pull (installations + masked config + mappings + checkpoints) for client mirroring; canonical `/sync` style with `last_sync/page/size/sort_by/sort_dir` → `ApiResponse<PageResponse<...>>`.
-- [ ] T039 [US3] Serialise concurrent sparse-upserts per (installation, entity) and ensure checkpoint only advances past accounted rows (FR-021/FR-022); partial-failure → per-row FAILED in result, run status PARTIAL.
+- [X] T029 [US3] `domain/model/ConnectorSyncCheckpoint.kt` (installationUid, entityType, direction, watermark, lastSyncedAt) + `domain/model/ConnectorSyncRun.kt` (installationUid, entityType?, trigger, startedAt, finishedAt?, status, processed/created/updated/failed, errorDetail). (data-model.md §§Checkpoint, Run)
+- [X] T030 [US3] Flyway `V1.0.2__connector_sync_state.sql` (both vendors): `connector_sync_checkpoint` (unique `(installation_uid, entity_type, direction)`), `connector_sync_run`.
+- [X] T031 [P] [US3] Repositories `ConnectorSyncCheckpointRepository.kt`, `ConnectorSyncRunRepository.kt`.
+- [X] T032 [US3] **Sparse upsert request/result model**: `SparseUpsertRow` carrying `ref_id`, `entity_type`, and `values: Map<String, JsonNode?>` (or `Map<String, Any?>`) where **key presence is the signal** (FR-018c) — do NOT use a fixed nullable DTO. `SparseUpsertResult` (ref_id, ampairs_uid?, outcome, applied_columns). (research.md R4)
+- [X] T033 [US3] `service/ConnectorSparseUpsertService.kt` (the core, reuse `ProductService.updateProducts()` merge pattern): match the existing record by `refId` (or `uid`) **only** — no business-key reconciliation; a non-matching row creates a new record (FR-019). For each row → `writable = values.keys ∩ mappingAllowlist(installation, entityType)`; dispatch to `ConnectorEntityWriter` for `entityType` with the present, in-allowlist columns; key present ⇒ write (incl. explicit null = clear), key absent ⇒ leave untouched; keys outside allowlist ignored (FR-018/FR-018b). Overlapping-connector writes to the same field resolve last-write-wins (FR-019b).
+- [X] T034 [US3] `controller/ConnectorDataController.kt`: `POST /installations/{uid}/data/{entity_type}/upsert` (body `List<SparseUpsertRow>`) → `ApiResponse<List<SparseUpsertResult>>`; tenant context; this is SEPARATE from global `/{module}/v1/{resource}/sync` (FR-018a — leave that untouched).
+- [X] T035 [P] [US3] Implement `ConnectorEntityWriter` in the **customer** module (`customer/.../ConnectorCustomerWriter.kt`) and **product** module (`product/.../ConnectorProductWriter.kt`), applying present columns by `refId` via their existing services (Principle IX). Cover Tally entities: customer, customer_group, product, product_catalog, unit, stock_balance (unit in `unit` module).
+- [X] T036 [US3] `service/ConnectorCheckpointService.kt` + endpoint `PUT /installations/{uid}/checkpoints` (advance watermark, FR-017); incremental semantics (FR-016).
+- [X] T037 [US3] `service/ConnectorSyncRunService.kt` + endpoints `GET/POST /installations/{uid}/runs` (record + list run history, FR-020); admin visibility (FR-007).
+- [X] T038 [US3] `controller/ConnectorSyncController.kt`: `GET /connector/v1/sync` metadata pull (installations + masked config + mappings + checkpoints) for client mirroring; canonical `/sync` style with `last_sync/page/size/sort_by/sort_dir` → `ApiResponse<PageResponse<...>>`.
+- [X] T039 [US3] Serialise concurrent sparse-upserts per (installation, entity) and ensure checkpoint only advances past accounted rows (FR-021/FR-022); partial-failure → per-row FAILED in result, run status PARTIAL.
 - [ ] T040 [US3] [TEST] Integration test `SparseUpsertDataIntegrityTest.kt` (Testcontainers): verifies SC-004 (row1≠row2 columns, unmapped/omitted preserved), explicit-null clears, out-of-allowlist ignored, no duplicates by refId, and SC-008 resume-after-interruption (checkpoint).
 
 **Checkpoint**: US1+US2+US3 = full server-side platform for one connector; data integrity proven.
@@ -119,7 +119,7 @@
 
 **Independent Test**: Configure a connector, do nothing → background sync runs on schedule; restart client → resumes from backend checkpoint; pause → no sync.
 
-- [ ] T041 [US4] Backend `controller`/`service`: `POST /installations/{uid}/pause` + `/resume` (FR-025) toggling status PAUSED⇄ENABLED; honor `autoStart`/`scheduleSeconds`.
+- [X] T041 [US4] Backend `controller`/`service`: `POST /installations/{uid}/pause` + `/resume` (FR-025) toggling status PAUSED⇄ENABLED; honor `autoStart`/`scheduleSeconds`.
 - [ ] T042 [CLIENT ampairs-app] [US4] `shared/src/desktopMain/com/ampairs/tallysync/TallySyncScheduler`: auto-start background sync when an `ENABLED` connector is discovered from pulled config; resume from backend checkpoint on app start (FR-023/FR-024); stop when PAUSED.
 - [ ] T042a [CLIENT ampairs-app] [US4] **Connector status UI** (FR-H04, G3): show connector state (NEEDS_CONFIG/ENABLED/PAUSED/ERROR) and last sync run result (time, counts, error) in the client; surface pause/resume and on-demand sync trigger (FR-025).
 
@@ -133,7 +133,7 @@
 
 **Independent Test**: A workspace using client-side Tally enables the Tally connector → customers/products/units/groups keep syncing, no duplicates, prior data preserved.
 
-- [ ] T043 [US5] Backend: register the **Tally** `CatalogueConnector` provider (`domain/catalogue/TallyConnectorProvider.kt`): `type="tally"`, `hostingType=CLIENT_SIDE`, supportedEntities (customer, customer_group, product, product_catalog, unit, stock_balance), `supportedDirections=[INBOUND]`, connectionSchema (host, port), default mapping template mirroring current `TallyCustomerMapper`/`TallyProductMapper`.
+- [X] T043 [US5] Backend: register the **Tally** `CatalogueConnector` provider (`domain/catalogue/TallyConnectorProvider.kt`): `type="tally"`, `hostingType=CLIENT_SIDE`, supportedEntities (customer, customer_group, product, product_catalog, unit, stock_balance), `supportedDirections=[INBOUND]`, connectionSchema (host, port), default mapping template mirroring current `TallyCustomerMapper`/`TallyProductMapper`.
 - [ ] T044 [P] [CLIENT ampairs-app] [US5] Add `SyncEntity.CONNECTOR`; create `ConnectorSyncDelegate` (mirror `feature/store/.../StoreSyncDelegate`) pulling `/connector/v1/sync` into a workspace-scoped Room cache; `@ContributesIntoMap(WorkspaceScope::class)` + `@SyncEntityKey`.
 - [ ] T045 [P] [CLIENT ampairs-app] [US5] `ConnectorConfigProvider` (mirror `feature/store/.../StoreSettingsProvider`) exposing host/port/mapping/watermark from the cache.
 - [ ] T046 [CLIENT ampairs-app] [US5] Repoint `TallySyncService`/`TallySyncScheduler` to read config+mapping+watermark from `ConnectorConfigProvider` instead of `AppPreferencesDataStore`; after each Tally cycle push business data via `POST .../data/{entity_type}/upsert` and report checkpoint + run to backend.
@@ -148,7 +148,7 @@
 
 **Goal**: Platform-ready for bidirectional sync without re-architecture; no execution in this release.
 
-- [ ] T049 [US6] Ensure `supportedDirections` (catalogue) and a per-installation `direction` setting exist and are persisted; default INBOUND only; document OUTBOUND execution + most-recent-update-wins conflict (FR-030/FR-031) as deferred. No outbound execution code.
+- [X] T049 [US6] Ensure `supportedDirections` (catalogue) and a per-installation `direction` setting exist and are persisted; default INBOUND only; document OUTBOUND execution + most-recent-update-wins conflict (FR-030/FR-031) as deferred. No outbound execution code.
 
 ---
 
