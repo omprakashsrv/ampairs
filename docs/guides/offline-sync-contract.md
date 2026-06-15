@@ -120,6 +120,13 @@ fun bulkUpsert(requests: List<XRequest>): List<XResponse> = requests.map { req -
   UID-keyed rows, so a bulk `/sync` push does not apply.
 - **file** — binary image upload via multipart `POST /images/{type}/{uid}`, entity-scoped `GET`, per-image
   `DELETE`. Binary can't ride a JSON `List<T>` body, and it's UI-invoked, not central-sync.
+- **connector** (Apps & Extensions platform, spec 013) — external-system data lands via a dedicated
+  **sparse-upsert** endpoint `POST /connector/v1/installations/{uid}/data/{entity_type}/upsert`, NOT the
+  global `/sync`. Each row carries a sparse `values` map where **key presence** decides which columns are
+  written (omitted = preserved, explicit null = clear), intersected with the installation's mapping
+  allowlist. This per-row partial-update semantics is intentionally different from the full UID-keyed
+  upsert above, so it stays off-contract. The connector's own metadata (installations) still uses a
+  standard `GET /connector/v1/sync` pull for client mirroring.
 
 ---
 
