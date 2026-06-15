@@ -37,4 +37,12 @@ class ConnectorInstallationController(
         installationService.uninstall(uid)
         return ApiResponse.success(Unit)
     }
+
+    @PostMapping("/{uid}/pause")
+    fun pause(@PathVariable uid: String): ApiResponse<InstallationResponse> =
+        ApiResponse.success(installationService.pause(uid).asResponse())
+
+    @PostMapping("/{uid}/resume")
+    fun resume(@PathVariable uid: String): ApiResponse<InstallationResponse> =
+        ApiResponse.success(installationService.resume(uid).asResponse())
 }
