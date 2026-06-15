@@ -7,7 +7,23 @@
 
 ## Overview
 
-Ampairs needs a **generic, server-managed Apps & Extensions platform** that lets a workspace connect to external business systems (Tally today; Zoho, Salesforce, HubSpot and others later) without bespoke client-side code per integration. A workspace administrator browses a catalogue of available connectors, installs one into their workspace, supplies connection details, maps the external system's fields to Ampairs fields, and from then on the **server** drives an incremental, stateful synchronisation between the external system and Ampairs data. Mapped fields are updated on each sync; unmapped fields on existing records are preserved untouched. Configured connectors start automatically. The existing client-side, one-way Tally integration is migrated onto this platform so it becomes one connector among many.
+Ampairs needs a **generic Apps & Extensions platform** that lets a workspace connect to external business systems (Tally today; Zoho, Salesforce, HubSpot and others later) without bespoke, hardcoded integration code. A workspace administrator browses a catalogue of available connectors, installs one into their workspace, supplies connection details, and maps the external system's fields to Ampairs fields. The connector then synchronises data incrementally and statefully between the external system and Ampairs.
+
+The platform supports **two connector hosting types**:
+
+1. **Client-side connectors (priority — e.g. Tally)**: all push/pull execution happens in the Ampairs client (desktop) app, which talks to the local external system and pushes mapped data to the Ampairs backend via the existing `/sync` contract. What is **new** is that the connector's configuration, field mapping, sync checkpoints, and run history are **persisted to (and synced from) the backend**, so the setup is retained across reinstalls/devices and the client keeps the sync running in the background with a status UI.
+2. **Server-side connectors (deferred — not a priority now)**: both push and pull run on the server for internet-reachable systems. The platform's model (catalogue, install, config, mapping, sync-state) is designed to accommodate this later without re-architecting.
+
+When the backend receives synced records, it updates only the mapped fields and preserves unmapped columns. Configured connectors start automatically. The existing client-side, one-way Tally integration is migrated onto this platform so it becomes one (client-side) connector among many.
+
+## Clarifications
+
+### Session 2026-06-15
+
+- Q: How should server-driven sync reach an on-premise system like Tally? → A: Connectors come in two hosting types — **client-side** (priority; Tally — all push/pull runs in the client desktop app) and **server-side** (deferred — both push/pull run on the server). Tally stays client-executed; no separate server-side relay agent is introduced. (Supersedes the earlier "local agent/bridge" answer.)
+- Q: For client-side connectors (Tally), what persists to the backend beyond the synced data itself? → A: Connector configuration + field mapping + per-entity sync checkpoints/watermarks + run/job history. (Data continues to reach Ampairs via the existing `/sync` push; backend applies mapped-fields-only partial updates.)
+- Q: Where do client-side connectors execute? → A: Inside the existing Ampairs client (desktop) app, extending today's Tally module — reusing the existing client sync path.
+- Q: Two-way conflict authority when both sides change a record between syncs? → A: Most-recent-update-wins (newer last-modified timestamp), consistent with the project's last-write-wins semantics.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -45,36 +61,36 @@ After installing a connector, the administrator supplies the connection details 
 
 ---
 
-### User Story 3 - Server-side incremental stateful sync (Priority: P1)
+### User Story 3 - Incremental stateful sync (Priority: P1)
 
-Once a connector is configured and mapped, the server periodically (and on demand) synchronises data from the external system into Ampairs. Each sync only fetches what changed since the last successful sync (incremental) and remembers its position so the next run resumes from there (stateful). For each record, only the mapped fields are written; any unmapped Ampairs fields on an existing record are left exactly as they were.
+Once a connector is configured and mapped, it periodically (and on demand) synchronises data between the external system and Ampairs. For client-side connectors (Tally — the priority), the Ampairs client (desktop) app performs the push/pull and pushes mapped data to the backend; for server-side connectors (deferred) the server performs it. Either way, each sync only processes what changed since the last successful sync (incremental) and remembers its position so the next run resumes from there (stateful). The sync checkpoints and run history are persisted to the backend so the setup survives reinstalls/devices. When the backend stores a record, only the mapped fields are written; any unmapped Ampairs columns on an existing record are left exactly as they were.
 
-**Why this priority**: This is the core value — moving sync from the client to the server and making it incremental, stateful, and non-destructive. It is the reason the platform exists.
+**Why this priority**: Incremental, stateful, non-destructive sync — with config, mapping, checkpoints, and history retained server-side — is the core value and the reason the platform exists.
 
-**Independent Test**: With a configured connector, run a sync, verify mapped records appear/update in Ampairs; change one external record, run again, verify only the changed record is processed and unmapped fields on it are untouched.
+**Independent Test**: With a configured connector, run a sync, verify mapped records appear/update in Ampairs; change one external record, run again, verify only the changed record is processed and unmapped columns on it are untouched; reinstall the client and confirm the connector resumes incrementally from the backend-persisted checkpoint.
 
 **Acceptance Scenarios**:
 
-1. **Given** a configured connector running its first sync, **When** the sync completes, **Then** external records are created/updated in Ampairs using the mapping, and a sync-state checkpoint is recorded for that connector/entity.
+1. **Given** a configured connector running its first sync, **When** the sync completes, **Then** external records are created/updated in Ampairs using the mapping, and a sync-state checkpoint for that connector/entity is persisted to the backend.
 2. **Given** a connector that has synced before, **When** a new sync runs, **Then** only records changed in the external system since the last checkpoint are processed (incremental), and the checkpoint advances.
-3. **Given** an existing Ampairs record with values in unmapped fields, **When** a sync updates that record from the external system, **Then** the mapped fields are overwritten and the unmapped fields retain their previous values.
-4. **Given** a sync run, **When** it completes or fails, **Then** an auditable run record is stored (start/end time, records processed, created/updated counts, errors) and is visible to the administrator.
-5. **Given** a sync interrupted mid-run (crash/restart), **When** sync resumes, **Then** it continues from the last persisted checkpoint without duplicating or losing records.
+3. **Given** an existing Ampairs record with values in unmapped columns, **When** synced data updates that record, **Then** the mapped fields are overwritten and the unmapped columns retain their previous values.
+4. **Given** a sync run, **When** it completes or fails, **Then** an auditable run record (start/end time, records processed, created/updated/failed counts, errors) is persisted to the backend and is visible to the administrator.
+5. **Given** a sync interrupted mid-run (client crash/restart or reinstall), **When** sync resumes, **Then** it continues from the last backend-persisted checkpoint without duplicating or losing records.
 
 ---
 
 ### User Story 4 - Auto-start configured connectors (Priority: P2)
 
-A connector that has been fully configured for a workspace begins syncing automatically on its schedule without anyone manually triggering it, and resumes automatically after a server restart.
+A connector that has been fully configured for a workspace begins syncing automatically on its schedule without anyone manually triggering it. For a client-side connector, the Ampairs client app auto-starts background sync once it detects (from the backend-persisted config) that the workspace has a configured connector; for a server-side connector, the server auto-starts it.
 
 **Why this priority**: Automation is the point of a connector — administrators configure once and expect data to keep flowing. It depends on P1–P3 existing but materially raises the product's value.
 
-**Independent Test**: Configure a connector, do nothing further, and confirm a sync runs on schedule; restart the server and confirm scheduled syncs resume for all configured workspaces.
+**Independent Test**: Configure a connector, do nothing further, and confirm a sync runs on schedule; restart the host (client app for Tally) and confirm scheduled background sync resumes from the backend-persisted checkpoint.
 
 **Acceptance Scenarios**:
 
 1. **Given** a fully configured, enabled connector, **When** its schedule elapses, **Then** a sync runs automatically with no manual trigger.
-2. **Given** the server restarts, **When** it comes back up, **Then** all enabled, configured connectors across all workspaces resume their schedules from their last checkpoints.
+2. **Given** a client-side connector and a workspace whose connector config is persisted in the backend, **When** the Ampairs client app starts (or restarts), **Then** it discovers the configured connector and resumes background sync from the last persisted checkpoint without manual setup.
 3. **Given** an administrator pauses a connector, **When** the schedule elapses, **Then** no sync runs until it is re-enabled.
 
 ---
@@ -117,7 +133,7 @@ Beyond pulling external data into Ampairs, the platform can also push Ampairs ch
 - **Mapping points to a non-existent or removed Ampairs field**: such a mapping is flagged invalid at save time (and skipped safely at sync time) rather than corrupting data.
 - **A record deleted in the external system**: handled per the connector's declared delete behaviour (propagate as soft-delete vs. ignore); the default must be explicit and non-destructive unless configured otherwise.
 - **Duplicate external identifiers / records that match more than one Ampairs record**: resolved deterministically (e.g. by stable external id) and logged rather than creating duplicates.
-- **Local agent offline**: when the workspace's local connectivity agent (for on-premise systems like Tally) is offline, the connector is shown as "waiting for agent", no sync is attempted, the checkpoint is preserved, and sync resumes automatically when the agent reconnects.
+- **Client host offline (client-side connectors)**: when the Ampairs client app hosting a client-side connector (e.g. Tally) is closed or offline, no sync runs, the backend-persisted checkpoint is preserved, and background sync resumes automatically from that checkpoint the next time the client app starts.
 - **Connector uninstalled mid-sync**: an in-flight sync stops cleanly and no further syncs run.
 - **Subscription tier no longer includes a connector**: an already-installed connector is disabled (not silently deleted) and the administrator is informed.
 - **Same workspace, same connector installed twice**: prevented — at most one installation per connector per workspace (unless the connector explicitly supports multiple connections).
@@ -127,6 +143,13 @@ Beyond pulling external data into Ampairs, the platform can also push Ampairs ch
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
+
+#### Connector hosting types
+- **FR-H01**: Each connector MUST declare a hosting type — **client-side** (push/pull executed in the Ampairs client app) or **server-side** (push/pull executed on the server) — and the platform MUST support both within the same catalogue/install/config/mapping/sync-state model.
+- **FR-H02**: For a **client-side** connector, all external-system push/pull MUST execute in the Ampairs client (desktop) app, which pushes mapped data to the Ampairs backend via the existing `/sync` contract; the backend MUST NOT require a direct connection to the external system.
+- **FR-H03**: For a client-side connector, the connector configuration, field mapping, per-entity sync checkpoints/watermarks, and run/job history MUST be persisted to the backend and synced down to the client, so setup and sync progress are retained across reinstalls and devices.
+- **FR-H04**: Client-side sync MUST continue to run in the background while the Ampairs client app is open, with a status UI showing the connector's state and last sync result.
+- **FR-H05**: Server-side connectors (both push and pull executed on the server) are explicitly deferred (not in the first release); the model MUST accommodate them later without re-architecting.
 
 #### Connector catalogue & installation
 - **FR-001**: The system MUST maintain a catalogue of available connectors, each described by a type/identifier, display name, description, the Ampairs entity types it supports, and its supported sync direction(s).
@@ -148,26 +171,26 @@ Beyond pulling external data into Ampairs, the platform can also push Ampairs ch
 - **FR-013**: The system MUST validate a mapping when saved, rejecting or flagging mappings that target non-existent Ampairs fields or violate type expectations.
 - **FR-014**: The data-mapping configuration MUST be presented through a UI that lets a non-developer administrator complete mapping without writing code.
 
-#### Sync engine (server-side, incremental, stateful)
-- **FR-015**: The server MUST perform the synchronisation between the external system and Ampairs (sync MUST NOT depend on a client device being online).
+#### Sync engine (incremental, stateful)
+- **FR-015**: The synchronisation between the external system and Ampairs MUST be performed by the connector's host — the Ampairs client app for client-side connectors (e.g. Tally), or the server for server-side connectors. For client-side connectors, sync runs whenever the client app is running and does not depend on a server-initiated trigger.
 - **FR-016**: Sync MUST be incremental — each run processes only records changed in the external system since the last successful checkpoint.
-- **FR-017**: Sync MUST be stateful — the system persists a per-connector, per-entity (and per-direction) checkpoint/watermark and resumes from it, including after a server restart or interrupted run.
-- **FR-018**: When writing a record, the system MUST update only the mapped fields and MUST preserve the existing values of unmapped fields on that record.
+- **FR-017**: Sync MUST be stateful — a per-connector, per-entity (and per-direction) checkpoint/watermark is persisted to the backend and resumed from, including after a client/server restart, reinstall, or interrupted run.
+- **FR-018**: When the backend persists a synced record, it MUST update only the mapped fields and MUST preserve the existing values of unmapped columns on that record (mapped-fields-only partial update).
 - **FR-019**: The system MUST match incoming external records to existing Ampairs records by a stable external identifier so that repeated syncs update rather than duplicate.
 - **FR-020**: The system MUST record an auditable run history per sync (start/end time, trigger, records processed, created/updated/failed counts, and error details).
 - **FR-021**: The system MUST serialise concurrent syncs for the same connector/entity so checkpoint windows do not overlap.
 - **FR-022**: On failure, the system MUST retry on a backoff, preserve the last good checkpoint, surface the error state to the administrator, and not advance the checkpoint past unaccounted records.
 
 #### Auto-start & scheduling
-- **FR-023**: The system MUST automatically run sync on a schedule for every enabled, fully configured connector without a manual trigger.
-- **FR-024**: The system MUST resume scheduled syncs for all enabled connectors across all workspaces after a server restart.
+- **FR-023**: The system MUST automatically run sync on a schedule for every enabled, fully configured connector without a manual trigger. For client-side connectors, the Ampairs client app MUST auto-start background sync upon discovering (from the backend-persisted config) that the workspace has an enabled connector.
+- **FR-024**: After a host restart (client app for client-side connectors; server for server-side connectors), the host MUST resume scheduled syncs for all enabled connectors from their backend-persisted checkpoints without manual re-setup.
 - **FR-025**: An administrator MUST be able to pause and resume a connector, and to trigger an on-demand sync.
 
 #### Migration of existing Tally integration
 - **FR-026**: Tally MUST be modelled as a connector on this platform, supporting the entities the current integration supports (customers, customer groups, products, product groups/categories, units, stock balances).
 - **FR-027**: Migration MUST match previously synced Tally records to existing Ampairs records so no duplicates are created and prior data is preserved.
 - **FR-028**: After migration, the legacy client-side Tally sync path MUST be retired without any workspace losing Tally connectivity.
-- **FR-029**: For on-premise external systems such as Tally (which run on the user's local network and are not directly reachable from the server), reachability MUST be provided by a lightweight, workspace-installed local agent/bridge that runs near the external system and relays between it and the Ampairs server. The server remains the system of record for configuration, mapping, and sync state; the agent provides only connectivity to the local system. The agent MUST authenticate to the server as its workspace, and the platform MUST surface the agent's connectivity status (online/offline) to the administrator.
+- **FR-029**: Tally MUST be modelled as a **client-side** connector: its push/pull continues to execute in the Ampairs client (desktop) app talking to the local Tally instance (no server-side relay agent is introduced). The migration's new behaviour is that Tally's configuration, mapping, sync checkpoints, and run history move from client-only storage to backend-persisted storage (per FR-H03), so the setup is retained and discoverable across reinstalls/devices.
 
 #### Two-way sync (future-facing)
 - **FR-030**: The platform MUST be designed so a connector can declare and later perform bidirectional sync (Ampairs → external) without re-architecting the catalogue, configuration, mapping, or sync-state model.
@@ -175,14 +198,13 @@ Beyond pulling external data into Ampairs, the platform can also push Ampairs ch
 
 ### Key Entities *(include if feature involves data)*
 
-- **Connector (catalogue definition)**: A type of external integration available to install (Tally, Zoho, etc.). Attributes: identifier/type, display name, description, supported entity types, supported sync directions, default mapping template, connection-detail schema, entitlement/tier requirement.
+- **Connector (catalogue definition)**: A type of external integration available to install (Tally, Zoho, etc.). Attributes: identifier/type, **hosting type (client-side / server-side)**, display name, description, supported entity types, supported sync directions, default mapping template, connection-detail schema, entitlement/tier requirement.
 - **Connector Installation**: A connector enabled for a specific workspace. Attributes: workspace, connector reference, lifecycle state, enabled/auto-start flag, schedule, timestamps. Tenant-scoped.
 - **Connection Configuration / Credentials**: The per-installation connection details and secrets needed to reach the external system. Securely stored; secrets never exposed to clients.
 - **Data Mapping**: Per-installation, per-entity rules describing how external fields map to Ampairs fields, which fields are unmapped, and transformation/sanitisation rules. Persisted server-side.
-- **Sync State / Checkpoint**: Per-installation, per-entity, per-direction watermark recording how far sync has progressed (the basis for incremental + stateful behaviour).
-- **Sync Run / Job History**: An auditable record of each sync execution — trigger, timing, counts (created/updated/failed), and errors.
+- **Sync State / Checkpoint**: Per-installation, per-entity, per-direction watermark recording how far sync has progressed (the basis for incremental + stateful behaviour). Persisted to the backend (including for client-side connectors) so it survives reinstalls/devices.
+- **Sync Run / Job History**: An auditable record of each sync execution — trigger, timing, counts (created/updated/failed), and errors. Persisted to the backend (including for client-executed runs).
 - **External Record Reference**: The link between a stable external identifier and the corresponding Ampairs record, used to match updates and avoid duplicates.
-- **Local Connectivity Agent**: A lightweight, workspace-installed bridge that runs near an on-premise external system (e.g. Tally) and relays between it and the server. Attributes: workspace, authentication identity, online/offline status, last-seen time. Holds no configuration or mapping itself — it only provides connectivity.
 
 ## Success Criteria *(mandatory)*
 
@@ -192,17 +214,18 @@ Beyond pulling external data into Ampairs, the platform can also push Ampairs ch
 - **SC-002**: Adding a brand-new connector type (e.g. Zoho) to the platform requires no changes to the install/configure/map/sync user experience — the same flows work for it.
 - **SC-003**: 100% of syncs after the first are incremental — a run with no external changes processes zero records and completes quickly.
 - **SC-004**: Across repeated syncs, zero duplicate Ampairs records are created from the same external record, and 100% of unmapped fields on updated records retain their prior values.
-- **SC-005**: Configured connectors run automatically on schedule, and after a server restart 100% of enabled connectors resume from their last checkpoint with no manual intervention.
+- **SC-005**: Configured connectors run automatically on schedule, and after a host restart (client app for Tally) 100% of enabled connectors resume from their backend-persisted checkpoint with no manual intervention.
 - **SC-006**: Every workspace currently using client-side Tally sync continues to receive Tally data after migration, with no data loss and no duplicate records.
 - **SC-007**: For every sync run, an administrator can see whether it succeeded or failed and why, within the workspace UI.
 - **SC-008**: A sync interrupted by a crash or restart resumes without losing or double-processing records (verified by record counts before/after).
 
 ## Assumptions
 
-- **Server-side ownership**: All connector configuration, mappings, credentials, sync state, and run history live in the backend database; clients are thin views over server-managed state (replacing today's DataStore-only Tally config).
-- **On-premise connectivity via agent**: On-premise systems like Tally are reached through a workspace-installed local agent/bridge (FR-029); the server orchestrates sync and holds all state, while the agent only relays data to/from the local system. Internet-reachable connectors (Zoho, Salesforce, HubSpot) may be reached by the server directly without an agent.
+- **Backend persistence, client execution (priority)**: For client-side connectors (the first-release priority), connector configuration, mapping, sync checkpoints, and run history live in the backend database (replacing today's DataStore-only Tally config), but the actual push/pull executes in the Ampairs client (desktop) app, which pushes mapped data to the backend via the existing `/sync` contract. Credentials/secrets are stored securely.
+- **Execution host**: Client-side connectors run inside the existing Ampairs client app, extending today's Tally module and reusing the existing client sync path; no separate standalone connector/agent process is introduced.
+- **Server-side connectors deferred**: Server-side connectors (push/pull on the server, for internet-reachable systems) are designed-for but not built in the first release.
 - **Conflict resolution**: Two-way conflicts resolve by most-recent-update-wins, consistent with the project's existing last-write-wins sync semantics.
-- **First release scope**: The first release delivers the catalogue, per-workspace install, configuration, data mapping, server-side incremental/stateful one-way sync (external → Ampairs), auto-start, and Tally migration. Two-way sync (Ampairs → external) is platform-ready but delivered in a later phase, consistent with stakeholder intent.
+- **First release scope**: The first release delivers the catalogue, per-workspace install, configuration, data mapping, client-side incremental/stateful one-way sync (external → Ampairs) with backend-persisted config/mapping/checkpoints/history, auto-start, and Tally migration. Two-way sync (Ampairs → external) and server-side-hosted connectors are platform-ready but delivered later, consistent with stakeholder intent.
 - **Entitlements reuse existing concepts**: Connector availability reuses the existing workspace module-enablement / subscription-tier mechanism rather than inventing a new entitlement system.
 - **Identity for matching**: External records carry a stable identifier (e.g. Tally's record GUID) used to match Ampairs records and drive incremental updates.
 - **Sync semantics reuse the canonical model**: Incremental, checkpointed, non-destructive, multi-tenant sync follows the project's established offline-sync principles (timestamps/watermarks, in-band soft deletes, last-write-wins for conflicts) adapted to external connectors.
@@ -214,6 +237,7 @@ Beyond pulling external data into Ampairs, the platform can also push Ampairs ch
 - Building specific Zoho / Salesforce / HubSpot connector implementations (the platform must support them; only Tally is delivered first).
 - A public third-party developer/marketplace SDK for external parties to publish connectors.
 - Bidirectional/two-way write-back sync execution in the first release (design must accommodate it; FR-030).
+- Server-side-hosted connectors (push/pull executed on the server) in the first release (design must accommodate them; FR-H05).
 - Real-time/streaming sync (the first release is scheduled + on-demand incremental sync).
 - Migrating non-Tally legacy integrations (none exist today).
 </content>

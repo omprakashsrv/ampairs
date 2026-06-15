@@ -31,6 +31,6 @@
 
 ## Notes
 
-- Both prior clarifications are resolved: FR-029 (on-premise connectivity) → workspace-installed local agent/bridge; FR-031 (two-way conflict authority) → most-recent-update-wins. No open markers remain.
-- All checklist items pass. Spec is ready for `/speckit.clarify` (optional) or `/speckit.plan`.
+- Clarifications resolved (see spec `## Clarifications`, Session 2026-06-15): connectors have two hosting types — **client-side** (priority; Tally runs push/pull in the Ampairs client app) and **server-side** (deferred); config/mapping/checkpoints/run-history persist to the backend; client-side connectors run inside the existing Ampairs client app; two-way conflict authority is most-recent-update-wins. (This supersedes the earlier "local agent/bridge" answer for FR-029.)
+- No open markers remain. All checklist items pass. Spec is ready for `/speckit.plan`.
 </content>
