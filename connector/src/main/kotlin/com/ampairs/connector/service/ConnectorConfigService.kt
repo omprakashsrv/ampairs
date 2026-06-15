@@ -1,5 +1,6 @@
 package com.ampairs.connector.service
 
+import com.ampairs.connector.config.ConnectorJson
 import com.ampairs.connector.config.ConnectorSecretCipher
 import com.ampairs.connector.domain.dto.ConfigRequest
 import com.ampairs.connector.domain.dto.ConfigResponse
@@ -7,7 +8,6 @@ import com.ampairs.connector.domain.dto.ConnectionTestResponse
 import com.ampairs.connector.domain.model.ConnectorConfig
 import com.ampairs.connector.repository.ConnectorConfigRepository
 import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -22,8 +22,8 @@ class ConnectorConfigService(
     private val configRepository: ConnectorConfigRepository,
     private val installationService: ConnectorInstallationService,
     private val cipher: ConnectorSecretCipher,
-    private val objectMapper: ObjectMapper,
 ) {
+    private val objectMapper = ConnectorJson.mapper
     private val mapType = object : TypeReference<Map<String, String>>() {}
 
     fun get(installationUid: String): ConfigResponse {
