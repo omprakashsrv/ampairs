@@ -155,7 +155,7 @@
 ## Phase 9: Polish & Cross-Cutting
 
 - [ ] T050 [P] [POLISH] [WEB ampairs-web] Stub the web workstream (separate repo, not in env): Apps catalogue + install + connection-config form + data-mapping editor under workspace-settings/module-management, Angular Material 3 only. Document required endpoints (from `contracts/connector-api.yaml`).
-- [ ] T051 [P] [POLISH] Update `docs/guides/offline-sync-contract.md` and `connector/CLAUDE.md`: note the connector sparse-upsert is OFF the canonical `/sync` contract by design (like tax/file), and the global `/sync` is unchanged.
+- [X] T051 [P] [POLISH] Update `docs/guides/offline-sync-contract.md` and `connector/CLAUDE.md`: note the connector sparse-upsert is OFF the canonical `/sync` contract by design (like tax/file), and the global `/sync` is unchanged.
 - [ ] T052 [POLISH] Backend gate: `./gradlew :ampairs_service:flywayInfo` (versions sequential), `./gradlew :connector:compileKotlin`, `./gradlew testAll` (Docker), `./gradlew ciBuild`.
 - [ ] T053 [P] [CLIENT ampairs-app] [POLISH] Validate all targets: `./gradlew shared:compileKotlinIosSimulatorArm64 androidApp:compileDebugKotlinAndroid desktopApp:compileKotlin`.
 - [ ] T054 [P] [POLISH] Verify `EntityChangePublisher` broadcasts on connector metadata + data writes so other devices pull (multi-device consistency).
