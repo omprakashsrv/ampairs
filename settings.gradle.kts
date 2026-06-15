@@ -19,6 +19,7 @@ include("setting")
 include("sequence")
 include("subscription")
 include("ecom")
+include("connector")
 include("ampairs_service")
 
 

@@ -22,11 +22,11 @@
 
 **Purpose**: Register the new `connector` bounded-context module so it compiles and migrates.
 
-- [ ] T001 [SETUP] Add `include("connector")` to `settings.gradle.kts`.
-- [ ] T002 [SETUP] Create `connector/build.gradle.kts` by copying `customer/build.gradle.kts` (Spring Boot library: `bootJar` disabled, `jar` enabled with empty classifier, `api(project(":core"))`, `allOpen` for JPA, group `com.ampairs`, web/data-jpa/validation/security starters).
-- [ ] T003 [SETUP] In `ampairs_service/build.gradle.kts`: add `implementation(project(mapOf("path" to ":connector")))` and add `"connector"` to the `migrationModules` list.
-- [ ] T004 [P] [SETUP] Create package skeleton `connector/src/main/kotlin/com/ampairs/connector/{domain/model,domain/dto,domain/catalogue,repository,service,controller,config,exception}` and a `package-info`/`CLAUDE.md` stub mirroring `setting`.
-- [ ] T005 [P] [SETUP] Create empty Flyway migration dirs `connector/src/main/resources/db/migration/postgresql/` and `.../mysql/`. Run `./gradlew :ampairs_service:flywayInfo` to confirm the module is picked up and to choose the starting version.
+- [X] T001 [SETUP] Add `include("connector")` to `settings.gradle.kts`.
+- [X] T002 [SETUP] Create `connector/build.gradle.kts` by copying `customer/build.gradle.kts` (Spring Boot library: `bootJar` disabled, `jar` enabled with empty classifier, `api(project(":core"))`, `allOpen` for JPA, group `com.ampairs`, web/data-jpa/validation/security starters).
+- [X] T003 [SETUP] In `ampairs_service/build.gradle.kts`: add `implementation(project(mapOf("path" to ":connector")))` and add `"connector"` to the `migrationModules` list.
+- [X] T004 [P] [SETUP] Create package skeleton `connector/src/main/kotlin/com/ampairs/connector/{domain/model,domain/dto,domain/catalogue,repository,service,controller,config,exception}` and a `package-info`/`CLAUDE.md` stub mirroring `setting`.
+- [X] T005 [P] [SETUP] Create empty Flyway migration dirs `connector/src/main/resources/db/migration/postgresql/` and `.../mysql/`. Run `./gradlew :ampairs_service:flywayInfo` to confirm the module is picked up and to choose the starting version.
 
 **Checkpoint**: `./gradlew :connector:compileKotlin` succeeds (empty module).
 
@@ -38,15 +38,15 @@
 
 **⚠️ No user-story work begins until this phase is complete.**
 
-- [ ] T006 [FOUND] Create `ConnectorInstallation` entity in `domain/model/ConnectorInstallation.kt` extending `OwnableBaseDomain` with `connectorType`, `status` (enum `InstallationStatus`: NEEDS_CONFIG/ENABLED/PAUSED/ERROR/UNINSTALLED), `autoStart`, `scheduleSeconds?`, `lastErrorMessage?`, `active`; add `@NamedEntityGraph` for config+mappings. (data-model.md §ConnectorInstallation)
-- [ ] T007 [FOUND] Flyway `V1.0.0__connector_installation.sql` in BOTH `postgresql/` and `mysql/` (TIMESTAMPTZ vs TIMESTAMP), with unique index on `(owner_id, connector_type)` filtered to active rows (FR-005).
-- [ ] T008 [P] [FOUND] `repository/ConnectorInstallationRepository.kt` (Spring Data; derived queries `findByOwnerIdAndActiveTrue`, `findByUidAndOwnerId`, `findByActiveTrueAndStatus`).
-- [ ] T009 [P] [FOUND] Installation DTOs + converters in `domain/dto/` (`InstallationResponse`, `asResponse()`); no entity exposed (Principle II).
-- [ ] T010 [FOUND] Catalogue infra in `domain/catalogue/`: `CatalogueConnector` data class (type, displayName, hostingType, supportedEntities, supportedDirections, connectionSchema, defaultMapping, requiredTier/requiredModule, multipleInstancesAllowed) + `ConnectorCatalogueProvider` SPI + a registry bean aggregating providers. (data-model.md §Connector)
+- [X] T006 [FOUND] Create `ConnectorInstallation` entity in `domain/model/ConnectorInstallation.kt` extending `OwnableBaseDomain` with `connectorType`, `status` (enum `InstallationStatus`: NEEDS_CONFIG/ENABLED/PAUSED/ERROR/UNINSTALLED), `autoStart`, `scheduleSeconds?`, `lastErrorMessage?`, `active`; add `@NamedEntityGraph` for config+mappings. (data-model.md §ConnectorInstallation)
+- [X] T007 [FOUND] Flyway `V1.0.0__connector_installation.sql` in BOTH `postgresql/` and `mysql/` (TIMESTAMPTZ vs TIMESTAMP), with unique index on `(owner_id, connector_type)` filtered to active rows (FR-005).
+- [X] T008 [P] [FOUND] `repository/ConnectorInstallationRepository.kt` (Spring Data; derived queries `findByOwnerIdAndActiveTrue`, `findByUidAndOwnerId`, `findByActiveTrueAndStatus`).
+- [X] T009 [P] [FOUND] Installation DTOs + converters in `domain/dto/` (`InstallationResponse`, `asResponse()`); no entity exposed (Principle II).
+- [X] T010 [FOUND] Catalogue infra in `domain/catalogue/`: `CatalogueConnector` data class (type, displayName, hostingType, supportedEntities, supportedDirections, connectionSchema, defaultMapping, requiredTier/requiredModule, multipleInstancesAllowed) + `ConnectorCatalogueProvider` SPI + a registry bean aggregating providers. (data-model.md §Connector)
 - [ ] T011 [FOUND] Entitlement gating service in `service/ConnectorCatalogueService.kt`: list catalogue filtered by `InstalledModulesProvider.enabledModuleCodes()` + `MasterModule.requiredTier`/`SubscriptionTier`; reuse existing `SubscriptionAddon.TALLY_INTEGRATION`. Register a `connector` MasterModule entry (dependencies: customer-management, product-management). (research.md R6)
-- [ ] T012 [P] [FOUND] Secret encryption util in `config/ConnectorSecretCipher.kt` (encrypt/decrypt with key from env var, e.g. `CONNECTOR_SECRET_KEY`); never log plaintext (FR-008, Principle XI).
-- [ ] T013 [P] [FOUND] `exception/` typed domain exceptions (`ConnectorNotFoundException`, `ConnectorAlreadyInstalledException`, `InvalidMappingException`, `ConnectorConfigInvalidException`) — bubble to `GlobalExceptionHandler` (Principle VI).
-- [ ] T014 [FOUND] **Cross-module write SPI** `ConnectorEntityWriter` (public interface in `connector` api package or `core`): `entityType: String`; `applySparse(refId: String, presentColumns: Map<String, Any?>): WriteOutcome` (CREATED/UPDATED/SKIPPED/FAILED + appliedColumns). Connector dispatches by `entityType`; target modules implement it. (research.md R3, Principle IX — no direct cross-module repo access.)
+- [X] T012 [P] [FOUND] Secret encryption util in `config/ConnectorSecretCipher.kt` (encrypt/decrypt with key from env var, e.g. `CONNECTOR_SECRET_KEY`); never log plaintext (FR-008, Principle XI).
+- [X] T013 [P] [FOUND] `exception/` typed domain exceptions (`ConnectorNotFoundException`, `ConnectorAlreadyInstalledException`, `InvalidMappingException`, `ConnectorConfigInvalidException`) — bubble to `GlobalExceptionHandler` (Principle VI).
+- [X] T014 [FOUND] **Cross-module write SPI** `ConnectorEntityWriter` (public interface in `connector` api package or `core`): `entityType: String`; `applySparse(refId: String, presentColumns: Map<String, Any?>): WriteOutcome` (CREATED/UPDATED/SKIPPED/FAILED + appliedColumns). Connector dispatches by `entityType`; target modules implement it. (research.md R3, Principle IX — no direct cross-module repo access.)
 
 **Checkpoint**: Module compiles with installation persistence; catalogue + SPI defined.
 
@@ -59,10 +59,10 @@
 **Independent Test**: Install one connector → appears `NEEDS_CONFIG` for that workspace only; uninstall returns it to catalogue; second workspace unaffected.
 
 - [ ] T015 [P] [US1] [TEST] Contract test `connector/src/test/.../CatalogueAndInstallContractTest.kt`: `GET /connector/v1/catalogue` (tier-gated), `POST /connector/v1/installations`, `DELETE`, `GET /installations` — assert `ApiResponse` shape, tenant isolation, NEEDS_CONFIG status, duplicate-install rejected (FR-005).
-- [ ] T016 [US1] `controller/ConnectorCatalogueController.kt`: `GET /connector/v1/catalogue` → `ApiResponse<List<CatalogueConnector>>`; set tenant context (try/finally); flag `installed` per workspace.
-- [ ] T017 [US1] `service/ConnectorInstallationService.kt`: install (enforce one active per type unless `multipleInstancesAllowed`, FR-005), uninstall (soft-delete `active=false`, stop sync), list, status transitions (FR-006).
-- [ ] T018 [US1] `controller/ConnectorInstallationController.kt`: `GET/POST /installations`, `DELETE /installations/{uid}` → `ApiResponse`; tenant context per method.
-- [ ] T019 [US1] Wire `EntityChangePublisher` broadcast on install/uninstall so clients pull (entity name `connector`).
+- [X] T016 [US1] `controller/ConnectorCatalogueController.kt`: `GET /connector/v1/catalogue` → `ApiResponse<List<CatalogueConnector>>`; set tenant context (try/finally); flag `installed` per workspace.
+- [X] T017 [US1] `service/ConnectorInstallationService.kt`: install (enforce one active per type unless `multipleInstancesAllowed`, FR-005), uninstall (soft-delete `active=false`, stop sync), list, status transitions (FR-006).
+- [X] T018 [US1] `controller/ConnectorInstallationController.kt`: `GET/POST /installations`, `DELETE /installations/{uid}` → `ApiResponse`; tenant context per method.
+- [X] T019 [US1] Wire `EntityChangePublisher` broadcast on install/uninstall so clients pull (entity name `connector`).
 
 **Checkpoint**: US1 independently testable — catalogue + install/uninstall work.
 
