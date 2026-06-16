@@ -20,7 +20,7 @@ class TallyConnectorProvider : ConnectorCatalogueProvider {
         description = "Sync customers, customer groups, products, product catalogue, units and stock balances from a local Tally ERP instance.",
         hostingType = HostingType.CLIENT_SIDE,
         supportedEntities = listOf(
-            "customer", "customer_group", "product", "product_catalog", "unit", "stock_balance",
+            "customer", "customer_group", "product", "product_group", "product_category", "unit", "stock_balance",
         ),
         supportedDirections = listOf(SyncDirection.INBOUND),
         connectionSchema = listOf(
@@ -64,14 +64,22 @@ class TallyConnectorProvider : ConnectorCatalogueProvider {
                     DefaultMappingRule("standardPrice", "mrp", transform = "parse_price"),
                     DefaultMappingRule("standardCost", "costPrice", transform = "parse_price"),
                     DefaultMappingRule("hsnCode", "taxCode", transform = "extract_hsn"),
-                    DefaultMappingRule("baseUnits", "baseUnit"),
-                    DefaultMappingRule("category", "category"),
-                    DefaultMappingRule("parent", "group"),
+                    DefaultMappingRule("baseUnits", "baseUnitId", transform = "resolve_unit_id"),
+                    DefaultMappingRule("category", "categoryId", transform = "resolve_category_id"),
+                    DefaultMappingRule("parent", "groupId", transform = "resolve_group_id"),
                 ),
             ),
-            // StockGroup / StockCategory → product catalogue node (TallyProductMapper)
+            // StockGroup → ProductGroup (TallyProductMapper)
             DefaultEntityMapping(
-                entityType = "product_catalog",
+                entityType = "product_group",
+                rules = listOf(
+                    DefaultMappingRule("guid", "refId"),
+                    DefaultMappingRule("name", "name"),
+                ),
+            ),
+            // StockCategory → ProductCategory (TallyProductMapper)
+            DefaultEntityMapping(
+                entityType = "product_category",
                 rules = listOf(
                     DefaultMappingRule("guid", "refId"),
                     DefaultMappingRule("name", "name"),

@@ -22,6 +22,10 @@ interface CustomerGroupRepository : JpaRepository<CustomerGroup, String>, JpaSpe
      */
     fun existsByUid(uid: String): Boolean
 
+    /** Connector match keys (spec 013): match an existing group by external id or uid. */
+    fun findByRefId(refId: String?): CustomerGroup?
+    fun findByUid(uid: String?): CustomerGroup?
+
     /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
     @Query("SELECT MAX(g.updatedAt) FROM CustomerGroup g")
     fun findMaxUpdatedAt(): Instant?
