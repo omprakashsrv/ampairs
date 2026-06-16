@@ -1,7 +1,11 @@
 package com.ampairs.connector.service
 
 import com.ampairs.connector.config.Constants
+import com.ampairs.connector.config.ConnectorJson
+import com.ampairs.connector.domain.catalogue.CatalogueConnector
 import com.ampairs.connector.domain.catalogue.ConnectorCatalogueRegistry
+import com.ampairs.connector.domain.dto.FieldMappingRuleDto
+import com.ampairs.connector.domain.model.ConnectorFieldMapping
 import com.ampairs.connector.domain.model.ConnectorInstallation
 import com.ampairs.connector.domain.model.InstallationStatus
 import com.ampairs.connector.exception.ConnectorErrors
@@ -56,8 +60,38 @@ class ConnectorInstallationService(
             this.active = true
         }
         val saved = repository.save(installation)
+        seedDefaultMappings(saved.uid, connector)
         entityChangePublisher.created(Constants.SYNC_ENTITY_CODE, saved.uid)
         return saved
+    }
+
+    /**
+     * Seed the connector's default mapping template (FR-011) as editable per-entity mapping rows so
+     * the workspace starts with a working mapping (e.g. the current Tally field mappings) instead of
+     * a blank slate. The admin can then customise them.
+     */
+    private fun seedDefaultMappings(installationUid: String, connector: CatalogueConnector) {
+        connector.defaultMapping.forEach { entityMapping ->
+            if (mappingRepository.findByInstallationUidAndEntityType(installationUid, entityMapping.entityType) != null) {
+                return@forEach
+            }
+            val rules = entityMapping.rules.map {
+                FieldMappingRuleDto(
+                    externalField = it.externalField,
+                    ampairsField = it.ampairsField,
+                    unmapped = false,
+                    transform = it.transform,
+                )
+            }
+            mappingRepository.save(
+                ConnectorFieldMapping().apply {
+                    this.installationUid = installationUid
+                    this.entityType = entityMapping.entityType
+                    this.rules = ConnectorJson.mapper.writeValueAsString(rules)
+                    this.version = 1
+                }
+            )
+        }
     }
 
     /** Promote NEEDS_CONFIG/ERROR → ENABLED once a config and at least one mapping exist (FR-006). */
