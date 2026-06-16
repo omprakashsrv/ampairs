@@ -94,12 +94,12 @@ class TallyConnectorProvider : ConnectorCatalogueProvider {
                     DefaultMappingRule("symbol", "shortName"),
                 ),
             ),
-            // Closing balance → Product inventory quantity
+            // Closing balance → Product stock (Inventory child row, applied via the mapping DSL)
             DefaultEntityMapping(
                 entityType = "stock_balance",
                 rules = listOf(
                     DefaultMappingRule("guid", "refId"),
-                    DefaultMappingRule("closingBalance", "inventory", transform = "parse_quantity"),
+                    DefaultMappingRule("closingBalance", "stockQuantity", transform = "parse_quantity"),
                 ),
             ),
         ),

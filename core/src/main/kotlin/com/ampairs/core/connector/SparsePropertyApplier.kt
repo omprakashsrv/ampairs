@@ -5,28 +5,30 @@ package com.ampairs.core.connector
  * (`var name` → `setName`). Used by [ConnectorEntityWriter] implementations to write only the columns
  * present in a connector row. Returns the property names actually applied.
  *
- * - Only keys with a matching single-arg setter are applied; unknown keys are ignored by the caller's
- *   allowlist already, but extra safety here.
- * - Values arrive from JSON (String/Number/Boolean/null) and are coerced to the setter's parameter
- *   type. A null targeting a non-null Kotlin property is skipped (cannot clear a non-null column).
+ * Handles flat scalar fields only (String/Int/Long/Double/Boolean + null). Complex/nested targets
+ * (collections, embedded objects) are handled by per-writer custom appliers — see [DslEntityWriter].
  */
 object SparsePropertyApplier {
 
     fun apply(target: Any, columns: Map<String, Any?>): List<String> {
         val applied = mutableListOf<String>()
         for ((name, value) in columns) {
-            val setter = target.javaClass.methods.firstOrNull {
-                it.name == setterName(name) && it.parameterCount == 1
-            } ?: continue
-            val paramType = setter.parameterTypes[0]
-            val coerced = runCatching { coerce(value, paramType) }.getOrNull()
-            if (value != null && coerced == null && !paramType.isAssignableFrom(value.javaClass)) {
-                // Could not coerce — skip rather than corrupt.
-                continue
-            }
-            runCatching { setter.invoke(target, coerced) }.onSuccess { applied += name }
+            if (applyOne(target, name, value)) applied += name
         }
         return applied
+    }
+
+    /** Apply a single column via its setter; returns true if it was applied. */
+    fun applyOne(target: Any, name: String, value: Any?): Boolean {
+        val setter = target.javaClass.methods.firstOrNull {
+            it.name == setterName(name) && it.parameterCount == 1
+        } ?: return false
+        val paramType = setter.parameterTypes[0]
+        val coerced = runCatching { coerce(value, paramType) }.getOrNull()
+        if (value != null && coerced == null && !paramType.isAssignableFrom(value.javaClass)) {
+            return false // could not coerce — skip rather than corrupt
+        }
+        return runCatching { setter.invoke(target, coerced); true }.getOrDefault(false)
     }
 
     private fun setterName(prop: String): String =
