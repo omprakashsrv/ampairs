@@ -4,6 +4,7 @@ import com.ampairs.core.multitenancy.DeviceContextHolder
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.core.security.AuthenticationHelper
 import com.ampairs.core.sync.EntityChangePublisher
+import com.ampairs.event.domain.events.ProductCatalogChangedEvent
 import com.ampairs.event.domain.events.ProductCreatedEvent
 import com.ampairs.event.domain.events.ProductUpdatedEvent
 import com.ampairs.product.domain.dto.product.ProductResponse
@@ -23,6 +24,7 @@ import org.springframework.data.domain.Sort
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.time.Instant
@@ -39,6 +41,9 @@ class ProductService(
     val productRepository: ProductRepository,
     val eventPublisher: ApplicationEventPublisher,
     private val entityChangePublisher: EntityChangePublisher,
+    // Product photos are stored in the file module (entity_image, entityType=PRODUCT); resolve their
+    // URLs when building a storefront catalog snapshot. product↔file are already coupled (ProductImage).
+    private val entityImageService: com.ampairs.file.domain.service.EntityImageService,
 ) {
 
     /**
@@ -146,10 +151,62 @@ class ProductService(
                 if (p.status.equals("DELETED", ignoreCase = true)) com.ampairs.core.sync.EntityChangeType.DELETED
                 else com.ampairs.core.sync.EntityChangeType.UPDATED,
             )
+            // Propagate edits (name/brand/category/photos/price) of already-listed products to the
+            // storefront catalog. The bulk sync never changes is_ecom_listed itself — listing is
+            // toggled via setEcomListing — so a deleted listed product is unlisted, others refreshed.
+            if (p.isEcomListed) {
+                val deleted = p.status.equals("DELETED", ignoreCase = true)
+                eventPublisher.publishEvent(buildCatalogChange(p, listed = !deleted))
+            }
         }
         return saved.asResponse()
     }
 
+
+    /**
+     * Toggle a product's storefront listing. Online, UI-invoked action (no offline-sync path):
+     * persists the flag, then publishes a catalog event so the ecom module lists/unlists it.
+     */
+    @Transactional
+    fun setEcomListing(productId: String, listed: Boolean): ProductResponse? {
+        val product = productRepository.findByUid(productId) ?: return null
+        product.isEcomListed = listed
+        val saved = productRepository.save(product)
+        eventPublisher.publishEvent(buildCatalogChange(saved, listed))
+        return saved.asResponse()
+    }
+
+    /**
+     * Resolve a product into a catalog-change snapshot (names + image URLs already resolved, no JPA
+     * associations) so the async ecom listener can consume it after commit without a session.
+     */
+    private fun buildCatalogChange(product: Product, listed: Boolean): ProductCatalogChangedEvent {
+        val price = if (product.sellingPrice > 0) product.sellingPrice else product.mrp
+        return ProductCatalogChangedEvent(
+            workspaceId = getWorkspaceId(),
+            managementProductId = product.uid,
+            listed = listed,
+            name = product.name,
+            description = product.description,
+            brand = product.brand?.name,
+            category = product.category?.name,
+            subcategory = product.subCategory?.name,
+            unit = product.baseUnit?.name,
+            price = BigDecimal.valueOf(price),
+            mrp = if (product.mrp > 0) BigDecimal.valueOf(product.mrp) else null,
+            // Real inventory wiring is a follow-up; list products as available so they aren't hidden.
+            stockQuantity = 100,
+            imageUrls = resolveImageUrls(product.uid),
+        )
+    }
+
+    /** Product photos live in the file module (entity_image, entityType=PRODUCT); primary first. */
+    private fun resolveImageUrls(productUid: String): List<String> = runCatching {
+        entityImageService.getImages("PRODUCT", productUid, "/api/file/v1")
+            .images
+            .sortedByDescending { it.isPrimary }
+            .map { it.imageUrl }
+    }.getOrDefault(emptyList())
 
     @Transactional
     fun updateProductGroups(groups: List<ProductGroup>): List<ProductGroup> {
