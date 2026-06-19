@@ -74,7 +74,8 @@ class MasterModuleSeederService(
             createInvoiceModule(),
             createInventoryModule(),
             createTaxCodeModule(),
-            createUnitModule()
+            createUnitModule(),
+            createStorefrontModule()
         )
     }
 
@@ -383,6 +384,48 @@ class MasterModuleSeederService(
         sizeMb = 3
         featured = false
         displayOrder = 55
+        active = true
+    }
+
+    private fun createStorefrontModule() = MasterModule().apply {
+        moduleCode = "storefront-management"
+        name = "Online Store"
+        description = "Set up and manage your customer-facing online storefront — configure store name, branding (logo and banner), access mode, and publish your catalog so customers can browse and place orders"
+        tagline = "Sell online with your own branded storefront"
+        category = ModuleCategory.SALES_MANAGEMENT
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.FREE
+        requiredRole = UserRole.MANAGER
+        complexity = ModuleComplexity.STANDARD
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 9, false, "Enables an online storefront for customers to browse and order"),
+            createBusinessRelevance(BusinessType.WHOLESALE, 7, false, "Optional B2B online ordering channel"),
+            createBusinessRelevance(BusinessType.MANUFACTURING, 6, false, "Optional direct-to-customer sales channel")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = listOf("PRODUCT_READ"),
+            optionalPermissions = listOf("ORDER_READ", "ORDER_WRITE"),
+            dependencies = listOf("product-management")
+        )
+        uiMetadata = createUIMetadata(
+            icon = "storefront",
+            primaryColor = "#7026B5",
+            tags = listOf("Storefront", "Online Store", "E-commerce", "Branding", "Catalog")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/storefront",
+            displayName = "Store",
+            iconName = "storefront",
+            menuItems = listOf(
+                createMenuItem("storefront-setup", "Store Setup", "/storefront", "storefront", 1, true)
+            )
+        )
+        navigationIndex = 80
+        provider = "Ampairs"
+        sizeMb = 6
+        featured = true
+        displayOrder = 65
         active = true
     }
 
