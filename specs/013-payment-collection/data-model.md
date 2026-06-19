@@ -12,7 +12,7 @@ A **party** in Phase 1 is an existing `customer` (referenced by `customer.uid`);
 ## Enumerations
 
 ```
-EntryType        = OPENING_BALANCE | SALES_INVOICE | SALES_RETURN | CREDIT_NOTE |
+EntryType        = SALES_INVOICE | SALES_RETURN | CREDIT_NOTE |
                    PAYMENT_IN | PAYMENT_OUT | PURCHASE_BILL | PURCHASE_RETURN | DEBIT_NOTE |
                    DISCOUNT_ALLOWED | WRITE_OFF | ROUND_OFF | ADJUSTMENT
 Direction        = DR | CR                  # DR ⇒ +amount (receivable), CR ⇒ −amount
@@ -20,10 +20,16 @@ PaymentDirection = RECEIVED | PAID          # money in vs money out
 PaymentMode      = CASH | CHEQUE | UPI | NEFT | RTGS | IMPS | NET_BANKING | CARD |
                    BANK_TRANSFER | WALLET | OTHER
 ClearanceStatus  = PENDING | CLEARED | BOUNCED | CANCELLED
-AdjustmentType   = OPENING_BALANCE | SALES_RETURN | CREDIT_NOTE | PURCHASE_BILL |
+AdjustmentType   = SALES_RETURN | CREDIT_NOTE | PURCHASE_BILL |
                    PURCHASE_RETURN | DEBIT_NOTE | DISCOUNT_ALLOWED | WRITE_OFF | ADJUSTMENT
-AllocationTarget = INVOICE | PURCHASE | LEDGER_ENTRY
+AllocationTarget = INVOICE | PURCHASE | LEDGER_ENTRY   # Phase 1 uses INVOICE only; PURCHASE/LEDGER_ENTRY are Phase 2
 ```
+
+> **Opening balance is NOT a `LedgerEntry`.** It is an attribute of `PartyBalance`
+> (`openingBalance` + `openingDirection` + `openingAsOf`) and is folded into the balance as
+> `openingSigned` by `recompute()`. The party statement renders it as a **synthetic first line** (label
+> "Opening Balance"), but no `OPENING_BALANCE` row is ever persisted in `ledger_entry`. This is why
+> `OPENING_BALANCE` does not appear in `EntryType`/`AdjustmentType`.
 
 Sign mapping (single source of truth for balance math):
 `signedAmount = if (direction == DR) +amount else -amount`. Each `EntryType` has a fixed natural

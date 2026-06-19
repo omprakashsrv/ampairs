@@ -7,8 +7,9 @@ description: "Task list for Payment & Collection (Party Ledger)"
 **Input**: Design documents from `/specs/013-payment-collection/`
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/
 
-**Tests**: Included only for **critical ledger logic** (balance foot-to-zero, statement, aging,
-allocation, bounce/reversal) — mandated by Success Criteria SC-002/006/007 and the constitution's
+**Tests**: Included only for **critical ledger logic** — backend foot-to-zero, statement, aging,
+allocation, edit/cancel reversal, bounce/reversal; mobile recompute parity + offline convergence
+(`feature/payment` tests). Mandated by Success Criteria SC-002/005/006/007 and the constitution's
 testing gates. Not full TDD across all surfaces.
 
 **Two repos**:
@@ -51,6 +52,7 @@ plumbing, and money type). No story work begins until this completes.
 - [ ] T019 MB: `PaymentApi` + `PaymentApiImpl` (Ktor) for ledger-entry & party-balance `/sync` using `ApiUrlBuilder.paymentUrl`.
 - [ ] T020 BE+MB: Invoice integration — BE publish `InvoiceFinalizedEvent` from the `invoice` module on `INVOICED`; BE `@EventListener` in `payment` posts/updates `LDG_<invoice.uid>` (SALES_INVOICE, DR, `totalCost`), reverses on cancel; MB write the same deterministic ledger entry in the invoice-finalize Room transaction. Drafts never post (FR-013/014).
 - [ ] T021 [P] BE: **Test** — `BalanceService` foot-to-zero invariant over a mixed set (sales, multi-bill receipts, advances, returns, edits, backdated entries): `Σ party balances == Σ receivable − Σ payable`, zero drift (SC-002/006).
+- [ ] T021a [P] MB: **Test** (`feature/payment` commonTest) — local recompute parity: the on-device signed-sum (`Money` minor units) over the same fixture equals the backend `recompute()` result exactly (no drift); covers the mobile leg of SC-002/006 and the constitution mobile-test gate.
 
 **Checkpoint**: Ledger engine live — balances compute, sync, and reconcile. Stories can begin.
 
@@ -65,6 +67,7 @@ exactly that amount; allocate to bills → those bills' outstanding drop; overpa
 - [ ] T022 BE: `PaymentVoucher` DTOs + converters in `domain/dto/`; `PaymentVoucherRepository` (`@EntityGraph("PaymentVoucher.withAllocations")`, sync-feed queries).
 - [ ] T023 [US1] BE: `PaymentVoucherService` — `bulkUpsert`; on finalize post `PAYMENT_IN`(CR)/`PAYMENT_OUT`(DR) `LDG_<voucher.uid>` via `BalanceService`; default `clearanceStatus`; assign `voucher_no` from `SequenceNumberProvider` (series `RCP`/`PAY`).
 - [ ] T024 [US1] BE: `PaymentAllocationService` + `PaymentAllocationRepository` — validate `Σ amount ≤ voucher.total`, recompute `unallocatedAmount` (does NOT touch balance — FR-010/011).
+- [ ] T024a [US1] BE+MB: **Edit / cancel a payment voucher (FR-012).** BE: editing a voucher updates/replaces its `LDG_<voucher.uid>` and re-validates allocations; soft-deleting (`active=false`) reverses the ledger entry, drops its allocations, and recomputes — restoring the affected bills' outstanding (no hard delete — FR-023). MB: mirror in `PaymentVoucherRepository` (edit re-posts local entry, soft-delete reverses) so the on-device balance/bills stay consistent offline.
 - [ ] T025 [US1] BE: `PaymentController` `/payment/v1/vouchers/sync` + `/payment/v1/allocations/sync` (contracts/payment-sync.md §1,§2); tenant context at controller level.
 - [ ] T026 [US1] BE: `PaymentSettingDefinitions : SettingDefinitionProvider` in `config/` — `enabledPaymentModes`, `defaultPaymentMode`, `chequeRequiresClearance`, `allowOnAccountReceipts`, `enforceCreditLimit`, `agingBuckets` (gated by module `payment-collection`).
 - [ ] T027 [P] [US1] MB: Room entities/DAOs `PaymentVoucherEntity`, `PaymentAllocationEntity`; `PaymentVoucherRepository` + `PaymentAllocationRepository` (local-only, posts local ledger entry in same txn, `markPendingPush`).
@@ -72,7 +75,7 @@ exactly that amount; allocate to bills → those bills' outstanding drop; overpa
 - [ ] T029 [US1] MB: `RecordPaymentViewModel` (assisted, party-keyed; generate uid `UidGenerator.generateUid("RCP"/"PAY")`; load `enabledPaymentModes`; FIFO/manual allocation; on-account remainder).
 - [ ] T030 [US1] MB: `RecordPaymentScreen` — party picker, amount, mode picker with **mode-specific fields** (cheque no/bank/date; UTR/ref for UPI/NEFT/RTGS/IMPS/net-banking/card), date, allocation list. Strings via `stringResource`, money via `formatMoney`.
 - [ ] T031 [US1] MB: Route `Route.Payment` + sub-route for record-payment, entry provider in `shared/`, and `ModuleRegistry` mapping `"payment-collection" → Route.Payment`.
-- [ ] T032 [US1] BE: **Test** — voucher posting + allocation: receipt reduces balance by total; `Σ allocations ≤ total`; over-allocation rejected (VALIDATION_ERROR); on-account remainder retained.
+- [ ] T032 [US1] BE: **Test** — voucher posting + allocation: receipt reduces balance by total; `Σ allocations ≤ total`; over-allocation rejected (VALIDATION_ERROR); on-account remainder retained; **editing a voucher re-posts correctly and soft-deleting it reverses the entry and restores the bills' outstanding** (FR-012/023).
 
 **Checkpoint**: A collection can be recorded (online & offline) and the party balance reflects it. MVP demoable.
 
@@ -158,6 +161,7 @@ balance updates with correct direction.
 
 - [ ] T053 [P] BE: Performance — verify indexes on `(owner_id, party_uid, entry_date)` and aging queries; `@EntityGraph` coverage; avoid N+1 in statement/open-bills.
 - [ ] T054 [P] MB: Compile gate — `androidApp:compileDebugKotlinAndroid`, `shared:compileKotlinIosSimulatorArm64`, `desktopApp:compileKotlin`; verify workspace-switch isolation (no stale balances).
+- [ ] T054a MB: **Test** — offline convergence (SC-005) + run `./gradlew :feature:payment:check`: record a voucher/adjustment while offline (local balance updates immediately) → push/pull sync → on-device `cachedClosingBalance` equals the server `PartyBalance` with zero discrepancy.
 - [ ] T055 [P] Docs — add `payment/CLAUDE.md` (module overview) and `docs/modules/payment.md`; update `ModuleRegistry`/navigation notes.
 - [ ] T056 (Optional, R12) BE: Mirror `PartyBalance.cachedClosingBalance` → `Customer.outstandingAmount` via the same event path (pending confirmation of the open decision).
 - [ ] T057 Run `quickstart.md` scenarios A–D end-to-end (backend + mobile) as acceptance validation.
