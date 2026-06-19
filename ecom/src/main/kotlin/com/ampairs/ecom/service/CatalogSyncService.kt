@@ -3,6 +3,8 @@ package com.ampairs.ecom.service
 import com.ampairs.ecom.domain.enums.StockStatus
 import com.ampairs.ecom.domain.model.EcomListedProduct
 import com.ampairs.ecom.repository.EcomListedProductRepository
+import com.ampairs.event.domain.events.ProductCatalogChangedEvent
+import com.ampairs.event.domain.kafka.CatalogEventType
 import com.ampairs.event.domain.kafka.EcomCatalogEvent
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -12,6 +14,37 @@ import java.time.Instant
 class CatalogSyncService(
     private val listedProductRepository: EcomListedProductRepository,
 ) {
+
+    /**
+     * Apply a whole batch of product catalog changes for one storefront in a single transaction.
+     * Products sync in batches, so the publisher emits one [ProductCatalogChangedEvent] per batch
+     * and this resolves/persists them together (one tx) rather than one tx per product.
+     *
+     * Self-invokes the per-event handlers below; since they run inside this method's transaction
+     * (Spring self-invocation), the inner @Transactional is a no-op and everything shares one tx.
+     */
+    @Transactional
+    fun applyCatalogBatch(storefrontId: String, event: ProductCatalogChangedEvent) {
+        event.changes.forEach { change ->
+            val ecomEvent = EcomCatalogEvent(
+                eventType = if (change.listed) CatalogEventType.PRODUCT_LISTED else CatalogEventType.PRODUCT_UNLISTED,
+                workspaceId = event.workspaceId,
+                storefrontId = storefrontId,
+                managementProductId = change.managementProductId,
+                name = change.name,
+                brand = change.brand,
+                category = change.category,
+                subcategory = change.subcategory,
+                unit = change.unit,
+                price = change.price,
+                mrp = change.mrp,
+                stockQuantity = change.stockQuantity,
+                imageUrls = change.imageUrls,
+                description = change.description,
+            )
+            if (change.listed) handleProductListed(ecomEvent) else handleProductUnlisted(ecomEvent)
+        }
+    }
 
     @Transactional
     fun handleProductListed(event: EcomCatalogEvent) {
