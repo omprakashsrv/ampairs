@@ -8,8 +8,8 @@ import com.ampairs.ecom.domain.model.EcomOrderLineItem
 import com.ampairs.ecom.domain.model.Storefront
 import com.ampairs.ecom.exception.CartExpiredException
 import com.ampairs.ecom.exception.EmptyCartException
+import com.ampairs.ecom.event.EcomOrderEventPublisher
 import com.ampairs.ecom.exception.InvalidDeliveryAddressException
-import com.ampairs.ecom.kafka.EcomOrderKafkaProducer
 import com.ampairs.ecom.repository.CustomerAddressRepository
 import com.ampairs.ecom.repository.EcomCartRepository
 import com.ampairs.ecom.repository.EcomOrderLineItemRepository
@@ -24,7 +24,7 @@ class CheckoutService(
     private val orderRepository: EcomOrderRepository,
     private val orderLineItemRepository: EcomOrderLineItemRepository,
     private val addressRepository: CustomerAddressRepository,
-    private val orderKafkaProducer: EcomOrderKafkaProducer,
+    private val orderEventPublisher: EcomOrderEventPublisher,
 ) {
 
     @Transactional
@@ -91,7 +91,7 @@ class CheckoutService(
         cartRepository.save(cart)
 
         val orderWithItems = orderRepository.findByEcomOrderRef(savedOrder.ecomOrderRef)!!
-        orderKafkaProducer.publishOrderPlaced(orderWithItems)
+        orderEventPublisher.publishOrderPlaced(orderWithItems)
 
         return orderWithItems
     }
