@@ -4,6 +4,10 @@ import com.ampairs.ecom.domain.model.CustomerAddress
 import jakarta.validation.constraints.NotBlank
 
 data class CustomerAddressRequest(
+    // Client-generated uid (the app owns address ids). When present, create is idempotent on this
+    // uid so the local id stays authoritative and matches at checkout.
+    val uid: String? = null,
+
     val label: String? = null,
 
     @field:NotBlank

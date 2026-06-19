@@ -43,6 +43,10 @@ class EcomExceptionHandler : BaseExceptionHandler() {
     fun handleEmptyCart(ex: EmptyCartException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> =
         createErrorResponse(HttpStatus.BAD_REQUEST, ErrorCodes.VALIDATION_ERROR, "Cart is empty", ex.message, request, moduleName = "ecom")
 
+    @ExceptionHandler(InvalidDeliveryAddressException::class)
+    fun handleInvalidDeliveryAddress(ex: InvalidDeliveryAddressException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> =
+        createErrorResponse(HttpStatus.BAD_REQUEST, ErrorCodes.VALIDATION_ERROR, "Invalid delivery address", ex.message, request, moduleName = "ecom")
+
     @ExceptionHandler(EcomOrderNotFoundException::class)
     fun handleEcomOrderNotFound(ex: EcomOrderNotFoundException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> =
         createErrorResponse(HttpStatus.NOT_FOUND, ErrorCodes.NOT_FOUND, "Order not found", ex.message, request, moduleName = "ecom")
@@ -68,6 +72,7 @@ class ProductUnavailableException(message: String) : RuntimeException(message)
 class InsufficientStockException(message: String, val availableQuantity: Int) : RuntimeException(message)
 class CartExpiredException(message: String) : RuntimeException(message)
 class EmptyCartException(message: String) : RuntimeException(message)
+class InvalidDeliveryAddressException(message: String) : RuntimeException(message)
 class EcomOrderNotFoundException(message: String) : RuntimeException(message)
 class InvalidOrderStatusTransitionException(message: String) : RuntimeException(message)
 class StoreAccessDeniedException(message: String) : RuntimeException(message)

@@ -18,14 +18,24 @@ class CustomerAddressService(
 
     @Transactional
     fun addAddress(customerId: String, request: CustomerAddressRequest): CustomerAddress {
+        // Honor a client-provided uid (the app generates address ids locally and is the source of
+        // truth). This makes create idempotent on the uid, so the local id matches at checkout and
+        // a retried/duplicated push updates the same row instead of minting a divergent server uid.
+        val existing = request.uid?.takeIf { it.isNotBlank() }
+            ?.let { addressRepository.findByCustomerIdAndUid(customerId, it) }
+
         if (request.isDefault) {
             addressRepository.findByCustomerIdAndIsDefaultTrue(customerId)?.let {
-                it.isDefault = false
-                addressRepository.save(it)
+                if (it.uid != existing?.uid) {
+                    it.isDefault = false
+                    addressRepository.save(it)
+                }
             }
         }
-        val address = CustomerAddress()
-        address.customerId = customerId
+        val address = existing ?: CustomerAddress().also { a ->
+            a.customerId = customerId
+            request.uid?.takeIf { it.isNotBlank() }?.let { a.uid = it }
+        }
         address.label = request.label
         address.addressLine1 = request.addressLine1
         address.addressLine2 = request.addressLine2

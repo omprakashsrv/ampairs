@@ -8,6 +8,7 @@ import com.ampairs.ecom.domain.model.EcomOrderLineItem
 import com.ampairs.ecom.domain.model.Storefront
 import com.ampairs.ecom.exception.CartExpiredException
 import com.ampairs.ecom.exception.EmptyCartException
+import com.ampairs.ecom.exception.InvalidDeliveryAddressException
 import com.ampairs.ecom.kafka.EcomOrderKafkaProducer
 import com.ampairs.ecom.repository.CustomerAddressRepository
 import com.ampairs.ecom.repository.EcomCartRepository
@@ -96,21 +97,16 @@ class CheckoutService(
     }
 
     private fun resolveDeliveryAddress(request: CheckoutRequest, customerId: String): Map<String, Any> {
-        if (request.deliveryAddressId != null) {
-            val saved = addressRepository.findByCustomerIdAndUid(customerId, request.deliveryAddressId)
-            if (saved != null) {
-                return mapOf(
-                    "addressLine1" to saved.addressLine1,
-                    "addressLine2" to (saved.addressLine2 ?: ""),
-                    "city" to saved.city,
-                    "state" to saved.state,
-                    "pinCode" to saved.pinCode,
-                    "country" to saved.country,
-                    "phone" to (saved.phone ?: ""),
-                )
-            }
+        request.deliveryAddressId?.let { addressId ->
+            // The address id is client-generated and authoritative; a saved address MUST exist for
+            // it. Missing means the address was never pushed/synced — fail with a clear 400 rather
+            // than NPE'ing on the (absent) inline address fallback below.
+            val saved = addressRepository.findByCustomerIdAndUid(customerId, addressId)
+                ?: throw InvalidDeliveryAddressException("Delivery address not found: $addressId")
+            return saved.toAddressMap()
         }
-        val dto = request.deliveryAddress!!
+        val dto = request.deliveryAddress
+            ?: throw InvalidDeliveryAddressException("A delivery address is required to place the order")
         return mapOf(
             "addressLine1" to dto.addressLine1,
             "addressLine2" to (dto.addressLine2 ?: ""),
@@ -121,4 +117,14 @@ class CheckoutService(
             "phone" to (dto.phone ?: ""),
         )
     }
+
+    private fun CustomerAddress.toAddressMap(): Map<String, Any> = mapOf(
+        "addressLine1" to addressLine1,
+        "addressLine2" to (addressLine2 ?: ""),
+        "city" to city,
+        "state" to state,
+        "pinCode" to pinCode,
+        "country" to country,
+        "phone" to (phone ?: ""),
+    )
 }
