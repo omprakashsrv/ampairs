@@ -12,6 +12,14 @@ interface EcomCartRepository : CrudRepository<EcomCart, Long> {
     @EntityGraph("EcomCart.withItems")
     fun findBySessionToken(sessionToken: String): EcomCart?
 
+    /**
+     * Write-path lookup WITHOUT the items entity graph. Mutating cart items while the cart's
+     * read-only `@OneToMany` collection is initialized triggers a TransientPropertyValueException
+     * on autoflush. The write methods load the cart through this, mutate items via the item
+     * repository, flush+clear, then re-read through [findBySessionToken] for the response.
+     */
+    fun findFirstBySessionToken(sessionToken: String): EcomCart?
+
     fun findByCustomerIdAndStorefrontIdAndStatus(
         customerId: String,
         storefrontId: String,
