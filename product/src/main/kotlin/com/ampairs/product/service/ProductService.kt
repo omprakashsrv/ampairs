@@ -153,12 +153,20 @@ class ProductService(
                 else com.ampairs.core.sync.EntityChangeType.UPDATED,
             )
         }
-        // Propagate edits (name/brand/category/photos/price) of already-listed products to the
-        // storefront catalog as ONE batch event (products sync in batches). The bulk sync never
-        // changes is_ecom_listed itself — listing is toggled via setEcomListing — so a deleted
-        // listed product is unlisted, others refreshed.
-        val catalogChanges = saved.filter { it.isEcomListed }.map { p ->
-            buildCatalogChange(p, listed = !p.status.equals("DELETED", ignoreCase = true))
+        // Propagate already-listed products to the storefront catalog as ONE batch event (products
+        // sync in batches). The bulk sync never changes is_ecom_listed itself. A listed product that
+        // is now DELETED is unlisted from the store; other listed products are refreshed
+        // (name/brand/category/photos/price). Never-listed products produce no event — they never
+        // touch the store.
+        val catalogChanges = saved.mapNotNull { p ->
+            if (!p.isEcomListed) return@mapNotNull null
+            if (p.status.equals("DELETED", ignoreCase = true)) {
+                // Deleted from the product module -> unlist from the store. Minimal payload (no need
+                // to resolve names/images for a removal).
+                ProductCatalogChange(managementProductId = p.uid, listed = false)
+            } else {
+                buildCatalogChange(p)
+            }
         }
         if (catalogChanges.isNotEmpty()) {
             eventPublisher.publishEvent(ProductCatalogChangedEvent(getWorkspaceId(), catalogChanges))
@@ -176,21 +184,22 @@ class ProductService(
         val product = productRepository.findByUid(productId) ?: return null
         product.isEcomListed = listed
         val saved = productRepository.save(product)
-        eventPublisher.publishEvent(
-            ProductCatalogChangedEvent(getWorkspaceId(), listOf(buildCatalogChange(saved, listed)))
-        )
+        val change = if (listed) buildCatalogChange(saved)
+        else ProductCatalogChange(managementProductId = saved.uid, listed = false)
+        eventPublisher.publishEvent(ProductCatalogChangedEvent(getWorkspaceId(), listOf(change)))
         return saved.asResponse()
     }
 
     /**
-     * Resolve a product into a catalog-change snapshot (names + image URLs already resolved, no JPA
-     * associations) so the async ecom listener can consume it after commit without a session.
+     * Resolve a product into a "listed" catalog-change snapshot (names + image URLs already resolved,
+     * no JPA associations) so the async ecom listener can consume it after commit without a session.
+     * Used for list/refresh only; unlisting needs just the product id (see call sites).
      */
-    private fun buildCatalogChange(product: Product, listed: Boolean): ProductCatalogChange {
+    private fun buildCatalogChange(product: Product): ProductCatalogChange {
         val price = if (product.sellingPrice > 0) product.sellingPrice else product.mrp
         return ProductCatalogChange(
             managementProductId = product.uid,
-            listed = listed,
+            listed = true,
             name = product.name,
             description = product.description,
             brand = product.brand?.name,
