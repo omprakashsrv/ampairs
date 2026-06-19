@@ -107,24 +107,28 @@ class CheckoutService(
         }
         val dto = request.deliveryAddress
             ?: throw InvalidDeliveryAddressException("A delivery address is required to place the order")
-        return mapOf(
-            "addressLine1" to dto.addressLine1,
-            "addressLine2" to (dto.addressLine2 ?: ""),
-            "city" to dto.city,
-            "state" to dto.state,
-            "pinCode" to dto.pinCode,
-            "country" to dto.country,
-            "phone" to (dto.phone ?: ""),
-        )
+        return buildMap {
+            put("addressLine1", dto.addressLine1)
+            put("addressLine2", dto.addressLine2 ?: "")
+            put("city", dto.city)
+            put("state", dto.state)
+            put("pinCode", dto.pinCode)
+            put("country", dto.country)
+            put("phone", dto.phone ?: "")
+            dto.latitude?.let { put("latitude", it) }
+            dto.longitude?.let { put("longitude", it) }
+        }
     }
 
-    private fun CustomerAddress.toAddressMap(): Map<String, Any> = mapOf(
-        "addressLine1" to addressLine1,
-        "addressLine2" to (addressLine2 ?: ""),
-        "city" to city,
-        "state" to state,
-        "pinCode" to pinCode,
-        "country" to country,
-        "phone" to (phone ?: ""),
-    )
+    private fun CustomerAddress.toAddressMap(): Map<String, Any> = buildMap {
+        put("addressLine1", addressLine1)
+        put("addressLine2", addressLine2 ?: "")
+        put("city", city)
+        put("state", state)
+        put("pinCode", pinCode)
+        put("country", country)
+        put("phone", phone ?: "")
+        latitude?.let { put("latitude", it) }
+        longitude?.let { put("longitude", it) }
+    }
 }

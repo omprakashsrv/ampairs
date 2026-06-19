@@ -45,6 +45,8 @@ class CustomerAddressService(
         address.country = request.country
         address.phone = request.phone
         address.isDefault = request.isDefault
+        address.latitude = request.latitude
+        address.longitude = request.longitude
         return addressRepository.save(address)
     }
 
@@ -69,6 +71,8 @@ class CustomerAddressService(
         address.country = request.country
         address.phone = request.phone
         address.isDefault = request.isDefault
+        address.latitude = request.latitude
+        address.longitude = request.longitude
         return addressRepository.save(address)
     }
 

@@ -27,6 +27,9 @@ data class CustomerAddressRequest(
     val country: String = "IN",
     val phone: String? = null,
     val isDefault: Boolean = false,
+    // Optional geolocation, when the address was picked on the map.
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 )
 
 data class CustomerAddressResponse(
@@ -40,6 +43,8 @@ data class CustomerAddressResponse(
     val country: String,
     val phone: String?,
     val isDefault: Boolean,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 )
 
 fun CustomerAddress.asAddressResponse() = CustomerAddressResponse(
@@ -53,4 +58,6 @@ fun CustomerAddress.asAddressResponse() = CustomerAddressResponse(
     country = country,
     phone = phone,
     isDefault = isDefault,
+    latitude = latitude,
+    longitude = longitude,
 )
