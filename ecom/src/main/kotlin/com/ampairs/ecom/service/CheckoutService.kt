@@ -14,6 +14,8 @@ import com.ampairs.ecom.repository.CustomerAddressRepository
 import com.ampairs.ecom.repository.EcomCartRepository
 import com.ampairs.ecom.repository.EcomOrderLineItemRepository
 import com.ampairs.ecom.repository.EcomOrderRepository
+import com.ampairs.core.config.Constants
+import com.ampairs.core.utils.Helper
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -44,6 +46,9 @@ class CheckoutService(
         val deliveryAddress = resolveDeliveryAddress(request, customerId)
 
         val order = EcomOrder()
+        // Unique business reference for the order (the column is unique + non-null). Generated here
+        // because BaseDomain.prePersist only fills uid — an unset ref inserts "" and collides.
+        order.ecomOrderRef = Helper.generateUniqueId("ECO", Constants.ID_LENGTH)
         order.storefrontId = storefront.uid
         order.workspaceId = storefront.ownerId
         order.customerId = customerId
