@@ -13,13 +13,14 @@ import com.ampairs.ecom.repository.EcomCartRepository
 import com.ampairs.ecom.repository.EcomListedProductRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
 import jakarta.persistence.EntityManager
-import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.springframework.test.util.ReflectionTestUtils
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.never
@@ -38,7 +39,15 @@ class CartServiceTest {
     // Field-injected @PersistenceContext EntityManager (write paths flush+clear before re-reading).
     @Mock private lateinit var entityManager: EntityManager
 
-    @InjectMocks private lateinit var cartService: CartService
+    private lateinit var cartService: CartService
+
+    @BeforeEach
+    fun setup() {
+        cartService = CartService(cartRepository, cartItemRepository, listedProductRepository)
+        // @InjectMocks uses constructor injection only, so the @PersistenceContext field isn't set;
+        // inject the EntityManager mock explicitly.
+        ReflectionTestUtils.setField(cartService, "entityManager", entityManager)
+    }
 
     // ── createCart ────────────────────────────────────────────────────────────
 
