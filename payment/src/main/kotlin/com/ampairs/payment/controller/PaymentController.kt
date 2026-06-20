@@ -46,7 +46,7 @@ import java.time.Instant
  * Tenant context is set by `SessionUserFilter` (X-Workspace-ID); all reads/writes are
  * workspace-scoped. Errors bubble to [PaymentExceptionHandler].
  */
-@RestController
+@RestController("paymentLedgerController")
 @RequestMapping("/payment/v1")
 class PaymentController(
     private val ledgerEntryService: LedgerEntryService,
