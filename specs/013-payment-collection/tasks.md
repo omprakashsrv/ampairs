@@ -16,6 +16,17 @@ testing gates. Not full TDD across all surfaces.
 - Backend `ampairs/` — module path `payment/src/main/kotlin/com/ampairs/payment/` (abbreviated `BE:`).
 - Mobile `ampairs-app/` — module path `feature/payment/src/` (abbreviated `MB:`).
 
+> ## Implementation status — 2026-06-19 (commit `007c3ee` backend; `ampairs-app` branch)
+> Implemented by background agents; **compilation not yet verified** (CI on PR #143 is the gate).
+> - **Backend — DONE (files present):** T001, T002, T005, T008, T009, T010, T011, T012, T013, T014,
+>   T020(BE), T021, T022, T023, T024, T024a(BE), T025, T026, T032, T033, T036, T037, T040, T041,
+>   T044, T045, T046, T049, T050, T052, T055(BE docs), T056. (T053 perf: not separately verified.)
+> - **Mobile — PARTIAL:** DONE T003, T004, T006, T007, T015, T016, T017, T018, T019, T020(MB),
+>   T027, T028; partial T029 (RecordPaymentViewModel only). **TODO:** T030 (+ other screens),
+>   T031 (Routes/entry provider/ModuleRegistry), T034, T035 (customer-list badge), T038, T042, T043,
+>   T047(UI), T048, T051, T021a, T054, T054a. Mobile agent hit session limit mid-UI.
+> - **Next:** verify backend CI; finish mobile UI/navigation + mobile tests; run 3-target compile gate.
+
 ## Format: `[ID] [P?] [Story] Description`
 - **[P]** = parallelizable (different files, no dependency). **[Story]** = US1…US6.
 
