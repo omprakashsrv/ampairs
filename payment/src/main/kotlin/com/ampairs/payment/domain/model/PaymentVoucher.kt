@@ -5,7 +5,6 @@ import com.ampairs.payment.config.Constants
 import com.ampairs.payment.domain.enums.ClearanceStatus
 import com.ampairs.payment.domain.enums.PaymentDirection
 import com.ampairs.payment.domain.enums.PaymentMode
-import jakarta.persistence.BatchSize
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -18,6 +17,7 @@ import jakarta.persistence.OneToMany
 import jakarta.persistence.Table
 import java.math.BigDecimal
 import java.time.Instant
+import org.hibernate.annotations.BatchSize
 
 /**
  * Money-movement header. Posts exactly one [LedgerEntry] (`PAYMENT_IN` CR when RECEIVED /

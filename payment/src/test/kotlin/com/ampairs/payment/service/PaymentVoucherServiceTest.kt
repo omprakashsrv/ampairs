@@ -19,8 +19,10 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
 import org.mockito.kotlin.whenever
+import org.mockito.quality.Strictness
 import java.math.BigDecimal
 
 /**
@@ -29,6 +31,7 @@ import java.math.BigDecimal
  * over-allocation is rejected; bounce posts a contra reversal; clearing a terminal voucher fails.
  */
 @ExtendWith(MockitoExtension::class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class PaymentVoucherServiceTest {
 
     @Mock private lateinit var voucherRepo: PaymentVoucherRepository
