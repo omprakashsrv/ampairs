@@ -70,7 +70,8 @@ class CartService(
     private fun reloadCart(sessionToken: String): EcomCart {
         entityManager.flush()
         entityManager.clear()
-        return cartRepository.findBySessionToken(sessionToken)!!
+        return cartRepository.findBySessionToken(sessionToken)
+            ?: throw CartExpiredException("Cart not found after update: $sessionToken")
     }
 
     @Transactional

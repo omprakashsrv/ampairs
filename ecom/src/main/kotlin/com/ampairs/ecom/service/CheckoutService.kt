@@ -2,6 +2,7 @@ package com.ampairs.ecom.service
 
 import com.ampairs.ecom.domain.dto.CheckoutRequest
 import com.ampairs.ecom.domain.enums.CartStatus
+import com.ampairs.ecom.domain.enums.EcomOrderStatus
 import com.ampairs.ecom.domain.model.CustomerAddress
 import com.ampairs.ecom.domain.model.EcomOrder
 import com.ampairs.ecom.domain.model.EcomOrderLineItem
@@ -49,6 +50,10 @@ class CheckoutService(
         // Unique business reference for the order (the column is unique + non-null). Generated here
         // because BaseDomain.prePersist only fills uid — an unset ref inserts "" and collides.
         order.ecomOrderRef = Helper.generateUniqueId("ECO", Constants.ID_LENGTH)
+        // Orders await merchant review. The default (PLACED) is a dead state — confirmOrder/
+        // editLineItems require PENDING_MERCHANT_REVIEW and advanceStatus has no transition out of
+        // PLACED, so a PLACED order can never progress.
+        order.status = EcomOrderStatus.PENDING_MERCHANT_REVIEW
         order.storefrontId = storefront.uid
         order.workspaceId = storefront.ownerId
         order.customerId = customerId
@@ -95,7 +100,7 @@ class CheckoutService(
         cart.status = CartStatus.CONVERTED
         cartRepository.save(cart)
 
-        val orderWithItems = orderRepository.findByEcomOrderRef(savedOrder.ecomOrderRef)!!
+        val orderWithItems = orderRepository.findByEcomOrderRef(savedOrder.ecomOrderRef) ?: savedOrder
         orderEventPublisher.publishOrderPlaced(orderWithItems)
 
         return orderWithItems

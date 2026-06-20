@@ -125,7 +125,11 @@ class EcomOrderService(
             confirmed.forEach { payload ->
                 lineItems[payload.managementProductId]?.let {
                     it.quantityConfirmed = payload.quantityConfirmed
-                    try { it.status = EcomLineItemStatus.valueOf(payload.status) } catch (_: IllegalArgumentException) {}
+                    try {
+                        it.status = EcomLineItemStatus.valueOf(payload.status)
+                    } catch (e: IllegalArgumentException) {
+                        log.warn("Ignoring unknown line-item status '{}' for {}", payload.status, event.ecomOrderRef)
+                    }
                     lineItemRepository.save(it)
                 }
             }
