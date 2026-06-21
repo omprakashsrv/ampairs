@@ -1,6 +1,6 @@
-package com.ampairs.workspace.printing.domain.dto
+package com.ampairs.printing.domain.dto
 
-import com.ampairs.workspace.printing.domain.model.PrintTemplate
+import com.ampairs.printing.domain.model.PrintTemplate
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Size
 
