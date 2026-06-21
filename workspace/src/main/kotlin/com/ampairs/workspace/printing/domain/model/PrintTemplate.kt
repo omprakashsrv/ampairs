@@ -50,5 +50,9 @@ class PrintTemplate : OwnableBaseDomain() {
     @Column(name = "active", nullable = false)
     var active: Boolean = true
 
+    /** The chosen template for its (document_type, printer_class). Client-managed; one default per pair. */
+    @Column(name = "is_default", nullable = false)
+    var isDefault: Boolean = false
+
     override fun obtainSeqIdPrefix(): String = Constants.PRINT_TEMPLATE_PREFIX
 }

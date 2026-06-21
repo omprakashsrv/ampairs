@@ -32,6 +32,8 @@ data class PrintTemplateRequest(
     val version: Long = 1,
 
     val active: Boolean = true,
+
+    val isDefault: Boolean = false,
 )
 
 /**
@@ -46,6 +48,7 @@ data class PrintTemplateResponse(
     val templateJson: String,
     val version: Long,
     val active: Boolean,
+    val isDefault: Boolean,
     val updatedAt: String?,
 )
 
@@ -57,6 +60,7 @@ fun PrintTemplate.applyRequest(request: PrintTemplateRequest): PrintTemplate = a
     templateJson = request.templateJson
     templateVersion = request.version
     active = request.active
+    isDefault = request.isDefault
 }
 
 fun PrintTemplate.asResponse(): PrintTemplateResponse = PrintTemplateResponse(
@@ -67,6 +71,7 @@ fun PrintTemplate.asResponse(): PrintTemplateResponse = PrintTemplateResponse(
     templateJson = templateJson,
     version = templateVersion,
     active = active,
+    isDefault = isDefault,
     updatedAt = updatedAt?.toString(),
 )
 
