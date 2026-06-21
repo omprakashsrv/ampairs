@@ -1,7 +1,7 @@
-package com.ampairs.workspace.printing.service
+package com.ampairs.printing.service
 
-import com.ampairs.workspace.printing.domain.dto.PrintTemplateRequest
-import com.ampairs.workspace.printing.domain.dto.PrintTemplateResponse
+import com.ampairs.printing.domain.dto.PrintTemplateRequest
+import com.ampairs.printing.domain.dto.PrintTemplateResponse
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 

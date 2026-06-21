@@ -1,12 +1,12 @@
-package com.ampairs.workspace.printing.service
+package com.ampairs.printing.service
 
 import com.ampairs.core.sync.EntityChangePublisher
-import com.ampairs.workspace.printing.domain.dto.PrintTemplateRequest
-import com.ampairs.workspace.printing.domain.dto.PrintTemplateResponse
-import com.ampairs.workspace.printing.domain.dto.applyRequest
-import com.ampairs.workspace.printing.domain.dto.asResponse
-import com.ampairs.workspace.printing.domain.model.PrintTemplate
-import com.ampairs.workspace.printing.repository.PrintTemplateRepository
+import com.ampairs.printing.domain.dto.PrintTemplateRequest
+import com.ampairs.printing.domain.dto.PrintTemplateResponse
+import com.ampairs.printing.domain.dto.applyRequest
+import com.ampairs.printing.domain.dto.asResponse
+import com.ampairs.printing.domain.model.PrintTemplate
+import com.ampairs.printing.repository.PrintTemplateRepository
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
