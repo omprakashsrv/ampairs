@@ -1,9 +1,13 @@
-# printing (sub-package of `workspace`)
+# printing module
 
-Server-side storage + offline-sync for the mobile app's **print templates**. This is **not** a
-top-level module — it lives inside `workspace` because templates are workspace-scoped and share the
-workspace tenant/DB. The backend treats a template's layout as an **opaque blob**: it stores and
-syncs `template_json` verbatim and never parses or renders it. All rendering happens in the app.
+Server-side storage + offline-sync for the mobile app's **print templates**. Top-level bounded
+context (`com.ampairs.printing`) serving the `/printing/v1/**` namespace. Templates are
+workspace-scoped (tenant-filtered via `OwnableBaseDomain` + `X-Workspace-ID`). The backend treats a
+template's layout as an **opaque blob**: it stores and syncs `template_json` verbatim and never
+parses or renders it. All rendering happens in the app.
+
+Depends only on `:core`. Spring discovers it via the default `com.ampairs` component/entity/repo scan
+(no extra config). Previously a sub-package of `workspace`; extracted to its own module.
 
 ## What it owns
 - `PrintTemplate` (entity) — one row per template, `OwnableBaseDomain` (tenant-scoped via `@TenantId ownerId`).
@@ -49,7 +53,7 @@ One template per `(document_type, printer_class)` pair — e.g. THERMAL invoice 
 - Conversions: `PrintTemplate.applyRequest(req)`, `PrintTemplate.asResponse()`. DTO isolation —
   never expose the entity (root rule #2).
 
-## Migrations (`workspace/src/main/resources/db/migration/{mysql,postgresql}/`)
+## Migrations (`printing/src/main/resources/db/migration/{mysql,postgresql}/`)
 - `V1.0.93__create_print_template_table.sql`
 - `V1.0.94__add_print_template_is_default.sql`
 Write **both** vendor variants (runtime DB is PostgreSQL). Never edit an applied migration —

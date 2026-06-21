@@ -19,3 +19,4 @@
 | `invoice` | Invoices, payments |
 | `subscription` | Plans, billing |
 | `setting` | Central workspace settings registry (cross-module toggles, offline-sync) |
+| `printing` | Print-template storage + offline-sync (`/printing/v1`, opaque layout JSON) |
