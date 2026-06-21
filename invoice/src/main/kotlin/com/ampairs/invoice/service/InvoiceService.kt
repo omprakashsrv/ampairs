@@ -3,7 +3,9 @@ package com.ampairs.invoice.service
 import com.ampairs.core.multitenancy.DeviceContextHolder
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.core.security.AuthenticationHelper
+import com.ampairs.event.domain.events.InvoiceCancelledEvent
 import com.ampairs.event.domain.events.InvoiceCreatedEvent
+import com.ampairs.event.domain.events.InvoiceFinalizedEvent
 import com.ampairs.event.domain.events.InvoiceStatusChangedEvent
 import com.ampairs.event.domain.events.InvoiceUpdatedEvent
 import com.ampairs.invoice.domain.dto.InvoiceResponse
@@ -11,6 +13,7 @@ import com.ampairs.invoice.domain.dto.InvoiceUpdateRequest
 import com.ampairs.invoice.domain.dto.toInvoice
 import com.ampairs.invoice.domain.dto.toInvoiceItems
 import com.ampairs.invoice.domain.dto.toResponse
+import com.ampairs.invoice.domain.enums.InvoiceStatus
 import com.ampairs.invoice.domain.model.Invoice
 import com.ampairs.invoice.domain.model.InvoiceItem
 import com.ampairs.invoice.repository.InvoiceItemRepository
@@ -145,6 +148,7 @@ class InvoiceService(
 
     private fun upsertInvoice(invoice: Invoice, invoiceItems: List<InvoiceItem>): InvoiceResponse {
         val existing = if (invoice.uid.isNotEmpty()) invoiceRepository.findByUid(invoice.uid) else null
+        val previousStatus = existing?.status
         if (existing != null) {
             invoice.id = existing.id
             invoice.uid = existing.uid
@@ -164,7 +168,45 @@ class InvoiceService(
             item.invoiceId = savedInvoice.uid
             invoiceItemRepository.save(item)
         }
+        publishFinalizationEvents(savedInvoice, previousStatus)
         return savedInvoice.toResponse(savedItems)
+    }
+
+    /**
+     * Bridges the invoice lifecycle to the `payment` party ledger (spec 013, FR-013/014):
+     * publishes [InvoiceFinalizedEvent] when an invoice newly reaches INVOICED, and
+     * [InvoiceCancelledEvent] when it leaves INVOICED. Drafts never post.
+     */
+    private fun publishFinalizationEvents(invoice: Invoice, previousStatus: InvoiceStatus?) {
+        val nowFinalized = invoice.status == InvoiceStatus.INVOICED
+        val wasFinalized = previousStatus == InvoiceStatus.INVOICED
+        if (nowFinalized && !wasFinalized) {
+            eventPublisher.publishEvent(
+                InvoiceFinalizedEvent(
+                    source = this,
+                    workspaceId = getWorkspaceId(),
+                    entityId = invoice.uid,
+                    userId = getUserId(),
+                    deviceId = getDeviceId(),
+                    invoiceNumber = invoice.invoiceNumber,
+                    customerUid = invoice.customerId ?: "",
+                    totalAmount = invoice.totalCost,
+                    invoiceDateEpochMillis = invoice.invoiceDate.toEpochMilli(),
+                )
+            )
+        } else if (wasFinalized && !nowFinalized) {
+            eventPublisher.publishEvent(
+                InvoiceCancelledEvent(
+                    source = this,
+                    workspaceId = getWorkspaceId(),
+                    entityId = invoice.uid,
+                    userId = getUserId(),
+                    deviceId = getDeviceId(),
+                    invoiceNumber = invoice.invoiceNumber,
+                    customerUid = invoice.customerId ?: "",
+                )
+            )
+        }
     }
 
     /**
