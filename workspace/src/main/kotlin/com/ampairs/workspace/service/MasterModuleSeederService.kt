@@ -72,6 +72,7 @@ class MasterModuleSeederService(
             createProductModule(),
             createOrderModule(),
             createInvoiceModule(),
+            createPaymentModule(),
             createInventoryModule(),
             createTaxCodeModule(),
             createUnitModule(),
@@ -299,6 +300,50 @@ class MasterModuleSeederService(
         sizeMb = 15
         featured = true
         displayOrder = 40
+        active = true
+    }
+
+    private fun createPaymentModule() = MasterModule().apply {
+        moduleCode = "payment-collection"
+        name = "Payments & Collection"
+        description = "Subsidiary party ledger for receivables and collections — opening balances, sales/returns/payments, multi-mode receipts (cash, cheque, UPI, NEFT/RTGS/IMPS, bank transfer), bill-wise allocation, aging, and a live closing balance per party"
+        tagline = "Track what every party owes and collect it on time"
+        category = ModuleCategory.FINANCIAL_MANAGEMENT
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.BASIC
+        requiredRole = UserRole.EMPLOYEE
+        complexity = ModuleComplexity.ADVANCED
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 9, true, "Essential for tracking customer dues and recording counter collections"),
+            createBusinessRelevance(BusinessType.WHOLESALE, 10, true, "Critical for distributor receivables, party ledgers, and credit control"),
+            createBusinessRelevance(BusinessType.MANUFACTURING, 9, true, "Important for managing dealer outstanding and payment follow-up")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = listOf("PAYMENT_READ", "PAYMENT_WRITE"),
+            optionalPermissions = listOf("PAYMENT_DELETE", "PAYMENT_RECONCILE"),
+            dependencies = listOf("customer-management", "invoice-billing")
+        )
+        uiMetadata = createUIMetadata(
+            icon = "payments",
+            primaryColor = "#00897B",
+            tags = listOf("Collections", "Receivables", "Party Ledger", "Payments", "Aging")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/payments",
+            displayName = "Payments",
+            iconName = "payments",
+            menuItems = listOf(
+                createMenuItem("payment-dashboard", "Collections", "/payments", "payments", 1, true),
+                createMenuItem("payment-record", "Record Payment", "/payments/record", "add_card", 2),
+                createMenuItem("payment-outstanding", "Outstanding", "/payments/outstanding", "request_quote", 3)
+            )
+        )
+        navigationIndex = 55
+        provider = "Ampairs"
+        sizeMb = 6
+        featured = true
+        displayOrder = 45
         active = true
     }
 
