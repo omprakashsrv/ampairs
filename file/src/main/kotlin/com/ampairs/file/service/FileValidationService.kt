@@ -101,6 +101,7 @@ class FileValidationService(
         file: MultipartFile,
         allowedTypes: Set<String>? = null,
         maxSize: Long? = null,
+        scanMaliciousText: Boolean = true,
     ): FileValidationResult {
         val errors = mutableListOf<String>()
 
@@ -180,7 +181,9 @@ class FileValidationService(
             // Binary image formats (JPEG, PNG, GIF, WebP) are validated via magic bytes + ImageIO;
             // their re-encoding through processForStorage also strips all embedded metadata.
             // Scanning binary bytes as text produces false positives on common byte sequences.
-            if (contentType?.startsWith("image/") != true && containsMaliciousContent(fileBytes)) {
+            // Trusted server-authored markup (e.g. print templates) legitimately contains HTML tags
+            // that the heuristic scan would flag; callers may opt out via scanMaliciousText = false.
+            if (scanMaliciousText && contentType?.startsWith("image/") != true && containsMaliciousContent(fileBytes)) {
                 errors.add("File contains potentially malicious content")
                 logger.warn("Malicious content detected in file: {}", sanitizedFilename)
                 return FileValidationResult(false, errors)
@@ -218,6 +221,7 @@ class FileValidationService(
                 "xls" -> contentTypes.add("application/vnd.ms-excel")
                 "xlsx" -> contentTypes.add("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
                 "txt" -> contentTypes.add("text/plain")
+                "html", "htm" -> contentTypes.add("text/html")
             }
         }
 
