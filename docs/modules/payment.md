@@ -82,6 +82,6 @@ Base path `/payment/v1/**`. All return `ApiResponse<T>`; workspace-scoped via `X
 
 ## Migrations
 
-`V1.0.93` in both `mysql/` and `postgresql/` — `party_balance`, `ledger_entry`, `payment_voucher`,
+`V1.0.95` in both `mysql/` and `postgresql/` — `party_balance`, `ledger_entry`, `payment_voucher`,
 `payment_allocation`, `adjustment_voucher`; money `DECIMAL(19,4)`, timestamps `TIMESTAMP`/`TIMESTAMPTZ`,
 `owner_id` + the unique/indexes per the data model.

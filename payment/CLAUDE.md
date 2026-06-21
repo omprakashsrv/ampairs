@@ -49,7 +49,7 @@ Client-supplied `voucher_no` is honored as-is (offline); a blank number is fille
 counter via `VoucherNumberService`.
 
 ## Migrations
-`V1.0.93` (both `mysql/` and `postgresql/`) — `party_balance`, `ledger_entry`, `payment_voucher`,
+`V1.0.95` (both `mysql/` and `postgresql/`) — `party_balance`, `ledger_entry`, `payment_voucher`,
 `payment_allocation`, `adjustment_voucher`; money `DECIMAL(19,4)`, timestamps `TIMESTAMP(TZ)`.
 
 ## Full docs
