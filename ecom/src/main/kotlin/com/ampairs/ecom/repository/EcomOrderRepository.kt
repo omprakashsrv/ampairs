@@ -17,6 +17,9 @@ interface EcomOrderRepository :
     @EntityGraph("EcomOrder.withItems")
     fun findByEcomOrderRef(ecomOrderRef: String): EcomOrder?
 
+    @EntityGraph("EcomOrder.withItems")
+    fun findBySourceCartToken(sourceCartToken: String): EcomOrder?
+
     fun findByCustomerIdAndStorefrontId(customerId: String, storefrontId: String, pageable: Pageable): Page<EcomOrder>
 
     fun findByWorkspaceId(workspaceId: String, pageable: Pageable): Page<EcomOrder>

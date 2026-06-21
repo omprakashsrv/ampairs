@@ -42,6 +42,14 @@ class CheckoutService(
         val cart = cartRepository.findBySessionToken(sessionToken)
             ?: throw CartExpiredException("Cart not found: $sessionToken")
 
+        // Idempotency: a cart is single-use. If it was already converted (double-tap / retried
+        // request after a lost success response), return the order created the first time instead
+        // of placing a duplicate.
+        if (cart.status == CartStatus.CONVERTED) {
+            orderRepository.findBySourceCartToken(sessionToken)?.let { return it }
+            throw CartExpiredException("Cart already checked out: $sessionToken")
+        }
+
         if (cart.cartItems.isEmpty()) throw EmptyCartException("Cannot checkout with an empty cart")
 
         val deliveryAddress = resolveDeliveryAddress(request, customerId)
@@ -54,6 +62,7 @@ class CheckoutService(
         // editLineItems require PENDING_MERCHANT_REVIEW and advanceStatus has no transition out of
         // PLACED, so a PLACED order can never progress.
         order.status = EcomOrderStatus.PENDING_MERCHANT_REVIEW
+        order.sourceCartToken = sessionToken
         order.storefrontId = storefront.uid
         order.workspaceId = storefront.ownerId
         order.customerId = customerId

@@ -21,6 +21,7 @@ import java.time.Instant
         Index(name = "idx_ecom_order_customer",    columnList = "customer_id"),
         Index(name = "idx_ecom_order_workspace",   columnList = "workspace_id"),
         Index(name = "idx_ecom_order_status",      columnList = "status"),
+        Index(name = "idx_ecom_order_source_cart_token", columnList = "source_cart_token"),
     ]
 )
 class EcomOrder : BaseDomain() {
@@ -56,6 +57,11 @@ class EcomOrder : BaseDomain() {
 
     @Column(name = "management_order_ref", length = 255)
     var managementOrderRef: String? = null
+
+    // The cart session token this order was created from. Lets a retried checkout return the
+    // existing order instead of creating a duplicate (idempotency).
+    @Column(name = "source_cart_token", length = 200)
+    var sourceCartToken: String? = null
 
     @Column(name = "subtotal", nullable = false, precision = 19, scale = 4)
     var subtotal: BigDecimal = BigDecimal.ZERO
