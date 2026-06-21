@@ -1,7 +1,7 @@
-package com.ampairs.workspace.printing.domain.model
+package com.ampairs.printing.domain.model
 
 import com.ampairs.core.domain.model.OwnableBaseDomain
-import com.ampairs.workspace.config.Constants
+import com.ampairs.printing.config.Constants
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Index

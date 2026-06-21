@@ -1,6 +1,6 @@
-package com.ampairs.workspace.printing.repository
+package com.ampairs.printing.repository
 
-import com.ampairs.workspace.printing.domain.model.PrintTemplate
+import com.ampairs.printing.domain.model.PrintTemplate
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.EntityGraph

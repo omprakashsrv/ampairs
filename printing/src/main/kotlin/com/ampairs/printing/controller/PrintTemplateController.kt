@@ -1,10 +1,10 @@
-package com.ampairs.workspace.printing.controller
+package com.ampairs.printing.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
-import com.ampairs.workspace.printing.domain.dto.PrintTemplateRequest
-import com.ampairs.workspace.printing.domain.dto.PrintTemplateResponse
-import com.ampairs.workspace.printing.service.PrintTemplateService
+import com.ampairs.printing.domain.dto.PrintTemplateRequest
+import com.ampairs.printing.domain.dto.PrintTemplateResponse
+import com.ampairs.printing.service.PrintTemplateService
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
