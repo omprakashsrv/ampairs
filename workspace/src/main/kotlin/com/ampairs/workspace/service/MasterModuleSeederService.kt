@@ -74,7 +74,8 @@ class MasterModuleSeederService(
             createInvoiceModule(),
             createInventoryModule(),
             createTaxCodeModule(),
-            createUnitModule()
+            createUnitModule(),
+            createPrintingModule()
         )
     }
 
@@ -428,6 +429,49 @@ class MasterModuleSeederService(
         active = true
     }
     
+    private fun createPrintingModule() = MasterModule().apply {
+        moduleCode = "printing-management"
+        name = "Printing"
+        description = "Multi-platform printing for invoices, orders and receipts — thermal (ESC/POS) over USB/Bluetooth/network and inkjet/laser via the system print service, with workspace-shared templates per document type and printer class"
+        tagline = "Print invoices, orders and receipts on any printer"
+        category = ModuleCategory.ADMINISTRATION
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.FREE
+        requiredRole = UserRole.EMPLOYEE
+        complexity = ModuleComplexity.STANDARD
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 10, true, "Essential for printing bills and receipts at the counter on thermal printers"),
+            createBusinessRelevance(BusinessType.WHOLESALE, 9, true, "Important for printing invoices and orders on A4/inkjet printers"),
+            createBusinessRelevance(BusinessType.MANUFACTURING, 7, false, "Useful for printing orders, labels and delivery documents")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = listOf("PRINT_READ", "PRINT_WRITE"),
+            optionalPermissions = listOf("PRINT_TEMPLATE_WRITE")
+        )
+        uiMetadata = createUIMetadata(
+            icon = "print",
+            primaryColor = "#455A64",
+            tags = listOf("Printing", "Thermal", "ESC/POS", "Templates", "Receipts", "Invoices")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/printing",
+            displayName = "Printing",
+            iconName = "print",
+            menuItems = listOf(
+                createMenuItem("printer-list", "Printers", "/printing/printers", "print", 1, true),
+                createMenuItem("print-templates", "Templates", "/printing/templates", "description", 2),
+                createMenuItem("print-queue", "Print Queue", "/printing/queue", "queue", 3)
+            )
+        )
+        navigationIndex = 80
+        provider = "Ampairs"
+        sizeMb = 4
+        featured = false
+        displayOrder = 65
+        active = true
+    }
+
     // Helper functions to create embedded objects
     private fun createBusinessRelevance(
         businessType: BusinessType,
