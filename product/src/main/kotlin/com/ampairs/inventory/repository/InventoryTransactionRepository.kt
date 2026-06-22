@@ -408,4 +408,14 @@ interface InventoryTransactionRepository : CrudRepository<InventoryTransaction, 
         startDate: Instant,
         endDate: Instant
     ): List<InventoryTransaction>
+
+    // ============================================================================
+    // Offline-sync feeds (spec 014) — movements are append-only; @TenantId scopes the workspace.
+    // ============================================================================
+
+    @Query("SELECT t FROM inventory_transaction t WHERE t.updatedAt >= :lastSync")
+    fun findByUpdatedAtAfter(@Param("lastSync") lastSync: Instant, pageable: Pageable): Page<InventoryTransaction>
+
+    @Query("SELECT t FROM inventory_transaction t")
+    fun findAllForSync(pageable: Pageable): Page<InventoryTransaction>
 }
