@@ -67,6 +67,7 @@ dependencies {
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("io.mockk:mockk:1.14.11")
     testImplementation("com.ninja-squad:springmockk:5.0.1")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:6.3.0")
     testImplementation("org.testcontainers:testcontainers")
     testImplementation("org.testcontainers:postgresql")
     testImplementation("org.testcontainers:junit-jupiter")
