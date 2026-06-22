@@ -3,6 +3,7 @@
 
 plugins {
     base
+    jacoco   // root needs it too, so the aggregate JacocoReport task gets its jacocoClasspath
     id("org.springframework.boot") version "4.1.0" apply false
     id("io.spring.dependency-management") version "1.1.7" apply false
     id("org.flywaydb.flyway") version "11.14.1" apply false
@@ -31,6 +32,65 @@ subprojects {
     // Override Spring Boot 4.0's managed testcontainers version (2.0.5 sub-modules don't
     // all exist on Maven Central yet). Pin to the last stable 1.x release instead.
     extra["testcontainers.version"] = "1.21.0"
+
+    // ── Code coverage (JaCoCo) ───────────────────────────────────────────────
+    // Every JVM module gets coverage. The jacoco plugin only materialises its
+    // report task once the java plugin is present (each module applies kotlin("jvm")),
+    // so the lazy withType {} configuration below attaches whenever that happens.
+    apply(plugin = "jacoco")
+    the<JacocoPluginExtension>().toolVersion = "0.8.13"
+    tasks.withType<JacocoReport>().configureEach {
+        reports {
+            xml.required.set(true)   // machine-readable — consumed by CI publishing
+            html.required.set(true)  // human-readable — uploaded as a CI artifact
+        }
+    }
+    // `./gradlew test` also refreshes that module's coverage report.
+    tasks.withType<Test>().configureEach {
+        finalizedBy(tasks.withType<JacocoReport>())
+    }
+}
+
+// ── Project-wide aggregated coverage ─────────────────────────────────────────
+// ./gradlew codeCoverageReport
+//   → build/reports/jacoco/aggregate/coverage.xml  (consumed by CI publishing)
+//   → build/reports/jacoco/aggregate/html/         (uploaded as a CI artifact)
+//
+// Deliberately file-based (exec / classes / sources) rather than the
+// `jacoco-report-aggregation` plugin: that plugin resolves each module's runtime
+// classpath from the root, where Spring-BOM-managed deps (spring-kafka, etc.) have
+// no version and fail to resolve. Reading files sidesteps classpath resolution.
+tasks.register<JacocoReport>("codeCoverageReport") {
+    group = "verification"
+    description = "Aggregated JaCoCo coverage across all modules."
+
+    // Run every module's tests (writes build/jacoco/test.exec) and its per-module
+    // report. Depending on both keeps Gradle's implicit-dependency validation happy,
+    // since this task reads files those tasks produce.
+    dependsOn(subprojects.map { "${it.path}:test" })
+    dependsOn(subprojects.map { "${it.path}:jacocoTestReport" })
+
+    executionData.setFrom(
+        fileTree(rootDir) { include("**/build/jacoco/test.exec") }
+    )
+    classDirectories.setFrom(
+        files(subprojects.map { proj ->
+            // Kotlin/JVM main output; exclude generated/boilerplate from the denominator.
+            fileTree(proj.layout.buildDirectory.dir("classes/kotlin/main")) {
+                exclude("**/config/**", "**/*Application*", "**/generated/**")
+            }
+        })
+    )
+    sourceDirectories.setFrom(
+        files(subprojects.map { it.layout.projectDirectory.dir("src/main/kotlin") })
+    )
+
+    reports {
+        xml.required.set(true)
+        xml.outputLocation.set(layout.buildDirectory.file("reports/jacoco/aggregate/coverage.xml"))
+        html.required.set(true)
+        html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco/aggregate/html"))
+    }
 }
 
 // Global tasks for the entire project
