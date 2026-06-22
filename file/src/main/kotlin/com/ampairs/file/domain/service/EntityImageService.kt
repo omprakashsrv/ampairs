@@ -31,6 +31,15 @@ class EntityImageService(
 ) {
     private val logger = LoggerFactory.getLogger(EntityImageService::class.java)
 
+    companion object {
+        /**
+         * Entity types stored as raw non-image documents (HTML print templates, etc.).
+         * These skip the image pipeline: no decode/resize/EXIF-strip, no thumbnails, raw bytes only.
+         */
+        private val DOCUMENT_ENTITY_TYPES = setOf("PRINT_TEMPLATE")
+        private val DOCUMENT_ALLOWED_EXTENSIONS = setOf("html", "htm")
+    }
+
     /** Maps the stored (uppercased) entityType to the mobile SyncEntity image code, e.g. "customer_image". */
     private fun imageCode(entityType: String) = "${entityType.lowercase()}_image"
 
@@ -41,6 +50,9 @@ class EntityImageService(
         request: EntityImageUploadRequest,
         baseUrl: String,
     ): EntityImageResponse {
+        if (entityType.uppercase() in DOCUMENT_ENTITY_TYPES) {
+            return uploadDocument(entityType, entityUid, file, request, baseUrl)
+        }
         val start = System.currentTimeMillis()
 
         // 1. Validate — magic bytes, content type, dangerous content
@@ -128,6 +140,105 @@ class EntityImageService(
             "Image uploaded: entity={}/{}, uid={}, size={}b, dims={}x{}, time={}ms",
             entityType, entityUid, saved.uid, processed.bytes.size,
             processed.width, processed.height, System.currentTimeMillis() - start
+        )
+
+        entityChangePublisher.created(imageCode(entityType), entityUid)
+        return saved.asEntityImageResponse(baseUrl)
+    }
+
+    /**
+     * Upload a raw non-image document (e.g. an HTML print template). Skips the image pipeline:
+     * the bytes are validated for extension/size/dangerous-signature only, stored verbatim, and no
+     * thumbnails are generated. Shares the entity-scoped storage + sync model with images so the
+     * mobile file module can list/pull/reconcile templates exactly like images.
+     */
+    private fun uploadDocument(
+        entityType: String,
+        entityUid: String,
+        file: MultipartFile,
+        request: EntityImageUploadRequest,
+        baseUrl: String,
+    ): EntityImageResponse {
+        val start = System.currentTimeMillis()
+
+        // 1. Validate — extension/size/dangerous-signature; skip the HTML-flagging text scan for
+        //    these trusted, server-authored markup documents.
+        val validation = fileValidationService.validateFile(
+            file,
+            allowedTypes = DOCUMENT_ALLOWED_EXTENSIONS,
+            scanMaliciousText = false,
+        )
+        if (!validation.isValid) {
+            throw IllegalArgumentException("Invalid document file: ${validation.errors.joinToString()}")
+        }
+
+        val rawBytes = file.bytes
+        val checksum = validation.checksum
+            ?: throw IllegalArgumentException("Checksum unavailable")
+
+        // 2. Deduplication — same content already uploaded for this entity?
+        entityImageRepository.findByChecksum(checksum, entityType, entityUid)?.let { existing ->
+            logger.info("Dedup hit (document): entity={}/{}, existing={}", entityType, entityUid, existing.uid)
+            return existing.asEntityImageResponse(baseUrl)
+        }
+
+        val ext = resolveExtension(file.originalFilename ?: "template.html", file.contentType)
+
+        // 3. Build entity record — store raw bytes, no image dimensions/EXIF processing
+        val document = EntityImage().apply {
+            request.uid?.let { uid = it }
+            this.entityType = entityType
+            this.entityUid = entityUid
+            originalFilename = file.originalFilename ?: "template.$ext"
+            fileExtension = ext
+            contentType = file.contentType ?: "text/html"
+            fileSize = rawBytes.size.toLong()
+            this.checksum = checksum
+            isPrimary = request.isPrimary
+            displayOrder = request.displayOrder ?: 0
+            description = request.description
+            uploadedAt = Instant.now()
+            active = true
+        }
+        document.storagePath = document.storagePath()
+
+        // 4. Upload raw bytes to object storage
+        val result = objectStorageService.uploadFile(
+            rawBytes,
+            storageProperties.defaultBucket,
+            document.storagePath,
+            document.contentType,
+            mapOf(
+                "entity-type" to entityType,
+                "entity-uid" to entityUid,
+                "workspace" to document.ownerId,
+                "original-filename" to document.originalFilename,
+                "checksum" to checksum
+            )
+        )
+
+        document.storageUrl = result.url
+        document.metadata = EntityImageMetadata(
+            etag = result.etag,
+            lastModified = result.lastModified,
+            exifStripped = false
+        )
+
+        // 5. Primary logic (mirrors the image path)
+        if (request.isPrimary) {
+            entityImageRepository.clearPrimaryStatus(entityType, entityUid)
+            document.isPrimary = true
+            document.displayOrder = 0
+        } else if (request.displayOrder == null) {
+            document.displayOrder = entityImageRepository.getNextDisplayOrder(entityType, entityUid)
+        }
+
+        val saved = entityImageRepository.save(document)
+
+        logger.info(
+            "Document uploaded: entity={}/{}, uid={}, size={}b, type={}, time={}ms",
+            entityType, entityUid, saved.uid, rawBytes.size, document.contentType,
+            System.currentTimeMillis() - start
         )
 
         entityChangePublisher.created(imageCode(entityType), entityUid)
