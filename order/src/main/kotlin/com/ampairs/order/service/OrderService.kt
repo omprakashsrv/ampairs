@@ -6,7 +6,12 @@ import com.ampairs.core.security.AuthenticationHelper
 import com.ampairs.event.domain.events.OrderCreatedEvent
 import com.ampairs.event.domain.events.OrderStatusChangedEvent
 import com.ampairs.event.domain.events.OrderUpdatedEvent
+import com.ampairs.inventory.service.InventoryStockService
+import com.ampairs.inventory.service.StockLine
+import com.ampairs.inventory.service.StockMutationCommand
+import com.ampairs.inventory.service.StockSourceType
 import com.ampairs.invoice.service.InvoiceService
+import com.ampairs.order.domain.enums.OrderStatus
 import com.ampairs.order.domain.dto.OrderResponse
 import com.ampairs.order.domain.dto.OrderUpdateRequest
 import com.ampairs.order.domain.dto.toInvoice
@@ -42,8 +47,36 @@ class OrderService(
     val orderItemRepository: OrderItemRepository,
     val orderPagingRepository: OrderPagingRepository,
     val invoiceService: InvoiceService,
+    val inventoryStockService: InventoryStockService,
     val eventPublisher: ApplicationEventPublisher
 ) {
+
+    /**
+     * Apply/reverse stock for an order status transition (spec 014, US1). Idempotent in the
+     * inventory service, so repeated saves at the same status never double-count. Deduction is
+     * gated by the workspace `inventory/auto_deduct_on_order` setting inside the inventory service.
+     */
+    private fun syncInventoryForStatus(order: Order, orderItems: List<OrderItem>, newStatus: OrderStatus) {
+        if (orderItems.isEmpty()) return
+        val command = StockMutationCommand(
+            sourceType = StockSourceType.ORDER,
+            sourceId = order.uid,
+            referenceNumber = order.orderNumber,
+            performedBy = getUserId(),
+            lines = orderItems.map {
+                StockLine(
+                    sourceLineUid = it.uid,
+                    productId = it.productId,
+                    quantity = it.quantity.toBigDecimal(),
+                )
+            },
+        )
+        when (newStatus) {
+            OrderStatus.CONFIRMED -> inventoryStockService.applySale(command)
+            OrderStatus.CANCELLED, OrderStatus.REFUNDED -> inventoryStockService.reverseSale(command)
+            else -> Unit
+        }
+    }
 
     /**
      * Helper methods for event publishing
@@ -107,6 +140,9 @@ class OrderService(
 
             // Publish status changed event if status changed
             if (oldStatus != null && oldStatus != savedOrder.status) {
+                // Spec 014 US1: move stock for the sale on confirm; restore on cancel/refund.
+                syncInventoryForStatus(savedOrder, orderItems, savedOrder.status)
+
                 eventPublisher.publishEvent(
                     OrderStatusChangedEvent(
                         source = this,
