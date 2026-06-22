@@ -6,16 +6,15 @@ import com.ampairs.inventory.domain.dto.StockAdjustmentRequest
 import com.ampairs.inventory.domain.dto.StockInRequest
 import com.ampairs.inventory.domain.dto.StockOutRequest
 import com.ampairs.inventory.domain.dto.StockTransferRequest
-import com.ampairs.inventory.domain.model.InventoryConfig
 import com.ampairs.inventory.domain.model.InventoryItem
 import com.ampairs.inventory.domain.model.InventoryTransaction
 import com.ampairs.inventory.domain.model.Warehouse
 import com.ampairs.inventory.repository.InventoryTransactionRepository
-import com.ampairs.inventory.service.InventoryConfigService
 import com.ampairs.inventory.service.InventoryItemService
 import com.ampairs.inventory.service.InventorySerialService
 import com.ampairs.inventory.service.InventoryTransactionService
 import com.ampairs.inventory.service.WarehouseService
+import com.ampairs.setting.service.SettingService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -48,7 +47,7 @@ class InventoryTransactionServiceTest {
     private lateinit var warehouseService: WarehouseService
 
     @Mock
-    private lateinit var configService: InventoryConfigService
+    private lateinit var settingService: SettingService
 
     @Mock
     private lateinit var serialService: InventorySerialService
@@ -67,19 +66,16 @@ class InventoryTransactionServiceTest {
             block()
         }
 
-    private fun config(negative: Boolean = false): InventoryConfig =
-        InventoryConfig().apply { uid = "CFG-1"; allowNegativeStock = negative }
-
     @BeforeEach
     fun setUp() {
         service = InventoryTransactionService(
-            transactionRepository, itemService, warehouseService, configService, serialService
+            transactionRepository, itemService, warehouseService, settingService, serialService
         )
         whenever(transactionRepository.save(any<InventoryTransaction>())).thenAnswer { it.arguments[0] }
         whenever(warehouseService.getWarehouseByUid(any())).thenReturn(Warehouse().apply { uid = "WHR-1" })
         whenever(transactionRepository.countTransactionsToday(any())).thenReturn(0L)
         whenever(transactionRepository.existsByTransactionNumber(any())).thenReturn(false)
-        whenever(configService.getOrCreateConfig()).thenReturn(config())
+        whenever(settingService.getBoolean("inventory", "allow_negative_stock")).thenReturn(false)
     }
 
     @Test
@@ -141,7 +137,7 @@ class InventoryTransactionServiceTest {
     fun `stockOut throws on insufficient stock when negative not allowed`() {
         val it = item { currentStock = BigDecimal("10"); reservedStock = BigDecimal("0") }
         whenever(itemService.getInventoryItemByUid("INV-1")).thenReturn(it)
-        whenever(configService.getOrCreateConfig()).thenReturn(config(negative = false))
+        whenever(settingService.getBoolean("inventory", "allow_negative_stock")).thenReturn(false)
         val request = StockOutRequest(inventoryItemId = "INV-1", warehouseId = "WHR-1", quantity = BigDecimal("50"))
 
         assertThrows(IllegalStateException::class.java) { service.stockOut(request) }
@@ -152,7 +148,7 @@ class InventoryTransactionServiceTest {
     fun `stockOut allows negative when configured`() {
         val it = item { currentStock = BigDecimal("10"); reservedStock = BigDecimal("0") }
         whenever(itemService.getInventoryItemByUid("INV-1")).thenReturn(it)
-        whenever(configService.getOrCreateConfig()).thenReturn(config(negative = true))
+        whenever(settingService.getBoolean("inventory", "allow_negative_stock")).thenReturn(true)
         val request = StockOutRequest(inventoryItemId = "INV-1", warehouseId = "WHR-1", quantity = BigDecimal("50"))
 
         val txn = service.stockOut(request)
@@ -283,7 +279,7 @@ class InventoryTransactionServiceTest {
         val toItem = item { uid = "INV-TO"; warehouseId = "WHR-2" }
         whenever(itemService.findByInventoryItemIdAndWarehouseId("INV-1", "WHR-1")).thenReturn(fromItem)
         whenever(itemService.findByInventoryItemIdAndWarehouseId("INV-1", "WHR-2")).thenReturn(toItem)
-        whenever(configService.getOrCreateConfig()).thenReturn(config(negative = false))
+        whenever(settingService.getBoolean("inventory", "allow_negative_stock")).thenReturn(false)
         val request = StockTransferRequest(
             inventoryItemId = "INV-1",
             fromWarehouseId = "WHR-1",

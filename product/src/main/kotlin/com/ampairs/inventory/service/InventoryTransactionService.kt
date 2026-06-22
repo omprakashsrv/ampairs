@@ -4,6 +4,7 @@ import com.ampairs.inventory.config.Constants
 import com.ampairs.inventory.domain.dto.*
 import com.ampairs.inventory.domain.model.InventoryTransaction
 import com.ampairs.inventory.repository.InventoryTransactionRepository
+import com.ampairs.setting.service.SettingService
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
@@ -43,7 +44,7 @@ class InventoryTransactionService(
     private val inventoryTransactionRepository: InventoryTransactionRepository,
     private val inventoryItemService: InventoryItemService,
     private val warehouseService: WarehouseService,
-    private val inventoryConfigService: InventoryConfigService,
+    private val settingService: SettingService,
     private val inventorySerialService: InventorySerialService
 ) {
 
@@ -231,10 +232,10 @@ class InventoryTransactionService(
         warehouseService.getWarehouseByUid(request.warehouseId)
 
         // Check stock availability
-        val config = inventoryConfigService.getOrCreateConfig()
+        val allowNegativeStock = settingService.getBoolean("inventory", "allow_negative_stock")
         val availableStock = item.currentStock.subtract(item.reservedStock)
 
-        if (!config.allowNegativeStock && availableStock < request.quantity) {
+        if (!allowNegativeStock && availableStock < request.quantity) {
             throw IllegalStateException(
                 "Insufficient stock for item ${item.sku}. " +
                 "Available: $availableStock, Requested: ${request.quantity}"
@@ -334,8 +335,8 @@ class InventoryTransactionService(
         )
 
         // Check stock availability in source
-        val config = inventoryConfigService.getOrCreateConfig()
-        if (!config.allowNegativeStock && fromItem.availableStock < request.quantity) {
+        val allowNegativeStock = settingService.getBoolean("inventory", "allow_negative_stock")
+        if (!allowNegativeStock && fromItem.availableStock < request.quantity) {
             throw IllegalStateException(
                 "Insufficient stock in source warehouse. " +
                 "Available: ${fromItem.availableStock}, Requested: ${request.quantity}"
