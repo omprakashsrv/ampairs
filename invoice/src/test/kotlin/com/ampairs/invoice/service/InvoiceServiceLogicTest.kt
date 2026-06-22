@@ -6,6 +6,7 @@ import com.ampairs.event.domain.events.InvoiceFinalizedEvent
 import com.ampairs.event.domain.events.InvoiceStatusChangedEvent
 import com.ampairs.event.domain.events.InvoiceUpdatedEvent
 import com.ampairs.form.domain.model.EntityType
+import com.ampairs.inventory.service.InventoryStockService
 import com.ampairs.invoice.domain.dto.InvoiceItemRequest
 import com.ampairs.invoice.domain.dto.InvoiceUpdateRequest
 import com.ampairs.invoice.domain.dto.toInvoice
@@ -44,13 +45,14 @@ class InvoiceServiceLogicTest {
     @Mock private lateinit var invoiceRepository: InvoiceRepository
     @Mock private lateinit var invoiceItemRepository: InvoiceItemRepository
     @Mock private lateinit var invoicePagingRepository: InvoicePagingRepository
+    @Mock private lateinit var inventoryStockService: InventoryStockService
     @Mock private lateinit var eventPublisher: ApplicationEventPublisher
 
     private lateinit var service: InvoiceService
 
     @BeforeEach
     fun setUp() {
-        service = InvoiceService(invoiceRepository, invoiceItemRepository, invoicePagingRepository, eventPublisher)
+        service = InvoiceService(invoiceRepository, invoiceItemRepository, invoicePagingRepository, inventoryStockService, eventPublisher)
         whenever(invoiceRepository.save(any<Invoice>())).thenAnswer { it.arguments[0] }
         whenever(invoiceItemRepository.save(any<InvoiceItem>())).thenAnswer { it.arguments[0] }
         whenever(invoiceRepository.findMaxInvoiceNumber()).thenReturn(Optional.of("0"))

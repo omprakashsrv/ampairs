@@ -39,6 +39,7 @@ dependencies {
     api(project(mapOf("path" to ":core")))
     implementation(project(":form"))
     api(project(mapOf("path" to ":invoice")))
+    implementation(project(":product"))
     api(project(mapOf("path" to ":event")))
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework.kafka:spring-kafka")

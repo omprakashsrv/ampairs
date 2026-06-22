@@ -8,6 +8,7 @@ import com.ampairs.inventory.exception.InsufficientStockException
 import com.ampairs.inventory.repository.InventoryItemRepository
 import com.ampairs.inventory.repository.InventoryTransactionRepository
 import com.ampairs.inventory.repository.WarehouseRepository
+import com.ampairs.core.setting.InstalledModulesProvider
 import com.ampairs.setting.service.SettingService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -31,12 +32,14 @@ class InventoryStockServiceImpl(
     private val inventoryTransactionRepository: InventoryTransactionRepository,
     private val warehouseRepository: WarehouseRepository,
     private val settingService: SettingService,
+    private val installedModulesProvider: InstalledModulesProvider,
 ) : InventoryStockService {
 
     private val log = LoggerFactory.getLogger(InventoryStockServiceImpl::class.java)
 
     @Transactional
     override fun applySale(command: StockMutationCommand) {
+        if (!inventoryModuleInstalled()) return       // inventory-management not installed → no-op
         if (!autoDeductEnabled()) {
             log.debug("Auto-deduct disabled; skipping applySale for {} {}", command.sourceType, command.sourceId)
             return
@@ -72,6 +75,7 @@ class InventoryStockServiceImpl(
 
     @Transactional
     override fun reverseSale(command: StockMutationCommand) {
+        if (!inventoryModuleInstalled()) return       // inventory-management not installed → no-op
         for (line in command.lines) {
             val item = resolveItem(line) ?: continue
             // Reversals are recorded under a RETURN source type so their idempotency key never
@@ -151,6 +155,10 @@ class InventoryStockServiceImpl(
         // Fallback: first tracked item for the product across locations (single-warehouse setups).
         return inventoryItemRepository.findByProductId(productId).firstOrNull()
     }
+
+    /** Stock actions only run when the workspace has the inventory-management module installed. */
+    private fun inventoryModuleInstalled(): Boolean =
+        InventorySettingDefinitions.MODULE_CODE in installedModulesProvider.enabledModuleCodes()
 
     private fun autoDeductEnabled(): Boolean =
         settingBool(InventorySettingDefinitions.KEY_AUTO_DEDUCT_ON_ORDER)
