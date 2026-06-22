@@ -17,8 +17,10 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.extension.ExtendWith
+import jakarta.persistence.EntityManager
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import org.springframework.test.util.ReflectionTestUtils
 import org.mockito.kotlin.any
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.never
@@ -34,12 +36,17 @@ class CartServiceTest {
     @Mock private lateinit var cartRepository: EcomCartRepository
     @Mock private lateinit var cartItemRepository: EcomCartItemRepository
     @Mock private lateinit var listedProductRepository: EcomListedProductRepository
+    // Field-injected @PersistenceContext EntityManager (write paths flush+clear before re-reading).
+    @Mock private lateinit var entityManager: EntityManager
 
     private lateinit var cartService: CartService
 
     @BeforeEach
     fun setup() {
         cartService = CartService(cartRepository, cartItemRepository, listedProductRepository)
+        // @InjectMocks uses constructor injection only, so the @PersistenceContext field isn't set;
+        // inject the EntityManager mock explicitly.
+        ReflectionTestUtils.setField(cartService, "entityManager", entityManager)
     }
 
     // ── createCart ────────────────────────────────────────────────────────────
@@ -112,7 +119,7 @@ class CartServiceTest {
         val updatedCart = makeCart("c1")
         val request = CartItemRequest(listedProductId = "p1", quantity = 2)
 
-        whenever(cartRepository.findBySessionToken("tok")).thenReturn(cart)
+        whenever(cartRepository.findFirstBySessionToken("tok")).thenReturn(cart)
         whenever(listedProductRepository.findByUid("p1")).thenReturn(product)
         whenever(cartItemRepository.findByCartIdAndListedProductId("c1", "p1")).thenReturn(null)
         whenever(cartItemRepository.save(any<EcomCartItem>())).thenReturn(makeCartItem("i1", "c1", "p1"))
@@ -130,7 +137,7 @@ class CartServiceTest {
         val existingItem = makeCartItem("i1", "c1", "p1").apply { quantity = 1 }
         val request = CartItemRequest(listedProductId = "p1", quantity = 5)
 
-        whenever(cartRepository.findBySessionToken("tok")).thenReturn(cart, cart)
+        whenever(cartRepository.findFirstBySessionToken("tok")).thenReturn(cart)
         whenever(listedProductRepository.findByUid("p1")).thenReturn(product)
         whenever(cartItemRepository.findByCartIdAndListedProductId("c1", "p1")).thenReturn(existingItem)
         whenever(cartItemRepository.save(existingItem)).thenReturn(existingItem)
@@ -144,7 +151,7 @@ class CartServiceTest {
     @Test
     fun `addOrUpdateItem throws ProductUnavailableException when product missing`() {
         val cart = makeCart("c1")
-        whenever(cartRepository.findBySessionToken("tok")).thenReturn(cart)
+        whenever(cartRepository.findFirstBySessionToken("tok")).thenReturn(cart)
         whenever(listedProductRepository.findByUid("missing")).thenReturn(null)
 
         assertThrows<ProductUnavailableException> {
@@ -157,7 +164,7 @@ class CartServiceTest {
     fun `addOrUpdateItem throws ProductUnavailableException when product not visible`() {
         val cart = makeCart("c1")
         val product = makeProduct("p1", stock = 10).apply { isVisible = false }
-        whenever(cartRepository.findBySessionToken("tok")).thenReturn(cart)
+        whenever(cartRepository.findFirstBySessionToken("tok")).thenReturn(cart)
         whenever(listedProductRepository.findByUid("p1")).thenReturn(product)
 
         assertThrows<ProductUnavailableException> {
@@ -169,7 +176,7 @@ class CartServiceTest {
     fun `addOrUpdateItem throws InsufficientStockException when quantity exceeds stock`() {
         val cart = makeCart("c1")
         val product = makeProduct("p1", stock = 3)
-        whenever(cartRepository.findBySessionToken("tok")).thenReturn(cart)
+        whenever(cartRepository.findFirstBySessionToken("tok")).thenReturn(cart)
         whenever(listedProductRepository.findByUid("p1")).thenReturn(product)
 
         assertThrows<InsufficientStockException> {
@@ -185,7 +192,8 @@ class CartServiceTest {
         val item = makeCartItem("i1", "c1", "p1")
         cart.cartItems.add(item)
 
-        whenever(cartRepository.findBySessionToken("tok")).thenReturn(cart, cart)
+        whenever(cartRepository.findFirstBySessionToken("tok")).thenReturn(cart)
+        whenever(cartRepository.findBySessionToken("tok")).thenReturn(cart)
         whenever(cartItemRepository.findByCartId("c1")).thenReturn(mutableListOf(item))
 
         cartService.removeItem("tok", "i1")
@@ -197,7 +205,8 @@ class CartServiceTest {
         val cart = makeCart("c1")
         val item = makeCartItem("i1", "c1", "p1")
 
-        whenever(cartRepository.findBySessionToken("tok")).thenReturn(cart, cart)
+        whenever(cartRepository.findFirstBySessionToken("tok")).thenReturn(cart)
+        whenever(cartRepository.findBySessionToken("tok")).thenReturn(cart)
         whenever(cartItemRepository.findByCartId("c1")).thenReturn(mutableListOf(item))
 
         cartService.removeItem("tok", "non-existent")
@@ -209,7 +218,8 @@ class CartServiceTest {
     @Test
     fun `clearCart deletes all items and returns cart`() {
         val cart = makeCart("c1")
-        whenever(cartRepository.findBySessionToken("tok")).thenReturn(cart, cart)
+        whenever(cartRepository.findFirstBySessionToken("tok")).thenReturn(cart)
+        whenever(cartRepository.findBySessionToken("tok")).thenReturn(cart)
 
         cartService.clearCart("tok")
         verify(cartItemRepository).deleteByCartId("c1")
@@ -219,7 +229,7 @@ class CartServiceTest {
 
     @Test
     fun `claimGuestCart throws CartExpiredException when guest cart not found`() {
-        whenever(cartRepository.findBySessionToken("guest-tok")).thenReturn(null)
+        whenever(cartRepository.findFirstBySessionToken("guest-tok")).thenReturn(null)
         assertThrows<CartExpiredException> {
             cartService.claimGuestCart("guest-tok", "cust-1", "sf1")
         }
@@ -230,7 +240,7 @@ class CartServiceTest {
         val expired = makeCart("guest").apply {
             expiresAt = Instant.now().minusSeconds(3600)
         }
-        whenever(cartRepository.findBySessionToken("guest-tok")).thenReturn(expired)
+        whenever(cartRepository.findFirstBySessionToken("guest-tok")).thenReturn(expired)
         assertThrows<CartExpiredException> {
             cartService.claimGuestCart("guest-tok", "cust-1", "sf1")
         }
@@ -244,7 +254,7 @@ class CartServiceTest {
 
         val customerCart = makeCart("cust-c").apply { sessionToken = "cust-tok" }
 
-        whenever(cartRepository.findBySessionToken("guest-tok")).thenReturn(guestCart)
+        whenever(cartRepository.findFirstBySessionToken("guest-tok")).thenReturn(guestCart)
         whenever(cartRepository.findByCustomerIdAndStorefrontIdAndStatus("cust-1", "sf1", CartStatus.ACTIVE))
             .thenReturn(customerCart)
         whenever(cartItemRepository.findByCartId("guest-c")).thenReturn(mutableListOf(guestItem))
@@ -264,7 +274,7 @@ class CartServiceTest {
         val guestCart = makeCart("guest-c")
         val newCustomerCart = makeCart("new-cust-c").apply { sessionToken = "new-tok" }
 
-        whenever(cartRepository.findBySessionToken("guest-tok")).thenReturn(guestCart)
+        whenever(cartRepository.findFirstBySessionToken("guest-tok")).thenReturn(guestCart)
         whenever(cartRepository.findByCustomerIdAndStorefrontIdAndStatus("cust-1", "sf1", CartStatus.ACTIVE))
             .thenReturn(null)
         whenever(cartRepository.save(any<EcomCart>())).thenReturn(newCustomerCart)

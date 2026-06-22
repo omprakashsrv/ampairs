@@ -105,7 +105,7 @@ class StorefrontServiceTest {
     @Test
     fun `getPublishedStorefrontBySlug returns published storefront`() {
         val sf = makeStorefront("sf1", "ws1", "my-shop").apply { status = StorefrontStatus.PUBLISHED }
-        whenever(storefrontRepository.findBySlugAndStatus("my-shop", StorefrontStatus.PUBLISHED)).thenReturn(sf)
+        whenever(storefrontRepository.findBySlugAndStatus("my-shop", StorefrontStatus.PUBLISHED.name)).thenReturn(sf)
 
         val result = storefrontService.getPublishedStorefrontBySlug("my-shop")
         assertEquals(StorefrontStatus.PUBLISHED, result.status)
@@ -113,7 +113,7 @@ class StorefrontServiceTest {
 
     @Test
     fun `getPublishedStorefrontBySlug throws StorefrontNotFoundException when not found`() {
-        whenever(storefrontRepository.findBySlugAndStatus("draft-shop", StorefrontStatus.PUBLISHED)).thenReturn(null)
+        whenever(storefrontRepository.findBySlugAndStatus("draft-shop", StorefrontStatus.PUBLISHED.name)).thenReturn(null)
         assertThrows<StorefrontNotFoundException> {
             storefrontService.getPublishedStorefrontBySlug("draft-shop")
         }

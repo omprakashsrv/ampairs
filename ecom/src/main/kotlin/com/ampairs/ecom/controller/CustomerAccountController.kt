@@ -67,7 +67,7 @@ class CustomerAccountController(
 
     @GetMapping("/orders")
     fun getOrders(
-        @RequestParam storefrontSlug: String,
+        @RequestParam("storefront_slug") storefrontSlug: String,
         @PageableDefault(size = 20) pageable: Pageable,
         authentication: Authentication,
     ): ApiResponse<PageResponse<EcomOrderResponse>> {
@@ -86,7 +86,7 @@ class CustomerAccountController(
     @GetMapping("/orders/{ecomOrderRef}")
     fun getOrder(
         @PathVariable ecomOrderRef: String,
-        @RequestParam storefrontSlug: String,
+        @RequestParam("storefront_slug") storefrontSlug: String,
         authentication: Authentication,
     ): ApiResponse<EcomOrderResponse> {
         val storefront = storefrontService.getPublishedStorefrontBySlug(storefrontSlug)

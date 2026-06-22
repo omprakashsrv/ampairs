@@ -49,7 +49,10 @@ data class ProductResponse(
     val productType: String?,
     val serviceType: String?,
     val hasVariants: Boolean,
-    val variants: List<ProductVariantResponse>?
+    val variants: List<ProductVariantResponse>?,
+
+    /** Whether the product is listed on the workspace's ecom storefront. */
+    val isEcomListed: Boolean = false
 )
 
 fun List<Product>.asResponse(): List<ProductResponse> {
@@ -91,7 +94,8 @@ fun List<Product>.asResponse(): List<ProductResponse> {
             productType = it.productType?.name,
             serviceType = it.serviceType?.name,
             hasVariants = it.hasVariants,
-            variants = it.variants.asResponse()
+            variants = it.variants.asResponse(),
+            isEcomListed = it.isEcomListed
         )
     }
 }
@@ -134,7 +138,8 @@ fun Product.asResponse(): ProductResponse {
         productType = productType?.name,
         serviceType = serviceType?.name,
         hasVariants = hasVariants,
-        variants = variants.asResponse()
+        variants = variants.asResponse(),
+        isEcomListed = isEcomListed
     )
 }
 

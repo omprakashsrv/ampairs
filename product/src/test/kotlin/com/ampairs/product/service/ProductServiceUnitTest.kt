@@ -34,6 +34,7 @@ class ProductServiceUnitTest {
     @Mock private lateinit var productRepository: ProductRepository
     @Mock private lateinit var eventPublisher: ApplicationEventPublisher
     @Mock private lateinit var entityChangePublisher: com.ampairs.core.sync.EntityChangePublisher
+    @Mock private lateinit var entityImageService: com.ampairs.file.domain.service.EntityImageService
 
     private lateinit var productService: ProductService
 
@@ -48,7 +49,8 @@ class ProductServiceUnitTest {
             productSubCategoryRepository = productSubCategoryRepository,
             productRepository = productRepository,
             eventPublisher = eventPublisher,
-            entityChangePublisher = entityChangePublisher
+            entityChangePublisher = entityChangePublisher,
+            entityImageService = entityImageService
         )
     }
 

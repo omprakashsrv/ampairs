@@ -44,7 +44,7 @@ class StorefrontService(
 
     @Transactional(readOnly = true)
     fun getPublishedStorefrontBySlug(slug: String): Storefront =
-        storefrontRepository.findBySlugAndStatus(slug, StorefrontStatus.PUBLISHED)
+        storefrontRepository.findBySlugAndStatus(slug, StorefrontStatus.PUBLISHED.name)
             ?: throw StorefrontNotFoundException("No published storefront found with slug '$slug'")
 
     @Transactional

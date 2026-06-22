@@ -2,17 +2,21 @@ package com.ampairs.ecom.service
 
 import com.ampairs.ecom.domain.dto.CheckoutRequest
 import com.ampairs.ecom.domain.enums.CartStatus
+import com.ampairs.ecom.domain.enums.EcomOrderStatus
 import com.ampairs.ecom.domain.model.CustomerAddress
 import com.ampairs.ecom.domain.model.EcomOrder
 import com.ampairs.ecom.domain.model.EcomOrderLineItem
 import com.ampairs.ecom.domain.model.Storefront
 import com.ampairs.ecom.exception.CartExpiredException
 import com.ampairs.ecom.exception.EmptyCartException
-import com.ampairs.ecom.kafka.EcomOrderKafkaProducer
+import com.ampairs.ecom.event.EcomOrderEventPublisher
+import com.ampairs.ecom.exception.InvalidDeliveryAddressException
 import com.ampairs.ecom.repository.CustomerAddressRepository
 import com.ampairs.ecom.repository.EcomCartRepository
 import com.ampairs.ecom.repository.EcomOrderLineItemRepository
 import com.ampairs.ecom.repository.EcomOrderRepository
+import com.ampairs.core.config.Constants
+import com.ampairs.core.utils.Helper
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -23,7 +27,7 @@ class CheckoutService(
     private val orderRepository: EcomOrderRepository,
     private val orderLineItemRepository: EcomOrderLineItemRepository,
     private val addressRepository: CustomerAddressRepository,
-    private val orderKafkaProducer: EcomOrderKafkaProducer,
+    private val orderEventPublisher: EcomOrderEventPublisher,
 ) {
 
     @Transactional
@@ -38,11 +42,27 @@ class CheckoutService(
         val cart = cartRepository.findBySessionToken(sessionToken)
             ?: throw CartExpiredException("Cart not found: $sessionToken")
 
+        // Idempotency: a cart is single-use. If it was already converted (double-tap / retried
+        // request after a lost success response), return the order created the first time instead
+        // of placing a duplicate.
+        if (cart.status == CartStatus.CONVERTED) {
+            orderRepository.findBySourceCartToken(sessionToken)?.let { return it }
+            throw CartExpiredException("Cart already checked out: $sessionToken")
+        }
+
         if (cart.cartItems.isEmpty()) throw EmptyCartException("Cannot checkout with an empty cart")
 
         val deliveryAddress = resolveDeliveryAddress(request, customerId)
 
         val order = EcomOrder()
+        // Unique business reference for the order (the column is unique + non-null). Generated here
+        // because BaseDomain.prePersist only fills uid — an unset ref inserts "" and collides.
+        order.ecomOrderRef = Helper.generateUniqueId("ECO", Constants.ID_LENGTH)
+        // Orders await merchant review. The default (PLACED) is a dead state — confirmOrder/
+        // editLineItems require PENDING_MERCHANT_REVIEW and advanceStatus has no transition out of
+        // PLACED, so a PLACED order can never progress.
+        order.status = EcomOrderStatus.PENDING_MERCHANT_REVIEW
+        order.sourceCartToken = sessionToken
         order.storefrontId = storefront.uid
         order.workspaceId = storefront.ownerId
         order.customerId = customerId
@@ -89,36 +109,45 @@ class CheckoutService(
         cart.status = CartStatus.CONVERTED
         cartRepository.save(cart)
 
-        val orderWithItems = orderRepository.findByEcomOrderRef(savedOrder.ecomOrderRef)!!
-        orderKafkaProducer.publishOrderPlaced(orderWithItems)
+        val orderWithItems = orderRepository.findByEcomOrderRef(savedOrder.ecomOrderRef) ?: savedOrder
+        orderEventPublisher.publishOrderPlaced(orderWithItems)
 
         return orderWithItems
     }
 
     private fun resolveDeliveryAddress(request: CheckoutRequest, customerId: String): Map<String, Any> {
-        if (request.deliveryAddressId != null) {
-            val saved = addressRepository.findByCustomerIdAndUid(customerId, request.deliveryAddressId)
-            if (saved != null) {
-                return mapOf(
-                    "addressLine1" to saved.addressLine1,
-                    "addressLine2" to (saved.addressLine2 ?: ""),
-                    "city" to saved.city,
-                    "state" to saved.state,
-                    "pinCode" to saved.pinCode,
-                    "country" to saved.country,
-                    "phone" to (saved.phone ?: ""),
-                )
-            }
+        request.deliveryAddressId?.let { addressId ->
+            // The address id is client-generated and authoritative; a saved address MUST exist for
+            // it. Missing means the address was never pushed/synced — fail with a clear 400 rather
+            // than NPE'ing on the (absent) inline address fallback below.
+            val saved = addressRepository.findByCustomerIdAndUid(customerId, addressId)
+                ?: throw InvalidDeliveryAddressException("Delivery address not found: $addressId")
+            return saved.toAddressMap()
         }
-        val dto = request.deliveryAddress!!
-        return mapOf(
-            "addressLine1" to dto.addressLine1,
-            "addressLine2" to (dto.addressLine2 ?: ""),
-            "city" to dto.city,
-            "state" to dto.state,
-            "pinCode" to dto.pinCode,
-            "country" to dto.country,
-            "phone" to (dto.phone ?: ""),
-        )
+        val dto = request.deliveryAddress
+            ?: throw InvalidDeliveryAddressException("A delivery address is required to place the order")
+        return buildMap {
+            put("addressLine1", dto.addressLine1)
+            put("addressLine2", dto.addressLine2 ?: "")
+            put("city", dto.city)
+            put("state", dto.state)
+            put("pinCode", dto.pinCode)
+            put("country", dto.country)
+            put("phone", dto.phone ?: "")
+            dto.latitude?.let { put("latitude", it) }
+            dto.longitude?.let { put("longitude", it) }
+        }
+    }
+
+    private fun CustomerAddress.toAddressMap(): Map<String, Any> = buildMap {
+        put("addressLine1", addressLine1)
+        put("addressLine2", addressLine2 ?: "")
+        put("city", city)
+        put("state", state)
+        put("pinCode", pinCode)
+        put("country", country)
+        put("phone", phone ?: "")
+        latitude?.let { put("latitude", it) }
+        longitude?.let { put("longitude", it) }
     }
 }

@@ -3,16 +3,19 @@ package com.ampairs.ecom.kafka
 import com.ampairs.ecom.service.CatalogSyncService
 import com.ampairs.event.domain.kafka.CatalogEventType
 import com.ampairs.event.domain.kafka.EcomCatalogEvent
+import com.ampairs.event.kafka.KafkaAvailableCondition
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import org.apache.kafka.clients.consumer.ConsumerRecord
 import org.slf4j.LoggerFactory
+import org.springframework.context.annotation.Conditional
 import org.springframework.kafka.annotation.KafkaListener
 import org.springframework.kafka.support.Acknowledgment
 import org.springframework.stereotype.Component
 
 @Component
+@Conditional(KafkaAvailableCondition::class)
 class EcomCatalogKafkaConsumer(
     private val catalogSyncService: CatalogSyncService,
 ) {

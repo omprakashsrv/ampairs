@@ -5,13 +5,20 @@ import com.ampairs.event.domain.kafka.EcomOrderLineItemPayload
 import com.ampairs.event.domain.kafka.EcomOrderPlacedEvent
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.ampairs.event.kafka.KafkaAvailableCondition
 import com.fasterxml.jackson.module.kotlin.registerKotlinModule
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.context.annotation.Conditional
 import org.springframework.kafka.core.KafkaTemplate
 import org.springframework.stereotype.Component
 
+/**
+ * Kafka transport for "order placed" — disabled unless a broker is reachable
+ * ([KafkaAvailableCondition]). The default path is the in-process [com.ampairs.ecom.event.EcomOrderEventPublisher].
+ */
 @Component
+@Conditional(KafkaAvailableCondition::class)
 class EcomOrderKafkaProducer(
     @Qualifier("ecomOrderKafkaTemplate") private val ecomOrderKafkaTemplate: KafkaTemplate<String, String>,
 ) {

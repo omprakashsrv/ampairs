@@ -1,11 +1,13 @@
 package com.ampairs.order.kafka
 
+import com.ampairs.event.kafka.KafkaAvailableCondition
 import org.apache.kafka.clients.consumer.ConsumerConfig
 import org.apache.kafka.clients.producer.ProducerConfig
 import org.apache.kafka.common.serialization.StringDeserializer
 import org.apache.kafka.common.serialization.StringSerializer
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Conditional
 import org.springframework.context.annotation.Configuration
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory
@@ -17,6 +19,7 @@ import org.springframework.kafka.listener.DefaultErrorHandler
 import org.springframework.util.backoff.FixedBackOff
 
 @Configuration
+@Conditional(KafkaAvailableCondition::class)
 class EcomOrderKafkaConfig {
 
     @Value("\${ecom.kafka.bootstrap-servers:localhost:9092}")
