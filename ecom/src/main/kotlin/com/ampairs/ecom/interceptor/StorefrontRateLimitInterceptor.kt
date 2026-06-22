@@ -9,8 +9,9 @@ import org.springframework.stereotype.Component
 import org.springframework.web.servlet.HandlerInterceptor
 
 /**
- * Per-IP / per-user rate limiting for the public storefront surface (`/v1/store/**`): catalog
- * browse/search, cart mutations and checkout. Reuses the shared [RateLimitingService], which is a
+ * Per-IP / per-user rate limiting for the public storefront surface (everything under the
+ * `/v1/store` path): catalog browse and search, cart mutations and checkout. Reuses the shared
+ * [RateLimitingService], which is a
  * no-op unless `app.security.rate-limiting.enabled` is true — so this is safe-by-default and only
  * engages once rate limiting is switched on for the deployment.
  */
