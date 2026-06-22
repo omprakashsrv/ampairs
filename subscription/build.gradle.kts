@@ -65,7 +65,7 @@ dependencies {
     implementation("com.google.auth:google-auth-library-oauth2-http:1.48.0")
 
     // Stripe
-    implementation("com.stripe:stripe-java:32.1.0")
+    implementation("com.stripe:stripe-java:33.0.0")
 
     // Razorpay
     implementation("com.razorpay:razorpay-java:1.4.9")
