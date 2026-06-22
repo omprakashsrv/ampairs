@@ -49,7 +49,7 @@ dependencies {
     implementation("io.awspring.cloud:spring-cloud-aws-starter-s3")
     implementation("io.awspring.cloud:spring-cloud-aws-starter-sns")
 
-    implementation("io.minio:minio:9.0.1")
+    implementation("io.minio:minio:9.0.3")
 
     runtimeOnly("com.mysql:mysql-connector-j")
 
