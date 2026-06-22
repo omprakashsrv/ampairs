@@ -29,5 +29,7 @@ FROM inventory i
 LEFT JOIN inventory_item ii ON ii.product_id = i.product_id AND ii.owner_id = i.owner_id
 WHERE ii.id IS NULL;
 
--- 3. Drop the legacy table.
+-- 3. Drop the legacy tables. inventory_unit_conversion has an FK to inventory and its entity is
+--    also retired, so drop the dependent table first, then inventory.
+DROP TABLE IF EXISTS inventory_unit_conversion;
 DROP TABLE IF EXISTS inventory;
