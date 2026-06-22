@@ -85,19 +85,21 @@ cheap insurance (document gaps in `NO_MIGRATION_NEEDED.md` if a workspace has no
 
 ## R5 — Which resources go on the `/sync` contract
 
-**Decision**: Three sync resources:
+**Decision**: **Two** inventory sync resources:
 - `GET/POST /inventory/v1/items/sync` → InventoryItem (stock levels + pricing)
 - `GET/POST /inventory/v1/transactions/sync` → InventoryTransaction (movements; **append-only** — see R6)
-- `GET/POST /inventory/v1/config/sync` → InventoryConfig (one row per workspace; uid = a stable per-workspace key)
 
-`Warehouse`, `InventoryBatch`, `InventorySerial`, `InventoryLedger` are **not** synced in this feature.
+Inventory **policy/config is NOT an inventory sync resource** — it lives in the central `setting` module
+and rides `SyncEntity.STORE` (see R11). `Warehouse`, `InventoryBatch`, `InventorySerial`,
+`InventoryLedger` are **not** synced in this feature.
 
-**Rationale**: Items, movements, and config are exactly what the mobile UX (dashboard, list, detail,
-adjust, count, settings) needs. Config-as-sync keeps settings consistent across devices using the same
-generic engine instead of a bespoke endpoint.
+**Rationale**: Items and movements are the inventory-owned data the mobile UX (dashboard, list, detail,
+adjust, count) needs. Config is cross-cutting workspace policy that the platform already syncs generically
+via the setting module — adding a bespoke `/config/sync` would duplicate that infrastructure.
 
-**Alternatives considered**: Sync warehouses too — unnecessary while single-warehouse; the default
-warehouse is resolved server-side and need not appear on the client.
+**Alternatives considered**: (a) A dedicated `/inventory/v1/config/sync` — rejected, duplicates the
+central setting module's sync/UI for no benefit (this is exactly the change requested). (b) Sync
+warehouses — unnecessary while single-warehouse; the default warehouse is resolved server-side.
 
 ---
 
@@ -137,16 +139,18 @@ ambiguous under concurrency. Client-authoritative balance — rejected, can't be
 
 ## R8 — Mobile SyncEntity additions
 
-**Decision**: Reuse the existing `SyncEntity.INVENTORY` for items. **Add** `INVENTORY_TRANSACTION` and
-`INVENTORY_CONFIG` to the `SyncEntity` enum (`data/sync`). Each gets its own `SyncDelegate`
-(`@SyncEntityKey`, `@ContributesIntoMap(WorkspaceScope)`). Declare `pushDependencies` so items push before
-transactions (a movement references an item).
+**Decision**: Reuse the existing `SyncEntity.INVENTORY` for items. **Add only** `INVENTORY_TRANSACTION` to
+the `SyncEntity` enum (`data/sync`). Each gets its own `SyncDelegate` (`@SyncEntityKey`,
+`@ContributesIntoMap(WorkspaceScope)`). Declare `pushDependencies` so items push before transactions (a
+movement references an item). **No `INVENTORY_CONFIG`** — inventory policy syncs via the existing
+`SyncEntity.STORE` (the setting module's delegate already handles it).
 
-**Rationale**: The generic engine keys everything by `SyncEntity`; three resources need three keys.
-Dependency ordering prevents a movement landing for an item the server hasn't seen yet.
+**Rationale**: The generic engine keys everything by `SyncEntity`; the two inventory-owned resources need
+two keys. Config is not inventory-owned data on the wire — it is a setting row, already covered by
+`SyncEntity.STORE`.
 
-**Alternatives considered**: Cram transactions+config under `INVENTORY` — rejected, the engine drives one
-delegate per entity and per-entity checkpoints/mutexes would collide.
+**Alternatives considered**: Add `INVENTORY_CONFIG` — rejected, it would create a second sync path for data
+the setting module already syncs.
 
 ---
 
@@ -182,12 +186,54 @@ delivery and background alerts when the app is closed.
 
 ---
 
+## R11 — Inventory policy via the central `setting` module (replaces `InventoryConfig`)
+
+**Decision**: Retire the dedicated `InventoryConfig` entity/table/service/`/config/sync`. Inventory policy
+becomes five settings under module namespace `inventory`, managed by the central `setting` module:
+
+| Setting key (`inventory/…`) | Type | Default |
+|---|---|---|
+| `auto_deduct_on_order` | BOOLEAN | `true` |
+| `block_orders_when_out_of_stock` | BOOLEAN | `false` |
+| `allow_negative_stock` | BOOLEAN | `false` |
+| `allow_manual_override` | BOOLEAN | `true` |
+| `enable_low_stock_alerts` | BOOLEAN | `true` |
+
+- **Backend declares** them via a `@Component InventorySettingDefinitions : SettingDefinitionProvider`
+  (in `inventory/config/`), each with `requiresModule = "inventory-management"` so they only surface when
+  the module is installed. Definitions are code-based — **no Flyway migration** to define them; the
+  `setting` module's `GET /setting/v1/definitions` exposes them and `GET/POST /setting/v1/settings/sync`
+  syncs overrides.
+- **Backend reads** effective values via the public `SettingService.getBoolean("inventory", key)` (the
+  precedent used by `payment`/`invoice`/`common`) inside `InventoryStockService` and the alert scheduler.
+- **Mobile reads** via the existing `StoreSettingsProvider.getBoolean/observeBoolean("inventory", key,
+  default)` injected into inventory ViewModels (precedent: `InvoiceViewModel` reading
+  `common/prices_include_tax`). Editing happens in the existing generic `feature/store` settings screen,
+  which renders any definition for installed modules — **no inventory settings screen, entity, or delegate
+  on either side**.
+- **Migration**: optional one-time data backfill copying legacy `inventory_config` rows into `store_setting`
+  rows (`module_code='inventory'`, one row per key) before dropping `inventory_config`; if a workspace has
+  no legacy config, defaults apply and nothing is backfilled.
+
+**Rationale**: This is the requested change. The `setting` module already provides definitions, typed
+values, per-module gating, offline sync (`SyncEntity.STORE`), and a generic settings UI — duplicating any
+of it for inventory is waste and drift risk.
+
+**Alternatives considered**: Keep `InventoryConfig` as the source of truth and mirror into settings —
+rejected, two sources of truth. Keep `InventoryConfig` for "advanced" inventory config not in the
+pragmatic core — deferred config (expiry/overstock/strategy) can become additional `inventory/*` settings
+later; no need to retain the table.
+
+---
+
 ## Summary of new/changed schema (feeds data-model.md)
 
 - `inventory_transaction`: **add** `source_type`, `source_id`, `source_line_uid`, `balance_after` (if not
   present), partial unique index on `(source_type, source_id, source_line_uid, owner_id)`.
 - `inventory_item`: ensure `updated_at: Instant` + soft-delete (`is_active`) present for `/sync`; add
   `reserved_stock`/`available_stock` if missing (present per current model).
-- `inventory_config`: ensure a stable per-workspace `uid` and `updated_at` for `/sync`.
+- `inventory_config`: **retire** — declare `inventory/*` settings in the `setting` module instead; optional
+  one-time backfill `inventory_config` → `store_setting`, then drop `inventory_config` (R11).
 - Retire legacy `inventory` table (data migration → `inventory_item`, then drop).
-- Mobile: new Room entities + migration off `inventoryEntity`.
+- Mobile: new Room entities (items + transactions only) + migration off `inventoryEntity`; **no** mobile
+  config table (policy read via `StoreSettingsProvider`).

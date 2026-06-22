@@ -59,22 +59,27 @@ State/derivation: `recalculateAvailableStock()` on every stock mutation; `isLowS
 WHERE `source_line_uid IS NOT NULL` (R2). No soft-delete column — transactions are immutable/append-only
 (R6).
 
-### 1.3 InventoryConfig (`inventory_config`) — one per workspace, sync-enabled
+### 1.3 Inventory policy → central `setting` module (no `inventory_config` table) ♻️
 
-| Field | Type | Notes |
+The dedicated `InventoryConfig` entity/`inventory_config` table is **retired** (R11). Inventory policy is
+declared as `SettingDefinition`s under module `inventory` and stored as `store_setting` rows (the
+`setting` module's existing override entity: `module_code, setting_key, value, value_type, active,
+updatedAt`, extending `OwnableBaseDomain`). No new inventory table; no `/config/sync`.
+
+Declared via `@Component InventorySettingDefinitions : SettingDefinitionProvider`
+(`requiresModule = "inventory-management"`):
+
+| Setting key (`inventory/…`) | Type | Default |
 |---|---|---|
-| uid | String | ✏️ stable per-workspace key (e.g., `CFG-{workspace}`) so it has a deterministic **sync key**. |
-| autoDeductOnOrder | Boolean | default **true**. |
-| blockOrdersWhenOutOfStock | Boolean | default **false**. |
-| allowNegativeStock | Boolean | default **false**. |
-| allowManualOverride | Boolean | default **true**. |
-| enableLowStockAlerts | Boolean | default **true**. |
-| stockConsumptionStrategy | enum | kept = FIFO (irrelevant until batches; not exposed). |
-| defaultWarehouseId | String? | Resolved default (R1). |
-| updatedAt | Instant | **Sync cursor.** |
+| `auto_deduct_on_order` | BOOLEAN | `true` |
+| `block_orders_when_out_of_stock` | BOOLEAN | `false` |
+| `allow_negative_stock` | BOOLEAN | `false` |
+| `allow_manual_override` | BOOLEAN | `true` |
+| `enable_low_stock_alerts` | BOOLEAN | `true` |
 
-(Other existing config fields — expiry/overstock/ledger flags — remain but are **not exposed** in the
-pragmatic-core UI.)
+Read via `SettingService.getBoolean("inventory", key)` (backend) / `StoreSettingsProvider.getBoolean(
+"inventory", key, default)` (mobile). The default warehouse id (R1) is resolved server-side, not a setting.
+Deferred policy (consumption strategy, expiry/overstock) can be added later as more `inventory/*` settings.
 
 ### 1.4 Warehouse (`warehouse`) — kept, single default per tenant
 
@@ -84,6 +89,9 @@ Unchanged. Invariant enforced: exactly one `isDefault = true` per workspace (bac
 
 - `Inventory` (legacy flat entity), `InventoryRepository`, `InventoryRequest`/`InventoryResponse`, and the
   map-shaped `GET /inventory/v1/items`. Data migrated into `inventory_item` (R4) then table dropped.
+- `InventoryConfig` entity + `inventory_config` table + `InventoryConfigService` + `/config/sync` (R11).
+  Optional one-time backfill `inventory_config` → `store_setting` (`module_code='inventory'`, one row per
+  key) before dropping `inventory_config`.
 
 ### 1.6 Deferred (untouched)
 
@@ -116,10 +124,12 @@ signed-by-type), `balanceAfter: Double?`, `unitCost: Double?`, `sourceType`, `so
 DAO: `Flow`/Paging history by `inventoryItemId` (newest-first), `getUnsynced()`, insert (append-only),
 `upsertFromServer()`. **No update/delete of existing rows** (append-only, R6).
 
-### 2.3 InventoryConfigEntity (new — single cached row)
+### 2.3 Inventory policy — no inventory table (read via `StoreSettingsProvider`)
 
-Mirror of backend config fields above + `synced: Int`, `updatedAt: String?`. Single row keyed by the
-deterministic config uid.
+There is **no** mobile inventory config entity. Inventory ViewModels inject `StoreSettingsProvider` and
+read `getBoolean/observeBoolean("inventory", key, default)`; the values are stored/synced by the existing
+`feature/store` `StoreSettingEntity` under `SyncEntity.STORE`. Editing uses the existing generic store
+settings screen.
 
 ### 2.4 Room migration
 
@@ -136,7 +146,7 @@ be appended on first sync if desired — left as a task option).
 Workspace ──1:N── InventoryItem ──1:N── InventoryTransaction
    │                  │  (FK inventoryItemId)
    │                  └── optional → Product / ProductVariant / Unit
-   ├──1:1── InventoryConfig
+   ├──1:N── store_setting rows (module_code='inventory')   ← policy (central setting module)
    └──1:1── default Warehouse (single-warehouse mode)
 
 InventoryTransaction.sourceId ─ references ─▶ Order / Invoice document (loose, by uid; no FK across modules)
@@ -148,8 +158,8 @@ InventoryTransaction.sourceId ─ references ─▶ Order / Invoice document (lo
 
 - Manual adjustment quantity MUST be > 0 with a reason (FR-009).
 - Physical count equal to system on-hand ⇒ **no** movement (FR-020 / SC-003).
-- `blockOrdersWhenOutOfStock` ⇒ reject sale that drives tracked item < 0 unless `allowNegativeStock`
-  (FR-013/FR-014).
+- Setting `inventory/block_orders_when_out_of_stock` ⇒ reject sale that drives tracked item < 0 unless
+  `inventory/allow_negative_stock` (FR-013/FR-014); read via `SettingService`/`StoreSettingsProvider`.
 - Auto-deduction unique per `(source_type, source_id, source_line_uid)` ⇒ no double-count (FR-012/SC-002).
 - Low = `0 < currentStock <= reorderLevel && reorderLevel > 0`; Out = `currentStock <= 0` (FR-015).
 - Items without an inventory record are unaffected by stock logic (FR-004).

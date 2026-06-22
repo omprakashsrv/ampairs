@@ -13,15 +13,19 @@ movement** with running balance; (3) **low-stock visibility + alerts**; (4) the 
 **offline-first** via the canonical `/sync` contract and the gold-standard customer-module architecture.
 
 Technical approach: standardize the backend on the existing rich entities (`InventoryItem`,
-`InventoryTransaction`, `InventoryConfig`) constrained to a single default `Warehouse`; retire the legacy
-flat `Inventory` entity; expose the canonical `/sync` contract for items, transactions (movements), and
-config; implement order/invoice→stock deduction in `InventoryTransactionService` behind a cross-module
-public service interface with an **idempotency key per source document + line**; wire the dormant
-low-stock/expiry schedulers to the notification module. On mobile, rebuild `feature/inventory` to the
-customer template: new Room model (`InventoryItemEntity`, `InventoryTransactionEntity`, cached
-`InventoryConfig`), **local-only repository** + `markPendingPush`, dedicated **SyncDelegates** owning all
-API traffic, **MVI ViewModels**, new UX (dashboard, list, detail+history, adjust, count, settings),
-Navigation3 wiring, and a Room migration off the old flat entity.
+`InventoryTransaction`) constrained to a single default `Warehouse`; retire the legacy flat `Inventory`
+entity **and the dedicated `InventoryConfig` entity/table**; expose the canonical `/sync` contract for
+items and transactions (movements); move inventory policy into the **central `setting` module** (declare an
+`InventorySettingDefinitions` provider; read effective values via `SettingService.getBoolean("inventory",
+…)`); implement order/invoice→stock deduction in `InventoryTransactionService` behind a cross-module public
+service interface with an **idempotency key per source document + line**; wire the dormant low-stock/expiry
+schedulers to the notification module. On mobile, rebuild `feature/inventory` to the customer template: new
+Room model (`InventoryItemEntity`, `InventoryTransactionEntity`), **local-only repository** +
+`markPendingPush`, dedicated **SyncDelegates** owning all API traffic, **MVI ViewModels**, new UX
+(dashboard, list, detail+history, adjust, count), Navigation3 wiring, and a Room migration off the old flat
+entity. Inventory policy on mobile is read via the existing `StoreSettingsProvider`
+(`getBoolean/observeBoolean("inventory", …)`) and edited through the existing generic workspace-settings
+screen — **no inventory-specific settings screen, sync delegate, or DB table**.
 
 Deferred (explicitly out of scope; model must not preclude them): multi-warehouse/transfers, batch/lot +
 expiry (FIFO/FEFO/LIFO), serial tracking, ledger/valuation snapshots.
@@ -45,8 +49,10 @@ Mobile — Room (workspace-scoped SQLite per workspace slug).
 aggregates computed from local DB. Auto-deduction adds negligible latency to order/invoice confirmation.
 **Constraints**: Offline-capable on mobile; multi-tenant isolation; idempotent deduction (zero
 double-counts); local-edit-wins conflict resolution; all money/date via workspace business locale.
-**Scale/Scope**: Per-workspace inventory (typically hundreds–low-thousands of SKUs); ~7 mobile screens;
-3 backend `/sync` resources + 1 cross-module integration + alerts.
+**Scale/Scope**: Per-workspace inventory (typically hundreds–low-thousands of SKUs); ~6 mobile screens
+(no bespoke settings screen — reuses the central workspace-settings UI); **2** backend `/sync` resources
+(items, transactions) + inventory policy via the central `setting` module + 1 cross-module stock
+integration + alerts.
 
 **Open cross-team decision (carried from spec Assumptions)**: the exact order/invoice lifecycle event(s)
 that trigger deduction/restoration. Proposed default resolved in research.md (R3); to be confirmed with the
@@ -67,7 +73,8 @@ deduction is idempotent regardless of which event fires.
 | VI. Centralized exceptions | ✅ | Reuse existing `InventoryExceptionHandler`; no try/catch in controllers. |
 | VII. EntityGraph (N+1) | ✅ | Reuse `InventoryItem.withRelations` graph; add graphs for transaction reads as needed. |
 | VIII. Angular M3 | ➖ N/A | No web work in this feature. |
-| IX. Module boundaries | ⚠️→✅ | Inventory stays inside `product` (its current home) but order/invoice→stock goes through a **public service interface** (`InventoryStockService`), never direct repository/entity access. Justified in Complexity Tracking. |
+| IX. Module boundaries | ⚠️→✅ | Inventory stays inside `product` (its current home) but order/invoice→stock goes through a **public service interface** (`InventoryStockService`), never direct repository/entity access. Inventory policy is consumed via the `setting` module's public `SettingService`, not a parallel store. Justified in Complexity Tracking. |
+| Setting reuse (no parallel config) | ✅ | Inventory policy is declared as `SettingDefinition`s and stored/synced through the central `setting` module (precedent: `common/prices_include_tax`, `invoice/show_discount_options`); the dedicated `InventoryConfig` entity/table is retired. |
 | X. CMP parity | ✅ | All UI/VM/logic in `commonMain`; platform code only for DB factories; parity tracked in tasks. |
 | XI. Secrets hygiene | ✅ | No secrets introduced. |
 | Flyway (both vendors) | ✅ | Every migration written under `db/migration/mysql/` and `db/migration/postgresql/`. |
@@ -86,7 +93,8 @@ specs/014-inventory-revamp/
 ├── data-model.md        # Phase 1 — entities (backend JPA + mobile Room), fields, relationships, state
 ├── quickstart.md        # Phase 1 — end-to-end validation guide
 ├── contracts/
-│   ├── inventory-sync-api.md        # /sync contracts: items, transactions, config
+│   ├── inventory-sync-api.md        # /sync contracts: items, transactions
+│   ├── inventory-settings.md        # inventory policy via the central setting module
 │   └── stock-integration.md         # order/invoice → InventoryStockService contract
 ├── checklists/
 │   └── requirements.md  # spec quality checklist (done)
@@ -99,42 +107,47 @@ specs/014-inventory-revamp/
 # Backend — ampairs/product/src/main/kotlin/com/ampairs/inventory/
 inventory/
 ├── domain/
-│   ├── model/         # InventoryItem, InventoryTransaction, InventoryConfig (KEEP); Warehouse (single default)
-│   │                  # RETIRE: legacy Inventory.kt
-│   ├── dto/           # ADD: ItemSync(Request/Response), TransactionSync(Request/Response), ConfigSync(Request/Response)
+│   ├── model/         # InventoryItem, InventoryTransaction (KEEP); Warehouse (single default)
+│   │                  # RETIRE: legacy Inventory.kt AND InventoryConfig.kt (→ central setting module)
+│   ├── dto/           # ADD: ItemSync(Request/Response), TransactionSync(Request/Response)
 │   └── enums/         # TransactionType/Reason (KEEP)
-├── controller/        # ADD: /sync endpoints on Item/Transaction/Config controllers
-├── service/           # KEEP InventoryItem/Transaction/Config services; ADD getAfterSync + bulkUpsert;
-│                      # ADD InventoryStockService (public interface for order/invoice integration)
+├── config/            # ADD: InventorySettingDefinitions : SettingDefinitionProvider (5 inventory/* keys)
+├── controller/        # ADD: /sync endpoints on Item/Transaction controllers (remove map-shaped GET /items)
+├── service/           # KEEP InventoryItem/Transaction services; ADD getAfterSync + bulkUpsert;
+│                      # ADD InventoryStockService (public interface for order/invoice integration);
+│                      # RETIRE InventoryConfigService → read via core SettingService.getBoolean("inventory", …)
 ├── repository/        # ADD findUpdatedAfter / findAllForSync (sync feeds incl. soft-deleted)
 ├── listener/          # InventoryOrderEventListener → call InventoryStockService (or replace with explicit call)
-├── scheduler/         # wire low-stock/expiry → notification module
-└── src/main/resources/db/migration/{mysql,postgresql}/   # new Vx migrations (idempotency col, sync fields, retire legacy)
+├── scheduler/         # wire low-stock/expiry → notification module (gate on inventory/enable_low_stock_alerts)
+└── src/main/resources/db/migration/{mysql,postgresql}/   # new Vx migrations (idempotency col, sync fields,
+                                                          #   retire legacy Inventory + inventory_config,
+                                                          #   optional backfill inventory_config → store_setting)
 
 # Mobile — ampairs-app/feature/inventory/src/
 inventory/ (commonMain/kotlin/com/ampairs/inventory/)
 ├── data/
-│   ├── db/            # REBUILD: InventoryItemEntity, InventoryTransactionEntity, InventoryConfigEntity (+ synced flags),
+│   ├── db/            # REBUILD: InventoryItemEntity, InventoryTransactionEntity (+ synced flags),
 │   │                  #   InventoryDatabase, DAOs (reactive Flow + Paging sources), migration off old flat InventoryEntity
-│   ├── api/           # InventoryItemApi/TransactionApi/ConfigApi (+ impls) → /sync endpoints
+│   ├── api/           # InventoryItemApi/TransactionApi (+ impls) → /sync endpoints
 │   └── repository/    # local-only repos: Room write synced=false + syncStateDao.markPendingPush
-├── domain/            # Inventory item/movement/config domain models + mappers
-├── sync/              # InventoryItemSyncDelegate, InventoryTransactionSyncDelegate, InventoryConfigSyncDelegate
+├── domain/            # Inventory item/movement domain models + mappers
+├── sync/              # InventoryItemSyncDelegate, InventoryTransactionSyncDelegate
 ├── ui/
 │   ├── dashboard/     # low-stock / out-of-stock / total value
 │   ├── list/          # item list + search (Paging3)
 │   ├── detail/        # item detail + movement history (Paging3)
 │   ├── adjust/        # stock-adjustment flow
-│   ├── count/         # physical-count flow
-│   └── settings/      # inventory settings
-├── viewmodel/         # MVI ViewModels (StateFlow UiState + SharedFlow events)
+│   └── count/         # physical-count flow
+│                      # (NO settings screen — policy edited via the existing feature/store settings UI)
+├── viewmodel/         # MVI ViewModels (StateFlow UiState + SharedFlow events);
+│                      #   inject StoreSettingsProvider to read inventory/* policy (getBoolean/observeBoolean)
 ├── di/                # @ContributesTo(WorkspaceScope) DAO + (android/ios/desktop) DB providers
 └── composeResources/values/strings.xml   # all UI strings
 
 # Shared mobile wiring — ampairs-app/shared/src/commonMain/
-├── Routes.kt                                  # expand InventoryRoute (dashboard/list/detail/adjust/count/settings)
+├── Routes.kt                                  # expand InventoryRoute (dashboard/list/detail/adjust/count)
 ├── navigation/providers/InventoryEntryProvider.kt   # wire new routes
-└── data/sync/.../SyncEntity.kt                # ADD INVENTORY_TRANSACTION, INVENTORY_CONFIG (INVENTORY exists)
+└── data/sync/.../SyncEntity.kt                # ADD INVENTORY_TRANSACTION (INVENTORY exists; config via SyncEntity.STORE)
 ```
 
 **Structure Decision**: Mobile + API (cross-repo). Backend inventory stays within the `product` module

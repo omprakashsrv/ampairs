@@ -104,17 +104,18 @@ A user counts physical stock and enters the counted quantity per item. The syste
 
 ### User Story 6 - Configure inventory behavior per workspace (Priority: P2)
 
-An admin configures inventory policy for the workspace: whether to auto-deduct on sale, whether to block sales when out of stock, whether to allow negative stock, whether manual override is allowed, and alert preferences (low-stock alerts on/off). These settings govern the behavior in Stories 1 and 3.
+An admin configures inventory policy for the workspace: whether to auto-deduct on sale, whether to block sales when out of stock, whether to allow negative stock, whether manual override is allowed, and alert preferences (low-stock alerts on/off). These settings govern the behavior in Stories 1 and 3. They are managed through the **existing central workspace settings** experience alongside other modules' toggles — not a separate inventory-only settings area.
 
 **Why this priority**: The policies in Story 1/3 must be controllable, but sensible defaults let the business operate without touching settings first.
 
-**Independent Test**: Toggle "auto-deduct on sale" off and confirm sales no longer change stock; toggle it on and confirm they do.
+**Independent Test**: Toggle "auto-deduct on sale" off in the workspace settings and confirm sales no longer change stock; toggle it on and confirm they do.
 
 **Acceptance Scenarios**:
 
-1. **Given** the settings screen, **When** the admin changes a policy, **Then** subsequent inventory behavior follows the new policy.
+1. **Given** the workspace settings, **When** the admin changes an inventory policy, **Then** subsequent inventory behavior follows the new policy.
 2. **Given** a brand-new workspace, **When** inventory is first used, **Then** safe defaults apply without requiring configuration (auto-deduct on, block-on-out-of-stock off, negative stock off, low-stock alerts on).
-3. **Given** settings changed on one device, **When** another device syncs, **Then** the updated settings apply there too.
+3. **Given** an inventory policy changed on one device, **When** another device syncs, **Then** the updated policy applies there too.
+4. **Given** the inventory module is not installed for a workspace, **When** the admin opens workspace settings, **Then** inventory policies do not appear.
 
 ### Edge Cases
 
@@ -164,8 +165,9 @@ An admin configures inventory policy for the workspace: whether to auto-deduct o
 
 **Configuration**
 
-- **FR-018**: System MUST provide per-workspace inventory settings: auto-deduct on sale, block sales when out of stock, allow negative stock, allow manual override, and low-stock alerts on/off.
-- **FR-019**: System MUST apply safe defaults for a new workspace without requiring configuration (auto-deduct on, block-on-out-of-stock off, negative stock off, low-stock alerts on).
+- **FR-018**: System MUST expose per-workspace inventory policy — auto-deduct on sale, block sales when out of stock, allow negative stock, allow manual override, low-stock alerts on/off — through the **central workspace settings registry** (the same mechanism other modules use for cross-cutting toggles), surfaced in the existing workspace settings experience. Inventory MUST NOT introduce a separate, parallel configuration store.
+- **FR-019**: System MUST apply safe defaults for a new workspace without requiring configuration (auto-deduct on, block-on-out-of-stock off, negative stock off, low-stock alerts on); defaults apply until an explicit override is set.
+- **FR-019a**: Inventory policy settings MUST only be visible/applicable when the inventory module is installed for the workspace.
 
 **Physical count**
 
@@ -193,7 +195,7 @@ An admin configures inventory policy for the workspace: whether to auto-deduct o
 
 - **Inventory Item**: A stock-tracked good at the single stocking location. Key attributes: identifier, name/SKU, link to product/variant and unit, on-hand quantity, reserved quantity, available quantity (derived), reorder level, cost/selling/MRP prices, active flag. Relationships: optionally references a Product/variant and a Unit; has many Movements.
 - **Inventory Movement**: An immutable record of a single stock change. Key attributes: identifier, item reference, movement type (in/out/adjustment/count), reason, signed quantity, resulting balance, source (manual or document reference like order/invoice + line), actor, timestamp. Relationships: belongs to one Inventory Item; may reference a source document.
-- **Inventory Settings**: Per-workspace inventory policy. Key attributes: auto-deduct on sale, block sales when out of stock, allow negative stock, allow manual override, low-stock alerts enabled. Relationships: one per workspace.
+- **Inventory Policy (settings)**: Per-workspace inventory policy values — auto-deduct on sale, block sales when out of stock, allow negative stock, allow manual override, low-stock alerts enabled. These are **not a dedicated inventory entity**; they are stored and synced as entries in the shared workspace settings registry under the `inventory` namespace, with defaults declared by the inventory module. Relationships: keyed per workspace + setting key.
 - **Stock Alert** (conceptual): A low-stock or out-of-stock condition surfaced to the user; deduplicated per item+condition.
 
 ## Success Criteria *(mandatory)*
@@ -216,6 +218,7 @@ An admin configures inventory policy for the workspace: whether to auto-deduct o
 - The existing **order** and **invoice** lifecycles emit (or can be made to emit) the events needed to trigger deduction/restoration; this feature defines the inventory side of that contract and the minimal hook required on the sales side.
 - "Sale confirmed" is the trigger point for deduction; the precise lifecycle state(s) (e.g., confirmed/fulfilled/invoiced) will be finalized during planning with the order/invoice owners, but deduction is idempotent regardless of which event fires.
 - **Reserved stock** is supported in the model but reservation flows (holding stock for unconfirmed orders) are minimal in this feature; the primary path is on-hand deduction at confirmation.
+- Inventory policy reuses the **existing central workspace settings module** (definitions, sync, and the generic settings UI) rather than a dedicated inventory configuration store; the inventory module only declares its setting definitions and reads their effective values. Any legacy dedicated inventory-config data is migrated into the central settings registry during planning/implementation.
 - Alerts are surfaced in-app on the dashboard; push/notification delivery reuses the platform's existing notification mechanism where available and degrades gracefully to in-app only.
 - Inventory tracking is **opt-in per item**; existing products without inventory records are unaffected until an item is created for them.
 - Monetary/date formatting follows the workspace business locale already provided by the platform.

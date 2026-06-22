@@ -1,6 +1,8 @@
 # Contract: Inventory `/sync` APIs
 
-Conforms to the canonical offline-sync contract (`docs/guides/offline-sync-contract.md`). Three resources.
+Conforms to the canonical offline-sync contract (`docs/guides/offline-sync-contract.md`). **Two**
+inventory-owned resources: items and transactions. (Inventory *policy* is NOT here — it lives in the
+central `setting` module; see [inventory-settings.md](./inventory-settings.md).)
 All endpoints return `ApiResponse<T>`; tenant scope via `X-Workspace-ID`; params snake_case; pull feed
 includes soft-deleted rows; push is UID-keyed bulk upsert. DTOs live in `inventory/domain/dto/`.
 
@@ -61,20 +63,12 @@ inserted). Rejects `quantity <= 0`.
 
 ---
 
-## 3. Inventory Config — `/inventory/v1/config/sync`
+## 3. Inventory Config — NOT an inventory endpoint
 
-One row per workspace; deterministic `uid` (e.g., `CFG-{workspace}`).
-
-### PULL `GET /inventory/v1/config/sync`
-Returns `ApiResponse<PageResponse<InventoryConfigSyncResponse>>` (0 or 1 content row). If none exists, the
-server lazily creates the default and returns it.
-
-### PUSH `POST /inventory/v1/config/sync`
-Body: `List<InventoryConfigSyncRequest>` (length 1). UID-keyed upsert. Returns
-`ApiResponse<List<InventoryConfigSyncResponse>>`.
-
-`InventoryConfigSyncResponse/Request`: `uid, auto_deduct_on_order, block_orders_when_out_of_stock,
-allow_negative_stock, allow_manual_override, enable_low_stock_alerts, default_warehouse_id, updated_at`.
+Inventory policy is **not** synced through an inventory `/config/sync` endpoint. It is declared as
+`inventory/*` settings in the central `setting` module and synced via `GET/POST /setting/v1/settings/sync`
+(client `SyncEntity.STORE`). See [inventory-settings.md](./inventory-settings.md). No
+`InventoryConfig*` DTOs are introduced.
 
 ---
 
@@ -95,8 +89,8 @@ Legacy `GET /inventory/v1/items` (map-shaped) is **removed** (R4).
 |---|---|---|---|
 | items | `INVENTORY` (exists) | `InventoryItemSyncDelegate` | — |
 | transactions | `INVENTORY_TRANSACTION` (🆕) | `InventoryTransactionSyncDelegate` | after `INVENTORY` |
-| config | `INVENTORY_CONFIG` (🆕) | `InventoryConfigSyncDelegate` | — |
+| policy/config | `STORE` (exists) | `StoreSyncDelegate` (existing — no new delegate) | — |
 
-Contract conformance checklist (per resource): `/sync` GET+POST, snake_case params, pull includes
-soft-deleted (items/config; N/A append-only transactions), in-band delete (items/config), UID-keyed bulk
-upsert, `ApiResponse<PageResponse<T>>`/`ApiResponse<List<T>>`, DTO isolation, `@TenantId` scoping.
+Contract conformance checklist (per inventory resource): `/sync` GET+POST, snake_case params, pull includes
+soft-deleted (items; N/A append-only transactions), in-band delete (items), UID-keyed bulk upsert,
+`ApiResponse<PageResponse<T>>`/`ApiResponse<List<T>>`, DTO isolation, `@TenantId` scoping.

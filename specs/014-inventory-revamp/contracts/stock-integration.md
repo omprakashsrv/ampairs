@@ -35,11 +35,12 @@ data class StockLine(
 
 1. **Resolve item**: map each line's product/variant → `InventoryItem` at the default warehouse. If no
    inventory item exists, **skip that line** (inventory tracking is opt-in — FR-004); do not block the sale.
-2. **Policy gate** (read `InventoryConfig`):
-   - If `autoDeductOnOrder = false` → no-op (manual flow only — FR-010/scenario 5).
-   - If `blockOrdersWhenOutOfStock = true` AND a line would drive on-hand < 0 AND `allowNegativeStock =
-     false` → throw `InsufficientStockException` (sale rejected, nothing applied — FR-013).
-   - If `allowNegativeStock = true` → permit negative on-hand (FR-014).
+2. **Policy gate** (read via `SettingService.getBoolean("inventory", key)` — central setting module, R11):
+   - If `inventory/auto_deduct_on_order = false` → no-op (manual flow only — FR-010/scenario 5).
+   - If `inventory/block_orders_when_out_of_stock = true` AND a line would drive on-hand < 0 AND
+     `inventory/allow_negative_stock = false` → throw `InsufficientStockException` (sale rejected, nothing
+     applied — FR-013).
+   - If `inventory/allow_negative_stock = true` → permit negative on-hand (FR-014).
 3. **Idempotency** (R2): each line creates one `InventoryTransaction` with
    `(source_type, source_id, source_line_uid)`. The partial unique constraint makes a retry/duplicate a
    no-op (skip if exists). `applySale` and `reverseSale` are therefore safe under at-least-once delivery

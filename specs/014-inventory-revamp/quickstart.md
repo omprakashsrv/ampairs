@@ -36,16 +36,20 @@ cd /home/user/ampairs-app
 
 ## Scenario B — Auto-deduction on sale (Story 1, FR-010/012/013/014)
 
-1. Item `INV-test-1` at 10 on-hand; `InventoryConfig.auto_deduct_on_order = true`.
+1. Item `INV-test-1` at 10 on-hand; setting `inventory/auto_deduct_on_order = true` (default; settable via
+   `POST /setting/v1/settings/sync` with `{module:"inventory", key:"auto_deduct_on_order", value:"true"}`
+   or the workspace settings UI).
 2. Confirm an order/invoice for 3 units of that product → on-hand becomes **7**; one STOCK_OUT movement
    (reason SALE) with `balance_after = 7`, `source_id` = doc uid.
 3. Re-fire the same confirmation event (simulate retry) → on-hand **still 7**, **no second movement**.
    ✅ Idempotency (SC-002).
 4. Cancel/return the sale → on-hand back to **10**; one STOCK_IN (reason RETURN).
-5. Set `block_orders_when_out_of_stock = true`, `allow_negative_stock = false`; attempt a sale > on-hand →
-   rejected (`InsufficientStockException`), stock unchanged. Flip `allow_negative_stock = true` → succeeds,
-   on-hand goes negative. ✅ Policy matrix.
-6. Set `auto_deduct_on_order = false`; confirm a sale → stock unchanged. ✅ Scenario 5.
+5. Set settings `inventory/block_orders_when_out_of_stock = true`, `inventory/allow_negative_stock =
+   false`; attempt a sale > on-hand → rejected (`InsufficientStockException`), stock unchanged. Flip
+   `inventory/allow_negative_stock = true` → succeeds, on-hand goes negative. ✅ Policy matrix.
+6. Set `inventory/auto_deduct_on_order = false`; confirm a sale → stock unchanged. ✅ Scenario 5.
+   (All policy values are central settings read via `SettingService`/`StoreSettingsProvider`, not a
+   dedicated inventory config — see contracts/inventory-settings.md.)
 
 ## Scenario C — Manual adjustment & history (Story 2, FR-005/008/009)
 
@@ -81,16 +85,22 @@ cd /home/user/ampairs-app
 
 - Mobile `InventoryRepository` injects **no** `Api` (only DAO + `SyncStateDao`); writes set `synced=false`
   and call `markPendingPush`.
-- All inventory server traffic lives in the three `SyncDelegate`s (`@SyncEntityKey`,
+- All inventory server traffic lives in the two `SyncDelegate`s (items, transactions) (`@SyncEntityKey`,
   `@ContributesIntoMap(WorkspaceScope)`).
 - ViewModels expose `StateFlow` UiState + `SharedFlow` events; screens use `collectAsStateWithLifecycle`;
   list VM drives `isRefreshing` from `syncService.observeEntity(...)`.
 - All UI strings come from `composeResources`; UIDs from `UidGenerator.generateUid`.
+- Inventory policy is read via `SettingService` (backend) / `StoreSettingsProvider` (mobile) under the
+  `inventory` namespace — there is **no** `InventoryConfig` entity, `inventory_config` table,
+  `/config/sync` endpoint, `INVENTORY_CONFIG` SyncEntity, or inventory settings screen.
 - Spot-check via review + grep; the 3-target compile gate must be green.
 
-## Scenario H — Legacy migration (R4/R9)
+## Scenario H — Legacy migration (R4/R9/R11)
 
 - Backend: a workspace with legacy `inventory` rows → after migration, equivalent `inventory_item` rows
   exist with preserved stock/prices; legacy table dropped; no `GET /inventory/v1/items` (map) remains.
+- Backend config: a workspace with a legacy `inventory_config` row → after the optional backfill, five
+  `store_setting` rows (`module_code='inventory'`) carry the same values; `inventory_config` table dropped;
+  `GET /setting/v1/definitions` now lists the `inventory/*` keys for installed workspaces.
 - Mobile: existing local `inventoryEntity` rows → after Room migration, present as `InventoryItemEntity`
-  with preserved data; app opens without crash.
+  with preserved data; app opens without crash; inventory toggles appear in the existing settings screen.
