@@ -17,6 +17,9 @@ jobs:
   test:
     name: Unit & Integration Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write   # required to post the coverage comment on the PR
     steps:
       - uses: actions/checkout@v6
       - name: Set up JDK 21
@@ -34,8 +37,29 @@ jobs:
           # Gradle whose checksum the action does not yet know; the build uses the root wrapper.
           validate-wrappers: false
       - run: chmod +x gradlew
-      - name: Run tests
-        run: ./gradlew test --console=plain
+      - name: Run tests with coverage
+        # codeCoverageReport runs every module's `test` task and aggregates the
+        # per-module JaCoCo data into one report. A test failure still fails the job.
+        run: ./gradlew codeCoverageReport --console=plain
+      - name: Publish coverage comment on PR
+        if: ${{ github.event_name == 'pull_request' }}
+        uses: madrapps/jacoco-report@v1.7.2
+        with:
+          paths: ${{ github.workspace }}/build/reports/jacoco/aggregate/coverage.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          title: 'Backend Code Coverage'
+          update-comment: true
+          # Informational for now (foundation baseline). Raise min-coverage-changed-files
+          # later to enforce that new/changed code is tested.
+          min-coverage-overall: 0
+          min-coverage-changed-files: 0
+      - name: Upload HTML coverage report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage-report
+          path: build/reports/jacoco/aggregate/html/
+          if-no-files-found: warn
 
   migrations:
     name: Flyway migrate + validate (PostgreSQL)
