@@ -143,20 +143,30 @@ inventory/ (commonMain/kotlin/com/ampairs/inventory/)
 │                      # (NO settings screen — policy edited via the existing feature/store settings UI)
 ├── viewmodel/         # MVI ViewModels (StateFlow UiState + SharedFlow events);
 │                      #   inject StoreSettingsProvider to read inventory/* policy (getBoolean/observeBoolean)
-├── di/                # @ContributesTo(WorkspaceScope) DAO + (android/ios/desktop) DB providers
+├── di/                # @ContributesTo(WorkspaceScope) DAO + (android/ios/desktop) DB providers;
+│                      #   @ContributesBinding(WorkspaceScope) InventoryDataServiceImpl (implements inventory-api)
 └── composeResources/values/strings.xml   # all UI strings
+
+# Mobile cross-feature contract — ampairs-app/feature/inventory-api/  (NEW, mirrors customer-api/product-api)
+inventory-api/ (commonMain/kotlin/com/ampairs/inventory/)
+├── data/InventoryDataService.kt   # interface: getStock / observeStock (read-side availability)
+└── domain/InventoryStockInfo.kt   # lightweight model (productId, onHand, available, reorderLevel, isLowStock)
+#   order & invoice features depend on THIS (not feature/inventory). See contracts/stock-integration.md.
 
 # Shared mobile wiring — ampairs-app/shared/src/commonMain/
 ├── Routes.kt                                  # expand InventoryRoute (dashboard/list/detail/adjust/count)
 ├── navigation/providers/InventoryEntryProvider.kt   # wire new routes
 └── data/sync/.../SyncEntity.kt                # ADD INVENTORY_TRANSACTION (INVENTORY exists; config via SyncEntity.STORE)
+# settings.gradle.kts                          # ADD :feature:inventory-api
 ```
 
 **Structure Decision**: Mobile + API (cross-repo). Backend inventory stays within the `product` module
 (its existing home per the module-ownership table) rather than spinning out a new module, to avoid a
 large module-extraction yak-shave inside this feature; cross-module access is mediated by a public
 `InventoryStockService` interface. Mobile follows the established per-feature module layout mirrored from
-`feature/customer`.
+`feature/customer`, and exposes a thin `feature/inventory-api` contract module (mirroring
+`customer-api`/`product-api`) so `order`/`invoice` can read inventory availability without depending on the
+full `feature/inventory` — the app analogue of the backend's public service interface.
 
 ## Cross-Repo Sequencing (critical)
 

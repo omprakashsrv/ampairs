@@ -70,6 +70,47 @@ derive each `StockLine` (`productId`/`productVariantId`, `quantity`, and a stabl
 idempotency) from an order line and an invoice line. Locate the order/invoice service + line DTO first, then
 write the line→`StockLine` adapter. Deduction is idempotent regardless of which event fires.
 
+## App-side cross-communication — `feature/inventory-api` contract module
+
+The mobile app mirrors this boundary with a thin **`feature/inventory-api`** contract module (same
+pattern as `feature/customer-api` / `feature/product-api`: a public interface + lightweight model that
+other features depend on *without* coupling to the full `feature/inventory` implementation). This is the
+app analogue of the backend's public `InventoryStockService`.
+
+```kotlin
+// feature/inventory-api/src/commonMain/.../com/ampairs/inventory/data/InventoryDataService.kt
+interface InventoryDataService {
+    /** Current stock snapshot for a product/variant (for order/invoice editors to show availability). */
+    suspend fun getStock(productId: String, productVariantId: String? = null): InventoryStockInfo?
+    /** Reactive stock for a product, so an open editor reflects sync updates. */
+    fun observeStock(productId: String, productVariantId: String? = null): Flow<InventoryStockInfo?>
+}
+
+// feature/inventory-api/src/commonMain/.../com/ampairs/inventory/domain/InventoryStockInfo.kt
+data class InventoryStockInfo(
+    val productId: String,
+    val productVariantId: String? = null,
+    val onHand: Double,
+    val available: Double,
+    val reorderLevel: Double,
+    val isLowStock: Boolean,
+)
+```
+
+- **Producer**: the rebuilt `feature/inventory` implements `InventoryDataService` (reading its local Room
+  DAO) and contributes the binding in `WorkspaceScope` (`@ContributesBinding(WorkspaceScope::class)`).
+- **Consumers**: `feature/order` and `feature/invoice` depend on **`feature/inventory-api` only** (the
+  contract), never on `feature/inventory`. They use it to show available stock / low-stock badges in the
+  line-item editor (cf. `customer-api`'s `listCustomers` used by the order editor).
+- **Stock mutation stays server-authoritative**: on mobile, a sale is captured locally and pushed; the
+  **server** runs `InventoryStockService` deduction and the device pulls the updated `InventoryItem` via
+  `SyncEntity.INVENTORY`. The app contract is **read-side** (availability display); the app does not
+  duplicate the deduction engine. (If optimistic local reflection is ever wanted, it would be an additive
+  method on this same contract.)
+
+This keeps the module graph acyclic (`order`/`invoice` → `inventory-api`; `inventory` → `inventory-api`)
+and matches the established app convention.
+
 ## Test obligations (feeds quickstart.md & tasks.md)
 
 - Idempotency: invoking `applySale` twice for the same command yields one movement and one deduction.
