@@ -55,6 +55,17 @@ interface InventoryTransactionRepository : CrudRepository<InventoryTransaction, 
     @EntityGraph("InventoryTransaction.full")
     fun findByTransactionNumber(transactionNumber: String): InventoryTransaction?
 
+    /**
+     * Idempotency lookup for automatic (order/invoice-driven) stock movements.
+     * Tenant-scoped automatically via @TenantId. Returns the existing movement for a given
+     * source document line, if one was already recorded (spec 014, R2/SC-002).
+     */
+    fun findBySourceTypeAndSourceIdAndSourceLineUid(
+        sourceType: String,
+        sourceId: String,
+        sourceLineUid: String,
+    ): InventoryTransaction?
+
     // ============================================================================
     // Item-based Queries
     // ============================================================================
