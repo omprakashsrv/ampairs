@@ -68,7 +68,7 @@ dependencies {
     implementation("com.stripe:stripe-java:32.1.0")
 
     // Razorpay
-    implementation("com.razorpay:razorpay-java:1.4.8")
+    implementation("com.razorpay:razorpay-java:1.4.9")
 
     // Apache Commons for HMAC signature verification
     implementation("commons-codec:commons-codec:1.22.0")
