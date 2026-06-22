@@ -41,9 +41,9 @@ needed; the constraint on the transaction row is sufficient since the transactio
 
 ---
 
-## R3 — Order/invoice → stock trigger (the open cross-team decision)
+## R3 — Order/invoice → stock trigger (CONFIRMED)
 
-**Decision (proposed default, to confirm with order/invoice owners)**: Deduct on **order confirmation**
+**Decision (CONFIRMED — R3 default adopted)**: Deduct on **order confirmation**
 when `autoDeductOnOrder` is enabled; if the workspace operates invoice-first (no order step), deduct on
 **invoice finalize**. Restore on **order cancel** or **return/credit-note**, and on **invoice
 void/cancel**. The trigger is delivered to inventory via a **public service interface**
@@ -61,7 +61,9 @@ beyond the pragmatic core; modeled (reserved stock exists) but not the primary p
 event-listener integration — kept as fallback; the explicit service call is preferred for testability and
 to honor the module-boundary rule (public service interface, not events crossing as the contract).
 
-**Status**: OPEN — confirm exact lifecycle states with order/invoice owners during `/speckit-tasks`.
+**Status**: CONFIRMED (R3 default adopted). The only remaining work is implementation detail — the exact
+order/invoice line → `StockLine` mapping and the service call sites (tasks T023/T024 + finding U1); this is
+not an open design question. Deduction is idempotent regardless of which event fires.
 
 ---
 

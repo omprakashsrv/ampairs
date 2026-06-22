@@ -49,7 +49,7 @@ data class StockLine(
 5. **Movements**: `applySale` → STOCK_OUT (reason SALE); `reverseSale` → STOCK_IN (reason RETURN), with
    `source_type = RETURN`, referencing the original document. Each computes `balance_after` (R7).
 
-## Trigger wiring (R3 — proposed, confirm with order/invoice owners)
+## Trigger wiring (R3 — CONFIRMED)
 
 | Sale event | Call |
 |---|---|
@@ -63,8 +63,12 @@ Preferred delivery: **explicit call** from order/invoice services to `InventoryS
 boundary-clean). Fallback: keep `InventoryOrderEventListener` consuming existing Spring events and calling
 the same service. Idempotency makes a belt-and-suspenders combination safe.
 
-**Open item**: confirm whether the canonical trigger is order-confirm, invoice-finalize, or both per
-workspace mode, with the order/invoice owners (does not block inventory-side design).
+**Confirmed**: the canonical trigger is order-confirm (and invoice-finalize for invoice-first workspaces),
+with restore on order-cancel / return-credit-note / invoice-void. **Implementation detail to pin during
+T023/T024 (finding U1)**: the order/invoice line model and exact service call sites — specifically how to
+derive each `StockLine` (`productId`/`productVariantId`, `quantity`, and a stable `sourceLineUid` for
+idempotency) from an order line and an invoice line. Locate the order/invoice service + line DTO first, then
+write the line→`StockLine` adapter. Deduction is idempotent regardless of which event fires.
 
 ## Test obligations (feeds quickstart.md & tasks.md)
 

@@ -54,10 +54,12 @@ double-counts); local-edit-wins conflict resolution; all money/date via workspac
 (items, transactions) + inventory policy via the central `setting` module + 1 cross-module stock
 integration + alerts.
 
-**Open cross-team decision (carried from spec Assumptions)**: the exact order/invoice lifecycle event(s)
-that trigger deduction/restoration. Proposed default resolved in research.md (R3); to be confirmed with the
-order/invoice owners during `/speckit-tasks` or early implementation. Does not block design because
-deduction is idempotent regardless of which event fires.
+**Resolved decision (order/invoice trigger)**: the order/invoice lifecycle event(s) that trigger
+deduction/restoration are **confirmed as the R3 default** — deduct on order-confirm (or invoice-finalize
+for invoice-first workspaces), restore on order-cancel / return-credit-note / invoice-void. Deduction is
+idempotent regardless of which event fires (so a belt-and-suspenders event+call combination is safe). The
+remaining implementation detail (the exact order/invoice line → `StockLine` mapping and service call sites)
+is a discovery task in tasks.md (T023/T024 + U1), not an open design question.
 
 ## Constitution Check
 

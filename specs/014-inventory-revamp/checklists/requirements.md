@@ -38,7 +38,7 @@
   architecture requirements out of the user-facing sections; they belong in `plan.md`. They are
   reflected indirectly via FR-021–FR-026 (offline-first behavior) and SC-008 (architecture
   conformance) so planning can trace them.
-- One genuine cross-team dependency remains (the exact order/invoice lifecycle event that triggers
-  deduction). It is documented as an Assumption to be finalized with the order/invoice owners during
-  `/speckit-plan`, and deduction is specified to be idempotent regardless of which event fires, so it
-  does not block the spec.
+- The order/invoice trigger is **resolved**: deduct on order-confirm / invoice-finalize, restore on
+  cancel/return/void (R3 default, confirmed by the user). Deduction is idempotent regardless of which event
+  fires. The only follow-up is the implementation-level order/invoice line → stock line mapping (tracked in
+  tasks.md T023/T024).
