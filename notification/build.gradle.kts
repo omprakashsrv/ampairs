@@ -48,6 +48,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    // Method-security annotations (@PreAuthorize) for the SUPER_ADMIN global-announce endpoint
+    implementation("org.springframework.security:spring-security-core")
 
     // AWS SNS for SMS
     implementation("io.awspring.cloud:spring-cloud-aws-starter-sns")

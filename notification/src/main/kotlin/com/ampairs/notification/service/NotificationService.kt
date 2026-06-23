@@ -533,6 +533,23 @@ class NotificationService(
     fun sendImmediateSms(phoneNumber: String, message: String): NotificationResult {
         return sendImmediateNotification(phoneNumber, message, NotificationChannel.SMS)
     }
+
+    /**
+     * System-wide push announcement to every device subscribed to the global `announcements` FCM
+     * topic (the app subscribes/unsubscribes this topic from its notification settings). Topic sends
+     * are a single FCM call and are not workspace-scoped, so they are sent immediately rather than
+     * queued/persisted in the per-workspace notification feed.
+     */
+    fun sendGlobalAnnouncement(
+        title: String,
+        body: String,
+        data: Map<String, String> = emptyMap(),
+    ): NotificationResult = fcmPushProvider.sendToTopic(ANNOUNCEMENTS_TOPIC, title, body, data)
+
+    companion object {
+        /** Global FCM topic the app subscribes to for system announcements (FcmTopics.ANNOUNCEMENTS). */
+        const val ANNOUNCEMENTS_TOPIC = "announcements"
+    }
 }
 
 /**

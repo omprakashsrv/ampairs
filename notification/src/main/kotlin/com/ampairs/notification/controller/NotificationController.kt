@@ -14,6 +14,7 @@ import jakarta.validation.Valid
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
+import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.web.bind.annotation.*
 
 /**
@@ -168,5 +169,23 @@ class NotificationController(
             data = data,
         )
         return ApiResponse.success(mapOf("notification_uid" to uid))
+    }
+
+    /**
+     * System-wide announcement to every app install subscribed to the global `announcements` FCM
+     * topic (push-only; not stored in any workspace feed). SUPER_ADMIN only.
+     */
+    @PostMapping("/announce/global")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    fun announceGlobal(
+        @RequestParam title: String,
+        @RequestParam message: String,
+        @RequestParam(required = false) deepLink: String?,
+    ): ApiResponse<Map<String, Any>> {
+        val data = if (deepLink.isNullOrBlank()) emptyMap() else mapOf("deep_link" to deepLink)
+        val result = notificationService.sendGlobalAnnouncement(title, message, data)
+        return ApiResponse.success(
+            mapOf("sent" to result.success, "message_id" to (result.messageId ?: "")),
+        )
     }
 }

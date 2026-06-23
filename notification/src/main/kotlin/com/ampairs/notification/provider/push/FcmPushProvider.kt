@@ -79,6 +79,40 @@ class FcmPushProvider(
         }
     }
 
+    /**
+     * Broadcast to every device subscribed to an FCM [topic] (e.g. "announcements"). Used for
+     * system-wide announcements that aren't scoped to a single workspace or device token.
+     */
+    fun sendToTopic(
+        topic: String,
+        title: String?,
+        body: String,
+        data: Map<String, String> = emptyMap(),
+    ): NotificationResult {
+        val messaging = messagingProvider.ifAvailable
+            ?: return failure("FCM is not configured/available", "topic:$topic")
+
+        val message = Message.builder()
+            .setTopic(topic)
+            .putAllData(data)
+            .setNotification(Notification.builder().setTitle(title).setBody(body).build())
+            .build()
+
+        return try {
+            val messageId = messaging.send(message)
+            logger.info("FCM topic broadcast sent to '{}': {}", topic, messageId)
+            NotificationResult(
+                success = true,
+                messageId = messageId,
+                providerName = getProviderName(),
+                channel = getChannel(),
+            )
+        } catch (e: Exception) {
+            logger.error("FCM topic broadcast to '{}' failed", topic, e)
+            failure("Topic broadcast failed: ${e.message}", "topic:$topic")
+        }
+    }
+
     override fun getProviderName(): String = "FCM"
 
     override fun isAvailable(): Boolean = messagingProvider.ifAvailable != null
