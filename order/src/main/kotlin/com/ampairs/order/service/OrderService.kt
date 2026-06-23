@@ -6,7 +6,12 @@ import com.ampairs.core.security.AuthenticationHelper
 import com.ampairs.event.domain.events.OrderCreatedEvent
 import com.ampairs.event.domain.events.OrderStatusChangedEvent
 import com.ampairs.event.domain.events.OrderUpdatedEvent
+import com.ampairs.inventory.service.InventoryStockService
+import com.ampairs.inventory.service.StockLine
+import com.ampairs.inventory.service.StockMutationCommand
+import com.ampairs.inventory.service.StockSourceType
 import com.ampairs.invoice.service.InvoiceService
+import com.ampairs.order.domain.enums.OrderStatus
 import com.ampairs.order.domain.dto.OrderResponse
 import com.ampairs.order.domain.dto.OrderUpdateRequest
 import com.ampairs.order.domain.dto.toInvoice
@@ -16,6 +21,7 @@ import com.ampairs.order.domain.dto.toOrderItems
 import com.ampairs.order.domain.dto.toResponse
 import com.ampairs.order.domain.model.Order
 import com.ampairs.order.domain.model.OrderItem
+import java.math.BigDecimal
 import com.ampairs.order.repository.OrderItemRepository
 import com.ampairs.order.repository.OrderPagingRepository
 import com.ampairs.order.repository.OrderRepository
@@ -42,8 +48,39 @@ class OrderService(
     val orderItemRepository: OrderItemRepository,
     val orderPagingRepository: OrderPagingRepository,
     val invoiceService: InvoiceService,
+    val inventoryStockService: InventoryStockService,
     val eventPublisher: ApplicationEventPublisher
 ) {
+
+    /**
+     * Spec 014 (US1): move stock for the sale based on the order's status. Gated inside the
+     * inventory engine by (a) inventory-management installed and (b) the auto_deduct_on_order config;
+     * idempotent per order line. Untracked products are skipped. CONFIRMED..DELIVERED apply the sale;
+     * CANCELLED/REFUNDED restore it.
+     */
+    private fun syncStockForOrder(order: Order, orderItems: List<OrderItem>) {
+        if (orderItems.isEmpty()) return
+        val command = StockMutationCommand(
+            sourceType = StockSourceType.ORDER,
+            sourceId = order.uid,
+            referenceNumber = order.orderNumber,
+            performedBy = getUserId(),
+            lines = orderItems.map {
+                StockLine(
+                    sourceLineUid = it.uid,
+                    productId = it.productId,
+                    quantity = BigDecimal.valueOf(it.quantity),
+                )
+            },
+        )
+        when (order.status) {
+            OrderStatus.CONFIRMED, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED ->
+                inventoryStockService.applySale(command)
+            OrderStatus.CANCELLED, OrderStatus.REFUNDED ->
+                inventoryStockService.reverseSale(command)
+            else -> Unit
+        }
+    }
 
     /**
      * Helper methods for event publishing
@@ -122,6 +159,9 @@ class OrderService(
             }
         }
 
+        // Spec 014: apply/reverse inventory for the sale (idempotent; no-op if module/config off).
+        syncStockForOrder(savedOrder, orderItems)
+
         return savedOrder.toResponse(orderItems)
     }
 
@@ -184,6 +224,9 @@ class OrderService(
             item.orderId = savedOrder.uid
             orderItemRepository.save(item)
         }
+        // Spec 014: apply/reverse inventory for the sale on the offline-sync path too. Idempotent per
+        // line, so re-pushing an order with unchanged items/quantities is a no-op (no double-count).
+        syncStockForOrder(savedOrder, savedItems)
         return savedOrder.toResponse(savedItems)
     }
 

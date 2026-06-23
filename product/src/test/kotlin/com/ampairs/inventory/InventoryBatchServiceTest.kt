@@ -8,7 +8,6 @@ import com.ampairs.inventory.domain.model.InventoryItem
 import com.ampairs.inventory.domain.model.Warehouse
 import com.ampairs.inventory.repository.InventoryBatchRepository
 import com.ampairs.inventory.service.InventoryBatchService
-import com.ampairs.inventory.service.InventoryConfigService
 import com.ampairs.inventory.service.InventoryItemService
 import com.ampairs.inventory.service.WarehouseService
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -41,9 +40,6 @@ class InventoryBatchServiceTest {
     @Mock
     private lateinit var warehouseService: WarehouseService
 
-    @Mock
-    private lateinit var configService: InventoryConfigService
-
     private lateinit var service: InventoryBatchService
 
     private fun batch(uid: String = "BCH-1", available: BigDecimal = BigDecimal("100"), block: InventoryBatch.() -> Unit = {}): InventoryBatch =
@@ -62,11 +58,10 @@ class InventoryBatchServiceTest {
 
     @BeforeEach
     fun setUp() {
-        service = InventoryBatchService(batchRepository, itemService, warehouseService, configService)
+        service = InventoryBatchService(batchRepository, itemService, warehouseService)
         whenever(batchRepository.save(any<InventoryBatch>())).thenAnswer { it.arguments[0] }
         whenever(itemService.getInventoryItemByUid(any())).thenReturn(InventoryItem().apply { uid = "INV-1" })
         whenever(warehouseService.getWarehouseByUid(any())).thenReturn(Warehouse().apply { uid = "WHR-1" })
-        whenever(configService.getStockConsumptionStrategy()).thenReturn(Constants.STRATEGY_FIFO)
     }
 
     @Test

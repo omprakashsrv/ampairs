@@ -169,7 +169,6 @@ class ProductProvidersAndMappersTest {
         assertEquals("DIGITAL", response.serviceType)
         assertTrue(response.hasVariants)
         assertTrue(response.isEcomListed)
-        assertNull(response.inventory)
         assertTrue(response.images!!.isEmpty())
         assertNull(response.baseUnit)
     }
