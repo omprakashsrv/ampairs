@@ -2,6 +2,7 @@ package com.ampairs.workspace.service
 
 import com.ampairs.notification.provider.NotificationChannel
 import com.ampairs.notification.service.NotificationService
+import com.ampairs.notification.service.PushDispatchService
 import com.ampairs.workspace.model.WorkspaceInvitation
 import com.ampairs.workspace.model.enums.WorkspaceRole
 import org.slf4j.LoggerFactory
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service
 @Service
 class WorkspaceNotificationService(
     private val notificationService: NotificationService,
+    private val pushDispatchService: PushDispatchService,
 ) {
 
     companion object {
@@ -59,6 +61,24 @@ class WorkspaceNotificationService(
         } catch (e: Exception) {
             logger.error("Failed to send workspace invitation to: ${invitation.email}", e)
             throw e
+        }
+    }
+
+    /**
+     * Push + in-app notification to existing workspace members when a new member joins.
+     * Best-effort: never let a notification failure break the join flow.
+     */
+    fun notifyMemberJoined(workspaceId: String, workspaceName: String, newMemberName: String) {
+        try {
+            pushDispatchService.dispatch(
+                workspaceId = workspaceId,
+                type = "workspace_invitation",
+                title = "New member joined",
+                body = "$newMemberName joined $workspaceName",
+                data = mapOf("deep_link" to "ampairs://workspace/members"),
+            )
+        } catch (e: Exception) {
+            logger.error("Failed to dispatch member-joined notification for workspace $workspaceId", e)
         }
     }
 
