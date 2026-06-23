@@ -60,7 +60,7 @@ description: "Task list for Commerce Pricing Engine (009)"
 ### Tests
 - [ ] T019 [P] [US1] Resolution unit tests (qty 5/10/60, MOQ flag, fallback, overlap precedence).
 - [ ] T020 [P] [US1] Tier-validation test (gap/overlap rejected).
-- [ ] T020a [P] [US1] Precedence test (SC-010): geo-zone list resolves for a customer/delivery pincode; an attribute-predicate match never overrides a structured-dimension match; full precedence chain (per-customer > group/channel > product-group/brand/category > geo-zone/customer-type > predicate > fallback).
+- [ ] T020e [P] [US1] Precedence test (SC-010): geo-zone list resolves for a customer/delivery pincode; an attribute-predicate match never overrides a structured-dimension match; full precedence chain (per-customer > group/channel > product-group/brand/category > geo-zone/customer-type > predicate > fallback).
 
 **Checkpoint**: backend can resolve a wholesale tiered price; fallback verified.
 
