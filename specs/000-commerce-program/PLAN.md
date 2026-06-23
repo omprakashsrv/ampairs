@@ -46,7 +46,7 @@ ecom platform."
 | **Money consistency + currency** | `ecom` = `BigDecimal(19,4)`, `order`/`product` = `Double`, `ProductVariant` = `BigDecimal(15,2)`. **No currency field anywhere.** App is `Double` throughout. | **Cross-cutting decision D1** (below); enforced from 009 on |
 | **Payments** | Only subscription billing exists. `EcomOrder` has no payment/transaction entity, no gateway. | 011 Payments |
 | **Shipping / fulfillment** | `EcomOrderLineItem.shipmentGroup` is an orphan field — no zones, rates, courier, AWB, tracking. | 012 Shipping |
-| **Promotions** | None — no coupons, no cart-level discounts. | 013 Promotions |
+| **Promotions** | None — no coupons, no cart-level discounts, no BOGO/free-goods, no brand schemes. | Promotions (spec drafted at `specs/015-commerce-promotions/`) |
 | **B2B offline order/invoice sync** | `OrderSyncDelegate`/`InvoiceSyncDelegate` return `Success(0)` no-ops; not registered with `@SyncEntityKey`. Wholesale order entry on the app can't sync. | 010 B2B order/invoice sync |
 | **Reviews / ratings** | None. | 014 Reviews (optional, post-MVP) |
 | **Search at scale** | Postgres `ILIKE`/FTS today; fine for MVP. | Deferred — revisit at scale |

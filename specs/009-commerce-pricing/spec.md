@@ -26,6 +26,26 @@ Builds on `008-ecommerce-order-platform` (storefront, cart, checkout, orders) an
 - Q: Channel set? → A: `SalesChannel { RETAIL, WHOLESALE }` (extensible). India-MVP may launch
   retail-only; the wholesale path must exist in the schema and resolution from day one.
 
+### Session 2026-06-23 (program review — pricing/offers split confirmed)
+
+- Q: Are pricing and offers one feature or two? → A: **Two.** This feature (009) owns **base-price
+  resolution** (channel + group/customer/brand/category price lists, slab tiers, MOQ, variant,
+  validity, catalog fallback). A separate feature (**015 Commerce Promotions**) owns **offers** that
+  modify the order on top of resolved prices (cart/coupon discounts, BOGO/free-goods, brand
+  volume/value schemes). 009 leaves a clean handoff: resolution returns the effective unit price +
+  source; the promotion engine consumes that output, then tax runs.
+- Q: Brands and distribution explicitly in scope? → A: Yes. Price lists may be scoped to a **brand**
+  or **category** (not only product/variant), and the **DISTRIBUTOR** segment is served via
+  customer-group-scoped wholesale lists (the `SalesChannel` enum stays extensible:
+  `DISTRIBUTOR`/`B2B_MARKETPLACE` later). Per-customer special prices are the highest-priority match.
+- Q: In-store first or online first? → A: **In-store first.** Wire `PricingResolutionService` into the
+  KMP app order/invoice line-entry path (replacing `sellingPrice × multiplier`) and the monolith
+  `order`/`invoice` services at the 010 seam; **then** project price lists to the ecom read model so
+  the storefront/online ordering resolve identically.
+- Q: Resolution precedence (overlap)? → A: per-customer special > customer-group/channel list >
+  brand/category list > catalog fallback; ties broken by list `priority`, then most-recently-activated
+  (FR-004). Variant match wins over base product within a list.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 — Merchant sets a wholesale price list with tier breaks (Priority: P1)
