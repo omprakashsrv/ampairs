@@ -24,9 +24,12 @@ class PushDispatchService(
     private val notificationLogRepository: NotificationLogRepository,
     private val notificationService: NotificationService,
     private val devicePushTokenPort: ObjectProvider<DevicePushTokenPort>,
-    private val objectMapper: ObjectMapper,
 ) {
     private val logger = LoggerFactory.getLogger(PushDispatchService::class.java)
+
+    // Created internally — the test-profile context has no autowirable ObjectMapper bean, and this is
+    // only used to serialize the notification data payload (a Map<String, String>).
+    private val objectMapper = ObjectMapper()
 
     /**
      * @param workspaceId tenant the notification belongs to

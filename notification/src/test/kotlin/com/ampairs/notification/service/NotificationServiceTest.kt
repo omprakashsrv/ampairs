@@ -10,7 +10,6 @@ import com.ampairs.notification.provider.push.FcmPushProvider
 import com.ampairs.notification.provider.sms.AwsSnsSmsProvider
 import com.ampairs.notification.provider.sms.Msg91SmsProvider
 import com.ampairs.notification.repository.NotificationQueueRepository
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -75,7 +74,6 @@ class NotificationServiceTest {
             taskExecutor,
             notificationDatabaseService,
             props,
-            ObjectMapper(),
             devicePushTokenPort,
         )
     }

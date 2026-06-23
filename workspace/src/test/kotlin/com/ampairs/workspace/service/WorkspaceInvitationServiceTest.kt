@@ -49,6 +49,9 @@ class WorkspaceInvitationServiceTest {
     @Mock
     private lateinit var userService: UserService
 
+    @Mock
+    private lateinit var workspaceNotificationService: WorkspaceNotificationService
+
     private lateinit var service: WorkspaceInvitationService
 
     private data class TestUser(
@@ -82,6 +85,7 @@ class WorkspaceInvitationServiceTest {
             memberService,
             activityService,
             userService,
+            workspaceNotificationService,
         )
         whenever(invitationRepository.save(any<WorkspaceInvitation>())).thenAnswer { it.arguments[0] }
     }

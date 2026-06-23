@@ -12,7 +12,6 @@ import com.ampairs.notification.provider.push.FcmPushProvider
 import com.ampairs.notification.provider.sms.AwsSnsSmsProvider
 import com.ampairs.notification.provider.sms.Msg91SmsProvider
 import com.ampairs.notification.repository.NotificationQueueRepository
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.beans.factory.ObjectProvider
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -47,7 +46,7 @@ class NotificationServiceQueueTest {
         NotificationService(
             repository, msg91, awsSns, fcmPush, executor, databaseService,
             NotificationProperties(sms = SmsProperties(primaryProvider = primary)),
-            ObjectMapper(), devicePushTokenPort,
+            devicePushTokenPort,
         )
 
     @BeforeEach

@@ -34,12 +34,15 @@ class NotificationService(
     @Qualifier("notificationTaskExecutor") private val taskExecutor: Executor,
     private val notificationDatabaseService: NotificationDatabaseService,
     private val props: NotificationProperties,
-    private val objectMapper: ObjectMapper,
     // Optional — resolved from the subscription module when present; absent in isolated tests.
     private val devicePushTokenPort: ObjectProvider<DevicePushTokenPort>,
 ) {
 
     private val logger = LoggerFactory.getLogger(NotificationService::class.java)
+
+    // Created internally — the test-profile context has no autowirable ObjectMapper bean, and this is
+    // only used to (de)serialize the push data payload (a Map<String, String>).
+    private val objectMapper = ObjectMapper()
 
     /**
      * Send notification via specified channel
