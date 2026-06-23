@@ -399,15 +399,16 @@ and confirm an already-checked-out order keeps the snapshot.
 
 ## Out of Scope (this feature)
 
-- **Pricing engine itself** (price lists, tiers/slabs, MOQ, base-price resolution) — that is feature
-  **009**; this feature consumes its resolved prices.
+- **Pricing engine itself** (price lists, tiers/slabs, MOQ, base-price resolution) — that is the
+  Pricing feature (`009-commerce-pricing`); this feature consumes its resolved prices.
 - **Payment-term cash discount (O8)** — deferred follow-up. (Bundle/combo O6 is now **in scope** — see
   FR-002 `BUNDLE`.)
-- **Free shipping mechanics** beyond a coupon flag — real shipping zones/rates live in feature 012;
-  this feature only carries a `freeShipping` coupon effect that shipping later honors.
+- **Free shipping mechanics** beyond a coupon flag — real shipping zones/rates live in the Shipping
+  feature (future); this feature only carries a `freeShipping` coupon effect that shipping later honors.
 - **Loyalty points / store credit / gift cards** — separate future feature.
-- **Payments/refunds** (feature 011) — offer-driven credits affect totals only, not settlement.
-- **Multi-currency activation / FX** (feature 015 Go-Global) — only the currency field is carried.
+- **Payments/refunds** (the Payments feature, `013-payment-collection`) — offer-driven credits affect
+  totals only, not settlement.
+- **Multi-currency activation / FX** (the Go-Global feature, future) — only the currency field is carried.
 - **Brand-settlement reporting UI** — this feature records funding/attribution metadata; the
   reconciliation report is a downstream feature.
 

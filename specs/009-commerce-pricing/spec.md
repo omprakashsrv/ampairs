@@ -169,7 +169,7 @@ at qty 50, and confirm the line auto-fills the ₹210 tier from the locally proj
 ### User Story 4 — Currency travels with every price (global-ready) (Priority: P3)
 
 Every price the engine stores, resolves, and returns carries an explicit ISO-4217 currency. For the
-India launch this is always `INR`, but no code assumes it — so multi-currency in feature 015 is a data
+India launch this is always `INR`, but no code assumes it — so multi-currency in the Go-Global feature is a data
 change, not a refactor.
 
 **Why this priority**: Cheap insurance now; very expensive to retrofit later. Not a launch blocker for
@@ -315,12 +315,14 @@ India, hence P3.
 
 ## Out of Scope (this feature)
 
-- Payments/refunds (feature 011), shipping rates (012), coupons/promotions (013) — promotions stack
-  **on top of** resolved prices later, they do not belong in the pricing engine.
-- Implementing the stubbed Order/Invoice **sync delegates** (feature 010) — 009 ships the read model
-  + resolution; full B2B offline round-trip lands with 010.
-- Multi-currency **activation** / FX / VAT+sales-tax strategy impls (feature 015) — 009 only carries
-  the currency field and keeps `INR` as the workspace default.
+- Payments/refunds (the Payments feature, `013-payment-collection`), shipping rates (the Shipping
+  feature, future), coupons/promotions (the Promotions feature, `015-commerce-promotions`) — promotions
+  stack **on top of** resolved prices, they do not belong in the pricing engine.
+- Implementing the stubbed Order/Invoice **sync delegates** (the Store-Ops feature,
+  `010-store-ops-order-invoice`) — 009 ships the read model + resolution; full B2B offline round-trip
+  lands with Store-Ops.
+- Multi-currency **activation** / FX / VAT+sales-tax strategy impls (the Go-Global feature, future) —
+  009 only carries the currency field and keeps `INR` as the workspace default.
 - Search/faceting changes.
 
 ## Dependencies & Assumptions
