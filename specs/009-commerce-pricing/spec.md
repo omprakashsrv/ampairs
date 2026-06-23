@@ -46,6 +46,25 @@ Builds on `008-ecommerce-order-platform` (storefront, cart, checkout, orders) an
   brand/category list > catalog fallback; ties broken by list `priority`, then most-recently-activated
   (FR-004). Variant match wins over base product within a list.
 
+### Session 2026-06-23 (clarify — annotation/field-value targeting)
+
+- Q: How is "custom pricing by any product/customer field value" modeled? → A: **Hybrid.**
+  Structured, first-class **targeting dimensions** for the hot cases (sales channel, customer group,
+  **customer-type**, specific customer, brand, category, product/variant, **product-group**,
+  **geo-zone**) **plus** an optional list of **attribute predicates** `{ field, operator, value }`
+  over customer/product attributes (incl. custom JSON attributes) for rare cases. Predicates are
+  evaluated **last** and rank **below** any structured-dimension match (lowest precedence) so
+  resolution stays deterministic, indexable, offline-resolvable, and projectable to the ecom read
+  model. The dimension set is extensible (new structured dimensions added case-by-case).
+- Q: Geography granularity for pincode-based pricing? → A: **Named geo-zones.** A reusable `GeoZone`
+  (zone = set of pincodes, pincode-ranges, and/or states) is referenced by price lists; the resolver
+  maps the customer's (or delivery) pincode → zone. Exact-pincode pricing is a single-pincode zone.
+  `GeoZone` is shared master data (referenced by uid; reused by promotions feature 015).
+- Q: Updated overlap precedence with the new dimensions? → A: per-customer special >
+  customer/group + channel list (most specific) > product-group / brand / category list > geo-zone /
+  customer-type list > **attribute-predicate match** > catalog fallback; ties → list `priority`, then
+  most-recently-activated; variant match wins over base within a list.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 — Merchant sets a wholesale price list with tier breaks (Priority: P1)
@@ -178,7 +197,18 @@ India, hence P3.
 ### Functional Requirements
 
 - **FR-001**: The system MUST let a merchant create, edit, activate, deactivate, and soft-delete
-  **price lists** scoped to a `SalesChannel` (RETAIL | WHOLESALE) and an optional customer group.
+  **price lists** scoped to a `SalesChannel` (RETAIL | WHOLESALE) and any combination of structured
+  **targeting dimensions**: customer group, customer-type, specific customer, brand, category,
+  product-group, product/variant, and **geo-zone** (see FR-016/FR-017).
+- **FR-016**: The system MUST support **named geo-zones** as reusable master data (a `GeoZone` whose
+  membership is a set of pincodes, pincode-ranges, and/or states). A price list MAY be scoped to a
+  geo-zone; resolution MUST map the customer's (or delivery) pincode to its zone. An exact-pincode
+  price is a single-pincode zone. `GeoZone` is referenced by uid and shared with feature 015.
+- **FR-017**: A price list MAY additionally carry an optional ordered list of **attribute predicates**
+  `{ field, operator, value }` over customer/product attributes (incl. custom JSON attributes).
+  Predicate-only matches MUST rank **below** every structured-dimension match (lowest precedence
+  before catalog fallback) and MUST be evaluated deterministically. Resolution remains offline-capable
+  and projectable.
 - **FR-002**: A price list MUST contain **price-list items** targeting a product (or specific variant),
   each with a unit price and optional **MOQ** and optional ordered **quantity tiers** (`minQty`,
   `unitPrice`).
@@ -224,9 +254,15 @@ India, hence P3.
 
 ### Key Entities
 
-- **PriceList** (`OwnableBaseDomain`) — `uid`, `name`, `channel: SalesChannel`,
-  `customerGroupId: String?` (null = applies to all in channel), `currency`, `priority: Int`,
-  `status` (DRAFT/ACTIVE/INACTIVE), optional `startsAt`/`endsAt`, `active`.
+- **PriceList** (`OwnableBaseDomain`) — `uid`, `name`, `channel: SalesChannel`, and optional
+  structured targeting: `customerGroupId?`, `customerType?`, `customerId?`, `brandId?`, `categoryId?`,
+  `productGroupId?`, `geoZoneId?` (null on all = applies to all in channel); plus
+  `attributePredicates: List<AttributePredicate>?` (lowest-precedence match); `currency`,
+  `priority: Int`, `status` (DRAFT/ACTIVE/INACTIVE), optional `startsAt`/`endsAt`, `active`.
+- **GeoZone** (shared master, `OwnableBaseDomain`) — `uid`, `name`, `members` (pincodes,
+  pincode-ranges, states); referenced by `PriceList.geoZoneId` and by promotions (feature 015).
+- **AttributePredicate** (value/JSON) — `field` (e.g. `customer.attributes.tier`, `product.attributes.x`),
+  `operator` (EQ/NEQ/IN/GT/LT/...), `value`. Evaluated last, lowest precedence.
 - **PriceListItem** (`OwnableBaseDomain`) — `uid`, `priceListId`, `productId`, `variantSku: String?`,
   `unitPrice` (BigDecimal) + inherits list `currency`, `moq: BigDecimal?`, `tiers: List<PriceTier>`
   (JSON; each `minQty`, `unitPrice`).

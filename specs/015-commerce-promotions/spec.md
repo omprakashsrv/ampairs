@@ -38,6 +38,22 @@ catalog, storefront, cart, or checkout.
   onto the order/invoice line / cart / ecom order line. A later edit to the promotion never alters an
   existing snapshot.
 
+### Session 2026-06-23 (clarify — annotation/field-value targeting & combo offers)
+
+- Q: How is offer eligibility by any product/customer field value modeled? → A: **Hybrid**, identical
+  to pricing (009): structured eligibility dimensions (channel, customer group, **customer-type**,
+  customer, brand, category, **product-group**, product/variant, **geo-zone**, min-qty, min-cart) plus
+  an optional list of **attribute predicates** `{ field, operator, value }` evaluated **last** at
+  lowest precedence. Reuses the shared `GeoZone` master (FR-016/009) and the same `AttributePredicate`
+  shape — no second targeting model.
+- Q: Geography for offers? → A: Same **named geo-zones** as pricing (pincode → zone mapping); an
+  offer may be eligible for a geo-zone. Reuses the shared `GeoZone` entity.
+- Q: Combo offers in MVP? → A: **Yes** — add a `BUNDLE` promotion type with
+  `effectMode = FIXED_PRICE | DISCOUNT`: a bundle defines a set of products with required quantities;
+  the effect is either a **fixed combo price** ("A+B+C for ₹499") or a **combo discount** ("any N from
+  this set → % / flat off those lines"). Runs in the same resolve → apply → tax → snapshot pipeline.
+  Bundle is therefore **removed from Out of Scope**.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 — Merchant runs line & cart discounts in store ordering/invoicing (Priority: P1)
@@ -227,12 +243,17 @@ and confirm an already-checked-out order keeps the snapshot.
 
 - **FR-001**: The system MUST let a merchant create, edit, activate, deactivate, schedule
   (`startsAt`/`endsAt`), and soft-delete **promotions** scoped to one or more `SalesChannel`
-  (RETAIL | WHOLESALE) and optional eligibility (customer group, customer, brand, category,
-  product/variant, min-qty, min-cart-value).
+  (RETAIL | WHOLESALE) and optional eligibility across structured dimensions (customer group,
+  **customer-type**, customer, brand, category, **product-group**, product/variant, **geo-zone**,
+  min-qty, min-cart-value) **plus** optional **attribute predicates** `{ field, operator, value }`
+  evaluated last at lowest precedence. Geo-zone reuses the shared `GeoZone` master (FR-016/009);
+  the attribute-predicate shape is shared with pricing.
 - **FR-002**: The system MUST support these promotion **types** for MVP:
   `CART_DISCOUNT` (% / flat, line- or order-level), `COUPON` (code-gated % / flat),
-  `BOGO` / free-goods (buy X get Y free; Y may be a different SKU), and
-  `VOLUME_SCHEME` (qty- or value-slab discount on a brand/category aggregate, i.e. QPS/TPR).
+  `BOGO` / free-goods (buy X get Y free; Y may be a different SKU),
+  `VOLUME_SCHEME` (qty- or value-slab discount on a brand/category aggregate, i.e. QPS/TPR), and
+  `BUNDLE` / combo with `effectMode = FIXED_PRICE | DISCOUNT` (a set of products with required
+  quantities priced at a fixed combo amount, or "any N from the set → % / flat off those lines").
   (Manual line discounts are retained and tagged `source = MANUAL`.)
 - **FR-003**: The system MUST provide a **promotion engine** that, given resolved-price lines + cart
   context (channel, customer-or-anonymous, optional coupon code, workspace), returns the **ordered
@@ -298,16 +319,22 @@ and confirm an already-checked-out order keeps the snapshot.
 ### Key Entities
 
 - **Promotion** (`OwnableBaseDomain`) — `uid`, `name`, `type` (CART_DISCOUNT | COUPON | BOGO |
-  VOLUME_SCHEME), `channels: Set<SalesChannel>`, `status` (DRAFT/ACTIVE/INACTIVE), `priority: Int`,
-  `stackable: Boolean`, `conflictPolicy`, optional `startsAt`/`endsAt`, `currency`, `active`,
-  `fundingBrandId: String?`.
-- **PromotionEligibility** (embedded/JSON) — `customerGroupId?`, `customerId?`, `brandId?`,
-  `categoryId?`, `productId?`/`variantSku?`, `minQty?`, `minCartValue?`.
+  VOLUME_SCHEME | BUNDLE), `channels: Set<SalesChannel>`, `status` (DRAFT/ACTIVE/INACTIVE),
+  `priority: Int`, `stackable: Boolean`, `conflictPolicy`, optional `startsAt`/`endsAt`, `currency`,
+  `active`, `fundingBrandId: String?`.
+- **PromotionEligibility** (embedded/JSON) — `customerGroupId?`, `customerType?`, `customerId?`,
+  `brandId?`, `categoryId?`, `productGroupId?`, `productId?`/`variantSku?`, `geoZoneId?`, `minQty?`,
+  `minCartValue?`, `attributePredicates: List<AttributePredicate>?` (lowest-precedence match).
+- **GeoZone** (shared master, reused from feature 009) — referenced by `geoZoneId`; resolver maps the
+  customer's/delivery pincode to a zone.
+- **AttributePredicate** (value/JSON, shared with 009) — `field`, `operator`, `value`; evaluated last.
 - **PromotionEffect** (embedded/JSON, type-specific) — for CART_DISCOUNT: `{ percent? , flatAmount? ,
   scope: LINE|ORDER }`; for COUPON: `code`, effect like CART_DISCOUNT + `freeShipping?`; for BOGO:
   `{ triggerProductId/variantSku, triggerQty, freeProductId/variantSku, freeQty, perOrderCap?,
   freeGoodsTaxPolicy }`; for VOLUME_SCHEME: `{ aggregateBy: BRAND|CATEGORY, basis: QTY|VALUE,
-  slabs: List<{ minThreshold, percent }> }`.
+  slabs: List<{ minThreshold, percent }> }`; for BUNDLE:
+  `{ effectMode: FIXED_PRICE|DISCOUNT, items: List<{ productId/variantSku, qty }>,
+  fixedPriceMinor?, percent?, flatAmount?, minItemsFromSet? }`.
 - **Coupon** (may be modeled as `Promotion` of type COUPON, or a child) — `code` (normalized,
   unique-active per workspace), `perCustomerLimit?`, `globalLimit?`.
 - **CouponRedemption** (`OwnableBaseDomain`) — `uid`, `couponUid`, `customerId?`, `orderRef`,
@@ -346,12 +373,18 @@ and confirm an already-checked-out order keeps the snapshot.
 - **SC-007**: Every monetary value returned by any promotion API carries an explicit currency; a
   contract test rejects any bare-number money field.
 - **SC-008**: Public storefront offer resolution P95 < 60 ms under the projected read model.
+- **SC-009**: A `BUNDLE` offer applies correctly in both modes — a fixed-price combo charges the set
+  at the configured amount, and a combo-discount applies only when ≥ `minItemsFromSet` qualifying
+  items are present — verified in store and at online checkout.
+- **SC-010**: Geo-zone targeting resolves the correct rule for a given customer/delivery pincode, and
+  attribute-predicate matches never override a structured-dimension match (precedence test).
 
 ## Out of Scope (this feature)
 
 - **Pricing engine itself** (price lists, tiers/slabs, MOQ, base-price resolution) — that is feature
   **009**; this feature consumes its resolved prices.
-- **Bundle/combo pricing (O6)** and **payment-term cash discount (O8)** — deferred follow-up.
+- **Payment-term cash discount (O8)** — deferred follow-up. (Bundle/combo O6 is now **in scope** — see
+  FR-002 `BUNDLE`.)
 - **Free shipping mechanics** beyond a coupon flag — real shipping zones/rates live in feature 012;
   this feature only carries a `freeShipping` coupon effect that shipping later honors.
 - **Loyalty points / store credit / gift cards** — separate future feature.

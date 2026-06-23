@@ -45,12 +45,13 @@ description: "Task list for Commerce Pricing Engine (009)"
 **Independent Test**: create list (WHOLESALE, group Distributor), add tiered item (1–9 ₹240/10–49 ₹225/50+ ₹210, MOQ 10); resolve qty 5/10/60 → ₹240/₹225/₹210, `belowMoq` at 5; product with no list → `CATALOG_FALLBACK`.
 
 ### Implementation (backend)
-- [ ] T010 [P] [US1] `PriceList` entity (`OwnableBaseDomain`): uid, name, channel, customerGroupId?, currency, priority, status, startsAt?, endsAt?, active — `pricing/domain/model/`.
+- [ ] T010 [P] [US1] `PriceList` entity (`OwnableBaseDomain`): uid, name, channel, structured targeting (customerGroupId?, customerType?, customerId?, brandId?, categoryId?, productGroupId?, geoZoneId?), attributePredicates(JSON)?, currency, priority, status, startsAt?, endsAt?, active — `pricing/domain/model/`.
 - [ ] T011 [P] [US1] `PriceListItem` entity + `PriceTier` (JSON list: minQty, unitPrice): productId, variantSku?, unitPrice, moq?, tiers — `pricing/domain/model/`.
+- [ ] T011a [P] [US1] Shared `GeoZone` entity (`OwnableBaseDomain`): uid, name, members (pincodes/ranges/states) + repo + DTOs + Flyway; `AttributePredicate` value type `{field, operator, value}`. (Reused by feature 015.)
 - [ ] T012 [US1] Flyway `V1.0.x__create_pricing_tables.sql` in **both** mysql + postgresql (price_list, price_list_item; indexes on owner_id, channel, customer_group_id, product_id).
 - [ ] T013 [P] [US1] Repositories: `PriceListRepository`, `PriceListItemRepository` (`@EntityGraph` list→items).
 - [ ] T014 [P] [US1] DTOs + mappers: `PriceListRequest/Response`, `PriceListItemRequest/Response`, `PriceResolutionResponse` (`pricing/domain/dto/`).
-- [ ] T015 [US1] `PricingResolutionService` PUBLIC interface + impl: `resolve(customerId?, channel, productId, variantSku?, qty, workspace)` → effectiveUnitPrice, source (PRICE_LIST|CATALOG_FALLBACK), matchedPriceListUid, appliedTierMinQty, belowMoq. Precedence per FR-004 + clarification; variant>base; deterministic.
+- [ ] T015 [US1] `PricingResolutionService` PUBLIC interface + impl: `resolve(customerId?, channel, productId, variantSku?, qty, pincode?, workspace)` → effectiveUnitPrice, source (PRICE_LIST|CATALOG_FALLBACK), matchedPriceListUid, appliedTierMinQty, belowMoq. Map pincode→geo-zone; structured-dimension match first, attribute-predicate match last (lowest precedence); precedence per FR-004 + 2026-06-23 clarify; variant>base; deterministic.
 - [ ] T016 [US1] Tier validation (contiguous, non-overlapping; >top tier uses top) at save (FR-014).
 - [ ] T017 [US1] `PriceListService` (CRUD, activate/deactivate, soft-delete) + `PriceListController` `/pricing/v1/price-lists` (ApiResponse, tenant at controller).
 - [ ] T018 [US1] Catalog fallback path: when no active list matches, return `product.sellingPrice` tagged workspace base currency (FR-005).

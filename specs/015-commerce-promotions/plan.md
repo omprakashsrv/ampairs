@@ -120,8 +120,15 @@ Existing modules touched additively; no promotion configured = today's totals.
   global-count check; reject `GLOBAL_LIMIT_REACHED`/`USAGE_LIMIT_REACHED` deterministically.
 - **Apportionment**: volume-scheme/BOGO discounts apportioned across scope lines, rounding absorbed by
   a deterministic line (largest-remainder), reconciling to the offer total to the minor unit.
-- **Depends on 009**: requires `SalesChannel`, `Money`, `PricingResolutionService` output, and the
-  ecom Kafka projection infra to exist first → build after 009.
+- **Targeting (2026-06-23 clarify)**: hybrid eligibility — structured dimensions (incl.
+  `productGroupId`, `geoZoneId`, `customerType`) + optional lowest-precedence `attributePredicates`;
+  **reuses** the shared `GeoZone` master and `AttributePredicate` shape from feature 009 (no second
+  model). Geo eligibility maps customer/delivery pincode → zone.
+- **BUNDLE / combo (2026-06-23 clarify)**: new `PromotionType.BUNDLE` with
+  `effectMode = FIXED_PRICE | DISCOUNT`; effect carries the product set + required qtys and either a
+  fixed combo price or a `minItemsFromSet` threshold discount. Applied in the same engine pipeline.
+- **Depends on 009**: requires `SalesChannel`, `Money`, `PricingResolutionService` output, the shared
+  `GeoZone`/`AttributePredicate`, and the ecom Kafka projection infra to exist first → build after 009.
 
 ## Phase 1 — Design (data-model + contracts)
 

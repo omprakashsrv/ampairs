@@ -122,8 +122,13 @@ no behavior change when no price list exists.
 
 ## Phase 1 — Design (data-model + contracts; see those files)
 
-- **Entities**: `PriceList`, `PriceListItem` (+ `PriceTier` JSON), `SalesChannel`; ecom
-  `EcomPriceListProjection`; app `PriceListEntity`/`PriceListItemEntity`.
+- **Entities**: `PriceList` (structured targeting dims incl. `productGroupId`, `geoZoneId`,
+  `customerType` + `attributePredicates` JSON), `PriceListItem` (+ `PriceTier` JSON), `SalesChannel`,
+  shared `GeoZone` (pincode/range/state membership), `AttributePredicate` (value); ecom
+  `EcomPriceListProjection`; app `PriceListEntity`/`PriceListItemEntity`/`GeoZoneEntity`.
+- **Targeting model (2026-06-23 clarify)**: hybrid — structured dimensions (hot path) + optional
+  lowest-precedence attribute predicates. Precedence: per-customer special > customer/group+channel >
+  product-group/brand/category > geo-zone/customer-type > attribute-predicate > catalog fallback.
 - **Public service**: `PricingResolutionService.resolve(customerId?, channel, productId, variantSku?,
   qty, workspace) : PriceResolution` (effectiveUnitPrice, source, matchedPriceListUid, appliedTierMinQty, belowMoq).
 - **Contracts**:

@@ -26,13 +26,14 @@ description: "Task list for Commerce Promotions & Offers (015)"
 
 ## Phase 2: Foundational (BLOCKS all stories)
 
-- [ ] T005 `PromotionType { CART_DISCOUNT, COUPON, BOGO, VOLUME_SCHEME }`; `CouponRejectionReason` enum (BELOW_MIN_CART, INELIGIBLE_GROUP, EXPIRED, USAGE_LIMIT_REACHED, GLOBAL_LIMIT_REACHED, ...).
+- [ ] T005 `PromotionType { CART_DISCOUNT, COUPON, BOGO, VOLUME_SCHEME, BUNDLE }`; `CouponRejectionReason` enum (BELOW_MIN_CART, INELIGIBLE_GROUP, INELIGIBLE_ZONE, EXPIRED, USAGE_LIMIT_REACHED, GLOBAL_LIMIT_REACHED, ...).
 - [ ] T006 `Promotion` entity (`OwnableBaseDomain`): uid, name, type, channels(Set<SalesChannel>), status, priority, stackable, conflictPolicy, startsAt?, endsAt?, currency, fundingBrandId?, active.
-- [ ] T007 [P] `PromotionEligibility` (embedded/JSON): customerGroupId?, customerId?, brandId?, categoryId?, productId?/variantSku?, minQty?, minCartValue?.
+- [ ] T007 [P] `PromotionEligibility` (embedded/JSON): customerGroupId?, customerType?, customerId?, brandId?, categoryId?, productGroupId?, productId?/variantSku?, geoZoneId?, minQty?, minCartValue?, attributePredicates(JSON)?. Reuse shared `GeoZone` + `AttributePredicate` from feature 009 (no new geo model).
 - [ ] T008 [P] `PromotionEffect` (JSON, type-specific): CART_DISCOUNT {percent?/flat?, scope}; COUPON {code, effect, freeShipping?}; BOGO {triggerProduct/variantSku, triggerQty, freeProduct/variantSku, freeQty, perOrderCap?, freeGoodsTaxPolicy}; VOLUME_SCHEME {aggregateBy(BRAND|CATEGORY), basis(QTY|VALUE), slabs[{minThreshold, percent}]}.
 - [ ] T009 `Coupon` (Promotion-of-type-COUPON or child): code (normalized unique-active per workspace), perCustomerLimit?, globalLimit?. `CouponRedemption` entity: uid, couponUid, customerId?, orderRef, redeemedAt.
 - [ ] T010 Flyway `V1.0.x__create_promotion_tables.sql` (both vendors): promotion, coupon, coupon_redemption; **unique (coupon_uid, customer_id, order_ref)** + index for atomic global count; indexes on owner_id, type, channel, code.
 - [ ] T011 [P] Define order-of-operations contract used everywhere: **009 resolve → 015 apply → tax → snapshot**. Document the `ResolvedLine`/`CartContext`/`PromotionResult` shapes (shared with app).
+- [ ] T011a Shared **eligibility evaluator** used by all promotion types: matches structured dimensions (channel, group, customer-type, customer, brand, category, product-group, product/variant, geo-zone via pincode→zone, min-qty, min-cart) then optional `attributePredicates` (lowest precedence). Reuses feature 009's `GeoZone` + `AttributePredicate`. Mirrored pure-Kotlin in the app.
 
 **Checkpoint**: promotion data model + enums + pipeline contract ready.
 
@@ -115,6 +116,20 @@ description: "Task list for Commerce Promotions & Offers (015)"
 
 ### Tests
 - [ ] T035 [P] [US4] Slab selection, apportionment reconciliation to minor unit (SC-005), scope isolation.
+
+---
+
+## Phase 6b: Combo / Bundle offers (FR-002 `BUNDLE`, SC-009) (P2)
+
+**Goal**: `BUNDLE` type with `effectMode = FIXED_PRICE | DISCOUNT` — fixed combo price for a product
+set, or % / flat off when ≥ `minItemsFromSet` qualifying items are present.
+
+**Independent Test**: define "A+B+C for ₹499" (FIXED_PRICE) → set present charges ₹499; define "any 3
+from set → 15% off" (DISCOUNT) → applies only at ≥3 qualifying items.
+
+- [ ] T035a [US-BUNDLE] `PromotionEngine` BUNDLE path: detect the configured set + required qtys in the cart; FIXED_PRICE → reprice the set lines so their sum = `fixedPriceMinor` (apportioned, reconcile to minor unit, before tax); DISCOUNT → apply % / flat to qualifying lines when `minItemsFromSet` met; clamp ≥ 0.
+- [ ] T035b [US-BUNDLE] App `PromotionEngine` BUNDLE mirror + UI (bundle shown as a grouped/repriced set in order/invoice + ecom cart); snapshot applied bundle; compile 3 targets.
+- [ ] T035c [P] [US-BUNDLE] Tests: both modes, threshold gating, apportionment reconciliation, snapshot integrity (SC-009).
 
 ---
 
