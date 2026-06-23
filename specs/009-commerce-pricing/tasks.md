@@ -64,6 +64,21 @@ description: "Task list for Commerce Pricing Engine (009)"
 
 ---
 
+## Phase 3b: App admin UI — price-list management (US1, offline-first) 🎯 (C1: app admin only)
+
+**Goal**: merchants create/edit/activate price lists (items, tiers, MOQ, geo-zones, predicates) **in the KMP app**, offline-first; no web admin.
+
+**Independent Test**: offline, create a WHOLESALE list for group Distributor with a tiered item + MOQ; save → row `synced=false`; on reconnect it pushes via `PricingSyncDelegate` and appears server-side.
+
+- [ ] T020a [US1] App `PriceListRepository` (local-only): write to Room `synced=false` + `syncStateDao.markPendingPush(SyncEntity.PRICE_LIST, now)`; soft-delete = `active=false, synced=false`. No `Api` in repo (offline-sync rule).
+- [ ] T020b [US1] App admin ViewModels + screens (`feature/pricing/.../ui`): price-list list, create/edit (name, channel, targeting dims, currency, priority, validity), item editor (product/variant, unitPrice, MOQ, tiers), geo-zone picker/editor, attribute-predicate editor. MVI + `metroViewModel()`; `stringResource` only.
+- [ ] T020c [US1] Wire `PriceListRoute`/entry providers + nav into app admin/settings area; tier-validation mirrored client-side (contiguous/non-overlapping) before save.
+- [ ] T020d [P] [US1] Compile all 3 app targets.
+
+**Checkpoint**: merchant can fully manage price lists from the app, offline; pushes on reconnect.
+
+---
+
 ## Phase 4: User Story 3 — B2B order entry on the app uses the same prices (P2, offline)
 
 > Sequenced before US2 because in-store-first is the product priority; storefront (US2) follows.
@@ -75,7 +90,7 @@ description: "Task list for Commerce Pricing Engine (009)"
 ### Implementation (app + backend sync)
 - [ ] T021 [US1→app] Backend price-list `/sync` controller `GET/POST /pricing/v1/price-lists/sync` (offline-sync contract: snake_case params, soft-deletes in feed, UID-keyed bulk upsert).
 - [ ] T022 [P] [US3] App Room: `PriceListEntity`, `PriceListItemEntity` (+ tiers JSON) in `feature/pricing/.../data/db`; DB factory `@SingleIn(WorkspaceScope::class)` per platform.
-- [ ] T023 [P] [US3] App pricing `/sync` API + `PricingSyncDelegate` (`@ContributesIntoMap(WorkspaceScope::class)`, `@SyncEntityKey(PRICE_LIST)`); add `PRICE_LIST` to `SyncEntity`.
+- [ ] T023 [P] [US3] App pricing `/sync` API + `PricingSyncDelegate` (`@ContributesIntoMap(WorkspaceScope::class)`, `@SyncEntityKey(PRICE_LIST)`) — **push + pull** (push owns the admin-created lists); add `PRICE_LIST` to `SyncEntity`.
 - [ ] T024 [US3] App `PriceResolver` (pure, offline) mirroring backend precedence/tiers/MOQ over the Room read model; `Money`-typed.
 - [ ] T025 [US3] Wire `OrderViewModel`/`InvoiceViewModel` line entry: replace `productPrice × unitMultiplier` with `PriceResolver.resolve(...)` (respect `priceOverridden`); re-resolve on qty/variant/unit change.
 - [ ] T026 [US3] Snapshot fields on `OrderItem`/`InvoiceItem` (+ Room entities + migration): `resolvedUnitPriceMinor`, `currency`, `priceSource`, `matchedPriceListUid`, `appliedTierMinQty`, `belowMoq`.

@@ -53,6 +53,10 @@ catalog, storefront, cart, or checkout.
   the effect is either a **fixed combo price** ("A+B+C for ₹499") or a **combo discount** ("any N from
   this set → % / flat off those lines"). Runs in the same resolve → apply → tax → snapshot pipeline.
   Bundle is therefore **removed from Out of Scope**.
+- Q: Management surface for promotions/coupons? → A: **KMP app admin UI only** (no Angular web admin
+  this feature). Offline-first: app `feature/promotion` is full CRUD (Room write `synced=false` +
+  `markPendingPush`, `PromotionSyncDelegate` push **and** pull). Backend exposes `/promotion/v1` CRUD
+  + `/sync`.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -299,6 +303,10 @@ and confirm an already-checked-out order keeps the snapshot.
 - **FR-019**: Stacked offers MUST never drive any line or order total below zero (clamp + flag).
 - **FR-020**: Brand-funded schemes (BOGO/volume) MUST record **funding/attribution** metadata
   (e.g. `fundingBrandId`) on the snapshot for downstream settlement reporting.
+- **FR-021**: Promotion/coupon **management** (create/edit/activate/deactivate/soft-delete across all
+  types incl. BUNDLE, eligibility, geo-zones, predicates) MUST be performed in the **KMP app admin
+  UI** and work offline-first (local write `synced=false` → `markPendingPush` → `PromotionSyncDelegate`
+  push). No Angular web admin is in scope for this feature.
 
 ### Non-Functional / Constraints
 

@@ -91,12 +91,14 @@ ampairs/ (touch existing — additive only)
 └── invoice/ : InvoiceItem snapshot fields; same wiring
 
 ampairs-app/ (KMP)
-└── feature/pricing/                           # NEW read-model module
-    ├── commonMain/.../data/db        # PriceListEntity, PriceListItemEntity, PriceTier (Room)
-    ├── commonMain/.../data/api       # pricing /sync API
-    ├── commonMain/.../sync           # PricingSyncDelegate (@SyncEntityKey(PRICE_LIST))
-    ├── commonMain/.../domain         # Money value class, PriceResolver (pure, offline)
-    └── {android,ios,desktop}Main     # DB factory (@SingleIn(WorkspaceScope::class))
+└── feature/pricing/                           # NEW admin-CRUD + read-model module (offline-first)
+    ├── commonMain/.../data/db          # PriceListEntity, PriceListItemEntity, PriceTier, GeoZoneEntity (Room)
+    ├── commonMain/.../data/api         # pricing /sync API (push + pull)
+    ├── commonMain/.../data/repository  # PriceListRepository (local write synced=false + markPendingPush)
+    ├── commonMain/.../sync             # PricingSyncDelegate (@SyncEntityKey(PRICE_LIST)) — push + pull
+    ├── commonMain/.../domain           # Money value class, PriceResolver (pure, offline)
+    ├── commonMain/.../ui               # admin screens + ViewModels: price-list list/create/edit, tiers, geo-zones
+    └── {android,ios,desktop}Main       # DB factory (@SingleIn(WorkspaceScope::class))
 
 ampairs-app/ (touch existing — additive)
 ├── feature/order|invoice : ViewModel line-entry calls PriceResolver (replaces sellingPrice×multiplier);

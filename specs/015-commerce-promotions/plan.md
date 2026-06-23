@@ -90,12 +90,14 @@ ampairs/ (touch existing — additive)
 └── invoice/ : Invoice/InvoiceItem same
 
 ampairs-app/ (KMP)
-└── feature/promotion/                          # NEW read-model + engine module
-    ├── commonMain/.../data/db    # PromotionEntity, CouponEntity (Room)
-    ├── commonMain/.../data/api   # promotion /sync API
-    ├── commonMain/.../sync       # PromotionSyncDelegate (@SyncEntityKey(PROMOTION))
-    └── commonMain/.../domain     # PromotionEngine (pure, offline): apply over resolved lines
-    └── {android,ios,desktop}Main # DB factory (@SingleIn(WorkspaceScope::class))
+└── feature/promotion/                          # NEW admin-CRUD + engine module (offline-first)
+    ├── commonMain/.../data/db          # PromotionEntity, CouponEntity (Room)
+    ├── commonMain/.../data/api         # promotion /sync API (push + pull)
+    ├── commonMain/.../data/repository  # PromotionRepository (local write synced=false + markPendingPush)
+    ├── commonMain/.../sync             # PromotionSyncDelegate (@SyncEntityKey(PROMOTION)) — push + pull
+    ├── commonMain/.../domain           # PromotionEngine (pure, offline): apply over resolved lines
+    ├── commonMain/.../ui               # admin screens + ViewModels: promotion/coupon/bundle list/create/edit
+    └── {android,ios,desktop}Main       # DB factory (@SingleIn(WorkspaceScope::class))
 
 ampairs-app/ (touch existing — additive)
 ├── feature/order|invoice : ViewModel calls PromotionEngine after PriceResolver, before tax calc;

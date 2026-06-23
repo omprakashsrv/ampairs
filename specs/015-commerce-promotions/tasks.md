@@ -54,7 +54,7 @@ description: "Task list for Commerce Promotions & Offers (015)"
 
 ### App (offline)
 - [ ] T017 [US1] Backend promotion `/sync` controller `GET/POST /promotion/v1/promotions/sync`.
-- [ ] T018 [P] [US1] App Room `PromotionEntity` (+ eligibility/effect JSON) in `feature/promotion`; DB factory `@SingleIn(WorkspaceScope::class)`; `PromotionSyncDelegate` (`@SyncEntityKey(PROMOTION)`); add `PROMOTION` to `SyncEntity`.
+- [ ] T018 [P] [US1] App Room `PromotionEntity` (+ eligibility/effect JSON) in `feature/promotion`; DB factory `@SingleIn(WorkspaceScope::class)`; `PromotionSyncDelegate` (`@SyncEntityKey(PROMOTION)`) — **push + pull** (push owns admin-created promotions); add `PROMOTION` to `SyncEntity`.
 - [ ] T019 [US1] App pure `PromotionEngine` mirroring backend CART_DISCOUNT apply over resolved lines (`Money`-typed); wire into `OrderViewModel`/`InvoiceViewModel` **after** `PriceResolver`, **before** tax calc; snapshot onto items.
 - [ ] T020 [P] [US1] Compile all 3 app targets.
 
@@ -62,6 +62,21 @@ description: "Task list for Commerce Promotions & Offers (015)"
 - [ ] T021 [P] [US1] Apply tests: threshold on/off, before-tax math, clamp ≥ 0, snapshot round-trip; zero-regression test (SC-002).
 
 **Checkpoint**: cart discounts auto-apply offline in store order/invoice; manual discounts preserved.
+
+---
+
+## Phase 3b: App admin UI — promotion/coupon/bundle management (US1, offline-first) 🎯 (C1: app admin only)
+
+**Goal**: merchants create/edit/activate all promotion types (incl. coupons + BUNDLE), eligibility, geo-zones, predicates **in the KMP app**, offline-first; no web admin.
+
+**Independent Test**: offline, create a RETAIL cart-discount + a coupon + a BUNDLE; save → rows `synced=false`; on reconnect they push and appear server-side.
+
+- [ ] T021a [US1] App `PromotionRepository` (local-only): Room write `synced=false` + `markPendingPush(SyncEntity.PROMOTION, now)`; soft-delete = `active=false, synced=false`. No `Api` in repo.
+- [ ] T021b [US1] App admin ViewModels + screens (`feature/promotion/.../ui`): promotion list, create/edit per type (CART_DISCOUNT, COUPON, BOGO, VOLUME_SCHEME, BUNDLE), eligibility editor (dims + geo-zone + predicates), coupon code/limits, bundle set/effectMode editor. MVI + `metroViewModel()`; `stringResource` only.
+- [ ] T021c [US1] Wire `PromotionRoute`/entry providers + nav into app admin/settings area; client-side validation (e.g. tier/slab contiguity, bundle set non-empty) before save.
+- [ ] T021d [P] [US1] Compile all 3 app targets.
+
+**Checkpoint**: merchant can fully manage promotions/coupons/bundles from the app, offline; pushes on reconnect.
 
 ---
 

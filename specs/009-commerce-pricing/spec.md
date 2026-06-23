@@ -60,6 +60,10 @@ Builds on `008-ecommerce-order-platform` (storefront, cart, checkout, orders) an
   (zone = set of pincodes, pincode-ranges, and/or states) is referenced by price lists; the resolver
   maps the customer's (or delivery) pincode → zone. Exact-pincode pricing is a single-pincode zone.
   `GeoZone` is shared master data (referenced by uid; reused by promotions feature 015).
+- Q: Where do merchants create/manage price lists (management surface)? → A: **KMP app admin UI
+  only** — no Angular web admin in this feature. Management is offline-first: the app `feature/pricing`
+  is a full CRUD module (Room write `synced=false` + `markPendingPush`, `PricingSyncDelegate` owns
+  push **and** pull), not just a read-model. Backend exposes the same `/pricing/v1` CRUD + `/sync`.
 - Q: Updated overlap precedence with the new dimensions? → A: per-customer special >
   customer/group + channel list (most specific) > product-group / brand / category list > geo-zone /
   customer-type list > **attribute-predicate match** > catalog fallback; ties → list `priority`, then
@@ -209,6 +213,10 @@ India, hence P3.
   Predicate-only matches MUST rank **below** every structured-dimension match (lowest precedence
   before catalog fallback) and MUST be evaluated deterministically. Resolution remains offline-capable
   and projectable.
+- **FR-018**: Price-list **management** (create/edit/activate/deactivate/soft-delete, incl. items,
+  tiers, MOQ, geo-zones, predicates) MUST be performed in the **KMP app admin UI** and work
+  offline-first (local write `synced=false` → `markPendingPush` → `PricingSyncDelegate` push). No
+  Angular web admin is in scope for this feature.
 - **FR-002**: A price list MUST contain **price-list items** targeting a product (or specific variant),
   each with a unit price and optional **MOQ** and optional ordered **quantity tiers** (`minQty`,
   `unitPrice`).
