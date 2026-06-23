@@ -68,6 +68,13 @@ Builds on `008-ecommerce-order-platform` (storefront, cart, checkout, orders) an
   customer/group + channel list (most specific) > product-group / brand / category list > geo-zone /
   customer-type list > **attribute-predicate match** > catalog fallback; ties → list `priority`, then
   most-recently-activated; variant match wins over base within a list.
+- Q: Where is price resolution executed — merchant orders vs online orders? → A: **Two trust models.**
+  (1) **Merchant app** order/invoice resolves price **client-side** (offline, over the synced
+  read-model), snapshots it, and pushes; the backend `order`/`invoice` `/sync` endpoints **persist the
+  client snapshot as-is and do NOT re-resolve** (everything the app needs is already synced to it).
+  (2) **Online customer** orders (ecom) are resolved/validated **server-side** at cart/checkout (the
+  shopper device is untrusted and has no merchant data) over the ecom projection. The resolution
+  *algorithm* is single-sourced and must produce identical results in both (parity, SC-006).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -240,8 +247,13 @@ India, hence P3.
   in one list share one currency.
 - **FR-011**: Pricing master data MUST be **projected to the ecom read model** so storefront and app
   resolution need no synchronous call into the pricing module.
-- **FR-012**: The pricing module MUST expose a **public service interface** for `order`/`invoice` to
-  resolve prices in-process (per module-boundary rules — no direct repository access).
+- **FR-012**: Price resolution is executed in **two places only**: (a) the **merchant app**
+  client-side resolver (offline), and (b) the **ecom server-side** path (cart/checkout) over the
+  projection. The backend `order`/`invoice` `/sync` endpoints MUST persist the client-provided price
+  snapshot **without re-resolving** (offline-first trust model). The pricing module exposes its
+  resolution as a **single-sourced algorithm/service** (used for the ecom projection-based resolver,
+  admin preview, and to keep the app resolver in parity) — no synchronous cross-module resolution call
+  on the merchant order path.
 - **FR-013**: Price lists and items are **tenant-scoped** (`OwnableBaseDomain`) and MUST never leak
   across workspaces.
 - **FR-014**: Tier ranges within an item MUST be validated contiguous and non-overlapping at save.
@@ -296,8 +308,10 @@ India, hence P3.
 - **SC-004**: Public storefront resolution P95 < 50 ms under the projected read model.
 - **SC-005**: Every price returned by any pricing API carries an explicit currency; a contract test
   rejects any bare-number money field.
-- **SC-006**: The same resolution produces the same effective price on the storefront, in B2B app
-  order entry, and in the monolith `order` service for identical inputs.
+- **SC-006**: The single-sourced resolution algorithm produces the **same effective price** in the
+  merchant app (offline, over Room) and on the ecom server-side path (over the projection) for
+  identical inputs (parity test). The monolith `order`/`invoice` `/sync` stores the app's snapshot
+  verbatim and does not re-resolve (verified: pushed snapshot == persisted snapshot).
 
 ## Out of Scope (this feature)
 

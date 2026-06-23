@@ -8,10 +8,12 @@
 
 Add an **offers/promotions engine** that adjusts an order on top of prices already resolved by feature
 009. MVP types: cart/coupon discounts, BOGO/free-goods, and brand volume/value schemes (QPS/TPR).
-Master data + the apply engine live in a new monolith bounded context `com.ampairs.promotion`,
-exposed to `order`/`invoice` via a public service interface and **projected to the ecom read model via
-Kafka** (the CatalogSyncService/price-list pattern). The KMP app gets a `feature/promotion`
-offline read-model + a pure-Kotlin apply engine so in-store order/invoice entry applies offers offline.
+Master data + the single-sourced apply engine live in a new monolith bounded context
+`com.ampairs.promotion`, **projected to the ecom read model via Kafka** (the CatalogSyncService/price-
+list pattern). **Trust model (mirrors 009):** merchant in-store order/invoice applies offers
+**client-side** in the KMP app (offline) and pushes a snapshot the backend `/sync` stores verbatim;
+**online** customer orders apply/validate offers **server-side** at ecom checkout. The KMP app gets a
+full `feature/promotion` (offline-first `/sync`, admin CRUD + apply engine).
 The engine runs **after price resolution (009) and before tax** (`DocumentTotalsCalculator`), emits
 discount/free-goods lines, and the applied offer is **snapshotted** onto the order/cart so a later
 promotion edit never changes a placed order. Zero regression when no promotion is configured.

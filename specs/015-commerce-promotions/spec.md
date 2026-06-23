@@ -57,6 +57,12 @@ catalog, storefront, cart, or checkout.
   this feature). Offline-first: app `feature/promotion` is full CRUD (Room write `synced=false` +
   `markPendingPush`, `PromotionSyncDelegate` push **and** pull). Backend exposes `/promotion/v1` CRUD
   + `/sync`.
+- Q: Where are offers applied — merchant orders vs online orders? → A: **Two trust models** (mirrors
+  pricing). (1) **Merchant app** applies offers **client-side** (offline, over the synced promotion
+  read-model), snapshots them, and pushes; the backend `order`/`invoice` `/sync` **persists the
+  snapshot as-is and does NOT re-apply**. (2) **Online customer** orders apply/validate offers
+  **server-side** at cart/checkout (untrusted device). Coupon redemption is recorded server-side at
+  checkout (online) or at sync/push reconcile (merchant), preserving atomic usage limits either way.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -290,9 +296,12 @@ and confirm an already-checked-out order keeps the snapshot.
 - **FR-014**: Promotion master data MUST be **projected to the ecom read model** (same Kafka pattern
   as `CatalogSyncService` / the 009 price-list projection) so storefront and app resolution need no
   synchronous call into the promotion module.
-- **FR-015**: The promotion module MUST expose a **public service interface** for `order`/`invoice`
-  (and the app's local engine mirror) to apply offers in-process — no direct repository access across
-  modules (module-boundary rule).
+- **FR-015**: Offers are applied in **two places only**: (a) the **merchant app** client-side engine
+  (offline), and (b) the **ecom server-side** path (cart/checkout). The backend `order`/`invoice`
+  `/sync` endpoints MUST persist the client-applied offer snapshot **without re-applying**. The
+  promotion module exposes its apply logic as a **single-sourced engine** (used for the ecom
+  projection-based path, admin preview, and to keep the app engine in parity) — no synchronous
+  cross-module apply call on the merchant order path.
 - **FR-016**: Promotions, coupons, and usage records MUST be **tenant-scoped** (`OwnableBaseDomain`)
   and MUST never leak across workspaces.
 - **FR-017**: Every monetary value stored/returned MUST carry an explicit **ISO-4217 currency**
@@ -376,8 +385,9 @@ and confirm an already-checked-out order keeps the snapshot.
   (atomic-usage test).
 - **SC-005**: BOGO free-goods and volume-scheme apportionment reconcile to the offer total to the
   minor unit (no rounding drift) — property test.
-- **SC-006**: The same offer set produces the same adjusted totals on the storefront, in B2B app order
-  entry, and in the monolith `order` service for identical inputs (parity test).
+- **SC-006**: The single-sourced apply engine produces the **same adjusted totals** in the merchant
+  app (offline) and on the ecom server-side path for identical inputs (parity test). The monolith
+  `order`/`invoice` `/sync` stores the app's offer snapshot verbatim and does not re-apply.
 - **SC-007**: Every monetary value returned by any promotion API carries an explicit currency; a
   contract test rejects any bare-number money field.
 - **SC-008**: Public storefront offer resolution P95 < 60 ms under the projected read model.

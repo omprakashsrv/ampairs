@@ -49,7 +49,7 @@ description: "Task list for Commerce Promotions & Offers (015)"
 - [ ] T012 [P] [US1] Repositories: `PromotionRepository` (+ `@EntityGraph`); DTOs + mappers `PromotionRequest/Response`, `PromotionApplicationResponse` (`promotion/domain/dto/`).
 - [ ] T013 [US1] `PromotionEngine` PUBLIC interface + impl `apply(CartContext, lines: List<ResolvedLine>) : PromotionResult` (appliedPromotions ordered, discountAdjustments line/order, freeGoodsLines, rejections). CART_DISCOUNT path: eligibility (channel, min-cart) → order/line % or flat **before tax**; clamp ≥ 0 (FR-019).
 - [ ] T014 [US1] `PromotionService` (CRUD/activate/deactivate/soft-delete) + `PromotionController` `/promotion/v1/promotions` (ApiResponse, tenant at controller).
-- [ ] T015 [US1] Wire backend `order`/`invoice` create flow: after 009 resolution, call `PromotionEngine.apply(...)`, feed results into `DocumentTotalsCalculator`/tax, snapshot applied offers onto Order/OrderItem (+ Invoice/InvoiceItem). Tag pre-existing manual line discounts `source = MANUAL`.
+- [ ] T015 [US1] Backend `order`/`invoice` `/sync`: **persist the client-applied offer snapshot verbatim — no server re-apply** (offline-first trust model). Merchant-side apply happens on the app (T019); manual line discounts are tagged `source = MANUAL` client-side. (Server-side apply is the ecom path only — see Phase 7.)
 - [ ] T016 [US1] Snapshot fields (both repos): `Order/Invoice.appliedPromotions`(JSON) + `promotionDiscountTotalMinor`; `OrderItem/InvoiceItem.appliedPromotionUids`, `promotionDiscountMinor`, `isFreeGood`, `sourcePromotionUid`, `currency` (entities + Flyway/Room migrations).
 
 ### App (offline)
@@ -167,7 +167,7 @@ from set → 15% off" (DISCOUNT) → applies only at ≥3 qualifying items.
 
 ## Phase 8: Polish & Cross-Cutting
 
-- [ ] T041 Parity test: offers+tax totals identical across in-store calculator, app engine, monolith order service (SC-006/NFR-007).
+- [ ] T041 Parity test: offers+tax totals identical between the **merchant-app engine (offline)** and the **ecom server-side engine** for identical inputs (SC-006/NFR-007); plus a test that `order`/`invoice` `/sync` persists the pushed offer snapshot verbatim (no re-apply).
 - [ ] T042 [P] `Money` contract test rejects bare-number money (SC-007); totals never < 0 (FR-019).
 - [ ] T043 [P] `data-model.md`, `quickstart.md`, `contracts/` finalized; `docs/guides/offline-sync-contract.md` adds `promotion`/`coupon`.
 - [ ] T044 Run `flywayInfo` + `buildAll`/`testAll`; app compile-3-targets.

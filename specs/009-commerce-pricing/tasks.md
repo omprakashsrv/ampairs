@@ -32,7 +32,8 @@ description: "Task list for Commerce Pricing Engine (009)"
 - [ ] T006 [P] Backend `Money` representation: serializer for `{amount_minor: Long, currency}`; `BigDecimal(19,4)`+`currency CHAR(3)` column convention (helper/converter).
 - [ ] T007 [P] App `Money(minorUnits: Long, currency: String)` value class in `feature/pricing` (or shared) with `kotlinx-serialization`.
 - [ ] T008 Add `defaultChannel: SalesChannel = RETAIL` to ecom `Storefront` (entity + migration + DTO).
-- [ ] T009 Confirm/extend the 010 price-resolution **seam**: a single call site in `order`/`invoice` line build that currently reads `product.sellingPrice` — refactor to an injectable resolver port (no behavior change yet).
+- [ ] T009 Confirm/extend the 010 price-resolution **seam in the merchant app**: the single call site in the app `order`/`invoice` line build that reads `product.sellingPrice` → refactor to an injectable `PriceResolver` port (client-side; no behavior change yet). **No backend resolution wiring** — merchant orders are resolved on the client.
+- [ ] T009a Backend `order`/`invoice`: add price-snapshot columns (resolvedUnitPriceMinor, currency, priceSource, matchedPriceListUid, appliedTierMinQty, belowMoq) to Order/OrderItem + Invoice/InvoiceItem (entities + Flyway both vendors) so the `/sync` POST **persists the client snapshot verbatim** (no re-resolution).
 
 **Checkpoint**: channel + money + seam ready.
 
@@ -132,7 +133,7 @@ description: "Task list for Commerce Pricing Engine (009)"
 ## Phase 7: Polish & Cross-Cutting
 
 - [ ] T038 Regression suite: no price list configured → identical totals to today (SC-002).
-- [ ] T039 Parity test: storefront vs app vs monolith `order` resolution for identical inputs (SC-006).
+- [ ] T039 Parity test: **merchant-app (Room) resolver vs ecom server-side (projection) resolver** produce identical effective prices for identical inputs (SC-006); plus a test that `order`/`invoice` `/sync` persists the pushed snapshot verbatim (no re-resolution).
 - [ ] T040 [P] `data-model.md`, `quickstart.md`, `contracts/` finalized; update CLAUDE.md "mysql only" stale note → Postgres primary.
 - [ ] T041 [P] `docs/guides/offline-sync-contract.md`: add `price_list` to syncable resources.
 - [ ] T042 Run `./gradlew :ampairs_service:flywayInfo` + `buildAll`/`testAll`; app compile-3-targets.

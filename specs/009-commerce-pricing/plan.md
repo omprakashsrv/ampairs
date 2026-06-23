@@ -8,10 +8,13 @@
 
 Add a server-authoritative **price-resolution engine** so the same product sells at a retail price to
 walk-in/B2C shoppers and at channel/group/brand/quantity-tiered wholesale prices to B2B buyers.
-Master data + resolution live in a new monolith bounded context `com.ampairs.pricing`, exposed to
-`order`/`invoice` via a public service interface and **projected into the ecom read model via Kafka**
-(the pattern `CatalogSyncService` already uses for catalog). The KMP app gets a `feature/pricing`
-read-model (offline-first `/sync`) so in-store order/invoice entry resolves prices offline. Resolution
+Master data + the single-sourced resolution algorithm live in a new monolith bounded context
+`com.ampairs.pricing`, **projected into the ecom read model via Kafka** (the pattern
+`CatalogSyncService` already uses for catalog). **Trust model:** merchant in-store order/invoice
+resolves prices **client-side** in the KMP app (offline, over the synced read-model) and pushes a
+snapshot the backend `/sync` stores verbatim; **online** customer orders resolve **server-side** at
+ecom checkout over the projection. The KMP app gets a full `feature/pricing` (offline-first `/sync`,
+admin CRUD + resolver). Resolution
 **falls back to today's `sellingPrice`** when no list matches → zero regression. This feature is the
 base-price layer; **offers/promotions are feature 015** and consume this feature's resolved output.
 
