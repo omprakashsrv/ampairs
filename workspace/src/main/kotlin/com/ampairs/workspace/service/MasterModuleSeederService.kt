@@ -77,7 +77,8 @@ class MasterModuleSeederService(
             createTaxCodeModule(),
             createUnitModule(),
             createPrintingModule(),
-            createStorefrontModule()
+            createStorefrontModule(),
+            createAiAssistantModule()
         )
     }
 
@@ -557,6 +558,48 @@ class MasterModuleSeederService(
         sizeMb = 4
         featured = false
         displayOrder = 65
+        active = true
+    }
+
+    private fun createAiAssistantModule() = MasterModule().apply {
+        moduleCode = "ai-assistant"
+        name = "AI Assistant"
+        description = "Offline-first text and voice assistant that answers business questions about your own data (customers, products, stock, invoices) and drafts bills by voice — entirely on-device, with explicit confirmation before any money action"
+        tagline = "Ask questions and draft bills by voice — works offline"
+        category = ModuleCategory.COMMUNICATION
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.FREE
+        requiredRole = UserRole.EMPLOYEE
+        complexity = ModuleComplexity.STANDARD
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 8, false, "Hands-free billing and quick answers at the counter, even without internet"),
+            createBusinessRelevance(BusinessType.WHOLESALE, 8, false, "Fast voice-driven order/invoice drafting and on-device business queries"),
+            createBusinessRelevance(BusinessType.MANUFACTURING, 7, false, "Quick spoken lookups across customers, products, and stock")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = emptyList(),
+            optionalPermissions = listOf("CUSTOMER_READ", "PRODUCT_READ", "INVOICE_READ", "INVOICE_WRITE"),
+            dependencies = listOf("customer-management", "product-management", "invoice-billing")
+        )
+        uiMetadata = createUIMetadata(
+            icon = "auto_awesome",
+            primaryColor = "#6750A4",
+            tags = listOf("AI", "Assistant", "Voice", "Offline", "Chat")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/assistant",
+            displayName = "Assistant",
+            iconName = "auto_awesome",
+            menuItems = listOf(
+                createMenuItem("assistant-chat", "Assistant", "/assistant", "auto_awesome", 1, true)
+            )
+        )
+        navigationIndex = 90
+        provider = "Ampairs"
+        sizeMb = 5
+        featured = true
+        displayOrder = 70
         active = true
     }
 
