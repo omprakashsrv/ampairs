@@ -56,6 +56,9 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 
+    // Firebase Admin SDK for push notifications (FCM)
+    implementation("com.google.firebase:firebase-admin:9.4.1")
+
     runtimeOnly("com.mysql:mysql-connector-j")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     testImplementation("org.springframework.boot:spring-boot-starter-test")

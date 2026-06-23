@@ -18,6 +18,14 @@ class NotificationQueue : OwnableBaseDomain() {
     @Column(name = "message", nullable = false, columnDefinition = "TEXT")
     var message: String = ""
 
+    /** Optional title — used by push (FCM) rows; null for SMS. */
+    @Column(name = "title", length = 255)
+    var title: String? = null
+
+    /** Optional structured data payload (JSON) delivered alongside push notifications. */
+    @Column(name = "data_payload", columnDefinition = "TEXT")
+    var dataPayload: String? = null
+
     @Enumerated(EnumType.STRING)
     @Column(name = "channel", nullable = false)
     var channel: NotificationChannel = NotificationChannel.SMS
