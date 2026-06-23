@@ -6,12 +6,14 @@ import com.ampairs.notification.provider.NotificationChannel
 import com.ampairs.notification.provider.NotificationProvider
 import com.ampairs.notification.provider.NotificationResult
 import com.ampairs.notification.provider.NotificationStatus
+import com.ampairs.notification.port.DevicePushTokenPort
 import com.ampairs.notification.provider.push.FcmPushProvider
 import com.ampairs.notification.provider.sms.AwsSnsSmsProvider
 import com.ampairs.notification.provider.sms.Msg91SmsProvider
 import com.ampairs.notification.repository.NotificationQueueRepository
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Primary
 import org.springframework.scheduling.annotation.Async
@@ -33,6 +35,8 @@ class NotificationService(
     private val notificationDatabaseService: NotificationDatabaseService,
     private val props: NotificationProperties,
     private val objectMapper: ObjectMapper,
+    // Optional — resolved from the subscription module when present; absent in isolated tests.
+    private val devicePushTokenPort: ObjectProvider<DevicePushTokenPort>,
 ) {
 
     private val logger = LoggerFactory.getLogger(NotificationService::class.java)
@@ -349,6 +353,12 @@ class NotificationService(
                         "Notification failed via {}: {} - {}",
                         result.providerName, notification.uid, result.errorMessage
                     )
+                    // Prune a dead device token so we stop retrying push to it.
+                    if (notification.channel == NotificationChannel.PUSH_NOTIFICATION &&
+                        result.providerResponse == FcmPushProvider.TOKEN_INVALID_MARKER
+                    ) {
+                        devicePushTokenPort.ifAvailable?.invalidateToken(notification.recipient)
+                    }
                 }
             }
 
