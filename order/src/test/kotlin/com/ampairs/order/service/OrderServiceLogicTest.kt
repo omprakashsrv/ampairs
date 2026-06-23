@@ -10,6 +10,7 @@ import com.ampairs.event.domain.kafka.EcomOrderPlacedEvent
 import com.ampairs.event.domain.kafka.EcomOrderStatusEvent
 import com.ampairs.form.domain.model.EntityType
 import com.ampairs.invoice.domain.dto.InvoiceResponse
+import com.ampairs.inventory.service.InventoryStockService
 import com.ampairs.invoice.service.InvoiceService
 import com.ampairs.order.domain.dto.OrderItemRequest
 import com.ampairs.order.domain.dto.OrderUpdateRequest
@@ -52,6 +53,7 @@ class OrderServiceLogicTest {
     @Mock private lateinit var orderItemRepository: OrderItemRepository
     @Mock private lateinit var orderPagingRepository: OrderPagingRepository
     @Mock private lateinit var invoiceService: InvoiceService
+    @Mock private lateinit var inventoryStockService: InventoryStockService
     @Mock private lateinit var eventPublisher: ApplicationEventPublisher
     @Mock private lateinit var ecomOrderStatusProducer: EcomOrderStatusProducer
 
@@ -61,7 +63,7 @@ class OrderServiceLogicTest {
 
     @BeforeEach
     fun setUp() {
-        service = OrderService(orderRepository, orderItemRepository, orderPagingRepository, invoiceService, eventPublisher)
+        service = OrderService(orderRepository, orderItemRepository, orderPagingRepository, invoiceService, inventoryStockService, eventPublisher)
         ecomService = OrderEcomServiceImpl(orderRepository, ecomOrderStatusProducer)
         ingestionService = EcomOrderIngestionService(orderRepository, orderItemRepository, ecomOrderStatusProducer)
         whenever(orderRepository.save(any<Order>())).thenAnswer { it.arguments[0] }

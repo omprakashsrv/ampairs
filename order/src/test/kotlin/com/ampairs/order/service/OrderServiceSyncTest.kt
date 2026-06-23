@@ -7,6 +7,7 @@ import com.ampairs.order.domain.model.OrderItem
 import com.ampairs.order.repository.OrderItemRepository
 import com.ampairs.order.repository.OrderPagingRepository
 import com.ampairs.order.repository.OrderRepository
+import com.ampairs.inventory.service.InventoryStockService
 import com.ampairs.invoice.service.InvoiceService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -36,13 +37,14 @@ class OrderServiceSyncTest {
     @Mock private lateinit var orderItemRepository: OrderItemRepository
     @Mock private lateinit var orderPagingRepository: OrderPagingRepository
     @Mock private lateinit var invoiceService: InvoiceService
+    @Mock private lateinit var inventoryStockService: InventoryStockService
     @Mock private lateinit var eventPublisher: ApplicationEventPublisher
 
     private lateinit var service: OrderService
 
     @BeforeEach
     fun setup() {
-        service = OrderService(orderRepository, orderItemRepository, orderPagingRepository, invoiceService, eventPublisher)
+        service = OrderService(orderRepository, orderItemRepository, orderPagingRepository, invoiceService, inventoryStockService, eventPublisher)
     }
 
     @Test

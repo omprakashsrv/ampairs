@@ -41,6 +41,7 @@ dependencies {
     api(project(mapOf("path" to ":file")))
     api(project(mapOf("path" to ":event")))
     api(project(mapOf("path" to ":unit")))
+    implementation(project(":setting"))
     implementation("org.springframework.kafka:spring-kafka")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310")

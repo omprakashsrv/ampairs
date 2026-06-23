@@ -1,7 +1,6 @@
 package com.ampairs.product.domain.model
 
 import com.ampairs.core.domain.model.OwnableBaseDomain
-import com.ampairs.inventory.domain.model.Inventory
 import com.ampairs.product.config.Constants
 import com.ampairs.product.domain.model.group.ProductBrand
 import com.ampairs.product.domain.model.group.ProductCategory
@@ -133,13 +132,6 @@ class Product : OwnableBaseDomain() {
         name = "entity_id", referencedColumnName = "uid", insertable = false, updatable = false
     )
     var unitConversions: MutableList<UnitConversion> = mutableListOf()
-
-    @BatchSize(size = 30)
-    @OneToMany
-    @JoinColumn(
-        name = "product_id", referencedColumnName = "uid", insertable = false, updatable = false, nullable = false
-    )
-    var inventory: MutableList<Inventory> = mutableListOf()
 
     // Product classification
     @Enumerated(EnumType.STRING)
