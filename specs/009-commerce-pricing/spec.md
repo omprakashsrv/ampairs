@@ -214,7 +214,10 @@ India, hence P3.
 - **FR-016**: The system MUST support **named geo-zones** as reusable master data (a `GeoZone` whose
   membership is a set of pincodes, pincode-ranges, and/or states). A price list MAY be scoped to a
   geo-zone; resolution MUST map the customer's (or delivery) pincode to its zone. An exact-pincode
-  price is a single-pincode zone. `GeoZone` is referenced by uid and shared with feature 015.
+  price is a single-pincode zone. `GeoZone` is **owned by the `pricing` module** (exposed via a public
+  `GeoZoneService.zoneForPincode`), referenced by uid from promotions (`015`), and **projected to the
+  ecom read model** so storefront server-side resolution maps pincode→zone without a cross-module call.
+  `SalesChannel` lives in `core` (shared).
 - **FR-017**: A price list MAY additionally carry an optional ordered list of **attribute predicates**
   `{ field, operator, value }` over customer/product attributes (incl. custom JSON attributes).
   Predicate-only matches MUST rank **below** every structured-dimension match (lowest precedence
@@ -279,8 +282,9 @@ India, hence P3.
   `productGroupId?`, `geoZoneId?` (null on all = applies to all in channel); plus
   `attributePredicates: List<AttributePredicate>?` (lowest-precedence match); `currency`,
   `priority: Int`, `status` (DRAFT/ACTIVE/INACTIVE), optional `startsAt`/`endsAt`, `active`.
-- **GeoZone** (shared master, `OwnableBaseDomain`) — `uid`, `name`, `members` (pincodes,
-  pincode-ranges, states); referenced by `PriceList.geoZoneId` and by promotions (feature 015).
+- **GeoZone** (`OwnableBaseDomain`, **owned by `pricing`**) — `uid`, `name`, `members` (pincodes,
+  pincode-ranges, states); exposed via public `GeoZoneService`; referenced by `PriceList.geoZoneId`
+  and by promotions (`015`); projected to ecom (`EcomGeoZoneProjection`). `SalesChannel` is owned by `core`.
 - **AttributePredicate** (value/JSON) — `field` (e.g. `customer.attributes.tier`, `product.attributes.x`),
   `operator` (EQ/NEQ/IN/GT/LT/...), `value`. Evaluated last, lowest precedence.
 - **PriceListItem** (`OwnableBaseDomain`) — `uid`, `priceListId`, `productId`, `variantSku: String?`,

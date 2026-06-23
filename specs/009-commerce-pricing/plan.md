@@ -117,7 +117,8 @@ no behavior change when no price list exists.
 
 - **D1 Money** → `{amount_minor:Long, currency}` wire, `BigDecimal(19,4)`+`currency CHAR(3)` DB,
   `Money(minorUnits,currency)` app. Default INR.
-- **D2 SalesChannel** → `enum {RETAIL, WHOLESALE}` (extensible). `Storefront.defaultChannel`.
+- **D2 SalesChannel** → `enum {RETAIL, WHOLESALE}` (extensible), owned by **`core`** (shared) so
+  ecom/order/invoice/pricing/promotion reference it without cross-feature coupling. `Storefront.defaultChannel`.
 - **D5 Pricing home** → monolith `com.ampairs.pricing` + Kafka projection to ecom (no hot-path call).
 - **Resolution precedence** (spec FR-004 + 2026-06-23 clarification): per-customer special >
   customer-group/channel list > brand/category list > catalog fallback; ties → `priority` then
@@ -128,9 +129,10 @@ no behavior change when no price list exists.
 ## Phase 1 — Design (data-model + contracts; see those files)
 
 - **Entities**: `PriceList` (structured targeting dims incl. `productGroupId`, `geoZoneId`,
-  `customerType` + `attributePredicates` JSON), `PriceListItem` (+ `PriceTier` JSON), `SalesChannel`,
-  shared `GeoZone` (pincode/range/state membership), `AttributePredicate` (value); ecom
-  `EcomPriceListProjection`; app `PriceListEntity`/`PriceListItemEntity`/`GeoZoneEntity`.
+  `customerType` + `attributePredicates` JSON), `PriceListItem` (+ `PriceTier` JSON), `SalesChannel`
+  (in `core`), `GeoZone` (pincode/range/state membership, **owned by `pricing`** + public
+  `GeoZoneService.zoneForPincode`), `AttributePredicate` (value); ecom `EcomPriceListProjection` +
+  `EcomGeoZoneProjection`; app `PriceListEntity`/`PriceListItemEntity`/`GeoZoneEntity`.
 - **Targeting model (2026-06-23 clarify)**: hybrid — structured dimensions (hot path) + optional
   lowest-precedence attribute predicates. Precedence: per-customer special > customer/group+channel >
   product-group/brand/category > geo-zone/customer-type > attribute-predicate > catalog fallback.

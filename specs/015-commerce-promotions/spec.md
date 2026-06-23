@@ -272,7 +272,9 @@ and confirm an already-checked-out order keeps the snapshot.
 - **FR-004**: The engine MUST operate **after** price resolution (009) and **before** tax; it MUST NOT
   recompute base prices. Outputs feed the existing `TaxCalculationEngine`/`DocumentTotalsCalculator`.
 - **FR-005**: Resolution MUST be **deterministic** under multiple matches via `stackable`, `priority`,
-  and a documented `conflictPolicy`; the chosen set + order MUST be returned for audit.
+  and a documented `conflictPolicy` (**default `HIGHEST_PRIORITY`, tiebreak `BEST_FOR_CUSTOMER`**;
+  coupons non-stackable with each other but may stack with one auto-promotion unless flagged
+  non-stackable); the chosen set + order MUST be returned for audit.
 - **FR-006**: When no offer matches (and no coupon is entered), totals MUST be **identical to today's**
   (zero regression for merchants who configure no promotions).
 - **FR-007**: Coupons MUST validate eligibility (channel, group/customer, min-cart, brand/category,
@@ -342,8 +344,9 @@ and confirm an already-checked-out order keeps the snapshot.
 - **PromotionEligibility** (embedded/JSON) — `customerGroupId?`, `customerType?`, `customerId?`,
   `brandId?`, `categoryId?`, `productGroupId?`, `productId?`/`variantSku?`, `geoZoneId?`, `minQty?`,
   `minCartValue?`, `attributePredicates: List<AttributePredicate>?` (lowest-precedence match).
-- **GeoZone** (shared master, reused from feature 009) — referenced by `geoZoneId`; resolver maps the
-  customer's/delivery pincode to a zone.
+- **GeoZone** (owned by `pricing`/`009`, reused here) — referenced by `geoZoneId` via the public
+  `GeoZoneService`; storefront geo eligibility maps delivery pincode→zone via the shared
+  `EcomGeoZoneProjection`. `SalesChannel` is owned by `core`.
 - **AttributePredicate** (value/JSON, shared with 009) — `field`, `operator`, `value`; evaluated last.
 - **PromotionEffect** (embedded/JSON, type-specific) — for CART_DISCOUNT: `{ percent? , flatAmount? ,
   scope: LINE|ORDER }`; for COUPON: `code`, effect like CART_DISCOUNT + `freeShipping?`; for BOGO:
@@ -361,7 +364,7 @@ and confirm an already-checked-out order keeps the snapshot.
   `fundingBrandId?`, `appliedSlabThreshold?` — snapshotted onto order/invoice/cart.
 - **FreeGoodsLine** (value/JSON) — `productId`/`variantSku`, `qty`, `unitPriceMinor = 0`,
   `sourcePromotionUid`, `taxPolicy`.
-- **SalesChannel** (enum, from 009) — `RETAIL`, `WHOLESALE` (extensible).
+- **SalesChannel** (enum, in `core`; introduced by 009) — `RETAIL`, `WHOLESALE` (extensible).
 - **Existing entities — additive snapshot fields** (back-compat retained):
   - `OrderItem` / `InvoiceItem` / `EcomCartItem` / `EcomOrderLineItem` — add `appliedPromotionUids`,
     `promotionDiscountMinor`, `isFreeGood`, `sourcePromotionUid`, `currency`.

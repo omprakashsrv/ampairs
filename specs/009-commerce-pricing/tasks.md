@@ -28,7 +28,7 @@ description: "Task list for Commerce Pricing Engine (009)"
 
 **⚠️ No user-story work begins until this is done.**
 
-- [ ] T005 Define `SalesChannel { RETAIL, WHOLESALE }` enum (shared/core or pricing domain) usable by ecom/order/invoice.
+- [ ] T005 Define `SalesChannel { RETAIL, WHOLESALE }` enum in **`core`** (shared) so ecom/order/invoice/pricing/promotion all reference it without cross-feature coupling.
 - [ ] T006 [P] Backend `Money` representation: serializer for `{amount_minor: Long, currency}`; `BigDecimal(19,4)`+`currency CHAR(3)` column convention (helper/converter).
 - [ ] T007 [P] App `Money(minorUnits: Long, currency: String)` value class in `feature/pricing` (or shared) with `kotlinx-serialization`.
 - [ ] T008 Add `defaultChannel: SalesChannel = RETAIL` to ecom `Storefront` (entity + migration + DTO).
@@ -48,7 +48,7 @@ description: "Task list for Commerce Pricing Engine (009)"
 ### Implementation (backend)
 - [ ] T010 [P] [US1] `PriceList` entity (`OwnableBaseDomain`): uid, name, channel, structured targeting (customerGroupId?, customerType?, customerId?, brandId?, categoryId?, productGroupId?, geoZoneId?), attributePredicates(JSON)?, currency, priority, status, startsAt?, endsAt?, active — `pricing/domain/model/`.
 - [ ] T011 [P] [US1] `PriceListItem` entity + `PriceTier` (JSON list: minQty, unitPrice): productId, variantSku?, unitPrice, moq?, tiers — `pricing/domain/model/`.
-- [ ] T011a [P] [US1] Shared `GeoZone` entity (`OwnableBaseDomain`): uid, name, members (pincodes/ranges/states) + repo + DTOs + Flyway; `AttributePredicate` value type `{field, operator, value}`. (Reused by feature 015.)
+- [ ] T011a [P] [US1] `GeoZone` entity (`OwnableBaseDomain`) **owned by the `pricing` module**: uid, name, members (pincodes/ranges/states) + repo + DTOs + Flyway + a **public service interface** (`GeoZoneService.zoneForPincode(pincode)`); `AttributePredicate` value type `{field, operator, value}`. Promotion (015) references `GeoZone` by uid via this service (015 already depends on 009). `GeoZone` is also synced to the app (via the pricing `/sync` so admins manage zones offline) and projected to ecom (T030a).
 - [ ] T012 [US1] Flyway `V1.0.x__create_pricing_tables.sql` in **both** mysql + postgresql (price_list, price_list_item; indexes on owner_id, channel, customer_group_id, product_id).
 - [ ] T013 [P] [US1] Repositories: `PriceListRepository`, `PriceListItemRepository` (`@EntityGraph` list→items).
 - [ ] T014 [P] [US1] DTOs + mappers: `PriceListRequest/Response`, `PriceListItemRequest/Response`, `PriceResolutionResponse` (`pricing/domain/dto/`).
@@ -60,6 +60,7 @@ description: "Task list for Commerce Pricing Engine (009)"
 ### Tests
 - [ ] T019 [P] [US1] Resolution unit tests (qty 5/10/60, MOQ flag, fallback, overlap precedence).
 - [ ] T020 [P] [US1] Tier-validation test (gap/overlap rejected).
+- [ ] T020a [P] [US1] Precedence test (SC-010): geo-zone list resolves for a customer/delivery pincode; an attribute-predicate match never overrides a structured-dimension match; full precedence chain (per-customer > group/channel > product-group/brand/category > geo-zone/customer-type > predicate > fallback).
 
 **Checkpoint**: backend can resolve a wholesale tiered price; fallback verified.
 
@@ -111,6 +112,7 @@ description: "Task list for Commerce Pricing Engine (009)"
 ### Implementation (backend ecom)
 - [ ] T029 [US2] Kafka `PriceListChangedEvent` publisher in `pricing` on list/item activate/edit/deactivate.
 - [ ] T030 [US2] `EcomPriceListProjection` entity + repo + Kafka listener (reuse `CatalogSyncService` pattern); Flyway in postgresql (+ mysql if needed).
+- [ ] T030a [US2] Project **`GeoZone` membership to the ecom read model** (`EcomGeoZoneProjection` + listener on `GeoZoneChangedEvent`) so storefront server-side resolution can map a delivery/customer pincode → zone without a call into pricing. (Shared by promotions 015.)
 - [ ] T031 [US2] Public resolve endpoint `GET /v1/store/{slug}/price` on `StorefrontPublicController`: runs in `StorefrontTenantInterceptor` context, defaults to `storefront.defaultChannel`, honors authed B2B customer group; resolves from projection only (FR-006/007/008/011).
 - [ ] T032 [US2] Snapshot fields on `EcomCartItem`/`EcomOrderLineItem` (`resolvedUnitPriceMinor`, currency, priceSource, matchedPriceListUid); `CartService.addOrUpdateItem` + `CheckoutService` snapshot the resolved price (FR-009).
 - [ ] T033 [P] [US2] App `feature/ecom`: catalog/cart price display reads channel/group price from projection; checkout sends snapshot.

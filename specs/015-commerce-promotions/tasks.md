@@ -48,7 +48,8 @@ description: "Task list for Commerce Promotions & Offers (015)"
 ### Implementation
 - [ ] T012 [P] [US1] Repositories: `PromotionRepository` (+ `@EntityGraph`); DTOs + mappers `PromotionRequest/Response`, `PromotionApplicationResponse` (`promotion/domain/dto/`).
 - [ ] T013 [US1] `PromotionEngine` PUBLIC interface + impl `apply(CartContext, lines: List<ResolvedLine>) : PromotionResult` (appliedPromotions ordered, discountAdjustments line/order, freeGoodsLines, rejections). CART_DISCOUNT path: eligibility (channel, min-cart) → order/line % or flat **before tax**; clamp ≥ 0 (FR-019).
-- [ ] T014 [US1] `PromotionService` (CRUD/activate/deactivate/soft-delete) + `PromotionController` `/promotion/v1/promotions` (ApiResponse, tenant at controller).
+- [ ] T013a [US1] **Stacking / conflict resolution** in `PromotionEngine` (FR-005): each promotion has `stackable` + `priority` + workspace `conflictPolicy` (**default `HIGHEST_PRIORITY`, tiebreak `BEST_FOR_CUSTOMER`**); coupons are non-stackable with each other but may stack with one auto-promotion unless flagged non-stackable; non-stackable conflicts pick a single winner deterministically. Engine returns the **ordered applied set** + per-offer reason for audit. Mirrored pure-Kotlin in the app engine.
+- [ ] T014 [US1] `PromotionService` (CRUD/activate/deactivate/soft-delete) + `PromotionController` `/promotion/v1/promotions` (ApiResponse, tenant at controller). Add `conflictPolicy` as a workspace setting (default `HIGHEST_PRIORITY`).
 - [ ] T015 [US1] Backend `order`/`invoice` `/sync`: **persist the client-applied offer snapshot verbatim — no server re-apply** (offline-first trust model). Merchant-side apply happens on the app (T019); manual line discounts are tagged `source = MANUAL` client-side. (Server-side apply is the ecom path only — see Phase 7.)
 - [ ] T016 [US1] Snapshot fields (both repos): `Order/Invoice.appliedPromotions`(JSON) + `promotionDiscountTotalMinor`; `OrderItem/InvoiceItem.appliedPromotionUids`, `promotionDiscountMinor`, `isFreeGood`, `sourcePromotionUid`, `currency` (entities + Flyway/Room migrations).
 
@@ -156,7 +157,7 @@ from set → 15% off" (DISCOUNT) → applies only at ≥3 qualifying items.
 
 ### Implementation
 - [ ] T036 [US5] Kafka `PromotionChangedEvent` publisher in `promotion`; `EcomPromotionProjection` entity + repo + listener (reuse CatalogSyncService pattern); Flyway.
-- [ ] T037 [US5] Public endpoints `POST /v1/store/{slug}/coupon/apply` + `GET /v1/store/{slug}/offers` (StorefrontTenantInterceptor context, defaultChannel, authed customer group; resolve from projection — FR-011/012/013/014).
+- [ ] T037 [US5] Public endpoints `POST /v1/store/{slug}/coupon/apply` + `GET /v1/store/{slug}/offers` (StorefrontTenantInterceptor context, defaultChannel, authed customer group; resolve from projection — FR-011/012/013/014). Geo-zone eligibility uses the shared `EcomGeoZoneProjection` (from 009) to map delivery pincode→zone.
 - [ ] T038 [US5] `CartService`/`CheckoutService`: auto-apply eligible offers + entered coupon; snapshot applied offers + free-goods lines onto `EcomCart`/`EcomOrder`; record coupon redemption atomically at checkout.
 - [ ] T039 [P] [US5] App `feature/ecom`: coupon entry + auto-offer display at cart; snapshot at checkout.
 
@@ -169,6 +170,7 @@ from set → 15% off" (DISCOUNT) → applies only at ≥3 qualifying items.
 
 - [ ] T041 Parity test: offers+tax totals identical between the **merchant-app engine (offline)** and the **ecom server-side engine** for identical inputs (SC-006/NFR-007); plus a test that `order`/`invoice` `/sync` persists the pushed offer snapshot verbatim (no re-apply).
 - [ ] T042 [P] `Money` contract test rejects bare-number money (SC-007); totals never < 0 (FR-019).
+- [ ] T042a [P] **Stacking determinism** test (FR-005: priority/conflictPolicy/stackable winner is deterministic) + **SC-010** precedence test: geo-zone eligibility resolves for a delivery/customer pincode and an attribute-predicate match never overrides a structured-dimension match.
 - [ ] T043 [P] `data-model.md`, `quickstart.md`, `contracts/` finalized; `docs/guides/offline-sync-contract.md` adds `promotion`/`coupon`.
 - [ ] T044 Run `flywayInfo` + `buildAll`/`testAll`; app compile-3-targets.
 
