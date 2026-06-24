@@ -5,6 +5,7 @@ import com.ampairs.agent.domain.dto.asResponses
 import com.ampairs.agent.service.AiModelCatalogService
 import com.ampairs.agent.service.AiModelProxyService
 import com.ampairs.core.domain.dto.ApiResponse
+import java.io.IOException
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -50,7 +51,17 @@ class AiModelController(
 
         val upstream = proxyService.open(modelId, range)
         val body = StreamingResponseBody { output ->
-            upstream.body.use { it.copyTo(output, DEFAULT_COPY_BUFFER) }
+            try {
+                upstream.body.use { it.copyTo(output, DEFAULT_COPY_BUFFER) }
+            } catch (e: IOException) {
+                // The client aborted or the network dropped mid-stream — normal for multi-GB,
+                // resumable downloads (the app retries with a Range header). Headers are already
+                // committed, so there is nothing to report; swallow it instead of letting it bubble
+                // to GlobalExceptionHandler, which can't serialize an ApiResponse into the
+                // already-open application/octet-stream response.
+                if (e.cause is InterruptedException) Thread.currentThread().interrupt()
+                runCatching { upstream.body.close() }
+            }
         }
 
         val builder = ResponseEntity.status(upstream.statusCode)
