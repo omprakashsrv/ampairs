@@ -70,7 +70,7 @@ object AiModelCatalog {
             requiredRamMb = 3072,
             backendId = "litert-lm",
             platforms = setOf(ModelPlatform.ANDROID, ModelPlatform.IOS, ModelPlatform.DESKTOP),
-            recommended = false,
+            recommended = true,
             sourceUrl = "$HF/litert-community/Gemma3-1B-IT/resolve/main/gemma3-1b-it-int4.litertlm",
         ),
         AiModelDescriptor(
@@ -84,7 +84,7 @@ object AiModelCatalog {
             requiredRamMb = 4096,
             backendId = "litert-lm",
             platforms = setOf(ModelPlatform.ANDROID, ModelPlatform.IOS, ModelPlatform.DESKTOP),
-            recommended = true,
+            recommended = false,
             sourceUrl = "$HF/google/gemma-3n-E2B-it-litert-lm/resolve/main/gemma-3n-E2B-it-int4.litertlm",
         ),
         AiModelDescriptor(
@@ -98,7 +98,7 @@ object AiModelCatalog {
             requiredRamMb = 6144,
             backendId = "litert-lm",
             platforms = setOf(ModelPlatform.ANDROID, ModelPlatform.IOS, ModelPlatform.DESKTOP),
-            recommended = true,
+            recommended = false,
             sourceUrl = "$HF/google/gemma-3n-E4B-it-litert-lm/resolve/main/gemma-3n-E4B-it-int4.litertlm",
         ),
         AiModelDescriptor(
@@ -112,7 +112,7 @@ object AiModelCatalog {
             requiredRamMb = 6144,
             backendId = "litert-lm",
             platforms = setOf(ModelPlatform.ANDROID, ModelPlatform.IOS, ModelPlatform.DESKTOP),
-            recommended = false,
+            recommended = true,
             sourceUrl = "$HF/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm",
         ),
         AiModelDescriptor(
@@ -126,7 +126,7 @@ object AiModelCatalog {
             requiredRamMb = 8192,
             backendId = "litert-lm",
             platforms = setOf(ModelPlatform.ANDROID, ModelPlatform.IOS, ModelPlatform.DESKTOP),
-            recommended = false,
+            recommended = true,
             sourceUrl = "$HF/litert-community/gemma-4-E4B-it-litert-lm/resolve/main/gemma-4-E4B-it.litertlm",
         ),
     )

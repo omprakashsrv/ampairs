@@ -1,5 +1,6 @@
 package com.ampairs.agent.service
 
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.http.HttpStatus
@@ -35,6 +36,10 @@ data class UpstreamModelStream(
 @Service
 class AiModelProxyService(
     private val catalogService: AiModelCatalogService,
+    // HuggingFace access token for gated repos (e.g. google/gemma-3n-*). Ungated repos
+    // (litert-community/*) work without it. Set AGENT_HF_TOKEN (or hf-token property) to a token
+    // that has accepted the model licenses; left blank, gated models return 401 → 502.
+    @Value("\${agent.hf-token:\${HF_TOKEN:}}") private val hfToken: String,
 ) {
 
     private val httpClient: HttpClient = HttpClient.newBuilder()
@@ -53,6 +58,9 @@ class AiModelProxyService(
         val requestBuilder = HttpRequest.newBuilder(URI.create(model.sourceUrl))
             .timeout(Duration.ofMinutes(30))
             .GET()
+        if (hfToken.isNotBlank()) {
+            requestBuilder.header("Authorization", "Bearer $hfToken")
+        }
         if (!rangeHeader.isNullOrBlank()) {
             requestBuilder.header("Range", rangeHeader)
         }
@@ -61,10 +69,14 @@ class AiModelProxyService(
 
         if (response.statusCode() >= 400) {
             runCatching { response.body().close() }
-            throw ResponseStatusException(
-                HttpStatus.BAD_GATEWAY,
-                "Upstream model source returned ${response.statusCode()} for $modelId",
-            )
+            val code = response.statusCode()
+            val detail = if (code == 401 || code == 403) {
+                "Upstream model source requires authentication (gated repo) for $modelId — " +
+                    "set AGENT_HF_TOKEN to a HuggingFace token that has accepted the model license"
+            } else {
+                "Upstream model source returned $code for $modelId"
+            }
+            throw ResponseStatusException(HttpStatus.BAD_GATEWAY, detail)
         }
 
         val headers = response.headers()
