@@ -36,10 +36,10 @@ data class UpstreamModelStream(
 @Service
 class AiModelProxyService(
     private val catalogService: AiModelCatalogService,
-    // HuggingFace access token for gated repos (e.g. google/gemma-3n-*). Ungated repos
-    // (litert-community/*) work without it. Set AGENT_HF_TOKEN (or hf-token property) to a token
-    // that has accepted the model licenses; left blank, gated models return 401 → 502.
-    @Value("\${agent.hf-token:\${HF_TOKEN:}}") private val hfToken: String,
+    // HuggingFace access token for gated repos (e.g. google/gemma-3n-*, litert-community/*). Bound
+    // from the `agent.hf-token` property in application.yml, which resolves AGENT_HF_TOKEN (then
+    // HF_TOKEN) → blank. Left blank, gated models return 401 upstream → 502 to the app.
+    @Value("\${agent.hf-token:}") private val hfToken: String,
 ) {
 
     private val httpClient: HttpClient = HttpClient.newBuilder()
