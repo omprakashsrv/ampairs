@@ -10,11 +10,13 @@ import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
+import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.web.context.request.async.AsyncRequestTimeoutException
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody
 
@@ -71,6 +73,18 @@ class AiModelController(
         upstream.contentLength?.let { builder.header(HttpHeaders.CONTENT_LENGTH, it.toString()) }
         upstream.contentRange?.let { builder.header(HttpHeaders.CONTENT_RANGE, it) }
         return builder.body(body)
+    }
+
+    /**
+     * A download stream that exceeded the async window or whose client went away after the response
+     * was committed. The octet-stream response is already open, so an ApiResponse error body can't be
+     * written — swallow it here (controller-local handlers win over GlobalExceptionHandler) so it
+     * doesn't cascade into "No converter for ApiResponse with preset Content-Type". The app resumes
+     * via a Range request.
+     */
+    @ExceptionHandler(AsyncRequestTimeoutException::class)
+    fun handleAsyncTimeout() {
+        // no-op: response already committed; nothing to return
     }
 
     companion object {

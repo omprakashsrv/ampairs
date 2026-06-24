@@ -168,6 +168,11 @@ spring:
   mvc:
     servlet:
       path: /api
+    async:
+      # Streaming model downloads (AiModelController) run for minutes; -1 disables the MVC async
+      # request timeout so large/slow downloads aren't cut off mid-stream (an AsyncRequestTimeoutException
+      # at the default ~30s otherwise aborts the transfer). The socket/client governs the lifetime.
+      request-timeout: -1
   servlet:
     multipart:
       enabled: true
