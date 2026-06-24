@@ -135,7 +135,7 @@ description: "Task list for Commerce Pricing Engine (009)"
 ## Phase 7: Polish & Cross-Cutting
 
 - [ ] T038 Regression suite: no price list configured → identical totals to today (SC-002).
-- [ ] T039 Parity test: **merchant-app (Room) resolver vs ecom server-side (projection) resolver** produce identical effective prices for identical inputs (SC-006); plus a test that `order`/`invoice` `/sync` persists the pushed snapshot verbatim (no re-resolution).
+- [X] T039 Parity test: **merchant-app (Room) resolver vs ecom server-side (projection) resolver** produce identical effective prices for identical inputs (SC-006); plus a test that `order`/`invoice` `/sync` persists the pushed snapshot verbatim (no re-resolution).
 - [X] T040 [P] `data-model.md`, `quickstart.md`, `contracts/` finalized; update CLAUDE.md "mysql only" stale note → Postgres primary.
 - [X] T041 [P] `docs/guides/offline-sync-contract.md`: add `price_list` to syncable resources.
 - [ ] T042 Run `./gradlew :ampairs_service:flywayInfo` + `buildAll`/`testAll`; app compile-3-targets.
