@@ -19,7 +19,7 @@ description: "Task list for Commerce Pricing Engine (009)"
 
 - [X] T001 Create backend module `ampairs/pricing/` (Gradle module, `build.gradle.kts`, base package `com.ampairs.pricing`); register in `settings.gradle.kts` + `ampairs_service` deps.
 - [X] T002 Add `pricing` to `migrationModules` in `ampairs_service/build.gradle.kts`; create empty `pricing/src/main/resources/db/migration/{mysql,postgresql}/` dirs.
-- [ ] T003 [P] Create app module `ampairs-app/feature/pricing/` (KMP module + `build.gradle.kts`, composeResources, packageOfResClass pin); register in `settings.gradle.kts`.
+- [X] T003 [P] Create app module `ampairs-app/feature/pricing/` (KMP module + `build.gradle.kts`, composeResources, packageOfResClass pin); register in `settings.gradle.kts`.
 - [X] T004 [P] Run `./gradlew :ampairs_service:flywayInfo` to pick the next `V1.0.x` version for pricing migrations.
 
 ---
@@ -32,7 +32,7 @@ description: "Task list for Commerce Pricing Engine (009)"
 - [X] T006 [P] Backend `Money` representation: serializer for `{amount_minor: Long, currency}`; `BigDecimal(19,4)`+`currency CHAR(3)` column convention (helper/converter).
 - [ ] T007 [P] App `Money(minorUnits: Long, currency: String)` value class in `feature/pricing` (or shared) with `kotlinx-serialization`.
 - [X] T008 Add `defaultChannel: SalesChannel = RETAIL` to ecom `Storefront` (entity + migration + DTO).
-- [ ] T009 Confirm/extend the 010 price-resolution **seam in the merchant app**: the single call site in the app `order`/`invoice` line build that reads `product.sellingPrice` → refactor to an injectable `PriceResolver` port (client-side; no behavior change yet). **No backend resolution wiring** — merchant orders are resolved on the client.
+- [X] T009 Confirm/extend the 010 price-resolution **seam in the merchant app**: the single call site in the app `order`/`invoice` line build that reads `product.sellingPrice` → refactor to an injectable `PriceResolver` port (client-side; no behavior change yet). **No backend resolution wiring** — merchant orders are resolved on the client.
 - [X] T009a Backend `order`/`invoice`: add price-snapshot columns (resolvedUnitPriceMinor, currency, priceSource, matchedPriceListUid, appliedTierMinQty, belowMoq) to Order/OrderItem + Invoice/InvoiceItem (entities + Flyway both vendors) so the `/sync` POST **persists the client snapshot verbatim** (no re-resolution).
 
 **Checkpoint**: channel + money + seam ready.
@@ -72,10 +72,10 @@ description: "Task list for Commerce Pricing Engine (009)"
 
 **Independent Test**: offline, create a WHOLESALE list for group Distributor with a tiered item + MOQ; save → row `synced=false`; on reconnect it pushes via `PricingSyncDelegate` and appears server-side.
 
-- [ ] T020a [US1] App `PriceListRepository` (local-only): write to Room `synced=false` + `syncStateDao.markPendingPush(SyncEntity.PRICE_LIST, now)`; soft-delete = `active=false, synced=false`. No `Api` in repo (offline-sync rule).
-- [ ] T020b [US1] App admin ViewModels + screens (`feature/pricing/.../ui`): price-list list, create/edit (name, channel, targeting dims, currency, priority, validity), item editor (product/variant, unitPrice, MOQ, tiers), geo-zone picker/editor, attribute-predicate editor. MVI + `metroViewModel()`; `stringResource` only.
-- [ ] T020c [US1] Wire `PriceListRoute`/entry providers + nav into app admin/settings area; tier-validation mirrored client-side (contiguous/non-overlapping) before save.
-- [ ] T020d [P] [US1] Compile all 3 app targets.
+- [X] T020a [US1] App `PriceListRepository` (local-only): write to Room `synced=false` + `syncStateDao.markPendingPush(SyncEntity.PRICE_LIST, now)`; soft-delete = `active=false, synced=false`. No `Api` in repo (offline-sync rule).
+- [X] T020b [US1] App admin ViewModels + screens (`feature/pricing/.../ui`): price-list list, create/edit (name, channel, targeting dims, currency, priority, validity), item editor (product/variant, unitPrice, MOQ, tiers), geo-zone picker/editor, attribute-predicate editor. MVI + `metroViewModel()`; `stringResource` only.
+- [X] T020c [US1] Wire `PriceListRoute`/entry providers + nav into app admin/settings area; tier-validation mirrored client-side (contiguous/non-overlapping) before save.
+- [X] T020d [P] [US1] Compile all 3 app targets.
 
 **Checkpoint**: merchant can fully manage price lists from the app, offline; pushes on reconnect.
 
@@ -90,14 +90,14 @@ description: "Task list for Commerce Pricing Engine (009)"
 **Independent Test**: offline, select Distributor + product qty 50 → line auto-fills ₹210 from local read model; change qty to 5 → ₹240 + MOQ warning.
 
 ### Implementation (app + backend sync)
-- [ ] T021 [US1→app] Backend price-list `/sync` controller `GET/POST /pricing/v1/price-lists/sync` (offline-sync contract: snake_case params, soft-deletes in feed, UID-keyed bulk upsert).
-- [ ] T022 [P] [US3] App Room: `PriceListEntity`, `PriceListItemEntity` (+ tiers JSON) in `feature/pricing/.../data/db`; DB factory `@SingleIn(WorkspaceScope::class)` per platform.
-- [ ] T023 [P] [US3] App pricing `/sync` API + `PricingSyncDelegate` (`@ContributesIntoMap(WorkspaceScope::class)`, `@SyncEntityKey(PRICE_LIST)`) — **push + pull** (push owns the admin-created lists); add `PRICE_LIST` to `SyncEntity`.
-- [ ] T024 [US3] App `PriceResolver` (pure, offline) mirroring backend precedence/tiers/MOQ over the Room read model; `Money`-typed.
-- [ ] T025 [US3] Wire `OrderViewModel`/`InvoiceViewModel` line entry: replace `productPrice × unitMultiplier` with `PriceResolver.resolve(...)` (respect `priceOverridden`); re-resolve on qty/variant/unit change.
+- [X] T021 [US1→app] Backend price-list `/sync` controller `GET/POST /pricing/v1/price-lists/sync` (offline-sync contract: snake_case params, soft-deletes in feed, UID-keyed bulk upsert).
+- [X] T022 [P] [US3] App Room: `PriceListEntity`, `PriceListItemEntity` (+ tiers JSON) in `feature/pricing/.../data/db`; DB factory `@SingleIn(WorkspaceScope::class)` per platform.
+- [X] T023 [P] [US3] App pricing `/sync` API + `PricingSyncDelegate` (`@ContributesIntoMap(WorkspaceScope::class)`, `@SyncEntityKey(PRICE_LIST)`) — **push + pull** (push owns the admin-created lists); add `PRICE_LIST` to `SyncEntity`.
+- [X] T024 [US3] App `PriceResolver` (pure, offline) mirroring backend precedence/tiers/MOQ over the Room read model; `Money`-typed.
+- [X] T025 [US3] Wire `OrderViewModel`/`InvoiceViewModel` line entry: replace `productPrice × unitMultiplier` with `PriceResolver.resolve(...)` (respect `priceOverridden`); re-resolve on qty/variant/unit change.
 - [ ] T026 [US3] Snapshot fields on `OrderItem`/`InvoiceItem` (+ Room entities + migration): `resolvedUnitPriceMinor`, `currency`, `priceSource`, `matchedPriceListUid`, `appliedTierMinQty`, `belowMoq`.
 - [ ] T027 [US3] Surface MOQ warning in order/invoice UI (warn for B2B rep, not block).
-- [ ] T028 [P] [US3] Compile all 3 targets (`androidApp:compileDebugKotlinAndroid`, `shared:compileKotlinIosSimulatorArm64`, `desktopApp:compileKotlin`).
+- [X] T028 [P] [US3] Compile all 3 targets (`androidApp:compileDebugKotlinAndroid`, `shared:compileKotlinIosSimulatorArm64`, `desktopApp:compileKotlin`).
 
 **Checkpoint**: app resolves wholesale tier prices offline in order/invoice entry.
 
@@ -127,8 +127,8 @@ description: "Task list for Commerce Pricing Engine (009)"
 
 ## Phase 6: User Story 4 — Currency travels with every price (P3)
 
-- [ ] T036 [P] [US4] Enforce `Money` on all pricing DTOs; contract test rejects bare-number money (SC-005).
-- [ ] T037 [P] [US4] Single-currency-per-list validation (FR-010); catalog-fallback tagged workspace base currency.
+- [X] T036 [P] [US4] Enforce `Money` on all pricing DTOs; contract test rejects bare-number money (SC-005).
+- [X] T037 [P] [US4] Single-currency-per-list validation (FR-010); catalog-fallback tagged workspace base currency.
 
 ---
 
@@ -136,8 +136,8 @@ description: "Task list for Commerce Pricing Engine (009)"
 
 - [ ] T038 Regression suite: no price list configured → identical totals to today (SC-002).
 - [ ] T039 Parity test: **merchant-app (Room) resolver vs ecom server-side (projection) resolver** produce identical effective prices for identical inputs (SC-006); plus a test that `order`/`invoice` `/sync` persists the pushed snapshot verbatim (no re-resolution).
-- [ ] T040 [P] `data-model.md`, `quickstart.md`, `contracts/` finalized; update CLAUDE.md "mysql only" stale note → Postgres primary.
-- [ ] T041 [P] `docs/guides/offline-sync-contract.md`: add `price_list` to syncable resources.
+- [X] T040 [P] `data-model.md`, `quickstart.md`, `contracts/` finalized; update CLAUDE.md "mysql only" stale note → Postgres primary.
+- [X] T041 [P] `docs/guides/offline-sync-contract.md`: add `price_list` to syncable resources.
 - [ ] T042 Run `./gradlew :ampairs_service:flywayInfo` + `buildAll`/`testAll`; app compile-3-targets.
 
 ---
