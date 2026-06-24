@@ -33,7 +33,7 @@ description: "Task list for Commerce Pricing Engine (009)"
 - [ ] T007 [P] App `Money(minorUnits: Long, currency: String)` value class in `feature/pricing` (or shared) with `kotlinx-serialization`.
 - [X] T008 Add `defaultChannel: SalesChannel = RETAIL` to ecom `Storefront` (entity + migration + DTO).
 - [ ] T009 Confirm/extend the 010 price-resolution **seam in the merchant app**: the single call site in the app `order`/`invoice` line build that reads `product.sellingPrice` → refactor to an injectable `PriceResolver` port (client-side; no behavior change yet). **No backend resolution wiring** — merchant orders are resolved on the client.
-- [ ] T009a Backend `order`/`invoice`: add price-snapshot columns (resolvedUnitPriceMinor, currency, priceSource, matchedPriceListUid, appliedTierMinQty, belowMoq) to Order/OrderItem + Invoice/InvoiceItem (entities + Flyway both vendors) so the `/sync` POST **persists the client snapshot verbatim** (no re-resolution).
+- [X] T009a Backend `order`/`invoice`: add price-snapshot columns (resolvedUnitPriceMinor, currency, priceSource, matchedPriceListUid, appliedTierMinQty, belowMoq) to Order/OrderItem + Invoice/InvoiceItem (entities + Flyway both vendors) so the `/sync` POST **persists the client snapshot verbatim** (no re-resolution).
 
 **Checkpoint**: channel + money + seam ready.
 
