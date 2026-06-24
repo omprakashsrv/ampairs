@@ -191,3 +191,13 @@ journalctl -u ampairs -f
 3. Use Conventional Commits: `feat(module):`, `fix(module):`, `refactor(module):` — subject ≤72 chars
 4. Run `./gradlew ciBuild` and ensure it passes before opening a PR
 5. For features > 30 min, start with `/speckit.specify` to generate a spec first
+
+---
+
+## License
+
+**Source-available, noncommercial** — licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE.md).
+
+You may use, modify, and share this software for any **noncommercial** purpose. **Commercial use is not permitted** — including use by or for a business to generate revenue, sell the software, or charge customers for products or services built with it. This is *not* an OSI-approved open-source license (it restricts commercial use).
+
+For a commercial license, contact the copyright holder. Copyright © 2026 Om Prakash.
