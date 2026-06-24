@@ -17,10 +17,10 @@ description: "Task list for Commerce Pricing Engine (009)"
 
 ## Phase 1: Setup (Shared Infrastructure)
 
-- [ ] T001 Create backend module `ampairs/pricing/` (Gradle module, `build.gradle.kts`, base package `com.ampairs.pricing`); register in `settings.gradle.kts` + `ampairs_service` deps.
-- [ ] T002 Add `pricing` to `migrationModules` in `ampairs_service/build.gradle.kts`; create empty `pricing/src/main/resources/db/migration/{mysql,postgresql}/` dirs.
+- [X] T001 Create backend module `ampairs/pricing/` (Gradle module, `build.gradle.kts`, base package `com.ampairs.pricing`); register in `settings.gradle.kts` + `ampairs_service` deps.
+- [X] T002 Add `pricing` to `migrationModules` in `ampairs_service/build.gradle.kts`; create empty `pricing/src/main/resources/db/migration/{mysql,postgresql}/` dirs.
 - [ ] T003 [P] Create app module `ampairs-app/feature/pricing/` (KMP module + `build.gradle.kts`, composeResources, packageOfResClass pin); register in `settings.gradle.kts`.
-- [ ] T004 [P] Run `./gradlew :ampairs_service:flywayInfo` to pick the next `V1.0.x` version for pricing migrations.
+- [X] T004 [P] Run `./gradlew :ampairs_service:flywayInfo` to pick the next `V1.0.x` version for pricing migrations.
 
 ---
 
@@ -28,8 +28,8 @@ description: "Task list for Commerce Pricing Engine (009)"
 
 **⚠️ No user-story work begins until this is done.**
 
-- [ ] T005 Define `SalesChannel { RETAIL, WHOLESALE }` enum in **`core`** (shared) so ecom/order/invoice/pricing/promotion all reference it without cross-feature coupling.
-- [ ] T006 [P] Backend `Money` representation: serializer for `{amount_minor: Long, currency}`; `BigDecimal(19,4)`+`currency CHAR(3)` column convention (helper/converter).
+- [X] T005 Define `SalesChannel { RETAIL, WHOLESALE }` enum in **`core`** (shared) so ecom/order/invoice/pricing/promotion all reference it without cross-feature coupling.
+- [X] T006 [P] Backend `Money` representation: serializer for `{amount_minor: Long, currency}`; `BigDecimal(19,4)`+`currency CHAR(3)` column convention (helper/converter).
 - [ ] T007 [P] App `Money(minorUnits: Long, currency: String)` value class in `feature/pricing` (or shared) with `kotlinx-serialization`.
 - [ ] T008 Add `defaultChannel: SalesChannel = RETAIL` to ecom `Storefront` (entity + migration + DTO).
 - [ ] T009 Confirm/extend the 010 price-resolution **seam in the merchant app**: the single call site in the app `order`/`invoice` line build that reads `product.sellingPrice` → refactor to an injectable `PriceResolver` port (client-side; no behavior change yet). **No backend resolution wiring** — merchant orders are resolved on the client.
@@ -46,16 +46,16 @@ description: "Task list for Commerce Pricing Engine (009)"
 **Independent Test**: create list (WHOLESALE, group Distributor), add tiered item (1–9 ₹240/10–49 ₹225/50+ ₹210, MOQ 10); resolve qty 5/10/60 → ₹240/₹225/₹210, `belowMoq` at 5; product with no list → `CATALOG_FALLBACK`.
 
 ### Implementation (backend)
-- [ ] T010 [P] [US1] `PriceList` entity (`OwnableBaseDomain`): uid, name, channel, structured targeting (customerGroupId?, customerType?, customerId?, brandId?, categoryId?, productGroupId?, geoZoneId?), attributePredicates(JSON)?, currency, priority, status, startsAt?, endsAt?, active — `pricing/domain/model/`.
-- [ ] T011 [P] [US1] `PriceListItem` entity + `PriceTier` (JSON list: minQty, unitPrice): productId, variantSku?, unitPrice, moq?, tiers — `pricing/domain/model/`.
-- [ ] T011a [P] [US1] `GeoZone` entity (`OwnableBaseDomain`) **owned by the `pricing` module**: uid, name, members (pincodes/ranges/states) + repo + DTOs + Flyway + a **public service interface** (`GeoZoneService.zoneForPincode(pincode)`); `AttributePredicate` value type `{field, operator, value}`. Promotion (015) references `GeoZone` by uid via this service (015 already depends on 009). `GeoZone` is also synced to the app (via the pricing `/sync` so admins manage zones offline) and projected to ecom (T030a).
-- [ ] T012 [US1] Flyway `V1.0.x__create_pricing_tables.sql` in **both** mysql + postgresql (price_list, price_list_item; indexes on owner_id, channel, customer_group_id, product_id).
-- [ ] T013 [P] [US1] Repositories: `PriceListRepository`, `PriceListItemRepository` (`@EntityGraph` list→items).
-- [ ] T014 [P] [US1] DTOs + mappers: `PriceListRequest/Response`, `PriceListItemRequest/Response`, `PriceResolutionResponse` (`pricing/domain/dto/`).
-- [ ] T015 [US1] `PricingResolutionService` PUBLIC interface + impl: `resolve(customerId?, channel, productId, variantSku?, qty, pincode?, workspace)` → effectiveUnitPrice, source (PRICE_LIST|CATALOG_FALLBACK), matchedPriceListUid, appliedTierMinQty, belowMoq. Map pincode→geo-zone; structured-dimension match first, attribute-predicate match last (lowest precedence); precedence per FR-004 + 2026-06-23 clarify; variant>base; deterministic.
-- [ ] T016 [US1] Tier validation (contiguous, non-overlapping; >top tier uses top) at save (FR-014).
-- [ ] T017 [US1] `PriceListService` (CRUD, activate/deactivate, soft-delete) + `PriceListController` `/pricing/v1/price-lists` (ApiResponse, tenant at controller).
-- [ ] T018 [US1] Catalog fallback path: when no active list matches, return `product.sellingPrice` tagged workspace base currency (FR-005).
+- [X] T010 [P] [US1] `PriceList` entity (`OwnableBaseDomain`): uid, name, channel, structured targeting (customerGroupId?, customerType?, customerId?, brandId?, categoryId?, productGroupId?, geoZoneId?), attributePredicates(JSON)?, currency, priority, status, startsAt?, endsAt?, active — `pricing/domain/model/`.
+- [X] T011 [P] [US1] `PriceListItem` entity + `PriceTier` (JSON list: minQty, unitPrice): productId, variantSku?, unitPrice, moq?, tiers — `pricing/domain/model/`.
+- [X] T011a [P] [US1] `GeoZone` entity (`OwnableBaseDomain`) **owned by the `pricing` module**: uid, name, members (pincodes/ranges/states) + repo + DTOs + Flyway + a **public service interface** (`GeoZoneService.zoneForPincode(pincode)`); `AttributePredicate` value type `{field, operator, value}`. Promotion (015) references `GeoZone` by uid via this service (015 already depends on 009). `GeoZone` is also synced to the app (via the pricing `/sync` so admins manage zones offline) and projected to ecom (T030a).
+- [X] T012 [US1] Flyway `V1.0.x__create_pricing_tables.sql` in **both** mysql + postgresql (price_list, price_list_item; indexes on owner_id, channel, customer_group_id, product_id).
+- [X] T013 [P] [US1] Repositories: `PriceListRepository`, `PriceListItemRepository` (`@EntityGraph` list→items).
+- [X] T014 [P] [US1] DTOs + mappers: `PriceListRequest/Response`, `PriceListItemRequest/Response`, `PriceResolutionResponse` (`pricing/domain/dto/`).
+- [X] T015 [US1] `PricingResolutionService` PUBLIC interface + impl: `resolve(customerId?, channel, productId, variantSku?, qty, pincode?, workspace)` → effectiveUnitPrice, source (PRICE_LIST|CATALOG_FALLBACK), matchedPriceListUid, appliedTierMinQty, belowMoq. Map pincode→geo-zone; structured-dimension match first, attribute-predicate match last (lowest precedence); precedence per FR-004 + 2026-06-23 clarify; variant>base; deterministic.
+- [X] T016 [US1] Tier validation (contiguous, non-overlapping; >top tier uses top) at save (FR-014).
+- [X] T017 [US1] `PriceListService` (CRUD, activate/deactivate, soft-delete) + `PriceListController` `/pricing/v1/price-lists` (ApiResponse, tenant at controller).
+- [X] T018 [US1] Catalog fallback path: when no active list matches, return `product.sellingPrice` tagged workspace base currency (FR-005).
 
 ### Tests
 - [ ] T019 [P] [US1] Resolution unit tests (qty 5/10/60, MOQ flag, fallback, overlap precedence).
