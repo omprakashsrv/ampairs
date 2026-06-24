@@ -58,9 +58,9 @@ description: "Task list for Commerce Pricing Engine (009)"
 - [X] T018 [US1] Catalog fallback path: when no active list matches, return `product.sellingPrice` tagged workspace base currency (FR-005).
 
 ### Tests
-- [ ] T019 [P] [US1] Resolution unit tests (qty 5/10/60, MOQ flag, fallback, overlap precedence).
-- [ ] T020 [P] [US1] Tier-validation test (gap/overlap rejected).
-- [ ] T020e [P] [US1] Precedence test (SC-010): geo-zone list resolves for a customer/delivery pincode; an attribute-predicate match never overrides a structured-dimension match; full precedence chain (per-customer > group/channel > product-group/brand/category > geo-zone/customer-type > predicate > fallback).
+- [X] T019 [P] [US1] Resolution unit tests (qty 5/10/60, MOQ flag, fallback, overlap precedence).
+- [X] T020 [P] [US1] Tier-validation test (gap/overlap rejected).
+- [X] T020e [P] [US1] Precedence test (SC-010): geo-zone list resolves for a customer/delivery pincode; an attribute-predicate match never overrides a structured-dimension match; full precedence chain (per-customer > group/channel > product-group/brand/category > geo-zone/customer-type > predicate > fallback).
 
 **Checkpoint**: backend can resolve a wholesale tiered price; fallback verified.
 
