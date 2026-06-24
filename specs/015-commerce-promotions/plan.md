@@ -113,13 +113,15 @@ Existing modules touched additively; no promotion configured = today's totals.
 
 ## Phase 0 — Research
 
-- **Stacking / conflictPolicy**: each `Promotion` has `stackable: Boolean` + `priority: Int` +
-  workspace `conflictPolicy` (`HIGHEST_PRIORITY` | `BEST_FOR_CUSTOMER`). Non-stackable offers are
-  mutually exclusive; engine returns the ordered applied set for audit. **Default**: coupons
-  non-stackable with each other but stackable with one auto cart-discount unless flagged — confirm in
-  `/speckit.clarify`.
-- **Free-goods tax policy**: per-promotion `freeGoodsTaxPolicy` (`ZERO_RATED` | `TAXABLE_AT_MRP`);
-  GST-on-free-goods is a compliance edge — default `TAXABLE_AT_MRP`, confirm with finance.
+- **Stacking / conflictPolicy** (resolved 2026-06-23): each `Promotion` has `stackable: Boolean` +
+  `priority: Int` + workspace `conflictPolicy` (default `HIGHEST_PRIORITY`, tiebreak
+  `BEST_FOR_CUSTOMER`). Non-stackable offers are mutually exclusive; coupons non-stackable with each
+  other but may stack with one auto-promotion unless flagged. Engine returns the ordered applied set.
+- **Free-goods tax policy** (resolved 2026-06-24): per-promotion `freeGoodsTaxPolicy` (`ZERO_RATED` |
+  `TAXABLE_AT_MRP`); **default `ZERO_RATED` — no GST on free goods** (₹0 free-goods lines carry no tax).
+- **Coupons online-only** (resolved 2026-06-24): the merchant app never applies/redeems a coupon
+  offline — offline coupon entry returns `REQUIRES_CONNECTION`; the server validates + atomically
+  redeems online. Auto-promotions (cart/BOGO/volume/bundle) still apply offline. Removes double-spend.
 - **Atomic usage**: `CouponRedemption` unique `(coupon_uid, customer_id, order_ref)` + transactional
   global-count check; reject `GLOBAL_LIMIT_REACHED`/`USAGE_LIMIT_REACHED` deterministically.
 - **Apportionment**: volume-scheme/BOGO discounts apportioned across scope lines, rounding absorbed by

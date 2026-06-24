@@ -26,7 +26,7 @@ description: "Task list for Commerce Promotions & Offers (015)"
 
 ## Phase 2: Foundational (BLOCKS all stories)
 
-- [ ] T005 `PromotionType { CART_DISCOUNT, COUPON, BOGO, VOLUME_SCHEME, BUNDLE }`; `CouponRejectionReason` enum (BELOW_MIN_CART, INELIGIBLE_GROUP, INELIGIBLE_ZONE, EXPIRED, USAGE_LIMIT_REACHED, GLOBAL_LIMIT_REACHED, ...).
+- [ ] T005 `PromotionType { CART_DISCOUNT, COUPON, BOGO, VOLUME_SCHEME, BUNDLE }`; `CouponRejectionReason` enum (BELOW_MIN_CART, INELIGIBLE_GROUP, INELIGIBLE_ZONE, EXPIRED, USAGE_LIMIT_REACHED, GLOBAL_LIMIT_REACHED, REQUIRES_CONNECTION, ...); `FreeGoodsTaxPolicy { ZERO_RATED (default), TAXABLE_AT_MRP }`.
 - [ ] T006 `Promotion` entity (`OwnableBaseDomain`): uid, name, type, channels(Set<SalesChannel>), status, priority, stackable, conflictPolicy, startsAt?, endsAt?, currency, fundingBrandId?, active.
 - [ ] T007 [P] `PromotionEligibility` (embedded/JSON): customerGroupId?, customerType?, customerId?, brandId?, categoryId?, productGroupId?, productId?/variantSku?, geoZoneId?, minQty?, minCartValue?, attributePredicates(JSON)?. Reuse shared `GeoZone` + `AttributePredicate` from feature 009 (no new geo model).
 - [ ] T008 [P] `PromotionEffect` (JSON, type-specific): CART_DISCOUNT {percent?/flat?, scope}; COUPON {code, effect, freeShipping?}; BOGO {triggerProduct/variantSku, triggerQty, freeProduct/variantSku, freeQty, perOrderCap?, freeGoodsTaxPolicy}; VOLUME_SCHEME {aggregateBy(BRAND|CATEGORY), basis(QTY|VALUE), slabs[{minThreshold, percent}]}.
@@ -91,11 +91,11 @@ description: "Task list for Commerce Promotions & Offers (015)"
 - [ ] T022 [P] [US2] `CouponRepository`, `CouponRedemptionRepository`; `CouponApplyRequest/Response` DTOs.
 - [ ] T023 [US2] `CouponService`: normalize code (upper/trim), validate eligibility + window, **atomic** redemption (unique constraint + transactional global count); return `CouponRejectionReason` on failure (FR-007, NFR-005).
 - [ ] T024 [US2] Extend `PromotionEngine.apply` to accept an entered coupon code; merge coupon effect with stacking/conflictPolicy (FR-005); record redemption only on order placement (not on preview).
-- [ ] T025 [US2] App: coupon entry in order/invoice + `feature/ecom` cart; offline preview validates eligibility from local read model; redemption recorded server-side at sync/checkout (avoid offline double-spend — reconcile on push).
+- [ ] T025 [US2] App coupon entry in order/invoice + `feature/ecom` cart — **online-only**: if offline, reject with `REQUIRES_CONNECTION` (auto-promotions still apply); when online, call the server to validate eligibility + atomically redeem (no offline preview/redeem, no double-spend). Coupon snapshot recorded once the server confirms.
 - [ ] T026 [P] [US2] Compile 3 targets.
 
 ### Tests
-- [ ] T027 [P] [US2] Eligibility + limit matrix; **concurrent redemption** test — no over-redemption (SC-004).
+- [ ] T027 [P] [US2] Eligibility + limit matrix; **concurrent redemption** test — no over-redemption (SC-004); **offline coupon rejected** with `REQUIRES_CONNECTION` (auto-promotions still apply).
 
 **Checkpoint**: coupons validated + atomically redeemed in store and (later) online.
 
@@ -109,7 +109,7 @@ description: "Task list for Commerce Promotions & Offers (015)"
 
 ### Implementation
 - [ ] T028 [US3] `PromotionEngine` BOGO path: compute floor(qty/triggerQty), emit `FreeGoodsLine` (qty, unitPriceMinor=0, isFreeGood, sourcePromotionUid), honor `perOrderCap`; different-SKU support; out-of-stock free SKU → flag not drop.
-- [ ] T029 [US3] Free-goods tax policy (`ZERO_RATED` | `TAXABLE_AT_MRP`) fed deterministically into tax calc (both repos).
+- [ ] T029 [US3] Free-goods tax policy (`ZERO_RATED` default — no GST on free goods | `TAXABLE_AT_MRP`) fed deterministically into tax calc (both repos).
 - [ ] T030 [US3] Persist/snapshot free-goods lines as order/invoice/cart line items flagged `isFreeGood` (+ `fundingBrandId`); ensure they render in PDF/checkout.
 - [ ] T031 [US3] App `PromotionEngine` BOGO mirror + UI: free lines shown distinctly in order/invoice + ecom cart; compile 3 targets.
 

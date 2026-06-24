@@ -64,6 +64,17 @@ catalog, storefront, cart, or checkout.
   **server-side** at cart/checkout (untrusted device). Coupon redemption is recorded server-side at
   checkout (online) or at sync/push reconcile (merchant), preserving atomic usage limits either way.
 
+### Session 2026-06-24 (clarify — free-goods GST & offline coupons)
+
+- Q: GST treatment for free goods (BOGO)? → A: **No GST on free goods** — `freeGoodsTaxPolicy` default
+  is **`ZERO_RATED`** (free-goods lines are ₹0 and carry no tax) for both in-store and online; the
+  policy field is retained for future flexibility but ships zero-rated.
+- Q: Can coupons be applied offline in the merchant app? → A: **No — coupons are online-only.**
+  Auto-promotions (cart discount, BOGO, volume scheme, bundle) apply offline from the synced
+  read-model, but **coupon codes require connectivity** so the server validates eligibility + enforces
+  atomic usage. Offline coupon entry is rejected with `REQUIRES_CONNECTION` (this removes the offline
+  double-spend risk entirely).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 — Merchant runs line & cart discounts in store ordering/invoicing (Priority: P1)
@@ -129,6 +140,9 @@ per-customer limit).
    rejected with reason `GLOBAL_LIMIT_REACHED`.
 6. **Given** the coupon window has passed, **When** it is applied, **Then** it is rejected with reason
    `EXPIRED`.
+7. **Given** the merchant app is **offline**, **When** a coupon code is entered on an order/invoice,
+   **Then** it is rejected with reason `REQUIRES_CONNECTION` and not applied (auto-promotions still
+   apply); the coupon can be applied once connectivity returns.
 
 ---
 
@@ -231,8 +245,10 @@ and confirm an already-checked-out order keeps the snapshot.
   tier/slab). An offer never re-opens price resolution; it only adds discount/free-goods lines.
 - **Free-goods out of stock**: if a free-goods SKU is unavailable, the scheme is flagged (warn for B2B
   rep, block/substitute per storefront policy) — never silently dropped.
-- **Free-goods tax treatment**: the policy (zero-rated vs taxable at MRP) is explicit and consistent
-  across in-store and online; GST on free goods is a known compliance edge.
+- **Free-goods tax treatment**: free goods carry **no GST** — `freeGoodsTaxPolicy` default is
+  `ZERO_RATED` (the field stays configurable for future cases), applied consistently in-store and online.
+- **Offline coupon entry**: a coupon code entered while the merchant app is offline is **rejected**
+  with `REQUIRES_CONNECTION` (auto-promotions still apply) — coupons are never applied/redeemed offline.
 - **Rounding**: apportioned scheme discounts must reconcile to the offer total to the minor unit (no
   ±1 paise drift); the line that absorbs rounding is deterministic.
 - **Negative/zero totals**: stacked offers can never drive a line or order total below zero; clamp and
@@ -279,10 +295,13 @@ and confirm an already-checked-out order keeps the snapshot.
   (zero regression for merchants who configure no promotions).
 - **FR-007**: Coupons MUST validate eligibility (channel, group/customer, min-cart, brand/category,
   validity window) and **usage limits** (per-customer and global), returning a specific reason on
-  rejection. Usage counting MUST be **atomic** (no over-redemption under concurrency).
+  rejection. Usage counting MUST be **atomic** (no over-redemption under concurrency). Coupon
+  validation/redemption is **online-only** — the merchant app MUST NOT apply or redeem a coupon
+  offline; offline coupon entry is rejected with `REQUIRES_CONNECTION`.
 - **FR-008**: BOGO/free-goods MUST add explicit **free-goods lines** (`isFreeGood = true`, unit price
   ₹0, `sourcePromotionUid`), honoring trigger ratios (floor(qty/triggerQty)) and any per-order cap,
-  with a configurable, deterministic **free-goods tax policy**.
+  with a configurable, deterministic **free-goods tax policy** (default **`ZERO_RATED`** — no GST on
+  free goods).
 - **FR-009**: Volume/value schemes MUST aggregate qty or value over the offer's scope (brand/category)
   within one order, select the achieved slab, and **apportion** the discount across the scope's lines
   before tax, reconciling to the offer total to the minor unit.
@@ -308,9 +327,10 @@ and confirm an already-checked-out order keeps the snapshot.
   and MUST never leak across workspaces.
 - **FR-017**: Every monetary value stored/returned MUST carry an explicit **ISO-4217 currency**
   (`Money`); default `INR`.
-- **FR-018**: The KMP app MUST resolve and apply offers **offline** from a locally projected read
-  model (offers + coupons pulled via the `/sync` contract), so in-store order/invoice entry works
-  without connectivity; snapshots sync per the offline-first rules.
+- **FR-018**: The KMP app MUST apply **auto-promotions** (cart discount, BOGO, volume scheme, bundle)
+  **offline** from a locally projected read model (pulled via the `/sync` contract), so in-store
+  order/invoice entry works without connectivity; snapshots sync per the offline-first rules.
+  **Coupons are exempt** — they require online validation (FR-007) and MUST NOT be applied offline.
 - **FR-019**: Stacked offers MUST never drive any line or order total below zero (clamp + flag).
 - **FR-020**: Brand-funded schemes (BOGO/volume) MUST record **funding/attribution** metadata
   (e.g. `fundingBrandId`) on the snapshot for downstream settlement reporting.
