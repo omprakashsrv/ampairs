@@ -89,6 +89,11 @@ class CheckoutService(
             li.unitPrice = item.unitPrice
             li.quantityOrdered = item.quantity
             li.lineTotal = item.unitPrice.multiply(java.math.BigDecimal(item.quantity))
+            // Carry the price-resolution snapshot from cart → order line (honored even if a list is later edited).
+            li.resolvedUnitPriceMinor = item.resolvedUnitPriceMinor
+            li.currency = item.currency
+            li.priceSource = item.priceSource
+            li.matchedPriceListUid = item.matchedPriceListUid
             li
         }
         orderLineItemRepository.saveAll(lineItems)

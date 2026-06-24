@@ -31,7 +31,7 @@ description: "Task list for Commerce Pricing Engine (009)"
 - [X] T005 Define `SalesChannel { RETAIL, WHOLESALE }` enum in **`core`** (shared) so ecom/order/invoice/pricing/promotion all reference it without cross-feature coupling.
 - [X] T006 [P] Backend `Money` representation: serializer for `{amount_minor: Long, currency}`; `BigDecimal(19,4)`+`currency CHAR(3)` column convention (helper/converter).
 - [ ] T007 [P] App `Money(minorUnits: Long, currency: String)` value class in `feature/pricing` (or shared) with `kotlinx-serialization`.
-- [ ] T008 Add `defaultChannel: SalesChannel = RETAIL` to ecom `Storefront` (entity + migration + DTO).
+- [X] T008 Add `defaultChannel: SalesChannel = RETAIL` to ecom `Storefront` (entity + migration + DTO).
 - [ ] T009 Confirm/extend the 010 price-resolution **seam in the merchant app**: the single call site in the app `order`/`invoice` line build that reads `product.sellingPrice` → refactor to an injectable `PriceResolver` port (client-side; no behavior change yet). **No backend resolution wiring** — merchant orders are resolved on the client.
 - [ ] T009a Backend `order`/`invoice`: add price-snapshot columns (resolvedUnitPriceMinor, currency, priceSource, matchedPriceListUid, appliedTierMinQty, belowMoq) to Order/OrderItem + Invoice/InvoiceItem (entities + Flyway both vendors) so the `/sync` POST **persists the client snapshot verbatim** (no re-resolution).
 
@@ -113,8 +113,8 @@ description: "Task list for Commerce Pricing Engine (009)"
 - [ ] T029 [US2] Kafka `PriceListChangedEvent` publisher in `pricing` on list/item activate/edit/deactivate.
 - [ ] T030 [US2] `EcomPriceListProjection` entity + repo + Kafka listener (reuse `CatalogSyncService` pattern); Flyway in postgresql (+ mysql if needed).
 - [ ] T030a [US2] Project **`GeoZone` membership to the ecom read model** (`EcomGeoZoneProjection` + listener on `GeoZoneChangedEvent`) so storefront server-side resolution can map a delivery/customer pincode → zone without a call into pricing. (Shared by promotions 015.)
-- [ ] T031 [US2] Public resolve endpoint `GET /v1/store/{slug}/price` on `StorefrontPublicController`: runs in `StorefrontTenantInterceptor` context, defaults to `storefront.defaultChannel`, honors authed B2B customer group; resolves from projection only (FR-006/007/008/011).
-- [ ] T032 [US2] Snapshot fields on `EcomCartItem`/`EcomOrderLineItem` (`resolvedUnitPriceMinor`, currency, priceSource, matchedPriceListUid); `CartService.addOrUpdateItem` + `CheckoutService` snapshot the resolved price (FR-009).
+- [X] T031 [US2] Public resolve endpoint `GET /v1/store/{slug}/price` on `StorefrontPublicController`: runs in `StorefrontTenantInterceptor` context, defaults to `storefront.defaultChannel`, honors authed B2B customer group; resolves from projection only (FR-006/007/008/011).
+- [X] T032 [US2] Snapshot fields on `EcomCartItem`/`EcomOrderLineItem` (`resolvedUnitPriceMinor`, currency, priceSource, matchedPriceListUid); `CartService.addOrUpdateItem` + `CheckoutService` snapshot the resolved price (FR-009).
 - [ ] T033 [P] [US2] App `feature/ecom`: catalog/cart price display reads channel/group price from projection; checkout sends snapshot.
 
 ### Tests

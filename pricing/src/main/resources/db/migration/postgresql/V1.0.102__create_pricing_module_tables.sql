@@ -20,7 +20,7 @@ CREATE TABLE price_list (
     product_group_id VARCHAR(200),
     geo_zone_id VARCHAR(200),
     attribute_predicates_json TEXT,
-    currency CHAR(3) NOT NULL DEFAULT 'INR',
+    currency VARCHAR(3) NOT NULL DEFAULT 'INR',
     priority INT NOT NULL DEFAULT 0,
     status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
     starts_at TIMESTAMPTZ,
