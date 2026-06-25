@@ -2,6 +2,7 @@ package com.ampairs.agent.domain.dto
 
 import com.ampairs.agent.domain.model.AiModelDescriptor
 import com.ampairs.agent.domain.model.ModelPlatform
+import com.ampairs.agent.domain.model.ModelRole
 
 /**
  * Public manifest entry for one downloadable on-device model. Mirrors [AiModelDescriptor] but
@@ -14,6 +15,7 @@ data class AiModelResponse(
     val name: String,
     val family: String,
     val parameterLabel: String,
+    val role: ModelRole,
     val fileName: String,
     val sizeBytes: Long,
     val sha256: String?,
@@ -28,6 +30,7 @@ fun AiModelDescriptor.asResponse(): AiModelResponse = AiModelResponse(
     name = name,
     family = family,
     parameterLabel = parameterLabel,
+    role = role,
     fileName = fileName,
     sizeBytes = sizeBytes,
     sha256 = sha256,
