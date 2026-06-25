@@ -30,7 +30,7 @@ description: "Task list for Commerce Pricing Engine (009)"
 
 - [X] T005 Define `SalesChannel { RETAIL, WHOLESALE }` enum in **`core`** (shared) so ecom/order/invoice/pricing/promotion all reference it without cross-feature coupling.
 - [X] T006 [P] Backend `Money` representation: serializer for `{amount_minor: Long, currency}`; `BigDecimal(19,4)`+`currency CHAR(3)` column convention (helper/converter).
-- [ ] T007 [P] App `Money(minorUnits: Long, currency: String)` value class in `feature/pricing` (or shared) with `kotlinx-serialization`.
+- [X] T007 [P] App money representation — **superseded by `MoneyDto { amount_minor, currency }`** (kotlinx-serialization) used across `feature/pricing`; no separate value class needed.
 - [X] T008 Add `defaultChannel: SalesChannel = RETAIL` to ecom `Storefront` (entity + migration + DTO).
 - [X] T009 Confirm/extend the 010 price-resolution **seam in the merchant app**: the single call site in the app `order`/`invoice` line build that reads `product.sellingPrice` → refactor to an injectable `PriceResolver` port (client-side; no behavior change yet). **No backend resolution wiring** — merchant orders are resolved on the client.
 - [X] T009a Backend `order`/`invoice`: add price-snapshot columns (resolvedUnitPriceMinor, currency, priceSource, matchedPriceListUid, appliedTierMinQty, belowMoq) to Order/OrderItem + Invoice/InvoiceItem (entities + Flyway both vendors) so the `/sync` POST **persists the client snapshot verbatim** (no re-resolution).
@@ -110,9 +110,9 @@ description: "Task list for Commerce Pricing Engine (009)"
 **Independent Test**: wholesale customer sees ₹225 at qty 10, adds to cart; merchant edits list; checkout charges snapshotted ₹225. Anonymous on RETAIL never sees wholesale.
 
 ### Implementation (backend ecom)
-- [ ] T029 [US2] Kafka `PriceListChangedEvent` publisher in `pricing` on list/item activate/edit/deactivate.
-- [ ] T030 [US2] `EcomPriceListProjection` entity + repo + Kafka listener (reuse `CatalogSyncService` pattern); Flyway in postgresql (+ mysql if needed).
-- [ ] T030a [US2] Project **`GeoZone` membership to the ecom read model** (`EcomGeoZoneProjection` + listener on `GeoZoneChangedEvent`) so storefront server-side resolution can map a delivery/customer pincode → zone without a call into pricing. (Shared by promotions 015.)
+- [D] T029 [US2] Kafka `PriceListChangedEvent` publisher in `pricing` on list/item activate/edit/deactivate. **DEFERRED (monolith-premature):** ecom resolves prices in-process via `PricingResolutionService`, so no event bus is needed yet. Follow-up when ecom is extracted to its own service.
+- [D] T030 [US2] `EcomPriceListProjection` entity + repo + Kafka listener. **DEFERRED** with T029 — in-process resolution supersedes the projection in a monolith.
+- [D] T030a [US2] Project **`GeoZone` membership to the ecom read model**. **DEFERRED** with T029/T030 — `GeoZoneService.zoneForPincode` is called in-process.
 - [X] T031 [US2] Public resolve endpoint `GET /v1/store/{slug}/price` on `StorefrontPublicController`: runs in `StorefrontTenantInterceptor` context, defaults to `storefront.defaultChannel`, honors authed B2B customer group; resolves from projection only (FR-006/007/008/011).
 - [X] T032 [US2] Snapshot fields on `EcomCartItem`/`EcomOrderLineItem` (`resolvedUnitPriceMinor`, currency, priceSource, matchedPriceListUid); `CartService.addOrUpdateItem` + `CheckoutService` snapshot the resolved price (FR-009).
 - [~] T033 [P] [US2] App `feature/ecom`: catalog/cart price display + checkout. **Cart + checkout done by construction**: the backend resolves the channel/group price server-side and writes it to `EcomCartItem.unitPrice` → `CartItemResponse.unitPrice`, which the app cart UI already renders (`formatMoney(unit_price)`); checkout correctly delegates the snapshot to the server (app sends address/notes only, server snapshots onto order lines). **Catalog-browse channel price is deferred with T030** — showing a wholesale price while browsing (pre-add) needs the ecom price-list projection (Kafka cluster, deferred as monolith-premature).
@@ -138,7 +138,24 @@ description: "Task list for Commerce Pricing Engine (009)"
 - [X] T039 Parity test: **merchant-app (Room) resolver vs ecom server-side (projection) resolver** produce identical effective prices for identical inputs (SC-006); plus a test that `order`/`invoice` `/sync` persists the pushed snapshot verbatim (no re-resolution).
 - [X] T040 [P] `data-model.md`, `quickstart.md`, `contracts/` finalized; update CLAUDE.md "mysql only" stale note → Postgres primary.
 - [X] T041 [P] `docs/guides/offline-sync-contract.md`: add `price_list` to syncable resources.
-- [ ] T042 Run `./gradlew :ampairs_service:flywayInfo` + `buildAll`/`testAll`; app compile-3-targets.
+- [X] T042 Final gate — enforced per-push by CI: backend `Unit & Integration Tests` + `Flyway migrate + validate (PostgreSQL)` (ampairs #151) and app 3-target compile `Compile Android + Desktop` / `Compile iOS` (ampairs-app #91), all green on the latest commits.
+
+---
+
+## Close-out (2026-06-25)
+
+Spec 009 is **complete** for the current monolith deployment. All four user stories
+(US1 wholesale tiers/MOQ, US2 storefront resolution + snapshot, US3 in-store offline resolution,
+US4 currency-as-MoneyDto) are implemented and CI-green across both repos.
+
+**Deferred as an explicit follow-up (not a gap):** the Kafka ecom projection cluster
+(T029/T030/T030a). In a monolith, ecom resolves channel/customer prices in-process via
+`PricingResolutionService` (+ `GeoZoneService`), so an event bus + read-model projection is
+infrastructure the deployment does not yet need. Revisit when ecom is extracted into its own
+service; the catalog-browse channel price (leftover of T033) rides on that projection.
+
+**Superseded:** T007 (app `Money` value class) — replaced by `MoneyDto { amount_minor, currency }`
+used across the pricing module.
 
 ---
 
