@@ -168,6 +168,11 @@ spring:
   mvc:
     servlet:
       path: /api
+    async:
+      # Streaming model downloads (AiModelController) run for minutes; -1 disables the MVC async
+      # request timeout so large/slow downloads aren't cut off mid-stream (an AsyncRequestTimeoutException
+      # at the default ~30s otherwise aborts the transfer). The socket/client governs the lifetime.
+      request-timeout: -1
   servlet:
     multipart:
       enabled: true
@@ -456,6 +461,14 @@ google:
 firebase:
   enabled: ${FIREBASE_ENABLED:true}
   service-account-key-path: ${FIREBASE_SERVICE_ACCOUNT_KEY_PATH:keys/ampairs-firebase-adminsdk.json}
+
+# On-device AI assistant (agent module)
+agent:
+  # HuggingFace access token used by the model-download proxy (AiModelProxyService) to fetch the
+  # license-gated Gemma .litertlm checkpoints (litert-community/* and google/*). Blank → gated
+  # models return 502 ("requires authentication"). Set AGENT_HF_TOKEN (or HF_TOKEN) to a HuggingFace
+  # token whose account has accepted each model's license. SECRET — never commit a real value.
+  hf-token: ${AGENT_HF_TOKEN:${HF_TOKEN:}}
 
 # Notification Configuration
 notification:
