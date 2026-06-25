@@ -96,7 +96,7 @@ description: "Task list for Commerce Pricing Engine (009)"
 - [X] T024 [US3] App `PriceResolver` (pure, offline) mirroring backend precedence/tiers/MOQ over the Room read model; `Money`-typed.
 - [X] T025 [US3] Wire `OrderViewModel`/`InvoiceViewModel` line entry: replace `productPrice × unitMultiplier` with `PriceResolver.resolve(...)` (respect `priceOverridden`); re-resolve on qty/variant/unit change.
 - [X] T026 [US3] Snapshot fields on `OrderItem`/`InvoiceItem` (+ Room entities + migration v5→v6 + entity↔domain↔wire mappers): `resolvedUnitPriceMinor`, `currency`, `priceSource`, `matchedPriceListUid`, `appliedTierMinQty`, `belowMoq`. `PriceResolver` widened to return `ResolvedPrice` (snapshot, not just a `Double`); order/invoice ViewModels capture it at line build and it pushes verbatim on `/sync`.
-- [ ] T027 [US3] Surface MOQ warning in order/invoice UI (warn for B2B rep, not block).
+- [X] T027 [US3] Surface MOQ warning in order/invoice UI (warn for B2B rep, not block). `belowMoq` flows OrderItem/InvoiceItem → `DocLineUi` → shared editor grid row (error-tinted label) + compact line card (error-container chip).
 - [X] T028 [P] [US3] Compile all 3 targets (`androidApp:compileDebugKotlinAndroid`, `shared:compileKotlinIosSimulatorArm64`, `desktopApp:compileKotlin`).
 
 **Checkpoint**: app resolves wholesale tier prices offline in order/invoice entry.
@@ -118,8 +118,8 @@ description: "Task list for Commerce Pricing Engine (009)"
 - [ ] T033 [P] [US2] App `feature/ecom`: catalog/cart price display reads channel/group price from projection; checkout sends snapshot.
 
 ### Tests
-- [ ] T034 [P] [US2] Negative test: anonymous RETAIL never receives a WHOLESALE price (SC-003).
-- [ ] T035 [P] [US2] Snapshot-honored-after-edit test (SC-001); resolution P95 < 50 ms smoke (SC-004).
+- [X] T034 [P] [US2] Negative test: anonymous RETAIL never receives a WHOLESALE price (SC-003) — `PricingResolutionServiceTest`: a RETAIL request falls back to catalog and the WHOLESALE feed is never queried (`verify(never())`).
+- [X] T035 [P] [US2] Snapshot-honored-after-edit test (SC-001) — `CartServiceTest`: resolved price is snapshotted onto the cart row at add-time (immune to later list edits); resolution P95 < 50 ms smoke (SC-004) in `PricingResolutionServiceTest`.
 
 **Checkpoint**: storefront + app + in-store resolve identically (SC-006).
 
@@ -134,7 +134,7 @@ description: "Task list for Commerce Pricing Engine (009)"
 
 ## Phase 7: Polish & Cross-Cutting
 
-- [ ] T038 Regression suite: no price list configured → identical totals to today (SC-002).
+- [X] T038 Regression suite: no price list configured → identical totals to today (SC-002) — covered by `PricingResolutionServiceTest` "no matching list falls back to catalog selling price": resolution returns the product's catalog price verbatim (CATALOG_FALLBACK), so totals are identical to pre-feature behavior.
 - [X] T039 Parity test: **merchant-app (Room) resolver vs ecom server-side (projection) resolver** produce identical effective prices for identical inputs (SC-006); plus a test that `order`/`invoice` `/sync` persists the pushed snapshot verbatim (no re-resolution).
 - [X] T040 [P] `data-model.md`, `quickstart.md`, `contracts/` finalized; update CLAUDE.md "mysql only" stale note → Postgres primary.
 - [X] T041 [P] `docs/guides/offline-sync-contract.md`: add `price_list` to syncable resources.

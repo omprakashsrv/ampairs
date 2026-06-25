@@ -19,6 +19,8 @@ import org.junit.jupiter.api.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.math.BigDecimal
 
@@ -135,6 +137,48 @@ class PricingResolutionServiceTest {
         val r = service.resolve(req(1) { copy(customerAttributes = mapOf("customer.tier" to "GOLD")) })
         assertEquals("STRUCT", r.matchedPriceListUid)
         assertEquals(22500, r.effectiveUnitPrice.amountMinor)
+    }
+
+    @Test
+    fun `anonymous retail request never receives a wholesale price (SC-003)`() {
+        // A WHOLESALE list exists (₹240 base / tiered down to ₹210), but the buyer is on RETAIL.
+        val wholesale = list("WHOLE") { customerGroupId = "DIST" } // list() defaults channel = WHOLESALE
+        whenever(priceListRepository.findByChannelAndStatusAndActiveTrue(SalesChannel.RETAIL, PriceListStatus.ACTIVE))
+            .thenReturn(emptyList())
+        whenever(priceListRepository.findByChannelAndStatusAndActiveTrue(SalesChannel.WHOLESALE, PriceListStatus.ACTIVE))
+            .thenReturn(listOf(wholesale))
+
+        val r = service.resolve(req(60) { copy(channel = SalesChannel.RETAIL, customerId = null, customerGroupId = null) })
+
+        // The RETAIL buyer falls back to the catalog price — never the wholesale ₹210.
+        assertEquals(PriceSource.CATALOG_FALLBACK, r.source)
+        assertEquals(26000, r.effectiveUnitPrice.amountMinor)
+        assertNull(r.matchedPriceListUid)
+        // Isolation is structural: resolution queries strictly by the request channel, so the
+        // wholesale feed is never even consulted for a RETAIL request.
+        verify(priceListRepository).findByChannelAndStatusAndActiveTrue(SalesChannel.RETAIL, PriceListStatus.ACTIVE)
+        verify(priceListRepository, never()).findByChannelAndStatusAndActiveTrue(SalesChannel.WHOLESALE, PriceListStatus.ACTIVE)
+    }
+
+    @Test
+    fun `in-process resolution stays well under the latency budget (SC-004 smoke)`() {
+        val l = list("PRL1") { customerGroupId = "DIST" }
+        val it = item("PRL1") {
+            moq = BigDecimal(10)
+            tiersJson = PricingJson.write(listOf(PriceTier(BigDecimal(10), BigDecimal("225.00")), PriceTier(BigDecimal(50), BigDecimal("210.00"))))
+        }
+        whenever(priceListRepository.findByChannelAndStatusAndActiveTrue(any(), any())).thenReturn(listOf(l))
+        whenever(priceListItemRepository.findByPriceListIdAndProductIdAndActiveTrue("PRL1", "RICE")).thenReturn(listOf(it))
+
+        val iterations = 2_000
+        repeat(200) { service.resolve(req(60)) } // warm up the JIT before timing
+        val start = System.nanoTime()
+        repeat(iterations) { service.resolve(req(60)) }
+        val avgMs = (System.nanoTime() - start) / 1_000_000.0 / iterations
+
+        // SC-004 targets P95 < 50 ms for the in-process resolve. Assert a generous average ceiling so
+        // the smoke flags only a pathological regression (e.g. accidental O(n^2)), not CI jitter.
+        assertTrue(avgMs < 20.0, "avg in-process resolve was ${avgMs}ms (budget 50ms)")
     }
 
     @Test

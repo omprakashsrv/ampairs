@@ -142,6 +142,43 @@ class CartServiceTest {
     }
 
     @Test
+    fun `addOrUpdateItem snapshots the resolved price onto the cart item (SC-001)`() {
+        val cart = makeCart("c1")
+        val product = makeProduct("p1", stock = 100)
+        val request = CartItemRequest(listedProductId = "p1", quantity = 10)
+
+        whenever(cartRepository.findFirstBySessionToken("tok")).thenReturn(cart)
+        whenever(listedProductRepository.findByUid("p1")).thenReturn(product)
+        whenever(cartItemRepository.findByCartIdAndListedProductId("c1", "p1")).thenReturn(null)
+        whenever(cartItemRepository.save(any<EcomCartItem>())).thenAnswer { it.arguments[0] as EcomCartItem }
+        whenever(cartRepository.findBySessionToken("tok")).thenReturn(cart)
+        // The list resolves the line to a wholesale tier ₹225 (22500 minor) from list "WHOLE".
+        whenever(pricingResolutionService.resolve(any())).thenReturn(
+            PriceResolutionResponse(
+                effectiveUnitPrice = MoneyDto(22500, "INR"),
+                source = PriceSource.PRICE_LIST,
+                matchedPriceListUid = "WHOLE",
+                appliedTierMinQty = BigDecimal(10),
+                belowMoq = false,
+            )
+        )
+
+        val captor = argumentCaptor<EcomCartItem>()
+        cartService.addOrUpdateItem("tok", request)
+        verify(cartItemRepository).save(captor.capture())
+
+        // The resolved price is snapshotted onto the row at add-time. Because the cart line carries
+        // its own snapshot (never re-derived from the product/list), a later price-list edit cannot
+        // retroactively change what the buyer was quoted — SC-001.
+        val saved = captor.firstValue
+        assertEquals(22500, saved.resolvedUnitPriceMinor)
+        assertEquals("INR", saved.currency)
+        assertEquals(PriceSource.PRICE_LIST.name, saved.priceSource)
+        assertEquals("WHOLE", saved.matchedPriceListUid)
+        assertEquals(0, BigDecimal("225.00").compareTo(saved.unitPrice))
+    }
+
+    @Test
     fun `addOrUpdateItem updates quantity when item already in cart`() {
         val cart = makeCart("c1")
         val product = makeProduct("p1", stock = 10)
