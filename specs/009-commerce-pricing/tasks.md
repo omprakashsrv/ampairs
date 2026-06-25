@@ -95,7 +95,7 @@ description: "Task list for Commerce Pricing Engine (009)"
 - [X] T023 [P] [US3] App pricing `/sync` API + `PricingSyncDelegate` (`@ContributesIntoMap(WorkspaceScope::class)`, `@SyncEntityKey(PRICE_LIST)`) — **push + pull** (push owns the admin-created lists); add `PRICE_LIST` to `SyncEntity`.
 - [X] T024 [US3] App `PriceResolver` (pure, offline) mirroring backend precedence/tiers/MOQ over the Room read model; `Money`-typed.
 - [X] T025 [US3] Wire `OrderViewModel`/`InvoiceViewModel` line entry: replace `productPrice × unitMultiplier` with `PriceResolver.resolve(...)` (respect `priceOverridden`); re-resolve on qty/variant/unit change.
-- [ ] T026 [US3] Snapshot fields on `OrderItem`/`InvoiceItem` (+ Room entities + migration): `resolvedUnitPriceMinor`, `currency`, `priceSource`, `matchedPriceListUid`, `appliedTierMinQty`, `belowMoq`.
+- [X] T026 [US3] Snapshot fields on `OrderItem`/`InvoiceItem` (+ Room entities + migration v5→v6 + entity↔domain↔wire mappers): `resolvedUnitPriceMinor`, `currency`, `priceSource`, `matchedPriceListUid`, `appliedTierMinQty`, `belowMoq`. `PriceResolver` widened to return `ResolvedPrice` (snapshot, not just a `Double`); order/invoice ViewModels capture it at line build and it pushes verbatim on `/sync`.
 - [ ] T027 [US3] Surface MOQ warning in order/invoice UI (warn for B2B rep, not block).
 - [X] T028 [P] [US3] Compile all 3 targets (`androidApp:compileDebugKotlinAndroid`, `shared:compileKotlinIosSimulatorArm64`, `desktopApp:compileKotlin`).
 
