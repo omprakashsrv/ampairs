@@ -44,6 +44,7 @@ class ChatProvidersTest {
         allowedModelsCsv = "openrouter/free, google/gemma-4-31b-it:free",
         referer = "",
         title = "Ampairs",
+        disableReasoning = true,
     )
 
     @Test

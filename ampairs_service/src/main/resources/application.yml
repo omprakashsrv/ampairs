@@ -492,6 +492,10 @@ agent:
       # Optional ranking headers (OpenRouter leaderboards); blank → not sent.
       referer: ${OPENROUTER_REFERER:}
       title: ${OPENROUTER_TITLE:Ampairs}
+      # Turn off model reasoning/thinking tokens (default true = reasoning disabled). The structured intent
+      # turn gets no benefit from chain-of-thought, and free reasoning models otherwise add large latency
+      # on every request. Set OPENROUTER_DISABLE_REASONING=false to re-enable for a richer model.
+      disable-reasoning: ${OPENROUTER_DISABLE_REASONING:true}
 
 # Notification Configuration
 notification:

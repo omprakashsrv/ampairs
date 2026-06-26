@@ -2,6 +2,7 @@ package com.ampairs.agent.service
 
 import com.ampairs.agent.domain.dto.ChatCompletionRequest
 import com.ampairs.agent.domain.dto.ChatCompletionResponse
+import com.fasterxml.jackson.annotation.JsonInclude
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.PropertyNamingStrategies
 import java.net.URI
@@ -35,6 +36,10 @@ class OpenRouterChatProvider(
     // Optional OpenRouter ranking headers (appear on their leaderboards). Blank → not sent.
     @Value("\${agent.chat.openrouter.referer:}") private val referer: String,
     @Value("\${agent.chat.openrouter.title:Ampairs}") private val title: String,
+    // Disable model "reasoning"/thinking tokens. The assistant's structured intent turn gets no benefit
+    // from chain-of-thought, and free reasoning models otherwise burn a lot of latency thinking on every
+    // request — so default OFF. Toggle with OPENROUTER_REASONING=true if a richer model needs it.
+    @Value("\${agent.chat.openrouter.disable-reasoning:true}") private val disableReasoning: Boolean,
 ) : ChatProvider {
 
     override val id: String = ID
@@ -48,6 +53,7 @@ class OpenRouterChatProvider(
     // read the response with the tree model, so no jackson-module-kotlin is required.
     private val objectMapper = ObjectMapper().apply {
         propertyNamingStrategy = PropertyNamingStrategies.SNAKE_CASE
+        setSerializationInclusion(JsonInclude.Include.NON_NULL) // omit reasoning when not set
     }
 
     private val httpClient: HttpClient = HttpClient.newBuilder()
@@ -72,6 +78,7 @@ class OpenRouterChatProvider(
             messages = messages,
             maxTokens = request.maxTokens.coerceIn(1, MAX_CHAT_OUTPUT_TOKENS),
             temperature = request.temperature,
+            reasoning = if (disableReasoning) OpenRouterReasoning(enabled = false) else null,
         )
 
         val httpRequest = HttpRequest.newBuilder(URI.create("$baseUrl/chat/completions"))
@@ -115,6 +122,12 @@ private data class OpenAiChatRequest(
     val messages: List<OpenAiMessage>,
     val maxTokens: Int,
     val temperature: Float,
+    // OpenRouter unified reasoning control (omitted when null). `enabled=false` turns reasoning off.
+    val reasoning: OpenRouterReasoning? = null,
+)
+
+private data class OpenRouterReasoning(
+    val enabled: Boolean,
 )
 
 private data class OpenAiMessage(
