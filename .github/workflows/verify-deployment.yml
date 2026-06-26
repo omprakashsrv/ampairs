@@ -1,0 +1,74 @@
+name: Verify Deployment
+
+# Pull-based deployment verification.
+#
+# In the pull model the server-side agent (see docs/deployment/pull-based-deploy.md)
+# polls for new builds and deploys itself — GitHub Actions never SSHes in. This
+# workflow is how CI *observes* the result: it polls the public
+# /api/actuator/info endpoint until production reports the expected commit, then
+# asserts /api/actuator/health is UP.
+#
+# Triggers:
+#   - workflow_dispatch: verify a specific commit is live (manual / called after build)
+#   - schedule:          drift check — reports what is currently deployed
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: 'Commit SHA that should be live (defaults to the checked-out ref)'
+        required: false
+        type: string
+      timeout_seconds:
+        description: 'How long to wait for the commit to appear'
+        required: false
+        default: '300'
+        type: string
+  schedule:
+    # Hourly drift check: surfaces the live version, fails only if the API is down.
+    - cron: '17 * * * *'
+
+jobs:
+  verify:
+    name: Verify live version + health
+    runs-on: ubuntu-latest
+    env:
+      API_DOMAIN: ${{ vars.API_DOMAIN || 'api.ampairs.in' }}
+      EXPECTED_SHA: ${{ inputs.expected_sha || github.sha }}
+      TIMEOUT_SECONDS: ${{ inputs.timeout_seconds || '300' }}
+    steps:
+      - name: Report currently deployed version
+        run: |
+          set -euo pipefail
+          INFO_URL="https://${API_DOMAIN}/api/actuator/info"
+          echo "Querying ${INFO_URL}"
+          BODY=$(curl -fsS --max-time 10 "$INFO_URL")
+          echo "$BODY" | jq '.build // {}'
+          echo "live_commit=$(echo "$BODY" | jq -r '.build.commit // "unknown"')" >> "$GITHUB_OUTPUT"
+
+      - name: Wait for expected commit (dispatch only)
+        if: ${{ github.event_name == 'workflow_dispatch' }}
+        run: |
+          set -euo pipefail
+          INFO_URL="https://${API_DOMAIN}/api/actuator/info"
+          DEADLINE=$(( $(date +%s) + TIMEOUT_SECONDS ))
+          echo "Waiting up to ${TIMEOUT_SECONDS}s for commit ${EXPECTED_SHA}..."
+          while [ "$(date +%s)" -lt "$DEADLINE" ]; do
+            DEPLOYED_SHA=$(curl -fsS --max-time 10 "$INFO_URL" 2>/dev/null | jq -r '.build.commit // empty' || true)
+            if [ "$DEPLOYED_SHA" = "$EXPECTED_SHA" ]; then
+              echo "✅ Production is running the expected commit ($DEPLOYED_SHA)"
+              exit 0
+            fi
+            echo "⏳ live commit='${DEPLOYED_SHA:-<none>}', waiting for ${EXPECTED_SHA}..."
+            sleep 10
+          done
+          echo "❌ Timed out: production never reported commit ${EXPECTED_SHA}"
+          exit 1
+
+      - name: Assert health is UP
+        run: |
+          set -euo pipefail
+          HEALTH_URL="https://${API_DOMAIN}/api/actuator/health"
+          STATUS=$(curl -fsS --max-time 10 "$HEALTH_URL" | jq -r '.status // "UNKNOWN"')
+          echo "Health status: ${STATUS}"
+          [ "$STATUS" = "UP" ] || { echo "❌ Health is not UP"; exit 1; }
+          echo "✅ Health is UP"

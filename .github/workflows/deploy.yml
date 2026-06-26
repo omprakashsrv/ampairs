@@ -434,6 +434,31 @@ jobs:
           exit 1
         EOF
 
+    - name: Verify deployed version (public endpoint)
+      # Confirms the commit actually running in production matches what we just built,
+      # by polling the public /api/actuator/info endpoint (build.commit comes from
+      # bootBuildInfo). This is the same contract the pull-based deploy agent uses —
+      # CI observes the deployed version rather than assuming the restart succeeded.
+      env:
+        API_DOMAIN: ${{ vars.API_DOMAIN || 'api.ampairs.in' }}
+        EXPECTED_SHA: ${{ github.sha }}
+      run: |
+        set -euo pipefail
+        INFO_URL="https://${API_DOMAIN}/api/actuator/info"
+        echo "Expecting commit ${EXPECTED_SHA} at ${INFO_URL}"
+        for i in $(seq 1 20); do
+          DEPLOYED_SHA=$(curl -fsS --max-time 10 "$INFO_URL" 2>/dev/null | jq -r '.build.commit // empty' || true)
+          if [ "$DEPLOYED_SHA" = "$EXPECTED_SHA" ]; then
+            echo "✅ Production is running the expected commit ($DEPLOYED_SHA)"
+            exit 0
+          fi
+          echo "⏳ Attempt $i/20: live commit='${DEPLOYED_SHA:-<none>}', waiting for ${EXPECTED_SHA}..."
+          sleep 10
+        done
+        echo "❌ Production never reported the expected commit ${EXPECTED_SHA}"
+        echo "Last seen: '${DEPLOYED_SHA:-<none>}'"
+        exit 1
+
   notification:
     name: Send Notification
     needs: [build, deploy-production]

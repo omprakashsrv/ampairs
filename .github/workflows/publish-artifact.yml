@@ -1,0 +1,85 @@
+name: Publish Artifact
+
+# Pull-based deployment: the artifact SOURCE.
+#
+# On every push to main, build the boot jar and publish it to S3 as an immutable,
+# checksummed artifact, plus a `latest.json` manifest the server-side agent polls.
+# The server pulls and deploys itself (see docs/deployment/pull-based-deploy.md) —
+# GitHub never connects to the server, so no inbound SSH and no deploy key.
+#
+# Required configuration (Settings → Secrets and variables → Actions):
+#   secrets.AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY  — IAM user scoped to PutObject
+#                                                        on the artifact prefix ONLY.
+#   vars.ARTIFACT_S3_BUCKET                            — bucket name
+#   vars.ARTIFACT_S3_PREFIX (optional)                 — key prefix, e.g. "deploy"
+#   vars.AWS_REGION (optional, default ap-south-1)
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    name: Build and publish to S3
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      AWS_REGION: ${{ vars.AWS_REGION || 'ap-south-1' }}
+      ARTIFACT_S3_BUCKET: ${{ vars.ARTIFACT_S3_BUCKET }}
+      ARTIFACT_S3_PREFIX: ${{ vars.ARTIFACT_S3_PREFIX || 'deploy' }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Build boot jar
+        run: |
+          chmod +x gradlew
+          ./gradlew :ampairs_service:bootJar --console=plain
+        env:
+          SPRING_PROFILES_ACTIVE: production
+
+      - name: Publish jar + manifest to S3
+        run: |
+          set -euo pipefail
+          if [ -z "${ARTIFACT_S3_BUCKET}" ]; then
+            echo "❌ vars.ARTIFACT_S3_BUCKET is not set"; exit 1
+          fi
+
+          JAR_FILE=$(ls ampairs_service/build/libs/*.jar | grep -v '\-plain\.jar$' | head -1)
+          [ -n "$JAR_FILE" ] || { echo "❌ No boot jar found"; exit 1; }
+
+          SHA256=$(sha256sum "$JAR_FILE" | awk '{print $1}')
+          COMMIT="${GITHUB_SHA}"
+          PREFIX="${ARTIFACT_S3_PREFIX%/}"
+          JAR_KEY="${PREFIX}/artifacts/ampairs-service-${COMMIT}.jar"
+          BUILT_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+          echo "Uploading ${JAR_FILE} → s3://${ARTIFACT_S3_BUCKET}/${JAR_KEY}"
+          # Immutable: never overwrite an existing per-commit artifact.
+          aws s3 cp "$JAR_FILE" "s3://${ARTIFACT_S3_BUCKET}/${JAR_KEY}" --only-show-errors
+
+          # Manifest is written LAST and atomically — the agent treats its appearance
+          # as the signal that the artifact is fully uploaded and verified.
+          cat > latest.json <<JSON
+          {
+            "commit": "${COMMIT}",
+            "jar_key": "${JAR_KEY}",
+            "sha256": "${SHA256}",
+            "built_at": "${BUILT_AT}"
+          }
+          JSON
+          cat latest.json
+          aws s3 cp latest.json "s3://${ARTIFACT_S3_BUCKET}/${PREFIX}/manifests/latest.json" \
+            --content-type application/json --only-show-errors
+          echo "✅ Published commit ${COMMIT} (sha256=${SHA256})"
