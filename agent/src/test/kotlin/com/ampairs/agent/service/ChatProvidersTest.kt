@@ -3,7 +3,6 @@ package com.ampairs.agent.service
 import com.ampairs.agent.domain.dto.ChatCompletionMessage
 import com.ampairs.agent.domain.dto.ChatCompletionRequest
 import com.ampairs.agent.domain.dto.ChatResponseFormat
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
@@ -45,7 +44,6 @@ class ChatProvidersTest {
         allowedModelsCsv = "openrouter/free, google/gemma-4-31b-it:free",
         referer = "",
         title = "Ampairs",
-        objectMapper = ObjectMapper(),
     )
 
     @Test

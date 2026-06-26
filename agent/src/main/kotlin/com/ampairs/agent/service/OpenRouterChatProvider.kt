@@ -2,8 +2,8 @@ package com.ampairs.agent.service
 
 import com.ampairs.agent.domain.dto.ChatCompletionRequest
 import com.ampairs.agent.domain.dto.ChatCompletionResponse
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.PropertyNamingStrategies
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -35,13 +35,20 @@ class OpenRouterChatProvider(
     // Optional OpenRouter ranking headers (appear on their leaderboards). Blank → not sent.
     @Value("\${agent.chat.openrouter.referer:}") private val referer: String,
     @Value("\${agent.chat.openrouter.title:Ampairs}") private val title: String,
-    private val objectMapper: ObjectMapper,
 ) : ChatProvider {
 
     override val id: String = ID
 
     private val allowedModels: Set<String> =
         allowedModelsCsv.split(",").map { it.trim() }.filter { it.isNotBlank() }.toSet()
+
+    // Self-constructed, NOT the Spring bean: Spring Boot 4 autoconfigures a Jackson 3 (tools.jackson)
+    // ObjectMapper, so injecting the Jackson 2 type fails to wire and breaks every context that scans
+    // this bean. We only need request serialization (snake_case via a property naming strategy) and
+    // read the response with the tree model, so no jackson-module-kotlin is required.
+    private val objectMapper = ObjectMapper().apply {
+        propertyNamingStrategy = PropertyNamingStrategies.SNAKE_CASE
+    }
 
     private val httpClient: HttpClient = HttpClient.newBuilder()
         .connectTimeout(Duration.ofSeconds(30))
@@ -90,9 +97,11 @@ class OpenRouterChatProvider(
             )
         }
 
-        val parsed = objectMapper.readValue(response.body(), OpenAiChatResponse::class.java)
-        val text = parsed.choices.firstOrNull()?.message?.content.orEmpty()
-        return ChatCompletionResponse(content = text, modelId = parsed.model ?: model)
+        // Tree model — avoids needing jackson-module-kotlin to bind into Kotlin data classes.
+        val root = objectMapper.readTree(response.body())
+        val text = root.path("choices").path(0).path("message").path("content").asText("")
+        val returnedModel = root.path("model").asText("").ifBlank { model }
+        return ChatCompletionResponse(content = text, modelId = returnedModel)
     }
 
     companion object {
@@ -100,7 +109,7 @@ class OpenRouterChatProvider(
     }
 }
 
-/** OpenAI-compatible request body. Field names map to snake_case via the shared ObjectMapper. */
+/** OpenAI-compatible request body. Field names serialize to snake_case (e.g. `max_tokens`). */
 private data class OpenAiChatRequest(
     val model: String,
     val messages: List<OpenAiMessage>,
@@ -111,15 +120,4 @@ private data class OpenAiChatRequest(
 private data class OpenAiMessage(
     val role: String,
     val content: String,
-)
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-private data class OpenAiChatResponse(
-    val choices: List<OpenAiChoice> = emptyList(),
-    val model: String? = null,
-)
-
-@JsonIgnoreProperties(ignoreUnknown = true)
-private data class OpenAiChoice(
-    val message: OpenAiMessage? = null,
 )
