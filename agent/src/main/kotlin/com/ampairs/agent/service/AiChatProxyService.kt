@@ -50,7 +50,7 @@ class AiChatProxyService(
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "messages must not be empty")
         }
 
-        val model = request.model.trim().takeIf { it in allowedModels } ?: defaultModel
+        val model = resolveModel(request.model)
 
         // Anthropic carries the system prompt as a dedicated field, not a message role — pull the
         // system turns out and join them. The structured-output schema (if any) is appended as an
@@ -98,6 +98,10 @@ class AiChatProxyService(
 
         return ChatCompletionResponse(content = text, modelId = model)
     }
+
+    /** Requested model if it's in the allow-list, otherwise the configured default. */
+    internal fun resolveModel(requested: String): String =
+        requested.trim().takeIf { it in allowedModels } ?: defaultModel
 
     private companion object {
         // Safety ceiling on the per-request output the app can request through the proxy.
