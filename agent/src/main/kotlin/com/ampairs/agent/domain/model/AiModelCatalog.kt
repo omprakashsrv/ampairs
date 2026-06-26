@@ -35,8 +35,13 @@ enum class ModelRole { INTENT, CHAT, FALLBACK }
  *   verification (TODO: fill in real digests once mirrored on the backend CDN).
  * @property requiredRamMb minimum device total RAM (MB) to run this model; the app disables selection
  *   below this and shows a "needs X / device has Y" message.
- * @property backendId which app-side LLM backend runs it (`litert-lm`).
+ * @property backendId which app-side LLM backend runs it (`litert-lm`, or `cloud` for the hosted tier).
  * @property sourceUrl upstream URL the backend proxy streams from (HuggingFace litert-community / google).
+ *   Blank for cloud models — they run server-side and are never downloaded.
+ * @property transport cloud transport adapter id (e.g. `ampairs`) for `backendId == "cloud"` models;
+ *   null/blank for on-device models. Selects the app-side [com.ampairs.agent.llm.transport.LlmTransport].
+ * @property remoteModelId provider-side model id the cloud transport sends (e.g. `claude-sonnet-4-6`);
+ *   null/blank for on-device models.
  */
 data class AiModelDescriptor(
     val id: String,
@@ -52,6 +57,8 @@ data class AiModelDescriptor(
     val platforms: Set<ModelPlatform>,
     val recommended: Boolean,
     val sourceUrl: String,
+    val transport: String? = null,
+    val remoteModelId: String? = null,
 )
 
 /**
@@ -178,6 +185,69 @@ object AiModelCatalog {
             platforms = setOf(ModelPlatform.ANDROID, ModelPlatform.IOS, ModelPlatform.DESKTOP),
             recommended = false,
             sourceUrl = "$HF/google/functiongemma-270m-it/resolve/main/tiny_garden.litertlm",
+        ),
+        // Online (cloud-hosted) chat model — runs server-side via the AiChatProxyService
+        // (POST /agent/v1/chat/completions). No file, no download, no RAM gate; works on every
+        // platform. The app routes it through the "ampairs" cloud transport. `remoteModelId` MUST be in
+        // the proxy's allow-list (agent.chat.allowed-models) or the proxy falls back to its default.
+        AiModelDescriptor(
+            id = "cloud-ampairs-chat",
+            name = "Ampairs Cloud",
+            family = "cloud",
+            parameterLabel = "Cloud",
+            role = ModelRole.CHAT,
+            fileName = "",
+            sizeBytes = 0L,
+            sha256 = null,
+            requiredRamMb = 0,
+            backendId = "cloud",
+            platforms = setOf(ModelPlatform.ANDROID, ModelPlatform.IOS, ModelPlatform.DESKTOP),
+            recommended = false,
+            sourceUrl = "",
+            transport = "ampairs",
+            remoteModelId = "claude-sonnet-4-6",
+        ),
+        // Free online tier — routed to OpenRouter's free smart router (auto-picks a no-cost model with
+        // the needed capabilities). Same app-side "ampairs" transport; the backend router sends it to
+        // OpenRouter because `remoteModelId` is in agent.chat.openrouter.allowed-models. Subject to
+        // OpenRouter's free-tier rate limits / availability.
+        AiModelDescriptor(
+            id = "cloud-openrouter-free",
+            name = "Ampairs Cloud (Free)",
+            family = "cloud",
+            parameterLabel = "Free",
+            role = ModelRole.CHAT,
+            fileName = "",
+            sizeBytes = 0L,
+            sha256 = null,
+            requiredRamMb = 0,
+            backendId = "cloud",
+            platforms = setOf(ModelPlatform.ANDROID, ModelPlatform.IOS, ModelPlatform.DESKTOP),
+            recommended = false,
+            sourceUrl = "",
+            transport = "ampairs",
+            remoteModelId = "openrouter/free",
+        ),
+        // Free online tier — pinned to OpenRouter's `openrouter/owl-alpha` model (vs the `openrouter/free`
+        // smart router). Same app-side "ampairs" transport; the backend router sends it to OpenRouter
+        // because `remoteModelId` is in agent.chat.openrouter.allowed-models. Subject to OpenRouter's
+        // free-tier rate limits / availability.
+        AiModelDescriptor(
+            id = "cloud-openrouter-owl-alpha",
+            name = "Ampairs Cloud (Owl Alpha)",
+            family = "cloud",
+            parameterLabel = "Free",
+            role = ModelRole.CHAT,
+            fileName = "",
+            sizeBytes = 0L,
+            sha256 = null,
+            requiredRamMb = 0,
+            backendId = "cloud",
+            platforms = setOf(ModelPlatform.ANDROID, ModelPlatform.IOS, ModelPlatform.DESKTOP),
+            recommended = false,
+            sourceUrl = "",
+            transport = "ampairs",
+            remoteModelId = "openrouter/owl-alpha",
         ),
     )
 

@@ -22,13 +22,28 @@ class AiModelCatalogServiceTest {
     }
 
     @Test
-    fun `every model has a litertlm fileName, positive size and ram, and an https source`() {
-        service.listModels().forEach { m ->
+    fun `on-device models have a litertlm fileName, positive size and ram, and an https source`() {
+        service.listModels().filter { it.backendId != "cloud" }.forEach { m ->
             assertTrue(m.fileName.endsWith(".litertlm"), "${m.id} fileName must be .litertlm")
             assertTrue(m.sizeBytes > 0, "${m.id} sizeBytes must be > 0")
             assertTrue(m.requiredRamMb > 0, "${m.id} requiredRamMb must be > 0")
             assertTrue(m.platforms.isNotEmpty(), "${m.id} must target at least one platform")
             assertTrue(m.sourceUrl.startsWith("https://"), "${m.id} sourceUrl must be https")
+        }
+    }
+
+    @Test
+    fun `cloud models have no file or source and carry transport plus remote model id`() {
+        val cloud = service.listModels().filter { it.backendId == "cloud" }
+        cloud.forEach { m ->
+            assertTrue(m.fileName.isBlank(), "${m.id} cloud model must have no fileName")
+            assertTrue(m.sourceUrl.isBlank(), "${m.id} cloud model must have no sourceUrl")
+            assertTrue(m.platforms.isNotEmpty(), "${m.id} must target at least one platform")
+            assertFalse(m.transport.isNullOrBlank(), "${m.id} cloud model must declare a transport")
+            assertFalse(
+                m.remoteModelId.isNullOrBlank(),
+                "${m.id} cloud model must declare a remoteModelId",
+            )
         }
     }
 

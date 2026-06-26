@@ -54,6 +54,10 @@ class AiModelProxyService(
     fun open(modelId: String, rangeHeader: String?): UpstreamModelStream {
         val model = catalogService.findById(modelId)
             ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "Unknown model: $modelId")
+        if (model.sourceUrl.isBlank()) {
+            // Cloud (server-side) models have no downloadable file — they run via the chat proxy.
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "Model is not downloadable: $modelId")
+        }
 
         val requestBuilder = HttpRequest.newBuilder(URI.create(model.sourceUrl))
             .timeout(Duration.ofMinutes(30))

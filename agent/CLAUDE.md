@@ -5,9 +5,10 @@ bounded context (`com.ampairs.agent`) serving the `/agent/v1/**` namespace. Depe
 Spring discovers it via the default `com.ampairs` component scan (registered as a dependency of
 `:ampairs_service`).
 
-This module owns **no DB tables** — the model catalog is curated reference data in code
-(`AiModelCatalog`), not a tenant entity, so there are no Flyway migrations and it is **not** in
-`migrationModules`.
+The model catalog is curated reference data in code (`AiModelCatalog`), not a tenant entity. The
+module owns **one** DB table: `agent_chat_log` (opt-in chat telemetry, spec below) — so the module
+now has Flyway migrations and **is** in `migrationModules`. It depends on `:core` plus
+`spring-boot-starter-data-jpa`.
 
 ## What it owns
 - `AiModelCatalog` / `AiModelDescriptor` — the curated list of downloadable LiteRT-LM `.litertlm`
@@ -55,7 +56,26 @@ the app's downloader validates size and fails the download otherwise. A wrong `s
 the runtime download (`502`). **Neither is caught by CI** (both are runtime-only) — verify new entries
 on-device. `sha256` is null today (verification skipped app-side until digests are filled in).
 
+## Chat telemetry (`agent_chat_log`)
+Opt-in (default OFF on the client) capture of assistant turns for later quality analysis.
+
+| Method | Path | Purpose |
+|---|---|---|
+| `POST` | `/agent/v1/chat-logs` | Upload a batch of turns. Body `List<ChatLogRequest>` → `ApiResponse<ChatLogUploadResponse>` (saved count). |
+
+- **Workspace-scoped**: `ChatLog : OwnableBaseDomain` → `owner_id` = the `X-Workspace-ID` the request
+  carried. `SessionUserFilter` enforces auth + membership and sets the tenant context, so the
+  controller does **not** touch `TenantContextHolder`.
+- **User is server-stamped**: `user_id` comes from the security context (`AuthenticationHelper`), never
+  the request body. `owner_id`/`user_id` are not client-supplied.
+- One row per turn (`user_message` + `assistant_message`) plus `model_id` / `intent` / `module_name` /
+  `action_type` / `client_timestamp` (epoch-millis in the DTO → `Instant` in the entity).
+- **Write-mostly**: no read API yet; analysis is offline/admin. Cross-tenant reads would need
+  `nativeQuery = true` to bypass `@TenantId` filtering.
+- Flyway: `agent/src/main/resources/db/migration/{mysql,postgresql}/V1.0.102__create_agent_chat_log_table.sql`.
+
 ## App counterpart
 `ampairs-app` → `feature/agent`: `ModelManager` fetches the manifest and downloads via the proxy
 (`ApiUrlBuilder.agentUrl("v1/models/...")`), caches to `filesDir/agent_models/{fileName}`, and the
-`ProviderRegistry` loads the selected model into the LiteRT-LM engine.
+`ProviderRegistry` loads the selected model into the LiteRT-LM engine. The opt-in chat-telemetry
+uploader POSTs to `ApiUrlBuilder.agentUrl("v1/chat-logs")`.
