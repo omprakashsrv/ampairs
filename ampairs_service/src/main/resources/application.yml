@@ -469,6 +469,15 @@ agent:
   # models return 502 ("requires authentication"). Set AGENT_HF_TOKEN (or HF_TOKEN) to a HuggingFace
   # token whose account has accepted each model's license. SECRET — never commit a real value.
   hf-token: ${AGENT_HF_TOKEN:${HF_TOKEN:}}
+  # Anthropic API key used by the cloud chat proxy (AiChatProxyService) to serve the on-device
+  # assistant's online model tier (POST /agent/v1/chat/completions). Blank → that endpoint returns
+  # 503 ("cloud chat not configured"); the on-device models are unaffected. SECRET — never commit.
+  anthropic-api-key: ${AGENT_ANTHROPIC_API_KEY:${ANTHROPIC_API_KEY:}}
+  chat:
+    # Model used when the app requests an id that isn't in allowed-models (or sends none).
+    default-model: ${AGENT_CHAT_DEFAULT_MODEL:claude-sonnet-4-6}
+    # Comma-separated allow-list of provider model ids the proxy will forward.
+    allowed-models: ${AGENT_CHAT_ALLOWED_MODELS:claude-sonnet-4-6,claude-opus-4-8,claude-haiku-4-5}
 
 # Notification Configuration
 notification:
