@@ -228,6 +228,27 @@ object AiModelCatalog {
             transport = "ampairs",
             remoteModelId = "openrouter/free",
         ),
+        // Free online tier — pinned to OpenRouter's `openrouter/owl-alpha` model (vs the `openrouter/free`
+        // smart router). Same app-side "ampairs" transport; the backend router sends it to OpenRouter
+        // because `remoteModelId` is in agent.chat.openrouter.allowed-models. Subject to OpenRouter's
+        // free-tier rate limits / availability.
+        AiModelDescriptor(
+            id = "cloud-openrouter-owl-alpha",
+            name = "Ampairs Cloud (Owl Alpha)",
+            family = "cloud",
+            parameterLabel = "Free",
+            role = ModelRole.CHAT,
+            fileName = "",
+            sizeBytes = 0L,
+            sha256 = null,
+            requiredRamMb = 0,
+            backendId = "cloud",
+            platforms = setOf(ModelPlatform.ANDROID, ModelPlatform.IOS, ModelPlatform.DESKTOP),
+            recommended = false,
+            sourceUrl = "",
+            transport = "ampairs",
+            remoteModelId = "openrouter/owl-alpha",
+        ),
     )
 
     fun byId(id: String): AiModelDescriptor? = MODELS.firstOrNull { it.id == id }

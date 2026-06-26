@@ -29,7 +29,7 @@ class ChatLogController(
 ) {
 
     @PostMapping
-    fun upload(@RequestBody @Valid logs: List<ChatLogRequest>): ApiResponse<ChatLogUploadResponse> {
+    fun upload(@RequestBody logs: List<@Valid ChatLogRequest>): ApiResponse<ChatLogUploadResponse> {
         val auth = SecurityContextHolder.getContext().authentication
             ?: throw ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required")
         val userId = AuthenticationHelper.getCurrentUserId(auth)
