@@ -108,10 +108,10 @@
 
 **Independent Test**: Configure a WhatsApp credential → send goes from the client's number (`CLIENT_OWN` in the log); delete it → WhatsApp send `SKIPPED(NO_CREDENTIAL)`; usage report breaks down by channel/credential/billing-mode and reconciles with logs; `GET` returns masked secrets only.
 
-- [ ] **T035** [US6] `comm/port/WorkspaceCredentialPort.kt` + adapter delegating to notif `WorkspaceChannelCredentialService` (T019); `comm/controller/CredentialController.kt` — `GET/POST/PUT/DELETE /communication/v1/credentials` + `POST …/{uid}/validate`; `CredentialRequest` (write `secret`) / `CredentialResponse` (masked `secret_last4`, **no secret**).
-- [ ] **T036** [US6] Implement `WorkspaceChannelCredentialService.validate` (T019) — provider-side probe (e.g. WhatsApp token check) setting `status` + `last_validated_at`.
-- [ ] **T037** [P] [US6] `comm/service/usage/UsageReportService.kt` + `GET /communication/v1/usage?from&to&group_by` → aggregate by channel × credential × billing_mode (+ totals); reconciles with SENT/DELIVERED logs.
-- [ ] **T038** [P] [US6] Tests: `CredentialControllerTest` (secret never returned; masked read; write-only), `CredentialValidateTest`, `UsageReportTest` (one usage row per sent message; totals reconcile with logs; CLIENT_OWN vs PLATFORM split), `secretsNotLoggedTest` (no secret in log/`toString`).
+- [X] **T035** [US6] `comm/port/WorkspaceCredentialPort.kt` + adapter delegating to notif `WorkspaceChannelCredentialService` (T019); `comm/controller/CredentialController.kt` — `GET/POST/PUT/DELETE /communication/v1/credentials` + `POST …/{uid}/validate`; `CredentialRequest` (write `secret`) / `CredentialResponse` (masked `secret_last4`, **no secret**).
+- [X] **T036** [US6] Implement `WorkspaceChannelCredentialService.validate` (T019) — provider-side probe (e.g. WhatsApp token check) setting `status` + `last_validated_at`.
+- [X] **T037** [P] [US6] `comm/service/usage/UsageReportService.kt` + `GET /communication/v1/usage?from&to&group_by` → aggregate by channel × credential × billing_mode (+ totals); reconciles with SENT/DELIVERED logs.
+- [X] **T038** [P] [US6] Tests: `CredentialControllerTest` (secret never returned; masked read; write-only), `CredentialValidateTest`, `UsageReportTest` (one usage row per sent message; totals reconcile with logs; CLIENT_OWN vs PLATFORM split), `secretsNotLoggedTest` (no secret in log/`toString`).
 
 **Checkpoint**: Clients send from their own identity; usage is billable and reconciles.
 

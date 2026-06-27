@@ -30,4 +30,7 @@ interface CommunicationLogRepository : CrudRepository<CommunicationLog, Long> {
 
 interface CommunicationUsageRepository : CrudRepository<CommunicationUsage, Long> {
     fun findByCommunicationLogUid(communicationLogUid: String): CommunicationUsage?
+
+    /** Usage rows in a period for the current workspace (@TenantId-filtered) — billing report source. */
+    fun findByOccurredAtBetween(from: Instant, to: Instant): List<CommunicationUsage>
 }
