@@ -77,6 +77,8 @@ class NotificationServiceTest {
             devicePushTokenPort,
             org.mockito.kotlin.mock(),
             org.mockito.kotlin.mock(),
+            org.mockito.kotlin.mock(),
+            org.mockito.kotlin.mock(),
         )
     }
 

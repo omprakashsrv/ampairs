@@ -16,6 +16,7 @@ import com.ampairs.communication.repository.CommunicationRequestRepository
 import com.ampairs.communication.service.CommunicationConfigService
 import com.ampairs.communication.service.template.TemplateRenderer
 import com.ampairs.communication.service.template.TemplateRenderException
+import com.ampairs.notification.credential.NoCredentialException
 import com.ampairs.notification.provider.NotificationChannel
 import com.ampairs.notification.service.DispatchRequest
 import com.ampairs.notification.service.NotificationDispatchService
@@ -149,6 +150,14 @@ class CommunicationDispatchService(
             log.errorMessage = e.message
             logRepository.save(log)
             logger.warn("Render failed for request {} channel {}: {}", requestUid, channel, e.message)
+        } catch (e: NoCredentialException) {
+            // Client-owned-only channel (WhatsApp) with no workspace credential — never fall back to a
+            // platform sender (FR-037). Record a skip, not a failure.
+            log.status = DeliveryStatus.SKIPPED.name
+            log.skipReason = SkipReason.NO_CREDENTIAL.name
+            log.errorMessage = e.message
+            logRepository.save(log)
+            logger.warn("Skipped {} on {} — {}", requestUid, channel, e.message)
         }
     }
 

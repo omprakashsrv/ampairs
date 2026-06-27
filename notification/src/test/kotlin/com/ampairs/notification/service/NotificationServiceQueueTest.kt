@@ -49,6 +49,8 @@ class NotificationServiceQueueTest {
             devicePushTokenPort,
             mock(),
             mock(),
+            mock(),
+            mock(),
         )
 
     @BeforeEach

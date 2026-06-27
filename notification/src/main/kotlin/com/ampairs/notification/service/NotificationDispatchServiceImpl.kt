@@ -1,6 +1,7 @@
 package com.ampairs.notification.service
 
 import com.ampairs.core.multitenancy.TenantContextHolder
+import com.ampairs.notification.credential.WorkspaceChannelCredentialResolver
 import com.ampairs.notification.model.NotificationQueue
 import com.ampairs.notification.provider.NotificationStatus
 import com.ampairs.notification.repository.NotificationQueueRepository
@@ -19,6 +20,7 @@ import java.time.Instant
 @Service
 class NotificationDispatchServiceImpl(
     private val queueRepository: NotificationQueueRepository,
+    private val credentialResolver: WorkspaceChannelCredentialResolver,
 ) : NotificationDispatchService {
 
     private val logger = LoggerFactory.getLogger(NotificationDispatchServiceImpl::class.java)
@@ -27,6 +29,11 @@ class NotificationDispatchServiceImpl(
     @Transactional
     override fun enqueue(request: DispatchRequest): String {
         val tenantId = TenantContextHolder.getCurrentTenant() ?: "default"
+
+        // Resolve which credential this send uses. For client-owned-only channels (WhatsApp) with no
+        // workspace credential this throws NoCredentialException — the caller records NO_CREDENTIAL and
+        // never falls back to a platform sender (FR-037). Attribution is stamped on the row for billing.
+        val attribution = credentialResolver.resolve(request.channel)
 
         // WhatsApp/SMS approved-template references travel in the data payload until a typed provider
         // consumes them (kept non-secret).
@@ -45,6 +52,8 @@ class NotificationDispatchServiceImpl(
             this.scheduledAt = Instant.now()
             this.sourceModule = request.sourceModule
             this.sourceRef = request.sourceRef
+            this.credentialUid = attribution.credentialUid
+            this.billingMode = attribution.billingMode
             this.ownerId = tenantId
         }
         val saved = queueRepository.save(row)

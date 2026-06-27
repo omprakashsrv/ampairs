@@ -47,14 +47,14 @@
 - [X] **T012** `notif/service/NotificationDispatchService.kt` — public interface + `DispatchRequest` data class (channel, recipient, subject?, body, textBody?, title?, dataPayload, providerTemplateId?, params, category, sourceModule, sourceRef) returning the `notification_queue` uid; implementation enqueues a `NotificationQueue` row with the new columns.
 - [X] **T013** `notif/event/NotificationDeliveryUpdatedEvent.kt` — Spring `ApplicationEvent` carrying `sourceModule, sourceRef, status, providerMessageId, error, credentialUid, providerAccountRef, billingMode, costUnits, costCategory`; publish it from the queue's terminal-status transitions (monotonic, no regression — FR-010).
 - [X] **T014** [P] `notif/provider/email/EmailNotificationProvider.kt` implementing `NotificationProvider` (SMTP via Spring Mail and/or SES via AWS SDK, selected by `NotificationProperties.email.transport`); multipart HTML + plain-text; returns provider message id. Extend `NotificationProperties` with the `email` block.
-- [ ] **T015** [P] `notif/provider/whatsapp/WhatsAppNotificationProvider.kt` implementing `NotificationProvider` (Cloud API via `RestClient`; approved-template send with `providerTemplateId` + ordered `params`). Extend `NotificationProperties` with the `whatsapp` block.
+- [X] **T015** [P] `notif/provider/whatsapp/WhatsAppNotificationProvider.kt` implementing `NotificationProvider` (Cloud API via `RestClient`; approved-template send with `providerTemplateId` + ordered `params`). Extend `NotificationProperties` with the `whatsapp` block.
 
 ### Per-workspace credential foundation (notif) — on the send path
 
-- [ ] **T016** [P] `notif/credential/WorkspaceChannelCredential.kt` (`OwnableBaseDomain`; `secret_ciphertext`, `secret_last4`, `allow_platform_fallback`, `status`, `last_validated_at`) + repository.
-- [ ] **T017** [P] `notif/credential/CredentialCryptoService.kt` — AES-GCM encrypt/decrypt with the master key from env (`COMM_CRED_ENCRYPTION_KEY`); never logs/echoes plaintext; `toString()` redacted.
-- [ ] **T018** `notif/credential/WorkspaceChannelCredentialResolver.kt` — resolves the current-tenant credential for a channel: valid credential → `CLIENT_OWN`; none + `allow_platform_fallback` → `PLATFORM` (platform config); none + client-owned channel (WhatsApp) → throw `NoCredentialException` (→ `NO_CREDENTIAL` skip). Returns `(credentialUid, providerAccountRef, billingMode)`. Wire providers (T014/T015 + existing SMS/push) to call the resolver and decrypt the secret only here.
-- [ ] **T019** `notif/credential/WorkspaceChannelCredentialService.kt` — public interface (CRUD + `validate`) returning **masked** responses (no secret); used later by US6's controller. Secrets write-only.
+- [X] **T016** [P] `notif/credential/WorkspaceChannelCredential.kt` (`OwnableBaseDomain`; `secret_ciphertext`, `secret_last4`, `allow_platform_fallback`, `status`, `last_validated_at`) + repository.
+- [X] **T017** [P] `notif/credential/CredentialCryptoService.kt` — AES-GCM encrypt/decrypt with the master key from env (`COMM_CRED_ENCRYPTION_KEY`); never logs/echoes plaintext; `toString()` redacted.
+- [X] **T018** `notif/credential/WorkspaceChannelCredentialResolver.kt` — resolves the current-tenant credential for a channel: valid credential → `CLIENT_OWN`; none + `allow_platform_fallback` → `PLATFORM` (platform config); none + client-owned channel (WhatsApp) → throw `NoCredentialException` (→ `NO_CREDENTIAL` skip). Returns `(credentialUid, providerAccountRef, billingMode)`. Wire providers (T014/T015 + existing SMS/push) to call the resolver and decrypt the secret only here.
+- [X] **T019** `notif/credential/WorkspaceChannelCredentialService.kt` — public interface (CRUD + `validate`) returning **masked** responses (no secret); used later by US6's controller. Secrets write-only.
 
 ### Send orchestration + ports (comm)
 

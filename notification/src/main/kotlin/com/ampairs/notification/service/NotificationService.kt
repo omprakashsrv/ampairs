@@ -38,6 +38,8 @@ class NotificationService(
     private val devicePushTokenPort: ObjectProvider<DevicePushTokenPort>,
     private val emailNotificationProvider: com.ampairs.notification.provider.email.EmailNotificationProvider,
     private val eventPublisher: org.springframework.context.ApplicationEventPublisher,
+    private val whatsAppNotificationProvider: com.ampairs.notification.provider.whatsapp.WhatsAppNotificationProvider,
+    private val credentialResolver: com.ampairs.notification.credential.WorkspaceChannelCredentialResolver,
 ) {
 
     private val logger = LoggerFactory.getLogger(NotificationService::class.java)
@@ -318,11 +320,22 @@ class NotificationService(
      */
     @Async
     fun processSingleNotification(notification: NotificationQueue) {
+        // Background send — establish the row's tenant so @TenantId lookups (credential resolution,
+        // workspace provider selection) target the right workspace, then restore it in finally.
+        val priorTenant = com.ampairs.core.multitenancy.TenantContextHolder.getCurrentTenant()
+        com.ampairs.core.multitenancy.TenantContextHolder.setCurrentTenant(notification.ownerId)
         try {
             logger.debug(
                 "Processing notification: {} for {} via {}",
                 notification.uid, notification.recipient, notification.channel
             )
+
+            // Resolve credential attribution (which workspace credential / billing mode this send uses)
+            // so it is recorded on the row and rides the delivery event. Secret use happens in the provider.
+            runCatching { credentialResolver.resolve(notification.channel) }.getOrNull()?.let { attribution ->
+                notification.credentialUid = attribution.credentialUid
+                notification.billingMode = attribution.billingMode
+            }
 
             val providers = getProvidersForChannel(notification.channel)
             var lastResult: NotificationResult? = null
@@ -400,17 +413,19 @@ class NotificationService(
                 "System error: ${e.message}",
                 null
             )
+        } finally {
+            if (priorTenant != null) {
+                com.ampairs.core.multitenancy.TenantContextHolder.setCurrentTenant(priorTenant)
+            } else {
+                com.ampairs.core.multitenancy.TenantContextHolder.clearTenantContext()
+            }
         }
     }
 
     /**
-     * Get providers for a specific channel
-     */
-    /**
      * Notify the originating module (e.g. communication) of a terminal delivery outcome so it can
      * update its own log + usage ledger. No-op for rows without a source module (OTP/push internal).
-     * Credential attribution (credentialUid/billingMode) rides along once per-workspace credential
-     * resolution is wired (T016–T019); for now it carries whatever the queue row recorded.
+     * Credential attribution (credentialUid/billingMode) is resolved on the send path and carried here.
      */
     private fun publishDeliveryUpdate(
         notification: NotificationQueue,
@@ -441,7 +456,7 @@ class NotificationService(
             NotificationChannel.SMS -> getSmsProvidersInOrder()
             NotificationChannel.PUSH_NOTIFICATION -> listOf(fcmPushProvider)
             NotificationChannel.EMAIL -> listOf(emailNotificationProvider)
-            NotificationChannel.WHATSAPP -> emptyList() // TODO: Implement WhatsApp providers
+            NotificationChannel.WHATSAPP -> listOf(whatsAppNotificationProvider)
             else -> emptyList()
         }
     }

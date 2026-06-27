@@ -7,10 +7,20 @@ data class NotificationProperties(
     val sms: SmsProperties = SmsProperties(),
     val push: PushProperties = PushProperties(),
     val email: EmailProperties = EmailProperties(),
+    val whatsapp: WhatsAppProperties = WhatsAppProperties(),
     val batchSize: Int = 10,
     val retryDelayMinutes: Long = 5,
     val cleanupDays: Long = 30
 ) {
+    /**
+     * WhatsApp Cloud API non-secret defaults. The sender (phone_number_id) + access token are NOT
+     * here — WhatsApp is client-owned-only, so they come from the per-workspace credential.
+     */
+    data class WhatsAppProperties(
+        val apiVersion: String = "v20.0",
+        val defaultLanguage: String = "en_US",
+    )
+
     /**
      * Platform/shared email transport (SMTP). Used when a workspace has no own email credential and
      * the channel permits platform fallback. Supply host/credentials via the environment.
