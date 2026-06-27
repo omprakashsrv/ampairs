@@ -196,11 +196,15 @@ All enums serialize as their UPPER_SNAKE name (global SNAKE_CASE applies to fiel
 
 ## 5. Migration (Flyway)
 
-New module `analytics` → first migration `V1.0.0__create_analytics_tables.sql`, written in **both**
+New module `analytics` → migration `V1.0.105__create_analytics_tables.sql`, written in **both**
 `analytics/src/main/resources/db/migration/mysql/` and `…/postgresql/` (vendor-specific
 `TIMESTAMP` vs `TIMESTAMPTZ`). Add `"analytics"` to `migrationModules` in
-`ampairs_service/build.gradle.kts` and `include("analytics")` in `settings.gradle.kts`. Confirm the next
-version with `./gradlew :ampairs_service:flywayInfo` before finalizing (per-module sequences are
-independent — `order` started at `V1.0.0`).
+`ampairs_service/build.gradle.kts` and `include("analytics")` in `settings.gradle.kts`.
+
+> **Correction (implementation finding):** Flyway merges all module locations into **one global
+> version timeline**, so versions must be unique across the whole repo — they are NOT per-module
+> sequences. The highest existing version was `V1.0.104`, so analytics uses **`V1.0.105`**. (The earlier
+> "per-module, `order` started at `V1.0.0`" note was wrong — `order`'s `V1.0.0` predates the others on
+> the shared timeline.)
 
 Tables: `kpi_daily_summary`, `demand_forecast` (+ indexes in §1). No changes to other modules' tables.

@@ -27,10 +27,10 @@ backend ≥80% coverage on bucketing/recompute/forecast (JUnit + Testcontainers)
 
 **Purpose**: Create both module skeletons and wire them into their builds.
 
-- [ ] T001 [P] (BE) Create `analytics` backend module skeleton: `analytics/build.gradle.kts`
+- [X] T001 [P] (BE) Create `analytics` backend module skeleton: `analytics/build.gradle.kts`
   (depends on `core`, `business` public API; Spring Data JPA, Flyway), package tree
   `analytics/src/main/kotlin/com/ampairs/analytics/{domain/model,domain/enums,domain/catalog,domain/dto,repository,service,controller,config,event,batch}` and `analytics/src/test/kotlin/...`.
-- [ ] T002 (BE) Wire backend module: add `include("analytics")` to `settings.gradle.kts`,
+- [X] T002 (BE) Wire backend module: add `include("analytics")` to `settings.gradle.kts`,
   `implementation(project(":analytics"))` to `ampairs_service/build.gradle.kts`, and add `"analytics"`
   to the `migrationModules` list in `ampairs_service/build.gradle.kts`. (depends on T001)
 - [ ] T003 [P] (MOB) Create `feature/analytics` module skeleton: `feature/analytics/build.gradle.kts`
@@ -51,23 +51,24 @@ backend ≥80% coverage on bucketing/recompute/forecast (JUnit + Testcontainers)
 wiring every story needs. **No user-story work starts until this phase is done.**
 
 ### Backend foundations
-- [ ] T005 [P] (BE) Enums in `analytics/domain/enums/`: `MetricGroup`, `Period`, `TaxKind`,
+- [X] T005 [P] (BE) Enums in `analytics/domain/enums/`: `MetricGroup`, `Period`, `TaxKind`,
   `AgingBucket`, `ForecastMethod`, `Confidence`, `MetricUnit`, `Aggregation` (per data-model §4).
-- [ ] T006 [P] (BE) `MetricDefinition` catalog registry in `analytics/domain/catalog/MetricCatalog.kt`
+- [X] T006 [P] (BE) `MetricDefinition` catalog registry in `analytics/domain/catalog/MetricCatalog.kt`
   with the P1 metric ids (data-model §1.3).
-- [ ] T007a (BE) **Discovery**: grep the `business` module for an existing public service exposing the
-  workspace timezone (e.g. `business/.../service/*Locale*`/`*TimeZone*`); record the exact interface +
-  method (or confirm none exists) before writing code. (deterministic prerequisite for T007)
-- [ ] T007 (BE) Business-timezone resolution: based on T007a, either reuse the existing public accessor
+- [X] T007a (BE) **Discovery**: grep the `business` module for an existing public service exposing the
+  workspace timezone. FOUND: `BusinessService.getBusinessProfile(): Business` exposes `timezone: String`
+  (IANA id; no dedicated ZoneId accessor). `BusinessTimeZoneProvider` wraps it. (prerequisite for T007)
+- [X] T007 (BE) Business-timezone resolution: based on T007a, either reuse the existing public accessor
   or add a read-only interface method returning the workspace `ZoneId` in the `business` module; inject
   it into `analytics`. Cross-module access via public service interface only (Principle IX) — analytics
   never reads the `business` repository directly. (depends on T007a)
-- [ ] T008 (BE) Flyway migration `V1.0.0__create_analytics_tables.sql` in BOTH
+- [X] T008 (BE) Flyway migration `V1.0.105__create_analytics_tables.sql` in BOTH
   `analytics/src/main/resources/db/migration/mysql/` and `.../postgresql/`: tables `kpi_daily_summary`
   and `demand_forecast` with the columns, unique keys, and indexes from data-model §1.1/§1.2 (vendor
-  `TIMESTAMP` vs `TIMESTAMPTZ`). Confirm next version via `./gradlew :ampairs_service:flywayInfo`.
+  `TIMESTAMP` vs `TIMESTAMPTZ`). NOTE: Flyway shares ONE global version timeline across all modules
+  (highest existing = `V1.0.104`), so analytics uses `V1.0.105` — NOT a per-module `V1.0.0`.
 - [ ] T009 (BE) Verify migration applies on Postgres: `./gradlew :ampairs_service:flywayMigrate` then
-  `flywayInfo` shows V1.0.0 applied. (depends on T008)
+  `flywayInfo` shows `V1.0.105` applied. (depends on T008; requires a running DB — not run in sandbox)
 
 ### Mobile foundations
 - [ ] T010 [P] (MOB) Domain models in `feature/analytics/.../domain/`: `MetricDefinition`, `KpiResult`,
@@ -121,13 +122,13 @@ match the backend `…/dashboard/kpis` to the last currency unit.
   per-workspace `@SingleIn(WorkspaceScope::class)` DBs.)
 
 ### Backend implementation (US1)
-- [ ] T020 [P] [US1] (BE) `KpiDailySummary` entity in `analytics/domain/model/` extending
+- [X] T020 [P] [US1] (BE) `KpiDailySummary` entity in `analytics/domain/model/` extending
   `OwnableBaseDomain`, with `@NamedEntityGraph` if needed (data-model §1.1).
-- [ ] T021 [P] [US1] (BE) Read DTOs + `asResponse()` converters in `analytics/domain/dto/`:
+- [X] T021 [P] [US1] (BE) Read DTOs + `asResponse()` converters in `analytics/domain/dto/`:
   `KpiResponse`/`KpiValueResponse`, `TrendPointResponse`, `AgingResponse`/`AgingBucketResponse`,
   `GstSummaryResponse` (+ splits/rate rows), `TopEntryResponse`, `RecomputeResultResponse`
   (contracts/dashboard-read.md §DTOs).
-- [ ] T022 [US1] (BE) `KpiDailySummaryRepository` with the upsert + read/`GROUP BY` queries and the
+- [X] T022 [US1] (BE) `KpiDailySummaryRepository` with the upsert + read/`GROUP BY` queries and the
   covering indexes referenced by data-model §1.1. (depends on T020)
 - [ ] T023 [US1] (BE) `KpiRollupService`: business-zone bucketing + upsert of affected buckets;
   `recompute(fromDate,toDate,groups)` reconcile from source tables (idempotent). (depends on T022, T007)
