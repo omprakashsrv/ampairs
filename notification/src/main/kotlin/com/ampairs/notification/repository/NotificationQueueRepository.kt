@@ -15,6 +15,9 @@ import java.time.Instant
 @Repository
 interface NotificationQueueRepository : JpaRepository<NotificationQueue, String> {
 
+    /** Correlate a provider delivery webhook back to the original send. */
+    fun findFirstByProviderMessageId(providerMessageId: String): NotificationQueue?
+
     /**
      * Find pending notifications ready to be sent
      */

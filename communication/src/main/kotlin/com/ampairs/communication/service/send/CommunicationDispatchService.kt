@@ -40,6 +40,7 @@ class CommunicationDispatchService(
     private val logRepository: CommunicationLogRepository,
     private val renderer: TemplateRenderer,
     private val configService: CommunicationConfigService,
+    private val suppressionService: com.ampairs.communication.service.consent.SuppressionService,
     private val dispatchProvider: ObjectProvider<NotificationDispatchService>,
 ) {
     private val logger = LoggerFactory.getLogger(CommunicationDispatchService::class.java)
@@ -89,6 +90,33 @@ class CommunicationDispatchService(
         return savedRequest
     }
 
+    /**
+     * Record a per-recipient SKIP without sending (e.g. consent opt-out) under its own request, so it
+     * shows up in the campaign rollup. Idempotent via dedupKey.
+     */
+    @Transactional
+    fun recordSkip(
+        templateUid: String,
+        channel: Channel,
+        recipient: Recipient,
+        category: MessageCategory,
+        sourceRef: String?,
+        dedupKey: String?,
+        reason: SkipReason,
+    ) {
+        dedupKey?.let { if (requestRepository.findByDedupKey(it) != null) return }
+        val request = requestRepository.save(CommunicationRequest().apply {
+            this.templateUid = templateUid
+            triggerType = TriggerType.CAMPAIGN.name
+            this.sourceRef = sourceRef
+            channels = channel.name
+            audienceType = "SINGLE"
+            this.dedupKey = dedupKey
+            status = DeliveryStatus.SKIPPED.name
+        })
+        saveSkipped(request.uid, recipient, channel, category, reason)
+    }
+
     private fun dispatchOne(
         requestUid: String,
         template: MessageTemplate,
@@ -108,6 +136,11 @@ class CommunicationDispatchService(
         val address = recipient.addressFor(channel)
         if (address == null) {
             saveSkipped(requestUid, recipient, channel, category, SkipReason.NO_ADDRESS)
+            return
+        }
+        // Address-level suppression (hard bounce / complaint / unsubscribe) blocks all sends (FR-031).
+        if (suppressionService.isSuppressed(channel, address)) {
+            saveSkipped(requestUid, recipient, channel, category, SkipReason.SUPPRESSED)
             return
         }
 

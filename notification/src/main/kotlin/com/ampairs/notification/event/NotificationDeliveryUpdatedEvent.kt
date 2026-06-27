@@ -19,4 +19,7 @@ data class NotificationDeliveryUpdatedEvent(
     val billingMode: String? = null,
     val costUnits: Int? = null,
     val costCategory: String? = null,
+    /** Set by provider webhooks on a hard bounce/complaint so the source module suppresses the address. */
+    val suppress: Boolean = false,
+    val suppressionReason: String? = null,
 )

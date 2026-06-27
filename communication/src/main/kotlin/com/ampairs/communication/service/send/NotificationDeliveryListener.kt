@@ -1,9 +1,12 @@
 package com.ampairs.communication.service.send
 
+import com.ampairs.communication.domain.enums.Channel
 import com.ampairs.communication.domain.enums.DeliveryStatus
+import com.ampairs.communication.domain.enums.SuppressionReason
 import com.ampairs.communication.domain.model.CommunicationUsage
 import com.ampairs.communication.repository.CommunicationLogRepository
 import com.ampairs.communication.repository.CommunicationUsageRepository
+import com.ampairs.communication.service.consent.SuppressionService
 import com.ampairs.notification.event.NotificationDeliveryUpdatedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
@@ -23,6 +26,7 @@ import java.time.Instant
 class NotificationDeliveryListener(
     private val logRepository: CommunicationLogRepository,
     private val usageRepository: CommunicationUsageRepository,
+    private val suppressionService: SuppressionService,
 ) {
     private val logger = LoggerFactory.getLogger(NotificationDeliveryListener::class.java)
 
@@ -33,6 +37,17 @@ class NotificationDeliveryListener(
         val log = logRepository.findByUid(event.sourceRef) ?: run {
             logger.debug("No communication_log for sourceRef={}", event.sourceRef)
             return
+        }
+
+        // Hard bounce / complaint → suppress the address for all future sends (FR-031). Independent of
+        // the monotonic status guard below, since a bounce can arrive after a "sent" status.
+        if (event.suppress) {
+            val ch = runCatching { Channel.valueOf(log.channel) }.getOrNull()
+            val reason = runCatching { SuppressionReason.valueOf(event.suppressionReason ?: "HARD_BOUNCE") }
+                .getOrDefault(SuppressionReason.HARD_BOUNCE)
+            if (ch != null && log.recipientAddress.isNotBlank()) {
+                suppressionService.suppress(ch, log.recipientAddress, reason)
+            }
         }
 
         val newStatus = runCatching { DeliveryStatus.valueOf(event.status.uppercase()) }.getOrNull() ?: return

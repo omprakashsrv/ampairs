@@ -139,15 +139,15 @@
 
 **Independent Test**: Campaign to a 100-customer group on SMS with 10 opted out → 90 targeted, 10 `SKIPPED(OPTED_OUT)`; quiet hours defer; pause stops sends; rollup `sent+failed+skipped == targeted`.
 
-- [ ] **T044** [P] [US3] `comm/domain/model/Campaign.kt` + repo (state machine DRAFT/SCHEDULED→RUNNING↔PAUSED→DONE; rollup counts derived from logs).
-- [ ] **T045** [P] [US3] `comm/domain/model/CommunicationPreference.kt` + `CommunicationSuppression.kt` + repos.
-- [ ] **T046** [US3] Complete **SEGMENT** resolution in `CustomerAudienceAdapter` (T020) — resolve customer-group membership at send time (FR-013).
-- [ ] **T047** [US3] `comm/service/campaign/ConsentGate.kt` + `QuietHours.kt` + `Throttler.kt` — exclude opted-out (`SKIPPED(OPTED_OUT)`); defer quiet hours (business-tz, midnight-spanning); pace to `throttle_per_minute`. Transactional path stays exempt.
-- [ ] **T048** [US3] `comm/service/campaign/CampaignRunner.kt` + `comm/controller/CampaignController.kt` — `GET/POST /communication/v1/campaigns/sync` + `POST …/{uid}/start|pause|resume`; resolves audience + `targeted_count` on start; `CampaignResponse` rollup (targeted/sent/delivered/failed/skipped).
-- [ ] **T049** [US3] `comm/controller/PreferenceSyncController.kt` — `GET/POST /communication/v1/preferences/sync` (standard contract) + DTOs.
-- [ ] **T050** [US3] `comm/service/consent/UnsubscribeService.kt` + public `GET/POST /communication/v1/unsubscribe?token=` (token-scoped tenant, no header) — flip preference + record `CommunicationSuppression(UNSUBSCRIBE)` (FR-030).
-- [ ] **T051** [US3] `notif/controller/NotificationWebhookController.kt` — `POST /notification/v1/webhooks/{provider}` (ses|sns|whatsapp), signature-verified; map to monotonic queue-status update; republish `NotificationDeliveryUpdatedEvent`; communication listener records hard-bounce/complaint → `CommunicationSuppression` and updates usage attribution.
-- [ ] **T052** [P] [US3] Tests: `ConsentGateTest` (opt-out skip; transactional bypass; hard-bounce suppression), `QuietHoursTest` (midnight-spanning defer), `CampaignRunnerTest` (lifecycle + rollup reconciles `targeted == sent+failed+skipped`), `UnsubscribeTest`, `WebhookTest` (no status regression; bounce → suppression).
+- [X] **T044** [P] [US3] `comm/domain/model/Campaign.kt` + repo (state machine DRAFT/SCHEDULED→RUNNING↔PAUSED→DONE; rollup counts derived from logs).
+- [X] **T045** [P] [US3] `comm/domain/model/CommunicationPreference.kt` + `CommunicationSuppression.kt` + repos.
+- [X] **T046** [US3] Complete **SEGMENT** resolution in `CustomerAudienceAdapter` (T020) — resolve customer-group membership at send time (FR-013).
+- [X] **T047** [US3] `comm/service/campaign/ConsentGate.kt` + `QuietHours.kt` + `Throttler.kt` — exclude opted-out (`SKIPPED(OPTED_OUT)`); defer quiet hours (business-tz, midnight-spanning); pace to `throttle_per_minute`. Transactional path stays exempt.
+- [X] **T048** [US3] `comm/service/campaign/CampaignRunner.kt` + `comm/controller/CampaignController.kt` — `GET/POST /communication/v1/campaigns/sync` + `POST …/{uid}/start|pause|resume`; resolves audience + `targeted_count` on start; `CampaignResponse` rollup (targeted/sent/delivered/failed/skipped).
+- [X] **T049** [US3] `comm/controller/PreferenceSyncController.kt` — `GET/POST /communication/v1/preferences/sync` (standard contract) + DTOs.
+- [X] **T050** [US3] `comm/service/consent/UnsubscribeService.kt` + public `GET/POST /communication/v1/unsubscribe?token=` (token-scoped tenant, no header) — flip preference + record `CommunicationSuppression(UNSUBSCRIBE)` (FR-030).
+- [X] **T051** [US3] `notif/controller/NotificationWebhookController.kt` — `POST /notification/v1/webhooks/{provider}` (ses|sns|whatsapp), signature-verified; map to monotonic queue-status update; republish `NotificationDeliveryUpdatedEvent`; communication listener records hard-bounce/complaint → `CommunicationSuppression` and updates usage attribution.
+- [X] **T052** [P] [US3] Tests: `ConsentGateTest` (opt-out skip; transactional bypass; hard-bounce suppression), `QuietHoursTest` (midnight-spanning defer), `CampaignRunnerTest` (lifecycle + rollup reconciles `targeted == sent+failed+skipped`), `UnsubscribeTest`, `WebhookTest` (no status regression; bounce → suppression).
 
 **Checkpoint**: Promotional campaigns are compliant, paced, and reconcile.
 

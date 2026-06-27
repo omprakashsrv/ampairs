@@ -13,12 +13,14 @@ import java.time.Instant
 interface CommunicationRequestRepository : CrudRepository<CommunicationRequest, Long> {
     fun findByUid(uid: String?): CommunicationRequest?
     fun findByDedupKey(dedupKey: String): CommunicationRequest?
+    fun findBySourceRef(sourceRef: String): List<CommunicationRequest>
 }
 
 interface CommunicationLogRepository : CrudRepository<CommunicationLog, Long> {
     fun findByUid(uid: String?): CommunicationLog?
     fun findByNotificationUid(notificationUid: String): CommunicationLog?
     fun findByRequestUid(requestUid: String): List<CommunicationLog>
+    fun findByRequestUidIn(requestUids: Collection<String>): List<CommunicationLog>
 
     /** Pull-only sync feed for delivery status. @TenantId filters by workspace. */
     @Query("SELECT l FROM communication_log l WHERE l.updatedAt >= :lastSync")
