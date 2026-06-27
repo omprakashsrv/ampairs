@@ -78,6 +78,7 @@ class MasterModuleSeederService(
             createUnitModule(),
             createPrintingModule(),
             createStorefrontModule(),
+            createPricingModule(),
             createAiAssistantModule()
         )
     }
@@ -558,6 +559,52 @@ class MasterModuleSeederService(
         sizeMb = 4
         featured = false
         displayOrder = 65
+        active = true
+    }
+
+    private fun createPricingModule() = MasterModule().apply {
+        moduleCode = "pricing-management"
+        name = "Pricing & Offers"
+        description = "Channel- and segment-aware price lists with quantity tiers and MOQ, reusable geo-zones, and promotions/offers (cart & coupon discounts, BOGO, brand/category targeting) applied on top of resolved prices — fully offline-first"
+        tagline = "Set the right price and run offers for every customer"
+        category = ModuleCategory.SALES_MANAGEMENT
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.BASIC
+        requiredRole = UserRole.MANAGER
+        complexity = ModuleComplexity.ADVANCED
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 8, false, "Run counter offers and customer-group pricing to drive sales"),
+            createBusinessRelevance(BusinessType.WHOLESALE, 10, true, "Essential for channel/segment price lists, quantity tiers, and dealer schemes"),
+            createBusinessRelevance(BusinessType.MANUFACTURING, 9, false, "Useful for distributor pricing tiers and volume-based offers")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = listOf("PRODUCT_READ"),
+            optionalPermissions = listOf("CUSTOMER_READ", "ORDER_READ"),
+            dependencies = listOf("product-management", "customer-management")
+        )
+        uiMetadata = createUIMetadata(
+            icon = "sell",
+            primaryColor = "#C2185B",
+            tags = listOf("Pricing", "Price Lists", "Offers", "Promotions", "Discounts", "Geo Zones")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/pricing",
+            displayName = "Pricing",
+            iconName = "sell",
+            menuItems = listOf(
+                createMenuItem("pricing-overview", "Overview", "/pricing", "dashboard", 1, true),
+                createMenuItem("price-lists", "Price Lists", "/pricing/lists", "list_alt", 2),
+                createMenuItem("offers", "Offers", "/pricing/offers", "local_offer", 3),
+                createMenuItem("geo-zones", "Geo Zones", "/pricing/zones", "place", 4),
+                createMenuItem("price-tester", "Price Tester", "/pricing/tester", "science", 5)
+            )
+        )
+        navigationIndex = 45
+        provider = "Ampairs"
+        sizeMb = 6
+        featured = true
+        displayOrder = 35
         active = true
     }
 
