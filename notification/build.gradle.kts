@@ -48,6 +48,8 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-data-jpa")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    // Method-security annotations (@PreAuthorize) for the SUPER_ADMIN global-announce endpoint
+    implementation("org.springframework.security:spring-security-core")
 
     // AWS SNS for SMS
     implementation("io.awspring.cloud:spring-cloud-aws-starter-sns")
@@ -55,6 +57,9 @@ dependencies {
     // Jackson for JSON processing
     implementation("com.fasterxml.jackson.core:jackson-databind")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+
+    // Firebase Admin SDK for push notifications (FCM)
+    implementation("com.google.firebase:firebase-admin:9.4.1")
 
     runtimeOnly("com.mysql:mysql-connector-j")
     developmentOnly("org.springframework.boot:spring-boot-devtools")

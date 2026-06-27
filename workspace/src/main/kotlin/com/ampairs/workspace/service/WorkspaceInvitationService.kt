@@ -29,6 +29,7 @@ class WorkspaceInvitationService(
     private val memberService: WorkspaceMemberService,
     private val activityService: WorkspaceActivityService,
     private val userService: UserService,
+    private val workspaceNotificationService: WorkspaceNotificationService,
 ) {
 
     companion object {
@@ -151,6 +152,15 @@ class WorkspaceInvitationService(
             invitation.status = InvitationStatus.ACCEPTED
             invitation.acceptedAt = Instant.now()
             invitationRepository.save(invitation)
+
+            // Notify existing members that someone joined (push + in-app, best-effort)
+            val workspaceName = workspaceRepository.findByUid(invitation.workspaceId)
+                .map { it.name }.orElse("your workspace")
+            val newMemberName = userService.getUserById(userId)?.let { user ->
+                listOfNotNull(user.firstName, user.lastName).joinToString(" ").ifBlank { null }
+                    ?: user.email ?: user.phone
+            } ?: "A new member"
+            workspaceNotificationService.notifyMemberJoined(invitation.workspaceId, workspaceName, newMemberName)
         }
 
         val updatedInvitation = invitationRepository.findByUid(invitation.uid).get()

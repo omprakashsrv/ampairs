@@ -4,12 +4,15 @@ import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.notification.config.NotificationProperties
 import com.ampairs.notification.config.NotificationProperties.SmsProperties
 import com.ampairs.notification.model.NotificationQueue
+import com.ampairs.notification.port.DevicePushTokenPort
 import com.ampairs.notification.provider.NotificationChannel
 import com.ampairs.notification.provider.NotificationResult
 import com.ampairs.notification.provider.NotificationStatus
+import com.ampairs.notification.provider.push.FcmPushProvider
 import com.ampairs.notification.provider.sms.AwsSnsSmsProvider
 import com.ampairs.notification.provider.sms.Msg91SmsProvider
 import com.ampairs.notification.repository.NotificationQueueRepository
+import org.springframework.beans.factory.ObjectProvider
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -34,13 +37,16 @@ class NotificationServiceQueueTest {
     private val repository: NotificationQueueRepository = mock()
     private val msg91: Msg91SmsProvider = mock()
     private val awsSns: AwsSnsSmsProvider = mock()
+    private val fcmPush: FcmPushProvider = mock()
     private val executor: Executor = Executor { it.run() }
     private val databaseService: NotificationDatabaseService = mock()
+    private val devicePushTokenPort: ObjectProvider<DevicePushTokenPort> = mock()
 
     private fun service(primary: String = "MSG91"): NotificationService =
         NotificationService(
-            repository, msg91, awsSns, executor, databaseService,
+            repository, msg91, awsSns, fcmPush, executor, databaseService,
             NotificationProperties(sms = SmsProperties(primaryProvider = primary)),
+            devicePushTokenPort,
         )
 
     @BeforeEach
