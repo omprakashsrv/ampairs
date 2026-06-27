@@ -27,7 +27,7 @@ Templates, schedules, campaigns, and preferences are exposed over the canonical 
 **Project Type**: Web/service backend module + (high-level) mobile feature module
 **Performance Goals**: transactional message dispatched < 30 s p99 (SC-001); campaign throttle configurable per-minute; sweeper tick ~1 min
 **Constraints**: multi-tenant isolation (`X-Workspace-ID`); business-timezone-correct recurrence (never server zone); at-most-once sends; server-side rendering (the app never renders email)
-**Scale/Scope**: per-workspace template/schedule/campaign counts in the 10s–100s; campaign audiences up to customer-group size (1k–10k); 11 communication tables + 1 new notification credential table + notification provider/column additions
+**Scale/Scope**: per-workspace template/schedule/campaign counts in the 10s–100s; campaign audiences up to customer-group size (1k–10k); 12 communication tables + 1 new notification credential table + notification provider/column additions
 
 ## Constitution Check
 
@@ -38,8 +38,8 @@ Templates, schedules, campaigns, and preferences are exposed over the canonical 
 | I. `Instant` timestamps / `TIMESTAMPTZ` | ✅ | All entity timestamps `Instant`; recurrence `next_run_at` stored as UTC `Instant` computed from business-tz wall-clock; migrations create `TIMESTAMPTZ` (pg) / `TIMESTAMP` (mysql) |
 | II. DTO isolation | ✅ | Request/Response DTOs in `communication/domain/dto/`; entity↔DTO via extension fns; no JPA entity leaves a controller |
 | III. Global snake_case JSON | ✅ | No `@JsonProperty` on standard fields; `htmlBody`→`html_body` automatically |
-| IV. Multi-tenancy | ✅ | All entities extend `OwnableBaseDomain`; tenant set by `SessionUserFilter` at controller level; public unsubscribe + provider-webhook endpoints resolve tenant from a signed token / stored row, not a header |
-| V. `ApiResponse<T>` | ✅ | All endpoints return `ApiResponse`; `/sync` pull → `ApiResponse<PageResponse<T>>` |
+| IV. Multi-tenancy | ⚠️ exception | All entities extend `OwnableBaseDomain`; tenant set by `SessionUserFilter` at controller level. **Two endpoints resolve tenant without `X-Workspace-ID`** — see Complexity Tracking: the provider webhook (verified by provider signature, correlated via `source_ref`) and the public unsubscribe link (tenant from a signed token). Both establish tenant context server-side before any repository access |
+| V. `ApiResponse<T>` | ⚠️ exception | Workspace-scoped endpoints + the unsubscribe JSON `POST` return `ApiResponse` (`/sync` pull → `ApiResponse<PageResponse<T>>`). **Two endpoints deviate by necessity** — see Complexity Tracking: provider webhooks return the provider-required ack shape; the public unsubscribe `GET` returns a minimal confirmation page |
 | VI. Centralized exceptions | ✅ | No try/catch for business errors in controllers; typed domain exceptions bubble |
 | (Security rule #10) Secrets | ✅ | Per-tenant provider secrets stored **encrypted at rest** (AES-GCM) with the master key from env (`COMM_CRED_ENCRYPTION_KEY`) — never in source; secrets are write-only over the API (masked on read) and excluded from logs/`toString()`; credentials are **not** on the `/sync` feed |
 | VII. `@EntityGraph` | ✅ | Template→variants fetched via `@NamedEntityGraph` to avoid N+1 on the aggregate `/sync` feed |
@@ -47,7 +47,7 @@ Templates, schedules, campaigns, and preferences are exposed over the canonical 
 | IX. Module boundaries | ✅ | New bounded context `communication`; cross-module access only via public service interfaces / ports (`event` listeners, a customer audience port, a notification dispatch service) — never foreign repositories |
 | X. Compose parity | ➖ High-level | Mobile module planned here; built in `ampairs-app` repo per CMP rules |
 
-**Result: PASS.** No violations; Complexity Tracking not required. (One judgment call — a new module vs. extending `notification` — is justified under Principle IX: orchestration is a distinct bounded context from transport. See research.md.)
+**Result: PASS with two documented exceptions** (Principles IV & V, both on the same two non-user-facing endpoints — see Complexity Tracking). Every workspace-scoped, user-facing endpoint complies fully. (One further judgment call — a new module vs. extending `notification` — is justified under Principle IX: orchestration is a distinct bounded context from transport. See research.md.)
 
 ## Project Structure
 
@@ -134,4 +134,9 @@ feature/communication/                  # new KMP feature module (separate plan/
 
 ## Complexity Tracking
 
-No constitution violations — section intentionally empty.
+Two endpoints take a documented exception to Principles IV (`X-Workspace-ID`) and V (`ApiResponse<T>`). Both are non-user-facing integration endpoints whose response shape and auth model are dictated by an external party, so the standard envelope/header cannot apply. They establish tenant context server-side before any repository access (Principle IV's intent is preserved).
+
+| Violation | Why needed | Simpler alternative rejected because |
+|---|---|---|
+| **Provider webhook** `POST /notification/v1/webhooks/{provider}` returns the **provider-required ack shape** (not `ApiResponse`) and is authed by **provider signature**, not `X-Workspace-ID` | SES/SNS/WhatsApp define the exact HTTP response they expect (e.g. SNS subscription-confirmation handshake, WhatsApp `200` echo); wrapping in `ApiResponse` or demanding a workspace header would break delivery-receipt ingestion. Tenant is resolved from the stored `source_ref` correlation before any write. | Wrapping in `ApiResponse` — rejected: providers reject/!retry on unexpected bodies. Requiring `X-Workspace-ID` — rejected: providers can't send it; the correlation row already binds the row to its workspace. |
+| **Public unsubscribe** `GET /communication/v1/unsubscribe` returns a **minimal confirmation page** and is authed by a **signed token**, not `X-Workspace-ID` | The link is opened by an end recipient in a browser/email client with no session and no workspace header; it must render a human page, and the tenant is encoded in (and verified from) the signed token. | Requiring `X-Workspace-ID` — rejected: recipients have no header/session. **Note:** the JSON `POST /unsubscribe` companion **does** return `ApiResponse<Unit>` — only the human `GET` page deviates. |

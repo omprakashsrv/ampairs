@@ -2,7 +2,7 @@
 
 All entities are in the `communication` module, package `com.ampairs.communication.domain.model`, extend **`OwnableBaseDomain`** (tenant-scoped via `@TenantId ownerId`, `uid`, `active`, `createdAt`/`updatedAt` as `Instant`), and serialize **snake_case**. Columns below omit the inherited `OwnableBaseDomain` fields except where behavior matters. Migrations are written for **both** `db/migration/mysql/` and `db/migration/postgresql/` (`TIMESTAMP` vs `TIMESTAMPTZ`).
 
-UID prefixes (client-authored on mobile; server prefix for server-minted rows): `CTPL` template, `CTPV` variant, `CREQ` request, `CLOG` log, `CSCH` schedule, `CCMP` campaign, `CPRF` preference, `CSUP` suppression, `CCFG` config.
+UID prefixes (client-authored on mobile; server prefix for server-minted rows): `CTPL` template, `CTPV` variant, `CREQ` request, `CLOG` log, `CSCH` schedule, `CCMP` campaign, `CPRF` preference, `CSUP` suppression, `CCFG` config, `CETB` event-template binding, `CUSG` usage.
 
 ---
 
@@ -193,7 +193,23 @@ UID prefixes (client-authored on mobile; server prefix for server-minted rows): 
 
 ---
 
-## 11. `communication_usage` (UsageRecord) — append-only billing ledger *(communication module)*
+## 11. `event_template_binding` (EventTemplateBinding) — transactional trigger map
+
+Workspace-scoped mapping that tells the `TransactionalEventListener` which template + channels to fire for a given domain event. Without it, a business event has nothing to send (FR-015).
+
+| Column | Type | Notes |
+|---|---|---|
+| `uid` | varchar | `CETB…` |
+| `event_type` | varchar | e.g. `INVOICE_CREATED`, `ORDER_CREATED`, `PAYMENT_RECEIVED` (matches the `event` module's published types) |
+| `template_uid` | varchar | FK → `message_template.uid` (or `template_code`) |
+| `channels` | varchar | CSV of Channel to send on |
+| `enabled` | bool | toggle without deleting |
+| `active` | bool | soft-delete |
+
+- Unique: `(owner_id, event_type)` (one binding per event type per workspace; extend to `(owner_id, event_type, template_uid)` if multiple templates per event are needed later).
+- Managed via the standard `/sync` contract (`/communication/v1/bindings/sync`) so the app can configure it offline.
+
+## 12. `communication_usage` (UsageRecord) — append-only billing ledger *(communication module)*
 
 | Column | Type | Notes |
 |---|---|---|
@@ -228,7 +244,7 @@ UID prefixes (client-authored on mobile; server prefix for server-minted rows): 
 
 `channel` already supports `EMAIL`/`WHATSAPP`. New providers (`EmailNotificationProvider`, `WhatsAppNotificationProvider`), `NotificationDispatchService`, and `NotificationDeliveryUpdatedEvent` (now also carrying `credentialUid`, `providerAccountRef`, `billingMode`, `costUnits`).
 
-### 12. `workspace_channel_credential` (WorkspaceChannelCredential) — NEW, `notification` module, `OwnableBaseDomain`
+### 13. `workspace_channel_credential` (WorkspaceChannelCredential) — NEW, `notification` module, `OwnableBaseDomain`
 
 | Column | Type | Notes |
 |---|---|---|
@@ -261,6 +277,7 @@ CommunicationLog *───1 notification_queue          (notification_uid; cros
 CommunicationLog 1───1 CommunicationUsage           (one usage row per SENT/DELIVERED message)
 WorkspaceChannelCredential (notification) ──used-by──> send path; attribution flows back to CommunicationLog + CommunicationUsage
 CommunicationSchedule 1───* CommunicationOccurrence (unique occurrence_key)
+EventTemplateBinding ──(maps event_type → template+channels)──> TransactionalEventListener ──> CommunicationRequest
 CommunicationSchedule ──(materializes)──> CommunicationRequest
 Campaign ──(materializes)──> CommunicationRequest ──> CommunicationLog (rollup)
 Customer (other module) 1───* CommunicationPreference   (by customer_uid, via port)

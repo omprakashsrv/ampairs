@@ -20,6 +20,14 @@ POST /communication/v1/templates/sync
 
 `TemplateVariantRequest/Response`: `uid, channel, locale, subject?, html_body?, text_body?, provider_template_id?, provider_params_json?, active`.
 
+## 🔁 Event→template bindings — standard `/sync`
+
+```
+GET  /communication/v1/bindings/sync?...   → ApiResponse<PageResponse<BindingResponse>>
+POST /communication/v1/bindings/sync       → ApiResponse<List<BindingResponse>>
+```
+`BindingRequest`: `uid, event_type, template_uid, channels, enabled, active`. Drives the transactional listener: which template + channels fire for `INVOICE_CREATED` / `ORDER_CREATED` / `PAYMENT_RECEIVED` (FR-015). Unique `(workspace, event_type)`.
+
 ## 🔁 Schedules — standard `/sync`
 
 ```

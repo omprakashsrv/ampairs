@@ -11,7 +11,7 @@ How to wire, run, and try the module locally. Backend lives in `ampairs` (this r
 
 ## 2. Migrations (both vendors — required)
 
-Write `communication/src/main/resources/db/migration/{mysql,postgresql}/V1.0.x__communication_init.sql` creating the 11 tables in data-model.md (`message_template`, `message_template_variant`, `communication_request`, `communication_log`, `communication_schedule`, `communication_occurrence`, `campaign`, `communication_preference`, `communication_suppression`, `communication_config`, `communication_usage`). Add a separate `notification` migration that (a) adds `subject`, `source_module`, `source_ref`, `credential_uid`, `billing_mode` to `notification_queue` and (b) creates the `workspace_channel_credential` table.
+Write `communication/src/main/resources/db/migration/{mysql,postgresql}/V1.0.x__communication_init.sql` creating the 12 tables in data-model.md (`message_template`, `message_template_variant`, `communication_request`, `communication_log`, `communication_schedule`, `communication_occurrence`, `campaign`, `communication_preference`, `communication_suppression`, `communication_config`, `event_template_binding`, `communication_usage`). Add a separate `notification` migration that (a) adds `subject`, `source_module`, `source_ref`, `credential_uid`, `billing_mode` to `notification_queue` and (b) creates the `workspace_channel_credential` table.
 
 ```bash
 ./gradlew :ampairs_service:flywayInfo      # pick next free V-number, check both vendors
