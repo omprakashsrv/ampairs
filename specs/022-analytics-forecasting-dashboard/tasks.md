@@ -55,10 +55,13 @@ wiring every story needs. **No user-story work starts until this phase is done.*
   `AgingBucket`, `ForecastMethod`, `Confidence`, `MetricUnit`, `Aggregation` (per data-model §4).
 - [ ] T006 [P] (BE) `MetricDefinition` catalog registry in `analytics/domain/catalog/MetricCatalog.kt`
   with the P1 metric ids (data-model §1.3).
-- [ ] T007 (BE) Business-timezone resolution: add/confirm a public service in the `business` module
-  (`business/.../service/BusinessLocaleService` or equivalent) returning the workspace `ZoneId`; inject
-  it into `analytics`. If a public accessor already exists, document it; else add an interface method
-  (read-only). (cross-module, Principle IX)
+- [ ] T007a (BE) **Discovery**: grep the `business` module for an existing public service exposing the
+  workspace timezone (e.g. `business/.../service/*Locale*`/`*TimeZone*`); record the exact interface +
+  method (or confirm none exists) before writing code. (deterministic prerequisite for T007)
+- [ ] T007 (BE) Business-timezone resolution: based on T007a, either reuse the existing public accessor
+  or add a read-only interface method returning the workspace `ZoneId` in the `business` module; inject
+  it into `analytics`. Cross-module access via public service interface only (Principle IX) — analytics
+  never reads the `business` repository directly. (depends on T007a)
 - [ ] T008 (BE) Flyway migration `V1.0.0__create_analytics_tables.sql` in BOTH
   `analytics/src/main/resources/db/migration/mysql/` and `.../postgresql/`: tables `kpi_daily_summary`
   and `demand_forecast` with the columns, unique keys, and indexes from data-model §1.1/§1.2 (vendor
@@ -99,13 +102,23 @@ match the backend `…/dashboard/kpis` to the last currency unit.
   invoice lands on `2026-07-01` for `Asia/Kolkata` (`analytics/src/test/.../KpiRollupServiceTimezoneTest.kt`). (R7/SC-003)
 - [ ] T016 [P] [US1] (BE) Testcontainers test: recompute idempotence — recomputing a day twice yields
   identical `kpi_daily_summary` rows (`.../KpiRollupReconcileTest.kt`). (SC-004)
+- [ ] T016a [P] [US1] (BE) Testcontainers test: source-state fidelity (`.../KpiSourceFidelityTest.kt`) —
+  (a) **backdated edit**: editing/backdating a finalized invoice re-rolls the affected business day's
+  summary, not just today (FR-014); (b) **exclusions**: drafts and cancelled/voided documents do NOT
+  contribute, and refunds/credit notes/partial payments reduce sales/collections/outstanding correctly
+  (FR-013).
 - [ ] T017 [P] [US1] (BE) Contract test for each dashboard read endpoint (kpis/trend/aging/gst-summary/top)
   asserting `ApiResponse` envelope + snake_case shape per contracts/dashboard-read.md
   (`.../AnalyticsControllerTest.kt`).
 - [ ] T018 [P] [US1] (BE) GST split unit test: intra (CGST+SGST) vs inter (IGST) from `taxInfos` +
   `placeOfSupply` reconciles to invoice tax (`.../GstSummaryServiceTest.kt`). (R10/SC-006)
 - [ ] T019 [P] [US1] (MOB) Aggregate-DAO unit tests for sales/aging/GST/top/inventory math over an
-  in-memory Room DB with seeded rows (`feature/analytics/src/commonTest/.../KpiQueryTest.kt`).
+  in-memory Room DB with seeded rows (`feature/analytics/src/commonTest/.../KpiQueryTest.kt`). Include a
+  **device-timezone-agreement** case: the same seeded rows bucketed with an injected business `TimeZone`
+  produce identical day/month totals regardless of the simulated device zone (SC-003, two-device
+  agreement) — assert no use of `currentSystemDefault()`. (Workspace isolation/FR-026 is enforced
+  structurally on the backend via `OwnableBaseDomain`/`TenantContextHolder` in T027 and on mobile by the
+  per-workspace `@SingleIn(WorkspaceScope::class)` DBs.)
 
 ### Backend implementation (US1)
 - [ ] T020 [P] [US1] (BE) `KpiDailySummary` entity in `analytics/domain/model/` extending
@@ -138,6 +151,11 @@ match the backend `…/dashboard/kpis` to the last currency unit.
   ViewModel (no cross-DB join; second keyed lookup for names — R4). (depends on T028)
 - [ ] T030 [US1] (MOB) `AnalyticsApi(+Impl)` in `data/api/` for deep-history reads via
   `ApiUrlBuilder.analyticsUrl(...)` (used only outside the device sync window). (depends on T011)
+- [ ] T030a [US1] (MOB) Sync-window boundary handling (FR-011): determine the earliest locally-synced
+  business date per source; when the requested period extends earlier, fetch the remainder via `T030`'s
+  API when online and merge with local aggregates; when offline, render a **reduced-coverage badge**
+  ("showing data from {date}") instead of silently undercounting. Surface coverage state in
+  `DashboardUiState`. (depends on T030, T029)
 - [ ] T031 [US1] (MOB) `DashboardViewModel` (`@ContributesIntoMap(WorkspaceScope::class)`+`@ViewModelKey`)
   exposing `StateFlow<DashboardUiState>`; period selector recomputes; freshness ("last synced") stamp;
   business-zone bucketing via injected `LocalAppLocale.timeZoneId`. (depends on T029, T010)
@@ -164,7 +182,11 @@ still renders.
 
 ### Tests for User Story 2 ⚠️
 - [ ] T034 [P] [US2] (BE) Holt-Winters unit test on a synthetic seasonal series (level+trend+seasonality)
-  and moving-average fallback for sparse history (`.../ForecastServiceTest.kt`). (R5/SC-007)
+  and moving-average fallback for sparse history (`.../ForecastServiceTest.kt`). **Deterministic
+  acceptance bar** (SC-007): on a held-out tail of the synthetic series, Holt-Winters MAPE MUST be at
+  least 20% lower than a naïve "same as last period" baseline; assert `method=MOVING_AVG` &
+  `confidence ≤ MEDIUM` when history < 2 seasonal cycles, `HOLT_WINTERS` & `confidence=HIGH` at ≥ 2
+  cycles. (R5)
 - [ ] T035 [P] [US2] (BE) Contract test for `GET /analytics/v1/forecasts/sync` — `ApiResponse<PageResponse>`,
   `last_sync`/paging, includes retired rows (`.../DemandForecastSyncControllerTest.kt`).
 - [ ] T036 [P] [US2] (MOB) `DemandForecastSyncDelegate` pull test (upsert + drop inactive + checkpoint
@@ -237,8 +259,10 @@ added/removed/reordered and sync across devices; an out-of-window export is prod
   parity spot-check SC-004).
 - [ ] T055 [P] Docs: add `analytics/CLAUDE.md` (BE) and a short `feature/analytics` note (MOB); update
   module ownership table if needed.
-- [ ] T056 Performance pass: confirm tile render <1s on SMB volumes (SC-001/002); verify date-bounded
-  queries use the covering indexes.
+- [ ] T056 Performance pass: confirm each tile renders <1s and a period switch recomputes <1s
+  (SC-001/SC-002) on the spec's SMB volume baseline (per Assumptions: ~thousands of invoices/orders and
+  thousands of products/customers per workspace — seed a dataset at that scale); verify date-bounded
+  queries use the covering indexes (no full-table scans) via query plans.
 
 ---
 
@@ -256,8 +280,9 @@ added/removed/reordered and sync across devices; an out-of-window export is prod
 
 ### Parallel opportunities
 - Setup: T001/T003 in parallel (different repos). Foundational: T005, T006, T010, T011, T012 are [P].
-- US1: all test tasks (T015–T019) [P]; T020/T021 [P]; backend (T020–T027) and mobile (T028–T033) tracks
-  run concurrently. US2 backend (T037–T042) ∥ mobile (T043–T045). US3 T048/T050/T051 [P].
+- US1: all test tasks (T015–T019 + T016a) [P]; T020/T021 [P]; backend (T020–T027) and mobile
+  (T028–T033, T030a) tracks run concurrently. US2 backend (T037–T042) ∥ mobile (T043–T045). US3
+  T048/T050/T051 [P].
 - With two developers: one drives backend, one drives mobile, per story.
 
 ---
@@ -272,8 +297,8 @@ deployable increment.
 
 ## Summary
 
-- **Total tasks**: 56 (T001–T056).
-- **Per story**: Setup 4 · Foundational 10 · US1 19 (T015–T033) · US2 12 (T034–T045) · US3 6 (T046–T051) · Polish 5.
+- **Total tasks**: 59 (T001–T056 + T007a, T016a, T030a).
+- **Per story**: Setup 4 · Foundational 11 (incl. T007a) · US1 21 (T015–T033 + T016a, T030a) · US2 12 (T034–T045) · US3 6 (T046–T051) · Polish 5.
 - **Tests included** (plan + constitution require them): backend Testcontainers (bucketing, recompute
   idempotence, GST split, Holt-Winters, contracts) + mobile DAO/sync tests and `check`/compile gates.
 - **MVP scope**: User Story 1 (offline KPI dashboard) — fully usable on its own.
