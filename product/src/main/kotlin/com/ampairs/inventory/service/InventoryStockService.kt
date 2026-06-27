@@ -21,10 +21,16 @@ interface InventoryStockService {
 
     /** Restore stock for a cancellation/return/void. Idempotent per source line. */
     fun reverseSale(command: StockMutationCommand)
+
+    /** Apply inbound stock for a received purchase (the mirror of [applySale]). Idempotent per source line. */
+    fun applyPurchase(command: StockMutationCommand)
+
+    /** Remove the inbound stock of a cancelled/reverted purchase. Idempotent per source line. */
+    fun reversePurchase(command: StockMutationCommand)
 }
 
 /** The source document type that triggered a stock movement. */
-enum class StockSourceType { ORDER, INVOICE, RETURN, MANUAL, COUNT }
+enum class StockSourceType { ORDER, INVOICE, PURCHASE, RETURN, MANUAL, COUNT }
 
 /**
  * A request to apply/reverse stock for one source document.
