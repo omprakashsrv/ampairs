@@ -61,6 +61,7 @@ A user exports the **full customer list including the `uid` column**, edits many
 3. **Given** a row that fails validation (e.g. malformed email, missing required field), **When** the import runs, **Then** that row is rejected with a field-level reason and the remaining valid rows still apply.
 4. **Given** a completed import, **When** the user views the result, **Then** they see counts (total / updated / created / skipped / failed) and can download an **error report** listing each failed row with its reason.
 5. **Given** the same file uploaded twice, **When** the second upload runs, **Then** records are upserted idempotently by `uid` (no duplication) — last write wins.
+6. **Given** a record with a pending unsynced local edit, **When** a CLIENT import touches that same `uid`, **Then** the local edit is preserved by default and the row is reported as a conflict (not silently overwritten), unless the user chose overwrite-local.
 
 ---
 
@@ -118,10 +119,10 @@ The same export/import works across modules — customer, product, order, invoic
 ### Edge Cases
 
 - **Huge export on-device**: a CLIENT export of a very large module could exhaust memory/time → the app streams rows to disk in batches and, above a configurable row threshold, recommends/forces SERVER generation.
-- **Excel on iOS**: rich `.xlsx` generation is hard in shared/native code → see plan (expect/actual writer; fallback to SERVER generation for Excel on platforms without a writer).
+- **Excel on iOS**: rich `.xlsx` generation is hard in shared/native code. **Decision (A1):** ship a **minimal pure-Kotlin OOXML writer** for iOS so offline Excel export holds on every platform (keeping the "all formats on the client" requirement true). SERVER generation is the **contingency** if that writer is deferred — not the baseline. CSV/JSON/XML are always offline on iOS.
 - **UID collisions / wrong module**: an imported file whose `uid` prefixes belong to a different module → rows are rejected with a "wrong entity type" reason.
 - **Partial connectivity during CLIENT import**: rows are written to Room as `synced = false`; the existing push retries until online — the import "succeeds locally" immediately and reconciles later.
-- **Concurrent edit**: a record edited locally (unsynced) while an import also touches it → existing local-edit-wins / last-write-wins-by-server-timestamp rules apply; the import path must not silently clobber a newer unsynced local edit without surfacing it.
+- **Concurrent edit**: a record edited locally (unsynced) while an import also touches it → governed by **FR-024**: default **skip-with-warning** (local-edit-wins, row reported as a conflict), with an optional explicit **overwrite-local**. The import path MUST NOT silently clobber a pending unsynced local edit.
 - **Format ambiguity on import**: commas/quotes/newlines in CSV fields, type coercion (numbers, booleans, dates, money in minor units) → strict, documented parsing with per-cell errors.
 - **Soft-deleted rows**: export may optionally include inactive rows (with an `active` column); import setting `active = false` performs a soft-delete that propagates via the normal sync delete path.
 - **Empty / header-only file on import**: reported as "0 rows", not an error.
@@ -153,6 +154,7 @@ The same export/import works across modules — customer, product, order, invoic
 - **FR-014**: CLIENT import MUST write parsed rows to the on-device DB as **unsynced**, so the existing push delivers the updates — usable offline, reconciling on reconnect.
 - **FR-015**: SERVER import MUST run as an **async job** that validates and upserts server-side and tracks the same status/result/error-report lifecycle as SERVER export.
 - **FR-016**: Imports MUST be **idempotent by `uid`** (re-uploading the same file does not duplicate records).
+- **FR-024**: A CLIENT import MUST NOT silently overwrite a record that has **pending unsynced local edits**. The default **conflict policy is skip-with-warning** (keep the local edit, count the row as a conflict in the result); an explicit **overwrite-local** option may be offered. Conflicts MUST be surfaced in the import result, never dropped.
 
 **Generic / cross-module**
 - **FR-017**: Each module MUST be onboarded by declaring an **export/import descriptor** (exportable columns + labels + types, the import match-key, the active/soft-delete column, and the mapping to its `/sync` DTOs) — no changes to the export/import engine.

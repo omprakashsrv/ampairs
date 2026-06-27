@@ -3,7 +3,7 @@
 **Input**: Design documents from `/home/user/ampairs/specs/015-report-bulk-export-import/`
 **Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/report-api.md
 
-**Tests**: This is not a TDD request. Test tasks are included as **OPTIONAL** in the Polish phase only (the plan's Testing section signals which are highest-value). Skip them to ship faster; do them to harden.
+**Tests**: This is not a TDD request, so most tests are **OPTIONAL** (Polish phase). **Exception (constitution "Testing & Quality Gates" — API endpoints ≥90%)**: the backend contract/integration tests for the **new endpoints** added in US3 and US4 are **REQUIRED** and live inside those story phases (T034a, T048a). Unit/perf tests stay optional.
 
 **Cross-repo**: This feature spans two repos. Tasks are tagged:
 - **[BE]** → backend repo `/home/user/ampairs` (Spring Boot, new `report` module)
@@ -65,7 +65,7 @@
 ### Implementation (US1)
 - [ ] T015 [APP] [US1] `SpreadsheetWriter` **actual** in `feature/export/src/androidMain/` using Apache POI (`SXSSF` streaming).
 - [ ] T016 [P] [APP] [US1] `SpreadsheetWriter` **actual** in `feature/export/src/desktopMain/` using Apache POI.
-- [ ] T017 [P] [APP] [US1] `SpreadsheetWriter` **actual** in `feature/export/src/iosMain/`: minimal pure-Kotlin OOXML writer over a KMP zip **or** a stub that signals "use SERVER" (research R4). CSV/JSON/XML must stay offline on iOS regardless.
+- [ ] T017 [P] [APP] [US1] `SpreadsheetWriter` **actual** in `feature/export/src/iosMain/`: build the **minimal pure-Kotlin OOXML writer over a KMP zip** (decision A1 — the default, so "all formats on client" incl. offline Excel holds on iOS per FR-001/FR-007). The SERVER fallback (T055) is the contingency only if this writer slips, **not** the baseline. CSV/JSON/XML stay offline on iOS regardless. Tabular `.xlsx` = a small fixed set of XML parts in a zip — keep the writer to the tabular subset (see research R4).
 - [ ] T018 [APP] [US1] Add `CustomerDao.queryForExport(filters, sort, includeInactive)` in `/home/user/ampairs-app/feature/customer/.../data/db/CustomerDao.kt`.
 - [ ] T019 [APP] [US1] `CustomerExporter` in `/home/user/ampairs-app/feature/customer/src/commonMain/kotlin/com/ampairs/customer/export/CustomerExporter.kt`: `columns` (uid[isMatchKey], name, phone, email, group_uid, active[isActiveFlag], display-only balance), `readRows()` (entity→row), registered `@Inject @ContributesIntoMap(WorkspaceScope::class) @ModuleExporterKey("customer")`. (Add `:data:common` dep to customer module if absent.)
 - [ ] T020 [APP] [US1] `ExportViewModel` + `ExportUiState` (MVI) in `feature/export/.../ui/`: module pick (from registry), format pick, standard report, run → `FormatWriter` → `saveExportFile`/`shareFile`.
@@ -84,7 +84,7 @@
 **Independent Test**: Export customers to CSV, edit `name`+`phone` of 5 rows, re-import → exactly those 5 customers updated (matched by `uid`), no new records, summary 5 updated / 0 failed; re-importing the same file is idempotent.
 
 ### Implementation (US2)
-- [ ] T024 [APP] [US2] Implement `CustomerExporter.writeRows(rows, mode)`: parse+validate via `applyExportRow` (email/required checks → `RowError`), `UPDATE_ONLY` skips unknown/blank `uid`, `UPSERT` generates `UidGenerator.generateUid("CUS")`; write `synced=false` then `syncStateDao.markPendingPush(SyncEntity.CUSTOMER, now)`. Returns `ImportOutcome`. **Never call the API here** — the existing `CustomerSyncDelegate` push delivers to `/customer/v1/customers/sync`.
+- [ ] T024 [APP] [US2] Implement `CustomerExporter.writeRows(rows, mode)`: parse+validate via `applyExportRow` (email/required checks → `RowError`), `UPDATE_ONLY` skips unknown/blank `uid`, `UPSERT` generates `UidGenerator.generateUid("CUS")`; write `synced=false` then `syncStateDao.markPendingPush(SyncEntity.CUSTOMER, now)`. Returns `ImportOutcome`. **Never call the API here** — the existing `CustomerSyncDelegate` push delivers to `/customer/v1/customers/sync`. **Unsynced-local conflict (spec FR-024 / edge case):** before overwriting, check the target row; if it already has `synced=false` (a pending local edit not yet pushed), do **not** silently clobber it — apply the configured `ConflictPolicy` (default `SKIP_WITH_WARNING`: leave the local edit, add the row to `ImportOutcome.conflicts`; alternative `OVERWRITE_LOCAL`) and surface the count in the result summary.
 - [ ] T025 [APP] [US2] `DataJobEntity` + `DataJobDao` (local-only, **not** synced) in `feature/export` Room DB (bump `ExportDatabase` version); `DataJobRepository` (pure Room) for tracking import/export runs + progress.
 - [ ] T026 [APP] [US2] `ImportViewModel` + state: `FilePicker` pick → `FormatReader` parse → preview first N rows + detected columns → mode toggle (Update-only/Upsert) → run `writeRows` → build `ImportOutcome` + generate local error-report CSV.
 - [ ] T027 [APP] [US2] `ImportScreen` (Compose) + result summary (total/updated/created/skipped/failed) + "Download/Share error report"; entry action on customer list + `Route`/entry provider.
@@ -108,6 +108,7 @@
 - [ ] T033 [BE] [US3] `ExportTemplateController` in `report/controller/`: `GET /report/v1/templates/sync` (→ `ApiResponse<PageResponse<…>>`, snake_case params) + `POST /report/v1/templates/sync` (→ `ApiResponse<List<…>>`), tenant context set/cleared at controller. Match `docs/guides/offline-sync-contract.md`.
 - [ ] T034 [BE] [US3] `ExportTemplateCheckpointContributor` in `report/sync/` (mirror `CustomerCheckpointContributor`).
 - [ ] T035 [BE] [US3] Flyway `report/src/main/resources/db/migration/{mysql,postgresql}/V<next>__report_init.sql` creating `export_template` (run `./gradlew :ampairs_service:flywayInfo` to pick the version). Write **both** vendors.
+- [ ] **T034a [BE] [US3] (REQUIRED test)** Contract test for `GET/POST /report/v1/templates/sync` (Testcontainers): pull feed includes soft-deleted rows; UID-keyed upsert preserves `uid`/`refId`; snake_case params + `ApiResponse<PageResponse<…>>` shape; tenant isolation (a template under workspace A is invisible to workspace B). Satisfies the constitution ≥90% endpoint-coverage gate for the new sync endpoint.
 
 ### App — template store + sync + editor
 - [ ] T036 [APP] [US3] `ExportTemplateEntity` + `ExportTemplateDao` in `feature/export` Room DB (bump version).
@@ -135,15 +136,17 @@
 - [ ] T046 [BE] [US4] Backend `FormatWriter`/`FormatReader` in `report/engine/format/`: Jackson CSV/XML/JSON + POI `SXSSF` Excel.
 - [ ] T047 [BE] [US4] `DataExportService` (create job, run via worker, store artifact in `file` module, return download ref) + `DataExportController`: `POST /report/v1/exports`, `GET /report/v1/exports/{uid}`, `GET /report/v1/exports/{uid}/download`.
 - [ ] T048 [BE] [US4] `DataImportService` (parse → validate per descriptor → map valid rows → module `bulkUpsert` in 100-batches → record `ImportRowError` → build error report) + `DataImportController`: multipart `POST /report/v1/imports/{moduleKey}`, `GET /report/v1/imports/{uid}`, `GET /report/v1/imports/{uid}/errors`.
-- [ ] T049 [BE] [US4] `DataJobWorker` (`VirtualThreadTaskExecutor` + `@Scheduled` queue drain, like `notification`) + `ReportConfig` (executor bean, `@Scheduled` retention/TTL purge of jobs+artifacts).
+- [ ] T049 [BE] [US4] `DataJobWorker` (`VirtualThreadTaskExecutor` + `@Scheduled` queue drain, like `notification`) + `ReportConfig` (executor bean, `@Scheduled` retention/TTL purge of jobs+artifacts). **Tenant scope (constitution IV):** the worker runs outside a controller request, so before any repository/service access it MUST establish tenant context from the job's `ownerId` — `TenantContextHolder.setCurrentTenant(job.ownerId)` wrapped in `try { … } finally { TenantContextHolder.clear() }` per job (the sanctioned manual-override case). The job's `ownerId` is the only source of workspace scope; never infer it from a request header here.
 - [ ] T050 [BE] [US4] `DataJobCompletionListener` → publish `DATA_JOB_COMPLETED` to `/topic/workspace/{workspaceId}` (STOMP/Kafka) + optional `notification`.
 - [ ] T051 [BE] [US4] `GET /report/v1/modules` returning `ModuleExportInfo` (label, supports_import, columns) from the registry.
+- [ ] **T048a [BE] [US4] (REQUIRED test)** Integration test for the SERVER import job (Testcontainers): a file with a known mix of valid/invalid rows → valid rows upserted via the module service, invalid rows recorded, job ends `PARTIAL` with the expected counts and a downloadable error report; re-uploading the same file is **idempotent by `uid`** (no duplicates); the worker honors tenant scope (job under workspace A never reads/writes workspace B). Covers FR-010/012/013/016/019 + the constitution ≥90% endpoint gate for `/exports` + `/imports`.
+- [ ] **T050a [BE] [US4] (REQUIRED test)** Lightweight perf smoke (SC-005): a SERVER export and import of ~50k synthetic rows completes as an async job (PENDING→COMPLETED/PARTIAL) without blocking the request thread; assert the request returns immediately with a job id and the worker drains in batches of 100. Bound the assertion to completion + non-blocking, not a hard wall-clock SLA.
 
 ### App — server toggle + status
 - [ ] T052 [APP] [US4] `DataJobApi(+Impl)` in `feature/export/data/api/`: start export (`POST /report/v1/exports`), start import (multipart `POST /report/v1/imports/{module}`), poll status, download artifact/error report.
 - [ ] T053 [APP] [US4] Add `GenerationLocation` toggle to Export/Import VMs; SERVER path calls `DataJobApi`, persists/refreshes `DataJobEntity`; CLIENT path unchanged.
 - [ ] T054 [APP] [US4] `JobStatusScreen` (progress, counts, download buttons); subscribe to `DATA_JOB_COMPLETED` via the existing STOMP/event handler to refresh job state.
-- [ ] T055 [APP] [US4] Excel-on-iOS fallback: when the iOS native `SpreadsheetWriter` is the stub, force `GenerationLocation=SERVER` for `EXCEL` and inform the user.
+- [ ] T055 [APP] [US4] Excel-on-iOS **contingency** fallback (only if T017's native writer is deferred/unavailable at runtime): force `GenerationLocation=SERVER` for `EXCEL` and inform the user. With T017 shipped this path is dormant; keep it as a guarded degradation, not the default.
 - [ ] T056 [APP] [US4] Compile gates (app 3 targets) + `./gradlew :report:compileKotlin :report:test`.
 
 **Checkpoint**: Scale + rich Excel + authoritative validation available online; offline CLIENT path still default.
@@ -168,15 +171,15 @@
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T062 [APP] Row-threshold heuristic: CLIENT export streams in batches (default 1k); above a configurable threshold, recommend/force SERVER. Surface the threshold in settings.
+- [ ] T062 [APP] Row-threshold heuristic: CLIENT export streams in batches (default 1k rows/batch); above a **configurable row threshold (default 25,000)** the UI recommends SERVER (and, for `EXCEL` on a platform without the native writer, forces it). Surface the threshold in settings.
 - [ ] T063 [BE] Tenant-isolation guard: assert every job read/write is scoped to the active workspace; reject `uid` prefixes that don't belong to `moduleKey` ("wrong entity type").
 - [ ] T064 [APP+BE] Locale fidelity: machine columns (uid, ISO-UTC timestamps, money-minor, enum codes, FK uids) stay raw; only `isDisplayOnly` columns use `formatMoney`/`formatDate` (research R9).
 - [ ] T065 [DOC] Update `/home/user/ampairs/docs/modules/` (new `report` module) and refresh agent-context if used.
-- [ ] T066 [BE] *(optional test)* Contract test: `/report/v1/templates/sync` GET/POST shape (Testcontainers).
-- [ ] T067 [BE] *(optional test)* Integration test: SERVER import partial-failure path → counts + error report; idempotent re-import by uid.
-- [ ] T068 [APP] *(optional test)* Unit tests: CSV/XML/JSON writer↔reader round-trip; `CustomerExporter` `readRows`/`writeRows` mapping incl. modes.
+- [ ] ~~T066~~ → promoted to **T034a** (REQUIRED, US3): `/report/v1/templates/sync` contract test.
+- [ ] ~~T067~~ → promoted to **T048a** (REQUIRED, US4): SERVER import partial-failure + idempotency + tenant scope.
+- [ ] T068 [APP] *(optional test)* Unit tests: CSV/XML/JSON writer↔reader round-trip (incl. iOS OOXML writer); `CustomerExporter` `readRows`/`writeRows` mapping incl. modes and the unsynced-local conflict policy (T024).
 - [ ] T069 [BE] *(optional test)* Retention scheduler purges expired jobs+artifacts; tenant-isolation negative test.
-- [ ] T070 [BE] *(optional)* Performance check: SERVER export+import of 50k rows completes without blocking request threads (virtual-thread worker, 100-batch upsert).
+- [ ] ~~T070~~ → promoted to **T050a** (REQUIRED, US4): 50k-row non-blocking perf smoke.
 
 ---
 
@@ -221,8 +224,9 @@ Each phase ends at a working, independently testable checkpoint.
 
 ## Summary
 
-- **Total tasks**: 70 (T001–T070).
-- **Per story**: Setup 5 · Foundational 9 · US1 9 · US2 5 · US3 14 · US4 14 · US5 5 · Polish 9.
+- **Total tasks**: 73 (T001–T070 + T034a, T048a, T050a; three Polish entries T066/T067/T070 are now redirects to those required tests).
+- **Per story**: Setup 5 · Foundational 9 · US1 9 · US2 5 · US3 15 · US4 16 · US5 5 · Polish 6 (+3 required tests pulled into US3/US4).
+- **Required tests** (constitution ≥90% endpoint gate): T034a, T048a, T050a. All other tests remain optional.
 - **Parallel opportunities**: format writers/readers, the three Excel platform actuals, cross-repo BE/APP tasks per phase, and the per-module exporters in US5.
 - **MVP scope**: **US1** (offline multi-format export of one module). Headline value at **US1+US2** (offline round-trip bulk edit) with zero backend.
 - **Independent test per story**: stated in each phase header.

@@ -44,7 +44,8 @@ A unit of export or import processing.
 | `status` | Enum | PENDING / RUNNING / COMPLETED / PARTIAL / FAILED. |
 | `totalRows` | Int | Known after read/parse. |
 | `processedRows` | Int | Progress. |
-| `createdRows` / `updatedRows` / `skippedRows` / `failedRows` | Int | Import counts (export uses total/processed only). |
+| `createdRows` / `updatedRows` / `skippedRows` / `failedRows` / `conflictRows` | Int | Import counts (export uses total/processed only). `conflictRows` = rows left unchanged because of a pending unsynced local edit (FR-024). |
+| `conflictPolicy` | Enum? | Import only (CLIENT): `SKIP_WITH_WARNING` (default) / `OVERWRITE_LOCAL`. |
 | `inputFileUid` | String? | Import: uploaded file (in `file` module / device). |
 | `outputFileUid` | String? | Export: generated artifact; or import error report. |
 | `errorFileUid` | String? | Import: downloadable error report (failed rows + reasons). |
@@ -52,7 +53,7 @@ A unit of export or import processing.
 | `startedAt` / `completedAt` | Instant? | |
 | `createdBy` | String | User uid. |
 
-- **Backend table**: `data_job`. Drained by `DataJobWorker` (virtual-thread executor + `@Scheduled` queue poll). Not on `/sync` — queried online via `GET /report/v1/exports/{uid}` & `/imports/{uid}`; completion pushed via STOMP/Kafka.
+- **Backend table**: `data_job`. Drained by `DataJobWorker` (virtual-thread executor + `@Scheduled` queue poll). **Tenant scope**: the worker runs outside a controller request, so it MUST establish tenant context from `DataJob.ownerId` (`TenantContextHolder.setCurrentTenant(ownerId)` in try/finally) before any repository/service access — the sanctioned manual-override of constitution IV (services still never set context themselves). Not on `/sync` — queried online via `GET /report/v1/exports/{uid}` & `/imports/{uid}`; completion pushed via STOMP/Kafka.
 - **App**: `DataJobEntity` (local-only, **not synced**) tracks CLIENT jobs' progress and caches SERVER job status for the UI.
 
 ### State machine
@@ -99,7 +100,7 @@ interface ModuleExporter {
     val moduleKey: String
     val columns: List<ExportColumn>
     suspend fun readRows(filters, sort, includeInactive): List<Map<String,String?>>   // from Room (offline)
-    suspend fun writeRows(rows: List<Map<String,String?>>, mode: ImportMode): ImportOutcome   // Room synced=false + markPendingPush
+    suspend fun writeRows(rows: List<Map<String,String?>>, mode: ImportMode, policy: ConflictPolicy): ImportOutcome   // Room synced=false + markPendingPush; skips pending unsynced rows per policy (FR-024)
 }
 ```
 Registered: backend Spring `Map<String, ModuleExportDescriptor>`; app Metro `@ContributesIntoMap(WorkspaceScope::class) @ModuleExporterKey("customer")`.
