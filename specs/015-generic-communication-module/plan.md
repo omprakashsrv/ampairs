@@ -9,7 +9,7 @@ Add a new `communication` backend bounded context that **orchestrates** multi-ch
 
 Three trigger modes, built in spec-priority order:
 
-1. **Transactional (P1)** — an `@EventListener` subscribes to `event`-module domain events (`InvoiceCreatedEvent`, `OrderCreatedEvent`, payment events) and to a manual API call; renders a template and dispatches immediately; bypasses promotional opt-out and quiet hours.
+1. **Transactional (P1)** — an `@EventListener` subscribes to `event`-module domain events (`InvoiceCreatedEvent`, `OrderCreatedEvent` — both implemented; payment-received needs a new `PaymentReceivedEvent` first, out of current scope) and to a manual API call; renders a template and dispatches immediately; bypasses promotional opt-out and quiet hours.
 2. **Recurring (P2)** — `CommunicationSchedule` rows with a recurrence rule, materialized by a `@Scheduled` sweeper that buckets all time in the **workspace business timezone**, claims due rows, and guarantees at-most-once per occurrence via a unique occurrence ledger.
 3. **Promotional (P3)** — `Campaign` rows with a `DRAFT→SCHEDULED→RUNNING→PAUSED→DONE` lifecycle, gated on per-customer/channel/category consent, quiet hours, and throttling, producing a reconciling delivery rollup.
 

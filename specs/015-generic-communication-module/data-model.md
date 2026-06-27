@@ -35,7 +35,7 @@ UID prefixes (client-authored on mobile; server prefix for server-minted rows): 
 | `base_version` | int | optimistic-concurrency counter for aggregate `/sync` (mirrors `form`) |
 | `active` | bool | soft-delete |
 
-- `@NamedEntityGraph("MessageTemplate.withVariants")` fetching `variants`.
+- Variants are keyed by `template_uid` (string uid), **not** a JPA `@OneToMany`/FK relationship. The service composes the aggregate by batch-loading variants via `TemplateVariantRepository.findByTemplateUidIn(...)` — one extra query per page, so no N+1 (Principle VII satisfied without a `@NamedEntityGraph`, which can't apply to a non-relationship).
 - Unique: `(owner_id, code)`.
 - Aggregate on `/sync`: pushed with its variants; LWW by `updatedAt`, conflict by `base_version`.
 
@@ -112,7 +112,7 @@ UID prefixes (client-authored on mobile; server prefix for server-minted rows): 
 | `audience_type` / `audience_ref` | enum / varchar? | |
 | `variables_json` | text? | static context (per-recipient vars resolved at materialize) |
 | `frequency` | enum(Frequency) | DAILY / WEEKLY / MONTHLY |
-| `interval` | int | every N periods |
+| `interval_count` | int | every N periods (column is `interval_count` — `interval` is a SQL reserved word; the entity field may be named `interval` mapped via `@Column(name = "interval_count")`) |
 | `day_of_week` | int? | 1–7 (WEEKLY) |
 | `day_of_month` | int? | 1–31 (MONTHLY; clamps to month end — FR-020) |
 | `time_of_day` | varchar | `HH:mm` wall-clock in business tz |
@@ -200,7 +200,7 @@ Workspace-scoped mapping that tells the `TransactionalEventListener` which templ
 | Column | Type | Notes |
 |---|---|---|
 | `uid` | varchar | `CETB…` |
-| `event_type` | varchar | e.g. `INVOICE_CREATED`, `ORDER_CREATED`, `PAYMENT_RECEIVED` (matches the `event` module's published types) |
+| `event_type` | varchar | `INVOICE_CREATED`, `ORDER_CREATED` (match the `event` module's published types). `PAYMENT_RECEIVED` reserved until a payment domain event exists |
 | `template_uid` | varchar | FK → `message_template.uid` (or `template_code`) |
 | `channels` | varchar | CSV of Channel to send on |
 | `enabled` | bool | toggle without deleting |

@@ -26,7 +26,7 @@ POST /communication/v1/templates/sync
 GET  /communication/v1/bindings/sync?...   → ApiResponse<PageResponse<BindingResponse>>
 POST /communication/v1/bindings/sync       → ApiResponse<List<BindingResponse>>
 ```
-`BindingRequest`: `uid, event_type, template_uid, channels, enabled, active`. Drives the transactional listener: which template + channels fire for `INVOICE_CREATED` / `ORDER_CREATED` / `PAYMENT_RECEIVED` (FR-015). Unique `(workspace, event_type)`.
+`BindingRequest`: `uid, event_type, template_uid, channels, enabled, active`. Drives the transactional listener: which template + channels fire for an event type. Wired today: `INVOICE_CREATED`, `ORDER_CREATED` (FR-015). `PAYMENT_RECEIVED` is reserved for when a payment domain event is added. Unique `(workspace, event_type)`.
 
 ## 🔁 Schedules — standard `/sync`
 

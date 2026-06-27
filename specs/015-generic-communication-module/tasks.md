@@ -37,7 +37,7 @@
 
 ### Core shared entities, repos, renderer (comm)
 
-- [X] **T008** [P] `comm/domain/model/MessageTemplate.kt` + `TemplateVariant.kt` (extend `OwnableBaseDomain`; `@NamedEntityGraph("MessageTemplate.withVariants")`); repos `comm/repository/MessageTemplateRepository.kt`, `TemplateVariantRepository.kt`.
+- [X] **T008** [P] `comm/domain/model/MessageTemplate.kt` + `TemplateVariant.kt` (extend `OwnableBaseDomain`; variants keyed by `template_uid`, not a JPA relationship — the service batch-loads via `findByTemplateUidIn` to avoid N+1, no `@NamedEntityGraph`); repos `comm/repository/MessageTemplateRepository.kt`, `TemplateVariantRepository.kt`.
 - [X] **T009** [P] `comm/domain/model/CommunicationRequest.kt` + `CommunicationLog.kt` (incl. `credential_uid`/`provider_account_ref`/`billing_mode`/`occurrence_key`); repos `CommunicationRequestRepository.kt`, `CommunicationLogRepository.kt`.
 - [X] **T010** [P] `comm/domain/model/CommunicationConfig.kt` + `CommunicationUsage.kt`; repos + a `CommunicationConfigService` that lazily creates the per-workspace defaults row.
 - [X] **T011** [P] `comm/service/template/TemplateRenderer.kt` — logic-less Mustache-style `{{var}}` interpolation over subject/HTML/text; returns rendered output + `missingVariables`; required-missing throws a typed `TemplateRenderException`. Include HTML→plain-text derivation for the email plain-text fallback.
