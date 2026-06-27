@@ -1,5 +1,5 @@
 -- Notification Module Migration (MySQL)
--- Version: 1.0.100
+-- Version: 1.0.104
 -- Description: In-app notification center history feed (canonical /sync resource)
 
 CREATE TABLE notification_log (
