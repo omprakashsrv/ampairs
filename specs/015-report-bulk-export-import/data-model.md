@@ -44,8 +44,9 @@ A unit of export or import processing.
 | `status` | Enum | PENDING / RUNNING / COMPLETED / PARTIAL / FAILED. |
 | `totalRows` | Int | Known after read/parse. |
 | `processedRows` | Int | Progress. |
-| `createdRows` / `updatedRows` / `skippedRows` / `failedRows` / `conflictRows` | Int | Import counts (export uses total/processed only). `conflictRows` = rows left unchanged because of a pending unsynced local edit (FR-024). |
-| `conflictPolicy` | Enum? | Import only (CLIENT): `SKIP_WITH_WARNING` (default) / `OVERWRITE_LOCAL`. |
+| `createdRows` / `updatedRows` / `skippedRows` / `failedRows` | Int | Import counts (export uses total/processed only). |
+| `conflictRows` *(CLIENT-only)* | Int | App-local field only — rows left unchanged because of a pending unsynced local edit (FR-024). **Not** on the backend `data_job` table / `DataJobResponse`. |
+| `conflictPolicy` *(CLIENT-only)* | Enum? | App-local field only — `SKIP_WITH_WARNING` (default) / `OVERWRITE_LOCAL`. **Not** on the backend (no unsynced-local concept server-side). |
 | `inputFileUid` | String? | Import: uploaded file (in `file` module / device). |
 | `outputFileUid` | String? | Export: generated artifact; or import error report. |
 | `errorFileUid` | String? | Import: downloadable error report (failed rows + reasons). |
@@ -53,6 +54,7 @@ A unit of export or import processing.
 | `startedAt` / `completedAt` | Instant? | |
 | `createdBy` | String | User uid. |
 
+- **Field scope**: `conflictRows` / `conflictPolicy` exist **only on the app-local `DataJobEntity`** (and on `ImportOutcome`) — conflicts arise from pending *unsynced local* rows, which exist only on-device. The backend `data_job` table and `DataJobResponse` omit them (a SERVER import has no unsynced-local concept).
 - **Backend table**: `data_job`. Drained by `DataJobWorker` (virtual-thread executor + `@Scheduled` queue poll). **Tenant scope**: the worker runs outside a controller request, so it MUST establish tenant context from `DataJob.ownerId` (`TenantContextHolder.setCurrentTenant(ownerId)` in try/finally) before any repository/service access — the sanctioned manual-override of constitution IV (services still never set context themselves). Not on `/sync` — queried online via `GET /report/v1/exports/{uid}` & `/imports/{uid}`; completion pushed via STOMP/Kafka.
 - **App**: `DataJobEntity` (local-only, **not synced**) tracks CLIENT jobs' progress and caches SERVER job status for the UI.
 
@@ -83,6 +85,8 @@ PENDING ──▶ RUNNING ──▶ COMPLETED        (all rows ok)
 ## 4. ModuleExportDescriptor  *(code, not persisted — the extensibility SPI)*
 
 Declared once per module. Interface in `core` (backend) / `data/common` (app) to avoid coupling the engine to domain modules.
+
+> **Glossary / cross-repo mapping.** The same SPI concept has a name per repo: **backend `ModuleExportDescriptor`** ↔ **app `ModuleExporter`**; backend **`fetch(...)`** ↔ app **`readRows(...)`**; backend **`importRows(rows, mode)`** ↔ app **`writeRows(rows, mode, policy)`**. The extra `policy: ConflictPolicy` on the app side is **intentional, not drift**: conflicts only occur against pending *unsynced local* rows, which exist only on-device (FR-024) — the backend has nothing to conflict with, so it takes no policy.
 
 **Backend SPI (`com.ampairs.core` … implemented in each module):**
 ```
