@@ -132,26 +132,29 @@ match the backend `…/dashboard/kpis` to the last currency unit.
   (contracts/dashboard-read.md §DTOs).
 - [X] T022 [US1] (BE) `KpiDailySummaryRepository` with the upsert + read/`GROUP BY` queries and the
   covering indexes referenced by data-model §1.1. (depends on T020)
-- [ ] T023 [US1] (BE) `KpiRollupService`: business-zone bucketing + upsert of affected buckets;
-  `recompute(fromDate,toDate,groups)` reconcile from source tables (idempotent). (depends on T022, T007)
-- [~] T024 [US1] (BE) `@TransactionalEventListener(AFTER_COMMIT)` in `analytics/event/` on
-  `InvoiceFinalizedEvent`/`InvoicePaidEvent`/`OrderEvents`/`InventoryStockUpdatedEvent` → calls
-  `KpiRollupService` upsert. (depends on T023)
-  PARTIAL (Option B): `AnalyticsInvoiceEventListener` + `KpiRollupService.applyInvoiceFinalized`
-  implemented for `InvoiceFinalizedEvent` → coarse SALES bucket (gross + count) only. `InvoiceStockUpdatedEvent`
-  does NOT exist (only `ProductStockChangedEvent`); net/tax/GST/top-N/inventory + paid/order/cancel
-  handling deferred to Option A (public read services + reconcile).
+- [X] T023 [US1] (BE) `KpiRollupService`: business-zone bucketing + idempotent `reconcile(from,to)` that
+  rebuilds invoice-derived buckets from source via the invoice public read service. (depends on T022, T007)
+  DONE (Option A): SALES (gross/net/tax/count), GST_SUMMARY (per rate × intra/inter), TOP_CUSTOMER.
+  Delete-then-rebuild = idempotent (SC-004); excludes drafts/de-finalized by construction (FR-013/014).
+  Source: new public `InvoiceAnalyticsQueryService.finalizedBetween(...)` (projection DTO, no entity leak).
+- [X] T024 [US1] (BE) `@TransactionalEventListener(AFTER_COMMIT)` in `analytics/event/` on a finalized
+  invoice → `KpiRollupService.reconcileDayOf(...)`. (depends on T023)
+  DONE for invoice: `AnalyticsInvoiceEventListener` reconciles the affected business day (self-healing —
+  handles redelivery/backdated edits). `InventoryStockUpdatedEvent`/`OrderConfirmedEvent` do NOT exist;
+  order/payment/inventory reconcile sources are separate later increments.
 - [ ] T025 [US1] (BE) `@Scheduled` nightly reconcile job in `analytics/batch/` calling
-  `recompute(trailing N days)`. (depends on T023)
-- [~] T026 [US1] (BE) `DashboardReadService` serving kpis/trend/aging/gst-summary/top from the summary;
+  `reconcile(trailing N days)`. (depends on T023)
+  NOT DONE: needs a workspace enumerator + per-tenant `TenantContextHolder` loop (cross-module to
+  `workspace`). The manual `POST /recompute` (per-request tenant) covers reconcile for now.
+- [X] T026 [US1] (BE) `DashboardReadService` serving kpis/trend/gst-summary/top from the summary;
   GST split logic per R10. (depends on T022)
-  PARTIAL: `DashboardReadService.kpis`/`trend` implemented for the SALES group (gross/count/AOV +
-  day/week/month trend bucketing). aging/gst-summary/top + their endpoints deferred (need richer buckets).
-- [~] T027 [US1] (BE) `AnalyticsController` with `GET /analytics/v1/dashboard/{kpis,trend,aging,gst-summary,top}`
-  and `POST /analytics/v1/recompute` (role-guarded) — sets/clears `TenantContextHolder` at controller
-  level, returns `ApiResponse<T>`, no business try/catch. (depends on T026, T023, T021)
-  PARTIAL: `AnalyticsController` exposes `GET /kpis` + `GET /trend` (`ApiResponse<T>`; tenant via
-  `SessionUserFilter`, matching every other controller). aging/gst-summary/top/recompute deferred.
+  DONE for invoice groups: SALES kpis (gross/net/tax/count/AOV), day/week/month trend, GST summary
+  (intra CGST+SGST / inter IGST, by-rate), top customers. aging (payment) + inventory + top-PRODUCT
+  (invoice items) deferred to their reconcile sources.
+- [X] T027 [US1] (BE) `AnalyticsController` `GET /dashboard/{kpis,trend,gst-summary,top}` +
+  `POST /analytics/v1/recompute`. (depends on T026, T023, T021)
+  DONE: all four reads + recompute, `ApiResponse<T>`, tenant via `SessionUserFilter` (matches every
+  other controller — no manual context). aging endpoint deferred with its data source.
 
 ### Mobile implementation (US1)
 - [ ] T028 [P] [US1] (MOB) Per-feature aggregate DAO queries (date-bounded `GROUP BY`, indexed) added to

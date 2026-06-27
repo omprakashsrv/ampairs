@@ -1,10 +1,16 @@
 package com.ampairs.analytics.service
 
+import com.ampairs.analytics.domain.dto.GstRateRow
+import com.ampairs.analytics.domain.dto.GstSummaryResponse
+import com.ampairs.analytics.domain.dto.InterSplit
+import com.ampairs.analytics.domain.dto.IntraSplit
 import com.ampairs.analytics.domain.dto.KpiResponse
 import com.ampairs.analytics.domain.dto.KpiValueResponse
+import com.ampairs.analytics.domain.dto.TopEntryResponse
 import com.ampairs.analytics.domain.dto.TrendPointResponse
 import com.ampairs.analytics.domain.enums.MetricGroup
 import com.ampairs.analytics.domain.enums.Period
+import com.ampairs.analytics.domain.enums.TaxKind
 import com.ampairs.analytics.domain.model.KpiDailySummary
 import com.ampairs.analytics.repository.KpiDailySummaryRepository
 import com.ampairs.business.service.BusinessService
@@ -12,14 +18,15 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.math.RoundingMode
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.IsoFields
 import java.time.temporal.TemporalAdjusters
 
 /**
- * Serves dashboard reads from the materialized [KpiDailySummary] (R1). P1 currently exposes the SALES
- * group (the only group the coarse event roll-up populates today — see [KpiRollupService]); the read
- * shape already matches the dashboard contract so adding groups is additive once their buckets exist.
+ * Serves dashboard reads from the materialized [KpiDailySummary] (R1). Backs the invoice-derived
+ * groups (SALES, GST_SUMMARY, TOP_CUSTOMER) populated by [KpiRollupService]; other groups are added
+ * as their reconcile sources land.
  */
 @Service
 @Transactional(readOnly = true)
@@ -32,7 +39,7 @@ class DashboardReadService(
         val rows = summaryRepository.findByMetricGroupAndBusinessDateBetween(group, from, to)
         val values = when (group) {
             MetricGroup.SALES -> salesValues(rows)
-            else -> emptyList() // other groups populated once their roll-up/reconcile lands
+            else -> emptyList()
         }
         return KpiResponse(
             metricGroup = group.name,
@@ -46,10 +53,11 @@ class DashboardReadService(
     }
 
     fun trend(metricId: String, from: LocalDate, to: LocalDate, period: Period): List<TrendPointResponse> {
-        // P1: only sales.* metrics are backed; default to gross for any sales metric id.
         val rows = summaryRepository.findByMetricGroupAndBusinessDateBetween(MetricGroup.SALES, from, to)
         val measure: (KpiDailySummary) -> BigDecimal = when (metricId) {
             "sales.count" -> { r -> BigDecimal.valueOf(r.docCount.toLong()) }
+            "sales.net" -> { r -> r.netAmount }
+            "sales.tax" -> { r -> r.taxAmount }
             else -> { r -> r.grossAmount }
         }
         return rows
@@ -64,13 +72,73 @@ class DashboardReadService(
             }
     }
 
+    fun gstSummary(from: LocalDate, to: LocalDate): GstSummaryResponse {
+        val rows = summaryRepository.findByMetricGroupAndBusinessDateBetween(MetricGroup.GST_SUMMARY, from, to)
+        val taxable = rows.fold(BigDecimal.ZERO) { a, r -> a.add(r.grossAmount) }
+        val totalTax = rows.fold(BigDecimal.ZERO) { a, r -> a.add(r.taxAmount) }
+        val intraTax = rows.filter { it.taxKind == TaxKind.INTRA }.fold(BigDecimal.ZERO) { a, r -> a.add(r.taxAmount) }
+        val interTax = rows.filter { it.taxKind == TaxKind.INTER }.fold(BigDecimal.ZERO) { a, r -> a.add(r.taxAmount) }
+        val half = intraTax.divide(BigDecimal.valueOf(2), 4, RoundingMode.HALF_UP)
+        val byRate = rows
+            .groupBy { (it.taxRate ?: BigDecimal.ZERO) to (it.taxKind ?: TaxKind.INTER) }
+            .map { (key, group) ->
+                GstRateRow(
+                    taxRate = key.first,
+                    taxableValue = group.fold(BigDecimal.ZERO) { a, r -> a.add(r.grossAmount) },
+                    taxAmount = group.fold(BigDecimal.ZERO) { a, r -> a.add(r.taxAmount) },
+                    kind = key.second.name,
+                )
+            }
+            .sortedBy { it.taxRate }
+        return GstSummaryResponse(
+            fromDate = from,
+            toDate = to,
+            currencyCode = currencyCode(),
+            taxableValue = taxable,
+            totalTax = totalTax,
+            intraState = IntraSplit(cgst = half, sgst = half),
+            interState = InterSplit(igst = interTax),
+            byRate = byRate,
+        )
+    }
+
+    /**
+     * Top entities by gross revenue for the period. `dimension=customer` is backed today; the entry
+     * `name` carries the id (human-readable names need a customer-module lookup, a later increment).
+     */
+    fun top(dimension: String, from: LocalDate, to: LocalDate, limit: Int): List<TopEntryResponse> {
+        val group = if (dimension.equals("product", ignoreCase = true)) MetricGroup.TOP_PRODUCT else MetricGroup.TOP_CUSTOMER
+        val rows = summaryRepository.findByMetricGroupAndBusinessDateBetween(group, from, to)
+        val keyOf: (KpiDailySummary) -> String =
+            if (group == MetricGroup.TOP_PRODUCT) { r -> r.dimProductId } else { r -> r.dimCustomerId }
+        return rows
+            .filter { keyOf(it).isNotBlank() }
+            .groupBy(keyOf)
+            .map { (id, g) ->
+                Triple(
+                    id,
+                    g.fold(BigDecimal.ZERO) { a, r -> a.add(r.grossAmount) },
+                    g.sumOf { it.docCount },
+                )
+            }
+            .sortedByDescending { it.second }
+            .take(limit.coerceIn(1, 50))
+            .mapIndexed { i, (id, gross, count) ->
+                TopEntryResponse(rank = i + 1, id = id, name = id, grossAmount = gross, qty = BigDecimal.ZERO, docCount = count)
+            }
+    }
+
     private fun salesValues(rows: List<KpiDailySummary>): List<KpiValueResponse> {
         val gross = rows.fold(BigDecimal.ZERO) { acc, r -> acc.add(r.grossAmount) }
+        val net = rows.fold(BigDecimal.ZERO) { acc, r -> acc.add(r.netAmount) }
+        val tax = rows.fold(BigDecimal.ZERO) { acc, r -> acc.add(r.taxAmount) }
         val count = rows.sumOf { it.docCount }
         val aov = if (count > 0) gross.divide(BigDecimal.valueOf(count.toLong()), 2, RoundingMode.HALF_UP)
         else BigDecimal.ZERO
         return listOf(
             KpiValueResponse("sales.gross", "MONEY", gross),
+            KpiValueResponse("sales.net", "MONEY", net),
+            KpiValueResponse("sales.tax", "MONEY", tax),
             KpiValueResponse("sales.count", "COUNT", BigDecimal.valueOf(count.toLong())),
             KpiValueResponse("sales.aov", "MONEY", aov),
         )
@@ -78,7 +146,7 @@ class DashboardReadService(
 
     private fun bucketStart(date: LocalDate, period: Period): LocalDate = when (period) {
         Period.DAY -> date
-        Period.WEEK -> date.with(IsoFields.DAY_OF_WEEK, 1) // Monday of that ISO week
+        Period.WEEK -> date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         Period.MONTH -> date.with(TemporalAdjusters.firstDayOfMonth())
     }
 

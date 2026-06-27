@@ -30,4 +30,18 @@ interface KpiDailySummaryRepository : JpaRepository<KpiDailySummary, Long> {
         dimProductId: String,
         dimCustomerId: String,
     ): KpiDailySummary?
+
+    /** Rows for several metric groups within an inclusive date range (drives top-N / GST reads). */
+    fun findByMetricGroupInAndBusinessDateBetween(
+        metricGroups: Collection<MetricGroup>,
+        fromDate: LocalDate,
+        toDate: LocalDate,
+    ): List<KpiDailySummary>
+
+    /** Clear the buckets a reconcile is about to rebuild, so the rebuild is idempotent. */
+    fun deleteByMetricGroupInAndBusinessDateBetween(
+        metricGroups: Collection<MetricGroup>,
+        fromDate: LocalDate,
+        toDate: LocalDate,
+    )
 }

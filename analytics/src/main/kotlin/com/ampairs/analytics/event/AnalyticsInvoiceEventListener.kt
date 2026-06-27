@@ -25,7 +25,9 @@ class AnalyticsInvoiceEventListener(
     fun onInvoiceFinalized(event: InvoiceFinalizedEvent) {
         TenantContextHolder.setCurrentTenant(event.workspaceId)
         try {
-            rollupService.applyInvoiceFinalized(event.totalAmount, event.invoiceDateEpochMillis)
+            // Reconcile the affected business day from source invoices — idempotent and self-healing
+            // (handles redelivery, backdated edits and de-finalization, which the event payload can't).
+            rollupService.reconcileDayOf(event.invoiceDateEpochMillis)
         } catch (e: Exception) {
             log.error("Failed to roll up finalized invoice {}: {}", event.invoiceNumber, e.message, e)
         } finally {

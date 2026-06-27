@@ -38,6 +38,8 @@ dependencies {
     api(project(mapOf("path" to ":event")))
     // analytics reads the workspace business timezone via the business module's public service
     implementation(project(":business"))
+    // analytics rebuilds KPI summaries from the invoice module's public read service (projections only)
+    implementation(project(":invoice"))
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework:spring-web")
     implementation("org.springframework:spring-webmvc")
