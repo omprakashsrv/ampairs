@@ -112,11 +112,13 @@ A staff member using the mobile app wants to draft and manage templates, schedul
 
 #### Content & templates
 - **FR-001**: The system MUST let a workspace define reusable message templates identified by a stable code, each carrying a category of either *transactional* or *promotional*.
-- **FR-002**: Each template MUST support one or more per-channel variants (email, SMS, WhatsApp, push/in-app), where the variant holds the channel-appropriate content (e.g. subject + body for email, body only for SMS).
+- **FR-002**: Each template MUST support one or more per-channel variants (email, SMS, WhatsApp, push/in-app), where the variant holds the channel-appropriate content (e.g. subject + rich HTML body for email, plain body only for SMS).
+- **FR-002a**: An email variant MUST support a rich HTML body (formatting, links, and image references) authored as HTML, and SHOULD carry an accompanying plain-text alternative used for clients/providers that need one; when no plain-text alternative is authored, the system MUST derive a reasonable one from the HTML. Placeholder substitution (FR-004) applies inside the HTML body, the plain-text alternative, and the subject.
+- **FR-002b**: Promotional email variants MUST include an unsubscribe affordance (e.g. an unsubscribe link/footer) so that recipients can opt out of further promotional email (feeding FR-030).
 - **FR-003**: Templates MUST support multiple languages per channel, with a defined default language used when a recipient's language has no matching variant.
 - **FR-004**: Template content MUST support named placeholders that are substituted with recipient/context data at send time.
 - **FR-005**: For channels that require provider pre-approved templates, a variant MUST be able to record the approved template identifier and a mapping of its parameters.
-- **FR-006**: The system MUST let a user preview a template variant with sample data, showing the fully substituted result and flagging any placeholder without a value.
+- **FR-006**: The system MUST let a user preview a template variant with sample data, showing the fully substituted result (for email, the rendered HTML as it will appear to the recipient) and flagging any placeholder without a value.
 
 #### Channels & delivery
 - **FR-007**: The system MUST be able to deliver messages over email, SMS, WhatsApp, and push/in-app in the first release.
@@ -207,7 +209,7 @@ A staff member using the mobile app wants to draft and manage templates, schedul
 ## Out of Scope (this feature)
 
 - Two-way conversational messaging / inbound chat handling beyond processing opt-out (STOP/unsubscribe) signals.
-- Visual drag-and-drop email design tooling (templates are content + placeholders, not a WYSIWYG builder).
+- Visual drag-and-drop email design tooling — a WYSIWYG builder. Hand-authored HTML email bodies with placeholders ARE in scope (FR-002a); only the visual editor that generates them is excluded.
 - Advanced audience segment building beyond existing customer groups / explicit lists (e.g. behavioral segmentation, A/B testing).
 - Provider billing, cost optimization, and least-cost routing.
 - Analytics beyond per-campaign delivery rollups and per-message delivery status (e.g. click-through funnels, attribution).
