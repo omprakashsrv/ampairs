@@ -39,6 +39,9 @@ data class CustomerUpdateRequest(
     @field:ValidEmail
     var email: String?,
 
+    @field:Size(max = 16, message = "Locale cannot exceed 16 characters")
+    var locale: String? = null,
+
     @field:ValidPincode
     var pincode: String?,
 
@@ -113,6 +116,7 @@ fun CustomerUpdateRequest.toCustomer(): Customer {
     customer.phone = this.phone ?: ""
     customer.landline = this.landline ?: ""
     customer.email = this.email ?: ""
+    customer.locale = this.locale
     customer.pincode = this.pincode ?: ""
     customer.customerType = this.customerType ?: "RETAIL"
     customer.customerGroup = this.customerGroup ?: "REGULAR"
