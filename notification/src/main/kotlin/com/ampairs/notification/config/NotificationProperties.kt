@@ -6,10 +6,25 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 data class NotificationProperties(
     val sms: SmsProperties = SmsProperties(),
     val push: PushProperties = PushProperties(),
+    val email: EmailProperties = EmailProperties(),
     val batchSize: Int = 10,
     val retryDelayMinutes: Long = 5,
     val cleanupDays: Long = 30
 ) {
+    /**
+     * Platform/shared email transport (SMTP). Used when a workspace has no own email credential and
+     * the channel permits platform fallback. Supply host/credentials via the environment.
+     */
+    data class EmailProperties(
+        val enabled: Boolean = false,
+        val host: String = "",
+        val port: Int = 587,
+        val username: String = "",
+        val password: String = "",
+        val from: String = "no-reply@ampairs.com",
+        val starttls: Boolean = true,
+    )
+
     /**
      * Firebase Cloud Messaging (push) configuration.
      *

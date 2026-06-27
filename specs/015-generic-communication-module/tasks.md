@@ -45,8 +45,8 @@
 ### Notification dispatch bridge + providers (notif)
 
 - [X] **T012** `notif/service/NotificationDispatchService.kt` — public interface + `DispatchRequest` data class (channel, recipient, subject?, body, textBody?, title?, dataPayload, providerTemplateId?, params, category, sourceModule, sourceRef) returning the `notification_queue` uid; implementation enqueues a `NotificationQueue` row with the new columns.
-- [ ] **T013** `notif/event/NotificationDeliveryUpdatedEvent.kt` — Spring `ApplicationEvent` carrying `sourceModule, sourceRef, status, providerMessageId, error, credentialUid, providerAccountRef, billingMode, costUnits, costCategory`; publish it from the queue's terminal-status transitions (monotonic, no regression — FR-010).
-- [ ] **T014** [P] `notif/provider/email/EmailNotificationProvider.kt` implementing `NotificationProvider` (SMTP via Spring Mail and/or SES via AWS SDK, selected by `NotificationProperties.email.transport`); multipart HTML + plain-text; returns provider message id. Extend `NotificationProperties` with the `email` block.
+- [X] **T013** `notif/event/NotificationDeliveryUpdatedEvent.kt` — Spring `ApplicationEvent` carrying `sourceModule, sourceRef, status, providerMessageId, error, credentialUid, providerAccountRef, billingMode, costUnits, costCategory`; publish it from the queue's terminal-status transitions (monotonic, no regression — FR-010).
+- [X] **T014** [P] `notif/provider/email/EmailNotificationProvider.kt` implementing `NotificationProvider` (SMTP via Spring Mail and/or SES via AWS SDK, selected by `NotificationProperties.email.transport`); multipart HTML + plain-text; returns provider message id. Extend `NotificationProperties` with the `email` block.
 - [ ] **T015** [P] `notif/provider/whatsapp/WhatsAppNotificationProvider.kt` implementing `NotificationProvider` (Cloud API via `RestClient`; approved-template send with `providerTemplateId` + ordered `params`). Extend `NotificationProperties` with the `whatsapp` block.
 
 ### Per-workspace credential foundation (notif) — on the send path

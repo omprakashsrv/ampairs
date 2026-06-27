@@ -47,6 +47,8 @@ class NotificationServiceQueueTest {
             repository, msg91, awsSns, fcmPush, executor, databaseService,
             NotificationProperties(sms = SmsProperties(primaryProvider = primary)),
             devicePushTokenPort,
+            mock(),
+            mock(),
         )
 
     @BeforeEach
