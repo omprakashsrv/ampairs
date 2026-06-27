@@ -25,9 +25,12 @@ queue/providers. Delivery feedback returns via `NotificationDeliveryUpdatedEvent
 ## Migrations
 `V1.0.105` (communication tables) + notification `V1.0.106` (queue columns).
 
-## Implementation status (MVP, spec 015 Phase A)
-Done: module + schema (both vendors) + core entities/repos + renderer + template/binding/log `/sync`
-+ preview + manual send (`POST /requests`) + dispatch engine + delivery listener + usage ledger +
-transactional listener wiring. Pending: live Email/WhatsApp providers + per-workspace credential
-foundation (T014–T019), recurring sweeper (US2), campaigns/consent (US3), and the customer
-contact-resolution provider that the transactional listener's recipient resolution depends on.
+## Implementation status (spec 015)
+**Backend complete** (US1–US4, US6 + foundation): templates/preview, manual + transactional sends
+(event-driven via `customerId`), Email + WhatsApp providers, per-workspace credentials (AES-GCM,
+write-only) + resolver, usage/billing report, recurring schedules (business-tz sweeper, at-most-once),
+promotional campaigns (consent gate, quiet hours, throttle, suppression), preferences `/sync`, public
+unsubscribe, provider webhooks. All unit-tested.
+Pending: mobile `feature/communication` (US5, `ampairs-app` repo); live Flyway validation against a
+DB (T007); security allow-list for the public unsubscribe/webhook paths is wired in
+`ampairs_service` `SecurityConfiguration.PUBLIC_PATHS`.

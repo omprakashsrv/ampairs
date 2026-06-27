@@ -167,9 +167,9 @@ High-level only here; full plan/tasks tracked in the mobile repo.
 
 ## Phase 9: Polish & Cross-Cutting
 
-- [ ] **T056** [P] `communication/CLAUDE.md` + `docs/modules/communication.md`; update root `docs/guides/offline-sync-contract.md` "Resources on the contract" to list communication templates(aggregate)/bindings/schedules/campaigns/preferences and note logs pull-only + credentials off-contract.
-- [ ] **T057** [P] `NO_MIGRATION_NEEDED.md`/version bookkeeping; confirm `migrationModules` + `flywayInfo` clean on both vendors.
-- [ ] **T058** Security pass: grep for any secret in logs/responses/`toString`; confirm `COMM_CRED_ENCRYPTION_KEY` env-only; credentials absent from `/sync`.
+- [X] **T056** [P] `communication/CLAUDE.md` + `docs/modules/communication.md`; update root `docs/guides/offline-sync-contract.md` "Resources on the contract" to list communication templates(aggregate)/bindings/schedules/campaigns/preferences and note logs pull-only + credentials off-contract.
+- [X] **T057** [P] `NO_MIGRATION_NEEDED.md`/version bookkeeping; confirm `migrationModules` + `flywayInfo` clean on both vendors.
+- [X] **T058** Security pass: grep for any secret in logs/responses/`toString`; confirm `COMM_CRED_ENCRYPTION_KEY` env-only; credentials absent from `/sync`.
 - [ ] **T059** [P] Run quickstart.md end-to-end (transactional → recurring → credential/usage → promotional); `:ampairs_service:ciBuild`.
 
 ---
