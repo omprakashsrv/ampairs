@@ -40,6 +40,8 @@ dependencies {
     implementation(project(":business"))
     // analytics rebuilds KPI summaries from the invoice module's public read service (projections only)
     implementation(project(":invoice"))
+    // analytics reads live collections/aging from the payment module's public read service
+    implementation(project(":payment"))
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework:spring-web")
     implementation("org.springframework:spring-webmvc")

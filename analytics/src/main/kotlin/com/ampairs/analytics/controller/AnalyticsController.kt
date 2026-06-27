@@ -1,5 +1,6 @@
 package com.ampairs.analytics.controller
 
+import com.ampairs.analytics.domain.dto.AgingResponse
 import com.ampairs.analytics.domain.dto.GstSummaryResponse
 import com.ampairs.analytics.domain.dto.KpiResponse
 import com.ampairs.analytics.domain.dto.RecomputeRequest
@@ -57,6 +58,12 @@ class AnalyticsController(
         val periodEnum = Period.valueOf(period.uppercase())
         return ApiResponse.success(readService.trend(metricId, fromDate, toDate, periodEnum))
     }
+
+    @GetMapping("/dashboard/aging")
+    fun aging(
+        @RequestParam("as_of_date", required = false) asOfDate: LocalDate?,
+    ): ApiResponse<AgingResponse> =
+        ApiResponse.success(readService.aging(asOfDate))
 
     @GetMapping("/dashboard/gst-summary")
     fun gstSummary(

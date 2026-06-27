@@ -1,5 +1,7 @@
 package com.ampairs.analytics.service
 
+import com.ampairs.analytics.domain.dto.AgingBucketResponse
+import com.ampairs.analytics.domain.dto.AgingResponse
 import com.ampairs.analytics.domain.dto.GstRateRow
 import com.ampairs.analytics.domain.dto.GstSummaryResponse
 import com.ampairs.analytics.domain.dto.InterSplit
@@ -14,11 +16,13 @@ import com.ampairs.analytics.domain.enums.TaxKind
 import com.ampairs.analytics.domain.model.KpiDailySummary
 import com.ampairs.analytics.repository.KpiDailySummaryRepository
 import com.ampairs.business.service.BusinessService
+import com.ampairs.payment.service.PaymentAnalyticsQueryService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDate
 import java.time.temporal.IsoFields
 import java.time.temporal.TemporalAdjusters
@@ -33,9 +37,18 @@ import java.time.temporal.TemporalAdjusters
 class DashboardReadService(
     private val summaryRepository: KpiDailySummaryRepository,
     private val businessService: BusinessService,
+    private val paymentQueryService: PaymentAnalyticsQueryService,
+    private val timeZoneProvider: BusinessTimeZoneProvider,
 ) {
 
     fun kpis(group: MetricGroup, from: LocalDate, to: LocalDate, period: Period): KpiResponse {
+        // COLLECTIONS is read live from the payment ledger (point-in-time), not the summary table.
+        if (group == MetricGroup.COLLECTIONS) {
+            return KpiResponse(
+                metricGroup = group.name, period = period.name, fromDate = from, toDate = to,
+                currencyCode = currencyCode(), values = collectionsValues(from, to), computedFrom = null,
+            )
+        }
         val rows = summaryRepository.findByMetricGroupAndBusinessDateBetween(group, from, to)
         val values = when (group) {
             MetricGroup.SALES -> salesValues(rows)
@@ -49,6 +62,32 @@ class DashboardReadService(
             currencyCode = currencyCode(),
             values = values,
             computedFrom = rows.mapNotNull { it.recomputedAt }.maxOrNull(),
+        )
+    }
+
+    /** Receivables aging snapshot as of [asOf] (null → business "today"), live from the payment module. */
+    fun aging(asOf: LocalDate?): AgingResponse {
+        val zone = timeZoneProvider.currentZone()
+        val day = asOf ?: Instant.now().atZone(zone).toLocalDate() // "today" in the business timezone
+        val asOfInstant = day.plusDays(1).atStartOfDay(zone).toInstant() // end of the business day
+        val snapshot = paymentQueryService.collectionsAging(asOfInstant)
+        return AgingResponse(
+            asOfDate = day,
+            currencyCode = currencyCode(),
+            totalOutstanding = snapshot.totalOutstanding,
+            buckets = snapshot.buckets.map { AgingBucketResponse(bucket = it.label, amount = it.amount, docCount = 0) },
+        )
+    }
+
+    private fun collectionsValues(from: LocalDate, to: LocalDate): List<KpiValueResponse> {
+        val zone = timeZoneProvider.currentZone()
+        val windowStart = from.atStartOfDay(zone).toInstant()
+        val windowEnd = to.plusDays(1).atStartOfDay(zone).toInstant()
+        val collected = paymentQueryService.collectedBetween(windowStart, windowEnd)
+        val outstanding = paymentQueryService.collectionsAging(windowEnd).totalOutstanding
+        return listOf(
+            KpiValueResponse("collections.collected", "MONEY", collected),
+            KpiValueResponse("collections.outstanding", "MONEY", outstanding),
         )
     }
 

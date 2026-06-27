@@ -149,12 +149,14 @@ match the backend `…/dashboard/kpis` to the last currency unit.
 - [X] T026 [US1] (BE) `DashboardReadService` serving kpis/trend/gst-summary/top from the summary;
   GST split logic per R10. (depends on T022)
   DONE for invoice groups: SALES kpis (gross/net/tax/count/AOV), day/week/month trend, GST summary
-  (intra CGST+SGST / inter IGST, by-rate), top customers. aging (payment) + inventory + top-PRODUCT
-  (invoice items) deferred to their reconcile sources.
-- [X] T027 [US1] (BE) `AnalyticsController` `GET /dashboard/{kpis,trend,gst-summary,top}` +
+  (intra CGST+SGST / inter IGST, by-rate), top customers. COLLECTIONS + AGING now done via a LIVE read
+  of the payment module (`PaymentAnalyticsQueryService` → existing `AgingService` + a "collected in
+  window" voucher sum) — point-in-time, not materialized. Inventory + top-PRODUCT (invoice items) still
+  deferred to their sources.
+- [X] T027 [US1] (BE) `AnalyticsController` `GET /dashboard/{kpis,trend,aging,gst-summary,top}` +
   `POST /analytics/v1/recompute`. (depends on T026, T023, T021)
-  DONE: all four reads + recompute, `ApiResponse<T>`, tenant via `SessionUserFilter` (matches every
-  other controller — no manual context). aging endpoint deferred with its data source.
+  DONE: kpis (incl. COLLECTIONS), trend, aging, gst-summary, top + recompute, `ApiResponse<T>`, tenant
+  via `SessionUserFilter` (matches every other controller — no manual context).
 
 ### Mobile implementation (US1)
 - [ ] T028 [P] [US1] (MOB) Per-feature aggregate DAO queries (date-bounded `GROUP BY`, indexed) added to
