@@ -11,7 +11,7 @@ How to wire, run, and try the module locally. Backend lives in `ampairs` (this r
 
 ## 2. Migrations (both vendors — required)
 
-Write `communication/src/main/resources/db/migration/{mysql,postgresql}/V1.0.x__communication_init.sql` creating the 10 tables in data-model.md (`message_template`, `message_template_variant`, `communication_request`, `communication_log`, `communication_schedule`, `communication_occurrence`, `campaign`, `communication_preference`, `communication_suppression`, `communication_config`). Add a separate `notification` migration adding `subject`, `source_module`, `source_ref` to `notification_queue`.
+Write `communication/src/main/resources/db/migration/{mysql,postgresql}/V1.0.x__communication_init.sql` creating the 11 tables in data-model.md (`message_template`, `message_template_variant`, `communication_request`, `communication_log`, `communication_schedule`, `communication_occurrence`, `campaign`, `communication_preference`, `communication_suppression`, `communication_config`, `communication_usage`). Add a separate `notification` migration that (a) adds `subject`, `source_module`, `source_ref`, `credential_uid`, `billing_mode` to `notification_queue` and (b) creates the `workspace_channel_credential` table.
 
 ```bash
 ./gradlew :ampairs_service:flywayInfo      # pick next free V-number, check both vendors
@@ -42,7 +42,11 @@ communication:
     tick-seconds: 60
   campaign:
     default-throttle-per-minute: 60
+  credentials:
+    encryption-key: ${COMM_CRED_ENCRYPTION_KEY}   # AES-GCM master key for per-workspace secrets (env only)
 ```
+
+The `notification.email`/`notification.whatsapp` blocks above are the **platform/shared** credentials (used only where a channel allows fallback). A workspace's **own** sender identity is configured at runtime via the credential API (below), stored encrypted — never in `application.yml`.
 
 ## 4. Try it — transactional (Phase A)
 
@@ -84,6 +88,24 @@ GET  /communication/v1/campaigns/sync         # rollup: targeted = sent + failed
 ```
 Opt a customer out (`/preferences/sync` with `opted_in=false`, or hit `/unsubscribe?token=…`) and confirm they are SKIPPED (`OPTED_OUT`) on the next campaign.
 
+## 6b. Try it — workspace sender identity & usage billing
+
+```
+# Configure the client's own WhatsApp number (secret is write-only — never returned)
+POST /communication/v1/credentials
+{ "channel":"WHATSAPP","provider":"META_CLOUD","sender_ref":"<client phone_number_id>",
+  "secret":"<client access token>","allow_platform_fallback":false }
+POST /communication/v1/credentials/{uid}/validate    # provider probe → status VALID
+
+# Send a WhatsApp message → goes out from the CLIENT's number; log records credential + billing_mode=CLIENT_OWN
+# Delete the credential and resend → SKIPPED with reason NO_CREDENTIAL (never platform fallback for WhatsApp)
+
+# Usage for billing
+GET /communication/v1/usage?from=2026-06-01&to=2026-06-30&group_by=channel,credential,billing_mode
+# → counts per channel × credential × billing_mode; PLATFORM rows are what you bill the client
+```
+Verify `GET /communication/v1/credentials` returns `secret_last4`/masked only (never the secret), and that no secret appears in logs (SC-011).
+
 ## 7. Validate
 
 ```bash
@@ -92,7 +114,7 @@ Opt a customer out (`/preferences/sync` with `opted_in=false`, or hit `/unsubscr
 ./gradlew ciBuild                                    # CI gate (Docker for integration/testAll)
 ```
 
-Key tests to add: `TemplateRendererTest` (placeholder substitution + missing-var warnings + HTML/text), `RecurrenceCalculatorTest` (business-tz, month-overflow day 31, midnight quiet-hours), `ConsentGateTest` (opt-out skip, transactional bypass, hard-bounce suppression), `EmailNotificationProviderTest` / `WhatsAppNotificationProviderTest` (mirror `Msg91SmsProviderTest`), `ScheduleSweeperTest` (at-most-once under overlap).
+Key tests to add: `TemplateRendererTest` (placeholder substitution + missing-var warnings + HTML/text), `RecurrenceCalculatorTest` (business-tz, month-overflow day 31, midnight quiet-hours), `ConsentGateTest` (opt-out skip, transactional bypass, hard-bounce suppression), `EmailNotificationProviderTest` / `WhatsAppNotificationProviderTest` (mirror `Msg91SmsProviderTest`), `ScheduleSweeperTest` (at-most-once under overlap), `CredentialCryptoServiceTest` (encrypt/decrypt round-trip; secret never in `toString`), `WorkspaceChannelCredentialResolverTest` (client-owned vs platform-fallback policy; WhatsApp blocked with `NO_CREDENTIAL`), `UsageLedgerTest` (one row per SENT/DELIVERED; report reconciles with logs).
 
 ## 8. Mobile (separate `ampairs-app` PR)
 

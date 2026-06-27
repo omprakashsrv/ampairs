@@ -128,3 +128,39 @@ Month-overflow (FR-020): "day 31" on a short month clamps to the month's last da
 **Rationale**: Matches `/metro-di` and `/offline-sync` skills and the existing feature-module layout. Detailed plan/tasks are a separate `ampairs-app` PR; here we only freeze the `/sync` contract + DTO shapes so both repos align.
 
 **Open follow-ups** (non-blocking): exact WhatsApp provider vendor (Meta Cloud API vs. MSG91/Twilio) and email transport (SMTP vs. SES) are config-time choices behind the provider interface; both are wired in Phase A/C and selected via `CommunicationProperties`/`NotificationProperties`.
+
+---
+
+## D11. Bring-your-own provider credentials (workspace sender identity)
+
+**Decision**: Add a `WorkspaceChannelCredential` entity **owned by `notification`** (the module that owns providers and actually authenticates to them). One row per `(workspace, channel, provider)` holding the workspace's own sender identity + secret material (WhatsApp `phone_number_id` + access token; email sender domain/from + SMTP/SES auth; SMS sender id + auth). At send time, each provider resolves the **current tenant's** credential via a `WorkspaceChannelCredentialResolver`:
+
+- credential found + valid → send through it; attribution `billing_mode = CLIENT_OWN`, `provider_account_ref` = the client's sender (e.g. WhatsApp number / from-domain).
+- no credential + channel **allows platform fallback** (per-channel policy flag, default: email yes, SMS configurable, **WhatsApp no**) → send through the platform credential from `NotificationProperties`; `billing_mode = PLATFORM`.
+- no credential + channel is **client-owned-sender** (WhatsApp) → **fail with a typed error**; the dispatch becomes a `SKIPPED`/`FAILED` log with reason `NO_CREDENTIAL` (FR-037/FR-042). No silent platform fallback.
+
+The provider returns the resolved `credentialUid`, `providerAccountRef`, `billingMode`, and any provider cost units on the result; these ride back to `communication` on `NotificationDeliveryUpdatedEvent` (D3) so the log and usage ledger can record them.
+
+**Rationale**: Credentials are *how the transport authenticates* — a `notification` concern, co-located with the providers that use them, resolved by `TenantContextHolder` already in scope on the send path. Keeping them out of `communication` preserves the boundary (D1): `communication` stays provider-agnostic and only consumes normalized attribution. The per-channel fallback policy makes "WhatsApp from the client's number only" a hard rule while still letting email degrade gracefully.
+
+**Alternatives rejected**: (a) credentials in `communication` — rejected: it would have to know provider specifics and re-resolve tenant on a path `notification` already owns. (b) credentials in `setting` registry — rejected: `setting` holds non-secret toggles; secret material needs encrypted, write-only handling distinct from the generic registry. (c) one global platform credential only — rejected: defeats the entire requirement (client sender identity + per-client billing).
+
+---
+
+## D12. Secret storage — encryption at rest & write-only API
+
+**Decision**: Secret columns on `WorkspaceChannelCredential` store **AES-GCM ciphertext**, encrypted/decrypted by a small `CredentialCryptoService` using a master key sourced from the **environment** (e.g. `COMM_CRED_ENCRYPTION_KEY`), never from source. The management API is **write-only for secrets**: create/update accept secret values; all responses **mask** them (e.g. last 4 / `••••`) and never return plaintext; secrets are excluded from logs, `toString()`, and error payloads. Decryption happens only inside the provider on the send path. A `validate` action performs a provider-side credential check (e.g. a WhatsApp token probe) and records a validity state + `last_validated_at`; the secret itself is never echoed.
+
+**Rationale**: Satisfies FR-039 and security rule #10 (no secrets in source; env-supplied config; never logged). Encryption-at-rest with an env-held master key is the standard pattern for per-tenant runtime secrets that *must* live in the DB (unlike platform-wide secrets, these can't be env vars — there is one set per workspace). Write-only + masking prevents accidental exfiltration via the API or sync.
+
+**Alternatives rejected**: (a) store plaintext, rely on DB encryption only — rejected: leaks via API/logs/backups; FR-039 demands app-level write-only. (b) external secrets manager (Vault/KMS per credential) — reasonable future hardening, but heavier than needed now; the `CredentialCryptoService` abstraction leaves room to swap the backing key store later. (c) sync credentials to the device — explicitly rejected (FR-043): never put secrets on the canonical `/sync` feed.
+
+---
+
+## D13. Usage attribution & billing ledger
+
+**Decision**: Add an append-only `communication_usage` ledger in `communication`, one row per **billable send event** (written when a log first reaches `SENT`/`DELIVERED`), capturing `workspace, channel, credential_uid, provider_account_ref, billing_mode, communication_log_uid, provider_message_id, cost_units, occurred_at`. The `communication_log` also denormalizes `credential_uid` + `billing_mode` for quick joins. A reporting endpoint aggregates usage by channel × credential × billing_mode over a period and MUST reconcile with the log (SC-010). The actual invoicing is left to the billing system (`subscription`/billing) which can consume this ledger; integration is out of scope here.
+
+**Rationale**: A dedicated immutable ledger (vs. deriving from logs alone) survives log retention/pruning and gives billing a stable, append-only source — the same reasoning that keeps financial records separate from operational ones. Writing on first `SENT`/`DELIVERED` (not on `QUEUED`) bills only messages that actually went out. `billing_mode` is the dimension that answers "do we charge the client (PLATFORM) or is it their own provider cost (CLIENT_OWN)".
+
+**Alternatives rejected**: (a) derive billing purely from `communication_log` at report time — rejected: logs may be pruned and statuses mutate; billing wants an immutable record. (b) put the ledger in `subscription` — rejected: the per-send context (channel/credential/account) originates in the send path; expose it from here and let billing pull. (c) bill at `QUEUED` — rejected: would over-bill skipped/failed-before-send messages.

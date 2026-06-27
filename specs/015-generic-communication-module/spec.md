@@ -93,6 +93,25 @@ A staff member using the mobile app wants to draft and manage templates, schedul
 
 ---
 
+### User Story 6 - Send from the workspace's own provider credentials and bill by usage (Priority: P2)
+
+A business owner wants their customers to see messages coming from *their own* sender identity — their own WhatsApp Business number, their own email domain, their own SMS sender ID — not the platform's. They configure their provider credentials once per channel, and from then on the platform sends through those credentials so the sender is the client. The platform records which credential every message was sent through, so usage is attributed correctly and the client can be billed: messages sent on the platform's shared credentials are billable to the client, while messages sent on the client's own credentials are the client's own provider cost.
+
+**Why this priority**: Sender identity (deliverability, trust, regulatory sender registration) and correct billing attribution are core to a multi-tenant communications product. This builds on the send pipeline (Story 1), so it is P2.
+
+**Independent Test**: Configure a workspace WhatsApp credential, send a WhatsApp message, and confirm it goes out from the client's own number (provider account recorded) attributed to that credential as client-owned usage; then remove the credential and confirm the WhatsApp send is blocked with a clear reason rather than sent from the platform's number.
+
+**Acceptance Scenarios**:
+
+1. **Given** a workspace has configured a WhatsApp credential, **When** a WhatsApp message is sent, **Then** it is dispatched using that credential (the client's own sender number) and the delivery log records the credential and provider account used.
+2. **Given** no workspace credential exists for a channel that requires client-owned sending (e.g. WhatsApp), **When** a send is attempted on that channel, **Then** it is blocked/skipped with a clear reason and is NOT sent from the platform's shared sender.
+3. **Given** a channel that permits platform fallback (e.g. email, when configured to allow it), **When** no workspace credential exists, **Then** the platform's shared credential is used and the message's usage is marked billable to the client.
+4. **Given** stored provider secrets, **When** a user views a configured credential, **Then** secret values are masked/never returned in full, and secrets never appear in logs.
+5. **Given** a period of sends, **When** the owner or admin views usage, **Then** totals are broken down by channel, by credential, and by billing mode, and reconcile exactly with the delivery log.
+6. **Given** a credential is invalid or expired at send time, **When** a client-owned-channel send is attempted, **Then** it fails with a clear reason and does NOT silently fall back to the platform's sender.
+
+---
+
 ### Edge Cases
 
 - **Missing address**: a targeted recipient has no address for the chosen channel → that channel is skipped for that recipient and recorded as "skipped — no address"; other channels still proceed.
@@ -105,6 +124,9 @@ A staff member using the mobile app wants to draft and manage templates, schedul
 - **Quiet-hours window spans midnight**: deferral logic handles windows that cross the day boundary.
 - **Hard bounce / invalid recipient**: repeated hard bounces for an address mark it undeliverable so it is not retried indefinitely.
 - **Unsubscribe link/keyword**: an opt-out received on any channel updates the customer's preference for that channel.
+- **Credential invalid/expired at send time**: a client-owned-channel send fails with a clear, surfaced reason and is not silently dropped or rerouted to the platform sender.
+- **Credential rotated mid-campaign**: messages already dispatched keep their original attribution; subsequent sends use the new credential, and usage attributes each message to the credential actually used.
+- **Secret never exposed**: provider secrets are never returned in any API response or written to any log, even in error/debug output.
 
 ## Requirements *(mandatory)*
 
@@ -157,8 +179,18 @@ A staff member using the mobile app wants to draft and manage templates, schedul
 - **FR-030**: The system MUST honor an opt-out received on any channel (e.g. an unsubscribe keyword or link) by updating the corresponding preference and excluding the customer from future promotional sends on that channel.
 - **FR-031**: An address that repeatedly hard-bounces MUST be marked undeliverable and excluded from further automatic retries.
 
+#### Provider credentials & usage billing
+- **FR-036**: A workspace MUST be able to configure its own provider credentials per channel (e.g. WhatsApp Business number + access token, email sender domain + transport credentials, SMS sender ID + auth), so that messages are sent from the workspace's own sender identity rather than the platform's.
+- **FR-037**: For channels designated as client-owned-sender (e.g. WhatsApp), the system MUST send using the workspace's credential and MUST NOT fall back to a platform/shared credential; with no valid workspace credential, the send MUST be blocked/skipped with a clear reason.
+- **FR-038**: For channels configured to permit it, the system MAY fall back to a platform/shared credential when the workspace has not configured its own; such sends MUST be marked billable to the client.
+- **FR-039**: Provider secrets MUST be stored encrypted at rest, MUST never be returned in API responses (write-only / masked on read), and MUST never be written to logs.
+- **FR-040**: Every sent message MUST record which credential and provider account it was sent through, and its billing mode (platform-billable vs client-owned).
+- **FR-041**: The system MUST provide per-workspace usage accounting aggregated by channel, by credential, and by billing mode over a period, reconciling exactly with the delivery log and suitable for billing.
+- **FR-042**: An invalid or expired credential detected at send time MUST fail the send with a clear reason; for client-owned-sender channels there MUST be no silent fallback to the platform sender. The system SHOULD offer a way to validate a credential before relying on it.
+- **FR-043**: Credential configuration MUST be workspace-scoped and isolated, and MUST NOT be exposed through the offline-sync feed in plaintext — it is managed via an authenticated write-only interface.
+
 #### Multi-tenancy, management & mobile
-- **FR-032**: All templates, schedules, campaigns, preferences, and logs MUST be scoped to a workspace and isolated between workspaces.
+- **FR-032**: All templates, schedules, campaigns, preferences, logs, credentials, and usage records MUST be scoped to a workspace and isolated between workspaces.
 - **FR-033**: Templates, schedules, campaigns, and preferences MUST be manageable from the mobile app while offline, with local changes synchronized to the server and across devices when connectivity is restored.
 - **FR-034**: Message sending MUST be performed server-side; the mobile app composes and manages but does not deliver.
 - **FR-035**: Users MUST be able to view recent communication delivery status from the management interface, including on mobile.
@@ -171,8 +203,10 @@ A staff member using the mobile app wants to draft and manage templates, schedul
 - **Communication Schedule**: a recurrence definition (frequency, interval, day selector, time of day, business timezone, optional start/end, pause state) bound to a template and audience; produces communication requests on each occurrence.
 - **Campaign**: a promotional send to an audience on a channel with a lifecycle, pacing, quiet-hours and consent gating, and an aggregated delivery rollup.
 - **Communication Preference / Consent**: a customer's per-channel, per-category opt-in/opt-out state plus undeliverable/bounce flags.
-- **Communication Log**: the durable record of each delivery attempt and its outcome, updated by provider feedback.
+- **Communication Log**: the durable record of each delivery attempt and its outcome, updated by provider feedback; carries the credential, provider account, and billing mode used.
 - **Audience**: the targeting definition (single recipient, explicit list, or segment such as a customer group) resolved to concrete recipients at send time.
+- **Provider Credential**: a workspace's per-channel sender identity and secret material (the client's own WhatsApp number/token, email sender + transport, SMS sender ID), stored encrypted with secrets write-only, plus a validity state and a flag for whether the channel allows platform fallback.
+- **Usage Record**: an append-only billing-ledger entry per sent message — workspace, channel, credential, provider account, billing mode (platform-billable vs client-owned), timestamp, provider message reference, and any provider cost units (e.g. SMS segments, WhatsApp conversation category).
 
 ## Success Criteria *(mandatory)*
 
@@ -186,6 +220,9 @@ A staff member using the mobile app wants to draft and manage templates, schedul
 - **SC-006**: A duplicate trigger or overlapping scheduler run never results in the same logical message being delivered to the same recipient more than once.
 - **SC-007**: Staff can author templates, schedules, and campaigns on mobile while offline, and 100% of those drafts synchronize to the server and other devices within one minute of connectivity being restored.
 - **SC-008**: At least 95% of sent messages reach a terminal delivery status (delivered/failed/exhausted) in the log within their retry window, with an accurate failure reason where applicable.
+- **SC-009**: 100% of client-owned-channel messages (e.g. WhatsApp) are sent from the workspace's configured sender; zero are sent from the platform's sender.
+- **SC-010**: Every delivered message is attributable to exactly one credential and one billing mode, and monthly usage totals reconcile 1:1 with the delivery log — no unattributed sends.
+- **SC-011**: Provider secrets are never present in any API response or log output (verified by inspection/test).
 
 ## Assumptions
 
@@ -193,7 +230,9 @@ A staff member using the mobile app wants to draft and manage templates, schedul
 - Recipients (customers) and segments (customer groups) already exist in the system and provide the addresses (email/phone) and language preferences used for targeting and rendering.
 - Domain events for order, invoice, and payment lifecycle are already published and can be subscribed to as transactional triggers.
 - Each workspace already has a business timezone (and locale) available for scheduling and rendering.
-- Provider accounts and credentials for each channel (email, SMS, WhatsApp) are configured per workspace or per environment by an administrator; provider selection/failover is an operational concern outside this spec.
+- Provider accounts owned by the client (e.g. their WhatsApp Business account/number, email sending domain) are provisioned with the provider by the client; the platform stores and uses those credentials on the client's behalf. A platform/shared credential exists per channel and is used only where the channel permits fallback.
+- An encryption key for credential secrets at rest is supplied via the environment (per security rules); the platform never stores provider secrets in plaintext.
+- Actual invoicing/charging is performed by the billing system; this feature produces the usage accounting it consumes (the billing integration itself is outside this spec).
 - WhatsApp (and some SMS routes) require provider pre-approved message templates; producing and approving those with the provider is an administrative prerequisite, while this feature records and references the approved identifiers.
 - "Quiet hours" and promotional throttling rates are configurable per workspace with sensible defaults.
 - Message content retention and delivery-log retention follow standard practices for the domain unless an administrator configures otherwise.
@@ -211,5 +250,5 @@ A staff member using the mobile app wants to draft and manage templates, schedul
 - Two-way conversational messaging / inbound chat handling beyond processing opt-out (STOP/unsubscribe) signals.
 - Visual drag-and-drop email design tooling — a WYSIWYG builder. Hand-authored HTML email bodies with placeholders ARE in scope (FR-002a); only the visual editor that generates them is excluded.
 - Advanced audience segment building beyond existing customer groups / explicit lists (e.g. behavioral segmentation, A/B testing).
-- Provider billing, cost optimization, and least-cost routing.
+- Actual invoicing/charging and least-cost routing/cost optimization. (Per-workspace credential-attributed *usage accounting* IS in scope — FR-040/FR-041 — but turning that usage into invoices is the billing system's job.)
 - Analytics beyond per-campaign delivery rollups and per-message delivery status (e.g. click-through funnels, attribution).

@@ -13,7 +13,9 @@ UID prefixes (client-authored on mobile; server prefix for server-minted rows): 
 - **TriggerType**: `EVENT`, `MANUAL`, `SCHEDULE`, `CAMPAIGN`
 - **AudienceType**: `SINGLE`, `LIST`, `SEGMENT`
 - **DeliveryStatus**: `QUEUED`, `SENT`, `DELIVERED`, `READ`, `FAILED`, `SKIPPED`, `EXHAUSTED` *(monotonic; never regresses)*
-- **SkipReason**: `NO_ADDRESS`, `OPTED_OUT`, `SUPPRESSED`, `QUIET_HOURS_EXPIRED`, `NO_VARIANT`
+- **SkipReason**: `NO_ADDRESS`, `OPTED_OUT`, `SUPPRESSED`, `QUIET_HOURS_EXPIRED`, `NO_VARIANT`, `NO_CREDENTIAL`
+- **BillingMode**: `CLIENT_OWN` *(sent on the workspace's own credential — client's provider cost)*, `PLATFORM` *(sent on the shared platform credential — billable to the client)*
+- **CredentialStatus**: `UNVERIFIED`, `VALID`, `INVALID`, `EXPIRED`
 - **Frequency**: `DAILY`, `WEEKLY`, `MONTHLY`
 - **CampaignStatus**: `DRAFT`, `SCHEDULED`, `RUNNING`, `PAUSED`, `DONE`
 - **SuppressionReason**: `HARD_BOUNCE`, `COMPLAINT`, `UNSUBSCRIBE`
@@ -89,7 +91,12 @@ UID prefixes (client-authored on mobile; server prefix for server-minted rows): 
 | `provider_message_id` | varchar? | from provider/webhook |
 | `error_message` | text? | terminal failure reason |
 | `occurrence_key` | varchar? | schedule occurrence (idempotency, denormalized) |
+| `credential_uid` | varchar? | which `workspace_channel_credential` was used (D11; null when none/skipped) |
+| `provider_account_ref` | varchar? | the sender used (WhatsApp number / from-domain / SMS sender id) |
+| `billing_mode` | enum(BillingMode)? | CLIENT_OWN / PLATFORM (FR-040) |
 | `sent_at` / `delivered_at` | Instant? | |
+
+> New `SkipReason` value `NO_CREDENTIAL` (client-owned channel with no valid workspace credential — FR-037).
 
 - Index: `(request_uid)`, `(notification_uid)`, `(customer_uid, channel)`.
 - Campaign rollup (FR-028) = `GROUP BY status` over logs where `request.source_ref = campaign.uid`.
@@ -186,17 +193,61 @@ UID prefixes (client-authored on mobile; server prefix for server-minted rows): 
 
 ---
 
-## `notification` module additions (existing entity)
+## 11. `communication_usage` (UsageRecord) — append-only billing ledger *(communication module)*
 
-`notification_queue` (existing) gains:
+| Column | Type | Notes |
+|---|---|---|
+| `uid` | varchar | server-minted |
+| `communication_log_uid` | varchar | FK → log (one usage row per billable send) |
+| `channel` | enum(Channel) | |
+| `credential_uid` | varchar? | which credential sent it (null only for PLATFORM with no row) |
+| `provider_account_ref` | varchar? | sender used |
+| `billing_mode` | enum(BillingMode) | CLIENT_OWN / PLATFORM |
+| `provider_message_id` | varchar? | |
+| `cost_units` | int | provider cost units (SMS segments / WhatsApp conversation = 1 / email = 1) |
+| `cost_category` | varchar? | e.g. WhatsApp conversation category (MARKETING/UTILITY/…) |
+| `occurred_at` | Instant | when the message went out (first SENT/DELIVERED) |
+
+- Written once when a `communication_log` first reaches `SENT`/`DELIVERED` (never on QUEUED/SKIPPED). **Append-only** (immutable) — survives log retention pruning.
+- Unique: `(communication_log_uid)` — exactly one usage row per sent message (SC-010 attribution).
+- Billing report = aggregate over `(channel, credential_uid, billing_mode)` for a period; reconciles 1:1 with sent logs. Not synced to the app.
+
+---
+
+## `notification` module additions
+
+### `notification_queue` (existing entity) gains:
 
 | Column | Type | Notes |
 |---|---|---|
 | `subject` | varchar? | EMAIL subject (NEW) |
 | `source_module` | varchar? | e.g. `communication` (NEW) |
 | `source_ref` | varchar? | `communication_log.uid` correlation (NEW) |
+| `credential_uid` | varchar? | resolved workspace credential used (NEW) |
+| `billing_mode` | varchar? | CLIENT_OWN / PLATFORM (NEW) |
 
-`channel` already supports `EMAIL`/`WHATSAPP`. New Flyway version under both vendors. New providers (`EmailNotificationProvider`, `WhatsAppNotificationProvider`) and `NotificationDispatchService` + `NotificationDeliveryUpdatedEvent` carry no further schema.
+`channel` already supports `EMAIL`/`WHATSAPP`. New providers (`EmailNotificationProvider`, `WhatsAppNotificationProvider`), `NotificationDispatchService`, and `NotificationDeliveryUpdatedEvent` (now also carrying `credentialUid`, `providerAccountRef`, `billingMode`, `costUnits`).
+
+### 12. `workspace_channel_credential` (WorkspaceChannelCredential) — NEW, `notification` module, `OwnableBaseDomain`
+
+| Column | Type | Notes |
+|---|---|---|
+| `uid` | varchar | server-minted (`WCC…`) |
+| `channel` | enum(NotificationChannel) | EMAIL / SMS / WHATSAPP / PUSH |
+| `provider` | varchar | e.g. `META_CLOUD`, `MSG91`, `SES`, `SMTP` |
+| `sender_ref` | varchar | client sender identity — WhatsApp `phone_number_id` / from-domain / SMS sender id (non-secret, returnable) |
+| `display_name` | varchar? | admin label |
+| `secret_ciphertext` | text | **AES-GCM ciphertext** of token/password/key (D12). NEVER returned |
+| `secret_last4` | varchar? | masked hint for the UI (non-secret) |
+| `config_json` | text? | non-secret extra config (region, api url, fallback hints) |
+| `allow_platform_fallback` | bool | per-credential/channel policy; WhatsApp defaults false (FR-037/FR-038) |
+| `status` | enum(CredentialStatus) | UNVERIFIED / VALID / INVALID / EXPIRED |
+| `last_validated_at` | Instant? | from the validate action |
+| `active` | bool | soft-delete |
+
+- Unique: `(owner_id, channel, provider)`. Resolver picks the active credential for the tenant+channel.
+- **Not on `/sync`** (FR-043) — managed via authenticated write-only API; secrets never leave the server.
+- New Flyway version under **both** vendors (mysql + postgresql).
 
 ---
 
@@ -207,6 +258,8 @@ MessageTemplate 1───* TemplateVariant            (aggregate; /sync togethe
 MessageTemplate 1───* CommunicationRequest        (by template_uid)
 CommunicationRequest 1───* CommunicationLog        (fan-out per recipient×channel)
 CommunicationLog *───1 notification_queue          (notification_uid; cross-module by id only)
+CommunicationLog 1───1 CommunicationUsage           (one usage row per SENT/DELIVERED message)
+WorkspaceChannelCredential (notification) ──used-by──> send path; attribution flows back to CommunicationLog + CommunicationUsage
 CommunicationSchedule 1───* CommunicationOccurrence (unique occurrence_key)
 CommunicationSchedule ──(materializes)──> CommunicationRequest
 Campaign ──(materializes)──> CommunicationRequest ──> CommunicationLog (rollup)
@@ -222,3 +275,6 @@ Workspace 1───1 CommunicationConfig
 - Transactional sends skip ConsentGate/QuietHours but still honor `HARD_BOUNCE` suppression.
 - Schedule `next_run_at` is always UTC `Instant`; all wall-clock math uses the workspace business timezone.
 - `(schedule_uid, occurrence_key)` and `(owner_id, dedup_key)` uniqueness are the two idempotency guarantees behind SC-006.
+- Credential resolution (per send): client-owned-sender channel (WhatsApp) with no valid credential → `SKIPPED`/`FAILED` with `NO_CREDENTIAL`, never platform fallback (FR-037). Channel allowing fallback + no credential → PLATFORM. Credential present + valid → CLIENT_OWN.
+- `secret_ciphertext` is the only secret column; it is AES-GCM encrypted, never returned by any API, never logged (FR-039/SC-011). Decryption occurs only inside the provider on the send path.
+- Exactly one `communication_usage` row per message that reaches SENT/DELIVERED → every billable send is attributable to one credential + one billing mode (SC-010).

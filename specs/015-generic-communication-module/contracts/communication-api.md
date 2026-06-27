@@ -79,6 +79,28 @@ Renders the selected variant with sample data; `rendered_html` is the email body
 
 ---
 
+## 🔐 Provider credentials — workspace sender identity (write-only secrets; NOT on `/sync`)
+
+Authenticated, workspace-scoped (`X-Workspace-ID`). Secrets are **write-only** — accepted on write, **never returned** (masked on read). Owned by `notification`; surfaced under the communication-settings UI.
+
+```
+GET    /communication/v1/credentials                 → ApiResponse<List<CredentialResponse>>   (masked)
+POST   /communication/v1/credentials                  body: CredentialRequest   → ApiResponse<CredentialResponse>
+PUT    /communication/v1/credentials/{uid}            body: CredentialRequest   → ApiResponse<CredentialResponse>
+DELETE /communication/v1/credentials/{uid}            → ApiResponse<Unit>        (soft-delete)
+▶️ POST /communication/v1/credentials/{uid}/validate  → ApiResponse<CredentialResponse>   (provider probe; sets status + last_validated_at)
+```
+`CredentialRequest`: `channel, provider, sender_ref, display_name?, secret, config_json?, allow_platform_fallback`.
+`CredentialResponse`: `uid, channel, provider, sender_ref, display_name?, secret_last4?, config_json?, allow_platform_fallback, status, last_validated_at?, active` — **no `secret`**.
+
+## 📊 Usage / billing report
+
+```
+GET /communication/v1/usage?from&to&group_by=channel,credential,billing_mode
+    → ApiResponse<UsageReportResponse>
+```
+`UsageReportResponse`: rows of `{ channel, credential_uid?, provider_account_ref?, billing_mode, message_count, cost_units, cost_category? }` + totals. Reconciles 1:1 with SENT/DELIVERED logs (SC-010). Consumed by the billing system to invoice `PLATFORM`-mode usage; `CLIENT_OWN` usage is informational (the client pays their provider directly).
+
 ## 🌐 Public unsubscribe (no workspace header — token-scoped)
 
 ```
@@ -119,10 +141,13 @@ data class DispatchRequest(
     val sourceModule: String,         // "communication"
     val sourceRef: String,            // communication_log.uid
 )
-// Published by notification on terminal status:
+// Published by notification on terminal status (carries credential attribution for billing):
 data class NotificationDeliveryUpdatedEvent(
     val sourceModule: String, val sourceRef: String,
     val status: String, val providerMessageId: String?, val error: String?,
+    val credentialUid: String?, val providerAccountRef: String?,
+    val billingMode: String?,        // CLIENT_OWN | PLATFORM
+    val costUnits: Int?, val costCategory: String?,
 )
 ```
 

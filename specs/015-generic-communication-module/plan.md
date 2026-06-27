@@ -15,6 +15,8 @@ Three trigger modes, built in spec-priority order:
 
 Templates, schedules, campaigns, and preferences are exposed over the canonical offline-sync `/sync` contract so the mobile app manages them offline-first (sending stays server-side). The mobile `feature/communication` KMP module is planned at a high level here and delivered in the `ampairs-app` repo under a separate plan/PR.
 
+**Per-workspace sender identity & usage billing**: `notification` also gains a `WorkspaceChannelCredential` store so each workspace sends from **its own** provider account (the client's WhatsApp number, email domain, SMS sender ID) — resolved per-tenant on the send path. WhatsApp is client-owned-sender only (no platform fallback); email/SMS may fall back per a policy flag. Secrets are AES-GCM encrypted at rest with an env-supplied key and are write-only over the API (never returned/logged). Every sent message is attributed to the credential + a `billing_mode` (CLIENT_OWN vs PLATFORM) and recorded in an append-only `communication_usage` ledger that the billing system consumes.
+
 ## Technical Context
 
 **Language/Version**: Kotlin 2.3 / Java 21 (backend); Kotlin 2.4 KMP (mobile, separate repo)
@@ -25,7 +27,7 @@ Templates, schedules, campaigns, and preferences are exposed over the canonical 
 **Project Type**: Web/service backend module + (high-level) mobile feature module
 **Performance Goals**: transactional message dispatched < 30 s p99 (SC-001); campaign throttle configurable per-minute; sweeper tick ~1 min
 **Constraints**: multi-tenant isolation (`X-Workspace-ID`); business-timezone-correct recurrence (never server zone); at-most-once sends; server-side rendering (the app never renders email)
-**Scale/Scope**: per-workspace template/schedule/campaign counts in the 10s–100s; campaign audiences up to customer-group size (1k–10k); 8 new entities + notification provider/column additions
+**Scale/Scope**: per-workspace template/schedule/campaign counts in the 10s–100s; campaign audiences up to customer-group size (1k–10k); 11 communication tables + 1 new notification credential table + notification provider/column additions
 
 ## Constitution Check
 
@@ -39,6 +41,7 @@ Templates, schedules, campaigns, and preferences are exposed over the canonical 
 | IV. Multi-tenancy | ✅ | All entities extend `OwnableBaseDomain`; tenant set by `SessionUserFilter` at controller level; public unsubscribe + provider-webhook endpoints resolve tenant from a signed token / stored row, not a header |
 | V. `ApiResponse<T>` | ✅ | All endpoints return `ApiResponse`; `/sync` pull → `ApiResponse<PageResponse<T>>` |
 | VI. Centralized exceptions | ✅ | No try/catch for business errors in controllers; typed domain exceptions bubble |
+| (Security rule #10) Secrets | ✅ | Per-tenant provider secrets stored **encrypted at rest** (AES-GCM) with the master key from env (`COMM_CRED_ENCRYPTION_KEY`) — never in source; secrets are write-only over the API (masked on read) and excluded from logs/`toString()`; credentials are **not** on the `/sync` feed |
 | VII. `@EntityGraph` | ✅ | Template→variants fetched via `@NamedEntityGraph` to avoid N+1 on the aggregate `/sync` feed |
 | VIII. Angular M3 | ➖ N/A | No web UI in this feature |
 | IX. Module boundaries | ✅ | New bounded context `communication`; cross-module access only via public service interfaces / ports (`event` listeners, a customer audience port, a notification dispatch service) — never foreign repositories |
@@ -85,9 +88,12 @@ communication/
     │   │   ├── trigger/                  # TransactionalEventListener (event-module @EventListener)
     │   │   ├── schedule/                # ScheduleSweeper (@Scheduled), RecurrenceCalculator, OccurrenceLedger
     │   │   ├── campaign/                # CampaignRunner, ConsentGate, QuietHours, Throttler
-    │   │   └── consent/                 # PreferenceService, SuppressionService, UnsubscribeService
-    │   ├── port/                        # CustomerAudiencePort, NotificationDispatchPort, BusinessTimezonePort
+    │   │   ├── consent/                 # PreferenceService, SuppressionService, UnsubscribeService
+    │   │   └── usage/                   # UsageLedgerService (writes communication_usage), UsageReportService
+    │   ├── port/                        # CustomerAudiencePort, NotificationDispatchPort, BusinessTimezonePort,
+    │   │                                #   WorkspaceCredentialPort (delegates to notification's credential service)
     │   └── controller/                  # template/schedule/campaign/preference (/sync) + action + public unsubscribe
+    │                                    #   + credentials (write-only) + usage report
     ├── main/resources/db/migration/
     │   ├── mysql/V1.0.x__communication_init.sql
     │   └── postgresql/V1.0.x__communication_init.sql
@@ -98,8 +104,13 @@ notification/src/main/kotlin/com/ampairs/notification/
 ├── provider/email/EmailNotificationProvider.kt        # NEW (SMTP/SES)
 ├── provider/whatsapp/WhatsAppNotificationProvider.kt  # NEW (Cloud API)
 ├── service/NotificationDispatchService.kt             # NEW public structured-enqueue API + delivery event
+├── credential/WorkspaceChannelCredential.kt           # NEW entity (per-workspace sender identity, encrypted secret)
+├── credential/WorkspaceChannelCredentialResolver.kt   # NEW per-tenant resolver + platform-fallback policy
+├── credential/CredentialCryptoService.kt              # NEW AES-GCM encrypt/decrypt (env master key)
+├── credential/WorkspaceChannelCredentialService.kt    # NEW public interface (CRUD + validate); communication's controller delegates here via WorkspaceCredentialPort
 ├── controller/NotificationWebhookController.kt        # NEW /notification/v1/webhooks/{provider}
-└── (migration) add subject/source_module/source_ref columns to notification_queue
+└── (migration) notification_queue += subject/source_module/source_ref/credential_uid/billing_mode;
+                NEW table workspace_channel_credential (both vendors)
 ```
 
 ### Source Code (mobile — high level, delivered separately in `ampairs-app`)
@@ -117,9 +128,9 @@ feature/communication/                  # new KMP feature module (separate plan/
 
 ## Phasing (follows spec priority)
 
-- **Phase A — Transactional (P1)**: module skeleton; `MessageTemplate`+`TemplateVariant` with the Mustache-style renderer + preview; `CommunicationLog`; `notification` Email provider + `NotificationDispatchService` + delivery-event feedback; `TransactionalEventListener` (start with `InvoiceCreatedEvent`); consent bypass for transactional; templates `/sync` (aggregate-grained); migrations. WhatsApp + push providers wired but transactional WhatsApp gated on an approved template id.
-- **Phase B — Recurring + template polish (P2)**: `CommunicationSchedule` + `ScheduleSweeper` + `RecurrenceCalculator` (business-tz) + occurrence ledger; schedules `/sync`; multi-language variant selection + default-locale fallback.
-- **Phase C — Promotional + mobile (P3)**: `Campaign` + `AudienceResolver` (customer groups) + `ConsentGate` + `QuietHours` + `Throttler` + `CommunicationSuppression` + preferences `/sync` + public unsubscribe + provider delivery webhooks (bounce → suppression); mobile `feature/communication` (separate repo/PR).
+- **Phase A — Transactional + sender identity foundation (P1/P2)**: module skeleton; `MessageTemplate`+`TemplateVariant` with the Mustache-style renderer + preview; `CommunicationLog`; `notification` Email provider + `NotificationDispatchService` + delivery-event feedback; `TransactionalEventListener` (start with `InvoiceCreatedEvent`); consent bypass for transactional; templates `/sync` (aggregate-grained); migrations. **Credential foundation** (required for any real WhatsApp/email send): `WorkspaceChannelCredential` entity + `CredentialCryptoService` + per-tenant `WorkspaceChannelCredentialResolver` with the platform-fallback policy (WhatsApp = client-owned only); capture `credential_uid`/`provider_account_ref`/`billing_mode` on the log; write the `communication_usage` ledger row on SENT/DELIVERED. WhatsApp provider wired (sends from the workspace credential; gated on an approved template id).
+- **Phase B — Recurring + credential management + template polish (P2)**: `CommunicationSchedule` + `ScheduleSweeper` + `RecurrenceCalculator` (business-tz) + occurrence ledger; schedules `/sync`; multi-language variant selection + default-locale fallback. **Credential write-only API + `/validate` action**; usage **report endpoint**.
+- **Phase C — Promotional + mobile (P3)**: `Campaign` + `AudienceResolver` (customer groups) + `ConsentGate` + `QuietHours` + `Throttler` + `CommunicationSuppression` + preferences `/sync` + public unsubscribe + provider delivery webhooks (bounce → suppression; webhook carries credential attribution into usage); mobile `feature/communication` (separate repo/PR) incl. a credential-settings + usage screen.
 
 ## Complexity Tracking
 
