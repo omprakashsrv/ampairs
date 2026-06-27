@@ -1,6 +1,6 @@
 # Implementation Plan: Analytics & Forecasting Dashboard
 
-**Branch**: `claude/indian-retail-ecosystem-877med` (spec dir `022-analytics-forecasting-dashboard`) | **Date**: 2026-06-27 | **Spec**: [spec.md](./spec.md)
+**Branch**: `claude/analytics-forecasting-dashboard-0cqkrv` (spec dir `022-analytics-forecasting-dashboard`) | **Date**: 2026-06-27 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/022-analytics-forecasting-dashboard/spec.md`
 
 ## Summary
