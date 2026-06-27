@@ -99,8 +99,10 @@ correct figures for Day/Week/Month bucketed in the business timezone; export wor
 match the backend `…/dashboard/kpis` to the last currency unit.
 
 ### Tests for User Story 1 ⚠️ (write first, ensure they fail)
-- [ ] T015 [P] [US1] (BE) Testcontainers test: business-timezone bucketing — a `2026-06-30T18:30:00Z`
+- [~] T015 [P] [US1] (BE) Testcontainers test: business-timezone bucketing — a `2026-06-30T18:30:00Z`
   invoice lands on `2026-07-01` for `Asia/Kolkata` (`analytics/src/test/.../KpiRollupServiceTimezoneTest.kt`). (R7/SC-003)
+  PARTIAL: covered now by a mock-based unit test (`KpiRollupServiceTest`, 3 tests passing — IST→Jul-1,
+  UTC→Jun-30, bucket increment). The full Testcontainers DB test is deferred to CI (no Docker in sandbox).
 - [ ] T016 [P] [US1] (BE) Testcontainers test: recompute idempotence — recomputing a day twice yields
   identical `kpi_daily_summary` rows (`.../KpiRollupReconcileTest.kt`). (SC-004)
 - [ ] T016a [P] [US1] (BE) Testcontainers test: source-state fidelity (`.../KpiSourceFidelityTest.kt`) —
@@ -132,16 +134,24 @@ match the backend `…/dashboard/kpis` to the last currency unit.
   covering indexes referenced by data-model §1.1. (depends on T020)
 - [ ] T023 [US1] (BE) `KpiRollupService`: business-zone bucketing + upsert of affected buckets;
   `recompute(fromDate,toDate,groups)` reconcile from source tables (idempotent). (depends on T022, T007)
-- [ ] T024 [US1] (BE) `@TransactionalEventListener(AFTER_COMMIT)` in `analytics/event/` on
+- [~] T024 [US1] (BE) `@TransactionalEventListener(AFTER_COMMIT)` in `analytics/event/` on
   `InvoiceFinalizedEvent`/`InvoicePaidEvent`/`OrderEvents`/`InventoryStockUpdatedEvent` → calls
   `KpiRollupService` upsert. (depends on T023)
+  PARTIAL (Option B): `AnalyticsInvoiceEventListener` + `KpiRollupService.applyInvoiceFinalized`
+  implemented for `InvoiceFinalizedEvent` → coarse SALES bucket (gross + count) only. `InvoiceStockUpdatedEvent`
+  does NOT exist (only `ProductStockChangedEvent`); net/tax/GST/top-N/inventory + paid/order/cancel
+  handling deferred to Option A (public read services + reconcile).
 - [ ] T025 [US1] (BE) `@Scheduled` nightly reconcile job in `analytics/batch/` calling
   `recompute(trailing N days)`. (depends on T023)
-- [ ] T026 [US1] (BE) `DashboardReadService` serving kpis/trend/aging/gst-summary/top from the summary;
+- [~] T026 [US1] (BE) `DashboardReadService` serving kpis/trend/aging/gst-summary/top from the summary;
   GST split logic per R10. (depends on T022)
-- [ ] T027 [US1] (BE) `AnalyticsController` with `GET /analytics/v1/dashboard/{kpis,trend,aging,gst-summary,top}`
+  PARTIAL: `DashboardReadService.kpis`/`trend` implemented for the SALES group (gross/count/AOV +
+  day/week/month trend bucketing). aging/gst-summary/top + their endpoints deferred (need richer buckets).
+- [~] T027 [US1] (BE) `AnalyticsController` with `GET /analytics/v1/dashboard/{kpis,trend,aging,gst-summary,top}`
   and `POST /analytics/v1/recompute` (role-guarded) — sets/clears `TenantContextHolder` at controller
   level, returns `ApiResponse<T>`, no business try/catch. (depends on T026, T023, T021)
+  PARTIAL: `AnalyticsController` exposes `GET /kpis` + `GET /trend` (`ApiResponse<T>`; tenant via
+  `SessionUserFilter`, matching every other controller). aging/gst-summary/top/recompute deferred.
 
 ### Mobile implementation (US1)
 - [ ] T028 [P] [US1] (MOB) Per-feature aggregate DAO queries (date-bounded `GROUP BY`, indexed) added to
@@ -205,8 +215,10 @@ still renders.
 - [ ] T041 [US2] (BE) `DemandSignalService` (public interface: avg daily demand + variability) +
   publish `DemandForecastUpdatedEvent` after each batch (consumed by 027/inventory; analytics writes no
   inventory tables — R6/FR-018). (depends on T040)
-- [ ] T042 [US2] (BE) `DemandForecastController` `GET /analytics/v1/forecasts/sync` →
+- [X] T042 [US2] (BE) `DemandForecastController` `GET /analytics/v1/forecasts/sync` →
   `ApiResponse<PageResponse<DemandForecastResponse>>`. (depends on T038)
+  DONE: controller + `DemandForecastReadService` (incremental `last_sync` paging, ASC). Rows are served
+  once the forecast batch (T037–T041) writes them.
 
 ### Mobile implementation (US2)
 - [ ] T043 [US2] (MOB) `DemandForecastSyncDelegate` (PULL-ONLY) `@ContributesIntoMap(WorkspaceScope::class)`
