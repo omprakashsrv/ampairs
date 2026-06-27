@@ -58,6 +58,26 @@ class NotificationQueue : OwnableBaseDomain() {
     @Column(name = "provider_response", columnDefinition = "TEXT")
     var providerResponse: String? = null
 
+    /** EMAIL subject line (null for SMS/push). */
+    @Column(name = "subject", length = 500)
+    var subject: String? = null
+
+    /** Originating module for cross-module correlation (e.g. "communication"). */
+    @Column(name = "source_module", length = 50)
+    var sourceModule: String? = null
+
+    /** Correlation id in the source module (e.g. communication_log.uid) for delivery-status feedback. */
+    @Column(name = "source_ref", length = 200)
+    var sourceRef: String? = null
+
+    /** Workspace provider credential resolved for this send (null = platform/shared). */
+    @Column(name = "credential_uid", length = 200)
+    var credentialUid: String? = null
+
+    /** Billing attribution: CLIENT_OWN (client's own credential) vs PLATFORM (billable to client). */
+    @Column(name = "billing_mode", length = 20)
+    var billingMode: String? = null
+
     fun isReadyForRetry(): Boolean {
         return status == NotificationStatus.FAILED &&
                 retryCount < maxRetries &&
