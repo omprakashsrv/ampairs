@@ -22,6 +22,7 @@ include("agent")
 include("sequence")
 include("subscription")
 include("ecom")
+include("report")
 include("ampairs_service")
 
 
