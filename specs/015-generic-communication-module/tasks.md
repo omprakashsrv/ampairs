@@ -59,7 +59,7 @@
 ### Send orchestration + ports (comm)
 
 - [X] **T020** `comm/port/CustomerAudiencePort.kt` + `comm/service/audience/CustomerAudienceAdapter.kt` — `resolve(audienceType, ref)` → `List<Recipient(customerUid, email?, phone?, pushTokens?, locale?)>`; implement **SINGLE** + **LIST** now via `customer`'s public service (inject via `ObjectProvider`); **SEGMENT** stubbed with a `TODO(US3)`. Add a minimal read interface to the `customer` module if one is missing (no foreign-repo access).
-- [ ] **T021** `comm/port/BusinessTimezonePort.kt` + adapter — resolve a workspace's business timezone (reuse `business`/locale source); used by US2/US3.
+- [X] **T021** `comm/port/BusinessTimezonePort.kt` + adapter — resolve a workspace's business timezone (reuse `business`/locale source); used by US2/US3.
 - [X] **T022** `comm/service/send/CommunicationDispatchService.kt` — the engine: select variant (channel+locale, default-locale fallback), render (T011), per recipient resolve address → if missing record `SKIPPED(NO_ADDRESS)`; honor hard-bounce suppression; call `NotificationDispatchService` (T012); persist `CommunicationLog` (QUEUED); on `NotificationDeliveryUpdatedEvent` (T013) update the log and **append one `communication_usage` row on first SENT/DELIVERED** with credential attribution. Inject the dispatch service via `ObjectProvider`. **For `PROMOTIONAL`-category email, append the workspace unsubscribe footer** (`CommunicationConfig.promotional_footer_html`, with a per-recipient signed unsubscribe token/link) to the rendered HTML + a text equivalent to the plain-text body (FR-002b); transactional email gets no footer. (Token verification + opt-out handling is T050.)
 - [ ] **T023** [P] Foundational tests: `TemplateRendererTest` (substitution, missing-var warnings, HTML+text, required-missing throws), `CredentialCryptoServiceTest` (round-trip; secret absent from `toString`), `WorkspaceChannelCredentialResolverTest` (CLIENT_OWN vs PLATFORM policy; WhatsApp → `NO_CREDENTIAL`).
 
@@ -123,11 +123,11 @@
 
 **Independent Test**: Create a monthly schedule (day 1, 09:00) in a non-server timezone; advance to that business-local moment → one request per eligible customer; re-run the sweeper → no duplicates; day-31 clamps to month end.
 
-- [ ] **T039** [US2] `comm/domain/model/CommunicationSchedule.kt` + `CommunicationOccurrence.kt` + repos (`(paused,next_run_at)` index; unique `(schedule_uid,occurrence_key)`).
-- [ ] **T040** [US2] `comm/controller/ScheduleSyncController.kt` — `GET/POST /communication/v1/schedules/sync` (standard contract); `ScheduleRequest/Response` (server owns `next_run_at`, read-only) + converters.
-- [ ] **T041** [US2] `comm/service/schedule/RecurrenceCalculator.kt` — compute next occurrence in the **workspace business timezone** (via `BusinessTimezonePort`), convert to UTC `Instant`; day-of-month overflow clamps to month end (FR-020); honor start/end (FR-021).
-- [ ] **T042** [US2] `comm/service/schedule/ScheduleSweeper.kt` — `@Scheduled(fixedDelay=tick)` selecting `paused=false AND next_run_at<=now`, claim via optimistic `version`, insert `communication_occurrence` (unique key = at-most-once guard), materialize a `CommunicationRequest`, advance `next_run_at`/`last_occurrence_key`. Guarded by `communication.scheduler.enabled`.
-- [ ] **T043** [P] [US2] Tests: `RecurrenceCalculatorTest` (business-tz vs server-tz, day-31 clamp, weekly interval, end-date stop), `ScheduleSweeperTest` (at-most-once under overlapping runs; pause skips; next_run advances), `ScheduleSyncContractTest`.
+- [X] **T039** [US2] `comm/domain/model/CommunicationSchedule.kt` + `CommunicationOccurrence.kt` + repos (`(paused,next_run_at)` index; unique `(schedule_uid,occurrence_key)`).
+- [X] **T040** [US2] `comm/controller/ScheduleSyncController.kt` — `GET/POST /communication/v1/schedules/sync` (standard contract); `ScheduleRequest/Response` (server owns `next_run_at`, read-only) + converters.
+- [X] **T041** [US2] `comm/service/schedule/RecurrenceCalculator.kt` — compute next occurrence in the **workspace business timezone** (via `BusinessTimezonePort`), convert to UTC `Instant`; day-of-month overflow clamps to month end (FR-020); honor start/end (FR-021).
+- [X] **T042** [US2] `comm/service/schedule/ScheduleSweeper.kt` — `@Scheduled(fixedDelay=tick)` selecting `paused=false AND next_run_at<=now`, claim via optimistic `version`, insert `communication_occurrence` (unique key = at-most-once guard), materialize a `CommunicationRequest`, advance `next_run_at`/`last_occurrence_key`. Guarded by `communication.scheduler.enabled`.
+- [X] **T043** [P] [US2] Tests: `RecurrenceCalculatorTest` (business-tz vs server-tz, day-31 clamp, weekly interval, end-date stop), `ScheduleSweeperTest` (at-most-once under overlapping runs; pause skips; next_run advances), `ScheduleSyncContractTest`.
 
 **Checkpoint**: Recurring sends fire business-tz-correctly with no duplicates.
 
