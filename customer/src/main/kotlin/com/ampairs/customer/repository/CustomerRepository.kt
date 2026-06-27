@@ -25,4 +25,7 @@ interface CustomerRepository : CrudRepository<Customer, Long>, PagingAndSortingR
     /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
     @Query("SELECT MAX(c.updatedAt) FROM customer c")
     fun findMaxUpdatedAt(): Instant?
+
+    /** Active members of a customer group (excludes soft-deleted). Used for audience/segment resolution. */
+    fun findByCustomerGroupAndStatusNot(customerGroup: String, status: String): List<Customer>
 }

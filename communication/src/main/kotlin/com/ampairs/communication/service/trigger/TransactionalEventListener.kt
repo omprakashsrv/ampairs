@@ -7,6 +7,7 @@ import com.ampairs.communication.service.send.CommunicationDispatchService
 import com.ampairs.communication.service.template.TemplateService
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.event.domain.events.InvoiceCreatedEvent
+import com.ampairs.event.domain.events.OrderCreatedEvent
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
@@ -17,10 +18,10 @@ import org.springframework.stereotype.Component
  * builds the variable context from the event, and dispatches. Bypasses promotional opt-out/quiet
  * hours by virtue of the template category being TRANSACTIONAL.
  *
- * NOTE: recipient (customer contact) resolution requires a public read interface on the customer
- * module (email/phone/locale by the event's customer). Until that `CustomerContactProvider` exists,
- * the audience resolves to no recipients and the send is a no-op (logged). This is the one remaining
- * wiring step for the event path — the manual `POST /requests` path is fully functional today.
+ * Recipient (email/phone/locale) is resolved from the event's `customerId` via the customer module's
+ * public `CustomerContactProvider` (through `CustomerAudiencePort`). A workspace must have an
+ * `event_template_binding` for the event type and the customer must have a contact on the chosen
+ * channel; otherwise the per-channel send is skipped and logged.
  */
 @Component
 class TransactionalEventListener(
@@ -38,9 +39,26 @@ class TransactionalEventListener(
             handle(
                 eventType = "INVOICE_CREATED",
                 dedupKey = "INVOICE_CREATED:${event.entityId}",
-                customerUid = null,
+                customerUid = event.customerId,
                 variables = mapOf(
                     "invoice_number" to event.invoiceNumber,
+                    "customer_name" to event.customerName,
+                    "total_amount" to event.totalAmount.toString(),
+                ),
+            )
+        }
+    }
+
+    @EventListener
+    @Async
+    fun onOrderCreated(event: OrderCreatedEvent) {
+        TenantContextHolder.withTenant(event.workspaceId) {
+            handle(
+                eventType = "ORDER_CREATED",
+                dedupKey = "ORDER_CREATED:${event.entityId}",
+                customerUid = event.customerId,
+                variables = mapOf(
+                    "order_number" to event.orderNumber,
                     "customer_name" to event.customerName,
                     "total_amount" to event.totalAmount.toString(),
                 ),

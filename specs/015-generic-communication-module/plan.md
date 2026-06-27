@@ -124,6 +124,8 @@ feature/communication/                  # new KMP feature module (separate plan/
 # + register "communication-management" → Route.Communication in ModuleRegistry; Navigation3 entry provider
 ```
 
+**Cross-module touchpoints** (additive, for the transactional path): `customer` gains a public `CustomerContactProvider` (`byUid`/`byGroup`) consumed by communication's `CustomerAudienceAdapter` + a `customer.locale` column; `event`/`invoice`/`order` enrich `InvoiceCreatedEvent`/`OrderCreatedEvent` with `customerId`. Direction stays communication→customer/event (Option A; no cycle).
+
 **Structure Decision**: New top-level backend Gradle module `communication/` (added to `settings.gradle.kts` and to `migrationModules` in `ampairs_service/build.gradle.kts`), discovered by the default `com.ampairs` component scan like `printing`. The mobile counterpart is a new `feature/communication` KMP module in the `ampairs-app` repo, scoped to its own plan/PR; this plan only fixes its contract surface (the `/sync` resources + DTO shapes) so the two repos stay in lockstep.
 
 ## Phasing (follows spec priority)

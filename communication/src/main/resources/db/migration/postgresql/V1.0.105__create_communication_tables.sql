@@ -16,8 +16,8 @@ CREATE TABLE message_template (
     description TEXT,
     base_version INT NOT NULL DEFAULT 1,
     active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_message_template_owner_code UNIQUE (owner_id, code)
 );
 CREATE INDEX idx_message_template_owner ON message_template(owner_id);
@@ -37,8 +37,8 @@ CREATE TABLE message_template_variant (
     provider_template_id VARCHAR(200),
     provider_params_json TEXT,
     active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_variant_template_channel_locale UNIQUE (template_uid, channel, locale)
 );
 CREATE INDEX idx_variant_template ON message_template_variant(template_uid);
@@ -59,8 +59,8 @@ CREATE TABLE communication_request (
     variables_json TEXT,
     dedup_key VARCHAR(255),
     status VARCHAR(20) NOT NULL DEFAULT 'QUEUED',
-    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_request_owner_dedup UNIQUE (owner_id, dedup_key)
 );
 CREATE INDEX idx_request_owner ON communication_request(owner_id);
@@ -85,10 +85,10 @@ CREATE TABLE communication_log (
     credential_uid VARCHAR(200),
     provider_account_ref VARCHAR(200),
     billing_mode VARCHAR(20),
-    sent_at TIMESTAMP(6),
-    delivered_at TIMESTAMP(6),
-    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    sent_at TIMESTAMPTZ,
+    delivered_at TIMESTAMPTZ,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX idx_log_owner ON communication_log(owner_id);
 CREATE INDEX idx_log_request ON communication_log(request_uid);
@@ -115,13 +115,13 @@ CREATE TABLE communication_schedule (
     start_date VARCHAR(10),
     end_date VARCHAR(10),
     paused BOOLEAN NOT NULL DEFAULT FALSE,
-    next_run_at TIMESTAMP(6),
-    last_run_at TIMESTAMP(6),
+    next_run_at TIMESTAMPTZ,
+    last_run_at TIMESTAMPTZ,
     last_occurrence_key VARCHAR(64),
     claim_version BIGINT NOT NULL DEFAULT 0,
     active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX idx_schedule_owner ON communication_schedule(owner_id);
 CREATE INDEX idx_schedule_due ON communication_schedule(paused, next_run_at);
@@ -134,9 +134,9 @@ CREATE TABLE communication_occurrence (
     ref_id VARCHAR(255),
     schedule_uid VARCHAR(200) NOT NULL,
     occurrence_key VARCHAR(64) NOT NULL,
-    materialized_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    materialized_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_occurrence_schedule_key UNIQUE (schedule_uid, occurrence_key)
 );
 
@@ -153,14 +153,14 @@ CREATE TABLE campaign (
     audience_ref VARCHAR(200),
     variables_json TEXT,
     status VARCHAR(20) NOT NULL DEFAULT 'DRAFT',
-    scheduled_at TIMESTAMP(6),
+    scheduled_at TIMESTAMPTZ,
     throttle_per_minute INT,
-    started_at TIMESTAMP(6),
-    completed_at TIMESTAMP(6),
+    started_at TIMESTAMPTZ,
+    completed_at TIMESTAMPTZ,
     targeted_count INT NOT NULL DEFAULT 0,
     active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 CREATE INDEX idx_campaign_owner ON campaign(owner_id);
 
@@ -176,8 +176,8 @@ CREATE TABLE communication_preference (
     opted_in BOOLEAN NOT NULL DEFAULT TRUE,
     source VARCHAR(40),
     active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_pref_owner_customer_channel_category UNIQUE (owner_id, customer_uid, channel, category)
 );
 CREATE INDEX idx_pref_owner ON communication_preference(owner_id);
@@ -192,8 +192,8 @@ CREATE TABLE communication_suppression (
     address VARCHAR(320) NOT NULL,
     reason VARCHAR(20) NOT NULL,
     active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_suppression_owner_channel_address UNIQUE (owner_id, channel, address)
 );
 
@@ -209,8 +209,8 @@ CREATE TABLE communication_config (
     promotional_footer_html TEXT,
     unsubscribe_base_url VARCHAR(500),
     active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_config_owner UNIQUE (owner_id)
 );
 
@@ -225,8 +225,8 @@ CREATE TABLE event_template_binding (
     channels VARCHAR(120) NOT NULL,
     enabled BOOLEAN NOT NULL DEFAULT TRUE,
     active BOOLEAN NOT NULL DEFAULT TRUE,
-    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_binding_owner_event UNIQUE (owner_id, event_type)
 );
 
@@ -244,9 +244,9 @@ CREATE TABLE communication_usage (
     provider_message_id VARCHAR(255),
     cost_units INT NOT NULL DEFAULT 1,
     cost_category VARCHAR(40),
-    occurred_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    created_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    occurred_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uq_usage_log UNIQUE (communication_log_uid)
 );
 CREATE INDEX idx_usage_owner ON communication_usage(owner_id);

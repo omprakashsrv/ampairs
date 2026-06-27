@@ -80,7 +80,9 @@ Month-overflow (FR-020): "day 31" on a short month clamps to the month's last da
 
 **Rationale**: Principle IX — cross-module access only via public service interfaces, never foreign repositories. A port keeps `communication` decoupled and testable, mirroring `notification`'s `DevicePushTokenPort` approach. (If `customer` lacks a suitable read interface, add a minimal one there — `communication` must not reach into `customer` repositories.)
 
-**Alternatives rejected**: direct `customer` repository injection — rejected by Principle IX.
+**Alternatives rejected**: direct `customer` repository injection — rejected by Principle IX. Port *inversion* (customer implements communication's port, à la `DevicePushTokenPort`) — rejected here: `communication` is the higher-level orchestrator and **already** depends on `customer`, which many modules depend on; making `customer` depend on `communication` would drag `communication` transitively into `order`/`invoice`/`ecom`/etc. So **Option A (direct consumption)** is used: `customer` exposes a public `CustomerContactProvider` (`byUid`/`byGroup`); communication's `CustomerAudienceAdapter` injects it via `ObjectProvider`.
+
+**Implemented:** the transactional path resolves recipients from the event's `customerId` — `InvoiceCreatedEvent`/`OrderCreatedEvent` were enriched with `customerId` (the invoice/order entities already carry `customer_id`), and `customer.locale` supplies the per-recipient language for variant selection.
 
 ---
 

@@ -79,6 +79,8 @@
 - [X] **T027** [US1] Wire and verify the **delivery-event → log update** path end-to-end: `CommunicationDispatchService` listens to `NotificationDeliveryUpdatedEvent` (T013/T022), updates the matching `CommunicationLog` status, and writes the usage row on first SENT/DELIVERED. (Does NOT add an endpoint — the `GET /communication/v1/logs/sync` read surface is owned solely by T033 in US4 to avoid a duplicate interim controller.)
 - [ ] **T028** [P] [US1] Tests: `TransactionalEventListenerTest` (invoice event → 2 dispatch calls, substituted vars), `CommunicationDispatchServiceTest` (missing email → `SKIPPED(NO_ADDRESS)`, SMS still sent; transactional bypasses opt-out; honors suppression), `EmailNotificationProviderTest`/`WhatsAppNotificationProviderTest` (mirror `Msg91SmsProviderTest`).
 
+- [X] **T060** [US1] Wire the event path to real recipients (closes the FR-015 event→contact gap): enrich `InvoiceCreatedEvent`/`OrderCreatedEvent` with `customerId` (event module) + pass it from `InvoiceService`/`OrderService`; add a public `CustomerContactProvider` (+impl, `byUid`/`byGroup`, excludes DELETED) in the customer module backed by `CustomerRepository.findByCustomerGroupAndStatusNot`; implement `CustomerAudienceAdapter` in communication consuming it via `ObjectProvider` (SINGLE→customer uid, SEGMENT→group, LIST→explicit); listener passes `event.customerId` and handles `OrderCreatedEvent`. Requires `customer.locale` (added, V1.0.107). **Module wiring = Option A** (communication already depends on customer; no inversion/cycle).
+
 **Checkpoint**: MVP — transactional sends work end to end and are billable/attributed.
 
 ---

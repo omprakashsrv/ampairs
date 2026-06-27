@@ -127,7 +127,8 @@ class OrderService(
                     deviceId = getDeviceId(),
                     orderNumber = savedOrder.orderNumber,
                     customerName = savedOrder.customerName ?: "",
-                    totalAmount = savedOrder.totalAmount
+                    totalAmount = savedOrder.totalAmount,
+                    customerId = savedOrder.customerId,
                 )
             )
         } else {
