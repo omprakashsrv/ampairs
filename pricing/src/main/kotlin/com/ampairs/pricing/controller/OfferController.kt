@@ -2,9 +2,12 @@ package com.ampairs.pricing.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
+import com.ampairs.pricing.domain.dto.OfferApplicationRequest
+import com.ampairs.pricing.domain.dto.OfferApplicationResponse
 import com.ampairs.pricing.domain.dto.OfferRequest
 import com.ampairs.pricing.domain.dto.OfferResponse
 import com.ampairs.pricing.exception.OfferNotFoundException
+import com.ampairs.pricing.service.OfferApplicationService
 import com.ampairs.pricing.service.OfferService
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
@@ -23,7 +26,15 @@ import org.springframework.web.bind.annotation.RestController
 @Validated
 class OfferController(
     private val offerService: OfferService,
+    private val offerApplicationService: OfferApplicationService,
 ) {
+
+    /** Apply eligible promotions to a priced cart (price-resolve → apply → tax → snapshot). */
+    @PostMapping("/apply")
+    fun applyOffers(
+        @Valid @RequestBody request: OfferApplicationRequest,
+    ): ApiResponse<OfferApplicationResponse> =
+        ApiResponse.success(offerApplicationService.apply(request))
 
     @GetMapping("/sync")
     fun getOffersSync(
