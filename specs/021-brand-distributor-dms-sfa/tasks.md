@@ -1,0 +1,284 @@
+---
+description: "Task list for Brand → Distributor DMS + Sales Force Automation"
+---
+
+# Tasks: Brand → Distributor DMS + Sales Force Automation
+
+**Input**: Design documents from `/specs/021-brand-distributor-dms-sfa/`
+**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/
+
+**Tests**: INCLUDED — the spec's Constitution Check and Testing & Quality Gates explicitly require them
+(cross-tenant consent gate, snapshot-recompute determinism, claim lifecycle, retailer-PII projection,
+offline author→sync round-trip; backend ≥80% critical / ≥90% endpoints).
+
+**Two repositories** — this feature spans both:
+- **Backend** `ampairs/` (this repo) — new `trade` bounded context.
+- **Mobile** `ampairs-app/` (sibling repo) — new `feature/trade` offline-first SFA module + `shared/` wiring.
+  Paths below prefixed `ampairs-app/` belong to the mobile repo (separate branch/PR; same branch name
+  `claude/brand-distributor-dms-sfa-12692h`).
+
+**Organization**: by user story (spec.md priorities). US1 (offline rep app) is the standalone MVP.
+
+## Format: `[ID] [P?] [Story] Description`
+- **[P]**: parallelizable (different files, no dependency)
+- **[Story]**: US1..US6 (maps to spec user stories); `—` = setup/foundational/polish
+
+---
+
+## Phase 1: Setup (Shared Infrastructure)
+
+**Purpose**: Create the backend `trade` module and the mobile `feature/trade` module skeletons + build wiring.
+
+- [ ] T001 [—] Create backend module `ampairs/trade/` with `build.gradle.kts` (depends on `core`, `workspace`, `order`, `invoice`, `product`, `customer`, `event` as needed via api/implementation), and package skeleton `src/main/kotlin/com/ampairs/trade/{domain/model,domain/dto,domain/enums,repository,service,controller,config,listener}` + `src/test/kotlin/com/ampairs/trade/`.
+- [ ] T002 [—] Register the module: add `include("trade")` to `ampairs/settings.gradle.kts`; add `implementation(project(":trade"))` to `ampairs/ampairs_service/build.gradle.kts`; add `"trade"` to `migrationModules` in `ampairs/ampairs_service/build.gradle.kts`.
+- [ ] T003 [P] [—] Add `ampairs/trade/src/main/resources/db/migration/{postgresql,mysql}/` directories; confirm next free global Flyway version with `./gradlew :ampairs_service:flywayInfo` (plan assumes **V1.0.117**; bump if taken).
+- [ ] T004 [P] [—] Create mobile module `ampairs-app/feature/trade/` with `build.gradle.kts` (KMP targets android/ios/desktop, Room/Ktor/Metro, Moko Permissions + Play Services Location on androidMain) and package skeleton `src/commonMain/kotlin/com/ampairs/trade/{data/api,data/db,data/repository,domain,di,sync,ui}` + platform source sets; add `include(":feature:trade")` to `ampairs-app/settings.gradle.kts`.
+- [ ] T005 [P] [—] Add `ApiUrlBuilder.tradeUrl(path)` in `ampairs-app/data/common/.../ApiUrlBuilder.kt` (mirrors existing `customerUrl`/`orderUrl`).
+
+---
+
+## Phase 2: Foundational (Blocking Prerequisites)
+
+**Purpose**: Cross-cutting trade infrastructure every story needs. **⚠️ No user story can start until this is done.**
+
+- [ ] T006 [—] Backend: typed exception hierarchy in `ampairs/trade/.../config/TradeExceptions.kt` — `TradeException` (422), `ConsentRequiredException` (403), `LinkStateException` (409), `ClaimStateException` (409); ensure each maps in the global handler (verify `core` GlobalExceptionHandler picks them up or register mappers).
+- [ ] T007 [P] [—] Backend: shared enums in `ampairs/trade/.../domain/enums/` — `TradeTier`, `SalesType` (PRIMARY/SECONDARY/TERTIARY) used across stories.
+- [ ] T008 [—] Backend: add `FIELD_REP("Field Representative", 30, "...")` to `ampairs/workspace/.../model/enums/WorkspaceRole.kt` (level 30, between GUEST=20 and MEMBER=40); update any role-permission matrices/tests that enumerate roles.
+- [ ] T009 [P] [—] Backend: `CrossTenantReadGuard` scaffold in `ampairs/trade/.../service/CrossTenantReadGuard.kt` — interface + method `requireActiveLink(brandWorkspaceId, distributorWorkspaceId, category): TradeLink` throwing `ConsentRequiredException`; real link lookup wired in US2/US3 (stub returns deny until TradeLink exists).
+- [ ] T010 [P] [—] Mobile: register sync entities — add `VISIT, FIELD_ORDER, ATTENDANCE, BEAT, JOURNEY_PLAN` to `ampairs-app/data/sync/.../SyncEntity.kt`.
+- [ ] T011 [P] [—] Mobile: add `Route.Trade` + sub-routes in `ampairs-app/shared/.../Routes.kt`; register `"dms-sfa" → Route.Trade` in `ModuleRegistry.kt`; create empty `TradeEntryProvider` wired into `CombinedEntryProvider`.
+- [ ] T012 [P] [—] Mobile: `TradeRoomDatabase` + workspace-scoped DI skeleton — `ampairs-app/feature/trade/.../data/db/TradeRoomDatabase.kt` and `di/TradeModule.{android,ios,desktop}.kt` (`@ContributesTo(WorkspaceScope::class)`, `@SingleIn(WorkspaceScope::class)`, `createDatabase<TradeRoomDatabase>(...)`, register with `WorkspaceClosableRegistry`).
+- [ ] T013 [P] [—] Mobile: geo/permissions expect/actual — `ampairs-app/feature/trade/.../domain/GeoLocationProvider.kt` (expect) + android (Play Services + Moko Permissions), ios, desktop (stub) actuals; returns nullable lat/lng (never throws on denial).
+
+**Checkpoint**: Trade modules build on all targets; role + sync entities + DB skeleton exist. User stories can begin.
+
+---
+
+## Phase 3: User Story 1 — Field rep runs the daily beat offline (Priority: P1) 🎯 MVP
+
+**Goal**: A distributor's FIELD_REP can run today's beat fully offline — visits (geo-flagged), counter orders, attendance, ad-hoc visits, offline new-outlet — syncing idempotently when online.
+
+**Independent Test**: In airplane mode, open today's beat, check in (out-of-radius still saved+flagged), take a counter order, add a new outlet, check out; re-enable network → every record uploads exactly once and appears in the distributor's data. (SC-001/002/003/010)
+
+### Tests for User Story 1 ⚠️
+- [ ] T014 [P] [US1] Backend contract test for `GET/POST /trade/v1/visits/sync` (UID-keyed idempotent upsert, soft-deletes in pull feed) in `ampairs/trade/src/test/.../VisitSyncContractTest.kt`.
+- [ ] T015 [P] [US1] Backend contract tests for `field-orders`, `attendance`, `beats`, `journey-plans` `/sync` in `ampairs/trade/src/test/.../{FieldOrder,Attendance,Beat,JourneyPlan}SyncContractTest.kt`.
+- [ ] T016 [P] [US1] Backend test: ad-hoc validation (`ad_hoc=false`⇒planned_visit required; `ad_hoc=true`⇒null) + geo-fence flag is informational (out-of-radius/no-location row still upserts) in `ampairs/trade/src/test/.../VisitRulesTest.kt`.
+- [ ] T017 [P] [US1] Mobile offline round-trip test: author visit+order+attendance+new-outlet offline → push → assert single upsert + re-push idempotent, in `ampairs-app/feature/trade/src/commonTest/.../OfflineSyncRoundTripTest.kt`.
+
+### Implementation for User Story 1 — Backend
+- [ ] T018 [P] [US1] Enums in `ampairs/trade/.../domain/enums/` — `VisitOutcome`, `GeoFenceStatus`, `AttendanceType`, `PlannedVisitStatus`.
+- [ ] T019 [P] [US1] Entities `Beat`, `BeatOutlet` (+ `@NamedEntityGraph("Beat.outlets")`) in `ampairs/trade/.../domain/model/`.
+- [ ] T020 [P] [US1] Entities `JourneyPlan`, `PlannedVisit` in `ampairs/trade/.../domain/model/`.
+- [ ] T021 [P] [US1] Entities `Visit` (geoFenceStatus, distanceMeters, adHoc, lat/lng, synced/active), `Attendance`, `FieldOrder` in `ampairs/trade/.../domain/model/`.
+- [ ] T022 [US1] Flyway `V1.0.117__create_trade_module_tables.sql` in BOTH `postgresql/` and `mysql/` — network+SFA tables for US1+US2 (beats, beat_outlets, journey_plans, planned_visits, visits, attendance, field_orders; + trade_networks, trade_links, network_retailers from US2). TIMESTAMPTZ/TIMESTAMP, DECIMAL(19,4) money, owner_id column.
+- [ ] T023 [P] [US1] Request/Response DTOs + converters for visit/field-order/attendance/beat/journey-plan in `ampairs/trade/.../domain/dto/` (snake_case, `@field:` validation, `asResponse()`/`toEntity()`).
+- [ ] T024 [P] [US1] Spring Data repositories for the 7 SFA entities in `ampairs/trade/.../repository/` (derived queries; `getXAfterSync(Instant?, Pageable)` incl. soft-deleted rows).
+- [ ] T025 [US1] `BeatService` + `JourneyPlanService` in `ampairs/trade/.../service/` — CRUD + today's-planned-visits derivation; FIELD_REP beat-scoping enforcement (rep sees only their distributor's beats).
+- [ ] T026 [US1] `VisitService` + `AttendanceService` + `FieldOrderService` in `ampairs/trade/.../service/` — bulk UID-keyed upsert; geo-fence flag compute (distance to outlet, never block); FieldOrder ties to `order` module via `OrderService` + tags SECONDARY; ad-hoc rule enforcement.
+- [ ] T027 [US1] `TradeSyncController` in `ampairs/trade/.../controller/` — `GET/POST /trade/v1/{visits|field-orders|attendance|beats|journey-plans}/sync` returning `ApiResponse<PageResponse<>>`/`ApiResponse<List<>>`; sets/clears tenant via X-Workspace-ID; per `contracts/trade-sfa-sync.md`.
+
+### Implementation for User Story 1 — Mobile (offline-first)
+- [ ] T028 [P] [US1] Room entities + DAOs for visit/field-order/attendance/beat/beat-outlet/journey-plan/planned-visit in `ampairs-app/feature/trade/.../data/db/` (synced/active flags; client-generated uids via `UidGenerator`).
+- [ ] T029 [P] [US1] `TradeApi` + impl (`tradeUrl`, multipart not needed) in `ampairs-app/feature/trade/.../data/api/`.
+- [ ] T030 [US1] Local-only repositories (`VisitRepository`, `FieldOrderRepository`, `AttendanceRepository`, `BeatRepository`) in `ampairs-app/feature/trade/.../data/repository/` — write Room `synced=false` + `syncStateDao.markPendingPush(...)`; NO Api in write path.
+- [ ] T031 [US1] SyncDelegates (`Visit/FieldOrder/Attendance/Beat/JourneyPlan`) in `ampairs-app/feature/trade/.../sync/` — `@ContributesIntoMap(WorkspaceScope::class)` + `@SyncEntityKey`; bulk push (synced=false rows, batch 100), batched pull (hard-delete server-DELETED), per canonical contract.
+- [ ] T032 [US1] ViewModels (`metroViewModel`) — today's beat, outlet visit (capture geo+time, flag), take counter order, add-outlet (creates `customer` via existing customer sync), check-in/out — in `ampairs-app/feature/trade/.../ui/`.
+- [ ] T033 [US1] Compose screens (commonMain, stringResource, collectAsStateWithLifecycle) for the above + `TradeEntryProvider` wiring; geo capture via `GeoLocationProvider`; offline confirmations (no network block).
+- [ ] T034 [US1] 3-target compile + check: `./gradlew :feature:trade:check shared:compileKotlinIosSimulatorArm64 androidApp:compileDebugKotlinAndroid desktopApp:compileKotlin` (mobile repo).
+
+**Checkpoint**: A distributor can run the offline SFA rep app end-to-end and sync — shippable MVP, no brand required.
+
+---
+
+## Phase 4: User Story 2 — Brand ↔ distributor consented link (Priority: P1)
+
+**Goal**: A brand invites a distributor; the distributor accepts with an agreed scope (coded outlets by default); either can revoke. No data flows before acceptance; isolation preserved.
+
+**Independent Test**: Brand invites D → before accept, brand snapshot read = 403; D accepts (CODED) → link ACCEPTED; D revokes → brand read = 403 again. Multiple brands see only their own link. (SC-004/006/009, FR-001..007)
+
+### Tests for User Story 2 ⚠️
+- [ ] T035 [P] [US2] Contract tests for `POST /trade/v1/links`, `/accept`, `/decline`, `/revoke` (state machine, `ApiResponse`) in `ampairs/trade/src/test/.../TradeLinkContractTest.kt`.
+- [ ] T036 [P] [US2] Consent-gate test: with no ACCEPTED link, a cross-tenant read throws `ConsentRequiredException`; illegal transition (accept REVOKED) throws `LinkStateException`, in `ampairs/trade/src/test/.../ConsentGateTest.kt`.
+- [ ] T037 [P] [US2] Scope-default test: invite without `retailer_visibility` ⇒ CODED; multi-brand isolation (brand A cannot see brand B's link), in `ampairs/trade/src/test/.../ConsentScopeTest.kt`.
+
+### Implementation for User Story 2
+- [ ] T038 [P] [US2] Enums `LinkStatus`, `RetailerVisibility` in `ampairs/trade/.../domain/enums/`.
+- [ ] T039 [P] [US2] Entities `TradeNetwork`, `TradeLink`, `ConsentScope` (embeddable, defaults: retailerVisibility=CODED), `NetworkRetailer` in `ampairs/trade/.../domain/model/` (tables already in V1.0.117 migration T022).
+- [ ] T040 [P] [US2] DTOs + converters (`TradeLinkResponse`, `ConsentScope`, invite/accept requests) in `ampairs/trade/.../domain/dto/` per `contracts/trade-network-actions.md`.
+- [ ] T041 [P] [US2] Repositories for network/link/network-retailer in `ampairs/trade/.../repository/` — incl. `findActiveLink(brand, distributor)` and uniqueness (≤1 non-revoked link per pair).
+- [ ] T042 [US2] `TradeLinkService` in `ampairs/trade/.../service/` — invite/accept/decline/revoke state machine; scope default CODED; distributor may tighten on accept; emit no data until ACCEPTED.
+- [ ] T043 [US2] Wire `CrossTenantReadGuard` (T009) to real `TradeLinkService.findActiveLink` + category check; replace deny stub.
+- [ ] T044 [US2] `TradeNetworkController` in `ampairs/trade/.../controller/` — link endpoints; brand ADMIN/OWNER for invite, distributor ADMIN/OWNER for accept/revoke; `ApiResponse<TradeLinkResponse>`.
+- [ ] T045 [P] [US2] Mobile (distributor): minimal "Trade links" screen + ViewModel to accept/decline/revoke invitations in `ampairs-app/feature/trade/.../ui/links/` (online action over `tradeUrl`).
+
+**Checkpoint**: The consent edge works end-to-end; cross-tenant reads are gated. Foundation for all brand-facing stories.
+
+---
+
+## Phase 5: User Story 3 — Brand secondary-sales rollup (Priority: P2)
+
+**Goal**: Distributor secondary sales (from their order/invoice docs, tagged SECONDARY) roll into versioned, recomputable `SecondarySalesSnapshot`s (event-triggered, ≤~5 min coalesced); the brand reads them aggregated across links, retailer dimension projected per scope.
+
+**Independent Test**: Two linked distributors record retailer sales → brand secondary-sales view shows combined totals by SKU×period; unlinked distributor excluded; backdated/cancelled invoice self-corrects with no double count within ~5 min. (SC-005/011, FR-018..023)
+
+### Tests for User Story 3 ⚠️
+- [ ] T046 [P] [US3] Snapshot-determinism test: same source docs ⇒ identical snapshot; a backdated/cancelled invoice triggers a recompute that supersedes the prior version (no double count), in `ampairs/trade/src/test/.../SnapshotRecomputeTest.kt`.
+- [ ] T047 [P] [US3] PII-projection test: scope CODED ⇒ `outlet_code` only (no name/area); scope IDENTIFIED ⇒ name/area present, never full contact PII, in `ampairs/trade/src/test/.../RetailerProjectionTest.kt`.
+- [ ] T048 [P] [US3] Endpoint test: `GET /trade/v1/snapshots/secondary-sales?...=all-linked` aggregates only ACCEPTED links; no link ⇒ 403, in `ampairs/trade/src/test/.../SecondarySalesReadTest.kt`.
+- [ ] T049 [P] [US3] Coalescing test: N rapid invoice events ⇒ ≤1 rebuild per ~5 min window per distributor, in `ampairs/trade/src/test/.../SnapshotDebounceTest.kt`.
+
+### Implementation for User Story 3
+- [ ] T050 [P] [US3] Enum `SnapshotGrain` + `SecondarySalesSnapshot` entity (key `(distributorWorkspaceId, grain, periodKey, sku, outlet/area, version)`) in `ampairs/trade/.../domain/model/`.
+- [ ] T051 [US3] Flyway `V1.0.118__create_trade_snapshot_target_tables.sql` (both vendors) — secondary_sales_snapshots, distributor_stock_snapshots (US4), sales_targets (US5), primary_order_links (US5).
+- [ ] T052 [P] [US3] Snapshot DTOs (`SecondarySalesRow`) + repository (versioned read, latest-version-per-key) in `ampairs/trade/.../{domain/dto,repository}/`.
+- [ ] T053 [US3] `SnapshotService` in `ampairs/trade/.../service/` — deterministic recompute from distributor order/invoice (via `InvoiceService`/`OrderService` public reads); **debounced ≤ once/~5 min per (distributor, grain)**; bumps `version`.
+- [ ] T054 [US3] Event listener in `ampairs/trade/.../listener/TradeSalesListener.kt` — on existing `InvoiceFinalizedEvent`/`InvoiceCancelledEvent` (+ order events) tag SECONDARY and enqueue debounced rebuild.
+- [ ] T055 [US3] `SnapshotController` (secondary-sales read) in `ampairs/trade/.../controller/` — consent-gated via `CrossTenantReadGuard`, retailer projection per scope, `all-linked` aggregation; `ApiResponse<PageResponse<SecondarySalesRow>>`.
+- [ ] T056 [P] [US3] Mobile/Web brand dashboard (online, pull-only): secondary-sales by SKU/beat/area screen + ViewModel in `ampairs-app/feature/trade/.../ui/dashboard/` (reads `tradeUrl("v1/snapshots/secondary-sales")`).
+
+**Checkpoint**: Brand sees consented, self-correcting secondary-sales rollups across distributors.
+
+---
+
+## Phase 6: User Story 4 — Distributor stock & replenishment (Priority: P2)
+
+**Goal**: Brand sees each linked distributor's on-hand stock per SKU (from their inventory) as versioned snapshots, plus days-of-stock / out-of-stock signals.
+
+**Independent Test**: A linked distributor's on-hand qty appears in the brand stock view; unlinked excluded; reducing qty reflects on refresh. (SC + FR-020/021)
+
+### Tests for User Story 4 ⚠️
+- [ ] T057 [P] [US4] Endpoint + consent test for `GET /trade/v1/snapshots/distributor-stock` (gated; unlinked excluded) and days-of-stock/out-of-stock derivation, in `ampairs/trade/src/test/.../DistributorStockReadTest.kt`.
+
+### Implementation for User Story 4
+- [ ] T058 [P] [US4] `DistributorStockSnapshot` entity + DTO (`DistributorStockRow`) + repository in `ampairs/trade/.../{domain/model,domain/dto,repository}/` (table in V1.0.118, T051).
+- [ ] T059 [US4] Extend `SnapshotService` — stock recompute from distributor `inventory` (via product/inventory public service); inventory-change event hook in `TradeSalesListener` (debounced rebuild).
+- [ ] T060 [US4] Add `distributor-stock` read to `SnapshotController` — derive days-of-stock/out-of-stock from stock + secondary-sales run rate; consent-gated (`scope.share_stock`).
+- [ ] T061 [P] [US4] Mobile/Web brand dashboard: distributor days-of-stock / OOS screen + ViewModel in `ampairs-app/feature/trade/.../ui/dashboard/`.
+
+**Checkpoint**: Brand sees consented distributor stock + replenishment signals.
+
+---
+
+## Phase 7: User Story 5 — Targets vs achievement + primary-order handshake (Priority: P2)
+
+**Goal**: Targets set per tier/grain with derived achievement from the same sales rollups; reps see a personal scorecard. Brand places primary orders via the brand→distributor confirm handshake (FR-024a). *(Primary-order handshake is grouped here as the primary-tier brand feature.)*
+
+**Independent Test**: A distributor-period target shows correct achievement % as sales accrue; a rep scorecard shows only their own achievement. Brand places a primary order → distributor confirms → a normal order appears in the distributor tenant; no link ⇒ rejected. (SC-007, FR-024/024a/025)
+
+### Tests for User Story 5 ⚠️
+- [ ] T062 [P] [US5] Target-achievement test: achievement derived from SecondarySalesSnapshot (secondary) / primary orders (primary) agrees brand-side and distributor-side, in `ampairs/trade/src/test/.../TargetAchievementTest.kt`.
+- [ ] T063 [P] [US5] Primary-order handshake test: place (requires ACTIVE link) → confirm creates distributor-tenant order via `OrderService`; reject leaves no distributor order; no link ⇒ `ConsentRequiredException`, in `ampairs/trade/src/test/.../PrimaryOrderHandshakeTest.kt`.
+
+### Implementation for User Story 5
+- [ ] T064 [P] [US5] Enums `TargetGrain`, `PrimaryOrderStatus`; entities `SalesTarget`, `PrimaryOrderLink` in `ampairs/trade/.../domain/{enums,model}/` (tables in V1.0.118, T051).
+- [ ] T065 [P] [US5] DTOs + repositories for targets + primary-order-link in `ampairs/trade/.../{domain/dto,repository}/`.
+- [ ] T066 [US5] `TargetService` — CRUD + derived achievement (no stored achievement) from snapshots/primary orders, per tier/grain/period.
+- [ ] T067 [US5] `PrimaryOrderService` — place (brand, ACTIVE link, references brand-tenant order uid) / confirm (distributor → create order via `OrderService`, set distributorOrderUid) / reject; state machine.
+- [ ] T068 [US5] `TargetController` (`GET /trade/v1/targets`, consent-gated `scope.share_targets`) + `PrimaryOrderController` (`POST /trade/v1/primary-orders`, `/confirm`, `/reject`) in `ampairs/trade/.../controller/`.
+- [ ] T069 [P] [US5] Mobile: rep "My targets / scorecard" screen + ViewModel in `ampairs-app/feature/trade/.../ui/scorecard/` (own achievement only).
+
+**Checkpoint**: Targets/achievement + primary-order handshake working; tenants stay authoritative.
+
+---
+
+## Phase 8: User Story 6 — Trade schemes & claims settlement (Priority: P3)
+
+**Goal**: Brand authors/publishes schemes; qualifying secondary sales accrue claims computed from the shared rollup; distributor submits, brand approves/rejects/settles with a reconcilable reference.
+
+**Independent Test**: Published scheme accrues correct claim from qualifying sales; distributor submits → brand approves → settles (reference recorded); rejected claims don't settle; claim amount matches both sides. (SC-008, FR-026..029)
+
+### Tests for User Story 6 ⚠️
+- [ ] T070 [P] [US6] Claim-lifecycle test: DRAFT→SUBMITTED→APPROVED→SETTLED happy path + illegal transitions ⇒ `ClaimStateException`; reject records reason and does not settle, in `ampairs/trade/src/test/.../ClaimLifecycleTest.kt`.
+- [ ] T071 [P] [US6] Claim-amount parity test: `computed_amount` from SecondarySalesSnapshot is identical for brand and distributor; zero qualifying sales ⇒ zero claim (no error), in `ampairs/trade/src/test/.../ClaimComputationTest.kt`.
+
+### Implementation for User Story 6
+- [ ] T072 [P] [US6] Enums `SchemeType`, `ClaimStatus`; entities `TradeScheme`, `SchemeClaim`, `ClaimSettlement` in `ampairs/trade/.../domain/{enums,model}/`.
+- [ ] T073 [US6] Flyway `V1.0.119__create_trade_scheme_claim_tables.sql` (both vendors) — trade_schemes, scheme_claims, claim_settlements.
+- [ ] T074 [P] [US6] DTOs + repositories for scheme/claim/settlement in `ampairs/trade/.../{domain/dto,repository}/`.
+- [ ] T075 [US6] `SchemeService` (author/publish down in-scope links) + `ClaimService` (accrue from qualifying SecondarySalesSnapshot; submit/approve/reject/settle lifecycle; optional spec-013 ledger ref on settle).
+- [ ] T076 [US6] `SchemeClaimController` — scheme create/publish/list + claim submit/approve/reject/settle endpoints per `contracts/trade-network-actions.md`; consent-gated.
+- [ ] T077 [P] [US6] Mobile (distributor): "Schemes & claims" screen + ViewModel (view published schemes, submit claim) in `ampairs-app/feature/trade/.../ui/claims/`.
+
+**Checkpoint**: Full claims settlement loop works; figures reconcile across tenants.
+
+---
+
+## Phase 9: Polish & Cross-Cutting Concerns
+
+- [ ] T078 [P] [—] Run `quickstart.md` end-to-end against a dev instance; fix any drift between contracts and implementation.
+- [ ] T079 [P] [—] Coverage check: backend ≥80% critical / ≥90% endpoints on consent gate, snapshot recompute, claim lifecycle, PII projection (`./gradlew :trade:test`); document gaps.
+- [ ] T080 [P] [—] `TradeSettingDefinitions` in `ampairs/trade/.../config/` — register the geo-fence radius + snapshot-coalesce-window as workspace settings (per `setting` module pattern).
+- [ ] T081 [P] [—] Docs: add `ampairs/docs/modules/trade.md` (module overview, cross-tenant boundary, snapshot model) and update module ownership table in `.claude/rules/08-module-boundaries.md`.
+- [ ] T082 [—] Backend CI gate: `./gradlew :ampairs_service:flywayInfo` (confirm V1.0.117–119 applied cleanly on Postgres + MySQL) + `./gradlew ciBuild`.
+- [ ] T083 [P] [—] Mobile final parity gate: `./gradlew :feature:trade:check` + 3-target compile; verify offline new-outlet + ad-hoc visit round-trip in an integration test.
+
+---
+
+## Dependencies & Execution Order
+
+### Phase dependencies
+- **Setup (P1: T001–T005)** → no deps.
+- **Foundational (P2: T006–T013)** → depends on Setup; **blocks all stories**.
+- **US1 (P3)** and **US2 (P4)** are both spec-P1 and **independent of each other** — US1 (offline rep app) is the standalone MVP; US2 (link/consent) is the foundation for brand-facing stories.
+- **US3 (P5)** depends on **US2** (consent gate) + the snapshot infra it introduces.
+- **US4 (P6)** depends on **US2**; reuses `SnapshotService`/`SnapshotController` from US3 (do US3 first or share the scaffold).
+- **US5 (P7)** depends on **US2**; secondary achievement reads US3 snapshots (primary achievement + primary-order handshake do not).
+- **US6 (P8)** depends on **US2 + US3** (claims computed from secondary-sales snapshots).
+- **Polish (P9)** depends on all desired stories.
+
+### Migration ordering (global Flyway versions)
+- `V1.0.117` (T022) — network + SFA tables (US1 + US2).
+- `V1.0.118` (T051) — snapshot + target + primary-order tables (US3/US4/US5).
+- `V1.0.119` (T073) — scheme/claim tables (US6).
+
+### Within each story
+Tests (write first, expect fail) → enums/entities → migration → DTOs/repos → services → controllers → mobile.
+
+### Parallel opportunities
+- Setup: T003/T004/T005 in parallel.
+- Foundational: T007/T009/T010/T011/T012/T013 in parallel (T006, T008 touch shared files — sequential-ish).
+- Within a story, `[P]` entity/DTO/test tasks in different files run in parallel; services/controllers that share a file are sequential.
+- After Foundational, **US1 and US2 can be built in parallel** by different developers (and backend vs mobile within US1 are largely parallel).
+
+---
+
+## Parallel Example: User Story 1
+
+```bash
+# Tests first (different files):
+T014 VisitSyncContractTest ; T015 {FieldOrder,Attendance,Beat,JourneyPlan}SyncContractTest
+T016 VisitRulesTest ; T017 (mobile) OfflineSyncRoundTripTest
+
+# Then entities/enums/DTOs in parallel (different files):
+T018 enums ; T019 Beat/BeatOutlet ; T020 JourneyPlan/PlannedVisit ; T021 Visit/Attendance/FieldOrder
+T023 DTOs ; T024 repositories
+# Mobile in parallel with backend:
+T028 Room+DAO ; T029 TradeApi
+```
+
+---
+
+## Implementation Strategy
+
+### MVP first (User Story 1 only)
+1. Phase 1 Setup → 2. Phase 2 Foundational → 3. Phase 3 US1 → **STOP & VALIDATE** the offline rep app
+(airplane-mode round-trip) → ship to a distributor. Delivers standalone SFA value with no brand needed.
+
+### Incremental delivery
+US1 (MVP, distributor SFA) → US2 (consent link) → US3 (secondary rollup) → US4 (stock) → US5 (targets +
+primary order) → US6 (schemes/claims). Each is an independently testable, deployable increment.
+
+### Parallel team strategy
+After Foundational: Dev A → US1 (mobile-heavy), Dev B → US2 then US3/US4 (backend snapshot rail), Dev C →
+US5/US6 once US2/US3 land. Backend and mobile within US1 split cleanly across two people.
+
+---
+
+## Notes
+- `[P]` = different files, no dependency. `[Story]` traces a task to its spec user story.
+- Tests included per the spec's Constitution Check; write them to fail first.
+- Cross-tenant reads ALWAYS pass `CrossTenantReadGuard` (active link + scope) — never query another tenant's live tables directly.
+- Snapshots are recomputed (versioned), never incrementally mutated — backdated docs trigger a rebuild.
+- Money: `BigDecimal`/`DECIMAL(19,4)` backend, `Long` minor units mobile. Timestamps `Instant`/`TIMESTAMPTZ`.
+- Commit after each task or logical group; keep backend (`ampairs`) and mobile (`ampairs-app`) commits in their own repos.
