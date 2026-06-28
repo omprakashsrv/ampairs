@@ -1,7 +1,13 @@
 # Implementation Plan: GST Return Filing & Reconciliation (GSTR)
 
-**Branch**: `claude/indian-retail-ecosystem-877med` (spec dir `028-gstr-filing`) | **Date**: 2026-06-27 | **Spec**: [spec.md](./spec.md)
+**Branch**: `claude/gstr-filing-specs-rsi2pm` (spec dir `028-gstr-filing`) | **Date**: 2026-06-28 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/028-gstr-filing/spec.md`
+
+> **Clarifications incorporated (spec Session 2026-06-28):** (1) a finalized invoice dated in an
+> already-FILED period still finalizes (keeps its real date) and is reported in the **next open** period's
+> GSTR-1 — `PeriodLockService` routes, never blocks (R8); (2) the electronic-**file** action and
+> credential setup are restricted to the workspace **owner/admin** role (Principle IV/XI); (3) QRMP
+> quarterly filers file **one GSTR-1 per quarter** — the optional monthly IFF is out of scope for now.
 
 ## Summary
 
@@ -56,9 +62,12 @@ is the **primary filing UI** and a tracked follow-up (see Constitution Check · 
 (server aggregation); export generation streams; the filing/pull retry worker drains its queue with
 exponential backoff; mobile status sync batches 100 rows/page.
 **Constraints**: Filing & 2A/2B pull are **online-only** (queue + retry); one return per
-`(gstin, type, fy, period)` (idempotent); a `FILED` period is **immutable** and **source-locked**; GSP/
-GSTN credentials never leave the server; EVC OTP goes to the signatory (never to the app); workspace +
-per-GSTIN data isolation; portal totals in whole rupees.
+`(gstin, type, fy, period)` (idempotent); a `FILED` period is **immutable** and **source-locked** — but a
+late invoice dated in a filed period is **routed to the next open period, never blocked** (R8); the
+electronic-**file** action and credential setup are **owner/admin-only** (RBAC; prepare/export may be
+broader); GSP/GSTN credentials never leave the server; EVC OTP goes to the signatory (never to the app);
+workspace + per-GSTIN data isolation; portal totals in whole rupees; QRMP filers file one GSTR-1 per
+quarter (monthly IFF deferred).
 **Scale/Scope**: Per workspace: 1–N GSTINs × ~12 monthly (or 4 quarterly) periods/year × return types.
 ~7 backend entities (`GstinRegistration`, `GstReturnPeriod`, `GstReturnSnapshot`, `PurchaseRegisterEntry`,
 `Gstn2bRecord`, `ReconciliationResult`, `GstFilingAttempt` + Phase-2 `GstnCredential`), ~2 pull-only sync
@@ -80,7 +89,7 @@ entities + ~6 action/export endpoints, ~1–2 mobile status screens.
 | VIII. Angular Material 3 Exclusivity | ⚠️ DEFERRED | Web is the **primary** filing/reconciliation UI; it will be Angular Material 3 only. Tracked follow-up; this plan delivers backend + a read-only mobile surface. |
 | IX. Domain-Driven Module Boundaries | ✅ PASS | New `gstr` bounded context; reads `invoice`/`tax`/`einvoice`/`setting` via public service interfaces + domain events, never repositories. |
 | X. Compose Multiplatform Parity | ✅ PASS | Shared status/summary logic in `feature/gstr/src/commonMain`; thin platform DI; pull-only — no on-device return computation. |
-| XI. Security & Secrets Hygiene | ✅ PASS | Phase-2 GSP/GSTN credentials env-provided + encrypted per-GSTIN row; EVC OTP never touches the app; filed/2B blobs ACL'd; no secrets in source/`keys/`. |
+| XI. Security & Secrets Hygiene | ✅ PASS | Phase-2 GSP/GSTN credentials env-provided + encrypted per-GSTIN row; EVC OTP never touches the app; the electronic-**file** action + credential setup are **owner/admin-only** (workspace RBAC; prepare/export may be broader); filed/2B blobs ACL'd; no secrets in source/`keys/`. |
 | Flyway | ✅ PASS | Versioned migrations in **both** `mysql/` and `postgresql/`; `gstr` added to `settings.gradle.kts` + `migrationModules`. **Version coordination**: max applied is `V1.0.104`, but specs 015/016/024/026 already claim `V1.0.105`–`V1.0.107`; this module uses a **distinct higher band `V1.0.110`/`V1.0.111`/`V1.0.112`** (verify with `./gradlew :ampairs_service:flywayInfo` before merge and bump if taken). |
 | Testing & Quality Gates | ✅ PASS | Backend ≥80% on aggregation + reconciliation + portal-JSON + idempotency/lock logic; mobile `check` + 3-target compile. |
 
@@ -151,7 +160,9 @@ gstr/
         └── postgresql/V1.0.112__create_gstr_filing_credential_tables.sql
 # wiring: settings.gradle.kts (include "gstr"); ampairs_service/build.gradle.kts
 #         (implementation(project(":gstr")) + "gstr" in migrationModules)
-# invoice finalize path: consult gstr PeriodLockService.isPeriodLocked(gstin, invoiceDate) (additive)
+# invoice finalize path: consult gstr PeriodLockService.isPeriodLocked(gstin, invoiceDate) (additive);
+#   a locked hit does NOT block finalize — it tags the invoice's GSTR-1 reporting period to the next
+#   open period (filing-period attribution), leaving the finalized invoice + its real date untouched
 
 # Mobile — ampairs-app/ (sibling repo)  — thin, read-only status/summary
 feature/gstr/src/
@@ -205,7 +216,8 @@ module's data model is reshaped; `gstr` is purely additive and downstream.
 - **Provider**: `GstnFilingProvider` port + one GSP impl + `GstnSandboxProvider` + `GstnProviderResolver`
   + `GstnSessionTokenCache`; encrypted `GstnCredential` per GSTIN. Flyway `V1.0.112`.
 - **Filing**: `GstFilingAttempt` lifecycle (`INITIATED→SUBMITTED→EVC_REQUESTED→FILED→ACKNOWLEDGED`),
-  EVC/OTP two-step (R7); `GstnFilingWorker` (`@Scheduled` queue + backoff); period advances
+  EVC/OTP two-step (R7), with the `file`/`file/confirm` endpoints + credential setup **owner/admin-gated**
+  (workspace RBAC); `GstnFilingWorker` (`@Scheduled` queue + backoff); period advances
   `RECONCILED → FILED → ACKNOWLEDGED` with persisted **ARN**; `getReturnStatus` idempotency pre-check +
   period locking/immutability at FILED (R8). Endpoints: `POST …/file` (request EVC), `POST …/file/confirm`
   (submit OTP), `GET …/filing-status`.
@@ -221,7 +233,8 @@ module's data model is reshaped; `gstr` is purely additive and downstream.
 - `ReturnType.GSTR9/GSTR9C` annual aggregation rolling up the 12 monthly periods' snapshots;
   9C reconciliation statement scaffolding. Deeper ITC once a **first-class purchase/vendor module** lands
   (replaces the CSV-fed `PurchaseRegisterEntry`); GSTR-1 amendment flow (corrections file in the *next*
-  period, never in-place — R8).
+  period, never in-place — R8); the optional **monthly IFF** upload for QRMP quarterly filers (deferred
+  from Phase 1, which files one quarter-end GSTR-1 per quarter).
 
 ### Mobile / offline considerations
 
