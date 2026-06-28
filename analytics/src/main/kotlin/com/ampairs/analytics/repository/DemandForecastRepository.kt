@@ -25,4 +25,7 @@ interface DemandForecastRepository : JpaRepository<DemandForecast, Long> {
         periodStart: java.time.LocalDate,
         horizon: Int,
     ): DemandForecast?
+
+    /** Most recent forecast for a product (drives the demand signal). @TenantId-scoped. */
+    fun findFirstByProductIdOrderByPeriodStartDesc(productId: String): DemandForecast?
 }

@@ -3,8 +3,11 @@ package com.ampairs.analytics.service
 import com.ampairs.analytics.domain.forecast.DemandForecasting
 import com.ampairs.analytics.domain.model.DemandForecast
 import com.ampairs.analytics.repository.DemandForecastRepository
+import com.ampairs.core.multitenancy.TenantContextHolder
+import com.ampairs.event.domain.events.DemandForecastUpdatedEvent
 import com.ampairs.invoice.service.InvoiceAnalyticsQueryService
 import org.slf4j.LoggerFactory
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -26,6 +29,7 @@ class ForecastService(
     private val invoiceQueryService: InvoiceAnalyticsQueryService,
     private val forecastRepository: DemandForecastRepository,
     private val timeZoneProvider: BusinessTimeZoneProvider,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     private val log = LoggerFactory.getLogger(ForecastService::class.java)
 
@@ -64,6 +68,22 @@ class ForecastService(
             val stdTotal = f.stdDevDaily * sqrt(horizonDays.toDouble()) // variance adds over the horizon
             upsert(productId, periodStart, horizonDays, meanTotal, stdTotal, f, now)
             count++
+        }
+        if (count > 0) {
+            // Signal replenishment/inventory (FR-018) — they pull per-product figures from
+            // DemandSignalService. workspaceId read (not set) from the active tenant context.
+            val workspaceId = TenantContextHolder.getCurrentTenant() ?: ""
+            eventPublisher.publishEvent(
+                DemandForecastUpdatedEvent(
+                    source = this,
+                    workspaceId = workspaceId,
+                    entityId = workspaceId,
+                    userId = "system",
+                    deviceId = "",
+                    productCount = count,
+                    generatedAtEpochMillis = now.toEpochMilli(),
+                ),
+            )
         }
         log.debug("Forecast recompute: {} products over {}d lookback", count, lookbackDays)
         return count

@@ -220,10 +220,12 @@ still renders.
 - [X] T040 [US2] (BE) Forecast batch writing `DemandForecast` rows. (depends on T039, T038)
   DONE: the cross-tenant nightly `AnalyticsNightlyBatch` (T025) calls `ForecastService.recompute` per
   workspace; a manual `POST /analytics/v1/forecasts/recompute` also exists for on-demand runs.
-- [ ] T041 [US2] (BE) `DemandSignalService` (public interface: avg daily demand + variability) +
-  publish `DemandForecastUpdatedEvent`. DEFERRED (YAGNI): no consumer exists yet — feature 027 isn't
-  built. Forecasts are already exposed via the `/forecasts/sync` pull feed; add the event/signal when 027
-  needs it (R6/FR-018).
+- [X] T041 [US2] (BE) `DemandSignalService` (avg daily demand + variability per product from the latest
+  forecast) + publish `DemandForecastUpdatedEvent` after each forecast run. (R6/FR-018)
+  DONE: `DemandForecastUpdatedEvent` lives in the `event` module (consumers depend on `event`, not
+  analytics); `ForecastService` publishes it per workspace run; `DemandSignalService` exposes per-day
+  mean/variability (horizon-total ÷ horizon, std ÷ √horizon). Analytics writes no inventory/replenishment
+  tables — it only measures + signals. Consumer (feature 027) not yet built; this is the integration hook.
 - [X] T042 [US2] (BE) `DemandForecastController` `GET /analytics/v1/forecasts/sync` →
   `ApiResponse<PageResponse<DemandForecastResponse>>`. (depends on T038)
   DONE: controller + `DemandForecastReadService` (incremental `last_sync` paging, ASC). Rows are served
