@@ -1,6 +1,6 @@
 -- Pricing Module Extension: Coupon Redemptions (MySQL)
 -- Description: Tracks each use of a COUPON-condition offer; enforces per-customer + global caps.
--- Dependencies: V1.0.106__create_offer_table.sql
+-- Dependencies: V1.0.112__create_offer_table.sql
 
 CREATE TABLE coupon_redemption (
     id BIGINT NOT NULL AUTO_INCREMENT,

@@ -1,6 +1,6 @@
 -- Pricing Module Extension: Offers / Promotions (MySQL)
 -- Description: Channel/segment-targeted promotions applied on top of resolved prices.
--- Dependencies: V1.0.102__create_pricing_module_tables.sql
+-- Dependencies: V1.0.107__create_pricing_module_tables.sql
 
 -- =====================================================
 -- Offer (Promotion)
