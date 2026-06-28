@@ -200,6 +200,42 @@ and visit-logging offline at a retailer counter. Reference systems: BeatRoute, B
   cross-tenant + offline + financial risk all simultaneously); ship the brand dashboard first (rejected —
   there's no secondary data to show until distributors/reps are capturing it).
 
+## R13. Clarifications integrated (spec session 2026-06-28)
+
+Five decisions from `/speckit.clarify` are now binding; each refines an earlier item rather than reversing it.
+
+- **R13.1 Retailer PII default (refines R3/R10)** — **Decision**: a `TradeLink`'s `ConsentScope` shares
+  outlets **coded/aggregated by default**; sharing **identified** retailers (name/area) is an explicit
+  opt-in flag on the scope, and **full retailer contact PII never crosses** a link under any scope.
+  **Rationale**: data-minimisation by default; the distributor owns the deliberate upgrade. **Impact**:
+  `ConsentScope.retailerVisibility ∈ {CODED, IDENTIFIED}`; `NetworkRetailer` carries a stable `outletCode`
+  always and name/area only when IDENTIFIED; the snapshot read projects retailer dimension per scope.
+- **R13.2 Snapshot freshness (refines R3/R9/R11)** — **Decision**: snapshots are **event-triggered but
+  coalesced/debounced to at most once per ~5 minutes per distributor** (figures ≤ ~5 min stale).
+  **Rationale**: per-write recompute is wasteful for hundreds of distributors; ~5 min is fresh enough for
+  replenishment without real-time cost. **Impact**: `SnapshotService` keeps a per-(distributor, grain)
+  debounce window; a backdated invoice still enqueues a full recompute (determinism preserved), it just
+  rides the same 5-min coalescing. New `SC-011` is the acceptance metric.
+- **R13.3 Geo at check-in (refines R5/R6)** — **Decision**: **capture + flag** — compute distance from the
+  captured point to the outlet's known location and mark visits outside a configurable radius; **never
+  block** check-in (incl. no-location). **Rationale**: rural GPS is unreliable and outlet coords are
+  approximate; blocking strands legitimate reps. **Impact**: `Visit.geoFenceStatus ∈ {IN_RADIUS,
+  OUT_OF_RADIUS, NO_LOCATION}` + `distanceMeters`; adherence/quality reports read the flag; the radius is a
+  trade setting.
+- **R13.4 Ad-hoc visits & offline new-outlet (refines R6/R10)** — **Decision**: reps may make **unplanned
+  visits** to any outlet of **their own distributor** and **register a new retailer offline**; all stays
+  distributor-scoped; adherence counts ad-hoc separately. **Rationale**: market expansion is core SFA; the
+  rep stays inside their tenant so isolation holds. **Impact**: `Visit.adHoc: Boolean` (a Visit need not
+  reference a `PlannedVisit`); the rep app authors a `customer` create over the existing customer `/sync`
+  (no new master); FIELD_REP scoping limits to the distributor, not to a fixed outlet list.
+- **R13.5 Primary-order handshake (new; complements R4)** — **Decision**: brand → distributor primary
+  orders are a **handshake** — the brand records the order in its **own** tenant; it surfaces to the
+  distributor over the **active link**; the distributor **confirms**, and it becomes a normal order in the
+  **distributor's** tenant. **No silent cross-tenant write.** **Rationale**: each tenant stays authoritative
+  for its own orders and applies its own validation/pricing; the link is the consent gate. **Impact**: a
+  `PrimaryOrderLink` (brandWorkspaceId, distributorWorkspaceId, brandOrderUid, status, distributorOrderUid?)
+  drives the confirm step via `PrimaryOrderService`; requires an active link.
+
 ---
 
 ## Resolved unknowns summary
@@ -218,3 +254,8 @@ and visit-logging offline at a retailer counter. Reference systems: BeatRoute, B
 | Cross-tenant RBAC / rep | `FIELD_REP` role in distributor tenant; `TradeLink` = sole trust edge (R10) |
 | Idempotency / snapshots | UID-keyed offline upserts; deterministic recomputable versioned snapshots (R11) |
 | Phasing | P1 SFA → P2 brand DMS view → P3 schemes/claims/analytics (R12) |
+| Retailer PII default | Coded/aggregated by default; identified opt-in; full PII never crosses (R13.1) |
+| Snapshot freshness | Event-triggered, coalesced ≤ ~5 min/distributor (R13.2) |
+| Geo at check-in | Capture + flag out-of-radius; never block (R13.3) |
+| Ad-hoc & new outlet | Unplanned visits + offline new-retailer, distributor-scoped (R13.4) |
+| Primary-order placement | Brand-tenant order → link → distributor confirm handshake (R13.5) |
