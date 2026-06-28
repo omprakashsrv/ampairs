@@ -74,8 +74,10 @@ wiring every story needs. **No user-story work starts until this phase is done.*
 - [ ] T010 [P] (MOB) Domain models in `feature/analytics/.../domain/`: `MetricDefinition`, `KpiResult`,
   `Period`, `AgingBucket`, aging/turns math helpers, business-zone bucketing util (injected `TimeZone`,
   never `currentSystemDefault()` — cmp-practices §12 / R7).
-- [ ] T011 [P] (MOB) `ApiUrlBuilder.analyticsUrl(path)` in `data/common/.../ApiUrlBuilder.kt`.
-- [ ] T012 [P] (MOB) Add `SyncEntity.DEMAND_FORECAST` to `data/sync/.../SyncEntity.kt`.
+- [X] T011 [P] (MOB) `ApiUrlBuilder.analyticsUrl(path)` → `/api/analytics/{path}` in
+  `data/common/.../ApiUrlBuilder.kt`. DONE (ampairs-app branch). Verification: ampairs-app CI (KMP build
+  is egress-blocked locally — `api.foojay.io` 403 for the JetBrains-vendor toolchain; confirmed).
+- [X] T012 [P] (MOB) `SyncEntity.DEMAND_FORECAST` in `data/sync/.../SyncEntity.kt`. DONE (ampairs-app branch).
 - [ ] T013 (MOB) `AnalyticsRoomDatabase` + `DemandForecastEntity` + DAO (forecast mirror ONLY) in
   `feature/analytics/.../data/db/`, with platform DB factories `AnalyticsModule.{android,ios,desktop}.kt`
   using `@SingleIn(WorkspaceScope::class)` + `closableRegistry.register` + explicit reified type param
