@@ -17,6 +17,13 @@ interface OfferRepository : CrudRepository<Offer, Long> {
     /** Active, ACTIVE-status offers for a channel — the application candidate set (@TenantId-filtered). */
     fun findByChannelAndStatusAndActiveTrue(channel: SalesChannel, status: OfferStatus): List<Offer>
 
+    /** Active coupon offers for a channel whose code matches (case-insensitive) — coupon lookup. */
+    fun findByChannelAndStatusAndActiveTrueAndCouponCodeIgnoreCase(
+        channel: SalesChannel,
+        status: OfferStatus,
+        couponCode: String,
+    ): List<Offer>
+
     // ── sync feed (includes inactive rows) ────────────────────────────────────────────
     @Query("SELECT o FROM offer o WHERE o.updatedAt > :updatedAt ORDER BY o.updatedAt ASC")
     fun findByUpdatedAtAfter(@Param("updatedAt") updatedAt: Instant, pageable: Pageable): Page<Offer>
