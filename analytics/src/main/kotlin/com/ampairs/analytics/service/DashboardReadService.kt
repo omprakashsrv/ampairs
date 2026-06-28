@@ -16,6 +16,7 @@ import com.ampairs.analytics.domain.enums.TaxKind
 import com.ampairs.analytics.domain.model.KpiDailySummary
 import com.ampairs.analytics.repository.KpiDailySummaryRepository
 import com.ampairs.business.service.BusinessService
+import com.ampairs.inventory.service.InventoryAnalyticsQueryService
 import com.ampairs.payment.service.PaymentAnalyticsQueryService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -38,15 +39,18 @@ class DashboardReadService(
     private val summaryRepository: KpiDailySummaryRepository,
     private val businessService: BusinessService,
     private val paymentQueryService: PaymentAnalyticsQueryService,
+    private val inventoryQueryService: InventoryAnalyticsQueryService,
     private val timeZoneProvider: BusinessTimeZoneProvider,
 ) {
 
     fun kpis(group: MetricGroup, from: LocalDate, to: LocalDate, period: Period): KpiResponse {
-        // COLLECTIONS is read live from the payment ledger (point-in-time), not the summary table.
-        if (group == MetricGroup.COLLECTIONS) {
+        // COLLECTIONS and INVENTORY are read live from their owning modules (point-in-time), not the
+        // materialized summary table.
+        if (group == MetricGroup.COLLECTIONS || group == MetricGroup.INVENTORY) {
+            val values = if (group == MetricGroup.COLLECTIONS) collectionsValues(from, to) else inventoryValues(from, to)
             return KpiResponse(
                 metricGroup = group.name, period = period.name, fromDate = from, toDate = to,
-                currencyCode = currencyCode(), values = collectionsValues(from, to), computedFrom = null,
+                currencyCode = currencyCode(), values = values, computedFrom = null,
             )
         }
         val rows = summaryRepository.findByMetricGroupAndBusinessDateBetween(group, from, to)
@@ -88,6 +92,17 @@ class DashboardReadService(
         return listOf(
             KpiValueResponse("collections.collected", "MONEY", collected),
             KpiValueResponse("collections.outstanding", "MONEY", outstanding),
+        )
+    }
+
+    private fun inventoryValues(from: LocalDate, to: LocalDate): List<KpiValueResponse> {
+        val zone = timeZoneProvider.currentZone()
+        val windowStart = from.atStartOfDay(zone).toInstant()
+        val windowEnd = to.plusDays(1).atStartOfDay(zone).toInstant()
+        return listOf(
+            KpiValueResponse("inventory.stock_value", "MONEY", inventoryQueryService.totalStockValue()),
+            KpiValueResponse("inventory.low_stock_count", "COUNT", BigDecimal.valueOf(inventoryQueryService.lowStockCount())),
+            KpiValueResponse("inventory.turns", "RATIO", inventoryQueryService.inventoryTurns(windowStart, windowEnd)),
         )
     }
 

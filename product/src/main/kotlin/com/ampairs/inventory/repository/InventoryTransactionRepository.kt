@@ -418,4 +418,18 @@ interface InventoryTransactionRepository : CrudRepository<InventoryTransaction, 
 
     @Query("SELECT t FROM inventory_transaction t")
     fun findAllForSync(pageable: Pageable): Page<InventoryTransaction>
+
+    /**
+     * Total quantity moved OUT (sales/consumption) across all items in [fromInclusive, toExclusive) —
+     * the numerator for workspace inventory turns (feature 022). @TenantId scopes to the workspace.
+     */
+    @Query(
+        "SELECT COALESCE(SUM(t.quantity), 0) FROM inventory_transaction t " +
+            "WHERE t.transactionType = 'STOCK_OUT' " +
+            "AND t.transactionDate >= :fromInclusive AND t.transactionDate < :toExclusive",
+    )
+    fun sumStockOutInWindow(
+        @Param("fromInclusive") fromInclusive: Instant,
+        @Param("toExclusive") toExclusive: Instant,
+    ): BigDecimal
 }

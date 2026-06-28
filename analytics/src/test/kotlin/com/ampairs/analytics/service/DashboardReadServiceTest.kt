@@ -6,6 +6,7 @@ import com.ampairs.analytics.domain.enums.TaxKind
 import com.ampairs.analytics.domain.model.KpiDailySummary
 import com.ampairs.analytics.repository.KpiDailySummaryRepository
 import com.ampairs.business.service.BusinessService
+import com.ampairs.inventory.service.InventoryAnalyticsQueryService
 import com.ampairs.payment.domain.dto.AgingSlice
 import com.ampairs.payment.domain.dto.CollectionsAgingProjection
 import com.ampairs.payment.service.PaymentAnalyticsQueryService
@@ -31,8 +32,9 @@ class DashboardReadServiceTest {
     private val repo = mock<KpiDailySummaryRepository>()
     private val business = mock<BusinessService> { on { getBusinessProfile() } doThrow RuntimeException("no profile") }
     private val payment = mock<PaymentAnalyticsQueryService>()
+    private val inventory = mock<InventoryAnalyticsQueryService>()
     private val tz = mock<BusinessTimeZoneProvider> { on { currentZone() } doReturn ZoneOffset.UTC }
-    private val service = DashboardReadService(repo, business, payment, tz)
+    private val service = DashboardReadService(repo, business, payment, inventory, tz)
 
     private fun row(
         group: MetricGroup, date: LocalDate, gross: Double = 0.0, net: Double = 0.0, tax: Double = 0.0,
@@ -105,6 +107,19 @@ class DashboardReadServiceTest {
         val outstanding = r.values.single { it.metricId == "collections.outstanding" }
         assertEquals(0, BigDecimal.valueOf(12000.0).compareTo(collected.value))
         assertEquals(0, BigDecimal.valueOf(45500.0).compareTo(outstanding.value))
+    }
+
+    @Test
+    fun `inventory kpis read stock value, low-stock count and turns live from product`() {
+        whenever(inventory.totalStockValue()).thenReturn(BigDecimal.valueOf(250000.0))
+        whenever(inventory.lowStockCount()).thenReturn(7L)
+        whenever(inventory.inventoryTurns(any(), any())).thenReturn(BigDecimal.valueOf(1.250))
+
+        val r = service.kpis(MetricGroup.INVENTORY, LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 30), Period.MONTH)
+
+        assertEquals(0, BigDecimal.valueOf(250000.0).compareTo(r.values.single { it.metricId == "inventory.stock_value" }.value))
+        assertEquals(0, BigDecimal.valueOf(7).compareTo(r.values.single { it.metricId == "inventory.low_stock_count" }.value))
+        assertEquals(0, BigDecimal.valueOf(1.250).compareTo(r.values.single { it.metricId == "inventory.turns" }.value))
     }
 
     @Test
