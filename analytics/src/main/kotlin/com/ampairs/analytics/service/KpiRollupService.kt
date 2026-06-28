@@ -47,6 +47,13 @@ class KpiRollupService(
         reconcile(day, day)
     }
 
+    /** Reconcile the trailing [days] business days up to and including today (called by the nightly batch). */
+    @Transactional
+    fun reconcileTrailing(days: Int): Int {
+        val today = Instant.now().atZone(timeZoneProvider.currentZone()).toLocalDate()
+        return reconcile(today.minusDays((days - 1).toLong()), today)
+    }
+
     /**
      * Rebuild invoice-derived KPI buckets for [fromDate, toDate] (inclusive) from source invoices.
      * @return number of summary rows written.

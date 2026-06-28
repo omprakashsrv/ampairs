@@ -142,10 +142,12 @@ match the backend `…/dashboard/kpis` to the last currency unit.
   DONE for invoice: `AnalyticsInvoiceEventListener` reconciles the affected business day (self-healing —
   handles redelivery/backdated edits). `InventoryStockUpdatedEvent`/`OrderConfirmedEvent` do NOT exist;
   order/payment/inventory reconcile sources are separate later increments.
-- [ ] T025 [US1] (BE) `@Scheduled` nightly reconcile job in `analytics/batch/` calling
-  `reconcile(trailing N days)`. (depends on T023)
-  NOT DONE: needs a workspace enumerator + per-tenant `TenantContextHolder` loop (cross-module to
-  `workspace`). The manual `POST /recompute` (per-request tenant) covers reconcile for now.
+- [X] T025 [US1] (BE) `@Scheduled` nightly reconcile job in `analytics/batch/AnalyticsNightlyBatch`
+  calling `reconcileTrailing(N)`. (depends on T023)
+  DONE: enumerates active workspaces (`WorkspaceRepository.findActiveWorkspaceUids`, native cross-tenant
+  query) and runs reconcile + forecast per workspace under its `TenantContextHolder` (set/cleared in
+  try/finally, entry-point pattern), one workspace's failure not aborting the rest. Cron
+  `analytics.nightly.cron` (default 02:30). Also satisfies the T040 batch.
 - [X] T026 [US1] (BE) `DashboardReadService` serving kpis/trend/gst-summary/top from the summary;
   GST split logic per R10. (depends on T022)
   DONE — ALL P1 KPI groups: SALES kpis (gross/net/tax/count/AOV), day/week/month trend, GST summary
@@ -215,10 +217,9 @@ still renders.
   invoice line items (via `InvoiceAnalyticsQueryService`) and fitting `DemandForecasting` (additive
   Holt-Winters + MA fallback), persisting/​upserting `DemandForecast` rows. (depends on T022)
   Note: additive (not multiplicative) weekly seasonality — robust to zero-heavy retail series.
-- [~] T040 [US2] (BE) Forecast batch writing `DemandForecast` rows. (depends on T039, T038)
-  PARTIAL: a MANUAL per-workspace trigger `POST /analytics/v1/forecasts/recompute` is implemented; the
-  cross-tenant nightly `@Scheduled` batch is deferred with T025 (both need a workspace enumerator +
-  per-tenant context loop).
+- [X] T040 [US2] (BE) Forecast batch writing `DemandForecast` rows. (depends on T039, T038)
+  DONE: the cross-tenant nightly `AnalyticsNightlyBatch` (T025) calls `ForecastService.recompute` per
+  workspace; a manual `POST /analytics/v1/forecasts/recompute` also exists for on-demand runs.
 - [ ] T041 [US2] (BE) `DemandSignalService` (public interface: avg daily demand + variability) +
   publish `DemandForecastUpdatedEvent`. DEFERRED (YAGNI): no consumer exists yet — feature 027 isn't
   built. Forecasts are already exposed via the `/forecasts/sync` pull feed; add the event/signal when 027

@@ -68,6 +68,16 @@ interface WorkspaceRepository : JpaRepository<Workspace, String> {
     fun findWorkspacesByUserId(@Param("userId") userId: String, pageable: Pageable): Page<Workspace>
 
     /**
+     * All active workspace uids (= tenant ids) for cross-tenant background jobs (e.g. the analytics
+     * nightly reconcile/forecast). Native query to bypass any tenant filtering.
+     */
+    @Query(
+        value = "SELECT w.uid FROM workspaces w WHERE w.active = true AND w.status = 'ACTIVE'",
+        nativeQuery = true,
+    )
+    fun findActiveWorkspaceUids(): List<String>
+
+    /**
      * Update last activity timestamp for a workspace
      */
     @Modifying

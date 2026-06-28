@@ -44,6 +44,8 @@ dependencies {
     implementation(project(":payment"))
     // analytics reads live inventory KPIs from the product module's public read service
     implementation(project(":product"))
+    // analytics enumerates active workspaces for its cross-tenant nightly batch
+    implementation(project(":workspace"))
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework:spring-web")
     implementation("org.springframework:spring-webmvc")
