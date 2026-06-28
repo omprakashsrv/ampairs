@@ -17,6 +17,14 @@ reject**, lets the business **export a portal-ready file or file electronically*
 lost. A single business may hold several GSTINs (one per state); each is tracked and filed
 independently.
 
+## Clarifications
+
+### Session 2026-06-28
+
+- Q: A finalized invoice whose invoice date falls inside an already-FILED period — block it or route it? → A: Allow the finalize (the invoice keeps its real date) and include it in the **next open** return period's GSTR-1 as a later-period document/amendment; the filed return is never altered.
+- Q: Who is authorized to electronically FILE a GST return (the legal EVC/ARN submission)? → A: Workspace **owner/admin role only** (via existing RBAC); preparation/export may be broader, but the file action and credential setup are admin-restricted.
+- Q: For QRMP (quarterly) GSTIN filers, is the optional monthly invoice furnishing (IFF) in scope? → A: No — quarterly filers prepare/file **one GSTR-1 per quarter**; monthly IFF is deferred to a later phase.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Auto-prepare a month's GSTR-1 and get a portal-ready file (Priority: P1)
@@ -162,9 +170,12 @@ locked.
    and filed date are recorded and the period status becomes filed/acknowledged.
 3. **Given** a filing acknowledgement was lost on the network, **When** filing is retried, **Then** the
    system checks the network's status first and does not file the same period twice.
-4. **Given** a filed period, **When** someone tries to finalize a back-dated invoice into that period,
-   **Then** the action is blocked or routed to the next open period, and the filed return is never
-   altered in place.
+4. **Given** a filed period, **When** someone finalizes a back-dated invoice dated in that period,
+   **Then** the invoice finalizes (keeping its real date), is included in the next open period's GSTR-1,
+   and the filed return is never altered in place.
+5. **Given** a member without the owner/admin role, **When** they attempt to file a return or configure
+   electronic-filing credentials, **Then** the action is denied (though they may still prepare, review
+   and export the return).
 
 ---
 
@@ -225,7 +236,8 @@ confirm the period shows the correct status, totals and acknowledgement referenc
 
 - **Empty / nil period**: a GSTIN with no sales in a period must still be preparable as a NIL return.
 - **Late invoice into a filed period**: finalizing a back-dated invoice whose date falls in an
-  already-filed period must be blocked or routed to the next open period — never alter filed history.
+  already-filed period must still succeed (the invoice keeps its real date) and be reported in the next
+  open period's GSTR-1 — never altering filed history.
 - **Re-preparing after edits**: re-preparing a not-yet-filed period must regenerate its totals from the
   current invoices; re-preparing a filed period must be refused.
 - **Rounding**: section totals must foot to the rupee-rounded header (rounding applied once at the
@@ -294,7 +306,8 @@ confirm the period shows the correct status, totals and acknowledgement referenc
 - **FR-019**: System MUST attribute each source document to a GSTIN by the state it was billed from.
 - **FR-020**: System MUST represent periods according to the GSTIN's filing frequency (months for
   monthly, quarters for quarterly), and support composition-dealer summary returns and (later) annual
-  returns.
+  returns. For quarterly (QRMP) filers the system prepares/files **one GSTR-1 per quarter**; the optional
+  monthly invoice furnishing (IFF) within a quarter is out of scope for now.
 
 **Filing, idempotency & immutability**
 
@@ -308,11 +321,17 @@ confirm the period shows the correct status, totals and acknowledgement referenc
 - **FR-024**: System MUST guarantee one return per (GSTIN, return type, financial year, period) and make
   re-preparation regenerate totals only while the period is not yet filed.
 - **FR-025**: System MUST freeze a filed period's return (immutable snapshot) and lock its source period
-  so a back-dated invoice cannot alter filed history — it is blocked or routed to the next open period.
+  so a back-dated invoice cannot alter filed history. A finalized invoice whose invoice date falls in an
+  already-filed period MUST still finalize (it keeps its real invoice date) and MUST be included in the
+  **next open** return period's GSTR-1 (reported as a later-period document/amendment); the filed return
+  is never altered in place. Finalizing such an invoice is never blocked or rejected.
 - **FR-026**: System MUST be idempotent on filing retries — after a lost acknowledgement it MUST verify
   current status with the GST network before re-filing and never double-file a period.
 - **FR-027**: System MUST keep all GST-network credentials and signatory secrets server-side; they MUST
   never be stored in source control or sent to the mobile app.
+- **FR-031**: System MUST restrict the electronic-filing action and electronic-filing credential setup
+  to the workspace **owner/admin** role (via existing role-based access control). Preparing, reviewing
+  and exporting returns MAY be available to other members; the legal file action is admin-only.
 
 **Mobile & access**
 
@@ -396,6 +415,8 @@ confirm the period shows the correct status, totals and acknowledgement referenc
 - Re-computing or changing per-line GST (owned by the tax capability).
 - Generating e-invoices / IRNs (owned by the e-invoice capability).
 - Annual returns (GSTR-9 / 9C) and the GSTR-1 amendment flow — a later phase.
+- The optional monthly invoice furnishing (IFF) for QRMP quarterly filers — deferred; quarterly filers
+  file one quarter-end GSTR-1.
 - A full purchase/vendor billing module — input-tax-credit reconciliation is fed by import until such a
   module exists.
 - Server-side digital-signature custody.
