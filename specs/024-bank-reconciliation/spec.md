@@ -187,6 +187,12 @@ yields the same canonical transactions as the CSV path.
 - **Account isolation**: transactions and matches must never leak across bank accounts or across
   workspaces.
 
+## Clarifications
+
+### Session 2026-06-28
+
+- Q: Should auto-reconciliation matching use the app's on-device/offline model, or stay a deterministic server-side engine? → A: Server-side only — auto-matching is a deterministic engine run on the server; the app's on-device/offline model is not used for reconciliation.
+
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
@@ -221,7 +227,8 @@ yields the same canonical transactions as the CSV path.
 **Matching**
 
 - **FR-010**: The system MUST automatically compare each imported transaction against the owner's
-  recorded receipts and payments and propose matches.
+  recorded receipts and payments and propose matches. This comparison MUST be performed server-side by a
+  deterministic matching engine; the app's on-device/offline model MUST NOT be used to generate matches.
 - **FR-011**: The system MUST assign each proposed match a confidence level derived from layered signals:
   an exact reference/UTR match is highest; an exact amount and direction within an allowed date window is
   high; a close amount with a narration that resembles the party name is medium.
@@ -316,7 +323,8 @@ yields the same canonical transactions as the CSV path.
 - **Import and matching happen server-side**: Reading statement files and searching the full set of
   recorded payments for candidates is performed centrally; the mobile experience is configuring accounts,
   uploading a file, and reviewing/confirming results. Reconciliation is not expected to work offline on a
-  partial copy of the data.
+  partial copy of the data. Auto-matching uses a deterministic server-side matching engine; the app's
+  on-device/offline model is not used for reconciliation.
 - **Statement upload is online**: Because statement files are binary/large, uploading a statement is an
   online action, distinct from routine offline-first data entry.
 - **Amounts in minor units**: Money is compared in exact minor units (paise) with a configurable
