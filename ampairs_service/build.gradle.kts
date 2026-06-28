@@ -40,6 +40,7 @@ dependencies {
     implementation(project(mapOf("path" to ":form")))
     implementation(project(mapOf("path" to ":event")))
     implementation(project(mapOf("path" to ":customer")))
+    implementation(project(mapOf("path" to ":supplier")))
     implementation(project(mapOf("path" to ":file")))
     implementation(project(mapOf("path" to ":unit")))
     implementation(project(mapOf("path" to ":setting")))
@@ -47,6 +48,7 @@ dependencies {
     implementation(project(mapOf("path" to ":product")))
     implementation(project(mapOf("path" to ":order")))
     implementation(project(mapOf("path" to ":invoice")))
+    implementation(project(mapOf("path" to ":purchase")))
     implementation(project(mapOf("path" to ":payment")))
     implementation(project(mapOf("path" to ":tax")))
     implementation(project(mapOf("path" to ":subscription")))
@@ -120,8 +122,8 @@ tasks.withType<Test> {
 
 val migrationModules = listOf(
     "agent", "auth", "business", "core", "customer", "ecom", "event", "file", "form",
-    "invoice", "notification", "order", "payment", "printing", "product", "sequence", "setting", "subscription",
-    "tax", "unit", "user", "workspace"
+    "invoice", "notification", "order", "payment", "printing", "product", "purchase", "sequence", "setting", "subscription",
+    "supplier", "tax", "unit", "user", "workspace"
 )
 
 // ── Local-dev migration tasks ──────────────────────────────────────────────────

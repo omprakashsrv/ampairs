@@ -69,8 +69,10 @@ class MasterModuleSeederService(
         return listOf(
             createBusinessModule(),
             createCustomerModule(),
+            createSupplierModule(),
             createProductModule(),
             createOrderModule(),
+            createPurchaseModule(),
             createInvoiceModule(),
             createPaymentModule(),
             createInventoryModule(),
@@ -173,6 +175,48 @@ class MasterModuleSeederService(
         displayOrder = 10
         active = true
     }
+
+    private fun createSupplierModule() = MasterModule().apply {
+        moduleCode = "supplier-management"
+        name = "Supplier Management"
+        description = "Comprehensive supplier (vendor) master with contact information, credit terms, GST compliance, and purchase relationship tracking"
+        tagline = "Manage your suppliers and vendors effectively"
+        category = ModuleCategory.CUSTOMER_MANAGEMENT
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.FREE
+        requiredRole = UserRole.EMPLOYEE
+        complexity = ModuleComplexity.STANDARD
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 8, true, "Essential for managing the vendors you buy stock from"),
+            createBusinessRelevance(BusinessType.WHOLESALE, 10, true, "Critical for B2B procurement and supplier credit control"),
+            createBusinessRelevance(BusinessType.MANUFACTURING, 9, true, "Important for managing raw-material and component suppliers")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = listOf("SUPPLIER_READ", "SUPPLIER_WRITE"),
+            optionalPermissions = listOf("SUPPLIER_DELETE", "SUPPLIER_EXPORT")
+        )
+        uiMetadata = createUIMetadata(
+            icon = "local_shipping",
+            primaryColor = "#00897B",
+            tags = listOf("Suppliers", "Vendors", "Procurement", "GST", "Credit Management")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/suppliers",
+            displayName = "Suppliers",
+            iconName = "local_shipping",
+            menuItems = listOf(
+                createMenuItem("supplier-list", "All Suppliers", "/suppliers", "local_shipping", 1, true),
+                createMenuItem("supplier-create", "Create Supplier", "/suppliers/create", "add_business", 2),
+            )
+        )
+        navigationIndex = 25
+        provider = "Ampairs"
+        sizeMb = 5
+        featured = false
+        displayOrder = 15
+        active = true
+    }
     
     private fun createProductModule() = MasterModule().apply {
         moduleCode = "product-management"
@@ -259,6 +303,49 @@ class MasterModuleSeederService(
         sizeMb = 12
         featured = true
         displayOrder = 30
+        active = true
+    }
+
+    private fun createPurchaseModule() = MasterModule().apply {
+        moduleCode = "purchase-management"
+        name = "Purchase Management"
+        description = "End-to-end purchase document processing with line items, supplier tracking, and automatic stock-in on receipt"
+        tagline = "Streamline your procurement and stock receipts"
+        category = ModuleCategory.ORDER_MANAGEMENT
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.BASIC
+        requiredRole = UserRole.EMPLOYEE
+        complexity = ModuleComplexity.STANDARD
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 8, true, "Essential for recording stock purchases and replenishment"),
+            createBusinessRelevance(BusinessType.WHOLESALE, 10, true, "Critical for bulk procurement and supplier order management"),
+            createBusinessRelevance(BusinessType.MANUFACTURING, 9, true, "Important for raw-material and component purchasing")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = listOf("PURCHASE_READ", "PURCHASE_WRITE"),
+            optionalPermissions = listOf("PURCHASE_DELETE", "PURCHASE_APPROVE"),
+            dependencies = listOf("supplier-management", "product-management")
+        )
+        uiMetadata = createUIMetadata(
+            icon = "shopping_bag",
+            primaryColor = "#5E35B1",
+            tags = listOf("Purchases", "Procurement", "Stock-in", "Suppliers")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/purchases",
+            displayName = "Purchases",
+            iconName = "shopping_bag",
+            menuItems = listOf(
+                createMenuItem("purchase-list", "All Purchases", "/purchases", "shopping_bag", 1, true),
+                createMenuItem("purchase-create", "Create Purchase", "/purchases/create", "add_shopping_cart", 2),
+            )
+        )
+        navigationIndex = 45
+        provider = "Ampairs"
+        sizeMb = 12
+        featured = false
+        displayOrder = 35
         active = true
     }
     

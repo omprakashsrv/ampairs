@@ -30,6 +30,15 @@ class InventorySettingDefinitions : SettingDefinitionProvider {
         ),
         SettingDefinition(
             module = MODULE,
+            key = KEY_AUTO_ADD_ON_PURCHASE,
+            valueType = SettingValueType.BOOLEAN,
+            defaultValue = "true",
+            label = "Auto-add stock on purchase",
+            description = "When enabled, receiving a purchase automatically increases stock for tracked items.",
+            requiresModule = MODULE_CODE,
+        ),
+        SettingDefinition(
+            module = MODULE,
             key = KEY_BLOCK_ORDERS_WHEN_OUT_OF_STOCK,
             valueType = SettingValueType.BOOLEAN,
             defaultValue = "false",
@@ -74,6 +83,7 @@ class InventorySettingDefinitions : SettingDefinitionProvider {
         const val MODULE_CODE = "inventory-management"
 
         const val KEY_AUTO_DEDUCT_ON_ORDER = "auto_deduct_on_order"
+        const val KEY_AUTO_ADD_ON_PURCHASE = "auto_add_on_purchase"
         const val KEY_BLOCK_ORDERS_WHEN_OUT_OF_STOCK = "block_orders_when_out_of_stock"
         const val KEY_ALLOW_NEGATIVE_STOCK = "allow_negative_stock"
         const val KEY_ALLOW_MANUAL_OVERRIDE = "allow_manual_override"
