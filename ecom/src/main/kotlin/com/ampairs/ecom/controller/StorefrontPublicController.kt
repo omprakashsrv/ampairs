@@ -20,8 +20,11 @@ import com.ampairs.ecom.interceptor.StorefrontTenantInterceptor
 import com.ampairs.ecom.repository.EcomListedProductRepository
 import com.ampairs.ecom.repository.EcomTaxonomyImageRepository
 import com.ampairs.core.domain.dto.MoneyDto
+import com.ampairs.pricing.domain.dto.CouponApplyRequest
+import com.ampairs.pricing.domain.dto.CouponResponse
 import com.ampairs.pricing.domain.dto.PriceResolutionRequest
 import com.ampairs.pricing.domain.dto.PriceResolutionResponse
+import com.ampairs.pricing.service.CouponService
 import com.ampairs.pricing.service.PricingResolutionService
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
@@ -35,7 +38,29 @@ class StorefrontPublicController(
     private val listedProductRepository: EcomListedProductRepository,
     private val taxonomyImageRepository: EcomTaxonomyImageRepository,
     private val pricingResolutionService: PricingResolutionService,
+    private val couponService: CouponService,
 ) {
+
+    /**
+     * Validate a coupon code for an online shopper in the storefront's channel — no side effects
+     * (redemption happens atomically at checkout). Runs within the StorefrontTenantInterceptor's
+     * tenant context, so the lookup is scoped to the storefront's workspace.
+     */
+    @GetMapping("/coupon/validate")
+    fun validateCoupon(
+        @PathVariable slug: String,
+        @RequestAttribute(StorefrontTenantInterceptor.STOREFRONT_ATTR) storefront: Storefront,
+        @RequestParam("code") code: String,
+        @RequestParam("customer_id", required = false) customerId: String? = null,
+    ): ApiResponse<CouponResponse> = ApiResponse.success(
+        couponService.validate(
+            CouponApplyRequest(
+                code = code,
+                channel = storefront.defaultChannel,
+                customerId = customerId,
+            )
+        )
+    )
 
     /**
      * Resolve the effective unit price a shopper sees for a listed product, in the storefront's
