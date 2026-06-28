@@ -64,6 +64,7 @@ offline author→sync round-trip; backend ≥80% critical / ≥90% endpoints).
 - [ ] T014 [P] [US1] Backend contract test for `GET/POST /trade/v1/visits/sync` (UID-keyed idempotent upsert, soft-deletes in pull feed) in `ampairs/trade/src/test/.../VisitSyncContractTest.kt`.
 - [ ] T015 [P] [US1] Backend contract tests for `field-orders`, `attendance`, `beats`, `journey-plans` `/sync` in `ampairs/trade/src/test/.../{FieldOrder,Attendance,Beat,JourneyPlan}SyncContractTest.kt`.
 - [ ] T016 [P] [US1] Backend test: ad-hoc validation (`ad_hoc=false`⇒planned_visit required; `ad_hoc=true`⇒null) + geo-fence flag is informational (out-of-radius/no-location row still upserts) in `ampairs/trade/src/test/.../VisitRulesTest.kt`.
+- [ ] T016a [P] [US1] Backend test for adherence (FR-017/SC-010): a Visit referencing a PlannedVisit marks it VISITED; a passed day with no Visit marks MISSED; ad-hoc visits are excluded from planned-adherence % but counted separately, in `ampairs/trade/src/test/.../AdherenceTest.kt`.
 - [ ] T017 [P] [US1] Mobile offline round-trip test: author visit+order+attendance+new-outlet offline → push → assert single upsert + re-push idempotent, in `ampairs-app/feature/trade/src/commonTest/.../OfflineSyncRoundTripTest.kt`.
 
 ### Implementation for User Story 1 — Backend
@@ -77,13 +78,15 @@ offline author→sync round-trip; backend ≥80% critical / ≥90% endpoints).
 - [ ] T025 [US1] `BeatService` + `JourneyPlanService` in `ampairs/trade/.../service/` — CRUD + today's-planned-visits derivation; FIELD_REP beat-scoping enforcement (rep sees only their distributor's beats).
 - [ ] T026 [US1] `VisitService` + `AttendanceService` + `FieldOrderService` in `ampairs/trade/.../service/` — bulk UID-keyed upsert; geo-fence flag compute (distance to outlet, never block); FieldOrder ties to `order` module via `OrderService` + tags SECONDARY; ad-hoc rule enforcement.
 - [ ] T027 [US1] `TradeSyncController` in `ampairs/trade/.../controller/` — `GET/POST /trade/v1/{visits|field-orders|attendance|beats|journey-plans}/sync` returning `ApiResponse<PageResponse<>>`/`ApiResponse<List<>>`; sets/clears tenant via X-Workspace-ID; per `contracts/trade-sfa-sync.md`.
+- [ ] T027a [US1] Adherence in `JourneyPlanService` (or `AdherenceService`) in `ampairs/trade/.../service/` — reconcile PlannedVisit → VISITED/MISSED from authored Visits; compute visit % / on-time % per rep × period with ad-hoc counted separately (FR-017); expose `GET /trade/v1/adherence?rep_member_uid&period_from&period_to` on `TradeSyncController` returning `ApiResponse<AdherenceSummary>` (SC-010).
 
 ### Implementation for User Story 1 — Mobile (offline-first)
 - [ ] T028 [P] [US1] Room entities + DAOs for visit/field-order/attendance/beat/beat-outlet/journey-plan/planned-visit in `ampairs-app/feature/trade/.../data/db/` (synced/active flags; client-generated uids via `UidGenerator`).
 - [ ] T029 [P] [US1] `TradeApi` + impl (`tradeUrl`, multipart not needed) in `ampairs-app/feature/trade/.../data/api/`.
 - [ ] T030 [US1] Local-only repositories (`VisitRepository`, `FieldOrderRepository`, `AttendanceRepository`, `BeatRepository`) in `ampairs-app/feature/trade/.../data/repository/` — write Room `synced=false` + `syncStateDao.markPendingPush(...)`; NO Api in write path.
 - [ ] T031 [US1] SyncDelegates (`Visit/FieldOrder/Attendance/Beat/JourneyPlan`) in `ampairs-app/feature/trade/.../sync/` — `@ContributesIntoMap(WorkspaceScope::class)` + `@SyncEntityKey`; bulk push (synced=false rows, batch 100), batched pull (hard-delete server-DELETED), per canonical contract.
-- [ ] T032 [US1] ViewModels (`metroViewModel`) — today's beat, outlet visit (capture geo+time, flag), take counter order, add-outlet (creates `customer` via existing customer sync), check-in/out — in `ampairs-app/feature/trade/.../ui/`.
+- [ ] T032 [US1] ViewModels (`metroViewModel`) — today's beat, outlet visit (capture geo+time, flag), add-outlet (creates `customer` via existing customer sync), check-in/out — in `ampairs-app/feature/trade/.../ui/`.
+- [ ] T032a [US1] Counter-order capture: author the order through the **existing `feature/order` offline flow** (the order rides the `order` module's `/sync`); the trade `FieldOrder` only stores the resulting `orderUid` as a SECONDARY-tagged reference — no parallel order entity in `feature/trade`. Wire the take-order action from the visit screen into `feature/order`'s create path.
 - [ ] T033 [US1] Compose screens (commonMain, stringResource, collectAsStateWithLifecycle) for the above + `TradeEntryProvider` wiring; geo capture via `GeoLocationProvider`; offline confirmations (no network block).
 - [ ] T034 [US1] 3-target compile + check: `./gradlew :feature:trade:check shared:compileKotlinIosSimulatorArm64 androidApp:compileDebugKotlinAndroid desktopApp:compileKotlin` (mobile repo).
 
@@ -131,10 +134,10 @@ offline author→sync round-trip; backend ≥80% critical / ≥90% endpoints).
 ### Implementation for User Story 3
 - [ ] T050 [P] [US3] Enum `SnapshotGrain` + `SecondarySalesSnapshot` entity (key `(distributorWorkspaceId, grain, periodKey, sku, outlet/area, version)`) in `ampairs/trade/.../domain/model/`.
 - [ ] T051 [US3] Flyway `V1.0.118__create_trade_snapshot_target_tables.sql` (both vendors) — secondary_sales_snapshots, distributor_stock_snapshots (US4), sales_targets (US5), primary_order_links (US5).
-- [ ] T052 [P] [US3] Snapshot DTOs (`SecondarySalesRow`) + repository (versioned read, latest-version-per-key) in `ampairs/trade/.../{domain/dto,repository}/`.
+- [ ] T052 [P] [US3] Snapshot DTOs (`SecondarySalesRow`) + repository (versioned read, latest-version-per-key) in `ampairs/trade/.../{domain/dto,repository}/`. The cross-distributor `all-linked` aggregate query uses `nativeQuery = true` (bypassing `@TenantId`); single-distributor reads stay tenant-filtered.
 - [ ] T053 [US3] `SnapshotService` in `ampairs/trade/.../service/` — deterministic recompute from distributor order/invoice (via `InvoiceService`/`OrderService` public reads); **debounced ≤ once/~5 min per (distributor, grain)**; bumps `version`.
 - [ ] T054 [US3] Event listener in `ampairs/trade/.../listener/TradeSalesListener.kt` — on existing `InvoiceFinalizedEvent`/`InvoiceCancelledEvent` (+ order events) tag SECONDARY and enqueue debounced rebuild.
-- [ ] T055 [US3] `SnapshotController` (secondary-sales read) in `ampairs/trade/.../controller/` — consent-gated via `CrossTenantReadGuard`, retailer projection per scope, `all-linked` aggregation; `ApiResponse<PageResponse<SecondarySalesRow>>`.
+- [ ] T055 [US3] `SnapshotController` (secondary-sales read) in `ampairs/trade/.../controller/` — every `all-linked` cross-tenant aggregation runs `nativeQuery = true` strictly behind `CrossTenantReadGuard` (active link + scope checked first); retailer projection per scope; `ApiResponse<PageResponse<SecondarySalesRow>>`.
 - [ ] T056 [P] [US3] Mobile/Web brand dashboard (online, pull-only): secondary-sales by SKU/beat/area screen + ViewModel in `ampairs-app/feature/trade/.../ui/dashboard/` (reads `tradeUrl("v1/snapshots/secondary-sales")`).
 
 **Checkpoint**: Brand sees consented, self-correcting secondary-sales rollups across distributors.
@@ -208,6 +211,7 @@ offline author→sync round-trip; backend ≥80% critical / ≥90% endpoints).
 
 - [ ] T078 [P] [—] Run `quickstart.md` end-to-end against a dev instance; fix any drift between contracts and implementation.
 - [ ] T079 [P] [—] Coverage check: backend ≥80% critical / ≥90% endpoints on consent gate, snapshot recompute, claim lifecycle, PII projection (`./gradlew :trade:test`); document gaps.
+- [ ] T079a [P] [—] Performance check (SC-006): load-test `GET /trade/v1/snapshots/{secondary-sales,distributor-stock}` with a brand linked to ≥200 distributors; assert first-page p95 < 2s; record results in the PR. Tune snapshot read indexes if needed.
 - [ ] T080 [P] [—] `TradeSettingDefinitions` in `ampairs/trade/.../config/` — register the geo-fence radius + snapshot-coalesce-window as workspace settings (per `setting` module pattern).
 - [ ] T081 [P] [—] Docs: add `ampairs/docs/modules/trade.md` (module overview, cross-tenant boundary, snapshot model) and update module ownership table in `.claude/rules/08-module-boundaries.md`.
 - [ ] T082 [—] Backend CI gate: `./gradlew :ampairs_service:flywayInfo` (confirm V1.0.117–119 applied cleanly on Postgres + MySQL) + `./gradlew ciBuild`.

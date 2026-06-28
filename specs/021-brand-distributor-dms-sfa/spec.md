@@ -395,8 +395,8 @@ on both sides.
   link — verified for every brand-facing view.
 - **SC-005**: A brand's secondary-sales totals match the sum of its linked distributors' shared sales for the
   same product and period, and remain correct after a distributor backdates or corrects a sale.
-- **SC-006**: A brand with hundreds of linked distributors can open secondary-sales and stock dashboards and
-  see results without perceptible lag.
+- **SC-006**: For a brand linked to at least 200 distributors, the secondary-sales and stock dashboards
+  return their first page of results within 2 seconds (p95) under normal load.
 - **SC-007**: Targets-vs-achievement figures shown to a brand and to a distributor for the same scope agree
   with each other.
 - **SC-008**: A trade-scheme claim amount computed for the brand equals the amount the distributor sees for

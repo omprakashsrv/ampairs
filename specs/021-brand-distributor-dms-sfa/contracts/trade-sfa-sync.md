@@ -69,7 +69,17 @@ thin trade-side reference, tagged SECONDARY for rollup.
   "effective_from": "2026-06-01T00:00:00Z", "effective_to": null, "active": true, "updated_at": "..." }
 ```
 
+## Adherence read (not a /sync — FR-017 / SC-010)
+```
+GET /trade/v1/adherence?rep_member_uid={WMB...}&period_from=...&period_to=...
+→ ApiResponse<AdherenceSummary>
+  { "planned": 40, "visited": 34, "missed": 6, "visit_pct": 85.0, "on_time_pct": 78.0, "ad_hoc_count": 5 }
+```
+Adherence is planned-vs-actual (PlannedVisit VISITED/MISSED reconciled from authored Visits); ad-hoc
+(unplanned) visits are counted separately and excluded from `visit_pct`.
+
 ## Acceptance
 - Pushing the same client uid twice upserts once (idempotent) — SC-002.
 - A visit/order/attendance authored with `active=false` is hard-deleted on the next pull cycle per contract.
 - Out-of-radius or no-location visits sync successfully and are flagged, not rejected — SC-001/SC-003.
+- Adherence can be reported for any rep and period; ad-hoc visits are counted separately — SC-010.
