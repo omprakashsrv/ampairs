@@ -45,5 +45,10 @@ class Storefront : OwnableBaseDomain() {
     @Enumerated(EnumType.STRING)
     var accessMode: StorefrontAccessMode = StorefrontAccessMode.PUBLIC
 
+    /** Sales channel this storefront prices in (RETAIL for B2C, WHOLESALE for B2B). Used by price resolution. */
+    @Column(name = "default_channel", nullable = false, length = 30)
+    @Enumerated(EnumType.STRING)
+    var defaultChannel: com.ampairs.core.domain.enums.SalesChannel = com.ampairs.core.domain.enums.SalesChannel.RETAIL
+
     override fun obtainSeqIdPrefix(): String = "SFR"
 }

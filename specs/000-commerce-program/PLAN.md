@@ -42,15 +42,15 @@ ecom platform."
 | Gap | Why it's a gap today | Roadmap feature |
 |---|---|---|
 | **Pricing engine** | One flat `price`/`mrp` per `EcomListedProduct`; wholesale is only a single `defaultDiscountPercentage` on the customer group. No price lists, no per-channel/per-group pricing, no MOQ, no slab/tier pricing, no resolution service. | **009 Pricing** ← drafted |
-| **Sales channel model** | RETAIL vs WHOLESALE is nowhere on cart/order/storefront. Only `accessMode` (PUBLIC/RESTRICTED) exists, which is access control, not a price/tax channel. | 009 (introduces `SalesChannel`) + threaded through 011/012 |
+| **Sales channel model** | RETAIL vs WHOLESALE is nowhere on cart/order/storefront. Only `accessMode` (PUBLIC/RESTRICTED) exists, which is access control, not a price/tax channel. | 009 (introduces `SalesChannel`) + threaded through Payments/Shipping |
 | **Money consistency + currency** | `ecom` = `BigDecimal(19,4)`, `order`/`product` = `Double`, `ProductVariant` = `BigDecimal(15,2)`. **No currency field anywhere.** App is `Double` throughout. | **Cross-cutting decision D1** (below); enforced from 009 on |
-| **Payments** | Only subscription billing exists. `EcomOrder` has no payment/transaction entity, no gateway. | 011 Payments |
-| **Shipping / fulfillment** | `EcomOrderLineItem.shipmentGroup` is an orphan field — no zones, rates, courier, AWB, tracking. | 012 Shipping |
-| **Promotions** | None — no coupons, no cart-level discounts. | 013 Promotions |
+| **Payments** | Only subscription billing exists. `EcomOrder` has no payment/transaction entity, no gateway. | Payments (`013-payment-collection`) |
+| **Shipping / fulfillment** | `EcomOrderLineItem.shipmentGroup` is an orphan field — no zones, rates, courier, AWB, tracking. | Shipping (future) |
+| **Promotions** | None — no coupons, no cart-level discounts, no BOGO/free-goods, no brand schemes. | Promotions (spec drafted at `specs/015-commerce-promotions/`) |
 | **B2B offline order/invoice sync** | `OrderSyncDelegate`/`InvoiceSyncDelegate` return `Success(0)` no-ops; not registered with `@SyncEntityKey`. Wholesale order entry on the app can't sync. | 010 B2B order/invoice sync |
-| **Reviews / ratings** | None. | 014 Reviews (optional, post-MVP) |
+| **Reviews / ratings** | None. | Reviews (future, optional post-MVP) |
 | **Search at scale** | Postgres `ILIKE`/FTS today; fine for MVP. | Deferred — revisit at scale |
-| **Multi-currency / i18n catalog / VAT+sales-tax impls** | Schema gets the seams now (D1, tax strategy); concrete global impls deferred. | 015 Go-Global (post India-MVP) |
+| **Multi-currency / i18n catalog / VAT+sales-tax impls** | Schema gets the seams now (D1, tax strategy); concrete global impls deferred. | Go-Global (future, post India-MVP) |
 
 ---
 
@@ -113,7 +113,7 @@ interface (per module-boundary rules), and **projected into the ecom read model 
 exact pattern `CatalogSyncService` already uses for catalog. This avoids a distributed pricing call on
 the hot storefront path and keeps the resolution logic single-sourced.
 
-### D6 — Payment gateway abstraction — **DECISION (for feature 011)**
+### D6 — Payment gateway abstraction — **DECISION (for the Payments feature, `013-payment-collection`)**
 
 One `PaymentGateway` port with `Razorpay` (India) + `Stripe` (global) adapters. Flow:
 create-gateway-order → client SDK collects payment → **webhook confirms** (idempotent, signature-
@@ -130,6 +130,13 @@ Each feature is scoped to **compile and ship independently** and ride the existi
 > drafted first, `010` Store-Ops second). The **build order** below was reprioritized per the product
 > decision to ship **store-operations order/invoice first** and slot the **pricing layer in
 > afterward**. So `010` is built before `009`.
+>
+> **Roadmap-label → spec-dir mapping (authoritative).** The names in the diagram below are program
+> build-phase labels, **not** spec-dir numbers. Specs are created in their own order; map them as:
+> Pricing → `009-commerce-pricing`; Store-Ops → `010-store-ops-order-invoice`; Payments →
+> `013-payment-collection`; **Promotions → `015-commerce-promotions`**; Shipping, Reviews, and
+> Go-Global have **no spec yet** (future). Earlier drafts that called Payments "011", Promotions "013",
+> or Go-Global "015" are superseded by this mapping.
 
 ```
 [NOW] 010 Store-ops Order & Invoice + GST  ── proper offline order/invoice create flow for store
@@ -144,23 +151,23 @@ Each feature is scoped to **compile and ship independently** and ride the existi
         │                          resolution call at the seam FR-001/009 leaves open. Storefront
         │                          consumes the same engine. (Money(minorUnits,currency) migrates here.)
         ▼
-      011 Payments              ── PaymentGateway port + Razorpay adapter (India-first; Stripe seam),
+      Payments (spec 013)       ── PaymentGateway port + Razorpay adapter (India-first; Stripe seam),
         │                          webhooks, refunds, idempotency; wires into EcomOrder + checkout
         ▼
-      012 Shipping / fulfillment ── zones, rate rules, courier port (Shiprocket/Delhivery), AWB +
+      Shipping (future)         ── zones, rate rules, courier port (Shiprocket/Delhivery), AWB +
         │                          tracking webhook → order/shipment status → FCM push
         ▼
-      013 Promotions            ── coupons (%/flat/BOGO/free-ship), eligibility (channel, group,
+      Promotions (spec 015)     ── coupons (%/flat/BOGO/free-ship), eligibility (channel, group,
         │                          min-cart, brand/category), stacking; applied at cart re-resolution
         ▼
-      014 Reviews / ratings      ── (optional, post-MVP) product reviews on the storefront
+      Reviews (future)          ── (optional, post-MVP) product reviews on the storefront
         ▼
-      015 Go-Global             ── multi-currency activation, VAT + US-sales-tax TaxStrategy impls,
+      Go-Global (future)        ── multi-currency activation, VAT + US-sales-tax TaxStrategy impls,
                                    i18n catalog, Stripe SCA/3DS, region gateway routing, GDPR/DPDP.
                                    Behind feature flags so India stays unaffected.
 ```
 
-**India-first MVP = 010 → 009 → 013.** **Truly global = + 015.**
+**India-first MVP = Store-Ops (010) → Pricing (009) → Promotions (015).** **Truly global = + Go-Global (future).**
 
 > **Why store-ops (010) before pricing (009):** store staff need to take orders and raise GST invoices
 > today against the current flat product price; pricing is a value-add layer, not a prerequisite.
@@ -175,8 +182,8 @@ Each feature is scoped to **compile and ship independently** and ride the existi
 | **009 (2nd)** | `pricing` (new), projects to `ecom`/`product` | `com.ampairs.pricing` | `feature/pricing` read-model + price display in ecom/order | Resolution falls back to flat `sellingPrice` when no list matches → zero regression; plugs into 010's seam |
 | 011 | `payment` (new) | `com.ampairs.payment` | checkout payment screen + status | Behind a per-storefront "payments enabled" flag; COD still works without it |
 | 012 | `shipping` (new) | `com.ampairs.shipping` | tracking screen already exists | Flat-rate fallback works without courier integration |
-| 013 | `promotion` (new) | `com.ampairs.promotion` | coupon entry at cart | No coupon = no change to totals |
-| 015 | cross-cutting | extends `tax`, all | i18n + currency display | Flags default off → India behavior unchanged |
+| 015 | `promotion` (new) | `com.ampairs.promotion` | coupon/offer entry + admin CRUD | No coupon = no change to totals |
+| Go-Global (future) | cross-cutting | extends `tax`, all | i18n + currency display | Flags default off → India behavior unchanged |
 
 ---
 
@@ -202,10 +209,10 @@ Each feature is scoped to **compile and ship independently** and ride the existi
 ## 5. Open questions to confirm before 010+
 
 1. **Currency activation timing** — keep `currency` columns populated with `INR` from 009, or defer
-   the column until 015? (Recommendation: add the column in 009, default `INR` — cheap insurance.)
+   the column until the Go-Global feature? (Recommendation: add the column in 009, default `INR` — cheap insurance.)
 2. **Pricing home** — confirm D5 (pricing in the monolith, Kafka-projected to ecom) vs putting it in
    the ecom service. Affects whether B2B `order` reads pricing in-process or over a service call.
-3. **Payments gateway priority** — Razorpay-only for MVP, or Razorpay + Stripe from 011?
+3. **Payments gateway priority** — Razorpay-only for MVP, or Razorpay + Stripe from the Payments feature?
 4. **Wholesale launch** — does the India-MVP launch wholesale storefronts, or retail-only with the
    channel seam dormant until later?
 

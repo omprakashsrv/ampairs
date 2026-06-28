@@ -71,7 +71,10 @@ Specs in `specs/{###-feature}/`. Next number: `006`.
 ```
 
 ## Flyway migrations
-- Path: `{module}/src/main/resources/db/migration/mysql/`
+- Paths (write BOTH — dev/runtime DB is **PostgreSQL**; MySQL kept for parity):
+  - `{module}/src/main/resources/db/migration/postgresql/`
+  - `{module}/src/main/resources/db/migration/mysql/`
+- Versions are **global across all modules** — pick a number unused by any module (`:ampairs_service:flywayInfo`).
 - Naming: `V{semver}__description.sql`
 - Never modify applied migrations — write a new version
 

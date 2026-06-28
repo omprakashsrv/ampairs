@@ -24,6 +24,13 @@ data class OrderItemResponse(
     val active: Boolean = true,
     val softDeleted: Boolean = false,
     val discount: List<Discount>? = null,
+    // 009 pricing snapshot.
+    var resolvedUnitPriceMinor: Long? = null,
+    var currency: String? = null,
+    var priceSource: String? = null,
+    var matchedPriceListUid: String? = null,
+    var appliedTierMinQty: Double? = null,
+    var belowMoq: Boolean? = null,
 )
 
 fun List<OrderItem>.toResponse(): List<OrderItemResponse> {
@@ -47,7 +54,13 @@ fun List<OrderItem>.toResponse(): List<OrderItemResponse> {
             baseQuantity = it.baseQuantity,
             variantSku = it.variantSku,
             taxInfos = it.taxInfos,
-            discount = it.discount
+            discount = it.discount,
+            resolvedUnitPriceMinor = it.resolvedUnitPriceMinor,
+            currency = it.currency,
+            priceSource = it.priceSource,
+            matchedPriceListUid = it.matchedPriceListUid,
+            appliedTierMinQty = it.appliedTierMinQty,
+            belowMoq = it.belowMoq,
         )
     }
 }
