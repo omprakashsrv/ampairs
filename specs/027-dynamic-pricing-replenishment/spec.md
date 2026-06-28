@@ -19,6 +19,12 @@ feature gives a business two related capabilities:
    restock, and produces *reorder suggestions* (how low to let stock fall before reordering, and how
    much to reorder) that the user can turn into a draft purchase.
 
+## Clarifications
+
+### Session 2026-06-28
+
+- Q: When an offline-captured order/invoice syncs and the backend's authoritative price differs from the device-computed line price, what happens to the saved line? → A: Keep the device-captured price as final (it was quoted to the customer offline); surface the discrepancy as a notification/flag for review — no silent re-pricing.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Automatic, rule-based pricing at order time (Priority: P1)
@@ -129,9 +135,10 @@ answer matches what the rule/suggestion views show.
   moment its window closes in the business timezone.
 - **Back-dated document** (entered with a past business date) prices using the rules that were
   effective on that date, not the rules effective "now".
-- **Device holds a stale rule set** → the offline price is still recorded; on sync the server
-  re-validates against the current rules and the authoritative result is reflected back, without
-  blocking the sale.
+- **Device holds a stale rule set** → the offline price is still recorded and **stays the final saved
+  price** (it was quoted to the customer); on sync the server re-validates against the authoritative
+  rules and, if its result differs, surfaces the discrepancy as a notification/flag for review without
+  silently re-pricing the line or blocking the sale.
 - **Currency rounding** → percentage and amount adjustments resolve to a clean rounded unit price
   with no fractional-currency drift, identical on device and server.
 - **Item with no sales history and no forecast** → no misleading suggestion is fabricated; the item
@@ -172,8 +179,10 @@ answer matches what the rule/suggestion views show.
 - **FR-011**: The existing single per-customer-group discount MUST be preserved as an equivalent
   lowest-priority pricing rule, so no current pricing behavior is lost.
 - **FR-012**: Pricing rules MUST be available on the device offline and stay current via the standard
-  synchronization mechanism, and the server MUST re-validate the device-resolved price on sync and be
-  authoritative on the rule set without blocking an offline sale.
+  synchronization mechanism, and the server MUST re-validate the device-resolved price on sync.
+  The server is authoritative on the **rule set** (not the committed price): the device-captured line
+  price remains the final saved price, and a re-validation mismatch MUST be surfaced as a
+  notification/flag for review rather than silently overwriting the line or blocking the offline sale.
 
 **Replenishment (P2)**
 
