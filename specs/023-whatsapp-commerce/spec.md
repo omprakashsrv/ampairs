@@ -16,6 +16,15 @@ The merchant's day-to-day app stays offline-first: WhatsApp orders simply appear
 list. The live conversation, catalog connection, and messaging-policy handling are managed for them
 behind the scenes.
 
+## Clarifications
+
+### Session 2026-06-28
+
+- Q: When a customer confirms a chat cart, does the order enter fulfilment immediately or wait for merchant acceptance? → A: Order is created in a "pending merchant review" state; the merchant must accept it before it proceeds to normal fulfilment.
+- Q: What consent does a customer messaging the merchant first grant for merchant-initiated messages? → A: Transactional only — messaging first / placing an order opts the customer in for transactional and order-status (utility) updates about their order; marketing/promotional messages require a separate explicit opt-in.
+- Q: Within an active conversation, can the merchant send manual free-form replies (human takeover)? → A: Yes — the merchant can send manual free-form messages within the allowed recent-contact window, alongside the automated browse/order flow.
+- Q: How should products with variants (e.g. size/color) appear in the WhatsApp browsable catalog? → A: Each purchasable variant/SKU is its own distinct browsable catalog entry.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Customer browses and places an order over WhatsApp (Priority: P1)
@@ -40,8 +49,10 @@ correct items, quantities, totals, and customer.
 2. **Given** a customer browsing the catalog, **When** they select items and quantities, **Then** a cart
    is maintained for that customer across messages and can be reviewed on request.
 3. **Given** a customer with items in their cart, **When** they confirm and provide a delivery address,
-   **Then** a new order is created in the merchant's order list (channel = WhatsApp) with the correct
-   line items, totals, and a customer matched by phone number.
+   **Then** a new order is created in the merchant's order list (channel = WhatsApp) in a pending
+   merchant-review state, with the correct line items, totals, and a customer matched by phone number.
+6. **Given** a captured WhatsApp order awaiting review, **When** the merchant accepts it, **Then** it
+   proceeds into normal fulfilment exactly like an order from any other channel.
 4. **Given** the same confirmation is delivered to the system more than once, **When** the order is
    captured, **Then** only one order is created (no duplicates).
 5. **Given** a customer references a product no longer available, **When** they try to add it, **Then**
@@ -134,8 +145,9 @@ longer initiate messages to that customer, and that the opt-out is recorded.
 
 **Acceptance Scenarios**:
 
-1. **Given** a customer who has not opted in, **When** the merchant attempts to initiate a message,
-   **Then** the send is prevented.
+1. **Given** a customer who has not given explicit marketing opt-in, **When** the merchant attempts to
+   initiate a marketing/promotional message, **Then** the send is prevented (transactional order-status
+   messages about that customer's own order remain allowed).
 2. **Given** a customer who sends an opt-out keyword, **When** it is received, **Then** the customer is
    marked opted-out, future merchant-initiated messages are blocked, and the event is recorded.
 3. **Given** a customer who messages the merchant first, **When** the conversation starts, **Then** the
@@ -170,7 +182,8 @@ longer initiate messages to that customer, and that the opt-out is recorded.
 - **FR-001**: A merchant MUST be able to connect their own WhatsApp Business number to their workspace and
   see its connection status.
 - **FR-002**: The system MUST make the workspace's listed products available for customers to browse in
-  WhatsApp when catalog sharing is enabled.
+  WhatsApp when catalog sharing is enabled. Each purchasable variant/SKU MUST be represented as its own
+  distinct browsable catalog entry.
 - **FR-003**: The system MUST keep the browsable WhatsApp catalog consistent with changes to listed
   products (price, availability, name, image, description).
 - **FR-004**: A merchant MUST be able to disconnect their WhatsApp number, after which the workspace
@@ -186,6 +199,8 @@ longer initiate messages to that customer, and that the opt-out is recorded.
   and let the customer review it.
 - **FR-008**: The system MUST capture a confirmed chat cart as a new order in the merchant's existing
   order workflow, tagged as originating from WhatsApp, with correct line items, quantities, and totals.
+- **FR-008a**: A captured WhatsApp order MUST be created in a "pending merchant review" state and MUST NOT
+  proceed to fulfilment until the merchant accepts it. Acceptance moves it into the normal order workflow.
 - **FR-009**: The system MUST match the ordering customer to an existing customer record by phone number,
   or create one if none exists, without creating duplicates.
 - **FR-010**: Order capture MUST be idempotent — a repeated confirmation of the same chat order MUST NOT
@@ -207,7 +222,10 @@ longer initiate messages to that customer, and that the opt-out is recorded.
 - **FR-015**: The system MUST distinguish between free-form messages (allowed within the recent-contact
   window) and approved templated messages (required outside it), and choose the correct mode automatically
   so that messaging remains policy-compliant.
-- **FR-016**: The system MUST only allow merchant-initiated messaging to customers who have opted in.
+- **FR-016**: The system MUST only allow merchant-initiated messaging to customers who have opted in. A
+  customer who messages the merchant first or places an order is opted in for transactional and
+  order-status (utility) messages about their order; marketing/promotional merchant-initiated messages
+  MUST require a separate explicit opt-in.
 - **FR-017**: The system MUST honour a customer opt-out (stop keyword), blocking further merchant-initiated
   messages, and MUST record consent and opt-out events for audit.
 
@@ -224,6 +242,8 @@ longer initiate messages to that customer, and that the opt-out is recorded.
 
 - **FR-022**: The merchant MUST be able to view WhatsApp conversations/inbox and the WhatsApp connection
   and catalog-sync configuration from their app.
+- **FR-022a**: The merchant MUST be able to send manual free-form replies (human takeover) within an active
+  conversation, while within the allowed recent-contact window, alongside the automated browse/order flow.
 - **FR-023**: WhatsApp-originated orders MUST appear in the merchant's normal (offline-capable) order list
   alongside orders from other channels.
 
@@ -236,14 +256,16 @@ longer initiate messages to that customer, and that the opt-out is recorded.
   free-messaging window), and the customer's opt-in/opt-out status.
 - **Cart Item**: A product and quantity the customer has added within a conversation, linked to a catalog
   entry, used to build the eventual order.
-- **Catalog Mapping (Item)**: The correspondence between a workspace's listed product and its representation
-  in the WhatsApp browsable catalog, so a chat selection can be translated back to a real product.
+- **Catalog Mapping (Item)**: The correspondence between a workspace's listed product variant/SKU and its
+  representation in the WhatsApp browsable catalog (one catalog entry per purchasable variant/SKU), so a
+  chat selection can be translated back to a specific real product.
 - **Inbound Message Log**: A record of each received message (with its provider message identifier) used to
   guarantee each is processed only once.
 - **Message Template**: A pre-approved message format (e.g. order confirmation, dispatch, payment reminder)
   used for merchant-initiated messages outside the free-messaging window, with its approval status.
 - **Captured Order**: The resulting order in the merchant's order workflow, tagged as WhatsApp-originated
-  and linked back to the conversation for status updates.
+  and linked back to the conversation for status updates. Starts in a pending merchant-review state and
+  enters fulfilment only once the merchant accepts it.
 
 ## Success Criteria *(mandatory)*
 
