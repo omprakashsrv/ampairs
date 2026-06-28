@@ -21,6 +21,15 @@ closes that gap: finalized invoices are automatically registered to obtain an IR
 e-way bill can be generated for goods movement, and both artifacts are displayed on the invoice and
 embedded in the printed/PDF document — including for field staff working offline.
 
+## Clarifications
+
+### Session 2026-06-28
+
+- Q: Which roles may generate/cancel e-invoices (IRN) and e-way bills? → A: Workspace administrators/owners only (automatic system registration on finalize is unaffected; manual generate/retry and all cancellations are admin/owner-only).
+- Q: How long should the system auto-retry transient IRN/EWB failures before stopping? → A: Retry with exponential backoff for a bounded window (default 48 hours), then mark "Failed" for manual retry.
+- Q: How long must signed e-invoice / e-way artifacts be retained? → A: For as long as the parent invoice is retained (match invoice retention policy).
+- Q: When a registration permanently fails, how is the user informed? → A: Per-invoice "Failed" status with reason, plus an aggregate list/view of failed e-invoices with their reasons.
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Automatic e-invoice (IRN) registration on finalize (Priority: P1)
@@ -92,10 +101,11 @@ on the invoice and its print output.
 
 ### User Story 3 - Cancel an e-invoice or e-way bill within the allowed window (Priority: P3)
 
-A user who registered an invoice in error (duplicate, wrong data) cancels the e-invoice within the
-statutory window by selecting a valid reason. Similarly, an e-way bill generated in error can be
-cancelled within its window. After the window closes, the system clearly explains that cancellation
-is no longer possible and points to the alternative remedy.
+An administrator/owner who registered an invoice in error (duplicate, wrong data) cancels the
+e-invoice within the statutory window by selecting a valid reason. Similarly, an e-way bill generated
+in error can be cancelled within its window. After the window closes, the system clearly explains
+that cancellation is no longer possible and points to the alternative remedy. (Cancellation is
+restricted to administrators/owners — see FR-027.)
 
 **Why this priority**: Corrections are important for compliance hygiene but are exception-path
 operations that build on P1/P2 already existing. They are time-boxed by law and lower volume.
@@ -199,13 +209,19 @@ registration is attempted; enable it and confirm subsequent finalized invoices a
 - **FR-008**: The system MUST guarantee at most one IRN per invoice document, including across
   retries and concurrent attempts, and MUST treat the portal's "duplicate request — existing IRN"
   response as success by storing the originally issued IRN.
-- **FR-009**: When registration cannot complete (portal down, transient error), the system MUST
-  retain the request and retry automatically with backoff until it succeeds or is determined to be
-  permanently invalid; the user MUST NOT need to manually resubmit transient failures.
+- **FR-009**: When registration cannot complete due to a transient error (portal down, timeout), the
+  system MUST retain the request and retry automatically with exponential backoff for a bounded
+  retry window (default 48 hours, configurable per workspace). Within that window the user MUST NOT
+  need to manually resubmit. A permanent/validation rejection MUST NOT be retried; it MUST be marked
+  Failed immediately with its reason.
 - **FR-010**: The system MUST expose the e-invoice status for each invoice as one of Pending,
-  Generated, Failed, or Cancelled, with a human-readable reason for Failed states.
-- **FR-011**: The system MUST allow a user to manually trigger registration (or retry a failed
-  registration) for an invoice while online.
+  Generated, Failed, or Cancelled, with a human-readable reason for Failed states. A registration
+  that exhausts the retry window without success MUST transition to Failed.
+- **FR-011**: The system MUST allow an administrator/owner to manually trigger registration (or retry
+  a failed registration) for an invoice while online.
+- **FR-011a**: In addition to per-invoice status, the system MUST provide an aggregate view listing
+  invoices whose e-invoice (or e-way bill) registration has Failed, each with its failure reason, so
+  that stuck documents are not silently missed.
 
 #### E-way bill
 
@@ -248,8 +264,12 @@ registration is attempted; enable it and confirm subsequent finalized invoices a
 - **FR-023**: Government portal/service-provider credentials MUST be stored securely server-side
   (encrypted, never in source or shipped to client devices) and resolved per workspace.
 - **FR-024**: Signed legal artifacts (the signed invoice payload and signed QR) MUST be retained for
-  audit and reprint, and MUST NOT be exposed in list/summary responses — only on the single-document
-  detail view.
+  audit and reprint for as long as the parent invoice is retained (matching the invoice retention
+  policy), and MUST NOT be exposed in list/summary responses — only on the single-document detail
+  view.
+- **FR-027**: Manually triggering generation/retry and cancelling an e-invoice or e-way bill MUST be
+  restricted to workspace administrators/owners. Automatic system registration on invoice finalize
+  (FR-004) is a system action and is not gated by this restriction.
 - **FR-025**: All e-invoice and e-way-bill data MUST be isolated per workspace (multi-tenant): a user
   sees only the artifacts of the active workspace.
 - **FR-026**: The system MUST retain the request and response exchanged with the portal for each
@@ -282,7 +302,8 @@ registration is attempted; enable it and confirm subsequent finalized invoices a
 - **SC-002**: For an eligible B2B invoice with complete data and a healthy portal connection, the
   user sees the IRN and QR code on the invoice within 10 seconds of finalization.
 - **SC-003**: 100% of invoices finalized while offline or during a portal outage complete their IRN
-  registration automatically once connectivity is restored, with zero manual resubmissions required.
+  registration automatically once connectivity is restored within the retry window (default 48
+  hours), with zero manual resubmissions required.
 - **SC-004**: Zero duplicate IRNs are issued for the same invoice across all retry and concurrency
   scenarios.
 - **SC-005**: 100% of generated e-invoices can be printed or exported with a valid, scannable QR code
