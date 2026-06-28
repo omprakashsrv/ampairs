@@ -14,5 +14,6 @@ interface Constants {
         const val UNIT_PREFIX = "UNT"
         const val PRODUCT_IMAGE_PREFIX = "PIM"
         const val VARIANT_PREFIX = "VAR"
+        const val PRODUCT_STANDARD_COST_PREFIX = "PST"
     }
 }
