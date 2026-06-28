@@ -61,6 +61,8 @@ source invoices, and a portal-ready export downloads.
 5. **Given** the tax rate on a product changed after an invoice was issued, **When** GSTR-1 is
    prepared, **Then** the return reflects the rate as it was at the time of issue, not the current
    rate.
+6. **Given** a GSTIN with no qualifying sales in a period, **When** the user prepares GSTR-1, **Then** a
+   valid NIL return is produced (empty sections, zero totals) and is exportable.
 
 ---
 

@@ -35,6 +35,7 @@ independently testable increment. Phasing also tracks plan.md's delivery phases:
 
 - [ ] T001 [SETUP] Create the `gstr` Gradle module: `gstr/build.gradle.kts` (Spring Boot/Kotlin module mirroring `einvoice/build.gradle.kts`: depends on `:core`, `:invoice`, `:tax`, `:einvoice`, `:setting`, `:event`, Spring Data JPA, Flyway, Jackson, validation, Spring scheduling, an HTTP client (RestClient/WebClient) for P2).
 - [ ] T002 [SETUP] Register the module: add `include("gstr")` to `settings.gradle.kts`; add `implementation(project(":gstr"))` and `"gstr"` to `migrationModules` in `ampairs_service/build.gradle.kts`.
+- [ ] T002a [SETUP] Resolve the Flyway version band BEFORE writing any migration: run `./gradlew :ampairs_service:flywayInfo`; confirm `V1.0.110/111/112` are unused (specs 015/016/024/026 may have claimed 105–107 or higher). If any is taken, pick the next free contiguous triple and update the version numbers referenced in T008/T009 (110), T062 (111) and T052 (112) consistently.
 - [ ] T003 [P] [SETUP] Create the package skeleton under `gstr/src/main/kotlin/com/ampairs/gstr/`: `domain/model`, `domain/enums`, `domain/dto`, `repository`, `service`, `provider`, `controller`, `event`, `config`; and the test root `gstr/src/test/kotlin/com/ampairs/gstr/`.
 - [ ] T004 [P] [SETUP] Add module doc stub `docs/modules/gstr.md` and a module `gstr/CLAUDE.md` summarizing the bounded context (reads invoice/tax/einvoice/setting via services + events; off-`/sync` pull-only on mobile).
 
@@ -104,11 +105,12 @@ portal-ready file (quickstart Steps 2 & 5; SC-001, SC-002, SC-005).
 - [ ] T025 [P] [US1] Rate-as-of-issue test: a backdated rate change must not alter the prepared snapshot (uses the immutable tax audit snapshot; FR-005) — same dir.
 - [ ] T026 [P] [US1] Portal-JSON schema-conformance test for `Gstr1PortalBuilder` (GSTN field names, rupee-rounded section totals) — `…/service/Gstr1PortalBuilderTest.kt`.
 - [ ] T027 [P] [US1] Controller/web-layer test for `prepare` + `gstr1` retrieve + `export?format=json|xlsx` returning `ApiResponse` / streamed artifact — `…/controller/GstrControllerTest.kt`.
+- [ ] T027a [P] [US1] NIL-period test: a period with zero finalized invoices prepares as a valid NIL GSTR-1 (empty sections, zero rupee totals) and exports without error (FR-008, edge "empty/nil period") — `gstr/src/test/kotlin/com/ampairs/gstr/service/Gstr1NilReturnTest.kt`.
 
 ### Implementation for User Story 1
 
 - [ ] T028 [US1] `service/Gstr1Aggregator.kt` — classify finalized invoices/CDNs (from T017 adapter) into Gstr1Section buckets using customerGst presence (registered) and placeOfSupply vs sellerPlaceOfSupply (intra/inter-state), reading rate-wise tax from the audit snapshot (fallback to live taxInfos for legacy). B2CL/B2CS split at `b2cl_threshold`. Produces section-structured data + HSN + DOCS. (R3)
-- [ ] T029 [US1] `service/GstReturnService.kt` — `prepare(gstin, type, period)`: idempotent upsert of `GstReturnPeriod`, run the aggregator, persist an immutable `GstReturnSnapshot`, advance NOT_STARTED→PREPARED (re-prepare only while not FILED — R8). Reuse `GstrMoney` rounding once at section boundary (R12).
+- [ ] T029 [US1] `service/GstReturnService.kt` — `prepare(gstin, type, period)`: idempotent upsert of `GstReturnPeriod`, run the aggregator, persist an immutable `GstReturnSnapshot`, advance NOT_STARTED→PREPARED (re-prepare only while not FILED — R8); an activity-free period yields a valid NIL snapshot (FR-008). Reuse `GstrMoney` rounding once at section boundary (R12).
 - [ ] T030 [P] [US1] `service/Gstr1PortalBuilder.kt` — render the snapshot into the GSTN offline-utility JSON shape via isolated `*PortalBuilder` DTOs with explicit `@JsonProperty` (b2b/inv/itms/txval/iamt.../pos/rt/hsn_sc) — documented external-contract exception.
 - [ ] T031 [P] [US1] `service/GstrExcelExporter.kt` — render the same snapshot to the Excel (xlsx) form.
 - [ ] T032 [US1] `controller/GstrController.kt` — `POST /gstr/v1/returns/{gstin}/{type}/{period}/prepare`, `GET …/gstr1`, `GET …/{type}/{period}/export?format=json|xlsx` (streamed); set tenant context at controller (try/finally), return `ApiResponse`. Per contracts/gstr-prepare.md + gstr-export.md.
@@ -284,7 +286,7 @@ period status, totals and ARN render read-only (US7 scenarios; SC-009).
 
 ## Phase 10: Polish & Cross-Cutting Concerns
 
-- [ ] T080 [P] [POLISH] Run `./gradlew :ampairs_service:flywayInfo`; confirm V1.0.110/111/112 are unused or bump the band; re-validate both vendors.
+- [ ] T080 [P] [POLISH] Re-verify (post-merge) the Flyway versions resolved in T002a are still free via `./gradlew :ampairs_service:flywayInfo`; re-validate both vendors apply cleanly.
 - [ ] T081 [P] [POLISH] Coverage gate: ensure ≥80% on aggregation + reconciliation + portal-JSON + idempotency/lock (`./gradlew :gstr:test` + report).
 - [ ] T082 [P] [POLISH] Performance check: prepare a month's GSTR-1 for a workspace with thousands of invoices in seconds; export streams (plan Performance Goals; SC-001).
 - [ ] T083 [P] [POLISH] Fill `docs/modules/gstr.md` (endpoints, lifecycle, GSTR-1/3B section mapping, off-`/sync` rationale).

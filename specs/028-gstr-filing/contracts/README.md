@@ -84,7 +84,10 @@ A non-owner/admin member who attempts a file or credential action is denied (HTT
 ## Period & path conventions used throughout
 
 - `{gstin}` — 15-char GSTIN of a registered `GstinRegistration` under the workspace.
-- `{type}` — return type: `gstr1` | `gstr3b` | `cmp08` (P3: `gstr9` | `gstr9c`).
+- `{type}` — return type, always **lowercase** in the URL: `gstr1` | `gstr3b` | `cmp08`
+  (P3: `gstr9` | `gstr9c`). The path segment maps to the uppercase `ReturnType` enum
+  (`GSTR1`/`GSTR3B`/`CMP08`) at the controller; clients send lowercase. The literal retrieve paths
+  (`…/gstr1`, `…/gstr3b`, `…/cmp08`) are the concrete forms of the generic `…/{type}/…` routes.
 - `{period}` — `MMYYYY` for monthly filers (e.g. `062026`), `Q{n}YYYY` for QRMP quarterly filers
   (e.g. `Q12026`), `YYYY` for annual. A quarterly filer files **one GSTR-1 per quarter** — there is
   **no monthly IFF endpoint** (out of scope, spec clarification / FR-020).
