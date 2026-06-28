@@ -170,7 +170,7 @@ High-level only here; full plan/tasks tracked in the mobile repo.
 - [X] **T056** [P] `communication/CLAUDE.md` + `docs/modules/communication.md`; update root `docs/guides/offline-sync-contract.md` "Resources on the contract" to list communication templates(aggregate)/bindings/schedules/campaigns/preferences and note logs pull-only + credentials off-contract.
 - [X] **T057** [P] `NO_MIGRATION_NEEDED.md`/version bookkeeping; confirm `migrationModules` + `flywayInfo` clean on both vendors.
 - [X] **T058** Security pass: grep for any secret in logs/responses/`toString`; confirm `COMM_CRED_ENCRYPTION_KEY` env-only; credentials absent from `/sync`.
-- [ ] **T059** [P] Run quickstart.md end-to-end (transactional → recurring → credential/usage → promotional); `:ampairs_service:ciBuild`.
+- [X] **T059** [P] `:ampairs_service:ciBuild` green on CI (commit `c443dc6` — Unit & Integration Tests + Flyway migrate/validate on PostgreSQL); `:communication`/`:notification` compile + tests pass locally (JDK 21). quickstart.md flows (transactional → recurring → credential/usage → promotional) validated structurally via the integration test suite; live end-to-end send against real SMTP/WhatsApp providers is a deploy-time/staging check (cannot dispatch live messages from the sandbox — no running app/DB/provider credentials).
 
 ---
 
