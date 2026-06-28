@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import java.math.BigDecimal
 import java.time.Instant
 
 /**
@@ -23,7 +24,7 @@ class ProductStandardCostResolutionTest {
     ) = ProductStandardCost().apply {
         this.uid = uid
         productId = "PRD1"
-        costPrice = price
+        costPrice = price.toBigDecimal()
         this.variantSku = variantSku
         effectiveFrom = from?.let { Instant.parse(it) }
         effectiveTo = to?.let { Instant.parse(it) }
@@ -37,8 +38,8 @@ class ProductStandardCostResolutionTest {
         )
         val old = ProductStandardCostServiceImpl.pick(items, null, Instant.parse("2026-01-15T00:00:00Z"))
         val recent = ProductStandardCostServiceImpl.pick(items, null, Instant.parse("2026-04-15T00:00:00Z"))
-        assertEquals(240.0, old?.costPrice)
-        assertEquals(210.0, recent?.costPrice)
+        assertEquals(240.0.toBigDecimal(), old?.costPrice)
+        assertEquals(210.0.toBigDecimal(), recent?.costPrice)
     }
 
     @Test
@@ -49,9 +50,9 @@ class ProductStandardCostResolutionTest {
         )
         // A July voucher must not see the September cost yet.
         val july = ProductStandardCostServiceImpl.pick(items, null, Instant.parse("2026-07-01T00:00:00Z"))
-        assertEquals(210.0, july?.costPrice)
+        assertEquals(210.0.toBigDecimal(), july?.costPrice)
         val october = ProductStandardCostServiceImpl.pick(items, null, Instant.parse("2026-10-01T00:00:00Z"))
-        assertEquals(199.0, october?.costPrice)
+        assertEquals(199.0.toBigDecimal(), october?.costPrice)
     }
 
     @Test
@@ -70,8 +71,8 @@ class ProductStandardCostResolutionTest {
             cost("VAR", 205.0, from = "2026-03-01T00:00:00Z", variantSku = "SKU-RED"),
         )
         val asOf = Instant.parse("2026-04-01T00:00:00Z")
-        assertEquals(205.0, ProductStandardCostServiceImpl.pick(items, "SKU-RED", asOf)?.costPrice)
-        assertEquals(210.0, ProductStandardCostServiceImpl.pick(items, "SKU-BLUE", asOf)?.costPrice, "no variant match falls back to base")
+        assertEquals(205.0.toBigDecimal(), ProductStandardCostServiceImpl.pick(items, "SKU-RED", asOf)?.costPrice)
+        assertEquals(210.0.toBigDecimal(), ProductStandardCostServiceImpl.pick(items, "SKU-BLUE", asOf)?.costPrice, "no variant match falls back to base")
 
         // Nothing effective yet for an early voucher.
         assertNull(ProductStandardCostServiceImpl.pick(items, null, Instant.parse("2026-01-01T00:00:00Z")))

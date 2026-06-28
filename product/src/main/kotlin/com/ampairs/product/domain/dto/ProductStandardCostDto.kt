@@ -2,6 +2,7 @@ package com.ampairs.product.domain.dto
 
 import com.ampairs.product.domain.model.ProductStandardCost
 import jakarta.validation.constraints.NotBlank
+import java.math.BigDecimal
 import java.time.Instant
 
 data class ProductStandardCostRequest(
@@ -13,7 +14,7 @@ data class ProductStandardCostRequest(
     val variantSku: String? = null,
 
     /** Standard purchase cost (major units, e.g. rupees). */
-    val costPrice: Double,
+    val costPrice: BigDecimal,
 
     /** Effective dating (Tally "Applicable From"); null effectiveFrom = effective from the beginning. */
     val effectiveFrom: Instant? = null,
@@ -28,7 +29,7 @@ data class ProductStandardCostResponse(
     val refId: String?,
     val productId: String,
     val variantSku: String?,
-    val costPrice: Double,
+    val costPrice: BigDecimal,
     val effectiveFrom: Instant?,
     val effectiveTo: Instant?,
     val active: Boolean,

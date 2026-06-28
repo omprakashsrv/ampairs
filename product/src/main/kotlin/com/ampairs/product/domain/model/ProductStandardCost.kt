@@ -6,6 +6,7 @@ import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Index
 import jakarta.persistence.Table
+import java.math.BigDecimal
 import java.time.Instant
 
 /**
@@ -34,8 +35,8 @@ class ProductStandardCost : OwnableBaseDomain() {
     @Column(name = "variant_sku", length = 200)
     var variantSku: String? = null
 
-    @Column(name = "cost_price", nullable = false)
-    var costPrice: Double = 0.0
+    @Column(name = "cost_price", nullable = false, precision = 15, scale = 2)
+    var costPrice: BigDecimal = BigDecimal.ZERO
 
     @Column(name = "effective_from")
     var effectiveFrom: Instant? = null
