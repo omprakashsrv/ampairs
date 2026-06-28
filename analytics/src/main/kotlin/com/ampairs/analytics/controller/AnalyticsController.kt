@@ -9,10 +9,14 @@ import com.ampairs.analytics.domain.dto.TopEntryResponse
 import com.ampairs.analytics.domain.dto.TrendPointResponse
 import com.ampairs.analytics.domain.enums.MetricGroup
 import com.ampairs.analytics.domain.enums.Period
+import com.ampairs.analytics.service.AnalyticsExportService
 import com.ampairs.analytics.service.DashboardReadService
 import com.ampairs.analytics.service.KpiRollupService
 import com.ampairs.core.domain.dto.ApiResponse
 import jakarta.validation.Valid
+import org.springframework.http.HttpHeaders
+import org.springframework.http.MediaType
+import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -34,6 +38,7 @@ import java.time.LocalDate
 class AnalyticsController(
     private val readService: DashboardReadService,
     private val rollupService: KpiRollupService,
+    private val exportService: AnalyticsExportService,
 ) {
 
     @GetMapping("/dashboard/kpis")
@@ -80,6 +85,25 @@ class AnalyticsController(
         @RequestParam("limit", defaultValue = "5") limit: Int,
     ): ApiResponse<List<TopEntryResponse>> =
         ApiResponse.success(readService.top(dimension, fromDate, toDate, limit))
+
+    /**
+     * Server-side export for history beyond the device sync window (P3). CSV only for now; streamed as
+     * a file, NOT wrapped in `ApiResponse`. PDF is deferred (R11).
+     */
+    @GetMapping("/export")
+    fun export(
+        @RequestParam("from_date") fromDate: LocalDate,
+        @RequestParam("to_date") toDate: LocalDate,
+        @RequestParam("period", defaultValue = "MONTH") period: String,
+        @RequestParam("format", defaultValue = "csv") format: String,
+    ): ResponseEntity<ByteArray> {
+        require(format.equals("csv", ignoreCase = true)) { "Unsupported export format '$format' (only csv)" }
+        val csv = exportService.exportCsv(fromDate, toDate, Period.valueOf(period.uppercase()))
+        return ResponseEntity.ok()
+            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"analytics_${fromDate}_${toDate}.csv\"")
+            .contentType(MediaType.parseMediaType("text/csv"))
+            .body(csv.toByteArray(Charsets.UTF_8))
+    }
 
     @PostMapping("/recompute")
     fun recompute(@RequestBody @Valid request: RecomputeRequest): ApiResponse<RecomputeResultResponse> {

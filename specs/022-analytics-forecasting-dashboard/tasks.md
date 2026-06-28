@@ -268,8 +268,10 @@ added/removed/reordered and sync across devices; an out-of-window export is prod
 - [ ] T050 [P] [US3] (MOB) `AnalyticsSettingDefinitions : SettingDefinitionProvider`
   (`module_code='analytics'`) for dashboard layout; persist add/remove/reorder via `StoreSetting` riding
   `SyncEntity.STORE`; dashboard reads layout. (depends on T031)
-- [ ] T051 [P] [US3] (BE) `GET /analytics/v1/export?format=csv|pdf&…` in a controller + service streaming
-  localized CSV/PDF from the summary (not `ApiResponse`-wrapped). (depends on T026)
+- [X] T051 [P] [US3] (BE) `GET /analytics/v1/export?format=csv&…` + `AnalyticsExportService` streaming a
+  flat `section,metric,value,currency` CSV across all KPI groups (reuses `DashboardReadService`; not
+  `ApiResponse`-wrapped; `Content-Disposition` attachment). (depends on T026)
+  CSV only — PDF deferred (R11: CSV sufficient for P1, avoids a new dependency); `format != csv` → 400.
 
 **Checkpoint**: All three stories independently functional.
 
