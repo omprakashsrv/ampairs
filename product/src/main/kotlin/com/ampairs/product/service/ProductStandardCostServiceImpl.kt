@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 import java.time.Instant
@@ -47,7 +48,7 @@ class ProductStandardCostServiceImpl(
         }
 
     @Transactional(readOnly = true)
-    override fun resolveCost(productId: String, variantSku: String?, asOf: Instant): Double? =
+    override fun resolveCost(productId: String, variantSku: String?, asOf: Instant): BigDecimal? =
         pick(repository.findByProductIdAndActiveTrue(productId), variantSku, asOf)?.costPrice
 
     companion object {

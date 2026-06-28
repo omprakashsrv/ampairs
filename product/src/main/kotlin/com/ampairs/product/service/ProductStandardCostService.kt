@@ -4,6 +4,7 @@ import com.ampairs.product.domain.dto.ProductStandardCostRequest
 import com.ampairs.product.domain.dto.ProductStandardCostResponse
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
+import java.math.BigDecimal
 import java.time.Instant
 
 /**
@@ -23,5 +24,5 @@ interface ProductStandardCostService {
      * when no cost version applies (caller falls back to the catalog cost). Variant match wins over a
      * base entry; among applicable versions the most-recently-effective one wins.
      */
-    fun resolveCost(productId: String, variantSku: String?, asOf: Instant): Double?
+    fun resolveCost(productId: String, variantSku: String?, asOf: Instant): BigDecimal?
 }
