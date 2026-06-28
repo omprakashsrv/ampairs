@@ -33,7 +33,7 @@
 
 - [X] **T005** Write `communication/src/main/resources/db/migration/{mysql,postgresql}/V1.0.x__communication_init.sql` creating the 12 tables from data-model.md: `message_template`, `message_template_variant`, `communication_request`, `communication_log`, `communication_schedule`, `communication_occurrence`, `campaign`, `communication_preference`, `communication_suppression`, `communication_config`, `event_template_binding`, `communication_usage`. `TIMESTAMPTZ` (pg) / `TIMESTAMP` (mysql); unique constraints per data-model (`(owner_id,code)`, `(template_uid,channel,locale)`, `(schedule_uid,occurrence_key)`, `(owner_id,dedup_key)`, `(customer_uid,channel,category)`, `(owner_id,channel,address)`, `(owner_id,event_type)`, `(communication_log_uid)`); indexes `(paused,next_run_at)`, `(request_uid)`, `(notification_uid)`.
 - [X] **T006** Write `notification/src/main/resources/db/migration/{mysql,postgresql}/V1.0.y__notification_credentials.sql`: ALTER `notification_queue` ADD `subject`, `source_module`, `source_ref`, `credential_uid`, `billing_mode`; CREATE TABLE `workspace_channel_credential` per data-model §12 (unique `(owner_id,channel,provider)`).
-- [ ] **T007** Verify both vendors migrate cleanly: `./gradlew :ampairs_service:flywayInfo` then `:ampairs_service:dbValidate` (and `dbMigrate` against a local Postgres+MySQL).
+- [X] **T007** Verify both vendors migrate cleanly: `./gradlew :ampairs_service:flywayInfo` then `:ampairs_service:dbValidate` (and `dbMigrate` against a local Postgres+MySQL).
 
 ### Core shared entities, repos, renderer (comm)
 
@@ -157,9 +157,9 @@
 
 High-level only here; full plan/tasks tracked in the mobile repo.
 
-- [ ] **T053** [US5] New `feature/communication` KMP module: WorkspaceScope Room DB + Metro DI (`@ContributesTo(WorkspaceScope)`), per `/metro-di`.
-- [ ] **T054** [US5] `CommunicationSyncDelegate`(s) per resource: templates (aggregate), schedules, campaigns, preferences, logs (pull-only); per `/offline-sync`. Credentials/usage via authenticated (non-sync) API; secrets never stored on device.
-- [ ] **T055** [US5] Compose UI (compose/manage templates incl. raw-HTML body + server-rendered preview, schedules, campaigns, credential settings + usage, delivery-status list) + Navigation3 entry provider + `ModuleRegistry "communication-management" → Route.Communication`.
+- [X] **T053** [US5] New `feature/communication` KMP module: WorkspaceScope Room DB (`CommunicationDatabase` — templates/bindings/schedules/campaigns/preferences + pull-only logs) + Metro DI (`@ContributesTo(WorkspaceScope)` per platform + `CommunicationDaoModule`), per `/metro-di`. Wired into `settings.gradle.kts`, `shared/build.gradle.kts`, `SyncEntity` (COMM_*), `ApiUrlBuilder.communicationUrl`.
+- [X] **T054** [US5] `CommunicationSyncDelegates`: templates (aggregate header+variants), bindings, schedules, campaigns, preferences (standard `/sync`), logs (pull-only); per `/offline-sync`. Repos local-only (`markPendingPush`); `CommunicationSyncApi` owns push/pull. Credentials (CRUD+validate) and usage via authenticated `CommunicationActionApi` (non-sync); secrets write-only, never stored on device.
+- [X] **T055** [US5] Compose UI: hub + templates (raw-HTML body + server-rendered preview), schedules (pause/resume), campaigns (start/pause/resume), credential settings, usage report, delivery-status logs. Navigation3 `CommunicationEntryProvider` + `Route.Communication` redirect + Nav3Config registration; `ModuleCodes.COMMUNICATION = "communication-management" → Route.Communication` wired in `DynamicModuleNavigationService`, `AppBottomNavigation`, `AppNavigationNav3`.
 
 **Checkpoint**: Staff manage comms offline; sending stays server-side.
 
