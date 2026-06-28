@@ -55,8 +55,10 @@ coverage on parsers/matching/idempotency, the tie-out invariant, and bounce rout
 - [ ] T013 [P] Add `SyncEntity` entries `BANK_ACCOUNT`, `BANK_STATEMENT_LINE`, `BANK_MATCH`, `STATEMENT_IMPORT` to `ampairs-app/data/sync/.../SyncEntity.kt`
 - [ ] T014 Create the mobile workspace-scoped Room DB `BankingDatabase` and platform DI (`BankingModule.{android,ios,desktop}.kt`, `@ContributesTo(WorkspaceScope::class)`, `@SingleIn(WorkspaceScope::class)`, registered with `WorkspaceClosableRegistry`, path `banking`) in `ampairs-app/feature/banking/src/`
 - [ ] T015 [P] Create `BankingApi` interface + skeleton `BankingApiImpl` (Ktor, including a multipart upload method) and `domain/` model/enum mirrors in `ampairs-app/feature/banking/src/commonMain/kotlin/com/ampairs/banking/data/api/`
+- [ ] T081 [P] Author `specs/024-bank-reconciliation/data-model.md` (entities + state machines), including the line-state (UNMATCHED/SUGGESTED/MATCHED/REJECTED) ↔ match-status (SUGGESTED/CONFIRMED/REJECTED) mapping so the two enums in T010 aren't conflated — author BEFORE story implementation (resolves analyze F1, T1)
+- [ ] T082 [P] Author `specs/024-bank-reconciliation/contracts/` (`banking-sync.md`, `banking-import.md`, `banking-actions.md`) defining the request/response shapes the US1–US3 controllers implement — author BEFORE the endpoint tasks T027/T028/T046/T054 so contracts guide implementation rather than document it after (resolves analyze F1)
 
-**Checkpoint**: Schema, enums, settings, and mobile DB/DI exist; stories can begin.
+**Checkpoint**: Schema, enums, settings, mobile DB/DI, and the design contracts (data-model + contracts/) exist; stories can begin.
 
 ---
 
@@ -220,13 +222,15 @@ confirm the saved column profile is reused.
 
 ## Phase 8: Polish & Cross-Cutting Concerns
 
-- [ ] T074 [P] Author `specs/024-bank-reconciliation/data-model.md` (entities + state machines) and `contracts/` (banking-sync, banking-import, banking-actions) to match the implementation
+- [ ] T074 [P] Reconcile `specs/024-bank-reconciliation/data-model.md` + `contracts/` (drafted in T081/T082) with the final implementation — close any drift in entities, state machines, or endpoint shapes
 - [ ] T075 [P] Author `specs/024-bank-reconciliation/quickstart.md` (import a CSV → run matching → confirm a match → view tie-out)
-- [ ] T076 Verify backend coverage ≥80% on parsers + matching + idempotency via `./gradlew :banking:test` and close gaps
+- [ ] T076 Verify backend coverage meets the constitution gates — **critical logic ≥80%** (parsers + matching + idempotency) AND **API endpoints ≥90%** (controllers) — via `./gradlew :banking:test`, and close gaps (resolves analyze V1; constitution §Testing & Quality Gates)
 - [ ] T077 [P] Mobile validation: `./gradlew :feature:banking:check` + 3-target compile (`androidApp:compileDebugKotlinAndroid`, `shared:compileKotlinIosSimulatorArm64`, `desktopApp:compileKotlin`)
 - [ ] T078 Performance check: import + match a few-thousand-line statement within seconds; verify candidate-search indexes (SC-001)
 - [ ] T079 [P] Add navigation entry to `feature/banking` from finance/settings (`ModuleRegistry`/entry provider) in `ampairs-app/feature/workspace/.../ModuleRegistry.kt` and `ampairs-app/shared/.../navigation/`
 - [ ] T080 Run `./gradlew :ampairs_service:flywayInfo` + `:banking:test` (Testcontainers) and `ciBuild` gate before marking complete
+- [ ] T083 [P] Auto-match-rate validation (SC-002): with a UTR-rich fixture statement whose lines have recorded counterparts, assert **≥80%** auto-match without manual intervention, in `ampairs/banking/src/test/kotlin/com/ampairs/banking/service/AutoMatchRateTest.kt` (resolves analyze C1)
+- [ ] T084 Reconciliation-time validation (SC-006): timed walkthrough reconciling a typical monthly statement reviewing only exceptions in **under 10 minutes**; document the run in `specs/024-bank-reconciliation/quickstart.md` (manual acceptance; resolves analyze C1)
 
 ---
 
@@ -234,7 +238,7 @@ confirm the saved column profile is reused.
 
 ### Phase Dependencies
 - **Setup (P1)**: no dependencies.
-- **Foundational (P2)**: depends on Setup — BLOCKS all stories (migration T008/T009, enums T010, settings T011, mobile DB/DI T014 are hard prerequisites).
+- **Foundational (P2)**: depends on Setup — BLOCKS all stories (migration T008/T009, enums T010, settings T011, mobile DB/DI T014 are hard prerequisites). Design docs **T081** (data-model) and **T082** (contracts) are authored here and SHOULD precede the endpoint tasks (T027/T028/T046/T054), though they don't block entity/parser work.
 - **US1 (P3)**: depends on Foundational. The MVP.
 - **US2 (P4)**: depends on Foundational + US1 (matches reference imported lines and accounts).
 - **US3 (P5)**: depends on US1+US2 (buckets/tie-out need lines + matches).
@@ -285,6 +289,7 @@ Task: "DTOs + ParsedLine + ColumnMapping"  # T022
 
 ### Notes
 - `[P]` = different files, no dependency. `[Story]` = traceability to US1–US5.
+- **Numbering note**: T081–T084 were added after the `/speckit.analyze` pass (remediation of findings F1, V1, C1, T1); they are placed in their logical phases (T081/T082 in Foundational, T083/T084 in Polish) so existing IDs and the coverage map stay stable — hence IDs are non-contiguous within those phases.
 - Backend builds/tests locally (system JDK 21): `./gradlew :banking:test`. Mobile build needs CI (JetBrains-vendor toolchain blocked in sandbox) — rely on PR CI / coverage bot.
 - Commit after each task or logical group; stop at any checkpoint to validate a story independently.
 - Watch the ledger invariant: matching only **annotates** vouchers; only US4 touches the ledger, and only via `payment`'s existing bounce command.
