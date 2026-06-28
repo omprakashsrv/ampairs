@@ -2,11 +2,15 @@ package com.ampairs.pricing.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
+import com.ampairs.pricing.domain.dto.CouponApplyRequest
+import com.ampairs.pricing.domain.dto.CouponRedeemRequest
+import com.ampairs.pricing.domain.dto.CouponResponse
 import com.ampairs.pricing.domain.dto.OfferApplicationRequest
 import com.ampairs.pricing.domain.dto.OfferApplicationResponse
 import com.ampairs.pricing.domain.dto.OfferRequest
 import com.ampairs.pricing.domain.dto.OfferResponse
 import com.ampairs.pricing.exception.OfferNotFoundException
+import com.ampairs.pricing.service.CouponService
 import com.ampairs.pricing.service.OfferApplicationService
 import com.ampairs.pricing.service.OfferService
 import jakarta.validation.Valid
@@ -27,6 +31,7 @@ import org.springframework.web.bind.annotation.RestController
 class OfferController(
     private val offerService: OfferService,
     private val offerApplicationService: OfferApplicationService,
+    private val couponService: CouponService,
 ) {
 
     /** Apply eligible promotions to a priced cart (price-resolve → apply → tax → snapshot). */
@@ -35,6 +40,20 @@ class OfferController(
         @Valid @RequestBody request: OfferApplicationRequest,
     ): ApiResponse<OfferApplicationResponse> =
         ApiResponse.success(offerApplicationService.apply(request))
+
+    /** Validate a coupon code (no side effects). */
+    @PostMapping("/coupon/validate")
+    fun validateCoupon(
+        @Valid @RequestBody request: CouponApplyRequest,
+    ): ApiResponse<CouponResponse> =
+        ApiResponse.success(couponService.validate(request))
+
+    /** Atomically redeem a coupon against an order (idempotent per order_ref). */
+    @PostMapping("/coupon/redeem")
+    fun redeemCoupon(
+        @Valid @RequestBody request: CouponRedeemRequest,
+    ): ApiResponse<CouponResponse> =
+        ApiResponse.success(couponService.redeem(request))
 
     @GetMapping("/sync")
     fun getOffersSync(
