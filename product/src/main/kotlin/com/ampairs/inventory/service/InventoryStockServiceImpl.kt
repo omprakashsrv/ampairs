@@ -94,6 +94,50 @@ class InventoryStockServiceImpl(
         }
     }
 
+    @Transactional
+    override fun applyPurchase(command: StockMutationCommand) {
+        if (!inventoryModuleInstalled()) return       // inventory-management not installed → no-op
+        if (!autoAddOnPurchaseEnabled()) {
+            log.debug("Auto-add-on-purchase disabled; skipping applyPurchase for {} {}", command.sourceType, command.sourceId)
+            return
+        }
+        for (line in command.lines) {
+            val item = resolveItem(line) ?: continue            // untracked line → skip
+            if (alreadyApplied(command.sourceType.name, command.sourceId, line.sourceLineUid)) continue
+
+            applyDelta(
+                item = item,
+                signedDelta = line.quantity,
+                txnType = Constants.TXN_TYPE_STOCK_IN,
+                reason = Constants.REASON_PURCHASE,
+                sourceType = command.sourceType.name,
+                command = command,
+                line = line,
+            )
+        }
+    }
+
+    @Transactional
+    override fun reversePurchase(command: StockMutationCommand) {
+        if (!inventoryModuleInstalled()) return       // inventory-management not installed → no-op
+        for (line in command.lines) {
+            val item = resolveItem(line) ?: continue
+            // Reversals are recorded under a distinct source type so their idempotency key never
+            // collides with the original applyPurchase row for the same document line.
+            if (alreadyApplied(PURCHASE_REVERSAL_SOURCE_TYPE, command.sourceId, line.sourceLineUid)) continue
+
+            applyDelta(
+                item = item,
+                signedDelta = line.quantity.negate(),
+                txnType = Constants.TXN_TYPE_STOCK_OUT,
+                reason = Constants.REASON_CORRECTION,
+                sourceType = PURCHASE_REVERSAL_SOURCE_TYPE,
+                command = command,
+                line = line,
+            )
+        }
+    }
+
     // ------------------------------------------------------------------------
     // Internals
     // ------------------------------------------------------------------------
@@ -163,6 +207,9 @@ class InventoryStockServiceImpl(
     private fun autoDeductEnabled(): Boolean =
         settingBool(InventorySettingDefinitions.KEY_AUTO_DEDUCT_ON_ORDER)
 
+    private fun autoAddOnPurchaseEnabled(): Boolean =
+        settingBool(InventorySettingDefinitions.KEY_AUTO_ADD_ON_PURCHASE)
+
     private fun settingBool(key: String): Boolean =
         settingService.getBoolean(InventorySettingDefinitions.MODULE, key)
 
@@ -172,5 +219,10 @@ class InventoryStockServiceImpl(
         val startOfDay = today.atStartOfDay(ZoneId.of("UTC")).toInstant()
         val count = inventoryTransactionRepository.countTransactionsToday(startOfDay)
         return "TXN-$dateStr-" + (count + 1).toString().padStart(4, '0')
+    }
+
+    private companion object {
+        /** Distinct source type for purchase reversals so the idempotency key never collides with applyPurchase. */
+        const val PURCHASE_REVERSAL_SOURCE_TYPE = "PURCHASE_REVERSAL"
     }
 }

@@ -15,6 +15,24 @@ interface NotificationProvider {
     fun sendNotification(recipient: String, message: String): NotificationResult
 
     /**
+     * Send a richer notification carrying a title and a structured data payload.
+     *
+     * Channels that don't support these extras (e.g. SMS) ignore them via this default delegation
+     * to the plain [sendNotification]. Push providers override this to forward title + data to FCM.
+     *
+     * @param recipient The recipient (device push token, phone number, etc.)
+     * @param message The notification body content
+     * @param title Optional title (push only)
+     * @param data Optional key/value data payload (push only)
+     */
+    fun sendNotification(
+        recipient: String,
+        message: String,
+        title: String?,
+        data: Map<String, String>,
+    ): NotificationResult = sendNotification(recipient, message)
+
+    /**
      * Get the provider name
      */
     fun getProviderName(): String

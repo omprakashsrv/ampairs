@@ -21,7 +21,7 @@ jobs:
       contents: read
       pull-requests: write   # required to post the coverage comment on the PR
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
@@ -43,7 +43,7 @@ jobs:
         run: ./gradlew codeCoverageReport --console=plain
       - name: Publish coverage comment on PR
         if: ${{ github.event_name == 'pull_request' }}
-        uses: madrapps/jacoco-report@v1.7.2
+        uses: madrapps/jacoco-report@v1.8.0
         with:
           paths: ${{ github.workspace }}/build/reports/jacoco/aggregate/coverage.xml
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -55,7 +55,7 @@ jobs:
           min-coverage-changed-files: 0
       - name: Upload HTML coverage report
         if: ${{ always() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-coverage-report
           path: build/reports/jacoco/aggregate/html/
@@ -80,7 +80,7 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
