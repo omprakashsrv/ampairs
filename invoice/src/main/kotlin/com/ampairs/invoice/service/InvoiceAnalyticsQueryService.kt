@@ -1,6 +1,7 @@
 package com.ampairs.invoice.service
 
 import com.ampairs.invoice.domain.dto.FinalizedInvoiceProjection
+import com.ampairs.invoice.domain.dto.InvoiceLineProjection
 import com.ampairs.invoice.domain.dto.TaxLineProjection
 import com.ampairs.invoice.domain.enums.InvoiceStatus
 import com.ampairs.invoice.domain.model.Invoice
@@ -45,6 +46,9 @@ class InvoiceAnalyticsQueryService(
             taxLines = taxInfos
                 .filter { it.value != 0.0 }
                 .map { TaxLineProjection(rate = it.percentage, taxValue = it.value) },
+            lines = invoiceItems
+                .filter { it.productId.isNotBlank() }
+                .map { InvoiceLineProjection(productId = it.productId, qty = it.quantity, gross = it.totalCost) },
         )
     }
 }

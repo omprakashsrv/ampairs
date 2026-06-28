@@ -15,10 +15,18 @@ data class FinalizedInvoiceProjection(
     val customerId: String,   // "" when walk-in / unset
     val intraState: Boolean,  // placeOfSupply == sellerPlaceOfSupply → CGST+SGST, else IGST
     val taxLines: List<TaxLineProjection>,
+    val lines: List<InvoiceLineProjection> = emptyList(),
 )
 
 /** One output-tax line: the GST rate and the tax amount snapshotted on the invoice. */
 data class TaxLineProjection(
     val rate: Double,
     val taxValue: Double,
+)
+
+/** One invoice line item, for top-product KPIs. */
+data class InvoiceLineProjection(
+    val productId: String,
+    val qty: Double,
+    val gross: Double,
 )

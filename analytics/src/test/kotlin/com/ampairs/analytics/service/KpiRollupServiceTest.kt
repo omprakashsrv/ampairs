@@ -5,6 +5,7 @@ import com.ampairs.analytics.domain.enums.TaxKind
 import com.ampairs.analytics.domain.model.KpiDailySummary
 import com.ampairs.analytics.repository.KpiDailySummaryRepository
 import com.ampairs.invoice.domain.dto.FinalizedInvoiceProjection
+import com.ampairs.invoice.domain.dto.InvoiceLineProjection
 import com.ampairs.invoice.domain.dto.TaxLineProjection
 import com.ampairs.invoice.service.InvoiceAnalyticsQueryService
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -62,6 +63,7 @@ class KpiRollupServiceTest {
             gross = 1180.0, net = 1000.0, tax = 180.0,
             customerId = "CUST1", intraState = true,
             taxLines = listOf(TaxLineProjection(rate = 18.0, taxValue = 180.0)),
+            lines = listOf(InvoiceLineProjection(productId = "PRD1", qty = 4.0, gross = 1180.0)),
         )
         whenever(invoiceQuery.finalizedBetween(any(), any())).thenReturn(listOf(invoice))
         whenever(repo.saveAll(any<Iterable<KpiDailySummary>>()))
@@ -75,7 +77,7 @@ class KpiRollupServiceTest {
         val captor = argumentCaptor<Iterable<KpiDailySummary>>()
         verify(repo).saveAll(captor.capture())
         val saved = captor.firstValue.toList()
-        assertEquals(3, written)
+        assertEquals(4, written)
 
         val sales = saved.single { it.metricGroup == MetricGroup.SALES }
         assertEquals(0, BigDecimal.valueOf(1180.0).compareTo(sales.grossAmount))
@@ -86,6 +88,11 @@ class KpiRollupServiceTest {
         val cust = saved.single { it.metricGroup == MetricGroup.TOP_CUSTOMER }
         assertEquals("CUST1", cust.dimCustomerId)
         assertEquals(0, BigDecimal.valueOf(1180.0).compareTo(cust.grossAmount))
+
+        val prod = saved.single { it.metricGroup == MetricGroup.TOP_PRODUCT }
+        assertEquals("PRD1", prod.dimProductId)
+        assertEquals(0, BigDecimal.valueOf(1180.0).compareTo(prod.grossAmount))
+        assertEquals(0, BigDecimal.valueOf(4.0).compareTo(prod.qty))
 
         val gst = saved.single { it.metricGroup == MetricGroup.GST_SUMMARY }
         assertEquals(TaxKind.INTRA, gst.taxKind)

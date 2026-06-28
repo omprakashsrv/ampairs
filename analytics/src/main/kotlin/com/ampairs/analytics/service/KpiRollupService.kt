@@ -37,7 +37,8 @@ class KpiRollupService(
     private val log = LoggerFactory.getLogger(KpiRollupService::class.java)
 
     /** Groups owned by the invoice reconcile (cleared + rebuilt together). */
-    private val invoiceGroups = listOf(MetricGroup.SALES, MetricGroup.GST_SUMMARY, MetricGroup.TOP_CUSTOMER)
+    private val invoiceGroups =
+        listOf(MetricGroup.SALES, MetricGroup.GST_SUMMARY, MetricGroup.TOP_CUSTOMER, MetricGroup.TOP_PRODUCT)
 
     /** Reconcile the single business day a finalized invoice belongs to (called by the event listener). */
     @Transactional
@@ -66,6 +67,7 @@ class KpiRollupService(
             val day = Instant.ofEpochMilli(inv.invoiceDateEpochMillis).atZone(zone).toLocalDate()
             accumulateSales(buckets, day, inv, now)
             accumulateTopCustomer(buckets, day, inv, now)
+            accumulateTopProduct(buckets, day, inv, now)
             accumulateGst(buckets, day, inv, now)
         }
 
@@ -97,6 +99,21 @@ class KpiRollupService(
         }
         b.grossAmount = b.grossAmount.add(BigDecimal.valueOf(inv.gross))
         b.docCount += 1
+    }
+
+    private fun accumulateTopProduct(
+        buckets: MutableMap<BucketKey, KpiDailySummary>, day: LocalDate,
+        inv: FinalizedInvoiceProjection, now: Instant,
+    ) {
+        for (line in inv.lines) {
+            if (line.productId.isBlank()) continue
+            val b = buckets.getOrPut(BucketKey(MetricGroup.TOP_PRODUCT, day, line.productId, "", null, null)) {
+                newBucket(MetricGroup.TOP_PRODUCT, day, now).apply { dimProductId = line.productId }
+            }
+            b.grossAmount = b.grossAmount.add(BigDecimal.valueOf(line.gross))
+            b.qty = b.qty.add(BigDecimal.valueOf(line.qty))
+            b.docCount += 1
+        }
     }
 
     private fun accumulateGst(

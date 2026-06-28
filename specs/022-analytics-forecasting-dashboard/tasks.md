@@ -148,11 +148,11 @@ match the backend `…/dashboard/kpis` to the last currency unit.
   `workspace`). The manual `POST /recompute` (per-request tenant) covers reconcile for now.
 - [X] T026 [US1] (BE) `DashboardReadService` serving kpis/trend/gst-summary/top from the summary;
   GST split logic per R10. (depends on T022)
-  DONE for invoice groups: SALES kpis (gross/net/tax/count/AOV), day/week/month trend, GST summary
-  (intra CGST+SGST / inter IGST, by-rate), top customers. COLLECTIONS + AGING via a LIVE read of the
-  payment module (`PaymentAnalyticsQueryService`). INVENTORY (stock value / low-stock count / turns) via
-  a LIVE read of the product module (`InventoryAnalyticsQueryService`). Only top-PRODUCT (needs invoice
-  items) remains of the P1 KPI groups.
+  DONE — ALL P1 KPI groups: SALES kpis (gross/net/tax/count/AOV), day/week/month trend, GST summary
+  (intra CGST+SGST / inter IGST, by-rate), top customers AND top products (invoice line items →
+  TOP_PRODUCT buckets with qty), all from the invoice reconcile. COLLECTIONS + AGING via a LIVE read of
+  the payment module; INVENTORY (stock value / low-stock count / turns) via a LIVE read of the product
+  module. The entire P1 dashboard read surface is backend-complete.
 - [X] T027 [US1] (BE) `AnalyticsController` `GET /dashboard/{kpis,trend,aging,gst-summary,top}` +
   `POST /analytics/v1/recompute`. (depends on T026, T023, T021)
   DONE: kpis (incl. COLLECTIONS), trend, aging, gst-summary, top + recompute, `ApiResponse<T>`, tenant

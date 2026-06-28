@@ -169,18 +169,21 @@ class DashboardReadService(
             .filter { keyOf(it).isNotBlank() }
             .groupBy(keyOf)
             .map { (id, g) ->
-                Triple(
-                    id,
-                    g.fold(BigDecimal.ZERO) { a, r -> a.add(r.grossAmount) },
-                    g.sumOf { it.docCount },
+                TopAccum(
+                    id = id,
+                    gross = g.fold(BigDecimal.ZERO) { a, r -> a.add(r.grossAmount) },
+                    qty = g.fold(BigDecimal.ZERO) { a, r -> a.add(r.qty) },
+                    count = g.sumOf { it.docCount },
                 )
             }
-            .sortedByDescending { it.second }
+            .sortedByDescending { it.gross }
             .take(limit.coerceIn(1, 50))
-            .mapIndexed { i, (id, gross, count) ->
-                TopEntryResponse(rank = i + 1, id = id, name = id, grossAmount = gross, qty = BigDecimal.ZERO, docCount = count)
+            .mapIndexed { i, a ->
+                TopEntryResponse(rank = i + 1, id = a.id, name = a.id, grossAmount = a.gross, qty = a.qty, docCount = a.count)
             }
     }
+
+    private data class TopAccum(val id: String, val gross: BigDecimal, val qty: BigDecimal, val count: Int)
 
     private fun salesValues(rows: List<KpiDailySummary>): List<KpiValueResponse> {
         val gross = rows.fold(BigDecimal.ZERO) { acc, r -> acc.add(r.grossAmount) }
