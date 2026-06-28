@@ -21,7 +21,7 @@ class InvoiceController(
      * missing uid in the response and keeps that invoice unsynced.
      */
     @PostMapping("/sync")
-    fun syncInvoices(@RequestBody @Valid requests: List<InvoiceUpdateRequest>): ApiResponse<List<InvoiceResponse>> {
+    fun syncInvoices(@RequestBody requests: List<@Valid InvoiceUpdateRequest>): ApiResponse<List<InvoiceResponse>> {
         return ApiResponse.success(invoiceService.bulkUpsertInvoices(requests))
     }
 

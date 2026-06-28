@@ -47,7 +47,7 @@ class CustomerTypeController(
      */
     @PostMapping("/sync")
     fun bulkUpsertCustomerTypes(
-        @RequestBody @Valid request: List<CustomerTypeUpdateRequest>
+        @RequestBody request: List<@Valid CustomerTypeUpdateRequest>
     ): ApiResponse<List<CustomerTypeResponse>> {
         val types = request.toCustomerTypes()
         val result = customerTypeService.bulkUpsertCustomerTypes(types)

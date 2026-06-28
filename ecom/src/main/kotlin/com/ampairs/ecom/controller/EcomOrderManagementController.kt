@@ -55,7 +55,7 @@ class EcomOrderManagementController(
     fun editLineItems(
         @RequestHeader("X-Workspace-ID") workspaceId: String,
         @PathVariable ecomOrderRef: String,
-        @RequestBody @Valid items: List<EcomOrderLineItemEditRequest>,
+        @RequestBody items: List<@Valid EcomOrderLineItemEditRequest>,
     ): ApiResponse<EcomOrderManagementResponse> {
         TenantContextHolder.setCurrentTenant(workspaceId)
         try {

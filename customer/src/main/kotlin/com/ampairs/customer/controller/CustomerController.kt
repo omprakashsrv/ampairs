@@ -24,7 +24,7 @@ class CustomerController(
      * separate per-row DELETE call in the sync push path.
      */
     @PostMapping("/customers/sync")
-    fun updateCustomers(@RequestBody @Valid customerUpdateRequest: List<CustomerUpdateRequest>): ApiResponse<List<CustomerResponse>> {
+    fun updateCustomers(@RequestBody customerUpdateRequest: List<@Valid CustomerUpdateRequest>): ApiResponse<List<CustomerResponse>> {
         val customers = customerUpdateRequest.toCustomers()
         val result = customerService.updateCustomers(customers).asCustomersResponse()
         return ApiResponse.success(result)
