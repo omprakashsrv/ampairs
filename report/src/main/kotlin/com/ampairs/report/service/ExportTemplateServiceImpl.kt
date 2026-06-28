@@ -7,7 +7,7 @@ import com.ampairs.report.domain.dto.ExportTemplateResponse
 import com.ampairs.report.domain.model.ExportTemplate
 import com.ampairs.report.repository.ExportTemplateRepository
 import com.fasterxml.jackson.core.type.TypeReference
-import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
@@ -20,11 +20,15 @@ import java.time.Instant
 @Service
 class ExportTemplateServiceImpl(
     private val repository: ExportTemplateRepository,
-    private val objectMapper: ObjectMapper,
     private val entityChangePublisher: EntityChangePublisher,
 ) : ExportTemplateService {
 
     private val logger = LoggerFactory.getLogger(ExportTemplateServiceImpl::class.java)
+
+    // Self-contained mapper for the opaque selected_columns/filters JSON columns.
+    // Matches the codebase convention (event/ecom/notification create their own); there is no
+    // shared @Bean ObjectMapper to inject, and autowiring one breaks the application context.
+    private val objectMapper = jacksonObjectMapper()
 
     private val columnListType = object : TypeReference<List<String>>() {}
     private val filterListType = object : TypeReference<List<ExportFilterDto>>() {}

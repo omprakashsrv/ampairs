@@ -6,7 +6,6 @@ import com.ampairs.report.domain.dto.ExportTemplateRequest
 import com.ampairs.report.domain.model.ExportTemplate
 import com.ampairs.report.repository.ExportTemplateRepository
 import com.ampairs.report.service.ExportTemplateServiceImpl
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -41,7 +40,7 @@ class ExportTemplateServiceTest {
 
     @BeforeEach
     fun setUp() {
-        service = ExportTemplateServiceImpl(repository, jacksonObjectMapper(), entityChangePublisher)
+        service = ExportTemplateServiceImpl(repository, entityChangePublisher)
     }
 
     @Test
