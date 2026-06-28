@@ -16,9 +16,15 @@ import com.ampairs.ecom.repository.EcomCartRepository
 import com.ampairs.ecom.repository.EcomOrderLineItemRepository
 import com.ampairs.ecom.repository.EcomOrderRepository
 import com.ampairs.core.config.Constants
+import com.ampairs.core.domain.dto.MoneyDto
 import com.ampairs.core.utils.Helper
+import com.ampairs.pricing.domain.dto.CartLineInput
+import com.ampairs.pricing.domain.dto.OfferApplicationRequest
+import com.ampairs.pricing.service.OfferApplicationService
+import com.ampairs.pricing.util.PricingJson
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
 import java.time.Instant
 
 @Service
@@ -28,7 +34,10 @@ class CheckoutService(
     private val orderLineItemRepository: EcomOrderLineItemRepository,
     private val addressRepository: CustomerAddressRepository,
     private val orderEventPublisher: EcomOrderEventPublisher,
+    private val offerApplicationService: OfferApplicationService,
 ) {
+
+    private val pricingCurrency = "INR"
 
     @Transactional
     fun checkout(
@@ -76,7 +85,31 @@ class CheckoutService(
         order.subtotal = cartItems.fold(java.math.BigDecimal.ZERO) { acc, item ->
             acc + item.unitPrice.multiply(java.math.BigDecimal(item.quantity))
         }
-        order.totalAmount = order.subtotal
+
+        // Apply eligible promotions server-side (single-sourced engine; the app mirrors it offline).
+        // Lines are already price-resolved; the engine only computes the discount on top.
+        val offerResult = offerApplicationService.apply(
+            OfferApplicationRequest(
+                channel = storefront.defaultChannel,
+                customerId = customerId,
+                pincode = order.deliveryAddress["pinCode"] as? String,
+                currency = pricingCurrency,
+                lines = cartItems.map { item ->
+                    CartLineInput(
+                        productId = item.managementProductId,
+                        quantity = BigDecimal(item.quantity),
+                        unitPriceMinor = item.resolvedUnitPriceMinor
+                            ?: MoneyDto.of(item.unitPrice, pricingCurrency)?.amountMinor ?: 0L,
+                    )
+                },
+            )
+        )
+        val discountMinor = offerResult.totalDiscount.amountMinor
+        order.promotionDiscountMinor = discountMinor.takeIf { it > 0 }
+        order.appliedPromotionsJson = offerResult.appliedOffers
+            .takeIf { it.isNotEmpty() }
+            ?.let { PricingJson.write(it) }
+        order.totalAmount = (order.subtotal - BigDecimal.valueOf(discountMinor).movePointLeft(2)).max(BigDecimal.ZERO)
 
         val savedOrder = orderRepository.save(order)
 
