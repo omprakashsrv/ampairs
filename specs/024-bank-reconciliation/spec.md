@@ -192,6 +192,7 @@ yields the same canonical transactions as the CSV path.
 ### Session 2026-06-28
 
 - Q: Should auto-reconciliation matching use the app's on-device/offline model, or stay a deterministic server-side engine? → A: Server-side only — auto-matching is a deterministic engine run on the server; the app's on-device/offline model is not used for reconciliation.
+- Q: With matching server-side, how is each transaction's state managed on the client and is matching shown live? → A: Fully asynchronous — matching runs async on the server; each transaction's match state is surfaced to the client read-only via sync (a transient matching-in-progress indicator, then resolved states), not a live per-candidate stream. Auto-matches apply automatically; SUGGESTED matches await a client-side confirm/reject that is sent online and re-syncs.
 
 ## Requirements *(mandatory)*
 
@@ -272,6 +273,17 @@ yields the same canonical transactions as the CSV path.
   behaviour: the minimum confidence required for auto-matching, the matching date window, the amount
   tolerance, a default import layout, and the narration patterns that indicate a return/bounce.
 
+**Processing model & client state**
+
+- **FR-024**: Server-side import and matching MUST run asynchronously. After upload, the client MUST
+  surface the import as matching-in-progress and transition it to complete once results are available;
+  the client MUST NOT block waiting for matching to finish.
+- **FR-025**: Each transaction's match state (UNMATCHED / SUGGESTED / MATCHED / REJECTED) MUST be
+  surfaced to the client read-only via sync — there is no live, per-candidate streaming of the matching
+  process. Auto-matches MUST appear without any client action; SUGGESTED matches MUST await a
+  client-side confirm/reject. Confirm/reject (and manual matches) are sent as online actions and re-sync
+  the affected transaction state.
+
 ### Key Entities *(include if feature involves data)*
 
 - **Bank Account**: A bank account the business holds — bank name, masked account number, identifier
@@ -324,7 +336,9 @@ yields the same canonical transactions as the CSV path.
   recorded payments for candidates is performed centrally; the mobile experience is configuring accounts,
   uploading a file, and reviewing/confirming results. Reconciliation is not expected to work offline on a
   partial copy of the data. Auto-matching uses a deterministic server-side matching engine; the app's
-  on-device/offline model is not used for reconciliation.
+  on-device/offline model is not used for reconciliation. Matching runs asynchronously; the client
+  observes each transaction's match state read-only via sync and performs confirm/reject as online
+  actions afterward.
 - **Statement upload is online**: Because statement files are binary/large, uploading a statement is an
   online action, distinct from routine offline-first data entry.
 - **Amounts in minor units**: Money is compared in exact minor units (paise) with a configurable
