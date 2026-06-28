@@ -83,6 +83,11 @@ data class RecomputeResultResponse(
     val durationMs: Long,
 )
 
+data class ForecastRecomputeResponse(
+    val productsForecast: Int,
+    val generatedAt: Instant,
+)
+
 data class DemandForecastResponse(
     val uid: String,
     val productId: String,

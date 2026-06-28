@@ -197,29 +197,32 @@ trending to stock-out surface as reorder candidates; offline with empty mirror a
 still renders.
 
 ### Tests for User Story 2 ⚠️
-- [ ] T034 [P] [US2] (BE) Holt-Winters unit test on a synthetic seasonal series (level+trend+seasonality)
-  and moving-average fallback for sparse history (`.../ForecastServiceTest.kt`). **Deterministic
-  acceptance bar** (SC-007): on a held-out tail of the synthetic series, Holt-Winters MAPE MUST be at
-  least 20% lower than a naïve "same as last period" baseline; assert `method=MOVING_AVG` &
-  `confidence ≤ MEDIUM` when history < 2 seasonal cycles, `HOLT_WINTERS` & `confidence=HIGH` at ≥ 2
-  cycles. (R5)
+- [X] T034 [P] [US2] (BE) Holt-Winters unit test on a synthetic seasonal series (`DemandForecastingTest`).
+  DONE: held-out-week MAPE is ≤ 80% of the naïve "same as last period" baseline (SC-007 bar met);
+  method/confidence thresholds asserted (HOLT_WINTERS/HIGH at ≥2 cycles, MOVING_AVG/MEDIUM at 1–2,
+  MOVING_AVG/LOW under 1); non-negativity on a zero-heavy series. (R5)
 - [ ] T035 [P] [US2] (BE) Contract test for `GET /analytics/v1/forecasts/sync` — `ApiResponse<PageResponse>`,
   `last_sync`/paging, includes retired rows (`.../DemandForecastSyncControllerTest.kt`).
 - [ ] T036 [P] [US2] (MOB) `DemandForecastSyncDelegate` pull test (upsert + drop inactive + checkpoint
   advance) over in-memory Room (`feature/analytics/src/commonTest/.../ForecastSyncDelegateTest.kt`).
 
 ### Backend implementation (US2)
-- [ ] T037 [P] [US2] (BE) `DemandForecast` entity in `analytics/domain/model/` (data-model §1.2) +
-  `DemandForecastResponse` DTO + `asResponse()` (contracts/forecast-sync.md). 
-- [ ] T038 [US2] (BE) `DemandForecastRepository` with the `/sync` feed query
-  (`updated_at > last_sync ORDER BY updated_at ASC`, includes inactive) + indexes. (depends on T037)
-- [ ] T039 [US2] (BE) `ForecastService` (Holt-Winters fit + MA fallback) building the daily sales series
-  from finalized invoices/confirmed orders. (depends on T022)
-- [ ] T040 [US2] (BE) Forecast batch in `analytics/batch/` (extend the nightly job) writing
-  `DemandForecast` rows. (depends on T039, T038)
+- [X] T037 [P] [US2] (BE) `DemandForecast` entity (data-model §1.2) + `DemandForecastResponse` DTO +
+  `asResponse()`. DONE (with the foundation/migration in the first backend increment).
+- [X] T038 [US2] (BE) `DemandForecastRepository` with the `/sync` feed query
+  (`updatedAt >= last_sync ASC`) + indexes. DONE.
+- [X] T039 [US2] (BE) `ForecastService` building the per-product daily sales series from finalized
+  invoice line items (via `InvoiceAnalyticsQueryService`) and fitting `DemandForecasting` (additive
+  Holt-Winters + MA fallback), persisting/​upserting `DemandForecast` rows. (depends on T022)
+  Note: additive (not multiplicative) weekly seasonality — robust to zero-heavy retail series.
+- [~] T040 [US2] (BE) Forecast batch writing `DemandForecast` rows. (depends on T039, T038)
+  PARTIAL: a MANUAL per-workspace trigger `POST /analytics/v1/forecasts/recompute` is implemented; the
+  cross-tenant nightly `@Scheduled` batch is deferred with T025 (both need a workspace enumerator +
+  per-tenant context loop).
 - [ ] T041 [US2] (BE) `DemandSignalService` (public interface: avg daily demand + variability) +
-  publish `DemandForecastUpdatedEvent` after each batch (consumed by 027/inventory; analytics writes no
-  inventory tables — R6/FR-018). (depends on T040)
+  publish `DemandForecastUpdatedEvent`. DEFERRED (YAGNI): no consumer exists yet — feature 027 isn't
+  built. Forecasts are already exposed via the `/forecasts/sync` pull feed; add the event/signal when 027
+  needs it (R6/FR-018).
 - [X] T042 [US2] (BE) `DemandForecastController` `GET /analytics/v1/forecasts/sync` →
   `ApiResponse<PageResponse<DemandForecastResponse>>`. (depends on T038)
   DONE: controller + `DemandForecastReadService` (incremental `last_sync` paging, ASC). Rows are served
