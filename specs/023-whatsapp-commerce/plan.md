@@ -1,6 +1,6 @@
 # Implementation Plan: WhatsApp Commerce (conversational ordering)
 
-**Branch**: `claude/indian-retail-ecosystem-877med` (spec dir `023-whatsapp-commerce`) | **Date**: 2026-06-27 | **Spec**: [spec.md](./spec.md)
+**Branch**: `claude/whatsapp-commerce-specs-8z6g1q` (spec dir `023-whatsapp-commerce`) | **Date**: 2026-06-27 (clarifications applied 2026-06-28) | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/023-whatsapp-commerce/spec.md`
 
 ## Summary
@@ -19,6 +19,20 @@ into a management `Order` (`orderType="WHATSAPP"`). Like ONDC, **the live conver
 not offline-synced** — the merchant's app surface is config + inbox + fulfilment, and orders reach the app
 through the normal offline `order` `/sync`. Full rationale in [research.md](./research.md); entities in
 [data-model.md](./data-model.md); APIs in [contracts/](./contracts/).
+
+### Clarifications applied (2026-06-28)
+
+The spec's `/speckit.clarify` session resolved four decisions that this plan now reflects:
+
+1. **Pending merchant review** — a captured chat order is created in a `PENDING_MERCHANT_REVIEW` state
+   (FR-008a); it enters normal fulfilment only when the merchant accepts it (see Phase 1).
+2. **Per-variant catalog grain** — each purchasable variant/SKU of an `EcomListedProduct` is its own
+   Meta catalog entry / `WhatsAppCatalogItem` (FR-002); the id map is variant-keyed (see Phase 1, R5).
+3. **Human-takeover reply** — the merchant can send manual free-form replies within the 24h window
+   (FR-022a), served by `WhatsAppInboxController` (see Phase 1 / Project Structure `controller/`).
+4. **Transactional vs marketing opt-in** — customer-initiated contact / placing an order grants consent
+   for transactional + order-status (UTILITY) sends only; MARKETING merchant-initiated sends require a
+   separate explicit opt-in (FR-016); `WhatsAppOptInService` gates by template category (see Phase 2, R9).
 
 ## Technical Context
 
@@ -81,17 +95,23 @@ in Complexity Tracking.
 ```
 specs/023-whatsapp-commerce/
 ├── plan.md              # This file
-├── spec.md              # Feature specification
+├── spec.md              # Feature specification (clarified 2026-06-28)
 ├── research.md          # Phase 0 — design decisions + rationale
-├── data-model.md        # Phase 1 — entities, conversation state machine, Meta payload mappings
-├── quickstart.md        # Phase 1 — connect a WABA, sync catalog, run a browse→order→pay walkthrough
-├── contracts/
-│   ├── README.md
-│   ├── whatsapp-webhook.md      # GET verify + POST inbound (Meta contract)
-│   ├── whatsapp-config.md       # /whatsapp/v1/config (account, catalog sync, templates, opt-in)
-│   └── whatsapp-inbox.md        # conversation/inbox read + merchant reply
-└── tasks.md             # Phase 2 output (/speckit.tasks — NOT created here)
+├── tasks.md             # /speckit.tasks output (T001–T052 + T014a = 53 tasks)
+├── checklists/
+│   └── requirements.md  # spec-quality checklist
+├── data-model.md        # ⏳ NOT YET AUTHORED — deferred to tasks T048 (Polish)
+├── quickstart.md        # ⏳ NOT YET AUTHORED — deferred to tasks T049 (Polish)
+└── contracts/           # ⏳ NOT YET AUTHORED — deferred to tasks T048 (Polish)
+    ├── whatsapp-webhook.md      # GET verify + POST inbound (Meta contract)
+    ├── whatsapp-config.md       # /whatsapp/v1/config (account, catalog sync, templates, opt-in)
+    └── whatsapp-inbox.md        # conversation/inbox read + merchant reply
 ```
+
+> **Note (artifact ordering):** `data-model.md`, `quickstart.md`, and `contracts/` are intentionally
+> deferred to the Polish phase (tasks T048/T049) rather than authored before `tasks.md`. Entity and
+> payload detail currently lives in `research.md` (R4/R5/R12) and the Phase 1 entity list below; the
+> deferred docs formalize them. This is an accepted, documented ordering trade-off.
 
 ### Source Code (repository root)
 
@@ -152,12 +172,15 @@ fulfilment reuses `feature/order`.
 - **Inbound**: `WhatsAppWebhookController` (`POST`) → `MetaSignatureVerifier` → resolve workspace by
   `phone_number_id` → async `WhatsAppConversationService` state machine; persist `WhatsAppInboundMessage`
   (idempotent on `wamid`).
-- **Catalog**: `WhatsAppCatalogService` syncs `EcomListedProduct` → Meta Commerce catalog;
-  `WhatsAppCatalogItem` id map; `ProductCatalogChangedListener` keeps it fresh.
+- **Catalog**: `WhatsAppCatalogService` syncs `EcomListedProduct` → Meta Commerce catalog **one entry per
+  purchasable variant/SKU** (FR-002); `WhatsAppCatalogItem` is the variant-keyed id map;
+  `ProductCatalogChangedListener` keeps it fresh.
 - **Browse + cart + order**: interactive list/button/product messages via `CloudApiWhatsAppGateway`; on
   confirm, `WhatsAppOrderCaptureService` → reuse `EcomOrderIngestionService` → management `Order`
-  (`orderType="WHATSAPP"`, phone-matched `Customer`), idempotent on `ecomOrderRef`.
-- **Mobile**: connect WABA, catalog-sync toggle, conversation inbox (orders arrive via existing order sync).
+  (`orderType="WHATSAPP"`, phone-matched `Customer`, status **`PENDING_MERCHANT_REVIEW`**), idempotent on
+  `ecomOrderRef`. The merchant **accepts** the order to move it into normal fulfilment (FR-008a).
+- **Mobile**: connect WABA, catalog-sync toggle, conversation inbox **+ merchant manual free-form reply
+  within the 24h window** (FR-022a); orders arrive via the existing order sync.
 
 ### Phase 2 — Payment link, status loop, templates, opt-in
 - `WhatsAppTemplate` + `WhatsAppNotificationProvider`: outbound via `NotificationService`, template-vs-
@@ -166,7 +189,8 @@ fulfilment reuses `feature/order`.
   → "payment received" reply + advance conversation; COD path.
 - **Status loop**: `OrderStatusChangedListener` → window-aware status updates.
 - **Opt-in**: `WhatsAppOptInService` — opt-in capture, STOP/opt-out handling, gating of merchant-initiated
-  sends; auditable.
+  sends **by template category** (TRANSACTIONAL/UTILITY allowed for an existing order on implicit consent;
+  MARKETING requires a separate explicit opt-in — FR-016); auditable.
 
 ### Phase 3 — Campaigns, automation, BSP, multi-number
 - Bulk MARKETING template campaigns to opted-in customers (segment from `customer`/spec 022 analytics).

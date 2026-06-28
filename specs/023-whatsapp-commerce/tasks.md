@@ -26,6 +26,13 @@ because browsing/ordering (US1) requires a connected number and a synced catalog
 - **Backend tests**: `whatsapp/src/test/kotlin/com/ampairs/whatsapp/`
 - **Mobile (sibling repo `ampairs-app/`)**: `feature/whatsapp/src/commonMain/kotlin/com/ampairs/whatsapp/{data/api,domain,di,ui}/`
 
+> **⚠️ Two-repo scope:** Tasks **T022, T033, T047** are **mobile** work in the **separate `ampairs-app`
+> repo** and are **out of scope for this backend PR** — they are listed here only for end-to-end
+> traceability and MUST be executed/tracked on an `ampairs-app` branch (or filed as issues there), not on
+> this `ampairs` branch. Every other task (T001–T052 + the T014a isolation test = 50 backend tasks) is
+> backend work in this repo. A story's backend
+> tasks are independently completable without its mobile task.
+
 ---
 
 ## Phase 1: Setup (Shared Infrastructure)
@@ -55,8 +62,9 @@ because browsing/ordering (US1) requires a connected number and a synced catalog
 - [ ] T012 `WhatsAppWebhookController` in `whatsapp/.../controller/` — `GET /whatsapp/v1/webhook` returns `hub.challenge` on verify-token match; `POST /whatsapp/v1/webhook` verifies signature (T010), **fast-acks 200**, dispatches processing async (`@Async`/`ApplicationEventPublisher`). Documented non-`ApiResponse` external contract (plan Complexity Tracking).
 - [ ] T013 Add `/whatsapp/v1/webhook` to the `workspace` `SessionUserFilter` skip-list (`WebhookPathSecurityConfig` allow-list) so the Meta-facing webhook bypasses the `X-Workspace-ID`/JWT requirement.
 - [ ] T014 Tenant resolution + inbound dedup: resolve workspace from `metadata.phone_number_id` → `WhatsAppAccount.workspaceId`, run handling inside `TenantContextHolder.withTenant {}` (rule 05 — never in a service); persist `WhatsAppInboundMessage` idempotently on `wamid` (skip duplicates) before processing.
+- [ ] T014a [P] **Cross-workspace isolation test** `whatsapp/src/test/.../TenantIsolationTest.kt` (covers FR-021 / SC-007) — with two workspaces each owning a `WhatsAppAccount`/conversation/catalog item, assert that a webhook routed to workspace A's `phone_number_id` never reads or mutates workspace B's conversations, catalog mapping, or orders, and that `OwnableBaseDomain` tenant filtering blocks any cross-tenant repository read.
 
-**Checkpoint**: Webhook verifies, signature-checks, fast-acks, resolves tenant, and dedupes — stories can begin.
+**Checkpoint**: Webhook verifies, signature-checks, fast-acks, resolves tenant, dedupes, and proves tenant isolation — stories can begin.
 
 ---
 
@@ -78,7 +86,7 @@ because browsing/ordering (US1) requires a connected number and a synced catalog
 - [ ] T019 [US4] `WhatsAppCatalogService` in `whatsapp/.../service/` — push the workspace's `EcomListedProduct` set to the Meta Commerce catalog as one product per variant/SKU (retailer_id, name, price, currency=INR, image_url, availability, description); persist the `WhatsAppCatalogItem` id map; batch for thousands of items.
 - [ ] T020 [US4] `ProductCatalogChangedListener` in `whatsapp/.../listener/` — on `ProductCatalogChangedEvent`, re-sync affected catalog items (cross-module via event, not repository — rule 08).
 - [ ] T021 [US4] Catalog-sync toggle in `WhatsAppConfigController` — `catalogSyncEnabled` on/off on `WhatsAppAccount`.
-- [ ] T022 [P] [US4] **Mobile** (`ampairs-app`): `feature/whatsapp` module — `WhatsAppApi(+Impl)` + `ApiUrlBuilder.whatsappUrl(...)`, connect-WABA + catalog-sync-toggle + connection-status UI in `ui/`; `WhatsAppModule.kt` DI; `settings.gradle.kts` + `shared/` Routes/entry provider + `ModuleRegistry("whatsapp-commerce" → Route.WhatsApp)`.
+- [ ] T022 [P] [US4] **Mobile** (`ampairs-app` repo — out of scope for this backend PR; tracked for traceability): `feature/whatsapp` module — `WhatsAppApi(+Impl)` + `ApiUrlBuilder.whatsappUrl(...)`, connect-WABA + catalog-sync-toggle + connection-status UI in `ui/`; `WhatsAppModule.kt` DI; `settings.gradle.kts` + `shared/` Routes/entry provider + `ModuleRegistry("whatsapp-commerce" → Route.WhatsApp)`.
 
 **Checkpoint**: Merchant can connect, see status, share catalog (per variant), and disconnect.
 
@@ -105,7 +113,7 @@ because browsing/ordering (US1) requires a connected number and a synced catalog
 - [ ] T030 [US1] Customer match/create by phone via `CustomerService` (no duplicate customer) (FR-009); pricing/GST resolve through the ecom path (FR-011).
 - [ ] T031 [US1] Merchant-acceptance path — accept a `PENDING_MERCHANT_REVIEW` WhatsApp order so it enters normal fulfilment (FR-008a). Acceptance endpoint/action surfaced for the merchant (config/inbox or reuse order workflow).
 - [ ] T032 [US1] `WhatsAppInboxController` `/whatsapp/v1/inbox` — paginated conversation/message read (`ApiResponse`/`PageResponse`, `@EntityGraph`) **and** merchant manual free-form reply (human takeover) gated on the 24h window (FR-022/022a).
-- [ ] T033 [P] [US1] **Mobile** (`ampairs-app`): conversation inbox + merchant reply UI in `feature/whatsapp/ui/`; verify WhatsApp orders surface in the existing `feature/order` `/sync` pull (`orderType="WHATSAPP"`) — no new SyncDelegate (plan R11).
+- [ ] T033 [P] [US1] **Mobile** (`ampairs-app` repo — out of scope for this backend PR; tracked for traceability): conversation inbox + merchant reply UI in `feature/whatsapp/ui/`; verify WhatsApp orders surface in the existing `feature/order` `/sync` pull (`orderType="WHATSAPP"`) — no new SyncDelegate (plan R11).
 
 **Checkpoint** 🎯 **MVP COMPLETE**: A customer can order over WhatsApp; the merchant sees, accepts, and fulfils it.
 
@@ -116,6 +124,12 @@ because browsing/ordering (US1) requires a connected number and a synced catalog
 **Goal**: After confirmation, the customer gets a UPI payment link (or COD); on settlement the payment is recorded and the customer is notified. (FR-012, FR-013; reuses spec 016/013.)
 
 **Independent Test**: Place an order (US1), receive the payment link, complete payment; verify the order shows paid and the customer receives a confirmation message; verify COD proceeds without a link.
+
+> **⚠️ Precondition (external dependency):** This story consumes **spec 016 (UPI collection / payment
+> links)** and **spec 013 (payment ledger settlement event)**. Before starting T035, confirm both are
+> implemented and live (the `payment`-module UPI link API + the settlement event are available). If they
+> are not yet shipped, US2 is **blocked** — proceed with US1/US3/US5 first. The COD path (T037) has no
+> such dependency and can land independently.
 
 ### Tests for User Story 2
 
@@ -167,7 +181,7 @@ because browsing/ordering (US1) requires a connected number and a synced catalog
 - [ ] T044 [US5] `WhatsAppNotificationProvider` in `whatsapp/.../provider/` — implements the `notification` provider interface behind `NotificationChannel.WHATSAPP`; routes outbound through `NotificationService` (template + delivery tracking, mirrors `wamid`/status into `NotificationQueue.providerMessageId`).
 - [ ] T045 [US5] Template approval status — handle `message_template_status_update` webhook events → update `WhatsAppTemplate.status`.
 - [ ] T046 [US5] `WhatsAppOptInService` in `whatsapp/.../service/` — capture opt-in (implicit on customer-initiated/order = transactional consent; explicit flow = marketing consent), handle STOP/opt-out → `OPTED_OUT`, gate all merchant-initiated sends by category (marketing requires explicit opt-in; transactional allowed for an existing order), auditable (FR-016/017).
-- [ ] T047 [P] [US5] **Mobile** (`ampairs-app`): template list + opt-in stats UI in `feature/whatsapp/ui/`.
+- [ ] T047 [P] [US5] **Mobile** (`ampairs-app` repo — out of scope for this backend PR; tracked for traceability): template list + opt-in stats UI in `feature/whatsapp/ui/`.
 
 **Checkpoint**: All five stories independently functional; messaging is policy-compliant.
 
