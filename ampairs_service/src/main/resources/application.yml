@@ -476,7 +476,7 @@ agent:
   chat:
     # Provider used for models that match no provider's allow-list (or a blank model). One of the
     # provider ids below (anthropic / openrouter).
-    default-provider: ${AGENT_CHAT_DEFAULT_PROVIDER:anthropic}
+    default-provider: ${AGENT_CHAT_DEFAULT_PROVIDER:openrouter}
     anthropic:
       # Model used when the routed request's model isn't in this provider's allow-list.
       default-model: ${AGENT_CHAT_DEFAULT_MODEL:claude-sonnet-4-6}
@@ -487,8 +487,8 @@ agent:
       api-key: ${OPENROUTER_API_KEY:}
       base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api/v1}
       # Default to the free smart router; allow-list the free options the app can request.
-      default-model: ${OPENROUTER_DEFAULT_MODEL:openrouter/free}
-      allowed-models: ${OPENROUTER_ALLOWED_MODELS:openrouter/free,google/gemma-4-31b-it:free}
+      default-model: ${OPENROUTER_DEFAULT_MODEL:openrouter/owl-alpha}
+      allowed-models: ${OPENROUTER_ALLOWED_MODELS:openrouter/owl-alpha}
       # Optional ranking headers (OpenRouter leaderboards); blank → not sent.
       referer: ${OPENROUTER_REFERER:}
       title: ${OPENROUTER_TITLE:Ampairs}
