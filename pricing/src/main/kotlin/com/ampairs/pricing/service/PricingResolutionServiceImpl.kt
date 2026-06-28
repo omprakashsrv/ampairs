@@ -26,13 +26,13 @@ class PricingResolutionServiceImpl(
 
     @Transactional(readOnly = true)
     override fun resolve(request: PriceResolutionRequest): PriceResolutionResponse {
-        val now = Instant.now()
+        val asOf = request.asOfDate
         val zoneId = geoZoneService.zoneForPincode(request.pincode, request.state)
 
         val best = priceListRepository
             .findByChannelAndStatusAndActiveTrue(request.channel, PriceListStatus.ACTIVE)
             .asSequence()
-            .filter { withinWindow(it, now) && matches(it, request, zoneId) }
+            .filter { withinWindow(it, asOf) && matches(it, request, zoneId) }
             // most specific first → highest priority → most recently activated
             .sortedWith(
                 compareBy<PriceList> { specificityRank(it) }
@@ -42,7 +42,7 @@ class PricingResolutionServiceImpl(
             .firstOrNull()
 
         if (best != null) {
-            val item = pickItem(best.uid, request.productId, request.variantSku)
+            val item = pickItem(best.uid, request.productId, request.variantSku, asOf)
             if (item != null) {
                 val tiers = PricingJson.read<List<PriceTier>>(item.tiersJson, emptyList())
                 val applicable = tiers.filter { it.minQty <= request.quantity }.maxByOrNull { it.minQty }
@@ -68,9 +68,9 @@ class PricingResolutionServiceImpl(
         )
     }
 
-    private fun withinWindow(list: PriceList, now: Instant): Boolean {
-        if (list.startsAt != null && now.isBefore(list.startsAt)) return false
-        if (list.endsAt != null && now.isAfter(list.endsAt)) return false
+    private fun withinWindow(list: PriceList, asOf: Instant): Boolean {
+        if (list.startsAt != null && asOf.isBefore(list.startsAt)) return false
+        if (list.endsAt != null && asOf.isAfter(list.endsAt)) return false
         return true
     }
 
@@ -98,14 +98,28 @@ class PricingResolutionServiceImpl(
         else -> 6
     }
 
-    /** Variant-targeted item wins over a base-product item within the same list. */
-    private fun pickItem(priceListUid: String, productId: String, variantSku: String?): PriceListItem? {
-        val items = priceListItemRepository.findByPriceListIdAndProductIdAndActiveTrue(priceListUid, productId)
-        if (items.isEmpty()) return null
-        if (variantSku != null) {
-            items.firstOrNull { it.variantSku == variantSku }?.let { return it }
-        }
-        return items.firstOrNull { it.variantSku == null } ?: items.first()
+    /**
+     * Variant-targeted item wins over a base-product item within the same list. Among items in the
+     * same scope, the most recent version effective at [asOf] wins (Tally "Applicable From"), so a
+     * back-dated bill gets the price effective on its date and future-dated prices stay dormant.
+     */
+    private fun pickItem(priceListUid: String, productId: String, variantSku: String?, asOf: Instant): PriceListItem? {
+        val effective = priceListItemRepository
+            .findByPriceListIdAndProductIdAndActiveTrue(priceListUid, productId)
+            .filter { itemEffective(it, asOf) }
+        if (effective.isEmpty()) return null
+
+        val variantMatches = if (variantSku != null) effective.filter { it.variantSku == variantSku } else emptyList()
+        val baseMatches = effective.filter { it.variantSku == null }
+        val pool = variantMatches.ifEmpty { baseMatches.ifEmpty { effective } }
+        return pool.maxByOrNull { it.effectiveFrom ?: Instant.EPOCH }
+    }
+
+    /** A null effectiveFrom means "from the beginning"; effectiveTo is an exclusive upper bound. */
+    private fun itemEffective(item: PriceListItem, asOf: Instant): Boolean {
+        item.effectiveFrom?.let { if (asOf.isBefore(it)) return false }
+        item.effectiveTo?.let { if (!asOf.isBefore(it)) return false }
+        return true
     }
 
     private fun evaluate(p: AttributePredicate, req: PriceResolutionRequest): Boolean {

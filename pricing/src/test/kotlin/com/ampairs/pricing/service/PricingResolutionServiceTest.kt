@@ -23,6 +23,7 @@ import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import java.math.BigDecimal
+import java.time.Instant
 
 class PricingResolutionServiceTest {
 
@@ -86,6 +87,32 @@ class PricingResolutionServiceTest {
         }
         // qty 60 → ₹210
         assertEquals(21000, service.resolve(req(60)).effectiveUnitPrice.amountMinor)
+    }
+
+    @Test
+    fun `effective-dated item - back-dated asOf gets the old price, recent asOf gets the new price`() {
+        val l = list("PRL1") { customerGroupId = "DIST" }
+        val old = item("PRL1") { uid = "OLD"; unitPrice = BigDecimal("240.00"); effectiveFrom = Instant.parse("2026-01-01T00:00:00Z") }
+        val new = item("PRL1") { uid = "NEW"; unitPrice = BigDecimal("200.00"); effectiveFrom = Instant.parse("2026-06-01T00:00:00Z") }
+        whenever(priceListRepository.findByChannelAndStatusAndActiveTrue(SalesChannel.WHOLESALE, PriceListStatus.ACTIVE)).thenReturn(listOf(l))
+        whenever(priceListItemRepository.findByPriceListIdAndProductIdAndActiveTrue("PRL1", "RICE")).thenReturn(listOf(old, new))
+
+        // Bill dated March 2026 (between the two versions) → old ₹240.
+        assertEquals(24000, service.resolve(req(5) { copy(asOfDate = Instant.parse("2026-03-01T00:00:00Z")) }).effectiveUnitPrice.amountMinor)
+        // Bill dated Sept 2026 (after the price change) → new ₹200.
+        assertEquals(20000, service.resolve(req(5) { copy(asOfDate = Instant.parse("2026-09-01T00:00:00Z")) }).effectiveUnitPrice.amountMinor)
+    }
+
+    @Test
+    fun `future-effective item is dormant until its effectiveFrom (falls back to catalog)`() {
+        val l = list("PRL1") { customerGroupId = "DIST" }
+        val future = item("PRL1") { unitPrice = BigDecimal("200.00"); effectiveFrom = Instant.parse("2030-01-01T00:00:00Z") }
+        whenever(priceListRepository.findByChannelAndStatusAndActiveTrue(SalesChannel.WHOLESALE, PriceListStatus.ACTIVE)).thenReturn(listOf(l))
+        whenever(priceListItemRepository.findByPriceListIdAndProductIdAndActiveTrue("PRL1", "RICE")).thenReturn(listOf(future))
+
+        val r = service.resolve(req(5) { copy(asOfDate = Instant.parse("2026-03-01T00:00:00Z")) })
+        assertEquals(PriceSource.CATALOG_FALLBACK, r.source)
+        assertEquals(26000, r.effectiveUnitPrice.amountMinor)
     }
 
     @Test

@@ -6,6 +6,7 @@ import com.ampairs.pricing.config.Constants
 import com.ampairs.pricing.domain.enums.PriceSource
 import jakarta.validation.constraints.NotBlank
 import java.math.BigDecimal
+import java.time.Instant
 
 /**
  * Inputs to price resolution. The caller supplies the buyer's resolved segment attributes (group,
@@ -30,6 +31,13 @@ data class PriceResolutionRequest(
 
     val pincode: String? = null,
     val state: String? = null,
+
+    /**
+     * The date the price is resolved "as of" — the transaction/voucher date for billing (so a
+     * back-dated bill gets the price effective on that date), or now for real-time storefront pricing.
+     * Drives both price-list window and effective-dated item selection (Tally "Applicable From").
+     */
+    val asOfDate: Instant = Instant.now(),
 
     val customerAttributes: Map<String, String> = emptyMap(),
     val productAttributes: Map<String, String> = emptyMap(),

@@ -6,6 +6,7 @@ import com.ampairs.pricing.domain.model.PriceTier
 import com.ampairs.pricing.util.PricingJson
 import jakarta.validation.constraints.NotBlank
 import java.math.BigDecimal
+import java.time.Instant
 
 data class PriceTierRequest(
     val minQty: BigDecimal,
@@ -36,6 +37,10 @@ data class PriceListItemRequest(
 
     val tiers: List<PriceTierRequest> = emptyList(),
 
+    /** Effective dating (Tally "Applicable From"); null effectiveFrom = effective from the beginning. */
+    val effectiveFrom: Instant? = null,
+    val effectiveTo: Instant? = null,
+
     val active: Boolean = true,
     val refId: String? = null,
 )
@@ -49,9 +54,11 @@ data class PriceListItemResponse(
     val unitPrice: MoneyDto,
     val moq: BigDecimal?,
     val tiers: List<PriceTierResponse>,
+    val effectiveFrom: Instant?,
+    val effectiveTo: Instant?,
     val active: Boolean,
-    val createdAt: java.time.Instant?,
-    val updatedAt: java.time.Instant?,
+    val createdAt: Instant?,
+    val updatedAt: Instant?,
 )
 
 /** Apply a request, converting minor-unit money to the persisted `BigDecimal(19,4)` using [currency]. */
@@ -67,6 +74,8 @@ fun PriceListItem.applyRequest(request: PriceListItemRequest, currency: String):
         ?.map { PriceTier(it.minQty, MoneyDto(it.unitPriceMinor, currency).toBigDecimal()) }
         ?.sortedBy { it.minQty }
         ?.let { PricingJson.write(it) }
+    effectiveFrom = request.effectiveFrom
+    effectiveTo = request.effectiveTo
     active = request.active
     request.refId?.takeIf { it.isNotBlank() }?.let { refId = it }
 }
@@ -81,6 +90,8 @@ fun PriceListItem.asResponse(currency: String): PriceListItemResponse = PriceLis
     moq = moq,
     tiers = PricingJson.read<List<PriceTier>>(tiersJson, emptyList())
         .map { PriceTierResponse(it.minQty, MoneyDto.of(it.unitPrice, currency)!!) },
+    effectiveFrom = effectiveFrom,
+    effectiveTo = effectiveTo,
     active = active,
     createdAt = createdAt,
     updatedAt = updatedAt,

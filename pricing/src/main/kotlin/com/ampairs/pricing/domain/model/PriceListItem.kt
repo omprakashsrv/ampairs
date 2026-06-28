@@ -7,6 +7,7 @@ import jakarta.persistence.Entity
 import jakarta.persistence.Index
 import jakarta.persistence.Table
 import java.math.BigDecimal
+import java.time.Instant
 
 /**
  * A single product/variant entry within a [PriceList]: a base unit price, optional MOQ, and optional
@@ -45,6 +46,15 @@ class PriceListItem : OwnableBaseDomain() {
 
     @Column(name = "active", nullable = false)
     var active: Boolean = true
+
+    // ── effective dating (price-change history, Tally "Applicable From") ──────────────────────
+    /** Effective from this instant; null = effective from the beginning (back-compat for legacy rows). */
+    @Column(name = "effective_from")
+    var effectiveFrom: Instant? = null
+
+    /** Effective until this instant (exclusive); null = open-ended (the current price). */
+    @Column(name = "effective_to")
+    var effectiveTo: Instant? = null
 
     override fun obtainSeqIdPrefix(): String = Constants.PRICE_LIST_ITEM_PREFIX
 }
