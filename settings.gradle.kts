@@ -2,6 +2,7 @@ rootProject.name = "ampairs"
 
 include("core")
 include("notification")
+include("communication")
 include("auth")
 include("user")
 include("workspace")

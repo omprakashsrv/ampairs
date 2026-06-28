@@ -1,6 +1,9 @@
 # notification module
 
-Multi-channel notification delivery — SMS (MSG91 primary, AWS SNS fallback), push (Firebase).
+Multi-channel notification delivery — SMS (MSG91 primary, AWS SNS fallback), push (Firebase),
+email (SMTP). Also the structured-dispatch transport for the `communication` module
+(`NotificationDispatchService` enqueues; `NotificationDeliveryUpdatedEvent` reports terminal status
+back to the source module for its log + usage ledger).
 
 ## Key entity
 - `NotificationQueue` — recipient, message, channel, status (PENDING/SENT/FAILED/RETRYING/EXHAUSTED), retryCount, providerUsed, providerResponse

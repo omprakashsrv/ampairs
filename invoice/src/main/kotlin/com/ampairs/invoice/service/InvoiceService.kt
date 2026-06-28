@@ -124,7 +124,8 @@ class InvoiceService(
                     deviceId = getDeviceId(),
                     invoiceNumber = updatedInvoice.invoiceNumber,
                     customerName = updatedInvoice.customerName ?: "",
-                    totalAmount = updatedInvoice.totalCost
+                    totalAmount = updatedInvoice.totalCost,
+                    customerId = updatedInvoice.customerId,
                 )
             )
         } else {

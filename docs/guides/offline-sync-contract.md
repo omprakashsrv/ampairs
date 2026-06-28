@@ -100,10 +100,15 @@ fun bulkUpsert(requests: List<XRequest>): List<XResponse> = requests.map { req -
 
 `customer`, `customer_group` (`/groups/sync`), `customer_type` (`/types/sync`), `product`,
 `product` catalog (`/groups/sync`, `/categories/sync`, `/brands/sync`, `/sub-categories/sync`),
-`unit`, `setting` (store), `order`, `invoice`.
+`unit`, `setting` (store), `order`, `invoice`, `printing` (templates),
+`communication` (`/bindings/sync`, `/schedules/sync`, `/campaigns/sync`, `/preferences/sync`;
+`/logs/sync` is **pull-only**).
 
 ## Aggregate-grained on the contract
 
+- **communication templates** — `GET/POST /communication/v1/templates/sync` carries one
+  `MessageTemplate` aggregate (uid = template) bundling its per-channel/locale variants;
+  delete-by-absence for variants + `base_version` optimistic concurrency (same shape as `form`).
 - **form** — a single feed `GET/POST /form/v1/config/schema/sync` carries **one `FormSchema`
   aggregate per entityType** (uid = entityType; each aggregate bundles its ordered sections + fields).
   It is on the canonical `/sync` contract with two aggregate-specific nuances:
@@ -118,6 +123,8 @@ fun bulkUpsert(requests: List<XRequest>): List<XResponse> = requests.map { req -
 - **tax** — the server mints the workspace tax code; writes are `POST /codes/subscribe`,
   `/bulk-subscribe`, and `DELETE /codes/{id}` (unsubscribe). A subscription model, not client-authored
   UID-keyed rows, so a bulk `/sync` push does not apply.
+- **communication credentials** — workspace provider secrets are managed via an authenticated
+  write-only API (`/communication/v1/credentials`), never synced (secrets must not reach the device).
 - **file** — binary image upload via multipart `POST /images/{type}/{uid}`, entity-scoped `GET`, per-image
   `DELETE`. Binary can't ride a JSON `List<T>` body, and it's UI-invoked, not central-sync.
 

@@ -75,6 +75,10 @@ class NotificationServiceTest {
             notificationDatabaseService,
             props,
             devicePushTokenPort,
+            org.mockito.kotlin.mock(),
+            org.mockito.kotlin.mock(),
+            org.mockito.kotlin.mock(),
+            org.mockito.kotlin.mock(),
         )
     }
 

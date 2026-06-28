@@ -71,6 +71,10 @@ class Customer : OwnableBaseDomain() {
     @Column(name = "country", length = 20, nullable = false)
     var country: String = "India"
 
+    /** Preferred language/locale for communications (e.g. "en", "hi"); null → workspace/template default. */
+    @Column(name = "locale", length = 16)
+    var locale: String? = null
+
     @Column(name = "location")
     var location: Point? = null
 

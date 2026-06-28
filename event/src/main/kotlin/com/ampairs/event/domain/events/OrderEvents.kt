@@ -11,7 +11,9 @@ class OrderCreatedEvent(
     override val deviceId: String,
     val orderNumber: String,
     val customerName: String,
-    val totalAmount: Double
+    val totalAmount: Double,
+    /** Customer uid for downstream consumers (e.g. communication transactional sends). */
+    val customerId: String? = null,
 ) : BaseEntityEvent(source, workspaceId, entityId, userId, deviceId) {
 
     override fun getChanges(): Map<String, Any> {

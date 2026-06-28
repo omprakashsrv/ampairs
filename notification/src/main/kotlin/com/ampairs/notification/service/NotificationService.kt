@@ -36,6 +36,10 @@ class NotificationService(
     private val props: NotificationProperties,
     // Optional — resolved from the subscription module when present; absent in isolated tests.
     private val devicePushTokenPort: ObjectProvider<DevicePushTokenPort>,
+    private val emailNotificationProvider: com.ampairs.notification.provider.email.EmailNotificationProvider,
+    private val eventPublisher: org.springframework.context.ApplicationEventPublisher,
+    private val whatsAppNotificationProvider: com.ampairs.notification.provider.whatsapp.WhatsAppNotificationProvider,
+    private val credentialResolver: com.ampairs.notification.credential.WorkspaceChannelCredentialResolver,
 ) {
 
     private val logger = LoggerFactory.getLogger(NotificationService::class.java)
@@ -316,11 +320,22 @@ class NotificationService(
      */
     @Async
     fun processSingleNotification(notification: NotificationQueue) {
+        // Background send — establish the row's tenant so @TenantId lookups (credential resolution,
+        // workspace provider selection) target the right workspace, then restore it in finally.
+        val priorTenant = com.ampairs.core.multitenancy.TenantContextHolder.getCurrentTenant()
+        com.ampairs.core.multitenancy.TenantContextHolder.setCurrentTenant(notification.ownerId)
         try {
             logger.debug(
                 "Processing notification: {} for {} via {}",
                 notification.uid, notification.recipient, notification.channel
             )
+
+            // Resolve credential attribution (which workspace credential / billing mode this send uses)
+            // so it is recorded on the row and rides the delivery event. Secret use happens in the provider.
+            runCatching { credentialResolver.resolve(notification.channel) }.getOrNull()?.let { attribution ->
+                notification.credentialUid = attribution.credentialUid
+                notification.billingMode = attribution.billingMode
+            }
 
             val providers = getProvidersForChannel(notification.channel)
             var lastResult: NotificationResult? = null
@@ -337,11 +352,13 @@ class NotificationService(
                     notification.uid
                 )
 
-                // Call external API outside of database transaction
+                // Call external API outside of database transaction.
+                // For EMAIL the subject travels in `subject`; reuse the title slot so providers that
+                // take a title (push) and a subject (email) share one signature.
                 val result = provider.sendNotification(
                     notification.recipient,
                     notification.message,
-                    notification.title,
+                    notification.title ?: notification.subject,
                     parseDataPayload(notification.dataPayload),
                 )
                 lastResult = result
@@ -349,6 +366,7 @@ class NotificationService(
                 if (result.success) {
                     // Update database in separate short transaction
                     notificationDatabaseService.updateNotificationAsSent(notification, result)
+                    publishDeliveryUpdate(notification, "SENT", result.messageId, null)
                     logger.info("Notification sent successfully via {}: {}", result.providerName, notification.uid)
                     return
                 } else {
@@ -373,6 +391,7 @@ class NotificationService(
                     lastResult.errorMessage,
                     lastResult.providerResponse
                 )
+                publishDeliveryUpdate(notification, "FAILED", null, lastResult.errorMessage)
             } else {
                 notificationDatabaseService.updateNotificationAsFailed(
                     notification,
@@ -380,6 +399,7 @@ class NotificationService(
                     "No providers available",
                     null
                 )
+                publishDeliveryUpdate(notification, "FAILED", null, "No providers available")
             }
 
             logger.error("Notification failed with all providers: {}", notification.uid)
@@ -393,18 +413,50 @@ class NotificationService(
                 "System error: ${e.message}",
                 null
             )
+        } finally {
+            if (priorTenant != null) {
+                com.ampairs.core.multitenancy.TenantContextHolder.setCurrentTenant(priorTenant)
+            } else {
+                com.ampairs.core.multitenancy.TenantContextHolder.clearTenantContext()
+            }
         }
     }
 
     /**
-     * Get providers for a specific channel
+     * Notify the originating module (e.g. communication) of a terminal delivery outcome so it can
+     * update its own log + usage ledger. No-op for rows without a source module (OTP/push internal).
+     * Credential attribution (credentialUid/billingMode) is resolved on the send path and carried here.
      */
+    private fun publishDeliveryUpdate(
+        notification: NotificationQueue,
+        status: String,
+        providerMessageId: String?,
+        error: String?,
+    ) {
+        val sourceModule = notification.sourceModule ?: return
+        val sourceRef = notification.sourceRef ?: return
+        runCatching {
+            eventPublisher.publishEvent(
+                com.ampairs.notification.event.NotificationDeliveryUpdatedEvent(
+                    sourceModule = sourceModule,
+                    sourceRef = sourceRef,
+                    status = status,
+                    providerMessageId = providerMessageId,
+                    error = error,
+                    credentialUid = notification.credentialUid,
+                    providerAccountRef = null,
+                    billingMode = notification.billingMode,
+                )
+            )
+        }.onFailure { logger.warn("Failed to publish delivery update for {}: {}", notification.uid, it.message) }
+    }
+
     private fun getProvidersForChannel(channel: NotificationChannel): List<NotificationProvider> {
         return when (channel) {
             NotificationChannel.SMS -> getSmsProvidersInOrder()
             NotificationChannel.PUSH_NOTIFICATION -> listOf(fcmPushProvider)
-            NotificationChannel.EMAIL -> emptyList() // TODO: Implement email providers
-            NotificationChannel.WHATSAPP -> emptyList() // TODO: Implement WhatsApp providers
+            NotificationChannel.EMAIL -> listOf(emailNotificationProvider)
+            NotificationChannel.WHATSAPP -> listOf(whatsAppNotificationProvider)
             else -> emptyList()
         }
     }

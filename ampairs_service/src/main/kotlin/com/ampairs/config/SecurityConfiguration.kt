@@ -33,6 +33,9 @@ private val PUBLIC_PATHS = arrayOf(
     "/core/v1/app-updates/check",
     "/core/v1/app-updates/download/**",
     "/subscription/v1/webhooks/**",
+    "/notification/v1/webhooks/**",       // provider delivery callbacks (signature-verified, not header-auth)
+    "/communication/v1/unsubscribe",      // public token-scoped unsubscribe (POST)
+    "/communication/v1/unsubscribe/**",   // public token-scoped unsubscribe (GET page)
     "/error",
     "/ws/**",    // WebSocket upgrade (direct path)
     "/api/ws/**" // WebSocket upgrade via DispatcherServlet (spring.mvc.servlet.path=/api)
