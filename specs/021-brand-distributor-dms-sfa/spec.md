@@ -28,6 +28,16 @@ business has **explicitly consented** to share; and the rep app must keep workin
 
 Reference systems in this space: BeatRoute, Bizom, FieldAssist.
 
+## Clarifications
+
+### Session 2026-06-28
+
+- Q: When a distributor accepts a brand's link, what retailer-level visibility should the brand get by default? → A: Coded/aggregated outlets by default; identified-retailer sharing (name/area) is an explicit opt-in on the link scope, and full contact PII is never shared.
+- Q: How current must the brand's secondary-sales / stock figures be? → A: Hybrid — each qualifying distributor sale/stock change triggers a snapshot rebuild, coalesced/debounced to at most once every ~5 minutes per distributor; brand figures are therefore at most ~5 minutes stale.
+- Q: Should outlet check-in enforce proximity to the outlet's location? → A: Capture + flag — compute distance from the captured location to the outlet and flag/score visits outside a configurable radius, but never block the check-in.
+- Q: May a rep visit outlets not on today's plan or register a new retailer in the field? → A: Yes — ad-hoc visits to any of the distributor's outlets are allowed, and a rep may register a new retailer in the field (offline); all stays scoped to the rep's own distributor, and adherence is still measured against the plan with ad-hoc stops reported separately.
+- Q: How is a primary order (brand → distributor) placed across the link? → A: Handshake — the brand records the order in its own tenant addressed to the linked distributor; it surfaces to the distributor as an inbound order over the link, which the distributor confirms, becoming a normal order in the distributor's tenant (no direct cross-tenant write).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Field rep runs the daily beat offline (Priority: P1)
@@ -228,6 +238,9 @@ on both sides.
 - **Outlet on a beat that no longer exists as a customer**: A retailer is deactivated by the distributor —
   it should drop off future beats without breaking already-captured history.
 - **Empty network**: A brand with no accepted links sees empty dashboards, not errors.
+- **Location unavailable or out-of-radius at check-in**: GPS is off, denied, or imprecise, or the rep is
+  beyond the outlet's radius — the visit is still recorded and marked (no location / out-of-radius), never
+  blocked.
 - **Scheme with no qualifying sales**: Produces a zero claim, not an error or a negative figure.
 
 ## Requirements *(mandatory)*
@@ -241,7 +254,9 @@ on both sides.
 - **FR-002**: The system MUST allow a distributor to accept or decline a pending invitation, and MUST share
   no data between the two businesses until the invitation is accepted.
 - **FR-003**: Each link MUST record an agreed sharing scope that governs what categories of data (e.g.
-  secondary sales, stock, whether outlets are identified or coded) the brand may see.
+  secondary sales, stock, whether outlets are identified or coded) the brand may see. By default a newly
+  accepted link shares outlets only as coded/aggregated; sharing identified retailers (name/area) is an
+  explicit opt-in the distributor enables on the link scope, and full retailer contact PII is never shared.
 - **FR-004**: The system MUST allow a distributor to revoke an active link at any time, after which the brand
   can access no further data from that distributor.
 - **FR-005**: The system MUST keep each business an independent tenant — joining a network MUST NOT merge
@@ -268,12 +283,20 @@ on both sides.
   offline, persisting locally and confirming to the rep without requiring a network connection.
 - **FR-014**: The system MUST automatically upload locally captured rep data when connectivity returns, with
   each record appearing exactly once even across retries, and without overwriting newer data.
-- **FR-015**: A rep MUST be restricted to the outlets on their assigned beats and MUST NOT see or act on
-  outlets outside their assignment.
+- **FR-015**: A rep's planned day is driven by their assigned beats, but a rep MAY make ad-hoc (unplanned)
+  visits to any outlet belonging to their own distributor. A rep MUST remain scoped to their own
+  distributor's data and MUST NOT see or act on another distributor's or another business's outlets.
+- **FR-015a**: A rep MUST be able to register a new retailer outlet in the field (offline) into the
+  distributor's customer records and immediately visit/take an order at it; the new outlet syncs like any
+  other offline-authored record.
 - **FR-016**: The system MUST capture the location and time of visits and attendance at the moment of
   authoring on the device.
+- **FR-016a**: The system MUST compare a visit's captured location to the outlet's known location and flag
+  (or score) visits that fall outside a configurable radius, for reporting. It MUST NOT block check-in on
+  proximity — an out-of-radius or location-unavailable check-in is still recorded, marked accordingly.
 - **FR-017**: The system MUST compute beat adherence (planned versus actual visits, including visit
-  completion and on-time measures) for reporting.
+  completion and on-time measures) for reporting, counting ad-hoc (unplanned) visits separately from
+  planned-visit adherence.
 
 #### Brand DMS visibility (secondary sales, stock, targets)
 
@@ -287,12 +310,19 @@ on both sides.
   secondary sales and stock.
 - **FR-022**: Brand-facing figures MUST self-correct when a distributor records or backdates a sale or stock
   change, with no double-counting and no stale totals, and MUST NOT require live access into the
-  distributor's private records during normal viewing.
+  distributor's private records during normal viewing. Each qualifying distributor sale or stock change MUST
+  trigger a snapshot rebuild, coalesced to at most once every ~5 minutes per distributor, so brand-facing
+  figures are at most ~5 minutes behind the distributor's recorded data.
 - **FR-023**: When the agreed scope shares only coded or aggregated outlets, the brand MUST NOT receive raw
   retailer contact details.
 - **FR-024**: The system MUST allow targets to be set per tier and grain — brand→distributor (primary) and
   distributor/rep→beat (secondary) — over a period and product/area, and MUST compute achievement against
   target from the same sales records used elsewhere.
+- **FR-024a**: The system MUST let a brand place a primary order against a linked distributor by recording the
+  order in the brand's own tenant; the order MUST surface to the distributor as an inbound order over the
+  active link for the distributor to confirm, upon which it becomes a normal order in the distributor's
+  tenant. The system MUST NOT write the order directly into the distributor's tenant without that
+  confirmation, and primary-order placement MUST require an active link.
 - **FR-025**: A rep MUST be able to see a personal scorecard of their own achievement against their target.
 
 #### Trade schemes & claims (financial)
@@ -326,16 +356,20 @@ on both sides.
 - **Trade Link**: The explicit, consented connection between one brand and one distributor, carrying status
   (pending / active / revoked) and the agreed sharing scope. The sole edge across which any data flows
   between the two businesses.
-- **Network Retailer**: A distributor's retail outlet (one of its existing customers) optionally surfaced to a
-  linked brand by code (or with details, if the scope allows).
+- **Network Retailer**: A distributor's retail outlet (one of its existing customers) surfaced to a linked
+  brand by code by default, or with identified details (name/area, never full contact PII) when the link
+  scope explicitly opts in.
 - **Beat**: A named route owning an ordered list of outlets with visit sequence and scheduled day(s).
 - **Beat Outlet**: The membership of a retailer outlet in a beat, with its sequence and visit day.
 - **Journey Plan (PJP)**: A rep's recurring weekly assignment of beats — the planned calendar of routes.
 - **Planned Visit**: An expected stop for a given day derived from the journey plan.
-- **Visit**: An actual rep stop at an outlet, with location, time, outcome, notes, and any order taken
-  (captured offline).
+- **Visit**: An actual rep stop at an outlet, with location, time, outcome, notes, any order taken, and a
+  proximity flag/score (distance from the outlet's known location; out-of-radius visits are flagged, not
+  blocked) — captured offline.
 - **Attendance**: A rep's check-in / check-out events with location and time.
 - **Field Order**: An order taken at the retailer counter, flowing into the distributor's order processing.
+- **Primary Order**: A brand → distributor order recorded in the brand's tenant and confirmed by the
+  distributor over the active link, becoming a normal order in the distributor's tenant on confirmation.
 - **Sales Target**: A target by tier and grain (period × product/area × distributor or rep/beat) against which
   achievement is measured.
 - **Secondary Sales (aggregate)**: A published, point-in-time rollup of distributor→retailer sales by product
@@ -371,20 +405,26 @@ on both sides.
   residual visibility.
 - **SC-010**: Beat adherence (planned vs actual visits) can be reported for any rep and period from captured
   data.
+- **SC-011**: A qualifying distributor sale or stock change is reflected in the brand's secondary-sales /
+  stock view within ~5 minutes, and a backdated or corrected distributor sale is reflected with correct
+  (non-double-counted) totals within the same window.
 
 ## Assumptions
 
 - **Both tiers run Ampairs**: A distributor uses Ampairs as a normal single-tier business today; a brand also
   runs Ampairs. The feature links existing tenants rather than importing external businesses.
-- **Retailers are existing customers**: Outlets on a beat are the distributor's existing customer records; the
-  feature does not introduce a separate retailer master.
+- **Retailers are the distributor's customers**: Outlets on a beat are the distributor's customer records; the
+  feature does not introduce a separate retailer master. Reps may add new retailers in the field (offline)
+  into the distributor's customer records — these are still ordinary customers, not a parallel master.
 - **Secondary sales reuse existing sales documents**: Distributor→retailer sales are the distributor's normal
   orders/invoices, tagged and rolled up — not re-entered.
 - **Sharing is published, not live**: The brand reads shared aggregates the distributor publishes under the
   link; the brand does not query the distributor's live records directly during normal viewing. This keeps
   the brand's view resilient to the distributor being offline and keeps the consent boundary auditable.
-- **Default outlet sharing is coded/aggregated**: Unless the link scope explicitly grants it, the brand sees
-  outlets by code or aggregated area, not raw retailer PII (data-minimisation default).
+- **Default outlet sharing is coded/aggregated**: A newly accepted link shares outlets only as coded/
+  aggregated by default. Sharing identified retailers (name/area) is an explicit opt-in the distributor
+  enables on the link scope; full retailer contact PII is never shared regardless of scope
+  (data-minimisation default).
 - **Tertiary sales (retailer→consumer)** are out of scope for the initial phases and are estimated only later
   where data allows.
 - **Phasing**: Delivery is phased — P1 = the distributor SFA rep app + link/consent foundation; P2 = brand
