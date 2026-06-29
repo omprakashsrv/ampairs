@@ -79,6 +79,12 @@ class TradeLinkService(
             brandWorkspaceId, distributorWorkspaceId, LinkStatus.ACCEPTED,
         )
 
+    /** All ACCEPTED links where this workspace is the distributor — the brands it shares up to. */
+    @Transactional(readOnly = true)
+    fun acceptedLinksForDistributor(distributorWorkspaceId: String): List<TradeLink> =
+        linkRepository.findByDistributorWorkspaceId(distributorWorkspaceId)
+            .filter { it.status == LinkStatus.ACCEPTED }
+
     fun require(uid: String): TradeLink =
         linkRepository.findByUid(uid) ?: throw TradeException("trade link $uid not found")
 
