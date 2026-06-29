@@ -195,7 +195,7 @@ incrementally mutated.
 | skuUid | String | the **distributor's** source product uid (from the distributor's order/invoice docs) |
 | attributedBrandWorkspaceId | String? | the brand this row is attributed to **as of sale time** (point-in-time) via Hop A (`NetworkBrand`); null = not attributed to any brand (other-brand/untagged) → excluded from brand reads |
 | brandProductUid / brandSkuCode | String? | set only where a CONFIRMED Hop B (`NetworkProduct`) mapping exists; attributed rows with null here are **counted** in the brand's aggregated "unmapped" bucket, never dropped (FR-018b) |
-| outletCode / areaCode | String? | per grain; outlet only when scope IDENTIFIED-eligible (still coded) |
+| outletCode / areaCode | String? | per grain. `areaCode` is derived from the **retailer outlet's `pincode`** (the `customer.pincode` on the sale) — a national standard, so it is **comparable across distributors without any mapping**; coarser rollup levels (city / district / state) derive from the same address. `outletCode` only when scope IDENTIFIED-eligible (still coded). Optional: a brand-defined **sales territory** (a grouping of pincodes) may overlay this for the brand's own geography — see §3 note. |
 | qty | BigDecimal | summed secondary qty |
 | value | BigDecimal | summed secondary value |
 | version | Long | bumped on each recompute |
@@ -210,7 +210,7 @@ Read by the brand only through `CrossTenantReadGuard` (active link + scope.share
 | skuUid | String | the **distributor's** source product uid (from the distributor's inventory) |
 | attributedBrandWorkspaceId | String? | brand attributed via Hop A (`NetworkBrand`); null = other-brand/untagged → excluded |
 | brandProductUid / brandSkuCode | String? | set only where a CONFIRMED Hop B mapping exists; attributed stock with null here is counted in the aggregated "unmapped" bucket, never dropped (FR-018b) |
-| warehouseCode / areaCode | String? | grain |
+| warehouseCode / areaCode | String? | grain — stock is held at a **warehouse**, so `warehouseCode` is the natural grain; `areaCode`, if used, derives from the **warehouse's pincode** (not a retailer area). |
 | quantityOnHand | BigDecimal | from distributor `inventory` |
 | version | Long | bump on recompute |
 | asOf | Instant | |
@@ -307,3 +307,10 @@ DRAFT→SUBMITTED; brand owns APPROVED/REJECTED/SETTLED.
   are **counted** in a single aggregated "unmapped" bucket, never dropped (FR-018b). Enums:
   `DesignationStatus ∈ {ACTIVE, REMOVED}`; `MatchSource ∈ {AUTO_BARCODE, AUTO_SKU, MANUAL}` (no HSN);
   `MappingStatus ∈ {SUGGESTED, CONFIRMED}`.
+- The **area** dimension of secondary-sales (and any area-grained read) is derived from the **retailer
+  outlet's `pincode`** (`customer.pincode` on each sale), with city/district/state as coarser rollup levels.
+  Because pincode is a national standard, area rolls up **across distributors without a mapping** (unlike
+  SKUs). A brand MAY optionally define **sales territories** (`BrandTerritory`: a named grouping of pincodes,
+  brand-tenant) to re-aggregate the same pincode-keyed data into its own geography — an optional overlay, not
+  required for the standard area rollup. Distributor-stock area, if surfaced, derives from the **warehouse's**
+  pincode, not a retailer area.

@@ -28,7 +28,8 @@ products are excluded. Where a CONFIRMED Hop B (`NetworkProduct`) mapping exists
 `brand_product_uid`/`brand_sku_code` and cross-distributor totals sum by `brand_product_uid` (same SKU coded
 differently across distributors rolls up correctly); attributed sales **without** a Hop B mapping are returned
 as a single aggregated "unmapped" row per period/grain (`brand_product_uid: null`), counted not dropped
-(FR-018b).
+(FR-018b). `area_code` is the **retailer outlet's pincode** (city/district/state are coarser rollups) — a
+national standard, so the same `area_code` aggregates across distributors with no mapping (FR-020a).
 `distributor_workspace_id=all-linked` aggregates across every ACCEPTED link of the calling brand; a
 distributor with no active link is excluded (SC-004/SC-005). No active link → `ConsentRequiredException`.
 

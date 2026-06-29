@@ -328,6 +328,12 @@ on both sides.
 - **FR-020**: The system MUST present a brand with each linked distributor's on-hand stock for products
   attributed to the brand (Hop A), as of a stated point in time, scoped to active links only; itemized by the
   brand's SKU where Hop B mapping exists, aggregated "unmapped" otherwise; other-brand/untagged excluded.
+- **FR-020a** (geography dimension): The **area** breakdown of secondary sales MUST be derived from the
+  **retailer outlet's pincode** (and coarser city/district/state rollups from the same address), so that area
+  totals are **comparable across distributors without any per-distributor area mapping** (pincode is a
+  national standard). The system MAY additionally let a brand define **sales territories** (named groupings of
+  pincodes) to re-aggregate the same data into the brand's own geography. Distributor-stock area, if shown,
+  derives from the warehouse's pincode, not a retailer area.
 - **FR-021**: The system MUST surface replenishment signals (e.g. days-of-stock, out-of-stock) derived from
   secondary sales and stock.
 - **FR-022**: Brand-facing figures MUST self-correct when a distributor records or backdates a sale or stock

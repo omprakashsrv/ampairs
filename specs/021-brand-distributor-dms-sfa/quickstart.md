@@ -21,6 +21,26 @@ POST /trade/v1/links/{uid}/accept   X-Workspace-ID: D   → status ACCEPTED
 Before acceptance, any brand snapshot read returns 403 `ConsentRequiredException`. After acceptance, the
 brand can read only what the scope allows.
 
+## 1b. Designate the brand label, then (optionally) map SKUs
+The distributor carries many brands and already tags products with its own in-catalog brand labels
+(`ProductBrand`). To attribute sales to Brand B, the distributor designates which label = Brand B:
+```
+# Hop A (required): designate a ProductBrand label for the linked brand
+POST /trade/v1/network-brands   X-Workspace-ID: D
+  { "link_uid": "TLN...", "distributor_product_brand_uid": "PBR-nestle" }   → status ACTIVE
+# Brand B can see the designation read-only:
+GET  /trade/v1/network-brands?link_uid=TLN...   X-Workspace-ID: B
+```
+Now every D product under that label attributes to Brand B (point-in-time, as of each sale); other brands'
+products never reach Brand B. Sales with no SKU mapping still count, under an aggregated "unmapped" total.
+```
+# Hop B (optional): reconcile specific products to Brand B's SKUs for SKU-grain itemization
+GET  /trade/v1/brand-catalog?link_uid=TLN...    X-Workspace-ID: D   # read Brand B's published catalog
+POST /trade/v1/network-products X-Workspace-ID: D
+  { "link_uid": "TLN...", "distributor_product_uid": "PRD...", "brand_product_uid": "PRD...",
+    "brand_sku_code": "BRX-12", "match_source": "AUTO_BARCODE" }    → status CONFIRMED
+```
+
 ## 2. Rep runs the beat — OFFLINE (the SFA core loop)
 On the rep's device (airplane mode):
 1. Open **Today's Beat** → planned outlets in sequence (from PJP/PlannedVisit, pulled earlier).
@@ -52,8 +72,11 @@ enqueues a rebuild, **coalesced to ≤ once per ~5 min per distributor**. The br
 GET /trade/v1/snapshots/secondary-sales?distributor_workspace_id=all-linked&grain=SKU_PERIOD&period_from=2026-06&period_to=2026-06
   X-Workspace-ID: B  → aggregated qty/value by SKU × month across all ACCEPTED links
 ```
-Outlets appear as `outlet_code` only (scope CODED). A backdated/cancelled D invoice bumps the snapshot
-`version` within the same window — totals self-correct, no double count (SC-005).
+Only Brand B's products appear (attributed via the Hop A designation); SKU-mapped ones itemize by brand SKU,
+the rest fall into an aggregated "unmapped" total. With `grain=SKU_PERIOD_AREA`, `area_code` is the retailer's
+**pincode**, so the same area aggregates across distributors with no mapping. Outlets appear as `outlet_code`
+only (scope CODED). A backdated/cancelled D invoice bumps the snapshot `version` within the same window —
+totals self-correct, no double count (SC-005).
 
 ## 5. Distributor stock & replenishment (brand)
 ```

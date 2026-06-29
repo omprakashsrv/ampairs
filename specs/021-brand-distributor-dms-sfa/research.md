@@ -251,6 +251,23 @@ Five decisions from `/speckit.clarify` are now binding; each refines an earlier 
   `brandSkuCode` resolved via confirmed mappings; brand reads filter to confirmed-mapped products (unmapped
   excluded — closes the competitor-leakage hole, FR-018a/018b). Scheme eligibility, product targets, and the
   primary-order handshake all reference the brand SKU through this map.
+- **R13.7 Two-level product linking + geography (refines R13.6; spec session 2026-06-29)** — **Decision**:
+  split linking into **Hop A** (attribution) + **Hop B** (SKU identity), and define the area dimension.
+  **Hop A** = `NetworkBrand`: the distributor designates its **existing in-catalog brand label**
+  (`ProductBrand`, which products already carry via `Product.brandId`) ↔ the brand workspace; this decides
+  *whose* product, is **point-in-time** (attribution fixed as-of-sale; re-tag affects only future sales), and
+  is distributor-controlled / brand-read-only. All the brand's products **count**, including ones with no SKU
+  match (aggregated "unmapped" bucket) — superseding R13.6's "confirmed-mapped only / exclude unmapped", which
+  **undercounted** the brand until every SKU was mapped. **Hop B** = `NetworkProduct` (optional): reconciles a
+  distributor product to the brand's specific SKU, auto-matched by **barcode/SKU** (**not HSN** — HSN is a tax
+  attribute, not on `Product`). **Geography**: the AREA dimension derives from the retailer outlet's
+  **pincode** (city/district/state coarser rollups) — a national standard, so it aggregates across
+  distributors with **no** area mapping (unlike SKUs); an optional brand `BrandTerritory` (pincode groupings)
+  overlays the brand's own geography. **Rationale**: reuses the existing `ProductBrand` (cheap, complete
+  attribution) and the existing `customer.pincode` (free cross-distributor geography); SKU/territory mapping
+  become optional refinements rather than prerequisites. **Alternatives rejected**: single-level SKU-only
+  (undercounts, ignores existing brand label); per-distributor area codes / a `NetworkArea` map (unnecessary —
+  pincode already normalizes nationally). Full detail in the product-brand-attribution sub-spec.
 
 ---
 
@@ -275,4 +292,5 @@ Five decisions from `/speckit.clarify` are now binding; each refines an earlier 
 | Geo at check-in | Capture + flag out-of-radius; never block (R13.3) |
 | Ad-hoc & new outlet | Unplanned visits + offline new-retailer, distributor-scoped (R13.4) |
 | Primary-order placement | Brand-tenant order → link → distributor confirm handshake (R13.5) |
-| Cross-workspace product identity | `NetworkProduct` map; brand publishes catalog, distributor maps (GTIN-assisted); brand view = confirmed-mapped products only (R13.6) |
+| Cross-workspace product identity | Two-level: Hop A `NetworkBrand` attribution (reuse `ProductBrand`, count incl. unmapped, point-in-time) + optional Hop B `NetworkProduct` SKU map (barcode/SKU) (R13.6 → **R13.7**) |
+| Geography / area dimension | Area = retailer `pincode` (city/state rollups), comparable across distributors with no mapping; optional brand territory overlay (R13.7) |
