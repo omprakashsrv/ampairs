@@ -58,6 +58,7 @@ dependencies {
     implementation(project(mapOf("path" to ":agent")))
     implementation(project(mapOf("path" to ":sfa")))
     implementation(project(mapOf("path" to ":trade")))
+    implementation(project(mapOf("path" to ":dms")))
 
     // Spring Boot starters
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -126,7 +127,7 @@ tasks.withType<Test> {
 val migrationModules = listOf(
     "agent", "auth", "business", "core", "customer", "ecom", "event", "file", "form",
     "invoice", "notification", "order", "payment", "pricing", "printing", "product", "purchase", "sequence", "setting", "sfa", "subscription",
-    "supplier", "tax", "trade", "unit", "user", "workspace"
+    "supplier", "tax", "trade", "dms", "unit", "user", "workspace"
 )
 
 // ── Local-dev migration tasks ──────────────────────────────────────────────────

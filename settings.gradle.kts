@@ -27,6 +27,7 @@ include("subscription")
 include("ecom")
 include("sfa")
 include("trade")
+include("dms")
 include("ampairs_service")
 
 
