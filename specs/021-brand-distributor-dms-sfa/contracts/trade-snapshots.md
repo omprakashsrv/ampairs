@@ -23,9 +23,12 @@ GET /trade/v1/snapshots/secondary-sales
   "period_key": "2026-06", "outlet_code": "OUT-0153|null", "area_code": "BLR-S|null",
   "qty": "120.000", "value": "920710.50", "version": 7, "as_of": "2026-06-28T04:20:00Z" }
 ```
-Only the distributor's products **confirmed-mapped** to a brand SKU appear; unmapped/other-brand products are
-excluded (FR-018b). Cross-distributor aggregation sums by `brand_product_uid`, so the same brand SKU coded
-differently by each distributor rolls up correctly.
+Rows are **attributed to the brand via Hop A** (`NetworkBrand`, point-in-time as of sale); other-brand/untagged
+products are excluded. Where a CONFIRMED Hop B (`NetworkProduct`) mapping exists the row carries
+`brand_product_uid`/`brand_sku_code` and cross-distributor totals sum by `brand_product_uid` (same SKU coded
+differently across distributors rolls up correctly); attributed sales **without** a Hop B mapping are returned
+as a single aggregated "unmapped" row per period/grain (`brand_product_uid: null`), counted not dropped
+(FR-018b).
 `distributor_workspace_id=all-linked` aggregates across every ACCEPTED link of the calling brand; a
 distributor with no active link is excluded (SC-004/SC-005). No active link → `ConsentRequiredException`.
 
@@ -43,7 +46,8 @@ GET /trade/v1/snapshots/distributor-stock
   "warehouse_code": "WH-1|null", "area_code": "BLR-S|null", "quantity_on_hand": "340.000",
   "days_of_stock": 9.4, "out_of_stock": false, "version": 3, "as_of": "..." }
 ```
-Unmapped/other-brand distributor stock is excluded (FR-018b).
+Stock is attributed via Hop A; other-brand/untagged excluded. Attributed stock without a Hop B SKU mapping is
+returned as an aggregated "unmapped" row (`brand_product_uid: null`), counted not dropped (FR-018b).
 `days_of_stock` / `out_of_stock` are derived from stock + the secondary-sales run rate (FR-021). Requires
 `scope.share_stock`.
 

@@ -62,33 +62,59 @@ POST /trade/v1/primary-orders/{uid}/reject           # tenant: distributor → s
 No endpoint writes directly into the distributor's order tables; only `confirm` does, through the
 distributor's own `OrderService` (its pricing/validation apply).
 
-## Product mapping — `NetworkProduct` (brand ↔ distributor catalog, clarification R13.6)
+## Product linking — two-level (sub-spec product-brand-attribution)
 
-Brand and distributor are separate workspaces with separate catalogs. The brand publishes its catalog down
-the active link; the distributor maps each product it carries to a brand SKU (auto-suggested by
-GTIN/barcode/HSN, manual confirm/override). Brand-facing product figures resolve through CONFIRMED mappings;
-unmapped distributor products are excluded from the brand view.
+Brand and distributor are separate workspaces with separate catalogs. Linking is **two-level**:
+**Hop A** (`NetworkBrand`) attributes via the distributor's existing in-catalog brand label; **Hop B**
+(`NetworkProduct`, optional) reconciles to the brand's specific SKU.
+
+### Hop A — brand attribution (`NetworkBrand`) — required
 
 ```
-GET  /trade/v1/brand-catalog?link_uid={TLN...}          # tenant: distributor — read the brand's published catalog (consent-gated, requires ACTIVE link)
-→ ApiResponse<PageResponse<BrandProductRow>>            # { brand_product_uid, brand_sku_code, name, gtin?, barcode?, hsn? }
+GET  /trade/v1/network-brands?link_uid={TLN...}         # tenant: distributor (or brand, read-only) — designations for the link
+→ ApiResponse<PageResponse<NetworkBrandRow>>
+
+POST /trade/v1/network-brands                           # tenant: distributor — designate one of its ProductBrand labels for the linked brand
+body: { "link_uid": "TLN...", "distributor_product_brand_uid": "PBR..." }
+→ ApiResponse<NetworkBrandRow>   # status = ACTIVE ; requires ACTIVE link
+
+DELETE /trade/v1/network-brands/{uid}                   # tenant: distributor — remove a designation (status = REMOVED)
+```
+```json
+// NetworkBrandRow
+{ "uid": "NBR...", "link_uid": "TLN...", "distributor_product_brand_uid": "PBR...",
+  "brand_workspace_id": "WSP...", "status": "ACTIVE|REMOVED" }
+```
+Multiple labels MAY be designated for one brand (aliases); a label MAY be designated for at most one brand per
+active link. The **brand** can `GET` this read-only; only the **distributor** can create/remove. All distributor
+products under a designated label attribute to the brand (point-in-time, as of sale).
+
+### Hop B — SKU mapping (`NetworkProduct`) — optional refinement
+
+The brand publishes its catalog down the active link; the distributor reconciles its products to brand SKUs
+(auto-suggested by **barcode/SKU**, manual confirm/override). A product attributed by Hop A but not Hop B-mapped
+is still **counted** in the brand's totals (aggregated "unmapped" bucket) — never excluded.
+
+```
+GET  /trade/v1/brand-catalog?link_uid={TLN...}          # tenant: distributor — read the brand's published catalog (consent-gated, ACTIVE link)
+→ ApiResponse<PageResponse<BrandProductRow>>            # { brand_product_uid, brand_sku_code, name, barcode? }
 
 GET  /trade/v1/network-products?link_uid={TLN...}&status=SUGGESTED|CONFIRMED   # tenant: distributor
-→ ApiResponse<PageResponse<NetworkProductRow>>          # incl. system auto-suggestions (match_source=AUTO_*)
+→ ApiResponse<PageResponse<NetworkProductRow>>          # incl. auto-suggestions (match_source=AUTO_BARCODE|AUTO_SKU); only products under a designated label are candidates
 
-POST /trade/v1/network-products                         # tenant: distributor — create/confirm a mapping
+POST /trade/v1/network-products                         # tenant: distributor — create/confirm a SKU mapping
 body: { "link_uid": "TLN...", "distributor_product_uid": "PRD...",
-        "brand_product_uid": "PRD...", "brand_sku_code": "BRX-12", "match_source": "MANUAL|AUTO_GTIN|..." }
+        "brand_product_uid": "PRD...", "brand_sku_code": "BRX-12", "match_source": "MANUAL|AUTO_BARCODE|AUTO_SKU" }
 → ApiResponse<NetworkProductRow>   # status = CONFIRMED
 ```
 ```json
 // NetworkProductRow
 { "uid": "NPR...", "link_uid": "TLN...", "distributor_product_uid": "PRD...",
   "brand_product_uid": "PRD...", "brand_sku_code": "BRX-12",
-  "match_source": "AUTO_GTIN|AUTO_BARCODE|AUTO_HSN|MANUAL", "status": "SUGGESTED|CONFIRMED", "active": true }
+  "match_source": "AUTO_BARCODE|AUTO_SKU|MANUAL", "status": "SUGGESTED|CONFIRMED", "active": true }
 ```
-At most one CONFIRMED mapping per `(link, distributor_product_uid)`. Auto-suggestions are computed by the
-brand-catalog matcher (shared GTIN/barcode/HSN); the distributor confirms/overrides them.
+At most one CONFIRMED mapping per `(link, distributor_product_uid)`. Auto-suggestions come from the brand-catalog
+matcher (shared barcode/SKU — **no HSN**, which is a tax attribute); the distributor confirms/overrides them.
 
 ## Schemes (Phase 3 — brand)
 

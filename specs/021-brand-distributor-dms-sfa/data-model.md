@@ -51,7 +51,25 @@ Uniqueness: at most one **non-revoked** link per `(brandWorkspaceId, distributor
 | displayName / area | String? | populated/projected to the brand **only** when scope.retailerVisibility = IDENTIFIED |
 | active | Boolean | |
 
-### NetworkProduct  *(tenant: distributor)* — brand↔distributor product mapping (clarification R13.6); product analog of NetworkRetailer
+### NetworkBrand  *(tenant: distributor)* — brand attribution / Hop A (sub-spec product-brand-attribution)
+The **primary, required** product-linking edge: designates one of the distributor's existing in-catalog brand
+labels (`product_brand`) as corresponding to the linked brand workspace. Decides *whose* product a distributor
+product is — all products whose `brandId` is a designated label attribute to that brand (unmapped-by-Hop-B
+included, bucketed "unmapped").
+| Field | Type | Notes |
+|---|---|---|
+| uid | String | PK, prefix `NBR` |
+| link → | String | TradeLink.uid |
+| distributorProductBrandUid → | String | the distributor's existing `ProductBrand` (`product_brand`) label |
+| brandWorkspaceId | String | the linked brand's workspace (from the link) |
+| status | DesignationStatus | ACTIVE / REMOVED |
+Multiple labels MAY be designated for one brand (aliases); a label MAY be designated for **at most one** brand
+per active link. Brand sees this **read-only**; the distributor controls it.
+
+### NetworkProduct  *(tenant: distributor)* — SKU identity / Hop B (optional refinement; clarification R13.6)
+Optional finer mapping of a distributor product to the brand's **specific** SKU; refines attributed figures to
+SKU grain. Only distributor products under a `NetworkBrand`-designated label are candidates; absence never
+drops a sale (it falls into the aggregated "unmapped" bucket).
 | Field | Type | Notes |
 |---|---|---|
 | uid | String | PK, prefix `NPR` |
@@ -59,8 +77,8 @@ Uniqueness: at most one **non-revoked** link per `(brandWorkspaceId, distributor
 | distributorProductUid → | String | distributor's `product` (the SKU the distributor carries; never leaves the distributor tenant raw) |
 | brandProductUid → | String | brand's `product` uid (from the catalog the brand published down the link) |
 | brandSkuCode | String | brand's stable SKU code — the brand-facing product dimension |
-| matchSource | MatchSource | AUTO_GTIN / AUTO_BARCODE / AUTO_HSN / MANUAL |
-| status | MappingStatus | SUGGESTED (auto-proposed) / CONFIRMED (distributor accepted) — only CONFIRMED drives brand figures |
+| matchSource | MatchSource | AUTO_BARCODE / AUTO_SKU / MANUAL (barcode = GTIN/EAN; **no HSN** — HSN is a tax attribute, not on `Product`) |
+| status | MappingStatus | SUGGESTED (auto-proposed) / CONFIRMED (distributor accepted) — only CONFIRMED itemizes by brand SKU |
 | active | Boolean | |
 Uniqueness: at most one CONFIRMED mapping per `(link, distributorProductUid)`. The brand's published catalog
 is read by the distributor over the link (consented brand→distributor direction) to populate `brandProductUid`/
@@ -175,7 +193,8 @@ incrementally mutated.
 | grain | SnapshotGrain | SKU×PERIOD, SKU×PERIOD×OUTLET, SKU×PERIOD×AREA |
 | periodKey | String | e.g. `2026-06` (month) or `2026-W26` |
 | skuUid | String | the **distributor's** source product uid (from the distributor's order/invoice docs) |
-| brandProductUid / brandSkuCode | String? | resolved via the CONFIRMED `NetworkProduct` mapping — the brand-facing product dimension; rows without a confirmed mapping are excluded from brand reads (FR-018b) |
+| attributedBrandWorkspaceId | String? | the brand this row is attributed to **as of sale time** (point-in-time) via Hop A (`NetworkBrand`); null = not attributed to any brand (other-brand/untagged) → excluded from brand reads |
+| brandProductUid / brandSkuCode | String? | set only where a CONFIRMED Hop B (`NetworkProduct`) mapping exists; attributed rows with null here are **counted** in the brand's aggregated "unmapped" bucket, never dropped (FR-018b) |
 | outletCode / areaCode | String? | per grain; outlet only when scope IDENTIFIED-eligible (still coded) |
 | qty | BigDecimal | summed secondary qty |
 | value | BigDecimal | summed secondary value |
@@ -189,7 +208,8 @@ Read by the brand only through `CrossTenantReadGuard` (active link + scope.share
 | uid | String | PK, prefix `DSS` |
 | distributorWorkspaceId | String | source tenant |
 | skuUid | String | the **distributor's** source product uid (from the distributor's inventory) |
-| brandProductUid / brandSkuCode | String? | resolved via the CONFIRMED `NetworkProduct` mapping; unmapped rows excluded from brand reads (FR-018b) |
+| attributedBrandWorkspaceId | String? | brand attributed via Hop A (`NetworkBrand`); null = other-brand/untagged → excluded |
+| brandProductUid / brandSkuCode | String? | set only where a CONFIRMED Hop B mapping exists; attributed stock with null here is counted in the aggregated "unmapped" bucket, never dropped (FR-018b) |
 | warehouseCode / areaCode | String? | grain |
 | quantityOnHand | BigDecimal | from distributor `inventory` |
 | version | Long | bump on recompute |
@@ -279,8 +299,11 @@ DRAFT→SUBMITTED; brand owns APPROVED/REJECTED/SETTLED.
   cancelled invoice triggers a rebuild that supersedes the prior version (no double count).
 - Money: `BigDecimal`/`DECIMAL(19,4)` server, `Long` minor units mobile; `computedAmount` and `settledAmount`
   for the same claim+sales MUST match across tenants.
-- Every brand-facing product figure (secondary sales, stock, targets, scheme eligibility) MUST resolve the
-  distributor's `skuUid` to a brand SKU via a CONFIRMED `NetworkProduct` mapping; distributor products with no
-  confirmed mapping are EXCLUDED from brand reads (no other-brand leakage, FR-018b). `MatchSource ∈ {AUTO_GTIN,
-  AUTO_BARCODE, AUTO_HSN, MANUAL}`; `MappingStatus ∈ {SUGGESTED, CONFIRMED}` (SUGGESTED→CONFIRMED is the
-  distributor's accept/override action).
+- Brand-facing product figures (secondary sales, stock, targets, scheme eligibility) follow the **two-level
+  model**: **Hop A** attributes each distributor product to a brand iff its `brandId` is under a label
+  designated by an ACTIVE `NetworkBrand` for that link (captured **as of sale time** — point-in-time);
+  other-brand/untagged products are EXCLUDED (no leakage, FR-018a). **Hop B** (`NetworkProduct`, optional)
+  itemizes attributed figures by the brand SKU where a CONFIRMED mapping exists; attributed-but-unmapped sales
+  are **counted** in a single aggregated "unmapped" bucket, never dropped (FR-018b). Enums:
+  `DesignationStatus ∈ {ACTIVE, REMOVED}`; `MatchSource ∈ {AUTO_BARCODE, AUTO_SKU, MANUAL}` (no HSN);
+  `MappingStatus ∈ {SUGGESTED, CONFIRMED}`.
