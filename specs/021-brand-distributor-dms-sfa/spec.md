@@ -42,6 +42,8 @@ Reference systems in this space: BeatRoute, Bizom, FieldAssist.
 ### Session 2026-06-29
 
 - Q: Should product linking be single-level (SKU mapping only) or two-level (brand attribution + optional SKU)? → A: **Two-level.** **Hop A** attributes via the distributor's **existing in-catalog brand label** (`ProductBrand` designated ↔ brand workspace): all the brand's products count, including ones not yet SKU-mapped (shown as a single aggregated "unmapped" total); attribution is **point-in-time** and the designation is distributor-controlled, brand-visible read-only. **Hop B** optionally reconciles a distributor product to the brand's specific SKU (auto-matched by **barcode/SKU**, not HSN) for SKU-grain itemization. This supersedes the 2026-06-28 single-level answer and is detailed in the **product-brand-attribution sub-spec** (`sub-specs/product-brand-attribution/`).
+- Q: When a brand introduces a new product, how does it enter the distributor's catalog? → A: **Distributor-curated import** — the system shows the distributor an "available for import" list (brand-catalog SKUs under a designated label that the distributor doesn't yet carry); the distributor one-click-imports the ones it stocks, which creates the distributor-side product (pre-filled from the brand entry) and the CONFIRMED `NetworkProduct` mapping. No auto-import of the brand's whole range.
+- Q: How does the distributor learn a brand introduced a new product? → A: **Push notification** — the brand publishing/adding a SKU emits a backend event, so the distributor sees a "new products available to import" signal; the available-for-import view is the pull fallback.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -321,6 +323,19 @@ on both sides.
   attributed by Hop A but **not** yet SKU-reconciled MUST still be **counted** in the brand's totals, shown as
   a single aggregated "unmapped" total per period/grain (qty/value only) — never dropped, and never itemized
   by the distributor's own product identity.
+- **FR-018c** (new-product introduction / import): The system MUST give a distributor an "available for
+  import" view of the brand's published catalog — SKUs under a label the distributor has designated, filtered
+  to those the distributor does not yet carry — searchable by name/category/barcode. The distributor MUST be
+  able to **import** a selected SKU, which creates a product in the distributor's own catalog pre-filled from
+  the brand entry (name, barcode, pack, suggested price), tags it with the designated brand label, and creates
+  the CONFIRMED `NetworkProduct` mapping in one action. The system MUST NOT auto-import the brand's full range;
+  only distributor-selected SKUs are added. A brand SKU counts as "already carried" when the distributor has a
+  product matching its barcode/SKU or an existing mapping to it (so it drops off the import list and is not
+  duplicated). Imported pricing is a starting point only — the distributor owns its own selling/purchase price.
+- **FR-018d** (new-product notification): When a brand publishes or adds a SKU to its catalog, the system MUST
+  signal each linked distributor (that has designated a matching brand label) that new products are available
+  to import, via the existing backend event/notification rail; the available-for-import view is the pull
+  fallback.
 - **FR-019**: The system MUST present a brand with aggregated secondary sales across its linked distributors,
   attributed to the brand via Hop A, broken down by time period and geography or outlet, scoped to active
   links only; figures are itemized by the brand's SKU where Hop B mapping exists and carry a single aggregated
