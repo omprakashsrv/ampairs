@@ -70,6 +70,10 @@ per active link. Brand sees this **read-only**; the distributor controls it.
 Optional finer mapping of a distributor product to the brand's **specific** SKU; refines attributed figures to
 SKU grain. Only distributor products under a `NetworkBrand`-designated label are candidates; absence never
 drops a sale (it falls into the aggregated "unmapped" bucket).
+**New-product introduction (NPI, FR-018c):** importing a brand SKU the distributor doesn't yet carry creates a
+normal distributor `product` (in the `product` module, pre-filled + tagged with the designated `ProductBrand`
+label) **plus** a CONFIRMED `NetworkProduct` — no new entity. "Already carried" = a distributor product matching
+the brand SKU's barcode/SKU or an existing mapping (excluded from available-for-import to avoid duplicates).
 | Field | Type | Notes |
 |---|---|---|
 | uid | String | PK, prefix `NPR` |

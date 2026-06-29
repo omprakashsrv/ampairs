@@ -116,6 +116,30 @@ body: { "link_uid": "TLN...", "distributor_product_uid": "PRD...",
 At most one CONFIRMED mapping per `(link, distributor_product_uid)`. Auto-suggestions come from the brand-catalog
 matcher (shared barcode/SKU — **no HSN**, which is a tax attribute); the distributor confirms/overrides them.
 
+### New-product introduction (NPI) — import a brand SKU the distributor doesn't yet carry (FR-018c/018d)
+
+The brand-catalog read is searchable; an "available for import" view lists brand SKUs under a designated label
+the distributor does **not** yet carry; importing one creates the distributor's own product (pre-filled) + the
+CONFIRMED mapping in a single action. The brand adding a SKU emits an event so the distributor is notified.
+
+```
+GET  /trade/v1/brand-catalog?link_uid={TLN...}&search=&category=&barcode=&since=   # searchable/filterable
+→ ApiResponse<PageResponse<BrandProductRow>>
+
+GET  /trade/v1/brand-catalog/available-for-import?link_uid={TLN...}&search=   # tenant: distributor
+→ ApiResponse<PageResponse<BrandProductRow>>   # only SKUs under a designated label NOT already carried
+                                               # (no distributor product matching barcode/SKU, no existing mapping)
+
+POST /trade/v1/network-products/import         # tenant: distributor — onboard a new SKU in one action
+body: { "link_uid": "TLN...", "brand_product_uid": "PRD..." }
+→ ApiResponse<NetworkProductRow>   # creates the distributor `product` (pre-filled: name, barcode, pack, suggested
+                                   # price; tagged with the designated ProductBrand label) via the product module,
+                                   # then a CONFIRMED NetworkProduct mapping. Distributor owns its own pricing.
+```
+A brand SKU is "already carried" when the distributor has a product matching its barcode/SKU or an existing
+mapping — such SKUs are excluded from available-for-import (no duplicates). When the brand publishes/adds a SKU,
+a backend event notifies each linked distributor with a matching designation ("new products available").
+
 ## Schemes (Phase 3 — brand)
 
 ```
