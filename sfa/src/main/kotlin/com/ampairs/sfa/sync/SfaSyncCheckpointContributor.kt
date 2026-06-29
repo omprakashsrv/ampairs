@@ -6,8 +6,10 @@ import com.ampairs.sfa.repository.BeatOutletRepository
 import com.ampairs.sfa.repository.BeatRepository
 import com.ampairs.sfa.repository.FieldOrderRepository
 import com.ampairs.sfa.repository.JourneyPlanRepository
+import com.ampairs.sfa.repository.LeaveRepository
 import com.ampairs.sfa.repository.PlannedVisitRepository
 import com.ampairs.sfa.repository.VisitRepository
+import com.ampairs.sfa.repository.VisitSurveyResponseRepository
 import org.springframework.stereotype.Component
 import java.time.Instant
 
@@ -24,6 +26,8 @@ class SfaSyncCheckpointContributor(
     private val visitRepository: VisitRepository,
     private val attendanceRepository: AttendanceRepository,
     private val fieldOrderRepository: FieldOrderRepository,
+    private val leaveRepository: LeaveRepository,
+    private val visitSurveyResponseRepository: VisitSurveyResponseRepository,
 ) : SyncCheckpointContributor {
 
     override fun checkpoints(): Map<String, Instant?> = mapOf(
@@ -34,5 +38,7 @@ class SfaSyncCheckpointContributor(
         "visit" to visitRepository.findMaxUpdatedAt(),
         "attendance" to attendanceRepository.findMaxUpdatedAt(),
         "field_order" to fieldOrderRepository.findMaxUpdatedAt(),
+        "leave" to leaveRepository.findMaxUpdatedAt(),
+        "visit_survey_response" to visitSurveyResponseRepository.findMaxUpdatedAt(),
     )
 }

@@ -238,18 +238,18 @@ visit productivity (productive-call %, coverage) for a period; a rep captures a 
 syncs and rolls up.
 
 ### Migration
-- [ ] T084 [P2] Flyway `V1.0.120__create_trade_reporting_survey_leave_tables.sql` in BOTH `postgresql/` and `mysql/` — `leaves` (rep×day excused) + `visit_survey_responses` (structured per-visit answers). Summaries/productivity are derived (no tables). Confirm next free version with `flywayInfo`.
+- [x] T084 [P2] Flyway `V1.0.120__create_trade_reporting_survey_leave_tables.sql` in BOTH `postgresql/` and `mysql/` — `leaves` (rep×day excused) + `visit_survey_responses` (structured per-visit answers). Summaries/productivity are derived (no tables). Confirm next free version with `flywayInfo`.
 
 ### Attendance Summary & Leave (FR-AS1–7)
-- [ ] T085 [P] [P2] Entity `Leave` (repMemberUid, date, reason, markedBy, status) + DTO + repo in `ampairs/trade/.../domain/{model,dto},repository/` (table in V1.0.120, T084).
-- [ ] T086 [P2] `AttendanceSummaryService` (read-only `@Transactional`) + `GET /trade/v1/attendance/summary?rep_member_uid&from&to` → `ApiResponse<AttendanceSummaryResponse>` (days present, working hours, late/absent/excused, business tz) in `ampairs/trade/.../{service,controller}/`. Mirror `payment` `AgingService` (`payment/.../service/AgingService.kt`).
-- [ ] T087 [P2] Attendance integrity in `AttendanceService` — enforce single-open attendance (reject/auto-close prior on push, FR-AS3) + scheduled auto-close past a configurable cutoff, flag `AUTO_CLOSED` (FR-AS4); register cutoff in `TradeSettingDefinitions`.
-- [ ] T088 [P2] `LeaveController` — manager CRUD `POST/GET/DELETE /trade/v1/leaves`; wire leave into adherence so excused days are not counted "missed" (update `JourneyPlanService` adherence, T027a).
+- [x] T085 [P] [P2] Entity `Leave` (repMemberUid, date, reason, markedBy, status) + DTO + repo in `ampairs/trade/.../domain/{model,dto},repository/` (table in V1.0.120, T084).
+- [x] T086 [P2] `AttendanceSummaryService` (read-only `@Transactional`) + `GET /trade/v1/attendance/summary?rep_member_uid&from&to` → `ApiResponse<AttendanceSummaryResponse>` (days present, working hours, late/absent/excused, business tz) in `ampairs/trade/.../{service,controller}/`. Mirror `payment` `AgingService` (`payment/.../service/AgingService.kt`).
+- [x] T087 [P2] Attendance integrity in `AttendanceService` — enforce single-open attendance (reject/auto-close prior on push, FR-AS3) + scheduled auto-close past a configurable cutoff, flag `AUTO_CLOSED` (FR-AS4); register cutoff in `TradeSettingDefinitions`.
+- [x] T088 [P2] `LeaveController` — manager CRUD `POST/GET/DELETE /trade/v1/leaves`; wire leave into adherence so excused days are not counted "missed" (update `JourneyPlanService` adherence, T027a).
 
 ### Visit Productivity & Survey (FR-VP1–7)
 - [ ] T089 [P] [P2] Add `EntityType.VISIT_SURVEY` to `form/.../domain/model/EntityType.kt` + `VisitSurveyStandardFieldProvider` (`@Component`, baseline fields `shelf_availability`/`competitor_present`/`planogram_compliance`) — reuses the `form` module template engine; survey template rides `GET/POST /form/v1/config/schema/sync`.
-- [ ] T090 [P] [P2] Entity `VisitSurveyResponse` (visitUid, structured per-question values, synced/active) + DTO + repo + offline `/sync` (`VisitSurveyResponseSyncDelegate`, `@SyncEntityKey(SyncEntity.VISIT_SURVEY_RESPONSE)`, canonical contract) in `ampairs/trade/.../{domain/model,domain/dto,repository,sync}/`.
-- [ ] T091 [P2] `VisitProductivityService` (read-only) + `GET /trade/v1/visits/productivity?rep_member_uid&from&to&area` → `ApiResponse<VisitProductivityResponse>` (productive-call %, lines/value per call, avg duration, unique-outlet coverage with revisit dedupe). Mirror `AgingService`.
+- [x] T090 [P] [P2] Entity `VisitSurveyResponse` (visitUid, structured per-question values, synced/active) + DTO + repo + offline `/sync` (`VisitSurveyResponseSyncDelegate`, `@SyncEntityKey(SyncEntity.VISIT_SURVEY_RESPONSE)`, canonical contract) in `ampairs/trade/.../{domain/model,domain/dto,repository,sync}/`.
+- [x] T091 [P2] `VisitProductivityService` (read-only) + `GET /trade/v1/visits/productivity?rep_member_uid&from&to&area` → `ApiResponse<VisitProductivityResponse>` (productive-call %, lines/value per call, avg duration, unique-outlet coverage with revisit dedupe). Mirror `AgingService`.
 - [ ] T092 [P2] Survey rollup — `GET /trade/v1/visits/survey-rollup?from&to&area` aggregating structured responses (counts/percentages per question) by period/area; point-in-time (FR-VP4/5).
 
 ### Mobile (`ampairs-app/feature/trade`)
@@ -258,8 +258,8 @@ syncs and rolls up.
 - [ ] T095 [P] [P2] Add `VISIT_SURVEY_RESPONSE` to mobile `ampairs-app/data/sync/.../SyncEntity.kt`.
 
 ### Tests
-- [ ] T096 [P] [P2] Backend test: attendance summary correctness + leave excusal (not absent / planned visits excused) + late/absent + auto-close bounds hours + single-open enforcement (FR-AS1–7), in `ampairs/trade/src/test/.../AttendanceSummaryTest.kt`.
-- [ ] T097 [P] [P2] Backend test: visit productivity (productive-call %, coverage dedupe) + survey capture/sync + survey rollup + point-in-time on template change (FR-VP1–7), in `ampairs/trade/src/test/.../VisitProductivitySurveyTest.kt`.
+- [x] T096 [P] [P2] Backend test: attendance summary correctness + leave excusal (not absent / planned visits excused) + late/absent + auto-close bounds hours + single-open enforcement (FR-AS1–7), in `ampairs/trade/src/test/.../AttendanceSummaryTest.kt`.
+- [x] T097 [P] [P2] Backend test: visit productivity (productive-call %, coverage dedupe) + survey capture/sync + survey rollup + point-in-time on template change (FR-VP1–7), in `ampairs/trade/src/test/.../VisitProductivitySurveyTest.kt`.
 - [ ] T098 [P] [P2] Mobile test: offline survey-capture round-trip (idempotent re-push, multi-device merge), in `ampairs-app/feature/trade/src/commonTest/.../SurveySyncRoundTripTest.kt`.
 
 **Checkpoint**: Managers get attendance/productivity/survey reporting + leave; reps capture surveys offline.

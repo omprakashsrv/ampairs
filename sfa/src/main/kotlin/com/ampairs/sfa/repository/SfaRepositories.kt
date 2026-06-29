@@ -1,12 +1,15 @@
 package com.ampairs.sfa.repository
 
+import com.ampairs.sfa.domain.enums.AttendanceStatus
 import com.ampairs.sfa.domain.model.Attendance
 import com.ampairs.sfa.domain.model.Beat
 import com.ampairs.sfa.domain.model.BeatOutlet
 import com.ampairs.sfa.domain.model.FieldOrder
 import com.ampairs.sfa.domain.model.JourneyPlan
+import com.ampairs.sfa.domain.model.Leave
 import com.ampairs.sfa.domain.model.PlannedVisit
 import com.ampairs.sfa.domain.model.Visit
+import com.ampairs.sfa.domain.model.VisitSurveyResponse
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
@@ -87,12 +90,39 @@ interface VisitRepository : JpaRepository<Visit, Long> {
 interface AttendanceRepository : JpaRepository<Attendance, Long> {
     fun findByUid(uid: String): Attendance?
     fun existsByUid(uid: String): Boolean
+    fun findByRepMemberUidAndStatusAndActiveTrue(repMemberUid: String, status: AttendanceStatus): List<Attendance>
+    fun findByRepMemberUidAndCheckInAtBetween(repMemberUid: String, from: Instant, to: Instant): List<Attendance>
 
     @Query("SELECT MAX(a.updatedAt) FROM Attendance a")
     fun findMaxUpdatedAt(): Instant?
 
     @Query("SELECT a FROM Attendance a WHERE a.updatedAt >= :lastSync")
     fun findByUpdatedAtAfter(lastSync: Instant, pageable: Pageable): Page<Attendance>
+}
+
+@Repository
+interface LeaveRepository : JpaRepository<Leave, Long> {
+    fun findByUid(uid: String): Leave?
+    fun existsByUid(uid: String): Boolean
+    fun findByRepMemberUidAndLeaveDateBetween(repMemberUid: String, from: Instant, to: Instant): List<Leave>
+
+    @Query("SELECT MAX(l.updatedAt) FROM Leave l")
+    fun findMaxUpdatedAt(): Instant?
+
+    @Query("SELECT l FROM Leave l WHERE l.updatedAt >= :lastSync")
+    fun findByUpdatedAtAfter(lastSync: Instant, pageable: Pageable): Page<Leave>
+}
+
+@Repository
+interface VisitSurveyResponseRepository : JpaRepository<VisitSurveyResponse, Long> {
+    fun findByUid(uid: String): VisitSurveyResponse?
+    fun existsByUid(uid: String): Boolean
+
+    @Query("SELECT MAX(s.updatedAt) FROM VisitSurveyResponse s")
+    fun findMaxUpdatedAt(): Instant?
+
+    @Query("SELECT s FROM VisitSurveyResponse s WHERE s.updatedAt >= :lastSync")
+    fun findByUpdatedAtAfter(lastSync: Instant, pageable: Pageable): Page<VisitSurveyResponse>
 }
 
 @Repository

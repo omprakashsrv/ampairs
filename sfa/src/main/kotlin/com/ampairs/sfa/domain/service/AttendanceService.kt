@@ -26,6 +26,7 @@ class AttendanceService(
 
     fun bulkUpsertAttendance(incoming: List<Attendance>): List<Attendance> = incoming.map { row ->
         row.status = deriveStatus(row)
+        enforceSingleOpen(row)
         val existing = row.uid.takeIf { it.isNotBlank() }?.let { attendanceRepository.findByUid(it) }
         if (existing != null) {
             existing.repMemberUid = row.repMemberUid
@@ -45,4 +46,20 @@ class AttendanceService(
 
     private fun deriveStatus(a: Attendance): AttendanceStatus =
         if (a.checkOutAt != null) AttendanceStatus.CLOSED else AttendanceStatus.OPEN
+
+    /**
+     * A rep may have at most one OPEN attendance (FR-AS3). When a new OPEN row arrives, any other
+     * still-open row for that rep is auto-closed (AUTO_CLOSED) rather than rejected — offline reps
+     * may legitimately forget to check out.
+     */
+    private fun enforceSingleOpen(row: Attendance) {
+        if (row.status != AttendanceStatus.OPEN || row.repMemberUid.isBlank()) return
+        attendanceRepository.findByRepMemberUidAndStatusAndActiveTrue(row.repMemberUid, AttendanceStatus.OPEN)
+            .filter { it.uid != row.uid }
+            .forEach { stale ->
+                stale.status = AttendanceStatus.AUTO_CLOSED
+                attendanceRepository.save(stale)
+                entityChangePublisher.updated("attendance", stale.uid)
+            }
+    }
 }
