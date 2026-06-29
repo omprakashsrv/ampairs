@@ -26,6 +26,7 @@ include("sequence")
 include("subscription")
 include("ecom")
 include("sfa")
+include("trade")
 include("ampairs_service")
 
 
