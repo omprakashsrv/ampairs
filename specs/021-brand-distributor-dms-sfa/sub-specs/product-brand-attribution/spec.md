@@ -41,6 +41,15 @@ distributor has *already* assigned. Hop A makes brand attribution complete and c
 - Q: How is a distributor product attributed when it has no brand label at all? → A: It is **not** attributed
   to any brand — attribution requires the product to be under a label the distributor has designated for an
   active link. Untagged products never surface to any brand.
+- Q: When a product is re-tagged to a different brand, does its sales history move? → A: No —
+  **point-in-time** attribution: each sale's brand attribution is fixed at sale time; re-tagging affects only
+  subsequent sales, and a snapshot recompute never rewrites a brand's historical totals.
+- Q: How are attributed-but-unmapped (no SKU match) sales shown to the brand? → A: As a **single aggregated
+  "unmapped" total** per period/grain (qty/value only) — the brand never sees the distributor's individual
+  product names/codes for unmapped items (the distributor does the SKU mapping and sees its own catalog).
+- Q: Can the brand see which distributor has designated a label for it? → A: Yes — **distributor-controlled,
+  brand-visible read-only**: the brand sees that an active designation exists per linked distributor and the
+  resulting attributed totals, but cannot alter it (no two-sided approval handshake).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -130,8 +139,8 @@ of Brand A's view and into Brand B's; revoking the link stops attribution entire
 - **Label maps to a brand with no active link**: No attribution occurs until a link to that brand is active.
 - **Alias labels**: Two distributor labels designated for the same brand are unioned, with no double-counting
   of a product that somehow sits under both.
-- **Re-tag mid-period**: Attribution follows the tag at the time of each sale; historical sales keep their
-  original attribution, future sales follow the new tag.
+- **Re-tag mid-period**: Attribution is point-in-time — each sale keeps the attribution it had at sale time;
+  re-tagging changes only future sales, and a snapshot recompute does **not** move historical attribution.
 - **Designation removed / link revoked**: Attribution stops going forward; prior published figures are not
   retroactively altered beyond ceasing further sharing.
 - **Distributor designates a label that matches multiple linked brands** (shouldn't happen): a label may be
@@ -148,8 +157,9 @@ of Brand A's view and into Brand B's; revoking the link stops attribution entire
 - **FR-A03**: The system MUST exclude from a brand's view any distributor product that is not under a label
   designated for that brand (other-brand and untagged products never appear to the brand).
 - **FR-A04**: A distributor product attributed to a brand by its label but **not** reconciled to a specific
-  brand SKU MUST still be counted in that brand's totals (presented under an "unmapped SKU" bucket), never
-  dropped. (Attribution is independent of, and a prerequisite to, SKU-level identity.)
+  brand SKU MUST still be counted in that brand's totals, presented as a **single aggregated "unmapped"
+  total** per period/grain (qty/value only), never dropped and never itemized by the distributor's individual
+  product name/code. (Attribution is independent of, and a prerequisite to, SKU-level identity.)
 - **FR-A05**: The system MUST support designating multiple distributor labels (aliases) for one brand,
   presenting their union without double-counting a product.
 - **FR-A06**: Attribution MUST follow catalog changes: re-tagging a product to a different brand's label
@@ -161,6 +171,13 @@ of Brand A's view and into Brand B's; revoking the link stops attribution entire
   distributor's authority; the brand cannot designate on the distributor's behalf.
 - **FR-A09**: A change to a designation or to a product's brand label MUST be reflected in the brand's
   attributed view within the parent feature's data-freshness window (see Success Criteria).
+- **FR-A10**: Attribution MUST be **point-in-time**: each sale's brand attribution is determined at sale
+  time and fixed thereafter. Re-tagging a product or changing a designation affects only subsequent sales; a
+  snapshot recompute MUST NOT retroactively move a brand's historical attributed totals. (Implies the
+  attribution in effect at sale time is captured, not derived live from the product's current label.)
+- **FR-A11**: A brand MUST be able to see, read-only, that an active designation exists for each linked
+  distributor and the resulting attributed totals; the brand MUST NOT be able to create or alter a
+  designation (no two-sided approval is required for attribution to take effect).
 
 ### Key Entities *(include if feature involves data)*
 
