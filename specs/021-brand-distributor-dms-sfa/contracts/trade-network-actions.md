@@ -140,14 +140,18 @@ A brand SKU is "already carried" when the distributor has a product matching its
 mapping — such SKUs are excluded from available-for-import (no duplicates). When the brand publishes/adds a SKU,
 a backend event notifies each linked distributor with a matching designation ("new products available").
 
-## Schemes (Phase 3 — defined in `pricing`/spec 015, not here)
+## Schemes (Phase 3 — definition in `pricing`/spec 015; publication in `trade`)
 
 Brand-funded scheme **definition** is owned by the `pricing` module (spec 015 `Offer`/volume-scheme engine,
-`fundingBrandId` attribution). Feature 021 exposes **NO scheme-create endpoint**. It MAY expose a
-**publish-down-link** action referencing a pricing scheme uid — `POST /{claim|trade}/v1/links/{uid}/schemes`
-*(exact shape pending `/speckit.clarify`)* — and a consent-gated `GET …/schemes` listing the pricing schemes
-applicable to the calling distributor. The `claim` endpoints (below) accrue from pricing's
-`fundingBrandId`-tagged secondary sales.
+`fundingBrandId` attribution). Feature 021 exposes **NO scheme-create endpoint**. It owns only the consented
+**`SchemePublication`** edge — publish a pricing scheme down an ACTIVE link:
+
+```
+POST   /trade/v1/links/{uid}/schemes   # brand: publish a pricing scheme (body: { "scheme_ref": "<offer uid>" }) — requires ACTIVE link
+DELETE /trade/v1/links/{uid}/schemes/{scheme_ref}   # brand: withdraw (auto-withdrawn on revoke)
+GET    /trade/v1/schemes                # distributor: lists pricing schemes published to it (consent-gated)
+```
+The `claim` endpoints (below) accrue from pricing's `fundingBrandId`-tagged secondary sales.
 
 ## Claims (Phase 3)
 

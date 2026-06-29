@@ -260,9 +260,17 @@ Read by the brand only through `CrossTenantReadGuard` (active link + scope.share
 
 > **Scheme definition lives in `pricing` (spec 015)** — the `Offer`/volume-scheme engine (QPS/TPR/BOGO),
 > which stamps `fundingBrandId` on the qualifying sale (015 FR-020). Feature 021 does NOT define a
-> `TradeScheme` entity; it owns only the claim→settlement lifecycle below, accruing from `pricing`-tagged,
-> `fundingBrandId`-attributed qualifying secondary sales. (Cross-link scheme *publication* mechanism is a
-> `[NEEDS CLARIFICATION]` in spec.md.)
+> `TradeScheme` entity; it owns only the `SchemePublication` edge + the claim→settlement lifecycle below,
+> accruing from `pricing`-tagged, `fundingBrandId`-attributed qualifying secondary sales.
+
+### SchemePublication  *(tenant: brand; `trade` module)*
+| Field | Type | Notes |
+|---|---|---|
+| uid | String | PK, prefix `SPB` |
+| schemeRef → | String | `pricing` scheme/offer uid (spec 015) — definition stays in pricing |
+| link → | String | TradeLink.uid; publication requires an ACTIVE link |
+| status | PublicationStatus | PUBLISHED / WITHDRAWN — revoked with the link, auditable |
+| publishedAt / withdrawnAt | Instant? | |
 
 ### SchemeClaim  *(tenant: distributor)*
 | Field | Type | Notes |

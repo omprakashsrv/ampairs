@@ -45,7 +45,7 @@ Reference systems in this space: BeatRoute, Bizom, FieldAssist.
 - Q: When a brand introduces a new product, how does it enter the distributor's catalog? → A: **Distributor-curated import** — the system shows the distributor an "available for import" list (brand-catalog SKUs under a designated label that the distributor doesn't yet carry); the distributor one-click-imports the ones it stocks, which creates the distributor-side product (pre-filled from the brand entry) and the CONFIRMED `NetworkProduct` mapping. No auto-import of the brand's whole range.
 - Q: How does the distributor learn a brand introduced a new product? → A: **Push notification** — the brand publishing/adding a SKU emits a backend event, so the distributor sees a "new products available to import" signal; the available-for-import view is the pull fallback.
 - Q: Brand-funded scheme definition vs the existing `pricing`/Offer engine — where does it live? → A: **Reuse `pricing` (spec 015).** Brand-funded scheme *definition + application* (QPS/TPR/BOGO/volume, `fundingBrandId` attribution) is owned by `pricing`/015; feature 021 does NOT define a parallel `TradeScheme`. Feature 021 owns only the **claim → settlement** reimbursement lifecycle (FR-027–029, the `claim` module) that 015 explicitly deferred.
-- Q: How is a brand-funded pricing scheme *published* across a `TradeLink` to linked distributors (015's engine is intra-tenant)? → **[NEEDS CLARIFICATION: does pricing's `Offer` engine support cross-tenant publication down a `TradeLink`, or does 021 add a thin link-scoped publication record referencing the pricing scheme uid? Resolve via `/speckit.clarify`.]**
+- Q: How is a brand-funded pricing scheme *published* across a `TradeLink` to linked distributors (015's engine is intra-tenant)? → A: **Link-scoped publication record.** Feature 021 adds a thin `SchemePublication` (in the `trade` module) that references the `pricing`/015 scheme/offer uid and a `TradeLink`; `pricing` keeps owning scheme *definition*, while 021 owns the **consented publish + visibility edge** — publication requires an ACTIVE link, is revocable with it, and is auditable like every other cross-tenant edge. The distributor sees only schemes published to it; claims accrue from `fundingBrandId`-tagged secondary sales (FR-027). No direct cross-tenant read into the brand's `Offer` table.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -382,8 +382,9 @@ on both sides.
   **`pricing` module (spec 015)**, which applies the scheme at order time and stamps `fundingBrandId`
   attribution on the qualifying sale (015 FR-020). This feature MUST **reuse** that definition and MUST NOT
   introduce a parallel `TradeScheme`. The genuinely-new surface here is **publishing** a brand-funded pricing
-  scheme **down an active `TradeLink`** to in-scope distributors — see the publication
-  `[NEEDS CLARIFICATION]` in the 2026-06-29 Clarifications session.
+  scheme **down an active `TradeLink`** to in-scope distributors via a thin **`SchemePublication`** record
+  (references the pricing scheme/offer uid + the link; requires an ACTIVE link; revocable and auditable with
+  it). The distributor sees only schemes published to it.
 - **FR-027**: The system MUST accrue a claim for qualifying secondary sales under a published scheme, computed
   from the same shared sales data so brand and distributor see an identical figure.
 - **FR-028**: The system MUST support a claim lifecycle of draft → submitted → approved or rejected → settled,
@@ -443,6 +444,10 @@ on both sides.
   (slab/value/qty/free-goods) with eligibility, period, and `fundingBrandId` funding attribution, defined and
   applied by the `pricing` engine. Feature 021 consumes it (and publishes it down a `TradeLink`); it does not
   define a new scheme entity.
+- **Scheme Publication**: A thin `trade`-module record linking a `pricing`/015 scheme/offer uid to a
+  `TradeLink` — the consented, revocable, auditable edge that makes a brand-funded scheme visible to a linked
+  distributor. Requires an ACTIVE link; ends with the link. The only new entity in the scheme/claim area
+  besides `Scheme Claim` / `Claim Settlement`.
 - **Scheme Claim**: A reimbursement accrued from qualifying secondary sales under a scheme.
 - **Claim Settlement**: The lifecycle and outcome (submitted → approved/rejected → settled) of a scheme claim,
   with a reconciliation reference.
