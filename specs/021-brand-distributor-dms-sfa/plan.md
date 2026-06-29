@@ -138,16 +138,16 @@ trade/
     │   │   │                   # BeatOutlet, JourneyPlan(PJP), PlannedVisit, Visit, Attendance,
     │   │   │                   # FieldOrder (counter order ref), PrimaryOrderLink, SalesTarget,
     │   │   │                   # SecondarySalesSnapshot, DistributorStockSnapshot (versioned),
-    │   │   │                   # TradeScheme, SchemeClaim, ClaimSettlement,
+    │   │   │                   # SchemeClaim, ClaimSettlement (scheme definition reused from pricing/015),
     │   │   │                   # Leave, VisitSurveyResponse (P8b reporting/survey/leave)
     │   │   ├── enums/          # TradeTier, LinkStatus, RetailerVisibility, DesignationStatus,
     │   │   │                   # MatchSource (AUTO_BARCODE/AUTO_SKU/MANUAL), MappingStatus,
-    │   │   │                   # VisitOutcome, GeoFenceStatus, ClaimStatus, SchemeType,
+    │   │   │                   # VisitOutcome, GeoFenceStatus, ClaimStatus,
     │   │   │                   # SalesType (PRIMARY/SECONDARY/TERTIARY)
     │   │   └── dto/            # request/response DTOs + converters
     │   ├── repository/         # Spring Data repos (+ @EntityGraph; @Query/nativeQuery for snapshots/rollups)
     │   ├── service/            # TradeLinkService (consent edge), SnapshotService (debounced recompute),
-    │   │                       # BeatService, VisitService, AttendanceService, SchemeService, ClaimService,
+    │   │                       # BeatService, VisitService, AttendanceService, ClaimService,
     │   │                       # TargetService, PrimaryOrderService, CrossTenantReadGuard (consent check)
     │   ├── controller/         # TradeNetworkController, TradeSyncController (SFA /sync),
     │   │                       # SnapshotController, SchemeClaimController, PrimaryOrderController
@@ -233,9 +233,10 @@ dashboard is a P3 follow-up.
   area, distributor days-of-stock, target vs achievement.
 
 ### Phase 3 — Trade schemes, claims/settlement, analytics, tertiary
-- `TradeScheme` (slab/value/qty/free-goods) published down links; `SchemeClaim` accrued from qualifying
-  secondary sales; `ClaimSettlement` lifecycle (`DRAFT→SUBMITTED→APPROVED|REJECTED→SETTLED`) with optional
-  spec-013 ledger adjustment on settlement.
+- Brand-funded schemes **defined in `pricing`/spec 015** (QPS/TPR/BOGO, `fundingBrandId` attribution)
+  published down links; `SchemeClaim` accrued from qualifying secondary sales; `ClaimSettlement` lifecycle
+  (`DRAFT→SUBMITTED→APPROVED|REJECTED→SETTLED`) with optional spec-013 ledger adjustment on settlement. Feature
+  021 does not define a parallel `TradeScheme` — it owns only the claim layer (`claim` module).
 - Tertiary-sales estimation (secondary − stock delta); advanced RTM analytics (productivity, fill-rate).
 - Angular web parity (Material 3) for the brand dashboard.
 

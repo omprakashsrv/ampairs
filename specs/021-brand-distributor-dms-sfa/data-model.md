@@ -256,24 +256,19 @@ Read by the brand only through `CrossTenantReadGuard` (active link + scope.share
 
 ---
 
-## 4. Schemes & claims (Phase 3)
+## 4. Claims & settlement (Phase 3 — `claim` module; scheme definition = `pricing`/015)
 
-### TradeScheme  *(tenant: brand)*
-| Field | Type | Notes |
-|---|---|---|
-| uid | String | PK, prefix `TSC` |
-| name | String | `@field:NotBlank` |
-| type | SchemeType | SLAB / VALUE / QTY / FREE_GOODS / DISPLAY |
-| eligibility | (embedded) | SKU/category set × geography × period |
-| fundingSource | String | |
-| periodStart / periodEnd | Instant | |
-| published | Boolean | published down in-scope links |
+> **Scheme definition lives in `pricing` (spec 015)** — the `Offer`/volume-scheme engine (QPS/TPR/BOGO),
+> which stamps `fundingBrandId` on the qualifying sale (015 FR-020). Feature 021 does NOT define a
+> `TradeScheme` entity; it owns only the claim→settlement lifecycle below, accruing from `pricing`-tagged,
+> `fundingBrandId`-attributed qualifying secondary sales. (Cross-link scheme *publication* mechanism is a
+> `[NEEDS CLARIFICATION]` in spec.md.)
 
 ### SchemeClaim  *(tenant: distributor)*
 | Field | Type | Notes |
 |---|---|---|
 | uid | String | PK, prefix `SCL` |
-| scheme → | String | TradeScheme.uid |
+| scheme → | String | `pricing` scheme/offer uid (spec 015) |
 | link → | String | TradeLink.uid |
 | computedAmount | BigDecimal | from qualifying SecondarySalesSnapshot — identical figure both sides |
 | status | ClaimStatus | DRAFT / SUBMITTED / APPROVED / REJECTED / SETTLED |

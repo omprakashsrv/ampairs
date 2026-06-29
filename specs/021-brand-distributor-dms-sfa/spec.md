@@ -44,6 +44,8 @@ Reference systems in this space: BeatRoute, Bizom, FieldAssist.
 - Q: Should product linking be single-level (SKU mapping only) or two-level (brand attribution + optional SKU)? → A: **Two-level.** **Hop A** attributes via the distributor's **existing in-catalog brand label** (`ProductBrand` designated ↔ brand workspace): all the brand's products count, including ones not yet SKU-mapped (shown as a single aggregated "unmapped" total); attribution is **point-in-time** and the designation is distributor-controlled, brand-visible read-only. **Hop B** optionally reconciles a distributor product to the brand's specific SKU (auto-matched by **barcode/SKU**, not HSN) for SKU-grain itemization. This supersedes the 2026-06-28 single-level answer and is detailed in the **product-brand-attribution sub-spec** (`sub-specs/product-brand-attribution/`).
 - Q: When a brand introduces a new product, how does it enter the distributor's catalog? → A: **Distributor-curated import** — the system shows the distributor an "available for import" list (brand-catalog SKUs under a designated label that the distributor doesn't yet carry); the distributor one-click-imports the ones it stocks, which creates the distributor-side product (pre-filled from the brand entry) and the CONFIRMED `NetworkProduct` mapping. No auto-import of the brand's whole range.
 - Q: How does the distributor learn a brand introduced a new product? → A: **Push notification** — the brand publishing/adding a SKU emits a backend event, so the distributor sees a "new products available to import" signal; the available-for-import view is the pull fallback.
+- Q: Brand-funded scheme definition vs the existing `pricing`/Offer engine — where does it live? → A: **Reuse `pricing` (spec 015).** Brand-funded scheme *definition + application* (QPS/TPR/BOGO/volume, `fundingBrandId` attribution) is owned by `pricing`/015; feature 021 does NOT define a parallel `TradeScheme`. Feature 021 owns only the **claim → settlement** reimbursement lifecycle (FR-027–029, the `claim` module) that 015 explicitly deferred.
+- Q: How is a brand-funded pricing scheme *published* across a `TradeLink` to linked distributors (015's engine is intra-tenant)? → **[NEEDS CLARIFICATION: does pricing's `Offer` engine support cross-tenant publication down a `TradeLink`, or does 021 add a thin link-scoped publication record referencing the pricing scheme uid? Resolve via `/speckit.clarify`.]**
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -198,8 +200,8 @@ sales accrue; a rep's scorecard shows their own achievement against their assign
 ### User Story 6 - Trade schemes and claims settlement (Priority: P3)
 
 A brand runs trade promotions (e.g. buy-a-slab-get-a-discount, free goods, display incentives) that a
-distributor funds upfront and later claims back. The brand authors a scheme with its eligibility rules and
-period and publishes it down to linked distributors. Qualifying secondary sales accrue a claim amount; the
+distributor funds upfront and later claims back. Using a **brand-funded scheme defined in `pricing`
+(spec 015)**, the brand publishes it down to linked distributors. Qualifying secondary sales accrue a claim amount; the
 distributor reviews and submits the claim; the brand approves, rejects, or settles it. Both sides see a
 consistent claim figure because it is computed from the same shared sales data, giving an auditable
 reimbursement trail instead of spreadsheets.
@@ -253,6 +255,11 @@ on both sides.
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
+
+> **Sub-spec requirements:** the SFA field-ops detail (beat plan, attendance, store visits) and its
+> reporting/survey/leave behaviors are specified in `sub-specs/sfa-field-operations/` (FR-BP/AT/SV) and
+> `sub-specs/field-ops-reporting/` (FR-AS1–7, FR-VP1–7). Tasks in Phase 8b reference those `FR-AS*`/`FR-VP*`
+> identifiers; they live in the sub-specs, not in this parent list.
 
 #### Trade network & consent (foundation)
 
@@ -370,9 +377,13 @@ on both sides.
 
 #### Trade schemes & claims (financial)
 
-- **FR-026**: A brand MUST be able to author a trade scheme with a type (e.g. slab, value, quantity, free
-  goods, display), eligibility (product/category × geography × period), and funding source, and publish it
-  down to linked distributors within scope.
+- **FR-026**: Brand-funded trade-scheme **definition and application** (slab/value/quantity/free-goods,
+  QPS/TPR; eligibility product/category × geography × period; funding source) is owned by the existing
+  **`pricing` module (spec 015)**, which applies the scheme at order time and stamps `fundingBrandId`
+  attribution on the qualifying sale (015 FR-020). This feature MUST **reuse** that definition and MUST NOT
+  introduce a parallel `TradeScheme`. The genuinely-new surface here is **publishing** a brand-funded pricing
+  scheme **down an active `TradeLink`** to in-scope distributors — see the publication
+  `[NEEDS CLARIFICATION]` in the 2026-06-29 Clarifications session.
 - **FR-027**: The system MUST accrue a claim for qualifying secondary sales under a published scheme, computed
   from the same shared sales data so brand and distributor see an identical figure.
 - **FR-028**: The system MUST support a claim lifecycle of draft → submitted → approved or rejected → settled,
@@ -428,7 +439,10 @@ on both sides.
   is captured **as of sale time** (point-in-time), so a recompute never moves historical totals.
 - **Distributor Stock (aggregate)**: A published, point-in-time rollup of a distributor's on-hand stock by
   product, shared up the link.
-- **Trade Scheme**: A brand-funded promotion with type, eligibility, period, and funding, published down links.
+- **Trade Scheme** *(owned by `pricing`/spec 015 — referenced here, not redefined)*: A brand-funded promotion
+  (slab/value/qty/free-goods) with eligibility, period, and `fundingBrandId` funding attribution, defined and
+  applied by the `pricing` engine. Feature 021 consumes it (and publishes it down a `TradeLink`); it does not
+  define a new scheme entity.
 - **Scheme Claim**: A reimbursement accrued from qualifying secondary sales under a scheme.
 - **Claim Settlement**: The lifecycle and outcome (submitted → approved/rejected → settled) of a scheme claim,
   with a reconciliation reference.

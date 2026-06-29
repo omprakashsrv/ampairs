@@ -69,7 +69,7 @@ offline author→sync round-trip; backend ≥80% critical / ≥90% endpoints).
 - [ ] T016a [P] [US1] Backend test for adherence (FR-017/SC-010): a Visit referencing a PlannedVisit marks it VISITED; a passed day with no Visit marks MISSED; ad-hoc visits are excluded from planned-adherence % but counted separately, in `ampairs/trade/src/test/.../AdherenceTest.kt`.
 - [ ] T016b [P] [US1] Backend test for rep-removed-from-beat scoping (FR-015 / Edge Cases): after a rep loses a beat assignment they can no longer read/act on those outlets, but Visits they already authored remain valid, in `ampairs/trade/src/test/.../BeatScopingTest.kt`.
 - [ ] T016c [P] [US1] Backend test for outlet deactivation (Edge Cases): a deactivated customer drops off future beats/planned visits while already-captured Visit/FieldOrder history is unaffected, in `ampairs/trade/src/test/.../OutletDeactivationTest.kt`.
-- [ ] T017 [P] [US1] Mobile offline round-trip test: author visit+order+attendance+new-outlet offline → push → assert single upsert + re-push idempotent, in `ampairs-app/feature/trade/src/commonTest/.../OfflineSyncRoundTripTest.kt`.
+- [ ] T017 [P] [US1] Mobile offline round-trip test: author visit+order+attendance+new-outlet offline → push → assert single upsert + re-push idempotent, in `ampairs-app/feature/trade/src/commonTest/.../OfflineSyncRoundTripTest.kt`. Also assert/record (or manual-QA per SC-001) that a full offline visit capture (check-in + outcome + counter order) completes in **< 60 s** with no network.
 - [ ] T017a [P] [US1] Mobile multi-device merge test: the same rep on two devices (and out-of-order sync) authors visits/orders offline → after sync all records merge with no loss and latest-authoritative wins, in `ampairs-app/feature/trade/src/commonTest/.../MultiDeviceMergeTest.kt`.
 
 ### Implementation for User Story 1 — Backend
@@ -106,7 +106,7 @@ offline author→sync round-trip; backend ≥80% critical / ≥90% endpoints).
 **Independent Test**: Brand invites D → before accept, brand snapshot read = 403; D accepts (CODED) → link ACCEPTED; D revokes → brand read = 403 again. Multiple brands see only their own link. (SC-004/006/009, FR-001..007)
 
 ### Tests for User Story 2 ⚠️
-- [ ] T035 [P] [US2] Contract tests for `POST /trade/v1/links`, `/accept`, `/decline`, `/revoke` (state machine, `ApiResponse`) in `ampairs/trade/src/test/.../TradeLinkContractTest.kt`.
+- [ ] T035 [P] [US2] Contract tests for `POST /trade/v1/links`, `/accept`, `/decline`, `/revoke` (state machine, `ApiResponse`) in `ampairs/trade/src/test/.../TradeLinkContractTest.kt`. Include authority (FR-031): invite/publish require brand ADMIN/OWNER; accept/decline/revoke are distributor-side; a non-admin actor is rejected.
 - [ ] T036 [P] [US2] Consent-gate test: with no ACCEPTED link, a cross-tenant read throws `ConsentRequiredException`; illegal transition (accept REVOKED) throws `LinkStateException`, in `ampairs/trade/src/test/.../ConsentGateTest.kt`.
 - [ ] T037 [P] [US2] Scope-default test: invite without `retailer_visibility` ⇒ CODED; multi-brand isolation (brand A cannot see brand B's link), in `ampairs/trade/src/test/.../ConsentScopeTest.kt`.
 - [ ] T037a [P] [US2] Two-level product-linking test (FR-018a/018b): (Hop A) designating a `ProductBrand` label via `NetworkBrand` attributes all products under it to the brand; other-brand/untagged products are excluded; (Hop B) barcode/SKU auto-match proposes SUGGESTED `NetworkProduct`s and CONFIRMED ones itemize by brand SKU (same SKU across two distributors aggregates under one `brand_product_uid`); an attributed-but-unmapped product is **counted** in the brand's aggregated "unmapped" total, not dropped, in `ampairs/trade/src/test/.../ProductLinkingTest.kt`.
@@ -210,16 +210,16 @@ offline author→sync round-trip; backend ≥80% critical / ≥90% endpoints).
 **Independent Test**: Published scheme accrues correct claim from qualifying sales; distributor submits → brand approves → settles (reference recorded); rejected claims don't settle; claim amount matches both sides. (SC-008, FR-026..029)
 
 ### Tests for User Story 6 ⚠️
-- [ ] T070 [P] [US6] Claim-lifecycle test: DRAFT→SUBMITTED→APPROVED→SETTLED happy path + illegal transitions ⇒ `ClaimStateException`; reject records reason and does not settle, in `ampairs/trade/src/test/.../ClaimLifecycleTest.kt`.
+- [ ] T070 [P] [US6] Claim-lifecycle test: DRAFT→SUBMITTED→APPROVED→SETTLED happy path + illegal transitions ⇒ `ClaimStateException`; reject records reason and does not settle, in `ampairs/claim/src/test/.../ClaimLifecycleTest.kt`. Include authority (FR-031): submit is distributor-side, approve/reject/settle are brand-side; a wrong-tier actor is rejected.
 - [ ] T071 [P] [US6] Claim-amount parity test: `computed_amount` from SecondarySalesSnapshot is identical for brand and distributor; zero qualifying sales ⇒ zero claim (no error), in `ampairs/trade/src/test/.../ClaimComputationTest.kt`.
 
 ### Implementation for User Story 6
-- [ ] T072 [P] [US6] Enums `SchemeType`, `ClaimStatus`; entities `TradeScheme`, `SchemeClaim`, `ClaimSettlement` in `ampairs/trade/.../domain/{enums,model}/`.
-- [ ] T073 [US6] Flyway `V1.0.119__create_trade_scheme_claim_tables.sql` (both vendors) — trade_schemes, scheme_claims, claim_settlements.
-- [ ] T074 [P] [US6] DTOs + repositories for scheme/claim/settlement in `ampairs/trade/.../{domain/dto,repository}/`.
-- [ ] T075 [US6] `SchemeService` (author/publish down in-scope links; scheme eligibility SKUs are **brand SKUs** matched to distributor sales via `NetworkProduct` (Hop B), scoped to sales attributed via `NetworkBrand` (Hop A)) + `ClaimService` (accrue from qualifying SecondarySalesSnapshot; submit/approve/reject/settle lifecycle; optional spec-013 ledger ref on settle).
-- [ ] T076 [US6] `SchemeClaimController` — scheme create/publish/list + claim submit/approve/reject/settle endpoints per `contracts/trade-network-actions.md`; consent-gated.
-- [ ] T077 [P] [US6] Mobile (distributor): "Schemes & claims" screen + ViewModel (view published schemes, submit claim) in `ampairs-app/feature/trade/.../ui/claims/`.
+- [ ] T072 [P] [US6] Enum `ClaimStatus`; entities `SchemeClaim` (FK = `pricing` scheme/offer uid + `fundingBrandId`), `ClaimSettlement` in `ampairs/claim/.../domain/{enums,model}/`. Scheme definition is **reused from `pricing`/spec 015** — do NOT create a `TradeScheme` entity or `SchemeType` enum.
+- [ ] T073 [US6] Flyway `V1.0.119__create_claim_settlement_tables.sql` (both vendors) — `scheme_claims`, `claim_settlements` **only** (no `trade_schemes` — scheme-definition tables live in `pricing`/015).
+- [ ] T074 [P] [US6] DTOs + repositories for claim/settlement in `ampairs/claim/.../{domain/dto,repository}/`.
+- [ ] T075 [US6] `ClaimService` only — accrue claims from qualifying `SecondarySalesSnapshot` rows carrying `pricing`'s `fundingBrandId` attribution (015 FR-020), scoped via `NetworkBrand` (Hop A) and keyed on the **brand SKU** via `NetworkProduct` (Hop B); submit/approve/reject/settle lifecycle; optional spec-013 ledger ref on settle. **No `SchemeService`** — scheme authoring/application is `pricing`/015; the optional scheme **publish-down-link** action (per the spec.md publication clarify) only references a pricing scheme uid, it never authors a scheme.
+- [ ] T076 [US6] `ClaimController` — claim submit/approve/reject/settle endpoints (+ an optional consent-gated read/publish-down-link of `pricing` schemes applicable to the link) per `contracts/trade-network-actions.md`; consent-gated. **No scheme create/publish authoring here** (that is `pricing`/015).
+- [ ] T077 [P] [US6] Mobile (distributor): "Schemes & claims" screen + ViewModel (view published schemes **(from `pricing`)**, submit claim) in `ampairs-app/feature/dms/.../ui/claims/`.
 
 **Checkpoint**: Full claims settlement loop works; figures reconcile across tenants.
 
@@ -294,7 +294,7 @@ syncs and rolls up.
 ### Migration ordering (global Flyway versions)
 - `V1.0.117` (T022) — network + SFA tables (US1 + US2).
 - `V1.0.118` (T051) — snapshot + target + primary-order tables (US3/US4/US5).
-- `V1.0.119` (T073) — scheme/claim tables (US6).
+- `V1.0.119` (T073) — claim/settlement tables (US6); scheme-definition tables live in `pricing`/spec 015.
 - `V1.0.120` (T084) — leave + visit-survey-response tables (Phase 8b reporting/survey/leave).
 
 ### Within each story

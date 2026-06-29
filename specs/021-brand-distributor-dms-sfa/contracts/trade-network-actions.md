@@ -140,13 +140,14 @@ A brand SKU is "already carried" when the distributor has a product matching its
 mapping — such SKUs are excluded from available-for-import (no duplicates). When the brand publishes/adds a SKU,
 a backend event notifies each linked distributor with a matching designation ("new products available").
 
-## Schemes (Phase 3 — brand)
+## Schemes (Phase 3 — defined in `pricing`/spec 015, not here)
 
-```
-POST /trade/v1/schemes                # create
-POST /trade/v1/schemes/{uid}/publish  # publish down in-scope links
-GET  /trade/v1/schemes                # distributor lists schemes published to it (consent-gated)
-```
+Brand-funded scheme **definition** is owned by the `pricing` module (spec 015 `Offer`/volume-scheme engine,
+`fundingBrandId` attribution). Feature 021 exposes **NO scheme-create endpoint**. It MAY expose a
+**publish-down-link** action referencing a pricing scheme uid — `POST /{claim|trade}/v1/links/{uid}/schemes`
+*(exact shape pending `/speckit.clarify`)* — and a consent-gated `GET …/schemes` listing the pricing schemes
+applicable to the calling distributor. The `claim` endpoints (below) accrue from pricing's
+`fundingBrandId`-tagged secondary sales.
 
 ## Claims (Phase 3)
 
