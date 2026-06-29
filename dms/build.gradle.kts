@@ -36,6 +36,10 @@ repositories {
 dependencies {
     api(project(mapOf("path" to ":core")))
     implementation(project(mapOf("path" to ":trade")))
+    implementation(project(mapOf("path" to ":invoice")))
+    implementation(project(mapOf("path" to ":product")))
+    implementation(project(mapOf("path" to ":customer")))
+    implementation(project(mapOf("path" to ":event")))
     compileOnly("org.springframework.boot:spring-boot-starter-data-rest")
     compileOnly("org.springframework.data:spring-data-rest-webmvc")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
