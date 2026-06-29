@@ -35,6 +35,7 @@ repositories {
 
 dependencies {
     api(project(mapOf("path" to ":core")))
+    implementation(project(mapOf("path" to ":dms")))
     compileOnly("org.springframework.boot:spring-boot-starter-data-rest")
     compileOnly("org.springframework.data:spring-data-rest-webmvc")
     implementation("org.jetbrains.kotlin:kotlin-reflect")

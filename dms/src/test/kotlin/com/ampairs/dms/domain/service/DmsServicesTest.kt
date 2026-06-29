@@ -61,4 +61,26 @@ class DmsServicesTest {
         assertEquals(1, targetService.readTargets("BRAND", "DIST").size)
         verify(guard).requireActiveLink("BRAND", "DIST", DataCategory.TARGETS)
     }
+
+    @Test
+    fun `qualifyingSecondaryValue gates then sums only the requested period`() {
+        whenever(guard.requireActiveLink(eq("BRAND"), eq("DIST"), eq(DataCategory.SECONDARY_SALES)))
+            .thenReturn(mock<TradeLink>())
+        whenever(secondaryRepo.findByAttributedBrandWorkspaceIdAndDistributorWorkspaceId("BRAND", "DIST"))
+            .thenReturn(
+                listOf(
+                    SecondarySalesSnapshot().apply { periodKey = "2026-06"; valueAmount = BigDecimal("1000") },
+                    SecondarySalesSnapshot().apply { periodKey = "2026-06"; valueAmount = BigDecimal("250") },
+                    SecondarySalesSnapshot().apply { periodKey = "2026-05"; valueAmount = BigDecimal("999") },
+                ),
+            )
+
+        val juneOnly = snapshotService.qualifyingSecondaryValue("BRAND", "DIST", "2026-06")
+        assertEquals(0, BigDecimal("1250").compareTo(juneOnly))
+        verify(guard).requireActiveLink("BRAND", "DIST", DataCategory.SECONDARY_SALES)
+
+        // null period sums everything
+        val allPeriods = snapshotService.qualifyingSecondaryValue("BRAND", "DIST", null)
+        assertEquals(0, BigDecimal("2249").compareTo(allPeriods))
+    }
 }

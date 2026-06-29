@@ -12,6 +12,7 @@ import com.ampairs.trade.domain.enums.DataCategory
 import com.ampairs.trade.service.CrossTenantReadGuard
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
 
 /**
  * Owns the secondary-sales / distributor-stock snapshots. Recompute replaces a distributor's rows
@@ -60,5 +61,24 @@ class SnapshotService(
         return stockRepository
             .findByAttributedBrandWorkspaceIdAndDistributorWorkspaceId(brandWorkspaceId, distributorWorkspaceId)
             .map { it.asRow() }
+    }
+
+    /**
+     * Consent-gated sum of a distributor's secondary-sales value attributed to this brand, optionally
+     * for a single [periodKey]. Drives brand-funded scheme accrual (the `claim` module reads this) — the
+     * same SECONDARY_SALES consent gate as [readSecondarySales], so a brand can only accrue where it has
+     * an active link. Returns [BigDecimal.ZERO] when there is nothing attributed.
+     */
+    @Transactional(readOnly = true)
+    fun qualifyingSecondaryValue(
+        brandWorkspaceId: String,
+        distributorWorkspaceId: String,
+        periodKey: String?,
+    ): BigDecimal {
+        guard.requireActiveLink(brandWorkspaceId, distributorWorkspaceId, DataCategory.SECONDARY_SALES)
+        return secondaryRepository
+            .findByAttributedBrandWorkspaceIdAndDistributorWorkspaceId(brandWorkspaceId, distributorWorkspaceId)
+            .filter { periodKey.isNullOrBlank() || it.periodKey == periodKey }
+            .fold(BigDecimal.ZERO) { acc, row -> acc.add(row.valueAmount) }
     }
 }

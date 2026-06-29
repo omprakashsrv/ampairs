@@ -1,9 +1,11 @@
 package com.ampairs.claim
 
 import com.ampairs.AmpairsApplication
+import com.ampairs.claim.domain.dto.ClaimAccrueFromSalesRequest
 import com.ampairs.claim.domain.dto.ClaimAccrueRequest
 import com.ampairs.claim.domain.enums.ClaimStatus
 import com.ampairs.claim.domain.model.SchemeClaim
+import com.ampairs.claim.domain.service.ClaimAccrualService
 import com.ampairs.claim.domain.service.ClaimService
 import com.ampairs.claim.exception.ClaimStateException
 import com.ampairs.workspace.service.WorkspaceMemberService
@@ -43,6 +45,7 @@ class ClaimControllerIntegrationTest {
     private lateinit var mockMvc: MockMvc
 
     @field:MockitoBean private lateinit var claimService: ClaimService
+    @field:MockitoBean private lateinit var claimAccrualService: ClaimAccrualService
     @field:MockitoBean private lateinit var workspaceMemberService: WorkspaceMemberService
 
     @BeforeEach
@@ -71,6 +74,34 @@ class ClaimControllerIntegrationTest {
             .andExpect(status().isOk)
             .andExpect(jsonPath("\$.success").value(true))
             .andExpect(jsonPath("\$.data.status").value("DRAFT"))
+    }
+
+    @Test
+    @DisplayName("POST /claim/v1/claims/accrue-from-sales derives the amount from DMS sales")
+    @WithMockUser(username = "tester", roles = ["USER"])
+    fun `accrue from secondary sales`() {
+        val claim = SchemeClaim().apply {
+            uid = "SCL-2"; schemeRef = "OFFER-1"; brandWorkspaceId = "BRAND"; distributorWorkspaceId = "DIST"
+            computedAmount = BigDecimal("250.0000"); status = ClaimStatus.DRAFT; periodKey = "2026-06"
+        }
+        whenever(claimAccrualService.accrueFromSecondarySales(any(), any(), any(), anyOrNull(), any(), anyOrNull()))
+            .thenReturn(claim)
+        mockMvc.perform(
+            post("/claim/v1/claims/accrue-from-sales")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    objectMapper.writeValueAsString(
+                        ClaimAccrueFromSalesRequest(
+                            schemeRef = "OFFER-1", brandWorkspaceId = "BRAND", distributorWorkspaceId = "DIST",
+                            periodKey = "2026-06", ratePercent = BigDecimal("2.5"),
+                        ),
+                    ),
+                ),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("\$.success").value(true))
+            .andExpect(jsonPath("\$.data.status").value("DRAFT"))
+            .andExpect(jsonPath("\$.data.scheme_ref").value("OFFER-1"))
     }
 
     @Test
