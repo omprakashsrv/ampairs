@@ -341,9 +341,9 @@ on both sides.
 
 - **FR-030**: The system MUST provide a field-rep role within the distributor business, scoped to assigned
   beats, without making the rep a member of any other business.
-- **FR-031**: Network administration actions (approving links, publishing schemes) MUST require brand
-  administrator-level authority; claim submission MUST be distributor-side and claim approval/settlement
-  brand-side.
+- **FR-031**: Brand-side network administration (inviting and managing links, publishing schemes) MUST
+  require brand administrator-level authority; the distributor accepts, declines, or revokes its own links;
+  claim submission MUST be distributor-side and claim approval/settlement brand-side.
 - **FR-032**: All money amounts MUST be stored and computed exactly (no rounding drift) and presented in the
   relevant business's currency.
 - **FR-033**: All timestamps MUST be stored in a timezone-unambiguous form so location/time captured in the

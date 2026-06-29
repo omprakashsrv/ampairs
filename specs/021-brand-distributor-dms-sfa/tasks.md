@@ -65,7 +65,10 @@ offline author→sync round-trip; backend ≥80% critical / ≥90% endpoints).
 - [ ] T015 [P] [US1] Backend contract tests for `field-orders`, `attendance`, `beats`, `journey-plans` `/sync` in `ampairs/trade/src/test/.../{FieldOrder,Attendance,Beat,JourneyPlan}SyncContractTest.kt`.
 - [ ] T016 [P] [US1] Backend test: ad-hoc validation (`ad_hoc=false`⇒planned_visit required; `ad_hoc=true`⇒null) + geo-fence flag is informational (out-of-radius/no-location row still upserts) in `ampairs/trade/src/test/.../VisitRulesTest.kt`.
 - [ ] T016a [P] [US1] Backend test for adherence (FR-017/SC-010): a Visit referencing a PlannedVisit marks it VISITED; a passed day with no Visit marks MISSED; ad-hoc visits are excluded from planned-adherence % but counted separately, in `ampairs/trade/src/test/.../AdherenceTest.kt`.
+- [ ] T016b [P] [US1] Backend test for rep-removed-from-beat scoping (FR-015 / Edge Cases): after a rep loses a beat assignment they can no longer read/act on those outlets, but Visits they already authored remain valid, in `ampairs/trade/src/test/.../BeatScopingTest.kt`.
+- [ ] T016c [P] [US1] Backend test for outlet deactivation (Edge Cases): a deactivated customer drops off future beats/planned visits while already-captured Visit/FieldOrder history is unaffected, in `ampairs/trade/src/test/.../OutletDeactivationTest.kt`.
 - [ ] T017 [P] [US1] Mobile offline round-trip test: author visit+order+attendance+new-outlet offline → push → assert single upsert + re-push idempotent, in `ampairs-app/feature/trade/src/commonTest/.../OfflineSyncRoundTripTest.kt`.
+- [ ] T017a [P] [US1] Mobile multi-device merge test: the same rep on two devices (and out-of-order sync) authors visits/orders offline → after sync all records merge with no loss and latest-authoritative wins, in `ampairs-app/feature/trade/src/commonTest/.../MultiDeviceMergeTest.kt`.
 
 ### Implementation for User Story 1 — Backend
 - [ ] T018 [P] [US1] Enums in `ampairs/trade/.../domain/enums/` — `VisitOutcome`, `GeoFenceStatus`, `AttendanceType`, `PlannedVisitStatus`.
@@ -129,6 +132,7 @@ offline author→sync round-trip; backend ≥80% critical / ≥90% endpoints).
 - [ ] T046 [P] [US3] Snapshot-determinism test: same source docs ⇒ identical snapshot; a backdated/cancelled invoice triggers a recompute that supersedes the prior version (no double count), in `ampairs/trade/src/test/.../SnapshotRecomputeTest.kt`.
 - [ ] T047 [P] [US3] PII-projection test: scope CODED ⇒ `outlet_code` only (no name/area); scope IDENTIFIED ⇒ name/area present, never full contact PII, in `ampairs/trade/src/test/.../RetailerProjectionTest.kt`.
 - [ ] T048 [P] [US3] Endpoint test: `GET /trade/v1/snapshots/secondary-sales?...=all-linked` aggregates only ACCEPTED links; no link ⇒ 403, in `ampairs/trade/src/test/.../SecondarySalesReadTest.kt`.
+- [ ] T048a [P] [US3] Backend test for distributor-offline read (Edge Cases): the brand's secondary-sales/stock read returns the last published snapshot version (no live dependency on the distributor being online), in `ampairs/trade/src/test/.../SnapshotAvailabilityTest.kt`.
 - [ ] T049 [P] [US3] Coalescing test: N rapid invoice events ⇒ ≤1 rebuild per ~5 min window per distributor, in `ampairs/trade/src/test/.../SnapshotDebounceTest.kt`.
 
 ### Implementation for User Story 3
