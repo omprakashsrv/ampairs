@@ -43,7 +43,7 @@ class ClaimController(
         ApiResponse.success(
             claimAccrualService.accrueFromSecondarySales(
                 request.schemeRef!!, request.brandWorkspaceId!!, request.distributorWorkspaceId!!,
-                request.periodKey, request.ratePercent!!, request.linkUid,
+                request.periodKey, request.ratePercent, request.linkUid,
             ).asResponse(),
         )
 

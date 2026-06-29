@@ -4,7 +4,6 @@ import com.ampairs.claim.domain.enums.ClaimStatus
 import com.ampairs.claim.domain.model.ClaimSettlement
 import com.ampairs.claim.domain.model.SchemeClaim
 import jakarta.validation.constraints.NotBlank
-import jakarta.validation.constraints.NotNull
 import java.math.BigDecimal
 import java.time.Instant
 
@@ -22,8 +21,9 @@ data class ClaimAccrueFromSalesRequest(
     @field:NotBlank val brandWorkspaceId: String? = null,
     @field:NotBlank val distributorWorkspaceId: String? = null,
     val periodKey: String? = null,
-    /** Scheme rate as a percentage of qualifying secondary-sales value (e.g. 2.5 = 2.5%). */
-    @field:NotNull val ratePercent: BigDecimal? = null,
+    /** Optional override of the scheme rate (percentage of qualifying value). When null it is read
+     * from the pricing/015 scheme definition (PERCENT-reward offer). */
+    val ratePercent: BigDecimal? = null,
     val linkUid: String? = null,
 )
 
