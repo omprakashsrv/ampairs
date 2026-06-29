@@ -20,3 +20,6 @@
 | `subscription` | Plans, billing |
 | `setting` | Central workspace settings registry (cross-module toggles, offline-sync) |
 | `printing` | Print-template storage + offline-sync (`/printing/v1`, opaque layout JSON) |
+| `trade` | Brand↔distributor network & consent edge — links, consent scope, brand/product attribution (NetworkBrand/NetworkProduct + NPI), primary-order handshake, `CrossTenantReadGuard`. Depends on `workspace`, `core` only |
+| `sfa` | Distributor field-sales automation (offline `/sync`) — beats/PJP, store visits, attendance, surveys, leave + reporting (adherence/summary/productivity). Standalone (the MVP); reads `customer`/`order`/`form` via public services |
+| `dms` | Brand distribution-management views — secondary-sales/distributor-stock snapshots, targets, trade schemes, claims/settlement. Consent-gated via `trade`; reads `order`/`invoice`/`inventory`/`payment` via public services + events |
