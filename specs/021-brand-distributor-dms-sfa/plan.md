@@ -136,7 +136,8 @@ trade/
     │   │   │                   # BeatOutlet, JourneyPlan(PJP), PlannedVisit, Visit, Attendance,
     │   │   │                   # FieldOrder (counter order ref), PrimaryOrderLink, SalesTarget,
     │   │   │                   # SecondarySalesSnapshot, DistributorStockSnapshot (versioned),
-    │   │   │                   # TradeScheme, SchemeClaim, ClaimSettlement
+    │   │   │                   # TradeScheme, SchemeClaim, ClaimSettlement,
+    │   │   │                   # Leave, VisitSurveyResponse (P8b reporting/survey/leave)
     │   │   ├── enums/          # TradeTier, LinkStatus, RetailerVisibility, DesignationStatus,
     │   │   │                   # MatchSource (AUTO_BARCODE/AUTO_SKU/MANUAL), MappingStatus,
     │   │   │                   # VisitOutcome, GeoFenceStatus, ClaimStatus, SchemeType,
@@ -200,6 +201,17 @@ dashboard is a P3 follow-up.
 - **Workspace**: add `FIELD_REP` role (level 30, additive) + beat scoping.
 - **Mobile**: offline rep app — today's beat (PJP), outlet visit (geo/time/outcome + flag), add new outlet
   offline, take order at counter, check-in/out attendance, my targets; all author-offline via `/sync`.
+
+### Phase 1b — Field-Ops reporting, survey & leave (US1 extensions, P2)
+- **Entities/services**: `Leave` (manager-marked excused absence), `VisitSurveyResponse` (offline,
+  `/sync`); `AttendanceSummaryService`, `VisitProductivityService`, survey-rollup (derived read-models),
+  `LeaveService`/controller; attendance single-open + auto-close in `AttendanceService`.
+- **Reuse**: survey templates via the `form` module (`EntityType.VISIT_SURVEY` + a `StandardFieldProvider`,
+  `/form/v1/config/schema/sync`); summary/productivity reads mirror the `payment` `AgingService` read-model
+  pattern (read-only service → `XyzSummaryResponse` → `ApiResponse<T>`).
+- **Endpoints**: `GET /trade/v1/attendance/summary`, `.../visits/productivity`, `.../visits/survey-rollup`;
+  leave CRUD `/trade/v1/leaves`; survey responses on the canonical `/sync`. Reports are online; capture
+  (survey) is offline. Builds on US1 capture; independent of the brand-facing stories.
 
 ### Phase 2 — Brand DMS visibility (secondary sales + stock + targets + primary order)
 - **Entities**: `SecondarySalesSnapshot`, `DistributorStockSnapshot` (versioned, recomputable),

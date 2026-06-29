@@ -169,6 +169,31 @@ is read by the distributor over the link (consented brand→distributor directio
 The FieldOrder is a thin trade-side reference; the real order lives in the `order` module (so distributor
 pricing/validation/sync apply). Tagged `SECONDARY` for snapshot rollup.
 
+### Leave  *(distributor)* — rep excused-absence (sub-spec field-ops-reporting, FR-AS5)
+| Field | Type | Notes |
+|---|---|---|
+| uid | String | PK, prefix `LVE` |
+| repMemberUid → | String | the rep (distributor `workspace` member) |
+| date | LocalDate (business tz) | the excused day |
+| reason | String? | |
+| markedBy → | String | the manager who marked it |
+| status | LeaveStatus | EXCUSED (manager-marked; rep self-service request→approve is a later enhancement) |
+Excused days are not counted absent (attendance summary) and their planned visits are excused, not missed
+(adherence). Manager-marked CRUD (online), not a rep-authored sync entity.
+
+### VisitSurveyResponse  *(distributor; offline-authored)* — store-visit survey answers (FR-VP1/2)
+| Field | Type | Notes |
+|---|---|---|
+| uid | String | PK, prefix `VSR`; client-generated |
+| visit → | String | the Visit the survey was captured on |
+| answers | (structured) | per-question values for the `VISIT_SURVEY` template (see note) |
+| synced / active | Boolean | offline-sync flags |
+The survey **template** reuses the platform `form` module (`EntityType.VISIT_SURVEY` + a
+`StandardFieldProvider`); responses are **structured/queryable** (not opaque JSON) so they roll up (FR-VP4).
+Captured offline, rides the canonical `/sync` (`SyncEntity.VISIT_SURVEY_RESPONSE`). `AttendanceSummary` and
+`VisitProductivity` are **derived read-models** (no tables) computed server-side from Attendance/Visit data,
+mirroring the `payment` `AgingService` read pattern.
+
 ---
 
 ## 3. Brand DMS aggregates & targets (Phase 2)

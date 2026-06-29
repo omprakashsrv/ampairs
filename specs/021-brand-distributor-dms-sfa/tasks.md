@@ -81,7 +81,7 @@ offline author→sync round-trip; backend ≥80% critical / ≥90% endpoints).
 - [ ] T025 [US1] `BeatService` + `JourneyPlanService` in `ampairs/trade/.../service/` — CRUD + today's-planned-visits derivation; FIELD_REP beat-scoping enforcement (rep sees only their distributor's beats).
 - [ ] T026 [US1] `VisitService` + `AttendanceService` + `FieldOrderService` in `ampairs/trade/.../service/` — bulk UID-keyed upsert; geo-fence flag compute (distance to outlet, never block); FieldOrder ties to `order` module via `OrderService` + tags SECONDARY; ad-hoc rule enforcement.
 - [ ] T027 [US1] `TradeSyncController` in `ampairs/trade/.../controller/` — `GET/POST /trade/v1/{visits|field-orders|attendance|beats|journey-plans}/sync` returning `ApiResponse<PageResponse<>>`/`ApiResponse<List<>>`; sets/clears tenant via X-Workspace-ID; per `contracts/trade-sfa-sync.md`.
-- [ ] T027a [US1] Adherence in `JourneyPlanService` (or `AdherenceService`) in `ampairs/trade/.../service/` — reconcile PlannedVisit → VISITED/MISSED from authored Visits; compute visit % / on-time % per rep × period with ad-hoc counted separately (FR-017); expose `GET /trade/v1/adherence?rep_member_uid&period_from&period_to` on `TradeSyncController` returning `ApiResponse<AdherenceSummary>` (SC-010).
+- [ ] T027a [US1] Adherence in `JourneyPlanService` (or `AdherenceService`) in `ampairs/trade/.../service/` — reconcile PlannedVisit → VISITED/MISSED from authored Visits; compute visit % / on-time % per rep × period with ad-hoc counted separately (FR-017); planned visits on a `Leave`-excused day (T085/T088) are excused, not missed; expose `GET /trade/v1/adherence?rep_member_uid&period_from&period_to` on `TradeSyncController` returning `ApiResponse<AdherenceSummary>` (SC-010).
 
 ### Implementation for User Story 1 — Mobile (offline-first)
 - [ ] T028 [P] [US1] Room entities + DAOs for visit/field-order/attendance/beat/beat-outlet/journey-plan/planned-visit in `ampairs-app/feature/trade/.../data/db/` (synced/active flags; client-generated uids via `UidGenerator`).
@@ -223,6 +223,46 @@ offline author→sync round-trip; backend ≥80% critical / ≥90% endpoints).
 
 ---
 
+## Phase 8b: Field-Ops Reporting, Survey & Leave (US1 extensions, Priority: P2)
+
+**Goal**: The management/reporting layer over the offline-captured SFA data — attendance summaries + leave,
+visit productivity, and store-visit surveys — per `sub-specs/field-ops-reporting/` (FR-AS1–7, FR-VP1–7) and
+`sub-specs/sfa-field-operations/` (FR-AT2/4/5/6/8, FR-SV6/SV7). Depends on Foundational + US1 capture; reports
+are online server-computed reads, survey responses are offline via `/sync`.
+
+**Independent Test**: A manager opens a rep's attendance summary (days/hours/late/absent, leave excused) and
+visit productivity (productive-call %, coverage) for a period; a rep captures a store survey offline that
+syncs and rolls up.
+
+### Migration
+- [ ] T084 [P2] Flyway `V1.0.120__create_trade_reporting_survey_leave_tables.sql` in BOTH `postgresql/` and `mysql/` — `leaves` (rep×day excused) + `visit_survey_responses` (structured per-visit answers). Summaries/productivity are derived (no tables). Confirm next free version with `flywayInfo`.
+
+### Attendance Summary & Leave (FR-AS1–7)
+- [ ] T085 [P] [P2] Entity `Leave` (repMemberUid, date, reason, markedBy, status) + DTO + repo in `ampairs/trade/.../domain/{model,dto},repository/` (table in V1.0.120, T084).
+- [ ] T086 [P2] `AttendanceSummaryService` (read-only `@Transactional`) + `GET /trade/v1/attendance/summary?rep_member_uid&from&to` → `ApiResponse<AttendanceSummaryResponse>` (days present, working hours, late/absent/excused, business tz) in `ampairs/trade/.../{service,controller}/`. Mirror `payment` `AgingService` (`payment/.../service/AgingService.kt`).
+- [ ] T087 [P2] Attendance integrity in `AttendanceService` — enforce single-open attendance (reject/auto-close prior on push, FR-AS3) + scheduled auto-close past a configurable cutoff, flag `AUTO_CLOSED` (FR-AS4); register cutoff in `TradeSettingDefinitions`.
+- [ ] T088 [P2] `LeaveController` — manager CRUD `POST/GET/DELETE /trade/v1/leaves`; wire leave into adherence so excused days are not counted "missed" (update `JourneyPlanService` adherence, T027a).
+
+### Visit Productivity & Survey (FR-VP1–7)
+- [ ] T089 [P] [P2] Add `EntityType.VISIT_SURVEY` to `form/.../domain/model/EntityType.kt` + `VisitSurveyStandardFieldProvider` (`@Component`, baseline fields `shelf_availability`/`competitor_present`/`planogram_compliance`) — reuses the `form` module template engine; survey template rides `GET/POST /form/v1/config/schema/sync`.
+- [ ] T090 [P] [P2] Entity `VisitSurveyResponse` (visitUid, structured per-question values, synced/active) + DTO + repo + offline `/sync` (`VisitSurveyResponseSyncDelegate`, `@SyncEntityKey(SyncEntity.VISIT_SURVEY_RESPONSE)`, canonical contract) in `ampairs/trade/.../{domain/model,domain/dto,repository,sync}/`.
+- [ ] T091 [P2] `VisitProductivityService` (read-only) + `GET /trade/v1/visits/productivity?rep_member_uid&from&to&area` → `ApiResponse<VisitProductivityResponse>` (productive-call %, lines/value per call, avg duration, unique-outlet coverage with revisit dedupe). Mirror `AgingService`.
+- [ ] T092 [P2] Survey rollup — `GET /trade/v1/visits/survey-rollup?from&to&area` aggregating structured responses (counts/percentages per question) by period/area; point-in-time (FR-VP4/5).
+
+### Mobile (`ampairs-app/feature/trade`)
+- [ ] T093 [P2] Visit survey capture (rep, offline) — Room `VisitSurveyResponse` entity/DAO + `VisitSurveyResponseSyncDelegate` + survey form UI rendering the `VISIT_SURVEY` schema; required-blank flagged, not blocked (FR-VP2/6).
+- [ ] T094 [P] [P2] Manager dashboards (online reads) — attendance summary, visit productivity, survey rollup screens + ViewModels, and a leave-marking screen, in `ampairs-app/feature/trade/.../ui/reports/`.
+- [ ] T095 [P] [P2] Add `VISIT_SURVEY_RESPONSE` to mobile `ampairs-app/data/sync/.../SyncEntity.kt`.
+
+### Tests
+- [ ] T096 [P] [P2] Backend test: attendance summary correctness + leave excusal (not absent / planned visits excused) + late/absent + auto-close bounds hours + single-open enforcement (FR-AS1–7), in `ampairs/trade/src/test/.../AttendanceSummaryTest.kt`.
+- [ ] T097 [P] [P2] Backend test: visit productivity (productive-call %, coverage dedupe) + survey capture/sync + survey rollup + point-in-time on template change (FR-VP1–7), in `ampairs/trade/src/test/.../VisitProductivitySurveyTest.kt`.
+- [ ] T098 [P] [P2] Mobile test: offline survey-capture round-trip (idempotent re-push, multi-device merge), in `ampairs-app/feature/trade/src/commonTest/.../SurveySyncRoundTripTest.kt`.
+
+**Checkpoint**: Managers get attendance/productivity/survey reporting + leave; reps capture surveys offline.
+
+---
+
 ## Phase 9: Polish & Cross-Cutting Concerns
 
 - [ ] T078 [P] [—] Run `quickstart.md` end-to-end against a dev instance; fix any drift between contracts and implementation.
@@ -230,7 +270,7 @@ offline author→sync round-trip; backend ≥80% critical / ≥90% endpoints).
 - [ ] T079a [P] [—] Performance check (SC-006): load-test `GET /trade/v1/snapshots/{secondary-sales,distributor-stock}` with a brand linked to ≥200 distributors; assert first-page p95 < 2s; record results in the PR. Tune snapshot read indexes if needed.
 - [ ] T080 [P] [—] `TradeSettingDefinitions` in `ampairs/trade/.../config/` — register the geo-fence radius + snapshot-coalesce-window as workspace settings (per `setting` module pattern).
 - [ ] T081 [P] [—] Docs: add `ampairs/docs/modules/trade.md` (module overview, cross-tenant boundary, snapshot model) and update module ownership table in `.claude/rules/08-module-boundaries.md`.
-- [ ] T082 [—] Backend CI gate: `./gradlew :ampairs_service:flywayInfo` (confirm V1.0.117–119 applied cleanly on Postgres + MySQL) + `./gradlew ciBuild`.
+- [ ] T082 [—] Backend CI gate: `./gradlew :ampairs_service:flywayInfo` (confirm V1.0.117–120 applied cleanly on Postgres + MySQL) + `./gradlew ciBuild`.
 - [ ] T083 [P] [—] Mobile final parity gate: `./gradlew :feature:trade:check` + 3-target compile; verify offline new-outlet + ad-hoc visit round-trip in an integration test.
 
 ---
@@ -245,12 +285,15 @@ offline author→sync round-trip; backend ≥80% critical / ≥90% endpoints).
 - **US4 (P6)** depends on **US2**; reuses `SnapshotService`/`SnapshotController` from US3 (do US3 first or share the scaffold).
 - **US5 (P7)** depends on **US2**; secondary achievement reads US3 snapshots (primary achievement + primary-order handshake do not).
 - **US6 (P8)** depends on **US2 + US3** (claims computed from secondary-sales snapshots).
+- **Field-Ops Reporting (P8b)** depends on **Foundational + US1 capture** (reports/leave/survey over the
+  attendance/visit data); independent of the brand-facing stories. P2 — can be built any time after US1.
 - **Polish (P9)** depends on all desired stories.
 
 ### Migration ordering (global Flyway versions)
 - `V1.0.117` (T022) — network + SFA tables (US1 + US2).
 - `V1.0.118` (T051) — snapshot + target + primary-order tables (US3/US4/US5).
 - `V1.0.119` (T073) — scheme/claim tables (US6).
+- `V1.0.120` (T084) — leave + visit-survey-response tables (Phase 8b reporting/survey/leave).
 
 ### Within each story
 Tests (write first, expect fail) → enums/entities → migration → DTOs/repos → services → controllers → mobile.

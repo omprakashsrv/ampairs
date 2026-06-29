@@ -5,7 +5,9 @@ same GET (pull) + POST (push) shape. Tenant = the **distributor** workspace; aut
 MANAGER) member. Records are UID-keyed (client-generated uids), in-band soft-delete, pull feed includes
 soft-deleted rows.
 
-Resources: `visits`, `field-orders`, `attendance`, `beats`, `journey-plans`.
+Resources: `visits`, `field-orders`, `attendance`, `beats`, `journey-plans`, `visit-survey-responses`
+(the last is the offline store-visit survey answers — structured per-question values keyed to a Visit, per
+`trade-reporting.md` / FR-VP2).
 (`beats`/`journey-plans` are typically authored by a MANAGER and pulled by reps; `visits`/`field-orders`/
 `attendance` are authored offline by reps.)
 
