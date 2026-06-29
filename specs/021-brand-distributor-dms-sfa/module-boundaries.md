@@ -1,17 +1,17 @@
 # Module Boundaries — Feature 021 (Brand → Distributor DMS + SFA)
 
 Defines which module owns which part of feature 021 and its sub-specs, per Constitution Principle IX
-(Domain-Driven Module Boundaries). The feature introduces **three new backend bounded contexts** —
-`trade`, `sfa`, `dms` — and makes small additive changes to existing modules. Cross-module access is via
+(Domain-Driven Module Boundaries). The feature introduces **four new backend bounded contexts** —
+`trade`, `sfa`, `dms`, `scheme` — and makes small additive changes to existing modules. Cross-module access is via
 **public service interfaces + events only**, never direct repository access.
 
 > **Status note:** `plan.md`, `tasks.md`, `data-model.md`, and `contracts/` were authored against a single
-> `ampairs/trade/...` path. The three-module split below supersedes that; the path remap is listed under
+> `ampairs/trade/...` path. The four-module split below supersedes that; the path remap is listed under
 > **Reconciliation** and is a flagged follow-up.
 
 ---
 
-## The three new modules
+## The four new modules
 
 ### 1. `trade` — cross-tenant network & consent core (the trust edge)
 The single place that holds the cross-tenant edge between a brand workspace and a distributor workspace.
@@ -35,25 +35,36 @@ The distributor's internal field-ops tool. No cross-tenant concern; fully offlin
 - **Independent of `trade`/`dms`** — ships standalone as the **MVP** (US1). Its sales output reaches the
   brand only indirectly, via the `order`/`invoice` documents that `dms` reads.
 
-### 3. `dms` — brand distribution-management views (cross-tenant aggregates)
-The brand-facing, online, read-mostly layer over published aggregates.
-- **Owns**: `SecondarySalesSnapshot`, `DistributorStockSnapshot` (versioned, recomputable), `SalesTarget`,
-  `TradeScheme`, `SchemeClaim`, `ClaimSettlement`; services `SnapshotService` (event-driven, debounced),
-  `TargetService`, `SchemeService`, `ClaimService`; the listeners that tag SECONDARY + enqueue snapshot
-  rebuilds.
+### 3. `dms` — brand distribution-management visibility (cross-tenant aggregates)
+The brand-facing, online, read-mostly visibility layer over published aggregates.
+- **Owns**: `SecondarySalesSnapshot`, `DistributorStockSnapshot` (versioned, recomputable), `SalesTarget`;
+  services `SnapshotService` (event-driven, debounced), `TargetService`; the listeners that tag SECONDARY +
+  enqueue snapshot rebuilds.
 - **Depends on**: `trade` (consent via `CrossTenantReadGuard` + NetworkBrand/NetworkProduct attribution),
-  `order`/`invoice`/`product`/`inventory` (source data via public services + events), `payment` (optional
-  ledger adjustment on settlement), `event`, `core`.
+  `order`/`invoice`/`product`/`inventory` (source data via public services + events), `event`, `core`.
 - **Does NOT depend on `sfa`** — it reads SFA's effect through the `order`/`invoice` modules, not the SFA
   entities.
 
+### 4. `scheme` — trade promotions & claims/settlement (the financial layer)
+The brand-funded incentive + reimbursement lifecycle — the highest correctness bar, with money movement.
+- **Owns**: `TradeScheme` (slab/value/qty/free-goods/display), `SchemeClaim`, `ClaimSettlement`; services
+  `SchemeService` (author/publish down links), `ClaimService` (accrue from qualifying secondary sales;
+  submit→approve/reject→settle lifecycle).
+- **Depends on**: `dms` (claims computed from `SecondarySalesSnapshot`), `trade` (consent + scheme publish
+  down links), `payment` (optional spec-013 ledger adjustment on settlement), `event`, `core`.
+- **Why its own context**: the claim/settlement money lifecycle + ledger integration are a distinct
+  correctness/audit concern from read-only visibility; isolating it keeps the financial state machine
+  contained (P3, ships last).
+
 ### Dependency graph (acyclic)
 ```
-sfa   → workspace, customer, order, form, setting, event, core        (standalone; the MVP)
-trade → workspace, core
-dms   → trade, order, invoice, product, inventory, payment, event, core
+sfa    → workspace, customer, order, form, setting, event, core       (standalone; the MVP)
+trade  → workspace, core
+dms    → trade, order, invoice, product, inventory, event, core
+scheme → dms, trade, payment, event, core
 ```
-No cycles: `sfa` depends on neither `trade` nor `dms`; `dms` depends on `trade` but not `sfa`.
+No cycles: `sfa` depends on none of the others; `dms` → `trade`; `scheme` → `dms` + `trade`; nothing
+depends on `sfa`.
 
 ---
 
@@ -67,10 +78,10 @@ No cycles: `sfa` depends on neither `trade` nor `dms`; `dms` depends on `trade` 
 | `invoice` | Secondary-sales source docs + `InvoiceFinalizedEvent`/`InvoiceCancelledEvent` (consumed by `dms`) |
 | `product` / `inventory` | `ProductBrand`/`Product`/barcode (Hop A/B + NPI), distributor `Inventory` (stock snapshots) — read by `trade`/`dms` via `ProductService`; NPI import creates products via `ProductService` |
 | `customer` | Retail outlets (beat outlets reference customers; offline new-outlet via customer `/sync`) |
-| `setting` | `sfa`/`trade`/`dms` register their `*SettingDefinitions` (geo-fence radius, auto-close cutoff, snapshot-coalesce window) |
+| `setting` | `sfa`/`trade`/`dms`/`scheme` register their `*SettingDefinitions` (geo-fence radius, auto-close cutoff, snapshot-coalesce window) |
 | `payment` | Optional spec-013 ledger adjustment on claim settlement; its `AgingService` is the read-model pattern `sfa` summaries mirror |
 | `event` | Shared domain-event classes the new modules publish/consume |
-| `ampairs_service` | Add `trade`, `sfa`, `dms` to `include(...)` + `migrationModules` |
+| `ampairs_service` | Add `trade`, `sfa`, `dms`, `scheme` to `include(...)` + `migrationModules` |
 
 ---
 
@@ -85,7 +96,7 @@ No cycles: `sfa` depends on neither `trade` nor `dms`; `dms` depends on `trade` 
 | Attendance capture + summary + leave (sfa-field-ops + field-ops-reporting A) | `sfa` (+ `workspace`) | `feature/sfa` |
 | Store visits + survey + productivity (sfa-field-ops + field-ops-reporting B) | `sfa` (+ `form`, `order`) | `feature/sfa` |
 | Secondary-sales / distributor-stock snapshots, targets (FR-018–025) | `dms` | `feature/dms` |
-| Trade schemes + claims/settlement (FR-026–029) | `dms` (+ `payment`) | `feature/dms` |
+| Trade schemes + claims/settlement (FR-026–029) | `scheme` (+ `dms`, `payment`) | `feature/dms` (or `feature/scheme`) |
 
 ### Mobile (`ampairs-app`) modules
 Follows the existing `feature/{x}` (+ `feature/{x}-api`) pattern:
@@ -108,7 +119,8 @@ Each module writes BOTH `postgresql/` and `mysql/`. Versions stay global (verify
 |---|---|
 | `trade` | trade_networks, trade_links, network_retailers, network_brands, network_products, primary_order_links |
 | `sfa` | beats, beat_outlets, journey_plans, planned_visits, visits, attendance, field_orders, leaves, visit_survey_responses |
-| `dms` | secondary_sales_snapshots, distributor_stock_snapshots, sales_targets, trade_schemes, scheme_claims, claim_settlements |
+| `dms` | secondary_sales_snapshots, distributor_stock_snapshots, sales_targets |
+| `scheme` | trade_schemes, scheme_claims, claim_settlements |
 
 ---
 
@@ -119,8 +131,8 @@ Each module writes BOTH `postgresql/` and `mysql/`. Versions stay global (verify
 - `ampairs/trade/...` → split across `ampairs/trade/`, `ampairs/sfa/`, `ampairs/dms/` per the tables above.
 - `feature/trade` (mobile) → `feature/sfa` (rep app/MVP), `feature/trade` (linking), `feature/dms` (brand
   dashboards).
-- Flyway: `V1.0.117` (network) stays `trade`; SFA tables move to an `sfa` migration; snapshot/target/scheme/
-  claim + leave/survey tables to `dms`/`sfa` migrations — reassign versions and update the migration-ordering
+- Flyway: `V1.0.117` (network) stays `trade`; SFA tables move to an `sfa` migration; snapshot/target
+  tables to `dms`, scheme/claim/settlement to `scheme`, leave/survey to `sfa` migrations — reassign versions and update the migration-ordering
   note + `migrationModules`.
 - Phase/task module paths and `SyncEntity` registrations follow the module each entity lands in.
 
