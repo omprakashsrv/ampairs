@@ -235,6 +235,22 @@ Five decisions from `/speckit.clarify` are now binding; each refines an earlier 
   for its own orders and applies its own validation/pricing; the link is the consent gate. **Impact**: a
   `PrimaryOrderLink` (brandWorkspaceId, distributorWorkspaceId, brandOrderUid, status, distributorOrderUid?)
   drives the confirm step via `PrimaryOrderService`; requires an active link.
+- **R13.6 Cross-workspace product identity (new; the missing product map)** — **Decision**: brand and
+  distributor are separate workspaces with separate product catalogs, so a distributor's product (`PRD…` in
+  the distributor tenant) is **not** the brand's product (`PRD…` in the brand tenant). Linking is
+  **distributor-maps (assisted)**: the brand **publishes its catalog** down the active link; the distributor
+  maps each product it carries to a brand SKU, with the system **auto-suggesting by GTIN/barcode/HSN** and a
+  manual confirm/override. The mapping is a `NetworkProduct` (the product analog of `NetworkRetailer`).
+  **Rationale**: a distributor carries many brands; without a per-link product map the brand's
+  "secondary-sales by product" is empty, mis-aggregated across distributors that code the same SKU
+  differently, or leaks competitor-brand sales. Distributor-side mapping preserves each tenant's catalog
+  autonomy (rejected: forcing the distributor to adopt the brand's master catalog couples the tenants;
+  rejected: GTIN-only auto-match is fragile on dirty barcode data — so auto-match is an *assist*, not the
+  sole mechanism). **Impact**: new `NetworkProduct{link, distributorProductUid, brandProductUid, brandSkuCode,
+  matchSource, status}`; `SecondarySalesSnapshot`/`DistributorStockSnapshot` carry `brandProductUid`/
+  `brandSkuCode` resolved via confirmed mappings; brand reads filter to confirmed-mapped products (unmapped
+  excluded — closes the competitor-leakage hole, FR-018a/018b). Scheme eligibility, product targets, and the
+  primary-order handshake all reference the brand SKU through this map.
 
 ---
 
@@ -259,3 +275,4 @@ Five decisions from `/speckit.clarify` are now binding; each refines an earlier 
 | Geo at check-in | Capture + flag out-of-radius; never block (R13.3) |
 | Ad-hoc & new outlet | Unplanned visits + offline new-retailer, distributor-scoped (R13.4) |
 | Primary-order placement | Brand-tenant order → link → distributor confirm handshake (R13.5) |
+| Cross-workspace product identity | `NetworkProduct` map; brand publishes catalog, distributor maps (GTIN-assisted); brand view = confirmed-mapped products only (R13.6) |

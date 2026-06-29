@@ -51,6 +51,21 @@ Uniqueness: at most one **non-revoked** link per `(brandWorkspaceId, distributor
 | displayName / area | String? | populated/projected to the brand **only** when scope.retailerVisibility = IDENTIFIED |
 | active | Boolean | |
 
+### NetworkProduct  *(tenant: distributor)* — brand↔distributor product mapping (clarification R13.6); product analog of NetworkRetailer
+| Field | Type | Notes |
+|---|---|---|
+| uid | String | PK, prefix `NPR` |
+| link → | String | TradeLink.uid |
+| distributorProductUid → | String | distributor's `product` (the SKU the distributor carries; never leaves the distributor tenant raw) |
+| brandProductUid → | String | brand's `product` uid (from the catalog the brand published down the link) |
+| brandSkuCode | String | brand's stable SKU code — the brand-facing product dimension |
+| matchSource | MatchSource | AUTO_GTIN / AUTO_BARCODE / AUTO_HSN / MANUAL |
+| status | MappingStatus | SUGGESTED (auto-proposed) / CONFIRMED (distributor accepted) — only CONFIRMED drives brand figures |
+| active | Boolean | |
+Uniqueness: at most one CONFIRMED mapping per `(link, distributorProductUid)`. The brand's published catalog
+is read by the distributor over the link (consented brand→distributor direction) to populate `brandProductUid`/
+`brandSkuCode`.
+
 ---
 
 ## 2. SFA field entities (tenant: DISTRIBUTOR; SFA-authored offline, ride `/sync`)
@@ -159,7 +174,8 @@ incrementally mutated.
 | distributorWorkspaceId | String | source tenant |
 | grain | SnapshotGrain | SKU×PERIOD, SKU×PERIOD×OUTLET, SKU×PERIOD×AREA |
 | periodKey | String | e.g. `2026-06` (month) or `2026-W26` |
-| skuUid | String | product |
+| skuUid | String | the **distributor's** source product uid (from the distributor's order/invoice docs) |
+| brandProductUid / brandSkuCode | String? | resolved via the CONFIRMED `NetworkProduct` mapping — the brand-facing product dimension; rows without a confirmed mapping are excluded from brand reads (FR-018b) |
 | outletCode / areaCode | String? | per grain; outlet only when scope IDENTIFIED-eligible (still coded) |
 | qty | BigDecimal | summed secondary qty |
 | value | BigDecimal | summed secondary value |
@@ -172,7 +188,8 @@ Read by the brand only through `CrossTenantReadGuard` (active link + scope.share
 |---|---|---|
 | uid | String | PK, prefix `DSS` |
 | distributorWorkspaceId | String | source tenant |
-| skuUid | String | product |
+| skuUid | String | the **distributor's** source product uid (from the distributor's inventory) |
+| brandProductUid / brandSkuCode | String? | resolved via the CONFIRMED `NetworkProduct` mapping; unmapped rows excluded from brand reads (FR-018b) |
 | warehouseCode / areaCode | String? | grain |
 | quantityOnHand | BigDecimal | from distributor `inventory` |
 | version | Long | bump on recompute |
@@ -262,3 +279,8 @@ DRAFT→SUBMITTED; brand owns APPROVED/REJECTED/SETTLED.
   cancelled invoice triggers a rebuild that supersedes the prior version (no double count).
 - Money: `BigDecimal`/`DECIMAL(19,4)` server, `Long` minor units mobile; `computedAmount` and `settledAmount`
   for the same claim+sales MUST match across tenants.
+- Every brand-facing product figure (secondary sales, stock, targets, scheme eligibility) MUST resolve the
+  distributor's `skuUid` to a brand SKU via a CONFIRMED `NetworkProduct` mapping; distributor products with no
+  confirmed mapping are EXCLUDED from brand reads (no other-brand leakage, FR-018b). `MatchSource ∈ {AUTO_GTIN,
+  AUTO_BARCODE, AUTO_HSN, MANUAL}`; `MappingStatus ∈ {SUGGESTED, CONFIRMED}` (SUGGESTED→CONFIRMED is the
+  distributor's accept/override action).

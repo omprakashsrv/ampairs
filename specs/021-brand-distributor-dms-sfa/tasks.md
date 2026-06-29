@@ -75,7 +75,7 @@ offline author→sync round-trip; backend ≥80% critical / ≥90% endpoints).
 - [ ] T019 [P] [US1] Entities `Beat`, `BeatOutlet` (+ `@NamedEntityGraph("Beat.outlets")`) in `ampairs/trade/.../domain/model/`.
 - [ ] T020 [P] [US1] Entities `JourneyPlan`, `PlannedVisit` in `ampairs/trade/.../domain/model/`.
 - [ ] T021 [P] [US1] Entities `Visit` (geoFenceStatus, distanceMeters, adHoc, lat/lng, synced/active), `Attendance`, `FieldOrder` in `ampairs/trade/.../domain/model/`.
-- [ ] T022 [US1] Flyway `V1.0.117__create_trade_module_tables.sql` in BOTH `postgresql/` and `mysql/` — network+SFA tables for US1+US2 (beats, beat_outlets, journey_plans, planned_visits, visits, attendance, field_orders; + trade_networks, trade_links, network_retailers from US2). TIMESTAMPTZ/TIMESTAMP, DECIMAL(19,4) money, owner_id column.
+- [ ] T022 [US1] Flyway `V1.0.117__create_trade_module_tables.sql` in BOTH `postgresql/` and `mysql/` — network+SFA tables for US1+US2 (beats, beat_outlets, journey_plans, planned_visits, visits, attendance, field_orders; + trade_networks, trade_links, network_retailers, network_products from US2). TIMESTAMPTZ/TIMESTAMP, DECIMAL(19,4) money, owner_id column.
 - [ ] T023 [P] [US1] Request/Response DTOs + converters for visit/field-order/attendance/beat/journey-plan in `ampairs/trade/.../domain/dto/` (snake_case, `@field:` validation, `asResponse()`/`toEntity()`).
 - [ ] T024 [P] [US1] Spring Data repositories for the 7 SFA entities in `ampairs/trade/.../repository/` (derived queries; `getXAfterSync(Instant?, Pageable)` incl. soft-deleted rows).
 - [ ] T025 [US1] `BeatService` + `JourneyPlanService` in `ampairs/trade/.../service/` — CRUD + today's-planned-visits derivation; FIELD_REP beat-scoping enforcement (rep sees only their distributor's beats).
@@ -107,16 +107,20 @@ offline author→sync round-trip; backend ≥80% critical / ≥90% endpoints).
 - [ ] T035 [P] [US2] Contract tests for `POST /trade/v1/links`, `/accept`, `/decline`, `/revoke` (state machine, `ApiResponse`) in `ampairs/trade/src/test/.../TradeLinkContractTest.kt`.
 - [ ] T036 [P] [US2] Consent-gate test: with no ACCEPTED link, a cross-tenant read throws `ConsentRequiredException`; illegal transition (accept REVOKED) throws `LinkStateException`, in `ampairs/trade/src/test/.../ConsentGateTest.kt`.
 - [ ] T037 [P] [US2] Scope-default test: invite without `retailer_visibility` ⇒ CODED; multi-brand isolation (brand A cannot see brand B's link), in `ampairs/trade/src/test/.../ConsentScopeTest.kt`.
+- [ ] T037a [P] [US2] Product-mapping test (FR-018a/018b): GTIN/barcode/HSN auto-match proposes SUGGESTED `NetworkProduct`s; only CONFIRMED mappings resolve a distributor product to a brand SKU; a distributor product with no confirmed mapping is excluded from brand reads; same brand SKU coded differently by two distributors aggregates under one `brand_product_uid`, in `ampairs/trade/src/test/.../NetworkProductMappingTest.kt`.
 
 ### Implementation for User Story 2
-- [ ] T038 [P] [US2] Enums `LinkStatus`, `RetailerVisibility` in `ampairs/trade/.../domain/enums/`.
+- [ ] T038 [P] [US2] Enums `LinkStatus`, `RetailerVisibility`, `MatchSource` (AUTO_GTIN/AUTO_BARCODE/AUTO_HSN/MANUAL), `MappingStatus` (SUGGESTED/CONFIRMED) in `ampairs/trade/.../domain/enums/`.
 - [ ] T039 [P] [US2] Entities `TradeNetwork`, `TradeLink`, `ConsentScope` (embeddable, defaults: retailerVisibility=CODED), `NetworkRetailer` in `ampairs/trade/.../domain/model/` (tables already in V1.0.117 migration T022).
+- [ ] T039a [P] [US2] Entity `NetworkProduct` (link, distributorProductUid, brandProductUid, brandSkuCode, matchSource, status; ≤1 CONFIRMED per (link, distributorProductUid)) in `ampairs/trade/.../domain/model/` + DTOs (`NetworkProductRow`, `BrandProductRow`) in `domain/dto/` (table in V1.0.117, T022).
 - [ ] T040 [P] [US2] DTOs + converters (`TradeLinkResponse`, `ConsentScope`, invite/accept requests) in `ampairs/trade/.../domain/dto/` per `contracts/trade-network-actions.md`.
 - [ ] T041 [P] [US2] Repositories for network/link/network-retailer in `ampairs/trade/.../repository/` — incl. `findActiveLink(brand, distributor)` and uniqueness (≤1 non-revoked link per pair).
 - [ ] T042 [US2] `TradeLinkService` in `ampairs/trade/.../service/` — invite/accept/decline/revoke state machine; scope default CODED; distributor may tighten on accept; emit no data until ACCEPTED.
 - [ ] T043 [US2] Wire `CrossTenantReadGuard` (T009) to real `TradeLinkService.findActiveLink` + category check; replace deny stub.
 - [ ] T044 [US2] `TradeNetworkController` in `ampairs/trade/.../controller/` — link endpoints; brand ADMIN/OWNER for invite, distributor ADMIN/OWNER for accept/revoke; `ApiResponse<TradeLinkResponse>`.
+- [ ] T044a [US2] `NetworkProductService` + endpoints — brand publishes/serves its catalog over the link (`GET /trade/v1/brand-catalog`, consent-gated to the distributor), GTIN/barcode/HSN auto-match producing SUGGESTED mappings, and distributor confirm/override (`GET/POST /trade/v1/network-products`) in `ampairs/trade/.../{service,controller}/` per `contracts/trade-network-actions.md`.
 - [ ] T045 [P] [US2] Mobile (distributor): minimal "Trade links" screen + ViewModel to accept/decline/revoke invitations in `ampairs-app/feature/trade/.../ui/links/` (online action over `tradeUrl`).
+- [ ] T045a [P] [US2] Mobile/Web (distributor): product-mapping screen + ViewModel — review auto-suggested matches against the brand catalog, confirm/override each to a brand SKU, in `ampairs-app/feature/trade/.../ui/mapping/`.
 
 **Checkpoint**: The consent edge works end-to-end; cross-tenant reads are gated. Foundation for all brand-facing stories.
 
@@ -133,13 +137,14 @@ offline author→sync round-trip; backend ≥80% critical / ≥90% endpoints).
 - [ ] T047 [P] [US3] PII-projection test: scope CODED ⇒ `outlet_code` only (no name/area); scope IDENTIFIED ⇒ name/area present, never full contact PII, in `ampairs/trade/src/test/.../RetailerProjectionTest.kt`.
 - [ ] T048 [P] [US3] Endpoint test: `GET /trade/v1/snapshots/secondary-sales?...=all-linked` aggregates only ACCEPTED links; no link ⇒ 403, in `ampairs/trade/src/test/.../SecondarySalesReadTest.kt`.
 - [ ] T048a [P] [US3] Backend test for distributor-offline read (Edge Cases): the brand's secondary-sales/stock read returns the last published snapshot version (no live dependency on the distributor being online), in `ampairs/trade/src/test/.../SnapshotAvailabilityTest.kt`.
+- [ ] T048b [P] [US3] Backend test for brand-product resolution/exclusion (FR-018b): snapshot rows resolve to `brand_product_uid`/`brand_sku_code` via confirmed `NetworkProduct`; a distributor sale of an unmapped/other-brand product never appears in the brand's secondary-sales view; cross-distributor totals aggregate by `brand_product_uid`, in `ampairs/trade/src/test/.../BrandProductResolutionTest.kt`.
 - [ ] T049 [P] [US3] Coalescing test: N rapid invoice events ⇒ ≤1 rebuild per ~5 min window per distributor, in `ampairs/trade/src/test/.../SnapshotDebounceTest.kt`.
 
 ### Implementation for User Story 3
 - [ ] T050 [P] [US3] Enum `SnapshotGrain` + `SecondarySalesSnapshot` entity (key `(distributorWorkspaceId, grain, periodKey, sku, outlet/area, version)`) in `ampairs/trade/.../domain/model/`.
-- [ ] T051 [US3] Flyway `V1.0.118__create_trade_snapshot_target_tables.sql` (both vendors) — secondary_sales_snapshots, distributor_stock_snapshots (US4), sales_targets (US5), primary_order_links (US5).
+- [ ] T051 [US3] Flyway `V1.0.118__create_trade_snapshot_target_tables.sql` (both vendors) — secondary_sales_snapshots, distributor_stock_snapshots (US4), sales_targets (US5), primary_order_links (US5). Snapshot tables include `brand_product_uid` + `brand_sku_code` columns (resolved via NetworkProduct).
 - [ ] T052 [P] [US3] Snapshot DTOs (`SecondarySalesRow`) + repository (versioned read, latest-version-per-key) in `ampairs/trade/.../{domain/dto,repository}/`. The cross-distributor `all-linked` aggregate query uses `nativeQuery = true` (bypassing `@TenantId`); single-distributor reads stay tenant-filtered.
-- [ ] T053 [US3] `SnapshotService` in `ampairs/trade/.../service/` — deterministic recompute from distributor order/invoice (via `InvoiceService`/`OrderService` public reads); **debounced ≤ once/~5 min per (distributor, grain)**; bumps `version`.
+- [ ] T053 [US3] `SnapshotService` in `ampairs/trade/.../service/` — deterministic recompute from distributor order/invoice (via `InvoiceService`/`OrderService` public reads); resolve each distributor `skuUid` to `brandProductUid`/`brandSkuCode` via the CONFIRMED `NetworkProduct` map and **exclude unmapped/other-brand products** from brand-facing rows; **debounced ≤ once/~5 min per (distributor, grain)**; bumps `version`.
 - [ ] T054 [US3] Event listener in `ampairs/trade/.../listener/TradeSalesListener.kt` — on existing `InvoiceFinalizedEvent`/`InvoiceCancelledEvent` (+ order events) tag SECONDARY and enqueue debounced rebuild.
 - [ ] T055 [US3] `SnapshotController` (secondary-sales read) in `ampairs/trade/.../controller/` — every `all-linked` cross-tenant aggregation runs `nativeQuery = true` strictly behind `CrossTenantReadGuard` (active link + scope checked first); retailer projection per scope; `ApiResponse<PageResponse<SecondarySalesRow>>`.
 - [ ] T056 [P] [US3] Mobile/Web brand dashboard (online, pull-only): secondary-sales by SKU/beat/area screen + ViewModel in `ampairs-app/feature/trade/.../ui/dashboard/` (reads `tradeUrl("v1/snapshots/secondary-sales")`).
@@ -180,7 +185,7 @@ offline author→sync round-trip; backend ≥80% critical / ≥90% endpoints).
 ### Implementation for User Story 5
 - [ ] T064 [P] [US5] Enums `TargetGrain`, `PrimaryOrderStatus`; entities `SalesTarget`, `PrimaryOrderLink` in `ampairs/trade/.../domain/{enums,model}/` (tables in V1.0.118, T051).
 - [ ] T065 [P] [US5] DTOs + repositories for targets + primary-order-link in `ampairs/trade/.../{domain/dto,repository}/`.
-- [ ] T066 [US5] `TargetService` — CRUD + derived achievement (no stored achievement) from snapshots/primary orders, per tier/grain/period.
+- [ ] T066 [US5] `TargetService` — CRUD + derived achievement (no stored achievement) from snapshots/primary orders, per tier/grain/period; product-grain targets/achievement key on the **brand SKU** (resolved via `NetworkProduct`).
 - [ ] T067 [US5] `PrimaryOrderService` — place (brand, ACTIVE link, references brand-tenant order uid) / confirm (distributor → create order via `OrderService`, set distributorOrderUid) / reject; state machine.
 - [ ] T068 [US5] `TargetController` (`GET /trade/v1/targets`, consent-gated `scope.share_targets`) + `PrimaryOrderController` (`POST /trade/v1/primary-orders`, `/confirm`, `/reject`) in `ampairs/trade/.../controller/`.
 - [ ] T069 [P] [US5] Mobile: rep "My targets / scorecard" screen + ViewModel in `ampairs-app/feature/trade/.../ui/scorecard/` (own achievement only).
@@ -203,7 +208,7 @@ offline author→sync round-trip; backend ≥80% critical / ≥90% endpoints).
 - [ ] T072 [P] [US6] Enums `SchemeType`, `ClaimStatus`; entities `TradeScheme`, `SchemeClaim`, `ClaimSettlement` in `ampairs/trade/.../domain/{enums,model}/`.
 - [ ] T073 [US6] Flyway `V1.0.119__create_trade_scheme_claim_tables.sql` (both vendors) — trade_schemes, scheme_claims, claim_settlements.
 - [ ] T074 [P] [US6] DTOs + repositories for scheme/claim/settlement in `ampairs/trade/.../{domain/dto,repository}/`.
-- [ ] T075 [US6] `SchemeService` (author/publish down in-scope links) + `ClaimService` (accrue from qualifying SecondarySalesSnapshot; submit/approve/reject/settle lifecycle; optional spec-013 ledger ref on settle).
+- [ ] T075 [US6] `SchemeService` (author/publish down in-scope links; scheme eligibility SKUs are **brand SKUs** matched to distributor sales via `NetworkProduct`) + `ClaimService` (accrue from qualifying SecondarySalesSnapshot; submit/approve/reject/settle lifecycle; optional spec-013 ledger ref on settle).
 - [ ] T076 [US6] `SchemeClaimController` — scheme create/publish/list + claim submit/approve/reject/settle endpoints per `contracts/trade-network-actions.md`; consent-gated.
 - [ ] T077 [P] [US6] Mobile (distributor): "Schemes & claims" screen + ViewModel (view published schemes, submit claim) in `ampairs-app/feature/trade/.../ui/claims/`.
 

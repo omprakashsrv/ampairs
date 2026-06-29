@@ -37,6 +37,7 @@ Reference systems in this space: BeatRoute, Bizom, FieldAssist.
 - Q: Should outlet check-in enforce proximity to the outlet's location? → A: Capture + flag — compute distance from the captured location to the outlet and flag/score visits outside a configurable radius, but never block the check-in.
 - Q: May a rep visit outlets not on today's plan or register a new retailer in the field? → A: Yes — ad-hoc visits to any of the distributor's outlets are allowed, and a rep may register a new retailer in the field (offline); all stays scoped to the rep's own distributor, and adherence is still measured against the plan with ad-hoc stops reported separately.
 - Q: How is a primary order (brand → distributor) placed across the link? → A: Handshake — the brand records the order in its own tenant addressed to the linked distributor; it surfaces to the distributor as an inbound order over the link, which the distributor confirms, becoming a normal order in the distributor's tenant (no direct cross-tenant write).
+- Q: Brand and distributor are separate workspaces with separate product catalogs — how are a distributor's products linked to the brand's products? → A: Distributor-maps (assisted) — the brand publishes its catalog down the active link; the distributor maps each product it carries to a brand SKU, with GTIN/barcode/HSN auto-suggestions (a `NetworkProduct` mapping). Brand-facing secondary-sales/stock/targets/scheme figures resolve to the brand SKU via confirmed mappings; distributor products with no confirmed brand mapping are excluded from the brand view (no competitor-brand leakage).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -302,10 +303,21 @@ on both sides.
 
 - **FR-018**: The system MUST derive secondary sales from the distributor's own sales documents (distributor
   → retailer), without requiring a separate parallel data-entry flow.
+- **FR-018a**: Because the brand and distributor are separate workspaces with separate product catalogs, the
+  system MUST let a brand publish its product catalog down an active link, and let the distributor map each
+  product it carries to a brand SKU, auto-suggesting matches by shared global identifier (GTIN/barcode/HSN)
+  with a manual confirm/override. This brand↔distributor product mapping is the canonical link between a
+  distributor's product and the brand's product.
+- **FR-018b**: All brand-facing product figures (secondary sales, stock, targets, scheme eligibility) MUST
+  resolve to the brand's SKU via a confirmed product mapping. Distributor products with no confirmed brand
+  mapping MUST be excluded from the brand's view — a brand MUST NOT see a distributor's sales or stock of
+  products belonging to other brands.
 - **FR-019**: The system MUST present a brand with aggregated secondary sales across its linked distributors,
-  broken down by product, time period, and geography or outlet, scoped to active links only.
-- **FR-020**: The system MUST present a brand with each linked distributor's on-hand stock per product, as of
-  a stated point in time, scoped to active links only.
+  broken down by **brand product** (via the link's product mapping), time period, and geography or outlet,
+  scoped to active links only; sales of unmapped/other-brand products are excluded.
+- **FR-020**: The system MUST present a brand with each linked distributor's on-hand stock per **brand
+  product** (via the link's product mapping), as of a stated point in time, scoped to active links only;
+  unmapped/other-brand products are excluded.
 - **FR-021**: The system MUST surface replenishment signals (e.g. days-of-stock, out-of-stock) derived from
   secondary sales and stock.
 - **FR-022**: Brand-facing figures MUST self-correct when a distributor records or backdates a sale or stock
@@ -359,6 +371,10 @@ on both sides.
 - **Network Retailer**: A distributor's retail outlet (one of its existing customers) surfaced to a linked
   brand by code by default, or with identified details (name/area, never full contact PII) when the link
   scope explicitly opts in.
+- **Network Product**: The mapping (per link) between a distributor's product (in the distributor workspace)
+  and the brand's product/SKU (in the brand workspace) — the product analog of Network Retailer. Carries the
+  brand SKU code, match source (auto by GTIN/barcode/HSN, or manual), and status (suggested/confirmed). Only
+  confirmed mappings drive the brand's product-dimensioned figures.
 - **Beat**: A named route owning an ordered list of outlets with visit sequence and scheduled day(s).
 - **Beat Outlet**: The membership of a retailer outlet in a beat, with its sequence and visit day.
 - **Journey Plan (PJP)**: A rep's recurring weekly assignment of beats — the planned calendar of routes.
@@ -372,8 +388,9 @@ on both sides.
   distributor over the active link, becoming a normal order in the distributor's tenant on confirmation.
 - **Sales Target**: A target by tier and grain (period × product/area × distributor or rep/beat) against which
   achievement is measured.
-- **Secondary Sales (aggregate)**: A published, point-in-time rollup of distributor→retailer sales by product
-  × period × outlet-or-area, shared up the link.
+- **Secondary Sales (aggregate)**: A published, point-in-time rollup of distributor→retailer sales by
+  **brand product** (resolved via the Network Product mapping) × period × outlet-or-area, shared up the link;
+  unmapped products are excluded.
 - **Distributor Stock (aggregate)**: A published, point-in-time rollup of a distributor's on-hand stock by
   product, shared up the link.
 - **Trade Scheme**: A brand-funded promotion with type, eligibility, period, and funding, published down links.

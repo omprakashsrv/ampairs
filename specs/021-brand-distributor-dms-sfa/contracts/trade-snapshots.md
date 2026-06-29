@@ -13,16 +13,19 @@ GET /trade/v1/snapshots/secondary-sales
     ?distributor_workspace_id={WSP...|all-linked}
     &grain=SKU_PERIOD|SKU_PERIOD_OUTLET|SKU_PERIOD_AREA
     &period_from=2026-04&period_to=2026-06
-    &sku_uid={PRD...}?  &area_code={...}?
+    &brand_product_uid={PRD...}?  &area_code={...}?     # the BRAND's product uid (not the distributor's)
     &page={int}&size={int}
 → ApiResponse<PageResponse<SecondarySalesRow>>
 ```
 ```json
-// SecondarySalesRow
-{ "distributor_workspace_id": "WSP...", "sku_uid": "PRD...", "period_key": "2026-06",
-  "outlet_code": "OUT-0153|null", "area_code": "BLR-S|null",
+// SecondarySalesRow — product dimension is the BRAND product (resolved via the confirmed NetworkProduct map)
+{ "distributor_workspace_id": "WSP...", "brand_product_uid": "PRD...", "brand_sku_code": "BRX-12",
+  "period_key": "2026-06", "outlet_code": "OUT-0153|null", "area_code": "BLR-S|null",
   "qty": "120.000", "value": "920710.50", "version": 7, "as_of": "2026-06-28T04:20:00Z" }
 ```
+Only the distributor's products **confirmed-mapped** to a brand SKU appear; unmapped/other-brand products are
+excluded (FR-018b). Cross-distributor aggregation sums by `brand_product_uid`, so the same brand SKU coded
+differently by each distributor rolls up correctly.
 `distributor_workspace_id=all-linked` aggregates across every ACCEPTED link of the calling brand; a
 distributor with no active link is excluded (SC-004/SC-005). No active link → `ConsentRequiredException`.
 
@@ -30,16 +33,17 @@ distributor with no active link is excluded (SC-004/SC-005). No active link → 
 
 ```
 GET /trade/v1/snapshots/distributor-stock
-    ?distributor_workspace_id={WSP...|all-linked}&sku_uid={PRD...}?&area_code={...}?
+    ?distributor_workspace_id={WSP...|all-linked}&brand_product_uid={PRD...}?&area_code={...}?
     &page={int}&size={int}
 → ApiResponse<PageResponse<DistributorStockRow>>
 ```
 ```json
-// DistributorStockRow
-{ "distributor_workspace_id": "WSP...", "sku_uid": "PRD...", "warehouse_code": "WH-1|null",
-  "area_code": "BLR-S|null", "quantity_on_hand": "340.000",
+// DistributorStockRow — product dimension is the BRAND product (via the confirmed NetworkProduct map)
+{ "distributor_workspace_id": "WSP...", "brand_product_uid": "PRD...", "brand_sku_code": "BRX-12",
+  "warehouse_code": "WH-1|null", "area_code": "BLR-S|null", "quantity_on_hand": "340.000",
   "days_of_stock": 9.4, "out_of_stock": false, "version": 3, "as_of": "..." }
 ```
+Unmapped/other-brand distributor stock is excluded (FR-018b).
 `days_of_stock` / `out_of_stock` are derived from stock + the secondary-sales run rate (FR-021). Requires
 `scope.share_stock`.
 

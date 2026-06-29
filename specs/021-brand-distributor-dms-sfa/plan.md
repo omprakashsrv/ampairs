@@ -33,6 +33,11 @@ Money is `DECIMAL(19,4)` backend / `Long` minor units mobile. Full rationale in 
 - **Primary orders**: brand → distributor is a **handshake** (brand-tenant order → surfaced over link →
   distributor confirms → becomes a normal order in the distributor tenant), never a silent cross-tenant
   write. → `PrimaryOrderLink` referencing the brand-side order uid + distributor-side confirmation.
+- **Cross-workspace product identity**: brand and distributor are separate workspaces with separate
+  catalogs, so a distributor's product ≠ the brand's product. The brand publishes its catalog down the link;
+  the distributor maps each carried product to a brand SKU (GTIN/barcode/HSN-assisted). → `NetworkProduct`
+  map; snapshots carry `brandProductUid`/`brandSkuCode`; **brand reads filter to confirmed-mapped products**
+  (unmapped/other-brand excluded — both a correctness and an isolation safeguard).
 
 ## Technical Context
 
@@ -123,12 +128,14 @@ trade/
     ├── kotlin/com/ampairs/trade/
     │   ├── domain/
     │   │   ├── model/          # TradeNetwork, TradeLink (consented edge), ConsentScope (embeddable),
-    │   │   │                   # NetworkRetailer, Beat, BeatOutlet, JourneyPlan(PJP), PlannedVisit, Visit,
-    │   │   │                   # Attendance, FieldOrder (counter order ref), PrimaryOrderLink, SalesTarget,
+    │   │   │                   # NetworkRetailer, NetworkProduct (brand↔distributor SKU map), Beat,
+    │   │   │                   # BeatOutlet, JourneyPlan(PJP), PlannedVisit, Visit, Attendance,
+    │   │   │                   # FieldOrder (counter order ref), PrimaryOrderLink, SalesTarget,
     │   │   │                   # SecondarySalesSnapshot, DistributorStockSnapshot (versioned),
     │   │   │                   # TradeScheme, SchemeClaim, ClaimSettlement
-    │   │   ├── enums/          # TradeTier, LinkStatus, ConsentLevel, VisitOutcome, GeoFenceStatus,
-    │   │   │                   # ClaimStatus, SchemeType, SalesType (PRIMARY/SECONDARY/TERTIARY)
+    │   │   ├── enums/          # TradeTier, LinkStatus, RetailerVisibility, MatchSource, MappingStatus,
+    │   │   │                   # VisitOutcome, GeoFenceStatus, ClaimStatus, SchemeType,
+    │   │   │                   # SalesType (PRIMARY/SECONDARY/TERTIARY)
     │   │   └── dto/            # request/response DTOs + converters
     │   ├── repository/         # Spring Data repos (+ @EntityGraph; @Query/nativeQuery for snapshots/rollups)
     │   ├── service/            # TradeLinkService (consent edge), SnapshotService (debounced recompute),
@@ -175,9 +182,11 @@ dashboard is a P3 follow-up.
 ## Phased Delivery
 
 ### Phase 1 (MVP) — Distributor SFA app + network/link plumbing
-- **Entities**: `TradeNetwork`, `TradeLink` (consented edge) + `ConsentScope`, `NetworkRetailer`, `Beat`,
-  `BeatOutlet`, `JourneyPlan`/PJP, `PlannedVisit`, `Visit`, `Attendance`, `FieldOrder`.
+- **Entities**: `TradeNetwork`, `TradeLink` (consented edge) + `ConsentScope`, `NetworkRetailer`,
+  `NetworkProduct` (brand↔distributor SKU map), `Beat`, `BeatOutlet`, `JourneyPlan`/PJP, `PlannedVisit`,
+  `Visit`, `Attendance`, `FieldOrder`.
 - **Services**: `TradeLinkService` (invite/accept/revoke/consent scope — incl. coded-vs-identified default),
+  `NetworkProductService` (brand-catalog read + GTIN/barcode/HSN auto-match + distributor confirm),
   `BeatService`, `VisitService` (geo-fence flag, ad-hoc), `AttendanceService`; `CrossTenantReadGuard` scaffold.
 - **Endpoints**: SFA canonical `/sync` (`/trade/v1/{visits|field-orders|attendance|beats|journey-plans}/sync`,
   `GET`+`POST`); `POST /trade/v1/links` (invite), `POST /trade/v1/links/{uid}/accept`,
@@ -190,8 +199,10 @@ dashboard is a P3 follow-up.
 - **Entities**: `SecondarySalesSnapshot`, `DistributorStockSnapshot` (versioned, recomputable),
   `SalesTarget`, `PrimaryOrderLink`.
 - **Services**: `SnapshotService` (event-driven, **debounced ≤ 5 min/distributor** recompute from
-  distributor invoice/order/inventory), `TargetService`, `PrimaryOrderService`; activate
-  `CrossTenantReadGuard` (consent check before any `nativeQuery` rollup, PII projection per scope).
+  distributor invoice/order/inventory; resolves each `skuUid` to `brandProductUid`/`brandSkuCode` via the
+  confirmed `NetworkProduct` map and **excludes unmapped/other-brand products** from brand-facing rows),
+  `TargetService`, `PrimaryOrderService`; activate `CrossTenantReadGuard` (consent check before any
+  `nativeQuery` rollup, PII projection per scope).
 - **Endpoints**: `GET /trade/v1/snapshots/secondary-sales`, `.../distributor-stock`, `GET /trade/v1/targets`
   (all `TradeLink`-scoped to the calling brand); `POST /trade/v1/primary-orders` (brand authors),
   `POST /trade/v1/primary-orders/{uid}/confirm` (distributor confirms → distributor-tenant order).
@@ -217,3 +228,4 @@ dashboard is a P3 follow-up.
 | New `FIELD_REP` role + beat scoping in `workspace` | SFA reps must be limited to their distributor's beats | A global cross-tenant role leaks distributor data and explodes membership; no scoping means any member sees all outlets |
 | Primary-order handshake (`PrimaryOrderLink` + confirm step) instead of direct write | Each tenant must stay authoritative for its own orders; the brand can't silently write into the distributor's tenant | A direct cross-tenant order insert breaches isolation/consent and bypasses the distributor's own order validation/pricing |
 | Snapshot publication pipeline (event-driven rebuild) | Decouples the brand's read path from the distributor's live writes and keeps the consent/isolation boundary intact | Direct live cross-tenant reads or nightly ETL are either isolation-breaking or stale and still need the consent edge |
+| `NetworkProduct` brand↔distributor SKU map (catalog publish + distributor mapping) | Brand and distributor are separate workspaces/catalogs; without a per-link map the brand's product view is empty, mis-aggregated, or leaks other brands' sales | Sharing a single global product master breaks tenant catalog autonomy; GTIN-only auto-match is fragile on dirty barcodes, so auto-match is an assist over an explicit distributor confirm |
