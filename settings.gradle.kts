@@ -28,6 +28,7 @@ include("ecom")
 include("sfa")
 include("trade")
 include("dms")
+include("claim")
 include("ampairs_service")
 
 
