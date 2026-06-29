@@ -5,7 +5,9 @@ description: "Task list for Brand → Distributor DMS + Sales Force Automation"
 # Tasks: Brand → Distributor DMS + Sales Force Automation
 
 **Input**: Design documents from `/specs/021-brand-distributor-dms-sfa/`
-**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/
+**Prerequisites**: plan.md, spec.md, research.md, data-model.md, contracts/, **module-boundaries.md**
+
+> **Module placement** is governed by `module-boundaries.md` (contexts `trade`/`sfa`/`dms`/`claim`); the `ampairs/trade/...` paths below predate the four-module split — map each per its capability/module row.
 
 **Tests**: INCLUDED — the spec's Constitution Check and Testing & Quality Gates explicitly require them
 (cross-tenant consent gate, snapshot-recompute determinism, claim lifecycle, retailer-PII projection,

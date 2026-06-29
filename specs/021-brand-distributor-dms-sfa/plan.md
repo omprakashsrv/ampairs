@@ -3,6 +3,8 @@
 **Branch**: `021-brand-distributor-dms-sfa` (dev branch `claude/brand-distributor-dms-sfa-12692h`) | **Date**: 2026-06-28 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/021-brand-distributor-dms-sfa/spec.md`
 
+> **Module placement** is governed by [`module-boundaries.md`](./module-boundaries.md) — four new contexts `trade`/`sfa`/`dms`/`claim` (+ existing `pricing` for brand-funded scheme *definition*). The single `ampairs/trade/...` paths in this plan predate the split; map each to its module per the capability table.
+
 ## Summary
 
 Take Ampairs up-market from a **single-tier** business app to a **multi-tier trade platform**: the

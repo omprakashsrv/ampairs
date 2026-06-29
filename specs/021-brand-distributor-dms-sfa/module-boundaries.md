@@ -2,7 +2,7 @@
 
 Defines which module owns which part of feature 021 and its sub-specs, per Constitution Principle IX
 (Domain-Driven Module Boundaries). The feature introduces **four new backend bounded contexts** —
-`trade`, `sfa`, `dms`, `scheme` — and makes small additive changes to existing modules. Cross-module access is via
+`trade`, `sfa`, `dms`, `claim` — and makes small additive changes to existing modules. Cross-module access is via
 **public service interfaces + events only**, never direct repository access.
 
 > **Status note:** `plan.md`, `tasks.md`, `data-model.md`, and `contracts/` were authored against a single
@@ -45,25 +45,27 @@ The brand-facing, online, read-mostly visibility layer over published aggregates
 - **Does NOT depend on `sfa`** — it reads SFA's effect through the `order`/`invoice` modules, not the SFA
   entities.
 
-### 4. `scheme` — trade promotions & claims/settlement (the financial layer)
-The brand-funded incentive + reimbursement lifecycle — the highest correctness bar, with money movement.
-- **Owns**: `TradeScheme` (slab/value/qty/free-goods/display), `SchemeClaim`, `ClaimSettlement`; services
-  `SchemeService` (author/publish down links), `ClaimService` (accrue from qualifying secondary sales;
-  submit→approve/reject→settle lifecycle).
-- **Depends on**: `dms` (claims computed from `SecondarySalesSnapshot`), `trade` (consent + scheme publish
-  down links), `payment` (optional spec-013 ledger adjustment on settlement), `event`, `core`.
-- **Why its own context**: the claim/settlement money lifecycle + ledger integration are a distinct
-  correctness/audit concern from read-only visibility; isolating it keeps the financial state machine
-  contained (P3, ships last).
+### 4. `claim` — trade-scheme claims & settlement (the reimbursement layer)
+The brand-funded **reimbursement** lifecycle. NOTE: the brand-funded **scheme definition + application**
+(QPS/TPR/BOGO/volume, stamping `fundingBrandId` at order time) **already lives in `pricing`** (spec 015,
+`Offer`/PriceList engine); `claim` reuses it and owns ONLY the settlement that 015 explicitly deferred.
+- **Owns**: `SchemeClaim`, `ClaimSettlement`; service `ClaimService` (accrue from `pricing`-tagged,
+  `fundingBrandId`-attributed qualifying secondary sales → submit → approve/reject → settle; optional
+  `payment` ledger on settle). Does **not** re-define `TradeScheme` — that is `pricing`/015.
+- **Depends on**: `pricing` (brand-funded scheme + funding attribution), `dms` (qualifying
+  `SecondarySalesSnapshot`s), `trade` (consent/link), `payment` (ledger), `event`, `core`.
+- **`claim` vs `pricing` boundary**: `pricing` = *scheme definition + discount application at the point of
+  sale* (stamps `fundingBrandId`); `claim` = *cross-tenant brand→distributor reimbursement* (accrue→settle)
+  computed from those tagged sales. Complementary, not duplicative — `claim` builds on `pricing`.
 
 ### Dependency graph (acyclic)
 ```
 sfa    → workspace, customer, order, form, setting, event, core       (standalone; the MVP)
 trade  → workspace, core
 dms    → trade, order, invoice, product, inventory, event, core
-scheme → dms, trade, payment, event, core
+claim  → pricing, dms, trade, payment, event, core
 ```
-No cycles: `sfa` depends on none of the others; `dms` → `trade`; `scheme` → `dms` + `trade`; nothing
+No cycles: `sfa` depends on none of the others; `dms` → `trade`; `claim` → `pricing`/`dms`/`trade`; nothing
 depends on `sfa`.
 
 ---
@@ -78,10 +80,10 @@ depends on `sfa`.
 | `invoice` | Secondary-sales source docs + `InvoiceFinalizedEvent`/`InvoiceCancelledEvent` (consumed by `dms`) |
 | `product` / `inventory` | `ProductBrand`/`Product`/barcode (Hop A/B + NPI), distributor `Inventory` (stock snapshots) — read by `trade`/`dms` via `ProductService`; NPI import creates products via `ProductService` |
 | `customer` | Retail outlets (beat outlets reference customers; offline new-outlet via customer `/sync`) |
-| `setting` | `sfa`/`trade`/`dms`/`scheme` register their `*SettingDefinitions` (geo-fence radius, auto-close cutoff, snapshot-coalesce window) |
+| `setting` | `sfa`/`trade`/`dms`/`claim` register their `*SettingDefinitions` (geo-fence radius, auto-close cutoff, snapshot-coalesce window) |
 | `payment` | Optional spec-013 ledger adjustment on claim settlement; its `AgingService` is the read-model pattern `sfa` summaries mirror |
 | `event` | Shared domain-event classes the new modules publish/consume |
-| `ampairs_service` | Add `trade`, `sfa`, `dms`, `scheme` to `include(...)` + `migrationModules` |
+| `ampairs_service` | Add `trade`, `sfa`, `dms`, `claim` to `include(...)` + `migrationModules` |
 
 ---
 
@@ -96,7 +98,7 @@ depends on `sfa`.
 | Attendance capture + summary + leave (sfa-field-ops + field-ops-reporting A) | `sfa` (+ `workspace`) | `feature/sfa` |
 | Store visits + survey + productivity (sfa-field-ops + field-ops-reporting B) | `sfa` (+ `form`, `order`) | `feature/sfa` |
 | Secondary-sales / distributor-stock snapshots, targets (FR-018–025) | `dms` | `feature/dms` |
-| Trade schemes + claims/settlement (FR-026–029) | `scheme` (+ `dms`, `payment`) | `feature/dms` (or `feature/scheme`) |
+| Trade-scheme **claims & settlement** (FR-027–029; scheme *definition* = `pricing`/spec-015) | `claim` (+ `pricing`, `dms`, `payment`) | `feature/dms` |
 
 ### Mobile (`ampairs-app`) modules
 Follows the existing `feature/{x}` (+ `feature/{x}-api`) pattern:
@@ -120,7 +122,7 @@ Each module writes BOTH `postgresql/` and `mysql/`. Versions stay global (verify
 | `trade` | trade_networks, trade_links, network_retailers, network_brands, network_products, primary_order_links |
 | `sfa` | beats, beat_outlets, journey_plans, planned_visits, visits, attendance, field_orders, leaves, visit_survey_responses |
 | `dms` | secondary_sales_snapshots, distributor_stock_snapshots, sales_targets |
-| `scheme` | trade_schemes, scheme_claims, claim_settlements |
+| `claim` | scheme_claims, claim_settlements (scheme *definition* tables live in `pricing`/spec-015) |
 
 ---
 
@@ -132,7 +134,7 @@ Each module writes BOTH `postgresql/` and `mysql/`. Versions stay global (verify
 - `feature/trade` (mobile) → `feature/sfa` (rep app/MVP), `feature/trade` (linking), `feature/dms` (brand
   dashboards).
 - Flyway: `V1.0.117` (network) stays `trade`; SFA tables move to an `sfa` migration; snapshot/target
-  tables to `dms`, scheme/claim/settlement to `scheme`, leave/survey to `sfa` migrations — reassign versions and update the migration-ordering
+  tables to `dms`, claim/settlement to `claim`, leave/survey to `sfa` migrations — reassign versions and update the migration-ordering
   note + `migrationModules`.
 - Phase/task module paths and `SyncEntity` registrations follow the module each entity lands in.
 
