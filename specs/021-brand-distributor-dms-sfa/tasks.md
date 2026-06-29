@@ -63,8 +63,8 @@ offline author→sync round-trip; backend ≥80% critical / ≥90% endpoints).
 **Independent Test**: In airplane mode, open today's beat, check in (out-of-radius still saved+flagged), take a counter order, add a new outlet, check out; re-enable network → every record uploads exactly once and appears in the distributor's data. (SC-001/002/003/010)
 
 ### Tests for User Story 1 ⚠️
-- [ ] T014 [P] [US1] Backend contract test for `GET/POST /trade/v1/visits/sync` (UID-keyed idempotent upsert, soft-deletes in pull feed) in `ampairs/trade/src/test/.../VisitSyncContractTest.kt`.
-- [ ] T015 [P] [US1] Backend contract tests for `field-orders`, `attendance`, `beats`, `journey-plans` `/sync` in `ampairs/trade/src/test/.../{FieldOrder,Attendance,Beat,JourneyPlan}SyncContractTest.kt`.
+- [x] T014 [P] [US1] Backend contract test for `GET/POST /trade/v1/visits/sync` (UID-keyed idempotent upsert, soft-deletes in pull feed) in `ampairs/trade/src/test/.../VisitSyncContractTest.kt`.
+- [x] T015 [P] [US1] Backend contract tests for `field-orders`, `attendance`, `beats`, `journey-plans` `/sync` in `ampairs/trade/src/test/.../{FieldOrder,Attendance,Beat,JourneyPlan}SyncContractTest.kt`.
 - [x] T016 [P] [US1] Backend test: ad-hoc validation (`ad_hoc=false`⇒planned_visit required; `ad_hoc=true`⇒null) + geo-fence flag is informational (out-of-radius/no-location row still upserts) in `ampairs/trade/src/test/.../VisitRulesTest.kt`.
 - [x] T016a [P] [US1] Backend test for adherence (FR-017/SC-010): a Visit referencing a PlannedVisit marks it VISITED; a passed day with no Visit marks MISSED; ad-hoc visits are excluded from planned-adherence % but counted separately, in `ampairs/trade/src/test/.../AdherenceTest.kt`.
 - [ ] T016b [P] [US1] Backend test for rep-removed-from-beat scoping (FR-015 / Edge Cases): after a rep loses a beat assignment they can no longer read/act on those outlets, but Visits they already authored remain valid, in `ampairs/trade/src/test/.../BeatScopingTest.kt`.
