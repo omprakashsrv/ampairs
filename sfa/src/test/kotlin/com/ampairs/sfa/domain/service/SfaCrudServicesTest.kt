@@ -127,6 +127,19 @@ class SfaCrudServicesTest {
         assertFalse(service.delete("LV-missing"))
     }
 
+    @Test
+    fun `leave bulk upsert inserts then updates`() {
+        val repo: LeaveRepository = mock()
+        val service = LeaveService(repo, publisher)
+        whenever(repo.save(any<Leave>())).thenAnswer { it.arguments[0] as Leave }
+
+        service.bulkUpsertLeaves(listOf(Leave().apply { repMemberUid = "REP-1" }))
+        verify(publisher).created(eq("leave"), any())
+        whenever(repo.findByUid("LV-2")).thenReturn(Leave().apply { uid = "LV-2" })
+        service.bulkUpsertLeaves(listOf(Leave().apply { uid = "LV-2" }))
+        verify(publisher).updated(eq("leave"), eq("LV-2"))
+    }
+
     // ───────── VisitSurveyResponse ─────────
     @Test
     fun `survey response upsert inserts then updates`() {

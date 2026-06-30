@@ -23,6 +23,11 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import org.mockito.kotlin.verify
+import org.junit.jupiter.api.Assertions.assertTrue
+import com.ampairs.trade.exception.TradeException
+import com.ampairs.trade.domain.enums.PublicationStatus
+import com.ampairs.trade.domain.enums.DesignationStatus
 
 class TradeMappingServicesTest {
 
@@ -104,5 +109,58 @@ class TradeMappingServicesTest {
 
         whenever(repo.findByUid("POL-2")).thenReturn(PrimaryOrderLink().apply { uid = "POL-2"; status = PrimaryOrderStatus.CONFIRMED })
         assertThrows<LinkStateException> { service.reject("POL-2") } // only PLACED can be rejected
+    }
+
+    // ───────── NetworkBrand remove + list + not-found ─────────
+    @Test
+    fun `network brand remove flips status, missing is rejected, list delegates`() {
+        val repo: NetworkBrandRepository = mock()
+        val service = NetworkBrandService(repo, tradeLinkService)
+        whenever(repo.save(any<NetworkBrand>())).thenAnswer { it.arguments[0] as NetworkBrand }
+        whenever(repo.findByUid("NBR-1")).thenReturn(NetworkBrand().apply { uid = "NBR-1"; status = DesignationStatus.ACTIVE })
+        assertEquals(DesignationStatus.REMOVED, service.remove("NBR-1").status)
+
+        whenever(repo.findByUid("missing")).thenReturn(null)
+        assertThrows<TradeException> { service.remove("missing") }
+
+        whenever(repo.findByLinkUid("TLK-1")).thenReturn(listOf(NetworkBrand().apply { uid = "NBR-1" }))
+        assertEquals(1, service.list("TLK-1").size)
+    }
+
+    // ───────── NetworkProduct confirm not-found + list ─────────
+    @Test
+    fun `network product confirm rejects missing and list delegates`() {
+        val repo: NetworkProductRepository = mock()
+        val service = NetworkProductService(repo, tradeLinkService)
+        whenever(repo.findByUid("missing")).thenReturn(null)
+        assertThrows<TradeException> { service.confirm("missing") }
+        whenever(repo.findByLinkUid("TLK-1")).thenReturn(listOf(NetworkProduct().apply { uid = "NPR-1" }))
+        assertEquals(1, service.list("TLK-1").size)
+    }
+
+    // ───────── SchemePublication withdraw + listPublished + not-found ─────────
+    @Test
+    fun `scheme publication withdraw flips status, missing is rejected, listPublished delegates`() {
+        val repo: SchemePublicationRepository = mock()
+        val service = SchemePublicationService(repo, tradeLinkService)
+        whenever(repo.save(any<SchemePublication>())).thenAnswer { it.arguments[0] as SchemePublication }
+        whenever(repo.findByUid("SPB-1")).thenReturn(SchemePublication().apply { uid = "SPB-1"; status = PublicationStatus.PUBLISHED })
+        assertEquals(PublicationStatus.WITHDRAWN, service.withdraw("SPB-1").status)
+
+        whenever(repo.findByUid("missing")).thenReturn(null)
+        assertThrows<TradeException> { service.withdraw("missing") }
+
+        whenever(repo.findByLinkUidAndStatus("TLK-1", PublicationStatus.PUBLISHED))
+            .thenReturn(listOf(SchemePublication().apply { uid = "SPB-1" }))
+        assertEquals(1, service.listPublished("TLK-1").size)
+    }
+
+    // ───────── PrimaryOrder not-found ─────────
+    @Test
+    fun `primary order confirm rejects a missing link`() {
+        val repo: PrimaryOrderLinkRepository = mock()
+        val service = PrimaryOrderService(repo, tradeLinkService)
+        whenever(repo.findByUid("missing")).thenReturn(null)
+        assertThrows<TradeException> { service.confirm("missing", "DORD-1") }
     }
 }
