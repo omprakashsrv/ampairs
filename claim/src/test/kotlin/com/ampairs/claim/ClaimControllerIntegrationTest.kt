@@ -4,6 +4,9 @@ import com.ampairs.AmpairsApplication
 import com.ampairs.claim.domain.dto.ClaimAccrueFromSalesRequest
 import com.ampairs.claim.domain.dto.ClaimAccrueRequest
 import com.ampairs.claim.domain.enums.ClaimStatus
+import com.ampairs.claim.domain.model.ClaimSettlement
+import com.ampairs.claim.domain.dto.ClaimSettleRequest
+import com.ampairs.claim.domain.dto.ClaimRejectRequest
 import com.ampairs.claim.domain.model.SchemeClaim
 import com.ampairs.claim.domain.service.ClaimAccrualService
 import com.ampairs.claim.domain.service.ClaimService
@@ -102,6 +105,48 @@ class ClaimControllerIntegrationTest {
             .andExpect(jsonPath("\$.success").value(true))
             .andExpect(jsonPath("\$.data.status").value("DRAFT"))
             .andExpect(jsonPath("\$.data.scheme_ref").value("OFFER-1"))
+    }
+
+    @Test
+    @DisplayName("submit / approve / reject move the claim through its lifecycle")
+    @WithMockUser(username = "tester", roles = ["USER"])
+    fun `lifecycle transitions`() {
+        fun claim(status: ClaimStatus) = SchemeClaim().apply {
+            uid = "SCL-1"; schemeRef = "OFFER-1"; brandWorkspaceId = "BRAND"; distributorWorkspaceId = "DIST"
+            computedAmount = BigDecimal("250"); this.status = status
+        }
+        whenever(claimService.submit("SCL-1")).thenReturn(claim(ClaimStatus.SUBMITTED))
+        mockMvc.perform(post("/claim/v1/claims/SCL-1/submit"))
+            .andExpect(status().isOk).andExpect(jsonPath("\$.data.status").value("SUBMITTED"))
+
+        whenever(claimService.approve("SCL-1")).thenReturn(claim(ClaimStatus.APPROVED))
+        mockMvc.perform(post("/claim/v1/claims/SCL-1/approve"))
+            .andExpect(status().isOk).andExpect(jsonPath("\$.data.status").value("APPROVED"))
+
+        whenever(claimService.reject(any(), any())).thenReturn(claim(ClaimStatus.REJECTED))
+        mockMvc.perform(
+            post("/claim/v1/claims/SCL-1/reject")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ClaimRejectRequest(reason = "insufficient docs"))),
+        )
+            .andExpect(status().isOk).andExpect(jsonPath("\$.data.status").value("REJECTED"))
+    }
+
+    @Test
+    @DisplayName("settle records a settlement reference")
+    @WithMockUser(username = "tester", roles = ["USER"])
+    fun `settle claim`() {
+        whenever(claimService.settle(any(), any(), any())).thenReturn(
+            ClaimSettlement().apply { uid = "STL-1"; claimUid = "SCL-1"; settledAmount = BigDecimal("250"); reference = "UTR-9" },
+        )
+        mockMvc.perform(
+            post("/claim/v1/claims/SCL-1/settle")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ClaimSettleRequest(reference = "UTR-9", settledAmount = BigDecimal("250")))),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("\$.data.reference").value("UTR-9"))
+            .andExpect(jsonPath("\$.data.claim_uid").value("SCL-1"))
     }
 
     @Test
