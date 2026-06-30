@@ -2,6 +2,13 @@ package com.ampairs.dms
 
 import com.ampairs.AmpairsApplication
 import com.ampairs.dms.domain.dto.SecondarySalesRow
+import tools.jackson.databind.ObjectMapper
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.http.MediaType
+import com.ampairs.dms.domain.model.SalesTarget
+import com.ampairs.dms.domain.enums.TargetTier
+import com.ampairs.dms.domain.dto.SalesTargetRequest
+import com.ampairs.dms.domain.dto.DistributorStockRow
 import com.ampairs.dms.domain.service.SnapshotService
 import com.ampairs.dms.domain.service.TargetService
 import com.ampairs.trade.exception.ConsentRequiredException
@@ -35,6 +42,7 @@ import java.math.BigDecimal
 class SnapshotControllerIntegrationTest {
 
     @Autowired private lateinit var webApplicationContext: WebApplicationContext
+    @Autowired private lateinit var objectMapper: ObjectMapper
     private lateinit var mockMvc: MockMvc
 
     @field:MockitoBean private lateinit var snapshotService: SnapshotService
@@ -70,5 +78,48 @@ class SnapshotControllerIntegrationTest {
         mockMvc.perform(get("/dms/v1/snapshots/secondary-sales").param("brand_workspace_id", "BRAND").param("distributor_workspace_id", "DIST"))
             .andExpect(status().isForbidden)
             .andExpect(jsonPath("$.success").value(false))
+    }
+
+    @Test
+    @DisplayName("GET distributor-stock with consent returns rows")
+    @WithMockUser(username = "tester", roles = ["USER"])
+    fun `distributor stock read`() {
+        whenever(snapshotService.readDistributorStock("BRAND", "DIST"))
+            .thenReturn(listOf(DistributorStockRow("BPROD-1", "SKU-1", 42.0, 1)))
+        mockMvc.perform(get("/dms/v1/snapshots/distributor-stock").param("brand_workspace_id", "BRAND").param("distributor_workspace_id", "DIST"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data[0].on_hand_quantity").value(42.0))
+    }
+
+    @Test
+    @DisplayName("POST /dms/v1/targets creates a target")
+    @WithMockUser(username = "tester", roles = ["USER"])
+    fun `create target`() {
+        val saved = SalesTarget().apply {
+            uid = "TGT-1"; tier = TargetTier.PRIMARY; brandWorkspaceId = "BRAND"; periodKey = "2026-06"
+            targetQuantity = 100.0; targetValue = BigDecimal("50000")
+        }
+        whenever(targetService.create(any())).thenReturn(saved)
+        mockMvc.perform(
+            post("/dms/v1/targets")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(
+                    SalesTargetRequest(brandWorkspaceId = "BRAND", periodKey = "2026-06", targetQuantity = 100.0, targetValue = BigDecimal("50000")),
+                )),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.uid").value("TGT-1"))
+            .andExpect(jsonPath("$.data.period_key").value("2026-06"))
+    }
+
+    @Test
+    @DisplayName("GET /dms/v1/targets lists a brand's targets")
+    @WithMockUser(username = "tester", roles = ["USER"])
+    fun `list targets`() {
+        whenever(targetService.readTargets("BRAND", null))
+            .thenReturn(listOf(SalesTarget().apply { uid = "TGT-1"; brandWorkspaceId = "BRAND"; periodKey = "2026-06" }))
+        mockMvc.perform(get("/dms/v1/targets").param("brand_workspace_id", "BRAND"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data[0].uid").value("TGT-1"))
     }
 }

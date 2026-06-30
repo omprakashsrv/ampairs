@@ -52,6 +52,14 @@ class DmsServicesTest {
     }
 
     @Test
+    fun `target create persists via the repo`() {
+        val target = SalesTarget().apply { brandWorkspaceId = "BRAND"; periodKey = "2026-06" }
+        whenever(targetRepo.save(target)).thenReturn(target)
+        assertEquals(target, targetService.create(target))
+        verify(targetRepo).save(target)
+    }
+
+    @Test
     fun `targets read is consent-gated only when a distributor is given`() {
         whenever(targetRepo.findByBrandWorkspaceId("BRAND")).thenReturn(listOf(SalesTarget().apply { brandWorkspaceId = "BRAND" }))
         // no distributor → no gate
