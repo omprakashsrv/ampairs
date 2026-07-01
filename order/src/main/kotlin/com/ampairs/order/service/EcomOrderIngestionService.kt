@@ -1,5 +1,6 @@
 package com.ampairs.order.service
 
+import com.ampairs.core.service.EcomCustomerService
 import com.ampairs.event.domain.kafka.EcomOrderPlacedEvent
 import com.ampairs.event.domain.kafka.EcomOrderStatusEvent
 import com.ampairs.order.domain.enums.OrderStatus
@@ -24,6 +25,7 @@ class EcomOrderIngestionService(
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
     private val ecomOrderStatusProducer: EcomOrderStatusProducer,
+    private val ecomCustomerService: EcomCustomerService,
 ) {
     private val log = LoggerFactory.getLogger(EcomOrderIngestionService::class.java)
 
@@ -34,10 +36,22 @@ class EcomOrderIngestionService(
             return
         }
 
+        // Link the storefront buyer to a workspace CRM customer (create-or-find), so the management
+        // order — and the invoice raised from it — reference a real CRM record rather than the raw
+        // ecom user id. Tenant context is set by the caller (EcomOrderPlacedListener).
+        val crmCustomerId = ecomCustomerService.linkOrCreateEcomCustomer(
+            ecomUserId = event.customerId,
+            name = event.customerName,
+            phone = event.customerPhone,
+            email = event.customerEmail,
+            billingAddress = event.deliveryAddress,
+            shippingAddress = event.deliveryAddress,
+        )
+
         val order = Order().apply {
             orderType = "ECOM"
             ecomOrderRef = event.ecomOrderRef
-            customerId = event.customerId
+            customerId = crmCustomerId
             customerName = event.customerName
             customerPhone = event.customerPhone
             status = OrderStatus.PENDING_MERCHANT_REVIEW
@@ -47,6 +61,14 @@ class EcomOrderIngestionService(
             billingAddress = event.deliveryAddress
             subtotal = event.subtotal.toDouble()
             totalAmount = event.totalAmount.toDouble()
+            // Populate the invoice-relevant totals so an invoice raised from this order carries the
+            // real amount. Ecom orders carry no tax yet, so base == subtotal and cost == total; GST
+            // on storefront orders is a follow-up.
+            basePrice = event.subtotal.toDouble()
+            totalCost = event.totalAmount.toDouble()
+            totalTax = 0.0
+            totalItems = event.lineItems.size
+            totalQuantity = event.lineItems.sumOf { it.quantityOrdered.toDouble() }
             orderDate = event.placedAt
             notes = null
         }

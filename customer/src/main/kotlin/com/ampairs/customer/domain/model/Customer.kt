@@ -41,6 +41,14 @@ class Customer : OwnableBaseDomain() {
     @Column(name = "pan_number", length = 10)
     var panNumber: String? = null
 
+    /**
+     * The ecom storefront buyer (auth `User` uid) this CRM customer was created from / linked to.
+     * Lets repeat storefront orders by the same shopper resolve to one Customer. Null for customers
+     * created through the normal CRM flow.
+     */
+    @Column(name = "ecom_user_id", length = 200)
+    var ecomUserId: String? = null
+
     @Column(name = "credit_limit", nullable = false)
     var creditLimit: Double = 0.0
 
