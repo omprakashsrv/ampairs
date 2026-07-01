@@ -59,7 +59,8 @@ class ImageResizingService(
                         else -> "jpg"
                     }
 
-                    val written = ImageIO.write(thumbnailImage, outputFormat, outputStream)
+                    val imageToWrite = stripAlphaIfNeeded(thumbnailImage, outputFormat)
+                    val written = ImageIO.write(imageToWrite, outputFormat, outputStream)
                     if (!written) {
                         throw ImageResizingException("Failed to write image in format: $outputFormat")
                     }
