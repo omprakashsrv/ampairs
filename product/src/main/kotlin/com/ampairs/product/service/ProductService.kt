@@ -191,6 +191,27 @@ class ProductService(
     }
 
     /**
+     * Re-publish a storefront catalog refresh for a single product whose IMAGES changed (added,
+     * removed, reordered, or primary switched) without any change to its scalar details.
+     *
+     * Product photos live in the `file` module, so an image-only edit commits there and emits a
+     * generic `EntityChangedEvent("product_image", ...)` — it never runs the product bulk-sync that
+     * normally publishes [ProductCatalogChangedEvent], so the storefront copy kept a stale image.
+     * This re-snapshots the product (including freshly resolved image URLs) and republishes the same
+     * catalog event the ecom listener already consumes. No-op for products not listed on the store.
+     *
+     * Tenant context must be set by the async caller (see ProductImageChangeListener).
+     */
+    @Transactional(readOnly = true)
+    fun refreshStorefrontListingForImage(productUid: String) {
+        val product = productRepository.findByUid(productUid) ?: return
+        if (!product.isEcomListed) return
+        eventPublisher.publishEvent(
+            ProductCatalogChangedEvent(getWorkspaceId(), listOf(buildCatalogChange(product)))
+        )
+    }
+
+    /**
      * Resolve a product into a "listed" catalog-change snapshot (names + image URLs already resolved,
      * no JPA associations) so the async ecom listener can consume it after commit without a session.
      * Used for list/refresh only; unlisting needs just the product id (see call sites).
