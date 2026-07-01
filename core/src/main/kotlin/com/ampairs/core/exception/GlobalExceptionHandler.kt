@@ -20,6 +20,7 @@ import org.springframework.web.method.annotation.HandlerMethodValidationExceptio
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.web.multipart.MaxUploadSizeExceededException
 import org.springframework.web.servlet.NoHandlerFoundException
+import org.springframework.web.servlet.resource.NoResourceFoundException
 import org.springframework.web.server.ResponseStatusException
 
 @RestControllerAdvice
@@ -171,6 +172,24 @@ class GlobalExceptionHandler : BaseExceptionHandler() {
             errorCode = ErrorCodes.NOT_FOUND,
             message = "Endpoint not found",
             details = "No handler found for ${ex.httpMethod} ${ex.requestURL}",
+            request = request,
+            moduleName = "global"
+        )
+    }
+
+    // Static/resource routes that match no handler (e.g. unknown paths served by the resource
+    // handler) throw NoResourceFoundException. Without an explicit handler it falls through to the
+    // generic Exception handler and pages as a 500 — map it to 404 like other unmatched routes.
+    @ExceptionHandler(NoResourceFoundException::class)
+    fun handleNoResourceFoundException(
+        ex: NoResourceFoundException,
+        request: HttpServletRequest,
+    ): ResponseEntity<ApiResponse<Any>> {
+        return createErrorResponse(
+            httpStatus = HttpStatus.NOT_FOUND,
+            errorCode = ErrorCodes.NOT_FOUND,
+            message = "Endpoint not found",
+            details = "No resource found for ${ex.httpMethod} ${ex.resourcePath}",
             request = request,
             moduleName = "global"
         )
