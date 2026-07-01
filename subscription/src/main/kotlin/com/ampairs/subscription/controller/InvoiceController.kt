@@ -37,7 +37,7 @@ class SubscriptionInvoiceController(
             ?: throw IllegalStateException("Workspace context not set")
 
         val invoices = subscriptionInvoiceQueryService.getInvoicesForWorkspace(workspaceId, status, pageable)
-        return ApiResponse.success(invoices.map { it.asInvoiceResponse() })
+        return ApiResponse.success(invoices)
     }
 
     @GetMapping("/{invoiceUid}")

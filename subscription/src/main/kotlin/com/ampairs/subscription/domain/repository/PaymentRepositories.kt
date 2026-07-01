@@ -212,7 +212,8 @@ interface SubscriptionInvoiceRepository : JpaRepository<Invoice, Long> {
     @EntityGraph("SubscriptionInvoice.withLineItems")
     fun findByWorkspaceId(workspaceId: String): List<Invoice>
 
-    @EntityGraph("SubscriptionInvoice.withLineItems")
+    // Paged query: line items are batch-loaded via @BatchSize while the service maps inside its
+    // read-only transaction — do NOT add @EntityGraph here (would force in-memory pagination).
     @Query("""
         SELECT i FROM Invoice i
         WHERE i.workspaceId = :workspaceId
@@ -220,6 +221,18 @@ interface SubscriptionInvoiceRepository : JpaRepository<Invoice, Long> {
     """)
     fun findByWorkspaceIdOrderByCreatedAtDesc(
         workspaceId: String,
+        pageable: Pageable
+    ): Page<Invoice>
+
+    @Query("""
+        SELECT i FROM Invoice i
+        WHERE i.workspaceId = :workspaceId
+        AND i.status = :status
+        ORDER BY i.createdAt DESC
+    """)
+    fun findByWorkspaceIdAndStatusOrderByCreatedAtDesc(
+        workspaceId: String,
+        status: InvoiceStatus,
         pageable: Pageable
     ): Page<Invoice>
 

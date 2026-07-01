@@ -2,6 +2,7 @@ package com.ampairs.subscription.domain.model
 
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import jakarta.persistence.*
+import org.hibernate.annotations.BatchSize
 import java.math.BigDecimal
 import java.time.Instant
 
@@ -174,7 +175,11 @@ class Invoice : OwnableBaseDomain() {
     /**
      * Line items for this invoice
      */
+    // @BatchSize batch-loads line items for a whole page in one query while the service maps DTOs
+    // inside its read-only transaction. Do NOT attach this collection to a paged @EntityGraph — that
+    // forces in-memory pagination (HHH90003004). See .claude/rules/11-lazy-loading.md.
     @OneToMany(mappedBy = "invoice", cascade = [CascadeType.ALL], orphanRemoval = true, fetch = FetchType.LAZY)
+    @BatchSize(size = 50)
     var lineItems: MutableList<InvoiceLineItem> = mutableListOf()
 
     /**

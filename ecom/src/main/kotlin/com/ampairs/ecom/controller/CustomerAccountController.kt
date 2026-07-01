@@ -76,7 +76,6 @@ class CustomerAccountController(
         try {
             val customerId = AuthenticationHelper.getUserId(authentication)!!
             val page = orderService.getCustomerOrders(customerId, storefront.uid, pageable)
-                .map { it.asEcomOrderResponse() }
             return ApiResponse.success(PageResponse.from(page))
         } finally {
             TenantContextHolder.clearTenantContext()

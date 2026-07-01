@@ -3,6 +3,7 @@ package com.ampairs.ecom.domain.model
 import com.ampairs.core.domain.model.BaseDomain
 import com.ampairs.ecom.domain.enums.EcomOrderStatus
 import jakarta.persistence.*
+import org.hibernate.annotations.BatchSize
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.math.BigDecimal
@@ -89,8 +90,12 @@ class EcomOrder : BaseDomain() {
     @Column(name = "merchant_reviewed_at")
     var merchantReviewedAt: Instant? = null
 
+    // @BatchSize lets paged queries batch-load line items for the whole page in one query per batch
+    // (instead of N+1) while the service maps DTOs inside its read-only transaction. Do NOT add this
+    // collection to a paged @EntityGraph — that triggers in-memory pagination (HHH90003004).
     @OneToMany
     @JoinColumn(name = "ecom_order_id", referencedColumnName = "uid", insertable = false, updatable = false)
+    @BatchSize(size = 50)
     var lineItems: MutableList<EcomOrderLineItem> = mutableListOf()
 
     override fun obtainSeqIdPrefix(): String = "ECO"

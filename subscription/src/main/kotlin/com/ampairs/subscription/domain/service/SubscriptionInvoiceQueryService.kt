@@ -1,28 +1,31 @@
 package com.ampairs.subscription.domain.service
 
+import com.ampairs.subscription.domain.dto.InvoiceResponse
 import com.ampairs.subscription.domain.dto.InvoiceSummaryResponse
+import com.ampairs.subscription.domain.dto.asInvoiceResponse
 import com.ampairs.subscription.domain.model.Invoice
 import com.ampairs.subscription.domain.model.InvoiceStatus
 import com.ampairs.subscription.domain.repository.SubscriptionInvoiceRepository
 import com.ampairs.subscription.exception.SubscriptionException
 import org.springframework.data.domain.Page
-import org.springframework.data.domain.PageImpl
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class SubscriptionInvoiceQueryService(
     private val subscriptionInvoiceRepository: SubscriptionInvoiceRepository
 ) {
 
-    fun getInvoicesForWorkspace(workspaceId: String, status: InvoiceStatus?, pageable: Pageable): Page<Invoice> {
-        return if (status != null) {
-            val filtered = subscriptionInvoiceRepository.findByStatus(status)
-                .filter { it.workspaceId == workspaceId }
-            PageImpl(filtered, pageable, filtered.size.toLong())
+    // Map to DTO inside the transaction so lazy lineItems batch-load while the session is open.
+    @Transactional(readOnly = true)
+    fun getInvoicesForWorkspace(workspaceId: String, status: InvoiceStatus?, pageable: Pageable): Page<InvoiceResponse> {
+        val page = if (status != null) {
+            subscriptionInvoiceRepository.findByWorkspaceIdAndStatusOrderByCreatedAtDesc(workspaceId, status, pageable)
         } else {
             subscriptionInvoiceRepository.findByWorkspaceIdOrderByCreatedAtDesc(workspaceId, pageable)
         }
+        return page.map { it.asInvoiceResponse() }
     }
 
     fun getInvoice(uid: String): Invoice =
