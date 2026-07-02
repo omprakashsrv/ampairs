@@ -4,6 +4,8 @@ import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.core.security.AuthenticationHelper
+import com.ampairs.core.service.EcomCustomerAccount
+import com.ampairs.core.service.EcomCustomerService
 import com.ampairs.ecom.domain.dto.CustomerAddressRequest
 import com.ampairs.ecom.domain.dto.CustomerAddressResponse
 import com.ampairs.ecom.domain.dto.EcomOrderResponse
@@ -27,7 +29,27 @@ class CustomerAccountController(
     private val addressService: CustomerAddressService,
     private val orderService: EcomOrderService,
     private val storefrontService: StorefrontService,
+    private val ecomCustomerService: EcomCustomerService,
 ) {
+
+    /**
+     * The CRM accounts the signed-in buyer can order for (the "ordering for" picker). Typically 0 or
+     * 1 (individual shopper); returns >1 for a buyer linked to multiple accounts (owner/manager/worker).
+     */
+    @GetMapping("/customers")
+    fun getCustomers(
+        @RequestParam("storefront_slug") storefrontSlug: String,
+        authentication: Authentication,
+    ): ApiResponse<List<EcomCustomerAccount>> {
+        val storefront = storefrontService.getPublishedStorefrontBySlug(storefrontSlug)
+        TenantContextHolder.setCurrentTenant(storefront.ownerId)
+        try {
+            val userId = AuthenticationHelper.getUserId(authentication)!!
+            return ApiResponse.success(ecomCustomerService.listAccountsForUser(userId))
+        } finally {
+            TenantContextHolder.clearTenantContext()
+        }
+    }
 
     @GetMapping("/addresses")
     fun getAddresses(authentication: Authentication): ApiResponse<List<CustomerAddressResponse>> {
@@ -76,7 +98,6 @@ class CustomerAccountController(
         try {
             val customerId = AuthenticationHelper.getUserId(authentication)!!
             val page = orderService.getCustomerOrders(customerId, storefront.uid, pageable)
-                .map { it.asEcomOrderResponse() }
             return ApiResponse.success(PageResponse.from(page))
         } finally {
             TenantContextHolder.clearTenantContext()

@@ -19,12 +19,12 @@ import org.springframework.stereotype.Component
 class EcomOrderEventPublisher(
     private val publisher: ApplicationEventPublisher,
 ) {
-    fun publishOrderPlaced(order: EcomOrder) {
-        publisher.publishEvent(order.toPlacedEvent())
+    fun publishOrderPlaced(order: EcomOrder, requestedCustomerId: String? = null) {
+        publisher.publishEvent(order.toPlacedEvent(requestedCustomerId))
     }
 }
 
-private fun EcomOrder.toPlacedEvent(): EcomOrderPlacedEvent = EcomOrderPlacedEvent(
+private fun EcomOrder.toPlacedEvent(requestedCustomerId: String?): EcomOrderPlacedEvent = EcomOrderPlacedEvent(
     ecomOrderRef = ecomOrderRef,
     workspaceId = workspaceId,
     storefrontId = storefrontId,
@@ -32,6 +32,7 @@ private fun EcomOrder.toPlacedEvent(): EcomOrderPlacedEvent = EcomOrderPlacedEve
     customerName = customerName,
     customerEmail = customerEmail,
     customerPhone = customerPhone,
+    requestedCustomerId = requestedCustomerId,
     deliveryAddress = deliveryAddress.toAddress(),
     lineItems = lineItems.map {
         EcomOrderLineItemPayload(

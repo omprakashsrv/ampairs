@@ -34,10 +34,15 @@ class EcomOrderIngestionService(
             return
         }
 
+        // Checkout already resolved (and blocked, if unlinked) the CRM distributor account this buyer
+        // may order for — requestedCustomerId here is that resolved id, not a raw client choice.
+        // Fall back to event.customerId only for events published before this field existed.
+        val crmCustomerId = event.requestedCustomerId ?: event.customerId
+
         val order = Order().apply {
             orderType = "ECOM"
             ecomOrderRef = event.ecomOrderRef
-            customerId = event.customerId
+            customerId = crmCustomerId
             customerName = event.customerName
             customerPhone = event.customerPhone
             status = OrderStatus.PENDING_MERCHANT_REVIEW
@@ -47,6 +52,14 @@ class EcomOrderIngestionService(
             billingAddress = event.deliveryAddress
             subtotal = event.subtotal.toDouble()
             totalAmount = event.totalAmount.toDouble()
+            // Populate the invoice-relevant totals so an invoice raised from this order carries the
+            // real amount. Ecom orders carry no tax yet, so base == subtotal and cost == total; GST
+            // on storefront orders is a follow-up.
+            basePrice = event.subtotal.toDouble()
+            totalCost = event.totalAmount.toDouble()
+            totalTax = 0.0
+            totalItems = event.lineItems.size
+            totalQuantity = event.lineItems.sumOf { it.quantityOrdered.toDouble() }
             orderDate = event.placedAt
             notes = null
         }
@@ -62,6 +75,12 @@ class EcomOrderIngestionService(
                 sellingPrice = item.unitPrice.toDouble()
                 productPrice = item.unitPrice.toDouble()
                 lineTotal = item.lineTotal.toDouble()
+                // Populate the displayed/invoiced line totals — the order module reads totalCost for
+                // the line amount, so leaving it 0 made every ecom line show a zero total. Ecom orders
+                // carry no tax yet, so base == total and tax == 0 (GST on storefront orders is a follow-up).
+                totalCost = item.lineTotal.toDouble()
+                basePrice = item.lineTotal.toDouble()
+                totalTax = 0.0
                 this.index = index
             }
             orderItemRepository.save(orderItem)

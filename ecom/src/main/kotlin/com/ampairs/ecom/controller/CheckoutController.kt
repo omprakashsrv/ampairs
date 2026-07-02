@@ -39,8 +39,11 @@ class CheckoutController(
             val principal = authentication.principal
             val customerEmail = if (principal is User) principal.email ?: "" else ""
             val customerName = if (principal is User) principal.getDisplayName() else customerId
+            // The login's phone lets checkout auto-link the buyer to a CRM customer the owner
+            // already created with that number (see EcomCustomerService.resolveLinkedCustomerId).
+            val customerPhone = if (principal is User) principal.phone.takeIf { it.isNotBlank() } else null
 
-            val order = checkoutService.checkout(sessionToken, request, customerId, customerEmail, customerName, storefront)
+            val order = checkoutService.checkout(sessionToken, request, customerId, customerEmail, customerName, customerPhone, storefront)
             return ApiResponse.success(order.asEcomOrderResponse())
         } finally {
             TenantContextHolder.clearTenantContext()
