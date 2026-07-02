@@ -22,6 +22,12 @@ data class DeliveryAddressDto(
 )
 
 data class CheckoutRequest(
+    /**
+     * The CRM account the buyer is ordering for (from the "ordering for" picker). Null → the server
+     * resolves the buyer's default/only account, or creates one on first order.
+     */
+    val customerId: String? = null,
+
     val deliveryAddressId: String? = null,
 
     @field:Valid

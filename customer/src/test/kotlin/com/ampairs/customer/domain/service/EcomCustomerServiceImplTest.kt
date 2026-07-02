@@ -98,6 +98,24 @@ class EcomCustomerServiceImplTest {
     }
 
     @Test
+    fun `honours an explicitly chosen account and links the login if needed`() {
+        whenever(customerContactRepository.findFirstByCustomerIdAndEcomUserId("CUS-CHOSEN", "USR1")).thenReturn(null)
+
+        val uid = service.linkOrCreateEcomCustomer(
+            "USR1", "Alice", "999", "a@x.com", null, null, requestedCustomerId = "CUS-CHOSEN",
+        )
+
+        assertEquals("CUS-CHOSEN", uid)
+        // Never resolves by contact list or phone, never creates a customer — just attaches the link.
+        verify(customerContactRepository, never()).findByEcomUserIdAndStatus(any(), any())
+        verify(customerService, never()).createCustomer(any())
+        val captor = argumentCaptor<CustomerContact>()
+        verify(customerContactRepository).save(captor.capture())
+        assertEquals("CUS-CHOSEN", captor.firstValue.customerId)
+        assertEquals("USR1", captor.firstValue.ecomUserId)
+    }
+
+    @Test
     fun `listAccountsForUser maps contacts to accounts labelled by the CRM account name`() {
         val c1 = contact("CUS-A", isDefault = true).also { it.role = "OWNER" }
         val c2 = contact("CUS-B").also { it.role = "WORKER"; it.name = "Bob" }

@@ -148,7 +148,8 @@ class CheckoutService(
         cartRepository.save(cart)
 
         val orderWithItems = orderRepository.findByEcomOrderRef(savedOrder.ecomOrderRef) ?: savedOrder
-        orderEventPublisher.publishOrderPlaced(orderWithItems)
+        // Carry the buyer's chosen CRM account (if any) so ingestion links the management order to it.
+        orderEventPublisher.publishOrderPlaced(orderWithItems, request.customerId)
 
         return orderWithItems
     }

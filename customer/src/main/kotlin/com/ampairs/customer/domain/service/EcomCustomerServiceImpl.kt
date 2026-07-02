@@ -36,7 +36,17 @@ class EcomCustomerServiceImpl(
         email: String?,
         billingAddress: Address?,
         shippingAddress: Address?,
+        requestedCustomerId: String?,
     ): String {
+        // 0. Buyer explicitly chose an account → attribute the order to it, linking this login if the
+        //    contact doesn't exist yet (e.g. an account the merchant created and shared).
+        if (!requestedCustomerId.isNullOrBlank()) {
+            if (customerContactRepository.findFirstByCustomerIdAndEcomUserId(requestedCustomerId, ecomUserId) == null) {
+                linkContact(requestedCustomerId, ecomUserId, name, phone, email, isDefault = false)
+            }
+            return requestedCustomerId
+        }
+
         // 1. This login already maps to one or more accounts → use the default (else the first).
         val contacts = customerContactRepository.findByEcomUserIdAndStatus(ecomUserId, ACTIVE)
         if (contacts.isNotEmpty()) {
@@ -73,7 +83,14 @@ class EcomCustomerServiceImpl(
         }
     }
 
-    private fun linkContact(customerId: String, ecomUserId: String, name: String, phone: String?, email: String?) {
+    private fun linkContact(
+        customerId: String,
+        ecomUserId: String,
+        name: String,
+        phone: String?,
+        email: String?,
+        isDefault: Boolean = true,
+    ) {
         val contact = CustomerContact()
         contact.customerId = customerId
         contact.ecomUserId = ecomUserId
@@ -81,7 +98,7 @@ class EcomCustomerServiceImpl(
         contact.phone = phone
         contact.email = email
         contact.role = "OWNER"
-        contact.isDefault = true
+        contact.isDefault = isDefault
         customerContactRepository.save(contact)
     }
 

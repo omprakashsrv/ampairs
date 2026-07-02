@@ -46,6 +46,7 @@ class EcomOrderIngestionService(
             email = event.customerEmail,
             billingAddress = event.deliveryAddress,
             shippingAddress = event.deliveryAddress,
+            requestedCustomerId = event.requestedCustomerId,
         )
 
         val order = Order().apply {

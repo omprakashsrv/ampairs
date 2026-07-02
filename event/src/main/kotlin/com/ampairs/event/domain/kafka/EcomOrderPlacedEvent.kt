@@ -17,6 +17,8 @@ data class EcomOrderPlacedEvent(
     val subtotal: BigDecimal,
     val totalAmount: BigDecimal,
     val placedAt: Instant,
+    /** The CRM account the buyer chose to order for (null → resolve their default/only account). */
+    val requestedCustomerId: String? = null,
 )
 
 data class EcomOrderLineItemPayload(

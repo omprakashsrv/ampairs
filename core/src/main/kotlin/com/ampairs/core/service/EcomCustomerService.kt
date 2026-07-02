@@ -33,6 +33,12 @@ interface EcomCustomerService {
         email: String?,
         billingAddress: Address?,
         shippingAddress: Address?,
+        /**
+         * The CRM account the buyer chose to order for. When set, the login is linked to (and the
+         * order attributed to) that account. When null, resolve the login's default/only account or
+         * create a new one.
+         */
+        requestedCustomerId: String? = null,
     ): String
 
     /**

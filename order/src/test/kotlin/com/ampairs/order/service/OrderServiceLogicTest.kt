@@ -75,7 +75,9 @@ class OrderServiceLogicTest {
         whenever(orderRepository.save(any<Order>())).thenAnswer { it.arguments[0] }
         whenever(orderItemRepository.save(any<OrderItem>())).thenAnswer { it.arguments[0] }
         whenever(
-            ecomCustomerService.linkOrCreateEcomCustomer(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull())
+            ecomCustomerService.linkOrCreateEcomCustomer(
+                anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(),
+            )
         ).thenReturn("CRM-1")
     }
 
