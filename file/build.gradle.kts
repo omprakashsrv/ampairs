@@ -49,7 +49,7 @@ dependencies {
     implementation("io.awspring.cloud:spring-cloud-aws-starter-s3")
     implementation("io.awspring.cloud:spring-cloud-aws-starter-sns")
 
-    implementation("io.minio:minio:9.0.1")
+    implementation("io.minio:minio:9.0.3")
 
     runtimeOnly("com.mysql:mysql-connector-j")
 
@@ -59,6 +59,7 @@ dependencies {
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
+    testImplementation("org.mockito.kotlin:mockito-kotlin:6.3.0")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:mysql")
     testImplementation("com.h2database:h2")

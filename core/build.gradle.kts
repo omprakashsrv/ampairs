@@ -66,7 +66,7 @@ dependencies {
     runtimeOnly("com.mysql:mysql-connector-j")
 
     // XML Processing
-    implementation("no.digipost.jaxb:jaxb2-jackson-helper:1.0.1")
+    implementation("no.digipost.jaxb:jaxb2-jackson-helper:2.0.1")
 
     // Caching
     implementation("org.springframework.boot:spring-boot-starter-cache")

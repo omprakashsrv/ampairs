@@ -51,6 +51,25 @@ class InvoiceItem : OwnableBaseDomain() {
     @Column(name = "total_tax", nullable = false)
     var totalTax: Double = 0.0
 
+    // 009 pricing snapshot — client-resolved effective price; backend persists verbatim (no re-resolution).
+    @Column(name = "resolved_unit_price_minor")
+    var resolvedUnitPriceMinor: Long? = null
+
+    @Column(name = "currency", length = 3)
+    var currency: String? = null
+
+    @Column(name = "price_source", length = 30)
+    var priceSource: String? = null
+
+    @Column(name = "matched_price_list_uid", length = 200)
+    var matchedPriceListUid: String? = null
+
+    @Column(name = "applied_tier_min_qty")
+    var appliedTierMinQty: Double? = null
+
+    @Column(name = "below_moq")
+    var belowMoq: Boolean? = null
+
     // spec 010 FR-014: unit of measure + base-unit quantity, and selected variant
     @Column(name = "unit_id", nullable = false, length = 255)
     var unitId: String = ""

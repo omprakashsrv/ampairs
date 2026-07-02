@@ -1,5 +1,6 @@
 package com.ampairs.invoice.service
 
+import com.ampairs.inventory.service.InventoryStockService
 import com.ampairs.invoice.domain.dto.InvoiceUpdateRequest
 import com.ampairs.invoice.domain.model.Invoice
 import com.ampairs.invoice.repository.InvoiceItemRepository
@@ -32,13 +33,14 @@ class InvoiceServiceSyncTest {
     @Mock private lateinit var invoiceRepository: InvoiceRepository
     @Mock private lateinit var invoiceItemRepository: InvoiceItemRepository
     @Mock private lateinit var invoicePagingRepository: InvoicePagingRepository
+    @Mock private lateinit var inventoryStockService: InventoryStockService
     @Mock private lateinit var eventPublisher: ApplicationEventPublisher
 
     private lateinit var service: InvoiceService
 
     @BeforeEach
     fun setup() {
-        service = InvoiceService(invoiceRepository, invoiceItemRepository, invoicePagingRepository, eventPublisher)
+        service = InvoiceService(invoiceRepository, invoiceItemRepository, invoicePagingRepository, inventoryStockService, eventPublisher)
     }
 
     @Test

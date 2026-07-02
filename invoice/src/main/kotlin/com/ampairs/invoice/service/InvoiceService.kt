@@ -16,6 +16,11 @@ import com.ampairs.invoice.domain.dto.toResponse
 import com.ampairs.invoice.domain.enums.InvoiceStatus
 import com.ampairs.invoice.domain.model.Invoice
 import com.ampairs.invoice.domain.model.InvoiceItem
+import com.ampairs.inventory.service.InventoryStockService
+import com.ampairs.inventory.service.StockLine
+import com.ampairs.inventory.service.StockMutationCommand
+import com.ampairs.inventory.service.StockSourceType
+import java.math.BigDecimal
 import com.ampairs.invoice.repository.InvoiceItemRepository
 import com.ampairs.invoice.repository.InvoicePagingRepository
 import com.ampairs.invoice.repository.InvoiceRepository
@@ -38,8 +43,39 @@ class InvoiceService(
     val invoiceRepository: InvoiceRepository,
     val invoiceItemRepository: InvoiceItemRepository,
     val invoicePagingRepository: InvoicePagingRepository,
+    val inventoryStockService: InventoryStockService,
     val eventPublisher: ApplicationEventPublisher
 ) {
+
+    /**
+     * Spec 014 (US1): move stock when an invoice crosses the finalize boundary. Gated inside the
+     * inventory engine by (a) inventory-management installed and (b) auto_deduct_on_order; idempotent
+     * per invoice line; untracked products skipped. Finalize (→ INVOICED) applies the sale; leaving
+     * INVOICED restores it.
+     */
+    private fun syncStockForInvoice(invoice: Invoice, items: List<InvoiceItem>, previousStatus: InvoiceStatus?) {
+        if (items.isEmpty()) return
+        // Avoid double-deduction: an invoice converted from an order lets the ORDER own the stock move.
+        if (!invoice.orderRefId.isNullOrBlank()) return
+        val nowFinalized = invoice.status == InvoiceStatus.INVOICED
+        val wasFinalized = previousStatus == InvoiceStatus.INVOICED
+        if (nowFinalized == wasFinalized) return
+        val command = StockMutationCommand(
+            sourceType = StockSourceType.INVOICE,
+            sourceId = invoice.uid,
+            referenceNumber = invoice.invoiceNumber,
+            performedBy = getUserId(),
+            lines = items.map {
+                StockLine(
+                    sourceLineUid = it.uid,
+                    productId = it.productId,
+                    quantity = BigDecimal.valueOf(it.quantity),
+                )
+            },
+        )
+        if (nowFinalized) inventoryStockService.applySale(command)
+        else inventoryStockService.reverseSale(command)
+    }
 
     /**
      * Helper methods for event publishing
@@ -120,6 +156,9 @@ class InvoiceService(
             }
         }
 
+        // Spec 014: apply/reverse inventory on the finalize boundary (idempotent; no-op if off).
+        syncStockForInvoice(updatedInvoice, invoiceItems, oldStatus)
+
         return invoice.toResponse(invoiceItems)
     }
 
@@ -169,6 +208,8 @@ class InvoiceService(
             invoiceItemRepository.save(item)
         }
         publishFinalizationEvents(savedInvoice, previousStatus)
+        // Spec 014: apply/reverse inventory on the finalize boundary (idempotent; no-op if off).
+        syncStockForInvoice(savedInvoice, savedItems, previousStatus)
         return savedInvoice.toResponse(savedItems)
     }
 

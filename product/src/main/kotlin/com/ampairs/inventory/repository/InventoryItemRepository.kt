@@ -7,7 +7,9 @@ import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.PagingAndSortingRepository
+import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
+import java.time.Instant
 
 /**
  * Inventory Item Repository
@@ -212,4 +214,15 @@ interface InventoryItemRepository : CrudRepository<InventoryItem, Long>,
      * @return Count of active inventory items
      */
     fun countByIsActive(isActive: Boolean): Long
+
+    // ============================================================================
+    // Offline-sync feeds (spec 014) — INCLUDE inactive (soft-deleted) rows so deletes propagate.
+    // @TenantId filters by current workspace automatically.
+    // ============================================================================
+
+    @Query("SELECT i FROM inventory_item i WHERE i.updatedAt >= :lastSync")
+    fun findByUpdatedAtAfter(@Param("lastSync") lastSync: Instant, pageable: Pageable): Page<InventoryItem>
+
+    @Query("SELECT i FROM inventory_item i")
+    fun findAllForSync(pageable: Pageable): Page<InventoryItem>
 }

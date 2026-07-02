@@ -70,6 +70,14 @@ class EcomOrder : BaseDomain() {
     @Column(name = "total_amount", nullable = false, precision = 19, scale = 4)
     var totalAmount: BigDecimal = BigDecimal.ZERO
 
+    // ── promotion-application snapshot (015) — captured at checkout; immune to later offer edits ──
+    @Column(name = "promotion_discount_minor")
+    var promotionDiscountMinor: Long? = null
+
+    /** JSON array of the applied offers (uid/name/reward/discount) the engine fired at checkout. */
+    @Column(name = "applied_promotions_json", columnDefinition = "TEXT")
+    var appliedPromotionsJson: String? = null
+
     @Column(name = "notes", columnDefinition = "TEXT")
     var notes: String? = null
 

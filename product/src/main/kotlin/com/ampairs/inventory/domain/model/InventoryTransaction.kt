@@ -211,6 +211,31 @@ class InventoryTransaction : OwnableBaseDomain() {
     var referenceNumber: String? = null
 
     // ============================================================================
+    // Source / Idempotency (spec 014 — order/invoice → stock integration)
+    // ============================================================================
+
+    /**
+     * Source of an automatic stock movement (ORDER, INVOICE, RETURN, MANUAL, COUNT).
+     * Used together with [sourceId] + [sourceLineUid] to make auto-deduction idempotent.
+     */
+    @Column(name = "source_type", length = 50)
+    var sourceType: String? = null
+
+    /**
+     * Source document UID (e.g. the order or invoice uid) for an automatic movement.
+     */
+    @Column(name = "source_id", length = 200)
+    var sourceId: String? = null
+
+    /**
+     * Per-line idempotency key for an automatic movement. The partial unique index
+     * (source_type, source_id, source_line_uid, owner_id) — WHERE source_line_uid IS NOT NULL —
+     * guarantees a retried/duplicated sale event never double-counts. Null for manual movements.
+     */
+    @Column(name = "source_line_uid", length = 200)
+    var sourceLineUid: String? = null
+
+    // ============================================================================
     // Transaction Metadata
     // ============================================================================
 

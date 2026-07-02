@@ -40,6 +40,7 @@ dependencies {
     implementation(project(mapOf("path" to ":form")))
     implementation(project(mapOf("path" to ":event")))
     implementation(project(mapOf("path" to ":customer")))
+    implementation(project(mapOf("path" to ":supplier")))
     implementation(project(mapOf("path" to ":file")))
     implementation(project(mapOf("path" to ":unit")))
     implementation(project(mapOf("path" to ":setting")))
@@ -47,11 +48,14 @@ dependencies {
     implementation(project(mapOf("path" to ":product")))
     implementation(project(mapOf("path" to ":order")))
     implementation(project(mapOf("path" to ":invoice")))
+    implementation(project(mapOf("path" to ":purchase")))
     implementation(project(mapOf("path" to ":payment")))
+    implementation(project(mapOf("path" to ":pricing")))
     implementation(project(mapOf("path" to ":tax")))
     implementation(project(mapOf("path" to ":subscription")))
     implementation(project(mapOf("path" to ":ecom")))
     implementation(project(mapOf("path" to ":printing")))
+    implementation(project(mapOf("path" to ":agent")))
 
     // Spring Boot starters
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -118,9 +122,9 @@ tasks.withType<Test> {
 }
 
 val migrationModules = listOf(
-    "auth", "business", "core", "customer", "ecom", "event", "file", "form",
-    "invoice", "notification", "order", "payment", "printing", "product", "sequence", "setting", "subscription",
-    "tax", "unit", "user", "workspace"
+    "agent", "auth", "business", "core", "customer", "ecom", "event", "file", "form",
+    "invoice", "notification", "order", "payment", "pricing", "printing", "product", "purchase", "sequence", "setting", "subscription",
+    "supplier", "tax", "unit", "user", "workspace"
 )
 
 // ── Local-dev migration tasks ──────────────────────────────────────────────────
@@ -135,12 +139,12 @@ val flywayRuntime by configurations.creating {
 }
 
 dependencies {
-    flywayRuntime("org.flywaydb:flyway-core:12.8.1")
-    flywayRuntime("org.flywaydb:flyway-database-postgresql:12.8.1")
-    flywayRuntime("org.flywaydb:flyway-mysql:12.8.1")
+    flywayRuntime("org.flywaydb:flyway-core:12.9.0")
+    flywayRuntime("org.flywaydb:flyway-database-postgresql:12.9.0")
+    flywayRuntime("org.flywaydb:flyway-mysql:12.9.0")
     flywayRuntime("org.postgresql:postgresql:42.7.11")
     flywayRuntime("com.mysql:mysql-connector-j:9.7.0")
-    flywayRuntime("org.slf4j:slf4j-simple:2.0.13")
+    flywayRuntime("org.slf4j:slf4j-simple:2.0.18")
 }
 
 fun runFlyway(command: String) {

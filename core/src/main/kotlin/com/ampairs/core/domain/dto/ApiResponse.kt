@@ -113,8 +113,10 @@ object ErrorCodes {
 
     // Business logic
     const val CUSTOMER_NOT_FOUND = "CUSTOMER_001"
+    const val SUPPLIER_NOT_FOUND = "SUPPLIER_001"
     const val PRODUCT_NOT_FOUND = "PRODUCT_001"
     const val ORDER_NOT_FOUND = "ORDER_001"
+    const val PURCHASE_NOT_FOUND = "PURCHASE_001"
     const val INVOICE_NOT_FOUND = "INVOICE_001"
     const val WORKSPACE_NOT_FOUND = "WORKSPACE_001"
     const val UNIT_NOT_FOUND = "UNIT_001"

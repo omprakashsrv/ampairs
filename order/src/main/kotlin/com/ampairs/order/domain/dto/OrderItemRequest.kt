@@ -25,6 +25,13 @@ data class OrderItemRequest(
     val active: Boolean = true,
     val softDeleted: Boolean = false,
     val discount: List<Discount>? = null,
+    // 009 pricing snapshot — client-resolved; persisted verbatim (no server re-resolution).
+    var resolvedUnitPriceMinor: Long? = null,
+    var currency: String? = null,
+    var priceSource: String? = null,
+    var matchedPriceListUid: String? = null,
+    var appliedTierMinQty: Double? = null,
+    var belowMoq: Boolean? = null,
 )
 
 fun List<OrderItemRequest>.toOrderItems(): List<OrderItem> {
@@ -49,6 +56,12 @@ fun List<OrderItemRequest>.toOrderItems(): List<OrderItem> {
         orderItem.variantSku = it.variantSku
         orderItem.taxInfos = it.taxInfos
         orderItem.discount = it.discount
+        orderItem.resolvedUnitPriceMinor = it.resolvedUnitPriceMinor
+        orderItem.currency = it.currency
+        orderItem.priceSource = it.priceSource
+        orderItem.matchedPriceListUid = it.matchedPriceListUid
+        orderItem.appliedTierMinQty = it.appliedTierMinQty
+        orderItem.belowMoq = it.belowMoq
         orderItem
     }
 }
@@ -75,6 +88,12 @@ fun List<OrderItem>.toInvoiceItems(): List<InvoiceItem> {
         orderItem.variantSku = it.variantSku
         orderItem.taxInfos = it.taxInfos.toInvoiceTaxInfos()
         orderItem.discount = it.discount?.toInvoiceDiscount()
+        orderItem.resolvedUnitPriceMinor = it.resolvedUnitPriceMinor
+        orderItem.currency = it.currency
+        orderItem.priceSource = it.priceSource
+        orderItem.matchedPriceListUid = it.matchedPriceListUid
+        orderItem.appliedTierMinQty = it.appliedTierMinQty
+        orderItem.belowMoq = it.belowMoq
         orderItem
     }
 }

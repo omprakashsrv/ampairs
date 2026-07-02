@@ -2,8 +2,6 @@ package com.ampairs.product.domain.dto.product
 
 import com.ampairs.file.domain.dto.FileResponse
 import com.ampairs.file.domain.dto.toFileResponse
-import com.ampairs.inventory.domain.dto.InventoryResponse
-import com.ampairs.inventory.domain.dto.asResponse
 import com.ampairs.unit.domain.dto.UnitConversionResponse
 import com.ampairs.unit.domain.dto.UnitResponse
 import com.ampairs.unit.domain.dto.asUnitConversionResponses
@@ -43,7 +41,6 @@ data class ProductResponse(
     val baseUnit: UnitResponse?,
     val baseUnitId: String?,
     val images: List<FileResponse>?,
-    val inventory: InventoryResponse?,
 
     // Product classification and variants
     val productType: String?,
@@ -88,7 +85,6 @@ fun List<Product>.asResponse(): List<ProductResponse> {
                 fileResponse
             },
             baseUnitId = it.baseUnitId,
-            inventory = if (it.inventory.size > 0) it.inventory[0].asResponse() else null,
 
             // Product classification and variants
             productType = it.productType?.name,
@@ -132,7 +128,6 @@ fun Product.asResponse(): ProductResponse {
             fileResponse
         },
         baseUnitId = baseUnitId,
-        inventory = if (inventory.size > 0) inventory[0].asResponse() else null,
 
         // Product classification and variants
         productType = productType?.name,
