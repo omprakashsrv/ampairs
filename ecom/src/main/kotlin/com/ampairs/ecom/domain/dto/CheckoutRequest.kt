@@ -24,7 +24,8 @@ data class DeliveryAddressDto(
 data class CheckoutRequest(
     /**
      * The CRM account the buyer is ordering for (from the "ordering for" picker). Null → the server
-     * resolves the buyer's default/only account, or creates one on first order.
+     * resolves the buyer's default/only linked account. Checkout is rejected if the buyer is not
+     * linked to any distributor (see `EcomCustomerService.resolveLinkedCustomerId`).
      */
     val customerId: String? = null,
 

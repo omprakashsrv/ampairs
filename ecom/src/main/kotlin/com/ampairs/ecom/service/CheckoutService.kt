@@ -7,7 +7,9 @@ import com.ampairs.ecom.domain.model.CustomerAddress
 import com.ampairs.ecom.domain.model.EcomOrder
 import com.ampairs.ecom.domain.model.EcomOrderLineItem
 import com.ampairs.ecom.domain.model.Storefront
+import com.ampairs.core.service.EcomCustomerService
 import com.ampairs.ecom.exception.CartExpiredException
+import com.ampairs.ecom.exception.EcomNotLinkedException
 import com.ampairs.ecom.exception.EmptyCartException
 import com.ampairs.ecom.event.EcomOrderEventPublisher
 import com.ampairs.ecom.exception.InvalidDeliveryAddressException
@@ -35,6 +37,7 @@ class CheckoutService(
     private val addressRepository: CustomerAddressRepository,
     private val orderEventPublisher: EcomOrderEventPublisher,
     private val offerApplicationService: OfferApplicationService,
+    private val ecomCustomerService: EcomCustomerService,
 ) {
 
     private val pricingCurrency = "INR"
@@ -46,8 +49,22 @@ class CheckoutService(
         customerId: String,
         customerEmail: String,
         customerName: String,
+        customerPhone: String?,
         storefront: Storefront,
     ): EcomOrder {
+        // A storefront buyer may only order for a distributor the workspace owner has linked them to.
+        // Resolve that CRM account up front — an unlinked buyer is blocked with a clear message rather
+        // than silently creating an account. Tenant context is set by the controller.
+        val resolvedCustomerId = ecomCustomerService.resolveLinkedCustomerId(
+            ecomUserId = customerId,
+            phone = customerPhone,
+            name = customerName,
+            email = customerEmail,
+            requestedCustomerId = request.customerId,
+        ) ?: throw EcomNotLinkedException(
+            "Your account is not linked to any distributor. Please contact the business owner to get linked before placing an order."
+        )
+
         val cart = cartRepository.findBySessionToken(sessionToken)
             ?: throw CartExpiredException("Cart not found: $sessionToken")
 
@@ -77,6 +94,7 @@ class CheckoutService(
         order.customerId = customerId
         order.customerName = customerName
         order.customerEmail = customerEmail
+        order.customerPhone = customerPhone ?: ""
         order.placedAt = Instant.now()
         order.deliveryAddress = deliveryAddress
         order.notes = request.notes
@@ -148,8 +166,9 @@ class CheckoutService(
         cartRepository.save(cart)
 
         val orderWithItems = orderRepository.findByEcomOrderRef(savedOrder.ecomOrderRef) ?: savedOrder
-        // Carry the buyer's chosen CRM account (if any) so ingestion links the management order to it.
-        orderEventPublisher.publishOrderPlaced(orderWithItems, request.customerId)
+        // Carry the resolved (already-linked) CRM account so ingestion attaches the management order
+        // to it directly — no re-resolution/auto-create on the order side.
+        orderEventPublisher.publishOrderPlaced(orderWithItems, resolvedCustomerId)
 
         return orderWithItems
     }

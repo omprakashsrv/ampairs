@@ -1,49 +1,41 @@
 package com.ampairs.core.service
 
-import com.ampairs.core.domain.model.Address
-
 /**
- * Cross-module bridge: turns an ecom storefront buyer into a workspace CRM `Customer`.
+ * Cross-module bridge: resolves the workspace CRM `Customer` (distributor account) a storefront buyer
+ * is allowed to order for.
  *
- * The ecom checkout only knows the buyer as an auth `User` (uid + name/phone/email snapshots) — there
- * is no link to the merchant's CRM. This interface (implemented in the `customer` module) find-or-creates
- * a real Customer so ecom orders and their invoices reference an actual CRM record.
+ * A storefront buyer must be **pre-linked** to a distributor by the workspace owner — either an
+ * explicit `CustomerContact`, or the owner having created a CRM customer with the buyer's phone.
+ * Buyers are **never auto-created**: an unlinked buyer cannot order and is told to contact the owner.
  *
  * Follows the same pattern as [OrderEcomService] / [EcomStorefrontLookupService]: the interface lives in
- * `core`, the implementation in the owning module, so callers depend only on `core`.
- *
- * Requires an active tenant context (the caller — e.g. the ecom-order ingestion listener — sets it); the
- * Customer is created/looked up within the current workspace.
+ * `core`, the implementation in the owning module, so callers depend only on `core`. Requires an active
+ * tenant context; all lookups/links are within the current workspace.
  */
 interface EcomCustomerService {
 
     /**
-     * Find-or-create the workspace CRM Customer for a storefront buyer and return its uid.
+     * Resolve the CRM distributor account this storefront buyer may order for, WITHOUT creating one.
+     * Returns null when the login is not linked to any account (→ the order must be blocked).
      *
      * Resolution order:
-     *  1. an existing Customer already linked to [ecomUserId];
-     *  2. else an existing Customer with the same [phone] in this workspace — adopted and back-filled
-     *     with [ecomUserId] so future orders resolve directly;
-     *  3. else a new Customer.
+     *  1. [requestedCustomerId] — only if the login is actually linked to it;
+     *  2. the login's default (else first) linked account;
+     *  3. a CRM customer the owner already created with the buyer's [phone] — auto-linked as a contact;
+     *  4. else null (not linked).
      */
-    fun linkOrCreateEcomCustomer(
+    fun resolveLinkedCustomerId(
         ecomUserId: String,
-        name: String,
         phone: String?,
+        name: String?,
         email: String?,
-        billingAddress: Address?,
-        shippingAddress: Address?,
-        /**
-         * The CRM account the buyer chose to order for. When set, the login is linked to (and the
-         * order attributed to) that account. When null, resolve the login's default/only account or
-         * create a new one.
-         */
         requestedCustomerId: String? = null,
-    ): String
+    ): String?
 
     /**
      * The CRM accounts a storefront login can order for (its [CustomerContact] links), for the
-     * checkout "ordering for" picker. Empty when the login has never ordered. Requires tenant context.
+     * checkout "ordering for" picker. Empty when the login is not linked to any account. Requires
+     * tenant context.
      */
     fun listAccountsForUser(ecomUserId: String): List<EcomCustomerAccount>
 }

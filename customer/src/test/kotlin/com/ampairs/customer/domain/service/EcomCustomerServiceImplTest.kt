@@ -1,11 +1,11 @@
 package com.ampairs.customer.domain.service
 
-import com.ampairs.core.domain.model.Address
 import com.ampairs.customer.domain.model.Customer
 import com.ampairs.customer.domain.model.CustomerContact
 import com.ampairs.customer.repository.CustomerContactRepository
 import com.ampairs.customer.repository.CustomerRepository
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -22,13 +22,12 @@ class EcomCustomerServiceImplTest {
 
     @Mock private lateinit var customerRepository: CustomerRepository
     @Mock private lateinit var customerContactRepository: CustomerContactRepository
-    @Mock private lateinit var customerService: CustomerService
 
     private lateinit var service: EcomCustomerServiceImpl
 
     @BeforeEach
     fun setup() {
-        service = EcomCustomerServiceImpl(customerRepository, customerContactRepository, customerService)
+        service = EcomCustomerServiceImpl(customerRepository, customerContactRepository)
     }
 
     private fun customer(uid: String) = Customer().also { it.uid = uid }
@@ -41,11 +40,20 @@ class EcomCustomerServiceImplTest {
         whenever(customerContactRepository.findByEcomUserIdAndStatus("USR1", "ACTIVE"))
             .thenReturn(listOf(contact("CUS-A"), contact("CUS-DEFAULT", isDefault = true)))
 
-        val uid = service.linkOrCreateEcomCustomer("USR1", "Alice", "999", "a@x.com", null, null)
+        val uid = service.resolveLinkedCustomerId("USR1", "999", "Alice", "a@x.com", null)
 
         assertEquals("CUS-DEFAULT", uid)
-        verify(customerService, never()).createCustomer(any())
         verify(customerContactRepository, never()).save(any())
+    }
+
+    @Test
+    fun `falls back to the first contact when none is marked default`() {
+        whenever(customerContactRepository.findByEcomUserIdAndStatus("USR1", "ACTIVE"))
+            .thenReturn(listOf(contact("CUS-A"), contact("CUS-B")))
+
+        val uid = service.resolveLinkedCustomerId("USR1", "999", "Alice", "a@x.com", null)
+
+        assertEquals("CUS-A", uid)
     }
 
     @Test
@@ -53,10 +61,9 @@ class EcomCustomerServiceImplTest {
         whenever(customerContactRepository.findByEcomUserIdAndStatus("USR1", "ACTIVE")).thenReturn(emptyList())
         whenever(customerRepository.findFirstByPhone("999")).thenReturn(customer("CUS-2"))
 
-        val uid = service.linkOrCreateEcomCustomer("USR1", "Alice", "999", "a@x.com", null, null)
+        val uid = service.resolveLinkedCustomerId("USR1", "999", "Alice", "a@x.com", null)
 
         assertEquals("CUS-2", uid)
-        verify(customerService, never()).createCustomer(any())
         val captor = argumentCaptor<CustomerContact>()
         verify(customerContactRepository).save(captor.capture())
         val saved = captor.firstValue
@@ -66,53 +73,51 @@ class EcomCustomerServiceImplTest {
     }
 
     @Test
-    fun `creates a customer and its first contact when nothing matches`() {
+    fun `returns null when nothing matches -- buyer is not linked to any distributor`() {
         whenever(customerContactRepository.findByEcomUserIdAndStatus("USR1", "ACTIVE")).thenReturn(emptyList())
         whenever(customerRepository.findFirstByPhone("999")).thenReturn(null)
-        whenever(customerService.createCustomer(any())).thenReturn(customer("CUS-3"))
 
-        val uid = service.linkOrCreateEcomCustomer("USR1", "Alice", "999", "a@x.com", Address(city = "Pune"), null)
+        val uid = service.resolveLinkedCustomerId("USR1", "999", "Alice", "a@x.com", null)
 
-        assertEquals("CUS-3", uid)
-        val custCaptor = argumentCaptor<Customer>()
-        verify(customerService).createCustomer(custCaptor.capture())
-        assertEquals("Alice", custCaptor.firstValue.name)
-        assertEquals("ONLINE", custCaptor.firstValue.customerType)
-        assertEquals("Pune", custCaptor.firstValue.city)
-        val contactCaptor = argumentCaptor<CustomerContact>()
-        verify(customerContactRepository).save(contactCaptor.capture())
-        assertEquals("CUS-3", contactCaptor.firstValue.customerId)
-        assertEquals("USR1", contactCaptor.firstValue.ecomUserId)
+        assertNull(uid)
+        verify(customerContactRepository, never()).save(any())
     }
 
     @Test
-    fun `skips phone lookup when phone is blank`() {
+    fun `skips phone lookup when phone is blank and returns null`() {
         whenever(customerContactRepository.findByEcomUserIdAndStatus("USR9", "ACTIVE")).thenReturn(emptyList())
-        whenever(customerService.createCustomer(any())).thenReturn(customer("CUS-9"))
 
-        val uid = service.linkOrCreateEcomCustomer("USR9", "Guest", null, "g@x.com", null, null)
+        val uid = service.resolveLinkedCustomerId("USR9", null, "Guest", "g@x.com", null)
 
-        assertEquals("CUS-9", uid)
+        assertNull(uid)
         verify(customerRepository, never()).findFirstByPhone(any())
-        verify(customerService).createCustomer(any())
     }
 
     @Test
-    fun `honours an explicitly chosen account and links the login if needed`() {
-        whenever(customerContactRepository.findFirstByCustomerIdAndEcomUserId("CUS-CHOSEN", "USR1")).thenReturn(null)
+    fun `honours an explicitly chosen account only if the login is linked to it`() {
+        whenever(customerContactRepository.findFirstByCustomerIdAndEcomUserId("CUS-CHOSEN", "USR1"))
+            .thenReturn(contact("CUS-CHOSEN"))
 
-        val uid = service.linkOrCreateEcomCustomer(
-            "USR1", "Alice", "999", "a@x.com", null, null, requestedCustomerId = "CUS-CHOSEN",
+        val uid = service.resolveLinkedCustomerId(
+            "USR1", "999", "Alice", "a@x.com", requestedCustomerId = "CUS-CHOSEN",
         )
 
         assertEquals("CUS-CHOSEN", uid)
-        // Never resolves by contact list or phone, never creates a customer — just attaches the link.
+        // Never falls through to the default-contact or phone-match resolution.
         verify(customerContactRepository, never()).findByEcomUserIdAndStatus(any(), any())
-        verify(customerService, never()).createCustomer(any())
-        val captor = argumentCaptor<CustomerContact>()
-        verify(customerContactRepository).save(captor.capture())
-        assertEquals("CUS-CHOSEN", captor.firstValue.customerId)
-        assertEquals("USR1", captor.firstValue.ecomUserId)
+        verify(customerRepository, never()).findFirstByPhone(any())
+    }
+
+    @Test
+    fun `rejects an explicitly chosen account the login is not linked to`() {
+        whenever(customerContactRepository.findFirstByCustomerIdAndEcomUserId("CUS-OTHER", "USR1")).thenReturn(null)
+
+        val uid = service.resolveLinkedCustomerId(
+            "USR1", "999", "Alice", "a@x.com", requestedCustomerId = "CUS-OTHER",
+        )
+
+        assertNull(uid)
+        verify(customerContactRepository, never()).save(any())
     }
 
     @Test

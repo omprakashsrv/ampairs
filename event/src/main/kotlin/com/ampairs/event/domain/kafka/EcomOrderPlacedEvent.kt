@@ -17,7 +17,7 @@ data class EcomOrderPlacedEvent(
     val subtotal: BigDecimal,
     val totalAmount: BigDecimal,
     val placedAt: Instant,
-    /** The CRM account the buyer chose to order for (null → resolve their default/only account). */
+    /** The CRM distributor account checkout already resolved (and confirmed linked) for this buyer. */
     val requestedCustomerId: String? = null,
 )
 

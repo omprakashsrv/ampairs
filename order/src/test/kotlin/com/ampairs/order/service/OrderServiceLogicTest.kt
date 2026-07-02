@@ -2,7 +2,6 @@ package com.ampairs.order.service
 
 import com.ampairs.core.domain.model.Address
 import com.ampairs.core.service.ConfirmedLineItem
-import com.ampairs.core.service.EcomCustomerService
 import com.ampairs.event.domain.events.OrderCreatedEvent
 import com.ampairs.event.domain.events.OrderStatusChangedEvent
 import com.ampairs.event.domain.events.OrderUpdatedEvent
@@ -35,7 +34,6 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
@@ -58,7 +56,6 @@ class OrderServiceLogicTest {
     @Mock private lateinit var inventoryStockService: InventoryStockService
     @Mock private lateinit var eventPublisher: ApplicationEventPublisher
     @Mock private lateinit var ecomOrderStatusProducer: EcomOrderStatusProducer
-    @Mock private lateinit var ecomCustomerService: EcomCustomerService
     // A mock OrderService for the ecom confirm path (real `service` below is the subject of the
     // OrderService tests). Keeps confirmEcomOrder from executing real invoice generation.
     @Mock private lateinit var orderServiceMock: OrderService
@@ -71,14 +68,9 @@ class OrderServiceLogicTest {
     fun setUp() {
         service = OrderService(orderRepository, orderItemRepository, orderPagingRepository, invoiceService, inventoryStockService, eventPublisher)
         ecomService = OrderEcomServiceImpl(orderRepository, orderItemRepository, orderServiceMock, ecomOrderStatusProducer)
-        ingestionService = EcomOrderIngestionService(orderRepository, orderItemRepository, ecomOrderStatusProducer, ecomCustomerService)
+        ingestionService = EcomOrderIngestionService(orderRepository, orderItemRepository, ecomOrderStatusProducer)
         whenever(orderRepository.save(any<Order>())).thenAnswer { it.arguments[0] }
         whenever(orderItemRepository.save(any<OrderItem>())).thenAnswer { it.arguments[0] }
-        whenever(
-            ecomCustomerService.linkOrCreateEcomCustomer(
-                anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(),
-            )
-        ).thenReturn("CRM-1")
     }
 
     private fun orderItem(block: OrderItem.() -> Unit = {}) = OrderItem().apply {
@@ -207,7 +199,7 @@ class OrderServiceLogicTest {
 
     // ==================== EcomOrderIngestionService.ingest ====================
 
-    private fun placedEvent(ref: String = "ECOM-1") = EcomOrderPlacedEvent(
+    private fun placedEvent(ref: String = "ECOM-1", requestedCustomerId: String? = null) = EcomOrderPlacedEvent(
         ecomOrderRef = ref,
         workspaceId = "WS-1",
         storefrontId = "SF-1",
@@ -215,6 +207,7 @@ class OrderServiceLogicTest {
         customerName = "Acme",
         customerEmail = "a@b.com",
         customerPhone = "999",
+        requestedCustomerId = requestedCustomerId,
         deliveryAddress = Address(state = "MAHARASHTRA"),
         lineItems = listOf(
             EcomOrderLineItemPayload(
@@ -239,7 +232,7 @@ class OrderServiceLogicTest {
 
         verify(orderRepository).save(argThat<Order> {
             orderType == "ECOM" && ecomOrderRef == "ECOM-1" && status == OrderStatus.PENDING_MERCHANT_REVIEW &&
-                placeOfSupply == "MAHARASHTRA" && subtotal == 200.0 && totalAmount == 236.0
+                placeOfSupply == "MAHARASHTRA" && subtotal == 200.0 && totalAmount == 236.0 && customerId == "CUS-1"
         })
         verify(orderItemRepository).save(argThat<OrderItem> {
             productId == "PRD-1" && quantity == 2.0 && unitPrice == 100.0 && lineTotal == 200.0
@@ -247,6 +240,15 @@ class OrderServiceLogicTest {
         verify(ecomOrderStatusProducer).publishStatusUpdate(argThat<EcomOrderStatusEvent> {
             newStatus == "PENDING_MERCHANT_REVIEW"
         })
+    }
+
+    @Test
+    fun `ingest prefers the checkout-resolved CRM customer id over the raw ecom user id`() {
+        whenever(orderRepository.findByEcomOrderRef("ECOM-1")).thenReturn(null)
+
+        ingestionService.ingest(placedEvent(requestedCustomerId = "CUS-RESOLVED"))
+
+        verify(orderRepository).save(argThat<Order> { customerId == "CUS-RESOLVED" })
     }
 
     @Test

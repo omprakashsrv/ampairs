@@ -1,9 +1,7 @@
 package com.ampairs.customer.domain.service
 
-import com.ampairs.core.domain.model.Address
 import com.ampairs.core.service.EcomCustomerAccount
 import com.ampairs.core.service.EcomCustomerService
-import com.ampairs.customer.domain.model.Customer
 import com.ampairs.customer.domain.model.CustomerContact
 import com.ampairs.customer.repository.CustomerContactRepository
 import com.ampairs.customer.repository.CustomerRepository
@@ -12,61 +10,51 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 /**
- * `customer`-module implementation of the [EcomCustomerService] bridge. Find-or-creates a workspace
- * CRM Customer for a storefront buyer and returns its uid, backed by the [CustomerContact] link so
- * many logins can share one account and one login can belong to many accounts.
+ * `customer`-module implementation of [EcomCustomerService]. Resolves the CRM distributor account a
+ * storefront buyer is allowed to order for — never creating one. A buyer must be pre-linked by the
+ * workspace owner (an explicit contact, or a CRM customer created with the buyer's phone); otherwise
+ * this returns null and checkout blocks the order.
  *
- * Runs inside the caller's tenant context (set by the ecom-order ingestion listener), so the
- * @TenantId-filtered lookups and persisted rows are all scoped to the buyer's workspace.
+ * Runs inside the caller's tenant context, so the @TenantId-filtered lookups and any link written are
+ * scoped to the buyer's workspace.
  */
 @Service
 class EcomCustomerServiceImpl(
     private val customerRepository: CustomerRepository,
     private val customerContactRepository: CustomerContactRepository,
-    private val customerService: CustomerService,
 ) : EcomCustomerService {
 
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
-    override fun linkOrCreateEcomCustomer(
+    override fun resolveLinkedCustomerId(
         ecomUserId: String,
-        name: String,
         phone: String?,
+        name: String?,
         email: String?,
-        billingAddress: Address?,
-        shippingAddress: Address?,
         requestedCustomerId: String?,
-    ): String {
-        // 0. Buyer explicitly chose an account → attribute the order to it, linking this login if the
-        //    contact doesn't exist yet (e.g. an account the merchant created and shared).
+    ): String? {
+        // 1. Explicit chosen account — only if the login is actually linked to it.
         if (!requestedCustomerId.isNullOrBlank()) {
-            if (customerContactRepository.findFirstByCustomerIdAndEcomUserId(requestedCustomerId, ecomUserId) == null) {
-                linkContact(requestedCustomerId, ecomUserId, name, phone, email, isDefault = false)
-            }
-            return requestedCustomerId
+            return customerContactRepository
+                .findFirstByCustomerIdAndEcomUserId(requestedCustomerId, ecomUserId)
+                ?.customerId
         }
-
-        // 1. This login already maps to one or more accounts → use the default (else the first).
+        // 2. The login's default (else first) linked account.
         val contacts = customerContactRepository.findByEcomUserIdAndStatus(ecomUserId, ACTIVE)
         if (contacts.isNotEmpty()) {
             return (contacts.firstOrNull { it.isDefault } ?: contacts.first()).customerId
         }
-
-        // 2. A CRM customer with this phone already exists → attach this login to it as a contact
-        //    (so the merchant doesn't get a duplicate account).
+        // 3. Owner already created a CRM customer with this phone → auto-link and use it.
         if (!phone.isNullOrBlank()) {
             customerRepository.findFirstByPhone(phone)?.let { existing ->
                 linkContact(existing.uid, ecomUserId, name, phone, email)
+                log.info("Linked ecom buyer {} to existing customer {} by phone", ecomUserId, existing.uid)
                 return existing.uid
             }
         }
-
-        // 3. New CRM account + its first contact (the creating login, default).
-        val customer = createCustomer(name, phone, email, billingAddress, shippingAddress)
-        linkContact(customer.uid, ecomUserId, name, phone, email)
-        log.info("Created CRM customer {} for ecom buyer {}", customer.uid, ecomUserId)
-        return customer.uid
+        // 4. Not linked to any distributor — the caller must block the order.
+        return null
     }
 
     @Transactional(readOnly = true)
@@ -83,51 +71,19 @@ class EcomCustomerServiceImpl(
         }
     }
 
-    private fun linkContact(
-        customerId: String,
-        ecomUserId: String,
-        name: String,
-        phone: String?,
-        email: String?,
-        isDefault: Boolean = true,
-    ) {
+    private fun linkContact(customerId: String, ecomUserId: String, name: String?, phone: String?, email: String?) {
         val contact = CustomerContact()
         contact.customerId = customerId
         contact.ecomUserId = ecomUserId
-        contact.name = name.ifBlank { phone ?: email ?: "Online customer" }
+        contact.name = name?.takeIf { it.isNotBlank() } ?: phone ?: email ?: "Online customer"
         contact.phone = phone
         contact.email = email
         contact.role = "OWNER"
-        contact.isDefault = isDefault
+        contact.isDefault = true
         customerContactRepository.save(contact)
-    }
-
-    private fun createCustomer(name: String, phone: String?, email: String?, billing: Address?, shipping: Address?): Customer {
-        val customer = Customer()
-        customer.name = name.ifBlank { phone ?: email ?: "Online customer" }
-        customer.phone = phone.orEmpty()
-        customer.email = email.orEmpty()
-        // customerType / customerGroup are required; the merchant can recategorise later.
-        customer.customerType = ONLINE_CATEGORY
-        customer.customerGroup = ONLINE_CATEGORY
-        billing?.let { addr ->
-            customer.billingAddress = addr
-            // Mirror the delivery address into the flat CRM columns for list/search display.
-            addr.street?.let { customer.street = it }
-            addr.street2?.let { customer.street2 = it }
-            addr.address?.let { customer.address = it }
-            addr.city?.let { customer.city = it }
-            addr.state?.let { customer.state = it }
-            addr.pincode?.let { customer.pincode = it }
-            addr.country?.let { customer.country = it }
-        }
-        shipping?.let { customer.shippingAddress = it }
-        return customerService.createCustomer(customer)
     }
 
     private companion object {
         const val ACTIVE = "ACTIVE"
-        /** Default type/group for storefront-originated customers (string codes; no FK). */
-        const val ONLINE_CATEGORY = "ONLINE"
     }
 }

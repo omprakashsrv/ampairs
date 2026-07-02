@@ -1,6 +1,5 @@
 package com.ampairs.order.service
 
-import com.ampairs.core.service.EcomCustomerService
 import com.ampairs.event.domain.kafka.EcomOrderPlacedEvent
 import com.ampairs.event.domain.kafka.EcomOrderStatusEvent
 import com.ampairs.order.domain.enums.OrderStatus
@@ -25,7 +24,6 @@ class EcomOrderIngestionService(
     private val orderRepository: OrderRepository,
     private val orderItemRepository: OrderItemRepository,
     private val ecomOrderStatusProducer: EcomOrderStatusProducer,
-    private val ecomCustomerService: EcomCustomerService,
 ) {
     private val log = LoggerFactory.getLogger(EcomOrderIngestionService::class.java)
 
@@ -36,18 +34,10 @@ class EcomOrderIngestionService(
             return
         }
 
-        // Link the storefront buyer to a workspace CRM customer (create-or-find), so the management
-        // order — and the invoice raised from it — reference a real CRM record rather than the raw
-        // ecom user id. Tenant context is set by the caller (EcomOrderPlacedListener).
-        val crmCustomerId = ecomCustomerService.linkOrCreateEcomCustomer(
-            ecomUserId = event.customerId,
-            name = event.customerName,
-            phone = event.customerPhone,
-            email = event.customerEmail,
-            billingAddress = event.deliveryAddress,
-            shippingAddress = event.deliveryAddress,
-            requestedCustomerId = event.requestedCustomerId,
-        )
+        // Checkout already resolved (and blocked, if unlinked) the CRM distributor account this buyer
+        // may order for — requestedCustomerId here is that resolved id, not a raw client choice.
+        // Fall back to event.customerId only for events published before this field existed.
+        val crmCustomerId = event.requestedCustomerId ?: event.customerId
 
         val order = Order().apply {
             orderType = "ECOM"
