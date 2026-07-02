@@ -59,7 +59,7 @@ dependencies {
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 
     // Firebase Admin SDK for push notifications (FCM)
-    implementation("com.google.firebase:firebase-admin:9.4.1")
+    implementation("com.google.firebase:firebase-admin:9.9.0")
 
     runtimeOnly("com.mysql:mysql-connector-j")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
