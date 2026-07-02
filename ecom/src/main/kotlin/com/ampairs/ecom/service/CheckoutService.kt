@@ -147,7 +147,7 @@ class CheckoutService(
             li.matchedPriceListUid = item.matchedPriceListUid
             li
         }
-        orderLineItemRepository.saveAll(lineItems)
+        val savedLineItems = orderLineItemRepository.saveAll(lineItems).toMutableList()
 
         if (request.saveAddress && request.deliveryAddress != null) {
             val addr = CustomerAddress()
@@ -166,6 +166,12 @@ class CheckoutService(
         cartRepository.save(cart)
 
         val orderWithItems = orderRepository.findByEcomOrderRef(savedOrder.ecomOrderRef) ?: savedOrder
+        // Re-fetching in this same session returns the cached order instance, whose lineItems
+        // collection was initialized empty at construction — the items were persisted through a
+        // separate repository, so the @EntityGraph JOIN FETCH does NOT re-populate it. Attach the
+        // just-saved items in-memory so the placed-event (and the management order + invoice built
+        // from it) actually carry the line items instead of coming through empty.
+        orderWithItems.lineItems = savedLineItems
         // Carry the resolved (already-linked) CRM account so ingestion attaches the management order
         // to it directly — no re-resolution/auto-create on the order side.
         orderEventPublisher.publishOrderPlaced(orderWithItems, resolvedCustomerId)
