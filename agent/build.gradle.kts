@@ -46,7 +46,7 @@ dependencies {
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
     // Official Anthropic SDK — used by AiChatProxyService to call the hosted chat model
     // (POST /agent/v1/chat/completions). The provider key stays server-side (agent.anthropic-api-key).
-    implementation("com.anthropic:anthropic-java:2.34.0")
+    implementation("com.anthropic:anthropic-java:2.47.1")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.security:spring-security-test")
     testImplementation("org.mockito.kotlin:mockito-kotlin:6.3.0")
