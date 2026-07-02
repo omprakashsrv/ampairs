@@ -235,7 +235,8 @@ class OrderServiceLogicTest {
                 placeOfSupply == "MAHARASHTRA" && subtotal == 200.0 && totalAmount == 236.0 && customerId == "CUS-1"
         })
         verify(orderItemRepository).save(argThat<OrderItem> {
-            productId == "PRD-1" && quantity == 2.0 && unitPrice == 100.0 && lineTotal == 200.0
+            productId == "PRD-1" && quantity == 2.0 && unitPrice == 100.0 && lineTotal == 200.0 &&
+                totalCost == 200.0 && basePrice == 200.0 && totalTax == 0.0
         })
         verify(ecomOrderStatusProducer).publishStatusUpdate(argThat<EcomOrderStatusEvent> {
             newStatus == "PENDING_MERCHANT_REVIEW"

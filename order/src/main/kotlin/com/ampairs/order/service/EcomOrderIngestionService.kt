@@ -75,6 +75,12 @@ class EcomOrderIngestionService(
                 sellingPrice = item.unitPrice.toDouble()
                 productPrice = item.unitPrice.toDouble()
                 lineTotal = item.lineTotal.toDouble()
+                // Populate the displayed/invoiced line totals — the order module reads totalCost for
+                // the line amount, so leaving it 0 made every ecom line show a zero total. Ecom orders
+                // carry no tax yet, so base == total and tax == 0 (GST on storefront orders is a follow-up).
+                totalCost = item.lineTotal.toDouble()
+                basePrice = item.lineTotal.toDouble()
+                totalTax = 0.0
                 this.index = index
             }
             orderItemRepository.save(orderItem)
