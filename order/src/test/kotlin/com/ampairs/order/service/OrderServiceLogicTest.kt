@@ -2,6 +2,7 @@ package com.ampairs.order.service
 
 import com.ampairs.core.domain.model.Address
 import com.ampairs.core.service.ConfirmedLineItem
+import com.ampairs.core.service.EcomCustomerService
 import com.ampairs.event.domain.events.OrderCreatedEvent
 import com.ampairs.event.domain.events.OrderStatusChangedEvent
 import com.ampairs.event.domain.events.OrderUpdatedEvent
@@ -34,6 +35,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
@@ -56,6 +58,10 @@ class OrderServiceLogicTest {
     @Mock private lateinit var inventoryStockService: InventoryStockService
     @Mock private lateinit var eventPublisher: ApplicationEventPublisher
     @Mock private lateinit var ecomOrderStatusProducer: EcomOrderStatusProducer
+    @Mock private lateinit var ecomCustomerService: EcomCustomerService
+    // A mock OrderService for the ecom confirm path (real `service` below is the subject of the
+    // OrderService tests). Keeps confirmEcomOrder from executing real invoice generation.
+    @Mock private lateinit var orderServiceMock: OrderService
 
     private lateinit var service: OrderService
     private lateinit var ecomService: OrderEcomServiceImpl
@@ -64,10 +70,13 @@ class OrderServiceLogicTest {
     @BeforeEach
     fun setUp() {
         service = OrderService(orderRepository, orderItemRepository, orderPagingRepository, invoiceService, inventoryStockService, eventPublisher)
-        ecomService = OrderEcomServiceImpl(orderRepository, ecomOrderStatusProducer)
-        ingestionService = EcomOrderIngestionService(orderRepository, orderItemRepository, ecomOrderStatusProducer)
+        ecomService = OrderEcomServiceImpl(orderRepository, orderItemRepository, orderServiceMock, ecomOrderStatusProducer)
+        ingestionService = EcomOrderIngestionService(orderRepository, orderItemRepository, ecomOrderStatusProducer, ecomCustomerService)
         whenever(orderRepository.save(any<Order>())).thenAnswer { it.arguments[0] }
         whenever(orderItemRepository.save(any<OrderItem>())).thenAnswer { it.arguments[0] }
+        whenever(
+            ecomCustomerService.linkOrCreateEcomCustomer(anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull(), anyOrNull())
+        ).thenReturn("CRM-1")
     }
 
     private fun orderItem(block: OrderItem.() -> Unit = {}) = OrderItem().apply {
