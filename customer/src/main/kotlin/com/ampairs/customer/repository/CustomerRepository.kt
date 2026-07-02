@@ -18,10 +18,7 @@ interface CustomerRepository : CrudRepository<Customer, Long>, PagingAndSortingR
     @EntityGraph("Customer.withImages")
     fun findByUid(uid: String): Customer?
 
-    /** Existing CRM customer already linked to this ecom storefront buyer (@TenantId-filtered). */
-    fun findFirstByEcomUserId(ecomUserId: String): Customer?
-
-    /** Existing CRM customer with this phone in the current workspace, for dedup (@TenantId-filtered). */
+    /** Existing CRM customer with this phone in the current workspace, for ecom dedup (@TenantId-filtered). */
     fun findFirstByPhone(phone: String): Customer?
 
     @EntityGraph("Customer.withImages")

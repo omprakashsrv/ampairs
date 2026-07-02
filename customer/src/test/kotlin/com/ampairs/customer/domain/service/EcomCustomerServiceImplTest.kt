@@ -2,6 +2,8 @@ package com.ampairs.customer.domain.service
 
 import com.ampairs.core.domain.model.Address
 import com.ampairs.customer.domain.model.Customer
+import com.ampairs.customer.domain.model.CustomerContact
+import com.ampairs.customer.repository.CustomerContactRepository
 import com.ampairs.customer.repository.CustomerRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
@@ -19,73 +21,78 @@ import org.mockito.kotlin.whenever
 class EcomCustomerServiceImplTest {
 
     @Mock private lateinit var customerRepository: CustomerRepository
+    @Mock private lateinit var customerContactRepository: CustomerContactRepository
     @Mock private lateinit var customerService: CustomerService
 
     private lateinit var service: EcomCustomerServiceImpl
 
     @BeforeEach
     fun setup() {
-        service = EcomCustomerServiceImpl(customerRepository, customerService)
+        service = EcomCustomerServiceImpl(customerRepository, customerContactRepository, customerService)
     }
 
-    private fun customer(uid: String, ecomUserId: String? = null, phone: String = "") =
-        Customer().also { it.uid = uid; it.ecomUserId = ecomUserId; it.phone = phone }
+    private fun customer(uid: String) = Customer().also { it.uid = uid }
+
+    private fun contact(customerId: String, isDefault: Boolean = false) =
+        CustomerContact().also { it.customerId = customerId; it.isDefault = isDefault }
 
     @Test
-    fun `returns existing customer already linked to the ecom user`() {
-        whenever(customerRepository.findFirstByEcomUserId("USR1"))
-            .thenReturn(customer("CUS1", ecomUserId = "USR1"))
+    fun `returns the default account when the login already has contacts`() {
+        whenever(customerContactRepository.findByEcomUserIdAndStatus("USR1", "ACTIVE"))
+            .thenReturn(listOf(contact("CUS-A"), contact("CUS-DEFAULT", isDefault = true)))
 
         val uid = service.linkOrCreateEcomCustomer("USR1", "Alice", "999", "a@x.com", null, null)
 
-        assertEquals("CUS1", uid)
+        assertEquals("CUS-DEFAULT", uid)
         verify(customerService, never()).createCustomer(any())
+        verify(customerContactRepository, never()).save(any())
     }
 
     @Test
-    fun `adopts an existing customer matched by phone and back-fills the ecom link`() {
-        whenever(customerRepository.findFirstByEcomUserId("USR1")).thenReturn(null)
-        val existing = customer("CUS2", ecomUserId = null, phone = "999")
-        whenever(customerRepository.findFirstByPhone("999")).thenReturn(existing)
+    fun `attaches a contact to an existing customer matched by phone`() {
+        whenever(customerContactRepository.findByEcomUserIdAndStatus("USR1", "ACTIVE")).thenReturn(emptyList())
+        whenever(customerRepository.findFirstByPhone("999")).thenReturn(customer("CUS-2"))
 
         val uid = service.linkOrCreateEcomCustomer("USR1", "Alice", "999", "a@x.com", null, null)
 
-        assertEquals("CUS2", uid)
-        assertEquals("USR1", existing.ecomUserId)
-        verify(customerService).updateCustomer(existing)
+        assertEquals("CUS-2", uid)
         verify(customerService, never()).createCustomer(any())
+        val captor = argumentCaptor<CustomerContact>()
+        verify(customerContactRepository).save(captor.capture())
+        val saved = captor.firstValue
+        assertEquals("CUS-2", saved.customerId)
+        assertEquals("USR1", saved.ecomUserId)
+        assertEquals(true, saved.isDefault)
     }
 
     @Test
-    fun `creates a new customer when nothing matches`() {
-        whenever(customerRepository.findFirstByEcomUserId("USR1")).thenReturn(null)
+    fun `creates a customer and its first contact when nothing matches`() {
+        whenever(customerContactRepository.findByEcomUserIdAndStatus("USR1", "ACTIVE")).thenReturn(emptyList())
         whenever(customerRepository.findFirstByPhone("999")).thenReturn(null)
-        whenever(customerService.createCustomer(any())).thenReturn(customer("CUS3", ecomUserId = "USR1"))
+        whenever(customerService.createCustomer(any())).thenReturn(customer("CUS-3"))
 
-        val uid = service.linkOrCreateEcomCustomer(
-            "USR1", "Alice", "999", "a@x.com", Address(city = "Pune"), null,
-        )
+        val uid = service.linkOrCreateEcomCustomer("USR1", "Alice", "999", "a@x.com", Address(city = "Pune"), null)
 
-        assertEquals("CUS3", uid)
-        val captor = argumentCaptor<Customer>()
-        verify(customerService).createCustomer(captor.capture())
-        val created = captor.firstValue
-        assertEquals("USR1", created.ecomUserId)
-        assertEquals("999", created.phone)
-        assertEquals("Alice", created.name)
-        assertEquals("ONLINE", created.customerType)
-        assertEquals("ONLINE", created.customerGroup)
-        assertEquals("Pune", created.city)
+        assertEquals("CUS-3", uid)
+        val custCaptor = argumentCaptor<Customer>()
+        verify(customerService).createCustomer(custCaptor.capture())
+        assertEquals("Alice", custCaptor.firstValue.name)
+        assertEquals("ONLINE", custCaptor.firstValue.customerType)
+        assertEquals("Pune", custCaptor.firstValue.city)
+        val contactCaptor = argumentCaptor<CustomerContact>()
+        verify(customerContactRepository).save(contactCaptor.capture())
+        assertEquals("CUS-3", contactCaptor.firstValue.customerId)
+        assertEquals("USR1", contactCaptor.firstValue.ecomUserId)
     }
 
     @Test
-    fun `skips phone dedup when phone is blank and creates a new customer`() {
-        whenever(customerRepository.findFirstByEcomUserId("USR9")).thenReturn(null)
-        whenever(customerService.createCustomer(any())).thenReturn(customer("CUS9", ecomUserId = "USR9"))
+    fun `skips phone lookup when phone is blank`() {
+        whenever(customerContactRepository.findByEcomUserIdAndStatus("USR9", "ACTIVE")).thenReturn(emptyList())
+        whenever(customerService.createCustomer(any())).thenReturn(customer("CUS-9"))
 
         val uid = service.linkOrCreateEcomCustomer("USR9", "Guest", null, "g@x.com", null, null)
 
-        assertEquals("CUS9", uid)
+        assertEquals("CUS-9", uid)
         verify(customerRepository, never()).findFirstByPhone(any())
         verify(customerService).createCustomer(any())
     }
