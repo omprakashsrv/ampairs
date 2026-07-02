@@ -96,4 +96,23 @@ class EcomCustomerServiceImplTest {
         verify(customerRepository, never()).findFirstByPhone(any())
         verify(customerService).createCustomer(any())
     }
+
+    @Test
+    fun `listAccountsForUser maps contacts to accounts labelled by the CRM account name`() {
+        val c1 = contact("CUS-A", isDefault = true).also { it.role = "OWNER" }
+        val c2 = contact("CUS-B").also { it.role = "WORKER"; it.name = "Bob" }
+        whenever(customerContactRepository.findByEcomUserIdAndStatus("USR1", "ACTIVE")).thenReturn(listOf(c1, c2))
+        whenever(customerRepository.findByUid("CUS-A")).thenReturn(customer("CUS-A").also { it.name = "Acme" })
+        whenever(customerRepository.findByUid("CUS-B")).thenReturn(null)
+
+        val accounts = service.listAccountsForUser("USR1")
+
+        assertEquals(2, accounts.size)
+        assertEquals("CUS-A", accounts[0].customerId)
+        assertEquals("Acme", accounts[0].name)
+        assertEquals(true, accounts[0].isDefault)
+        assertEquals("OWNER", accounts[0].role)
+        // Falls back to the contact's own name when the CRM customer can't be loaded.
+        assertEquals("Bob", accounts[1].name)
+    }
 }

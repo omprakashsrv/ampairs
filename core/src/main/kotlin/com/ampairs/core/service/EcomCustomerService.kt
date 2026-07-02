@@ -34,4 +34,18 @@ interface EcomCustomerService {
         billingAddress: Address?,
         shippingAddress: Address?,
     ): String
+
+    /**
+     * The CRM accounts a storefront login can order for (its [CustomerContact] links), for the
+     * checkout "ordering for" picker. Empty when the login has never ordered. Requires tenant context.
+     */
+    fun listAccountsForUser(ecomUserId: String): List<EcomCustomerAccount>
 }
+
+/** A CRM account a storefront buyer may order on behalf of. */
+data class EcomCustomerAccount(
+    val customerId: String,
+    val name: String,
+    val isDefault: Boolean,
+    val role: String,
+)

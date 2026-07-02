@@ -1,6 +1,7 @@
 package com.ampairs.customer.domain.service
 
 import com.ampairs.core.domain.model.Address
+import com.ampairs.core.service.EcomCustomerAccount
 import com.ampairs.core.service.EcomCustomerService
 import com.ampairs.customer.domain.model.Customer
 import com.ampairs.customer.domain.model.CustomerContact
@@ -56,6 +57,20 @@ class EcomCustomerServiceImpl(
         linkContact(customer.uid, ecomUserId, name, phone, email)
         log.info("Created CRM customer {} for ecom buyer {}", customer.uid, ecomUserId)
         return customer.uid
+    }
+
+    @Transactional(readOnly = true)
+    override fun listAccountsForUser(ecomUserId: String): List<EcomCustomerAccount> {
+        return customerContactRepository.findByEcomUserIdAndStatus(ecomUserId, ACTIVE).map { contact ->
+            // Label the picker with the CRM account name; fall back to the contact's own name.
+            val accountName = customerRepository.findByUid(contact.customerId)?.name ?: contact.name
+            EcomCustomerAccount(
+                customerId = contact.customerId,
+                name = accountName,
+                isDefault = contact.isDefault,
+                role = contact.role,
+            )
+        }
     }
 
     private fun linkContact(customerId: String, ecomUserId: String, name: String, phone: String?, email: String?) {
