@@ -418,4 +418,8 @@ interface InventoryTransactionRepository : CrudRepository<InventoryTransaction, 
 
     @Query("SELECT t FROM inventory_transaction t")
     fun findAllForSync(pageable: Pageable): Page<InventoryTransaction>
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(t.updatedAt) FROM inventory_transaction t")
+    fun findMaxUpdatedAt(): Instant?
 }

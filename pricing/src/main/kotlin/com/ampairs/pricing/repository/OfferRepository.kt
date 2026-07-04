@@ -30,4 +30,8 @@ interface OfferRepository : CrudRepository<Offer, Long> {
 
     @Query("SELECT o FROM offer o")
     fun findAllForSync(pageable: Pageable): Page<Offer>
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(o.updatedAt) FROM offer o")
+    fun findMaxUpdatedAt(): Instant?
 }

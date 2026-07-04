@@ -21,4 +21,8 @@ interface ProductStandardCostRepository : CrudRepository<ProductStandardCost, Lo
 
     @Query("SELECT c FROM product_standard_cost c")
     fun findAllForSync(pageable: Pageable): Page<ProductStandardCost>
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(c.updatedAt) FROM product_standard_cost c")
+    fun findMaxUpdatedAt(): Instant?
 }

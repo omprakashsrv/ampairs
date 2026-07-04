@@ -27,6 +27,7 @@ import com.ampairs.product.repository.ProductBrandRepository
 import com.ampairs.product.repository.ProductCategoryRepository
 import com.ampairs.product.repository.ProductGroupRepository
 import com.ampairs.product.repository.ProductRepository
+import com.ampairs.product.repository.ProductStandardCostRepository
 import com.ampairs.product.repository.ProductSubCategoryRepository
 import com.ampairs.product.sync.ProductCheckpointContributor
 import jakarta.servlet.http.HttpServletRequest
@@ -250,6 +251,7 @@ class ProductMiscUnitTest {
     @Mock private lateinit var productBrandRepository: ProductBrandRepository
     @Mock private lateinit var productGroupRepository: ProductGroupRepository
     @Mock private lateinit var productSubCategoryRepository: ProductSubCategoryRepository
+    @Mock private lateinit var productStandardCostRepository: ProductStandardCostRepository
 
     private lateinit var checkpointContributor: ProductCheckpointContributor
 
@@ -257,7 +259,7 @@ class ProductMiscUnitTest {
     fun setUp() {
         checkpointContributor = ProductCheckpointContributor(
             productRepository, productCategoryRepository, productBrandRepository,
-            productGroupRepository, productSubCategoryRepository,
+            productGroupRepository, productSubCategoryRepository, productStandardCostRepository,
         )
     }
 
@@ -268,12 +270,14 @@ class ProductMiscUnitTest {
         whenever(productBrandRepository.findMaxUpdatedAt()).thenReturn(Instant.parse("2025-05-01T00:00:00Z"))
         whenever(productGroupRepository.findMaxUpdatedAt()).thenReturn(null)
         whenever(productSubCategoryRepository.findMaxUpdatedAt()).thenReturn(Instant.parse("2025-02-01T00:00:00Z"))
+        whenever(productStandardCostRepository.findMaxUpdatedAt()).thenReturn(Instant.parse("2025-04-01T00:00:00Z"))
 
         val checkpoints = checkpointContributor.checkpoints()
 
         assertEquals(Instant.parse("2025-03-01T00:00:00Z"), checkpoints["product"])
         // max across catalog = brand (2025-05-01)
         assertEquals(Instant.parse("2025-05-01T00:00:00Z"), checkpoints["product_catalog"])
+        assertEquals(Instant.parse("2025-04-01T00:00:00Z"), checkpoints["product_standard_cost"])
     }
 
     @Test

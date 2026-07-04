@@ -225,4 +225,8 @@ interface InventoryItemRepository : CrudRepository<InventoryItem, Long>,
 
     @Query("SELECT i FROM inventory_item i")
     fun findAllForSync(pageable: Pageable): Page<InventoryItem>
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(i.updatedAt) FROM inventory_item i")
+    fun findMaxUpdatedAt(): Instant?
 }

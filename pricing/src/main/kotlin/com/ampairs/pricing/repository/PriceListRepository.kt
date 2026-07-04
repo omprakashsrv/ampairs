@@ -23,4 +23,8 @@ interface PriceListRepository : CrudRepository<PriceList, Long> {
 
     @Query("SELECT p FROM price_list p")
     fun findAllForSync(pageable: Pageable): Page<PriceList>
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(p.updatedAt) FROM price_list p")
+    fun findMaxUpdatedAt(): Instant?
 }

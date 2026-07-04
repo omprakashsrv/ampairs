@@ -5,6 +5,7 @@ import com.ampairs.product.repository.ProductBrandRepository
 import com.ampairs.product.repository.ProductCategoryRepository
 import com.ampairs.product.repository.ProductGroupRepository
 import com.ampairs.product.repository.ProductRepository
+import com.ampairs.product.repository.ProductStandardCostRepository
 import com.ampairs.product.repository.ProductSubCategoryRepository
 import org.springframework.stereotype.Component
 import java.time.Instant
@@ -21,6 +22,7 @@ class ProductCheckpointContributor(
     private val productBrandRepository: ProductBrandRepository,
     private val productGroupRepository: ProductGroupRepository,
     private val productSubCategoryRepository: ProductSubCategoryRepository,
+    private val productStandardCostRepository: ProductStandardCostRepository,
 ) : SyncCheckpointContributor {
 
     override fun checkpoints(): Map<String, Instant?> {
@@ -33,6 +35,7 @@ class ProductCheckpointContributor(
         return mapOf(
             "product" to productRepository.findMaxUpdatedAt(),
             "product_catalog" to maxCatalog,
+            "product_standard_cost" to productStandardCostRepository.findMaxUpdatedAt(),
         )
     }
 }
