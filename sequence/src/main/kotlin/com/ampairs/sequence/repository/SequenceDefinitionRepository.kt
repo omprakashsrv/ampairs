@@ -62,4 +62,8 @@ interface SequenceDefinitionRepository : CrudRepository<SequenceDefinition, Long
     /** Full sync feed (no checkpoint), INCLUDING inactive rows. @TenantId-filtered. */
     @Query("SELECT d FROM sequence_definition d")
     fun findAllForSync(pageable: Pageable): Page<SequenceDefinition>
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(d.updatedAt) FROM sequence_definition d")
+    fun findMaxUpdatedAt(): Instant?
 }
