@@ -5,6 +5,7 @@ import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 import java.time.Instant
 
@@ -22,4 +23,8 @@ interface PaymentVoucherRepository : JpaRepository<PaymentVoucher, Long> {
 
     @EntityGraph("PaymentVoucher.withAllocations")
     fun findByUpdatedAtGreaterThanEqual(lastSync: Instant, pageable: Pageable): Page<PaymentVoucher>
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(v.updatedAt) FROM payment_voucher v")
+    fun findMaxUpdatedAt(): Instant?
 }
