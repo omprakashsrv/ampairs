@@ -183,6 +183,27 @@ class StorefrontManagementControllerTest {
             .andExpect(jsonPath("$.success").value(false))
     }
 
+    @Test
+    @DisplayName("POST /storefront - brand_color_argb round-trips through create")
+    @WithMockUser(username = "ws-1", roles = ["USER"])
+    fun `should round trip brand color through create`() {
+        val created = makeStorefront("sf-1", "ws-1", "my-shop").apply { brandColorArgb = 4279650378L }
+        whenever(storefrontService.createStorefront(any(), eq("ws-1"))).thenReturn(created)
+
+        mockMvc.perform(
+            post("/v1/ecom/management/storefront")
+                .header("X-Workspace-ID", "ws-1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    objectMapper.writeValueAsString(
+                        StorefrontRequest(name = "My Shop", slug = "my-shop", brandColorArgb = 4279650378L)
+                    )
+                )
+        )
+            .andExpect(status().isCreated)
+            .andExpect(jsonPath("$.data.brand_color_argb").value(4279650378L))
+    }
+
     // ── PUT /api/v1/ecom/management/storefront ────────────────────────────────
 
     @Test
@@ -201,6 +222,23 @@ class StorefrontManagementControllerTest {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.name").value("Updated Shop"))
+    }
+
+    @Test
+    @DisplayName("PUT /storefront - brand_color_argb round-trips through update")
+    @WithMockUser(username = "ws-1", roles = ["USER"])
+    fun `should round trip brand color through update`() {
+        val updated = makeStorefront("sf-1", "ws-1", "my-shop").apply { brandColorArgb = 4279650378L }
+        whenever(storefrontService.updateStorefront(any(), eq("ws-1"))).thenReturn(updated)
+
+        mockMvc.perform(
+            put("/v1/ecom/management/storefront")
+                .header("X-Workspace-ID", "ws-1")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(StorefrontUpdateRequest(brandColorArgb = 4279650378L)))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.brand_color_argb").value(4279650378L))
     }
 
     // ── PUT /api/v1/ecom/management/storefront/publish ────────────────────────
