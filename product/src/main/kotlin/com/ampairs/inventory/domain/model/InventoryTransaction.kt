@@ -3,8 +3,10 @@ package com.ampairs.inventory.domain.model
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.inventory.config.Constants
 import jakarta.persistence.*
+import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.annotations.NotFound
 import org.hibernate.annotations.NotFoundAction
+import org.hibernate.type.SqlTypes
 import java.math.BigDecimal
 import java.time.Instant
 
@@ -191,8 +193,8 @@ class InventoryTransaction : OwnableBaseDomain() {
      * Serial numbers (optional - for serial-tracked items)
      * Stored as JSON array: ["SN001", "SN002", "SN003"]
      */
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "serial_numbers", columnDefinition = "JSON")
-    @Convert(converter = StringListJsonConverter::class)
     var serialNumbers: List<String>? = null
 
     // ============================================================================
@@ -270,6 +272,7 @@ class InventoryTransaction : OwnableBaseDomain() {
     /**
      * Extensible attributes (JSON)
      */
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "attributes", columnDefinition = "JSON")
     var attributes: Map<String, Any>? = null
 
@@ -326,34 +329,3 @@ class InventoryTransaction : OwnableBaseDomain() {
     }
 }
 
-/**
- * JPA Converter for List<String> to JSON
- * Handles serialization/deserialization of serial numbers array
- */
-@Converter
-class StringListJsonConverter : jakarta.persistence.AttributeConverter<List<String>?, String?> {
-
-    override fun convertToDatabaseColumn(attribute: List<String>?): String? {
-        if (attribute.isNullOrEmpty()) return null
-
-        // Simple JSON array serialization
-        return attribute.joinToString(
-            separator = ",",
-            prefix = "[\"",
-            postfix = "\"]",
-            transform = { it.replace("\"", "\\\"") }
-        )
-    }
-
-    override fun convertToEntityAttribute(dbData: String?): List<String>? {
-        if (dbData.isNullOrBlank() || dbData == "null") return null
-
-        // Simple JSON array deserialization
-        val cleaned = dbData.trim().removeSurrounding("[", "]").trim()
-        if (cleaned.isEmpty()) return emptyList()
-
-        return cleaned
-            .split("\",\"")
-            .map { it.trim().removeSurrounding("\"").replace("\\\"", "\"") }
-    }
-}
