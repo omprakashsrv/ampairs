@@ -49,9 +49,13 @@ private fun isPublicRequest(request: HttpServletRequest): Boolean {
     val contextPath = request.contextPath.orEmpty()
     val pathAfterContext = request.requestURI?.removePrefix(contextPath) ?: return false
     val servletPath = request.servletPath.orEmpty()
+    // pathInfo holds the path within the servlet (e.g. "/auth/v1/verify/firebase") when the
+    // DispatcherServlet is mapped to "/api/*" and servletPath is just "/api".
+    val pathInfo = request.pathInfo.orEmpty()
     return PUBLIC_PATHS.any { pattern ->
         antPathMatcher.match(pattern, pathAfterContext) ||
-                (servletPath.isNotEmpty() && antPathMatcher.match(pattern, servletPath))
+                (servletPath.isNotEmpty() && antPathMatcher.match(pattern, servletPath)) ||
+                (pathInfo.isNotEmpty() && antPathMatcher.match(pattern, pathInfo))
     }
 }
 
@@ -128,10 +132,12 @@ class SecurityConfiguration(
                         return@bearerTokenResolver null
                     }
                     val uri = request.requestURI
+                    val info = request.pathInfo.orEmpty()
                     val isPublic = uri.startsWith("/actuator/") || uri == "/actuator" ||
                         PUBLIC_PATHS.any { pattern ->
                             val prefix = pattern.removeSuffix("**").removeSuffix("*")
-                            uri.startsWith(prefix) || uri == pattern
+                            uri.startsWith(prefix) || uri == pattern ||
+                                (info.isNotEmpty() && (info.startsWith(prefix) || info == pattern))
                         }
                     if (isPublic) {
                         null
