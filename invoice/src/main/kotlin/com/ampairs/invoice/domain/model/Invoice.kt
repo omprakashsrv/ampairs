@@ -24,7 +24,7 @@ import java.util.*
         Index(name = "idx_invoice_uid", columnList = "uid", unique = true),
         Index(name = "invoice_ref_idx", columnList = "ref_id", unique = true),
         // Uniqueness for claimed numbers (sequence_number > 0) is enforced by a partial/functional
-        // unique index in the migrations (V1.0.118) — a full unique index would reject every
+        // unique index in the migrations (V1.0.119) — a full unique index would reject every
         // unsequenced (seq = 0) Tally/offline import after the first.
         Index(name = "idx_invoice_series_seq", columnList = "owner_id, series, sequence_number")
     ]
