@@ -1,6 +1,7 @@
 package com.ampairs.ecom.controller
 
 import com.ampairs.AmpairsApplication
+import com.ampairs.ecom.domain.enums.StorefrontAccessMode
 import com.ampairs.ecom.domain.enums.StorefrontStatus
 import com.ampairs.ecom.domain.model.Storefront
 import com.ampairs.ecom.kafka.EcomCatalogKafkaConsumer
@@ -157,6 +158,21 @@ class StorefrontDirectoryControllerTest {
             .andExpect(jsonPath("$.data.size").value(50))
     }
 
+    // ── access_mode ───────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("GET /storefronts - exposes access_mode so clients can badge restricted stores")
+    fun `should expose access mode`() {
+        persist("open-shop", "Open Shop", StorefrontStatus.PUBLISHED, accessMode = StorefrontAccessMode.PUBLIC)
+        persist("vip-shop", "VIP Shop", StorefrontStatus.PUBLISHED, accessMode = StorefrontAccessMode.RESTRICTED)
+
+        mockMvc.perform(get("/v1/storefronts"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.total_elements").value(2))
+            .andExpect(jsonPath("$.data.content[0].access_mode").value("PUBLIC"))
+            .andExpect(jsonPath("$.data.content[1].access_mode").value("RESTRICTED"))
+    }
+
     // ── brand color round-trip ────────────────────────────────────────────────
 
     @Test
@@ -186,6 +202,7 @@ class StorefrontDirectoryControllerTest {
         slug: String,
         name: String,
         status: StorefrontStatus,
+        accessMode: StorefrontAccessMode = StorefrontAccessMode.PUBLIC,
         brandColor: Long? = null,
     ): Storefront {
         // No tenant context is set in this test, so Hibernate resolves the "default" tenant for the
@@ -195,6 +212,7 @@ class StorefrontDirectoryControllerTest {
             this.slug = slug
             this.name = name
             this.status = status
+            this.accessMode = accessMode
             this.ownerId = "default"
             this.brandColorArgb = brandColor
         })

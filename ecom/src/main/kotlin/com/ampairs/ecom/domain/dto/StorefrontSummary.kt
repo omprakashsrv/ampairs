@@ -1,5 +1,6 @@
 package com.ampairs.ecom.domain.dto
 
+import com.ampairs.ecom.domain.enums.StorefrontAccessMode
 import com.ampairs.ecom.domain.enums.StorefrontStatus
 import com.ampairs.ecom.domain.model.Storefront
 import org.springframework.data.domain.Page
@@ -18,6 +19,7 @@ data class StorefrontSummary(
     val logoUrl: String?,
     val bannerUrl: String?,
     val status: StorefrontStatus,
+    val accessMode: StorefrontAccessMode,
     val brandColorArgb: Long?,
 )
 
@@ -29,6 +31,7 @@ fun Storefront.asStorefrontSummary() = StorefrontSummary(
     logoUrl = logoUrl,
     bannerUrl = bannerUrl,
     status = status,
+    accessMode = accessMode,
     brandColorArgb = brandColorArgb,
 )
 
