@@ -29,4 +29,8 @@ interface PrintTemplateRepository : CrudRepository<PrintTemplate, Long> {
     @EntityGraph("PrintTemplate.basic")
     @Query("SELECT t FROM print_template t")
     fun findAllForSync(pageable: Pageable): Page<PrintTemplate>
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(t.updatedAt) FROM print_template t")
+    fun findMaxUpdatedAt(): Instant?
 }

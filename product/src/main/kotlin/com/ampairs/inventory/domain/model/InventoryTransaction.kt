@@ -3,6 +3,8 @@ package com.ampairs.inventory.domain.model
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.inventory.config.Constants
 import jakarta.persistence.*
+import org.hibernate.annotations.NotFound
+import org.hibernate.annotations.NotFoundAction
 import java.math.BigDecimal
 import java.time.Instant
 
@@ -89,8 +91,12 @@ class InventoryTransaction : OwnableBaseDomain() {
     var inventoryItemId: String = ""
 
     /**
-     * Inventory item entity (lazy loaded)
+     * Inventory item entity (lazy loaded).
+     * NotFound(IGNORE): offline-synced transactions can reference an item uid not present on the
+     * server; without it Hibernate throws EntityFilterException on any read joining the
+     * association instead of resolving null.
      */
+    @NotFound(action = NotFoundAction.IGNORE)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
         name = "inventory_item_id",
@@ -114,8 +120,11 @@ class InventoryTransaction : OwnableBaseDomain() {
     var warehouseId: String = ""
 
     /**
-     * Warehouse entity (lazy loaded)
+     * Warehouse entity (lazy loaded).
+     * NotFound(IGNORE): warehouseId can be '' for offline-synced movements when the workspace has
+     * no default warehouse; resolves null instead of throwing EntityFilterException.
      */
+    @NotFound(action = NotFoundAction.IGNORE)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
         name = "warehouse_id",

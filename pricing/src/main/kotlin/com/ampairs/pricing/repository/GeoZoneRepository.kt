@@ -20,4 +20,8 @@ interface GeoZoneRepository : CrudRepository<GeoZone, Long> {
 
     @Query("SELECT z FROM geo_zone z")
     fun findAllForSync(pageable: Pageable): Page<GeoZone>
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(z.updatedAt) FROM geo_zone z")
+    fun findMaxUpdatedAt(): Instant?
 }

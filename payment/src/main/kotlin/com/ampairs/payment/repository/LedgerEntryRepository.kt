@@ -60,4 +60,8 @@ interface LedgerEntryRepository : JpaRepository<LedgerEntry, Long> {
     fun findAllByOrderByUpdatedAtAsc(pageable: Pageable): Page<LedgerEntry>
 
     fun findByUpdatedAtGreaterThanEqual(lastSync: Instant, pageable: Pageable): Page<LedgerEntry>
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(e.updatedAt) FROM ledger_entry e")
+    fun findMaxUpdatedAt(): Instant?
 }

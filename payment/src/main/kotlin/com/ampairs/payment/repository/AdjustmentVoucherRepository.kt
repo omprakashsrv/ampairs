@@ -4,6 +4,7 @@ import com.ampairs.payment.domain.model.AdjustmentVoucher
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.JpaRepository
+import org.springframework.data.jpa.repository.Query
 import org.springframework.stereotype.Repository
 import java.time.Instant
 
@@ -18,4 +19,8 @@ interface AdjustmentVoucherRepository : JpaRepository<AdjustmentVoucher, Long> {
     fun findAllByOrderByUpdatedAtAsc(pageable: Pageable): Page<AdjustmentVoucher>
 
     fun findByUpdatedAtGreaterThanEqual(lastSync: Instant, pageable: Pageable): Page<AdjustmentVoucher>
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(v.updatedAt) FROM adjustment_voucher v")
+    fun findMaxUpdatedAt(): Instant?
 }
