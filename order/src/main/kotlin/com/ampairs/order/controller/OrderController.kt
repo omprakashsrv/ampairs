@@ -28,7 +28,7 @@ class OrderController(
      * overallDiscountMode as supplied (no server recompute). Assigns orderNumber when blank.
      */
     @PostMapping("/sync")
-    fun syncOrders(@RequestBody @Valid requests: List<OrderUpdateRequest>): ApiResponse<List<OrderResponse>> {
+    fun syncOrders(@RequestBody requests: List<@Valid OrderUpdateRequest>): ApiResponse<List<OrderResponse>> {
         return ApiResponse.success(orderService.bulkUpsertOrders(requests))
     }
 
