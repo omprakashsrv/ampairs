@@ -47,7 +47,7 @@ class CustomerGroupController(
      */
     @PostMapping("/sync")
     fun bulkUpsertCustomerGroups(
-        @RequestBody @Valid request: List<CustomerGroupUpdateRequest>
+        @RequestBody request: List<@Valid CustomerGroupUpdateRequest>
     ): ApiResponse<List<CustomerGroupResponse>> {
         val groups = request.toCustomerGroups()
         val result = customerGroupService.bulkUpsertCustomerGroups(groups)
