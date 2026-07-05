@@ -16,4 +16,5 @@ data class StorefrontRequest(
     val description: String? = null,
     val logoUrl: String? = null,
     val bannerUrl: String? = null,
+    val brandColorArgb: Long? = null,
 )

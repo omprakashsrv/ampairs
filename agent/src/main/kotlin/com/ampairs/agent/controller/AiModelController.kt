@@ -6,6 +6,7 @@ import com.ampairs.agent.service.AiModelCatalogService
 import com.ampairs.agent.service.AiModelProxyService
 import com.ampairs.core.domain.dto.ApiResponse
 import java.io.IOException
+import org.springframework.http.ContentDisposition
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.context.request.async.AsyncRequestTimeoutException
 import org.springframework.web.server.ResponseStatusException
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody
+import java.nio.charset.StandardCharsets
 
 /**
  * On-device AI model catalog + download proxy. Global (not tenant-scoped) reference data — still
@@ -68,7 +70,10 @@ class AiModelController(
 
         val builder = ResponseEntity.status(upstream.statusCode)
             .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_OCTET_STREAM_VALUE)
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${model.fileName}\"")
+            .header(
+                HttpHeaders.CONTENT_DISPOSITION,
+                ContentDisposition.attachment().filename(model.fileName, StandardCharsets.UTF_8).build().toString(),
+            )
             .header(HttpHeaders.ACCEPT_RANGES, upstream.acceptRanges ?: "bytes")
         upstream.contentLength?.let { builder.header(HttpHeaders.CONTENT_LENGTH, it.toString()) }
         upstream.contentRange?.let { builder.header(HttpHeaders.CONTENT_RANGE, it) }

@@ -12,6 +12,7 @@ data class StorefrontResponse(
     val description: String?,
     val logoUrl: String?,
     val bannerUrl: String?,
+    val brandColorArgb: Long?,
     val status: StorefrontStatus,
     val accessMode: StorefrontAccessMode,
     val defaultChannel: com.ampairs.core.domain.enums.SalesChannel,
@@ -28,6 +29,7 @@ fun Storefront.asStorefrontResponse() = StorefrontResponse(
     description = description,
     logoUrl = logoUrl,
     bannerUrl = bannerUrl,
+    brandColorArgb = brandColorArgb,
     status = status,
     accessMode = accessMode,
     defaultChannel = defaultChannel,
@@ -45,5 +47,6 @@ fun StorefrontRequest.toStorefront(ownerId: String): Storefront {
     storefront.description = description
     storefront.logoUrl = logoUrl
     storefront.bannerUrl = bannerUrl
+    storefront.brandColorArgb = brandColorArgb
     return storefront
 }

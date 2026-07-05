@@ -6,7 +6,9 @@ import com.ampairs.core.auth.filter.ApiKeyAuthenticationFilter
 import com.ampairs.core.auth.provider.ApiKeyAuthenticationProvider
 import com.ampairs.core.config.ApplicationProperties
 import com.ampairs.core.exception.AuthEntryPointJwt
+import jakarta.servlet.http.HttpServletRequest
 import org.springframework.boot.security.autoconfigure.actuate.web.servlet.EndpointRequest
+import org.springframework.util.AntPathMatcher
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.ComponentScan
 import org.springframework.context.annotation.Configuration
@@ -20,6 +22,7 @@ import org.springframework.security.oauth2.jwt.JwtDecoder
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
+import org.springframework.security.web.util.matcher.RequestMatcher
 import org.springframework.web.cors.CorsConfigurationSource
 import javax.crypto.spec.SecretKeySpec
 
@@ -33,10 +36,24 @@ private val PUBLIC_PATHS = arrayOf(
     "/core/v1/app-updates/check",
     "/core/v1/app-updates/download/**",
     "/subscription/v1/webhooks/**",
+    "/v1/storefronts",     // Public cross-tenant storefront directory (multi-store app) — auth optional
+    "/v1/storefronts/**",
     "/error",
     "/ws/**",    // WebSocket upgrade (direct path)
     "/api/ws/**" // WebSocket upgrade via DispatcherServlet (spring.mvc.servlet.path=/api)
 )
+
+private val antPathMatcher = AntPathMatcher()
+
+private fun isPublicRequest(request: HttpServletRequest): Boolean {
+    val contextPath = request.contextPath.orEmpty()
+    val pathAfterContext = request.requestURI?.removePrefix(contextPath) ?: return false
+    val servletPath = request.servletPath.orEmpty()
+    return PUBLIC_PATHS.any { pattern ->
+        antPathMatcher.match(pattern, pathAfterContext) ||
+                (servletPath.isNotEmpty() && antPathMatcher.match(pattern, servletPath))
+    }
+}
 
 @Configuration
 @EnableWebSecurity
@@ -97,7 +114,7 @@ class SecurityConfiguration(
             .authorizeHttpRequests { requests ->
                 requests
                     .requestMatchers(EndpointRequest.toAnyEndpoint()).permitAll()
-                    .requestMatchers(*PUBLIC_PATHS).permitAll()
+                    .requestMatchers(RequestMatcher { request -> isPublicRequest(request) }).permitAll()
                     .anyRequest().authenticated()
             }
             .oauth2ResourceServer { oauth2 ->
