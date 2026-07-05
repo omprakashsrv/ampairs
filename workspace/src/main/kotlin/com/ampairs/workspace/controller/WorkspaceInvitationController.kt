@@ -23,9 +23,11 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
+import org.springframework.http.ContentDisposition
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
+import java.nio.charset.StandardCharsets
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.Authentication
 import org.springframework.security.core.context.SecurityContextHolder
@@ -1100,7 +1102,10 @@ class WorkspaceInvitationController(
         val filename = "workspace-invitations-${java.time.LocalDate.now()}.${format.lowercase()}"
 
         return ResponseEntity.ok()
-            .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"$filename\"")
+            .header(
+                HttpHeaders.CONTENT_DISPOSITION,
+                ContentDisposition.attachment().filename(filename, StandardCharsets.UTF_8).build().toString(),
+            )
             .header(HttpHeaders.CONTENT_TYPE, contentType)
             .body(exportData)
     }

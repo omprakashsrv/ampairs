@@ -111,6 +111,7 @@ class SessionUserFilter(
                 requestPath.contains("/swagger") ||
                 requestPath.contains("/api-docs") ||
                 requestPath.contains("/api/v1/store/") ||
+                requestPath.contains("/v1/storefronts") || // Public cross-tenant storefront directory (no workspace scope)
                 requestPath.startsWith("/api/ws") || // WebSocket upgrade — workspace context set by WebSocketChannelInterceptor
                 requestPath.startsWith("/ws")         // WebSocket direct path
     }

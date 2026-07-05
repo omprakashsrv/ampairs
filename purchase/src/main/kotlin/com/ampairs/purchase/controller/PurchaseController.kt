@@ -24,7 +24,7 @@ class PurchaseController(
      * A RECEIVED purchase increases inventory; a CANCELLED one reverses it.
      */
     @PostMapping("/sync")
-    fun syncPurchases(@RequestBody @Valid requests: List<PurchaseUpdateRequest>): ApiResponse<List<PurchaseResponse>> {
+    fun syncPurchases(@RequestBody requests: List<@Valid PurchaseUpdateRequest>): ApiResponse<List<PurchaseResponse>> {
         return ApiResponse.success(purchaseService.bulkUpsertPurchases(requests))
     }
 

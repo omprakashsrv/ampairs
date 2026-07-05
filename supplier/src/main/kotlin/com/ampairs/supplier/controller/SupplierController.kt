@@ -24,7 +24,7 @@ class SupplierController(
      * separate per-row DELETE call in the sync push path.
      */
     @PostMapping("/suppliers/sync")
-    fun updateSuppliers(@RequestBody @Valid supplierUpdateRequest: List<SupplierUpdateRequest>): ApiResponse<List<SupplierResponse>> {
+    fun updateSuppliers(@RequestBody supplierUpdateRequest: List<@Valid SupplierUpdateRequest>): ApiResponse<List<SupplierResponse>> {
         val suppliers = supplierUpdateRequest.toSuppliers()
         val result = supplierService.updateSuppliers(suppliers).asSuppliersResponse()
         return ApiResponse.success(result)

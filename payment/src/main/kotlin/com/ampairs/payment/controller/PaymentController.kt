@@ -67,7 +67,7 @@ class PaymentController(
 
     @PostMapping("/ledger-entries/sync")
     fun syncLedgerEntries(
-        @RequestBody @Valid requests: List<LedgerEntryRequest>,
+        @RequestBody requests: List<@Valid LedgerEntryRequest>,
     ): ApiResponse<List<LedgerEntryResponse>> =
         ApiResponse.success(ledgerEntryService.bulkUpsert(requests))
 
@@ -87,7 +87,7 @@ class PaymentController(
 
     @PostMapping("/party-balances/sync")
     fun syncPartyBalances(
-        @RequestBody @Valid requests: List<PartyBalanceRequest>,
+        @RequestBody requests: List<@Valid PartyBalanceRequest>,
     ): ApiResponse<List<PartyBalanceResponse>> =
         ApiResponse.success(partyBalanceService.bulkUpsert(requests))
 
@@ -107,7 +107,7 @@ class PaymentController(
 
     @PostMapping("/vouchers/sync")
     fun syncVouchers(
-        @RequestBody @Valid requests: List<PaymentVoucherRequest>,
+        @RequestBody requests: List<@Valid PaymentVoucherRequest>,
     ): ApiResponse<List<PaymentVoucherResponse>> =
         ApiResponse.success(voucherService.bulkUpsert(requests))
 
@@ -127,7 +127,7 @@ class PaymentController(
 
     @PostMapping("/allocations/sync")
     fun syncAllocations(
-        @RequestBody @Valid requests: List<PaymentAllocationRequest>,
+        @RequestBody requests: List<@Valid PaymentAllocationRequest>,
     ): ApiResponse<List<PaymentAllocationResponse>> =
         ApiResponse.success(allocationService.bulkUpsert(requests))
 
@@ -147,7 +147,7 @@ class PaymentController(
 
     @PostMapping("/adjustments/sync")
     fun syncAdjustments(
-        @RequestBody @Valid requests: List<AdjustmentVoucherRequest>,
+        @RequestBody requests: List<@Valid AdjustmentVoucherRequest>,
     ): ApiResponse<List<AdjustmentVoucherResponse>> =
         ApiResponse.success(adjustmentService.bulkUpsert(requests))
 

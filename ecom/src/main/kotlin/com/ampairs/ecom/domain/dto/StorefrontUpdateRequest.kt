@@ -9,6 +9,7 @@ data class StorefrontUpdateRequest(
     val logoUrl: String? = null,
     val bannerUrl: String? = null,
     val accessMode: StorefrontAccessMode? = null,
+    val brandColorArgb: Long? = null,
 )
 
 fun StorefrontUpdateRequest.applyTo(storefront: Storefront): Storefront {
@@ -17,5 +18,6 @@ fun StorefrontUpdateRequest.applyTo(storefront: Storefront): Storefront {
     logoUrl?.let { storefront.logoUrl = it }
     bannerUrl?.let { storefront.bannerUrl = it }
     accessMode?.let { storefront.accessMode = it }
+    brandColorArgb?.let { storefront.brandColorArgb = it }
     return storefront
 }
