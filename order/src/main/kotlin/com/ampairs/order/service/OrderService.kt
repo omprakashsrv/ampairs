@@ -59,13 +59,15 @@ class OrderService(
      * CANCELLED/REFUNDED restore it.
      */
     private fun syncStockForOrder(order: Order, orderItems: List<OrderItem>) {
-        if (orderItems.isEmpty()) return
+        // Never move stock for a removed (soft-deleted) line.
+        val activeItems = orderItems.filter { it.active }
+        if (activeItems.isEmpty()) return
         val command = StockMutationCommand(
             sourceType = StockSourceType.ORDER,
             sourceId = order.uid,
             referenceNumber = order.orderNumber,
             performedBy = getUserId(),
-            lines = orderItems.map {
+            lines = activeItems.map {
                 StockLine(
                     sourceLineUid = it.uid,
                     productId = it.productId,

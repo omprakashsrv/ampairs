@@ -54,7 +54,9 @@ class InvoiceService(
      * INVOICED restores it.
      */
     private fun syncStockForInvoice(invoice: Invoice, items: List<InvoiceItem>, previousStatus: InvoiceStatus?) {
-        if (items.isEmpty()) return
+        // Never move stock for a removed (soft-deleted) line.
+        val activeItems = items.filter { it.active }
+        if (activeItems.isEmpty()) return
         // Avoid double-deduction: an invoice converted from an order lets the ORDER own the stock move.
         if (!invoice.orderRefId.isNullOrBlank()) return
         val nowFinalized = invoice.status == InvoiceStatus.INVOICED
@@ -65,7 +67,7 @@ class InvoiceService(
             sourceId = invoice.uid,
             referenceNumber = invoice.invoiceNumber,
             performedBy = getUserId(),
-            lines = items.map {
+            lines = activeItems.map {
                 StockLine(
                     sourceLineUid = it.uid,
                     productId = it.productId,
