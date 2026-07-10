@@ -15,6 +15,11 @@ class InvoiceItem : OwnableBaseDomain() {
     @Column(name = "invoice_id", nullable = false, length = 255)
     var invoiceId: String = ""
 
+    // Soft-delete flag. A line the client removed during billing is pushed with active = false so
+    // the deletion propagates to every device via the invoice /sync feed (in-band delete).
+    @Column(name = "active", nullable = false)
+    var active: Boolean = true
+
     @Column(name = "description", nullable = false, length = 255)
     var description: String = ""
 

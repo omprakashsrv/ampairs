@@ -54,6 +54,8 @@ fun List<InvoiceItem>.toResponse(): List<InvoiceItemResponse> {
             baseQuantity = it.baseQuantity,
             variantSku = it.variantSku,
             taxInfos = it.taxInfos,
+            active = it.active,
+            softDeleted = !it.active,
             discount = it.discount,
             resolvedUnitPriceMinor = it.resolvedUnitPriceMinor,
             currency = it.currency,

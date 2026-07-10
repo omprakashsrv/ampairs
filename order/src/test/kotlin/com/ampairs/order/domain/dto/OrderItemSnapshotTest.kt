@@ -40,4 +40,24 @@ class OrderItemSnapshotTest {
         assertEquals(50.0, resp.appliedTierMinQty)
         assertEquals(false, resp.belowMoq)
     }
+
+    @Test
+    fun `a removed line round-trips as soft-deleted request to entity to response`() {
+        // The client pushes a removed line with active = false / softDeleted = true; it must persist
+        // inactive so the deletion propagates on the next /sync pull.
+        val removed = OrderItemRequest(id = "OI2", description = "Gone", active = false, softDeleted = true)
+        val kept = OrderItemRequest(id = "OI3", description = "Kept")
+
+        val entities = listOf(removed, kept).toOrderItems()
+        assertEquals(false, entities.first { it.uid == "OI2" }.active)
+        assertEquals(true, entities.first { it.uid == "OI3" }.active)
+
+        val responses = entities.toResponse()
+        val removedResp = responses.first { it.id == "OI2" }
+        assertEquals(false, removedResp.active)
+        assertEquals(true, removedResp.softDeleted)
+        val keptResp = responses.first { it.id == "OI3" }
+        assertEquals(true, keptResp.active)
+        assertEquals(false, keptResp.softDeleted)
+    }
 }

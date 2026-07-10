@@ -49,6 +49,9 @@ fun List<OrderItemRequest>.toOrderItems(): List<OrderItem> {
         orderItem.totalTax = it.totalTax
         orderItem.basePrice = it.basePrice
         orderItem.orderId = it.orderId
+        // A removed line arrives as active = false (or softDeleted = true); persisted verbatim so the
+        // deletion round-trips on the order /sync feed.
+        orderItem.active = it.active && !it.softDeleted
         orderItem.productId = it.productId
         orderItem.taxCode = it.taxCode
         orderItem.unitId = it.unitId
@@ -81,6 +84,7 @@ fun List<OrderItem>.toInvoiceItems(): List<InvoiceItem> {
         orderItem.totalTax = it.totalTax
         orderItem.basePrice = it.basePrice
         orderItem.invoiceId = ""
+        orderItem.active = it.active
         orderItem.productId = it.productId
         orderItem.taxCode = it.taxCode
         orderItem.unitId = it.unitId
