@@ -1,0 +1,161 @@
+package com.ampairs.claim
+
+import com.ampairs.AmpairsApplication
+import com.ampairs.claim.domain.dto.ClaimAccrueFromSalesRequest
+import com.ampairs.claim.domain.dto.ClaimAccrueRequest
+import com.ampairs.claim.domain.enums.ClaimStatus
+import com.ampairs.claim.domain.model.ClaimSettlement
+import com.ampairs.claim.domain.dto.ClaimSettleRequest
+import com.ampairs.claim.domain.dto.ClaimRejectRequest
+import com.ampairs.claim.domain.model.SchemeClaim
+import com.ampairs.claim.domain.service.ClaimAccrualService
+import com.ampairs.claim.domain.service.ClaimService
+import com.ampairs.claim.exception.ClaimStateException
+import com.ampairs.workspace.service.WorkspaceMemberService
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.DisplayName
+import org.junit.jupiter.api.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.whenever
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.http.MediaType
+import org.springframework.security.test.context.support.WithMockUser
+import org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity
+import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.bean.override.mockito.MockitoBean
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import org.springframework.test.web.servlet.setup.DefaultMockMvcBuilder
+import org.springframework.test.web.servlet.setup.MockMvcBuilders
+import org.springframework.web.context.WebApplicationContext
+import tools.jackson.databind.ObjectMapper
+import java.math.BigDecimal
+
+/**
+ * Drives the claim controller through the real security chain + JSON, ClaimService mocked. Verifies
+ * the accrue happy path and that a ClaimStateException maps to HTTP 409 via ClaimExceptionHandler.
+ */
+@SpringBootTest(classes = [AmpairsApplication::class])
+@ActiveProfiles("test")
+class ClaimControllerIntegrationTest {
+
+    @Autowired private lateinit var webApplicationContext: WebApplicationContext
+    @Autowired private lateinit var objectMapper: ObjectMapper
+    private lateinit var mockMvc: MockMvc
+
+    @field:MockitoBean private lateinit var claimService: ClaimService
+    @field:MockitoBean private lateinit var claimAccrualService: ClaimAccrualService
+    @field:MockitoBean private lateinit var workspaceMemberService: WorkspaceMemberService
+
+    @BeforeEach
+    fun setUp() {
+        whenever(workspaceMemberService.isWorkspaceMember(any())).thenReturn(true)
+        mockMvc = MockMvcBuilders
+            .webAppContextSetup(webApplicationContext)
+            .apply<DefaultMockMvcBuilder>(springSecurity())
+            .build()
+    }
+
+    @Test
+    @DisplayName("POST /claim/v1/claims accrues a DRAFT claim")
+    @WithMockUser(username = "tester", roles = ["USER"])
+    fun `accrue claim`() {
+        val claim = SchemeClaim().apply {
+            uid = "SCL-1"; schemeRef = "OFFER-1"; brandWorkspaceId = "BRAND"; distributorWorkspaceId = "DIST"
+            computedAmount = BigDecimal("100"); status = ClaimStatus.DRAFT
+        }
+        whenever(claimService.accrue(any(), any(), any(), any(), anyOrNull(), anyOrNull())).thenReturn(claim)
+        mockMvc.perform(
+            post("/claim/v1/claims")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ClaimAccrueRequest(schemeRef = "OFFER-1", brandWorkspaceId = "BRAND", distributorWorkspaceId = "DIST", computedAmount = BigDecimal("100")))),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("\$.success").value(true))
+            .andExpect(jsonPath("\$.data.status").value("DRAFT"))
+    }
+
+    @Test
+    @DisplayName("POST /claim/v1/claims/accrue-from-sales derives the amount from DMS sales")
+    @WithMockUser(username = "tester", roles = ["USER"])
+    fun `accrue from secondary sales`() {
+        val claim = SchemeClaim().apply {
+            uid = "SCL-2"; schemeRef = "OFFER-1"; brandWorkspaceId = "BRAND"; distributorWorkspaceId = "DIST"
+            computedAmount = BigDecimal("250.0000"); status = ClaimStatus.DRAFT; periodKey = "2026-06"
+        }
+        whenever(claimAccrualService.accrueFromSecondarySales(any(), any(), any(), anyOrNull(), any(), anyOrNull()))
+            .thenReturn(claim)
+        mockMvc.perform(
+            post("/claim/v1/claims/accrue-from-sales")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    objectMapper.writeValueAsString(
+                        ClaimAccrueFromSalesRequest(
+                            schemeRef = "OFFER-1", brandWorkspaceId = "BRAND", distributorWorkspaceId = "DIST",
+                            periodKey = "2026-06", ratePercent = BigDecimal("2.5"),
+                        ),
+                    ),
+                ),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("\$.success").value(true))
+            .andExpect(jsonPath("\$.data.status").value("DRAFT"))
+            .andExpect(jsonPath("\$.data.scheme_ref").value("OFFER-1"))
+    }
+
+    @Test
+    @DisplayName("submit / approve / reject move the claim through its lifecycle")
+    @WithMockUser(username = "tester", roles = ["USER"])
+    fun `lifecycle transitions`() {
+        fun claim(status: ClaimStatus) = SchemeClaim().apply {
+            uid = "SCL-1"; schemeRef = "OFFER-1"; brandWorkspaceId = "BRAND"; distributorWorkspaceId = "DIST"
+            computedAmount = BigDecimal("250"); this.status = status
+        }
+        whenever(claimService.submit("SCL-1")).thenReturn(claim(ClaimStatus.SUBMITTED))
+        mockMvc.perform(post("/claim/v1/claims/SCL-1/submit"))
+            .andExpect(status().isOk).andExpect(jsonPath("\$.data.status").value("SUBMITTED"))
+
+        whenever(claimService.approve("SCL-1")).thenReturn(claim(ClaimStatus.APPROVED))
+        mockMvc.perform(post("/claim/v1/claims/SCL-1/approve"))
+            .andExpect(status().isOk).andExpect(jsonPath("\$.data.status").value("APPROVED"))
+
+        whenever(claimService.reject(any(), any())).thenReturn(claim(ClaimStatus.REJECTED))
+        mockMvc.perform(
+            post("/claim/v1/claims/SCL-1/reject")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ClaimRejectRequest(reason = "insufficient docs"))),
+        )
+            .andExpect(status().isOk).andExpect(jsonPath("\$.data.status").value("REJECTED"))
+    }
+
+    @Test
+    @DisplayName("settle records a settlement reference")
+    @WithMockUser(username = "tester", roles = ["USER"])
+    fun `settle claim`() {
+        whenever(claimService.settle(any(), any(), any())).thenReturn(
+            ClaimSettlement().apply { uid = "STL-1"; claimUid = "SCL-1"; settledAmount = BigDecimal("250"); reference = "UTR-9" },
+        )
+        mockMvc.perform(
+            post("/claim/v1/claims/SCL-1/settle")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(ClaimSettleRequest(reference = "UTR-9", settledAmount = BigDecimal("250")))),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("\$.data.reference").value("UTR-9"))
+            .andExpect(jsonPath("\$.data.claim_uid").value("SCL-1"))
+    }
+
+    @Test
+    @DisplayName("POST approve on a non-submitted claim returns 409")
+    @WithMockUser(username = "tester", roles = ["USER"])
+    fun `illegal transition is conflict`() {
+        whenever(claimService.approve("SCL-1")).thenThrow(ClaimStateException("not submitted"))
+        mockMvc.perform(post("/claim/v1/claims/SCL-1/approve"))
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("\$.success").value(false))
+    }
+}

@@ -20,3 +20,7 @@
 | `subscription` | Plans, billing |
 | `setting` | Central workspace settings registry (cross-module toggles, offline-sync) |
 | `printing` | Print-template storage + offline-sync (`/printing/v1`, opaque layout JSON) |
+| `trade` | Brand↔distributor network & consent edge — links, consent scope, brand/product attribution (NetworkBrand/NetworkProduct + NPI), primary-order handshake, `CrossTenantReadGuard`. Depends on `workspace`, `core` only |
+| `sfa` | Distributor field-sales automation (offline `/sync`) — beats/PJP, store visits, attendance, surveys, leave + reporting (adherence/summary/productivity). Standalone (the MVP); reads `customer`/`order`/`form` via public services |
+| `dms` | Brand distribution-management visibility — secondary-sales/distributor-stock snapshots + targets. Consent-gated via `trade`; reads `order`/`invoice`/`inventory` via public services + events |
+| `claim` | Trade-scheme **claims & settlement** — SchemeClaim/ClaimSettlement reimbursement lifecycle (accrue→submit→approve→settle). Brand-funded **scheme definition** itself lives in `pricing` (spec 015); `claim` reuses it. Depends on `pricing`/`dms`/`trade` + `payment` (ledger) |

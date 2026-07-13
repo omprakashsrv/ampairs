@@ -1,7 +1,9 @@
 # Implementation Plan: Brand → Distributor DMS + Sales Force Automation
 
-**Branch**: `claude/indian-retail-ecosystem-877med` (spec dir `021-brand-distributor-dms-sfa`) | **Date**: 2026-06-27 | **Spec**: [spec.md](./spec.md)
+**Branch**: `021-brand-distributor-dms-sfa` (dev branch `claude/brand-distributor-dms-sfa-12692h`) | **Date**: 2026-06-28 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/021-brand-distributor-dms-sfa/spec.md`
+
+> **Module placement** is governed by [`module-boundaries.md`](./module-boundaries.md) — four new contexts `trade`/`sfa`/`dms`/`claim` (+ existing `pricing` for brand-funded scheme *definition*). The single `ampairs/trade/...` paths in this plan predate the split; map each to its module per the capability table.
 
 ## Summary
 
@@ -20,35 +22,60 @@ offline `/sync` engine (Room `synced=false` + `SyncDelegate`), scoped to the **d
 Trade schemes, claims/settlement, targets and distributor-stock visibility follow the same snapshot rail.
 Money is `DECIMAL(19,4)` backend / `Long` minor units mobile. Full rationale in [research.md](./research.md).
 
+**Clarifications folded in (2026-06-28 session):**
+- **Retailer PII**: a `TradeLink` shares outlets **coded/aggregated by default**; identified-retailer
+  sharing (name/area) is an explicit opt-in on the link scope; full contact PII never crosses. → drives
+  `ConsentScope` flags + `NetworkRetailer` projection.
+- **Snapshot freshness**: snapshots are **event-triggered, coalesced to ≤ once per ~5 min per distributor**
+  (figures ≤ ~5 min stale). → debounced rebuild queue, not per-write recompute.
+- **Geo at check-in**: **capture + flag** out-of-radius visits, **never block**. → `Visit.geoFenceStatus`
+  (IN_RADIUS / OUT_OF_RADIUS / NO_LOCATION), no hard gate.
+- **Ad-hoc & new outlet**: reps may make **unplanned visits** to any of their distributor's outlets and
+  **register a new retailer offline**. → `Visit.adHoc` flag; rep can author a `customer` create over sync.
+- **Primary orders**: brand → distributor is a **handshake** (brand-tenant order → surfaced over link →
+  distributor confirms → becomes a normal order in the distributor tenant), never a silent cross-tenant
+  write. → `PrimaryOrderLink` referencing the brand-side order uid + distributor-side confirmation.
+- **Cross-workspace product identity (two-level)**: brand and distributor are separate workspaces with
+  separate catalogs. **Hop A** (`NetworkBrand`) attributes via the distributor's **existing in-catalog brand
+  label** (`ProductBrand` designated ↔ brand workspace) — decides *whose* product, **point-in-time**,
+  distributor-controlled / brand-read-only; all the brand's products count (unmapped → aggregated bucket),
+  other-brand/untagged excluded. **Hop B** (`NetworkProduct`, optional) reconciles a distributor product to
+  the brand's **specific SKU** (auto-matched by **barcode/SKU**, not HSN) to itemize by SKU. Snapshots carry
+  `attributedBrandWorkspaceId` (always, as-of-sale) + `brandProductUid`/`brandSkuCode` (only where Hop B
+  mapped). Detailed in the product-brand-attribution sub-spec.
+
 ## Technical Context
 
 **Language/Version**: Backend Kotlin 2.3 / Java 21 (Spring Boot 4.0); Mobile Kotlin Multiplatform 2.4
 (Compose Multiplatform 1.11).
 **Primary Dependencies**: Backend — Spring Data JPA, Flyway, Jackson (SNAKE_CASE), `core`
-(`OwnableBaseDomain`, `ApiResponse`, `PageResponse`, `TenantContextHolder`); **public service interfaces**
-of `workspace` (link/membership/roles), `order`, `invoice`, `product`/`inventory`, `customer` for
-snapshots and tagging; Spring `ApplicationEventPublisher` for cross-module events. Mobile — Room KMP, Ktor,
-Metro DI, Navigation3, kotlinx.datetime, **Moko Permissions + Play Services Location** for geo/attendance,
-existing `data/sync` (`CentralSyncService`, `SyncDelegate`), `data/common` (`ApiUrlBuilder`,
-`WorkspaceAwareDatabaseFactory`).
-**Storage**: Backend — PostgreSQL/MySQL via Flyway, money `DECIMAL(19,4)`, timestamps `TIMESTAMPTZ`/
-`TIMESTAMP`; snapshot tables versioned. Mobile — Room (workspace-scoped DB `trade`), money `Long` minor
-units, geo as lat/lng `Double` captured on-device.
+(`OwnableBaseDomain`, `BaseDomain`, `ApiResponse`, `PageResponse`, `TenantContextHolder`); **public service
+interfaces** of `workspace` (membership/roles), `order` (`OrderService.bulkUpsertOrders`/`getOrdersAfterSync`),
+`invoice` (`InvoiceService` + existing `InvoiceFinalizedEvent`/`InvoiceCancelledEvent` from the `event`
+module), `product`/`inventory`, `customer` (`CustomerService`) for snapshots and tagging; Spring
+`ApplicationEventPublisher` for cross-module events. Mobile — Room KMP, Ktor, Metro DI, Navigation3,
+kotlinx.datetime, **Moko Permissions + Play Services Location** for geo/attendance, existing `data/sync`
+(`CentralSyncService`, `SyncDelegate`), `data/common` (`ApiUrlBuilder`, `WorkspaceAwareDatabaseFactory`).
+**Storage**: Backend — PostgreSQL (runtime) + MySQL parity via Flyway (next free global version **V1.0.117**),
+money `DECIMAL(19,4)`, timestamps `TIMESTAMPTZ`/`TIMESTAMP`; snapshot tables versioned. Mobile — Room
+(workspace-scoped DB `trade`), money `Long` minor units, geo as lat/lng `Double` captured on-device.
 **Testing**: Backend — JUnit/Testcontainers (`./gradlew :trade:test`), incl. cross-tenant consent-gate
-tests (brand cannot read without a live `TradeLink`), snapshot-recompute determinism, claim-lifecycle.
-Mobile — `./gradlew :feature:trade:check`; 3-target compile gates; offline author→sync round-trip tests.
+tests (brand cannot read without a live `TradeLink`), snapshot-recompute determinism, claim-lifecycle,
+PII-projection (coded vs identified). Mobile — `./gradlew :feature:trade:check`; 3-target compile gates;
+offline author→sync round-trip incl. offline new-outlet + ad-hoc visit.
 **Target Platform**: Backend service (Linux); Mobile Android (minSdk 24) / iOS / Desktop (JVM) — the rep
 app is primarily Android (field devices).
 **Project Type**: Mobile + API. The SFA rep app is **offline-first**; the brand DMS view is online
 dashboards over published snapshots.
 **Performance Goals**: Counter order + visit capture perceived instant offline (<2 s, no network);
-secondary-sales/stock dashboards render rollups for a brand with hundreds of distributors without lag;
-sync batches 100 records/page.
+secondary-sales/stock figures ≤ ~5 min stale (coalesced rebuild); dashboards render rollups for a brand
+with hundreds of distributors without perceptible lag; sync batches 100 records/page.
 **Constraints**: **Tenant isolation is absolute** — no tier sees another's data except through a consented
 `TradeLink`; cross-tenant reads use `nativeQuery=true` + a service-layer consent check. Rep app must
-author fully offline. Snapshots must be deterministic + recomputable (no drift on backdated docs).
+author fully offline (incl. new outlets). Snapshots must be deterministic + recomputable (no drift on
+backdated docs). Retailer contact PII never crosses a link.
 **Scale/Scope**: P1 distributor SFA + link plumbing; per distributor: tens of reps, thousands of outlets,
-high offline order volume. Brand (P2): hundreds of linked distributors aggregated. ~10–14 backend entities
+high offline order volume. Brand (P2): hundreds of linked distributors aggregated. ~14–16 backend entities
 across phases, ~8–10 sync entities (SFA), ~6–8 mobile screens.
 
 ## Constitution Check
@@ -57,20 +84,20 @@ across phases, ~8–10 sync entities (SFA), ~6–8 mobile screens.
 
 | Principle | Status | How this plan complies |
 |---|---|---|
-| I. Type Safety (Instant/TIMESTAMPTZ) | ✅ PASS | All timestamps `Instant` → `TIMESTAMPTZ`/`TIMESTAMP`; money `BigDecimal`/`DECIMAL(19,4)`; no `LocalDateTime`/`Double` money. |
-| II. DTO & Contract Isolation | ✅ PASS | Request/Response DTOs in `trade/domain/dto/`; entities never exposed; `entity.asResponse()`/`request.toEntity()` converters with validation. |
+| I. Type Safety (Instant/TIMESTAMPTZ, money) | ✅ PASS | All timestamps `Instant` → `TIMESTAMPTZ`/`TIMESTAMP`; money `BigDecimal`/`DECIMAL(19,4)`; no `LocalDateTime`/`Double` money. Geo lat/lng `Double` is fine (not money). |
+| II. DTO & Contract Isolation | ✅ PASS | Request/Response DTOs in `trade/domain/dto/`; entities never exposed; `entity.asResponse()`/`request.toEntity()` converters with `@field:` validation. |
 | III. Global JSON SNAKE_CASE | ✅ PASS | Global Jackson strategy; no `@JsonProperty` for standard fields. |
-| IV. Multi-Tenant Isolation | ⚠ PASS (with documented cross-tenant edge) | Every entity extends `OwnableBaseDomain` (`@TenantId`); tenant set by `SessionUserFilter`. **Cross-tier reads are the explicit exception**: served via consented snapshot publication, and any genuine cross-tenant SQL uses `nativeQuery=true` + a `TradeLink`-consent check (per rule 05). The `TradeLink` is the sole, auditable trust edge. |
+| IV. Multi-Tenant Isolation | ⚠ PASS (with documented cross-tenant edge) | Every entity extends `OwnableBaseDomain` (`@TenantId ownerId`); tenant set by `SessionUserFilter`. **Cross-tier reads are the explicit exception**: served via consented snapshot publication; any genuine cross-tenant SQL uses `nativeQuery=true` + a `TradeLink`-consent check (rule 05). The `TradeLink` is the sole, auditable trust edge. See Complexity Tracking. |
 | V. API Response Standardization | ✅ PASS | All endpoints return `ApiResponse<T>`; sync pull returns `ApiResponse<PageResponse<T>>`. |
-| VI. Centralized Exception Handling | ✅ PASS | No business try/catch in controllers; typed `TradeException`/`ConsentRequiredException`/`ClaimStateException` bubble to the global handler. |
-| VII. Efficient Data Loading | ✅ PASS | `@NamedEntityGraph` for beat+outlets, scheme+claims; derived queries; `@Query`/`nativeQuery` only for snapshot rollups + consented cross-tenant rollups. |
+| VI. Centralized Exception Handling | ✅ PASS | No business try/catch in controllers; typed `TradeException`/`ConsentRequiredException`/`ClaimStateException`/`LinkStateException` bubble to the global handler. |
+| VII. Efficient Data Loading | ✅ PASS | `@NamedEntityGraph` for beat+outlets, journeyPlan+plannedVisits, scheme+claims; derived queries; `@Query`/`nativeQuery` only for snapshot rollups + consented cross-tenant rollups. |
 | VIII. Angular Material 3 Exclusivity | ✅ N/A (this phase) | Web brand-dashboard parity deferred to P3; will use Angular Material 3 only. |
-| IX. Domain-Driven Module Boundaries | ✅ PASS | New `trade` bounded context; reads `workspace`/`order`/`invoice`/`inventory`/`customer` **only** via public service interfaces + events, never repositories. |
-| X. Compose Multiplatform Parity | ✅ PASS | Shared SFA logic/UI in `feature/trade/src/commonMain`; thin platform DI; geo/permissions via expect/actual + Moko/Play Services in platform sets. |
-| XI. Security & Secrets Hygiene | ✅ PASS | No new secrets; standard JWT/workspace auth; cross-tenant access strictly consent-gated and revocable. |
-| Flyway | ✅ PASS | Versioned migration in **both** `mysql/` and `postgresql/`; `trade` added to `migrationModules`; next version via `flywayInfo`. |
-| Offline `/sync` contract | ✅ PASS | SFA entities (visit, order, attendance, geo, beat) ride the canonical `GET/POST /trade/v1/{resource}/sync`; snapshots are pull-only (server-computed). |
-| Testing & Quality Gates | ✅ PASS | Backend ≥80% on consent gate + snapshot recompute + claim lifecycle; mobile `check` + 3-target compile + offline round-trip. |
+| IX. Domain-Driven Module Boundaries | ✅ PASS | New `trade` bounded context; reads `workspace`/`order`/`invoice`/`inventory`/`customer` **only** via public service interfaces + `event`-module events, never repositories. |
+| X. Compose Multiplatform Parity | ✅ PASS | Shared SFA logic/UI in `feature/trade/src/commonMain`; thin platform DI; geo/permissions via expect/actual + Moko/Play Services in platform sets. Parity tracked in this spec. |
+| XI. Security & Secrets Hygiene | ✅ PASS | No new secrets; standard JWT/workspace auth; cross-tenant access strictly consent-gated and revocable; retailer PII never crosses a link. |
+| Flyway | ✅ PASS | Versioned migration in **both** `mysql/` and `postgresql/` at **V1.0.117**; `trade` added to `migrationModules`; verify with `flywayInfo` before commit. |
+| Offline `/sync` contract | ✅ PASS | SFA entities (visit, field-order, attendance, beat, journey-plan) ride the canonical `GET/POST /trade/v1/{resource}/sync`; snapshots are pull-only (server-computed). |
+| Testing & Quality Gates | ✅ PASS | Backend ≥80% critical / ≥90% endpoints on consent gate + snapshot recompute + claim lifecycle + PII projection; mobile `check` + 3-target compile + offline round-trip. |
 
 **Result**: PASS — the only flagged item (IV) is the **deliberate cross-tier visibility boundary**, which
 complies with rule 05 (cross-tenant reads need `nativeQuery=true` + consent). It is the feature's central
@@ -83,14 +110,14 @@ design point, documented in Complexity Tracking, not a violation.
 ```
 specs/021-brand-distributor-dms-sfa/
 ├── plan.md              # This file
-├── spec.md              # Feature specification
-├── research.md          # Phase 0 — hierarchy, cross-tenant aggregation, offline SFA, snapshots
+├── spec.md              # Feature specification (with Clarifications session 2026-06-28)
+├── research.md          # Phase 0 — hierarchy, cross-tenant aggregation, offline SFA, snapshots, clarifications
 ├── data-model.md        # Phase 1 — entities, TradeLink consent, snapshot keys, state machines
 ├── quickstart.md        # Phase 1 — link a brand↔distributor, capture a beat order, roll up secondary sales
 ├── contracts/
 │   ├── README.md
-│   ├── trade-sfa-sync.md          # canonical /sync endpoints for visit/order/attendance/beat
-│   ├── trade-network-actions.md   # link invite/accept, scheme publish, claim submit/approve
+│   ├── trade-sfa-sync.md          # canonical /sync endpoints for visit/field-order/attendance/beat/journey-plan
+│   ├── trade-network-actions.md   # link invite/accept/revoke, scheme publish, claim submit/approve, primary order
 │   └── trade-snapshots.md         # secondary-sales / distributor-stock snapshot reads (consented)
 ├── checklists/
 │   └── requirements.md
@@ -105,40 +132,45 @@ trade/
 └── src/main/
     ├── kotlin/com/ampairs/trade/
     │   ├── domain/
-    │   │   ├── model/          # TradeNetwork, TradeLink (consented edge), NetworkRetailer,
-    │   │   │                   # Beat, BeatOutlet, JourneyPlan/PJP, PlannedVisit, Visit, Attendance,
-    │   │   │                   # FieldOrder (counter order ref), SalesTarget,
+    │   │   ├── model/          # TradeNetwork, TradeLink (consented edge), ConsentScope (embeddable),
+    │   │   │                   # NetworkRetailer, NetworkBrand (Hop A attribution),
+    │   │   │                   # NetworkProduct (Hop B optional SKU map), Beat,
+    │   │   │                   # BeatOutlet, JourneyPlan(PJP), PlannedVisit, Visit, Attendance,
+    │   │   │                   # FieldOrder (counter order ref), PrimaryOrderLink, SalesTarget,
     │   │   │                   # SecondarySalesSnapshot, DistributorStockSnapshot (versioned),
-    │   │   │                   # TradeScheme, SchemeClaim, ClaimSettlement
-    │   │   ├── enums/          # TradeTier, LinkStatus, ConsentScope, VisitOutcome, ClaimStatus,
-    │   │   │                   # SchemeType, SalesType (PRIMARY/SECONDARY/TERTIARY), TradeRole
+    │   │   │                   # SchemeClaim, ClaimSettlement (scheme definition reused from pricing/015),
+    │   │   │                   # Leave, VisitSurveyResponse (P8b reporting/survey/leave)
+    │   │   ├── enums/          # TradeTier, LinkStatus, RetailerVisibility, DesignationStatus,
+    │   │   │                   # MatchSource (AUTO_BARCODE/AUTO_SKU/MANUAL), MappingStatus,
+    │   │   │                   # VisitOutcome, GeoFenceStatus, ClaimStatus,
+    │   │   │                   # SalesType (PRIMARY/SECONDARY/TERTIARY)
     │   │   └── dto/            # request/response DTOs + converters
     │   ├── repository/         # Spring Data repos (+ @EntityGraph; @Query/nativeQuery for snapshots/rollups)
-    │   ├── service/            # TradeLinkService (consent edge), SnapshotService (recompute),
-    │   │                       # BeatService, VisitService, SchemeService, ClaimService, TargetService,
-    │   │                       # CrossTenantReadGuard (TradeLink consent check before nativeQuery)
+    │   ├── service/            # TradeLinkService (consent edge), SnapshotService (debounced recompute),
+    │   │                       # BeatService, VisitService, AttendanceService, ClaimService,
+    │   │                       # TargetService, PrimaryOrderService, CrossTenantReadGuard (consent check)
     │   ├── controller/         # TradeNetworkController, TradeSyncController (SFA /sync),
-    │   │                       # SnapshotController, SchemeClaimController
+    │   │                       # SnapshotController, SchemeClaimController, PrimaryOrderController
     │   ├── config/             # Constants, TradeSettingDefinitions
-    │   └── event/              # listeners on order/invoice events → tag + enqueue snapshot rebuild
+    │   └── listener/           # listeners on invoice/order events → tag SECONDARY + enqueue snapshot rebuild
     └── resources/db/migration/
-        ├── mysql/V1.0.x__create_trade_module_tables.sql
-        └── postgresql/V1.0.x__create_trade_module_tables.sql
-# wiring: settings.gradle.kts (include "trade"); ampairs_service/build.gradle.kts
+        ├── mysql/V1.0.117__create_trade_module_tables.sql
+        └── postgresql/V1.0.117__create_trade_module_tables.sql
+# wiring: settings.gradle.kts (include("trade")); ampairs_service/build.gradle.kts
 #         (implementation(project(":trade")) + "trade" in migrationModules)
-# workspace module: add FIELD_REP role (additive to WorkspaceRole ladder) via public service
-# reads order/invoice/inventory/customer PUBLIC SERVICE INTERFACES only — no cross-module repo access
+# workspace module: add FIELD_REP role (level 30, between GUEST=20 and MEMBER=40) via WorkspaceRole enum
+# reads order/invoice/inventory/customer PUBLIC SERVICE INTERFACES + event-module events only — no cross-module repo access
 
 # Mobile — ampairs-app/ (sibling repo) — OFFLINE-FIRST SFA rep app
 feature/trade/src/
 ├── commonMain/kotlin/com/ampairs/trade/
 │   ├── data/api/          # TradeApi(+Impl), ApiUrlBuilder.tradeUrl
-│   ├── data/db/           # Room entities + DAOs + TradeRoomDatabase (visit/order/attendance/beat)
+│   ├── data/db/           # Room entities + DAOs + TradeRoomDatabase (visit/field-order/attendance/beat/journey-plan)
 │   ├── data/repository/   # VisitRepository, FieldOrderRepository, AttendanceRepository (local-only)
 │   ├── domain/            # Money (minor units), models, geo capture, enums
 │   ├── di/                # TradeModule.kt
-│   ├── sync/              # Visit/FieldOrder/Attendance/Beat SyncDelegates (canonical /sync)
-│   └── ui/                # screens + ViewModels (today's beat, outlet visit, take order,
+│   ├── sync/              # Visit/FieldOrder/Attendance/Beat/JourneyPlan SyncDelegates (canonical /sync)
+│   └── ui/                # screens + ViewModels (today's beat, outlet visit, take order, add outlet,
 │                          #   check-in/out, my targets, beat scorecard)
 ├── androidMain/ iosMain/ desktopMain/   # TradeModule.{platform}.kt (@SingleIn(WorkspaceScope::class));
 #                                          geo/permissions actuals (Play Services / Moko)
@@ -148,43 +180,63 @@ feature/trade/src/
 # brand DMS dashboards (secondary-sales/stock/targets) are online pull-only views over snapshots
 ```
 
-**Structure Decision**: Mobile + API. Backend `trade/` mirrors existing bounded contexts; the new wrinkle
-is `CrossTenantReadGuard` + versioned snapshot tables. The mobile `feature/trade/` SFA module mirrors
-`feature/order`'s offline-first shape (SyncDelegate-owned API, workspace-scoped DB) and adds geo/
+**Structure Decision**: Mobile + API. Backend `trade/` mirrors existing bounded contexts (`order/`'s
+`domain/{model,dto,enums}` + `repository` + `service` + `controller` + `listener` layout); the new
+wrinkles are `CrossTenantReadGuard` + versioned snapshot tables. The mobile `feature/trade/` SFA module
+mirrors `feature/order`'s offline-first shape (SyncDelegate-owned API, workspace-scoped DB) and adds geo/
 attendance platform actuals. The brand DMS view is online (pull-only snapshot reads). Web (Angular) brand
 dashboard is a P3 follow-up.
 
 ## Phased Delivery
 
 ### Phase 1 (MVP) — Distributor SFA app + network/link plumbing
-- **Entities**: `TradeNetwork`, `TradeLink` (consented edge), `NetworkRetailer`, `Beat`, `BeatOutlet`,
+- **Entities**: `TradeNetwork`, `TradeLink` (consented edge) + `ConsentScope`, `NetworkRetailer`,
+  `NetworkBrand` (Hop A attribution), `NetworkProduct` (Hop B optional SKU map), `Beat`, `BeatOutlet`,
   `JourneyPlan`/PJP, `PlannedVisit`, `Visit`, `Attendance`, `FieldOrder`.
-- **Services**: `TradeLinkService` (invite/accept/consent scope), `BeatService`, `VisitService`,
-  `AttendanceService`; `CrossTenantReadGuard` scaffold.
-- **Endpoints**: SFA canonical `/sync` (`/trade/v1/{visits|field-orders|attendance|beats}/sync`,
-  `GET`+`POST`); `POST /trade/v1/links` (invite), `POST /trade/v1/links/{uid}/accept`.
-- **Workspace**: add `FIELD_REP` role (additive) + beat scoping.
-- **Events**: none cross-tenant yet; counter orders flow into the distributor's `order` module.
-- **Mobile**: offline rep app — today's beat (PJP), outlet visit (geo/time/outcome), take order at counter,
-  check-in/out attendance, my targets; all author-offline via `/sync`.
+- **Services**: `TradeLinkService` (invite/accept/revoke/consent scope — incl. coded-vs-identified default),
+  `NetworkBrandService` (distributor designates a `ProductBrand` label ↔ brand; brand read-only view),
+  `NetworkProductService` (optional Hop B: brand-catalog read + barcode/SKU auto-match + distributor confirm),
+  `BeatService`, `VisitService` (geo-fence flag, ad-hoc), `AttendanceService`; `CrossTenantReadGuard` scaffold.
+- **Endpoints**: SFA canonical `/sync` (`/trade/v1/{visits|field-orders|attendance|beats|journey-plans}/sync`,
+  `GET`+`POST`); `POST /trade/v1/links` (invite), `POST /trade/v1/links/{uid}/accept`,
+  `POST /trade/v1/links/{uid}/revoke`.
+- **Workspace**: add `FIELD_REP` role (level 30, additive) + beat scoping.
+- **Mobile**: offline rep app — today's beat (PJP), outlet visit (geo/time/outcome + flag), add new outlet
+  offline, take order at counter, check-in/out attendance, my targets; all author-offline via `/sync`.
 
-### Phase 2 — Brand DMS visibility (secondary sales + stock + targets)
+### Phase 1b — Field-Ops reporting, survey & leave (US1 extensions, P2)
+- **Entities/services**: `Leave` (manager-marked excused absence), `VisitSurveyResponse` (offline,
+  `/sync`); `AttendanceSummaryService`, `VisitProductivityService`, survey-rollup (derived read-models),
+  `LeaveService`/controller; attendance single-open + auto-close in `AttendanceService`.
+- **Reuse**: survey templates via the `form` module (`EntityType.VISIT_SURVEY` + a `StandardFieldProvider`,
+  `/form/v1/config/schema/sync`); summary/productivity reads mirror the `payment` `AgingService` read-model
+  pattern (read-only service → `XyzSummaryResponse` → `ApiResponse<T>`).
+- **Endpoints**: `GET /trade/v1/attendance/summary`, `.../visits/productivity`, `.../visits/survey-rollup`;
+  leave CRUD `/trade/v1/leaves`; survey responses on the canonical `/sync`. Reports are online; capture
+  (survey) is offline. Builds on US1 capture; independent of the brand-facing stories.
+
+### Phase 2 — Brand DMS visibility (secondary sales + stock + targets + primary order)
 - **Entities**: `SecondarySalesSnapshot`, `DistributorStockSnapshot` (versioned, recomputable),
-  `SalesTarget`.
-- **Services**: `SnapshotService` (event-driven recompute from distributor order/invoice/inventory),
-  `TargetService`; activate `CrossTenantReadGuard` (consent check before any `nativeQuery` rollup).
-- **Endpoints**: `GET /trade/v1/snapshots/secondary-sales`, `.../distributor-stock`,
-  `GET /trade/v1/targets` — all `TradeLink`-scoped to the calling brand; primary-order placement
-  brand→distributor reuses the `order` module addressed across the link.
-- **Events**: distributor `OrderFinalizedEvent`/`InvoiceFinalizedEvent` → tag `SECONDARY` → enqueue
-  snapshot rebuild; inventory change → stock-snapshot rebuild.
+  `SalesTarget`, `PrimaryOrderLink`.
+- **Services**: `SnapshotService` (event-driven, **debounced ≤ 5 min/distributor** recompute from
+  distributor invoice/order/inventory; **Hop A**: attributes each row to a brand via `NetworkBrand` captured
+  **as of sale time** (point-in-time), excludes other-brand/untagged; **Hop B**: sets `brandProductUid`/
+  `brandSkuCode` where a confirmed `NetworkProduct` exists, else counts the row in the aggregated "unmapped"
+  bucket), `TargetService`, `PrimaryOrderService`; activate `CrossTenantReadGuard` (consent check before any
+  `nativeQuery` rollup, PII projection per scope).
+- **Endpoints**: `GET /trade/v1/snapshots/secondary-sales`, `.../distributor-stock`, `GET /trade/v1/targets`
+  (all `TradeLink`-scoped to the calling brand); `POST /trade/v1/primary-orders` (brand authors),
+  `POST /trade/v1/primary-orders/{uid}/confirm` (distributor confirms → distributor-tenant order).
+- **Events**: distributor `InvoiceFinalizedEvent`/`InvoiceCancelledEvent` (existing) + order events → tag
+  `SECONDARY` → enqueue debounced snapshot rebuild; inventory change → stock-snapshot rebuild.
 - **Mobile/Web**: brand DMS dashboards (online, pull-only over snapshots) — secondary-sales by SKU/beat/
   area, distributor days-of-stock, target vs achievement.
 
 ### Phase 3 — Trade schemes, claims/settlement, analytics, tertiary
-- `TradeScheme` (slab/value/qty/free-goods) published down links; `SchemeClaim` accrued from qualifying
-  secondary sales; `ClaimSettlement` lifecycle (`DRAFT→SUBMITTED→APPROVED|REJECTED→SETTLED`) with optional
-  spec-013 ledger adjustment on settlement.
+- Brand-funded schemes **defined in `pricing`/spec 015** (QPS/TPR/BOGO, `fundingBrandId` attribution)
+  published down links; `SchemeClaim` accrued from qualifying secondary sales; `ClaimSettlement` lifecycle
+  (`DRAFT→SUBMITTED→APPROVED|REJECTED→SETTLED`) with optional spec-013 ledger adjustment on settlement. Feature
+  021 does not define a parallel `TradeScheme` — it owns only the claim layer (`claim` module).
 - Tertiary-sales estimation (secondary − stock delta); advanced RTM analytics (productivity, fill-rate).
 - Angular web parity (Material 3) for the brand dashboard.
 
@@ -194,5 +246,8 @@ dashboard is a P3 follow-up.
 |---|---|---|
 | Cross-tenant read edge (`TradeLink` consent + `nativeQuery=true` rollups) | A brand must see aggregated secondary sales/stock across many independent distributor tenants — the core DMS value | A parent-child mega-tenant breaks `@TenantId` isolation, the offline-per-workspace DB model, per-tier billing/RBAC, and the consent boundary |
 | Versioned recomputable snapshot tables (secondary-sales/stock) | Out-of-order/backdated distributor docs and offline multi-rep authoring would corrupt incrementally-mutated totals | Live cross-tenant queries breach isolation/consent and couple the brand to the distributor's live schema; running totals drift on backdated docs (spec-013 lesson) |
-| New `FIELD_REP` role + beat scoping in `workspace` | SFA reps must be limited to assigned beats within the distributor tenant | A global cross-tenant role leaks distributor data and explodes membership; no scoping means any member sees all outlets |
+| Debounced snapshot rebuild queue (≤ 5 min/distributor) | Per-write recompute for a brand with hundreds of distributors is wasteful; raw real-time isn't required (clarified ≤ ~5 min staleness acceptable) | Per-write recompute wastes compute at scale; pure nightly batch is too stale for replenishment signals |
+| New `FIELD_REP` role + beat scoping in `workspace` | SFA reps must be limited to their distributor's beats | A global cross-tenant role leaks distributor data and explodes membership; no scoping means any member sees all outlets |
+| Primary-order handshake (`PrimaryOrderLink` + confirm step) instead of direct write | Each tenant must stay authoritative for its own orders; the brand can't silently write into the distributor's tenant | A direct cross-tenant order insert breaches isolation/consent and bypasses the distributor's own order validation/pricing |
 | Snapshot publication pipeline (event-driven rebuild) | Decouples the brand's read path from the distributor's live writes and keeps the consent/isolation boundary intact | Direct live cross-tenant reads or nightly ETL are either isolation-breaking or stale and still need the consent edge |
+| Two-level product linking: `NetworkBrand` (Hop A attribution, reuses existing `ProductBrand`) + optional `NetworkProduct` (Hop B SKU map) | Brand & distributor are separate workspaces/catalogs; Hop A gives complete, cheap brand attribution (count incl. unmapped) reusing the distributor's existing brand label, Hop B refines to SKU grain | Single-level SKU-only mapping undercounts the brand until every SKU is mapped (excludes attributed-but-unmapped sales); a shared global product master breaks catalog autonomy; barcode-only auto-match is fragile, so Hop B is an assisted, optional refinement over Hop A |

@@ -30,6 +30,11 @@ enum class WorkspaceRole(
     MEMBER("Member", 40, "Standard access to workspace features and collaboration"),
 
     /**
+     * Field sales representative - scoped to assigned beats within the distributor workspace (SFA)
+     */
+    FIELD_REP("Field Representative", 30, "Field sales rep limited to assigned beats"),
+
+    /**
      * Limited guest access - temporary or external user access
      */
     GUEST("Guest", 20, "Limited access for external collaborators"),

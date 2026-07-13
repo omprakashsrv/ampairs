@@ -200,6 +200,75 @@ and visit-logging offline at a retailer counter. Reference systems: BeatRoute, B
   cross-tenant + offline + financial risk all simultaneously); ship the brand dashboard first (rejected —
   there's no secondary data to show until distributors/reps are capturing it).
 
+## R13. Clarifications integrated (spec session 2026-06-28)
+
+Five decisions from `/speckit.clarify` are now binding; each refines an earlier item rather than reversing it.
+
+- **R13.1 Retailer PII default (refines R3/R10)** — **Decision**: a `TradeLink`'s `ConsentScope` shares
+  outlets **coded/aggregated by default**; sharing **identified** retailers (name/area) is an explicit
+  opt-in flag on the scope, and **full retailer contact PII never crosses** a link under any scope.
+  **Rationale**: data-minimisation by default; the distributor owns the deliberate upgrade. **Impact**:
+  `ConsentScope.retailerVisibility ∈ {CODED, IDENTIFIED}`; `NetworkRetailer` carries a stable `outletCode`
+  always and name/area only when IDENTIFIED; the snapshot read projects retailer dimension per scope.
+- **R13.2 Snapshot freshness (refines R3/R9/R11)** — **Decision**: snapshots are **event-triggered but
+  coalesced/debounced to at most once per ~5 minutes per distributor** (figures ≤ ~5 min stale).
+  **Rationale**: per-write recompute is wasteful for hundreds of distributors; ~5 min is fresh enough for
+  replenishment without real-time cost. **Impact**: `SnapshotService` keeps a per-(distributor, grain)
+  debounce window; a backdated invoice still enqueues a full recompute (determinism preserved), it just
+  rides the same 5-min coalescing. New `SC-011` is the acceptance metric.
+- **R13.3 Geo at check-in (refines R5/R6)** — **Decision**: **capture + flag** — compute distance from the
+  captured point to the outlet's known location and mark visits outside a configurable radius; **never
+  block** check-in (incl. no-location). **Rationale**: rural GPS is unreliable and outlet coords are
+  approximate; blocking strands legitimate reps. **Impact**: `Visit.geoFenceStatus ∈ {IN_RADIUS,
+  OUT_OF_RADIUS, NO_LOCATION}` + `distanceMeters`; adherence/quality reports read the flag; the radius is a
+  trade setting.
+- **R13.4 Ad-hoc visits & offline new-outlet (refines R6/R10)** — **Decision**: reps may make **unplanned
+  visits** to any outlet of **their own distributor** and **register a new retailer offline**; all stays
+  distributor-scoped; adherence counts ad-hoc separately. **Rationale**: market expansion is core SFA; the
+  rep stays inside their tenant so isolation holds. **Impact**: `Visit.adHoc: Boolean` (a Visit need not
+  reference a `PlannedVisit`); the rep app authors a `customer` create over the existing customer `/sync`
+  (no new master); FIELD_REP scoping limits to the distributor, not to a fixed outlet list.
+- **R13.5 Primary-order handshake (new; complements R4)** — **Decision**: brand → distributor primary
+  orders are a **handshake** — the brand records the order in its **own** tenant; it surfaces to the
+  distributor over the **active link**; the distributor **confirms**, and it becomes a normal order in the
+  **distributor's** tenant. **No silent cross-tenant write.** **Rationale**: each tenant stays authoritative
+  for its own orders and applies its own validation/pricing; the link is the consent gate. **Impact**: a
+  `PrimaryOrderLink` (brandWorkspaceId, distributorWorkspaceId, brandOrderUid, status, distributorOrderUid?)
+  drives the confirm step via `PrimaryOrderService`; requires an active link.
+- **R13.6 Cross-workspace product identity (new; the missing product map)** — **Decision**: brand and
+  distributor are separate workspaces with separate product catalogs, so a distributor's product (`PRD…` in
+  the distributor tenant) is **not** the brand's product (`PRD…` in the brand tenant). Linking is
+  **distributor-maps (assisted)**: the brand **publishes its catalog** down the active link; the distributor
+  maps each product it carries to a brand SKU, with the system **auto-suggesting by GTIN/barcode/HSN** and a
+  manual confirm/override. The mapping is a `NetworkProduct` (the product analog of `NetworkRetailer`).
+  **Rationale**: a distributor carries many brands; without a per-link product map the brand's
+  "secondary-sales by product" is empty, mis-aggregated across distributors that code the same SKU
+  differently, or leaks competitor-brand sales. Distributor-side mapping preserves each tenant's catalog
+  autonomy (rejected: forcing the distributor to adopt the brand's master catalog couples the tenants;
+  rejected: GTIN-only auto-match is fragile on dirty barcode data — so auto-match is an *assist*, not the
+  sole mechanism). **Impact**: new `NetworkProduct{link, distributorProductUid, brandProductUid, brandSkuCode,
+  matchSource, status}`; `SecondarySalesSnapshot`/`DistributorStockSnapshot` carry `brandProductUid`/
+  `brandSkuCode` resolved via confirmed mappings; brand reads filter to confirmed-mapped products (unmapped
+  excluded — closes the competitor-leakage hole, FR-018a/018b). Scheme eligibility, product targets, and the
+  primary-order handshake all reference the brand SKU through this map.
+- **R13.7 Two-level product linking + geography (refines R13.6; spec session 2026-06-29)** — **Decision**:
+  split linking into **Hop A** (attribution) + **Hop B** (SKU identity), and define the area dimension.
+  **Hop A** = `NetworkBrand`: the distributor designates its **existing in-catalog brand label**
+  (`ProductBrand`, which products already carry via `Product.brandId`) ↔ the brand workspace; this decides
+  *whose* product, is **point-in-time** (attribution fixed as-of-sale; re-tag affects only future sales), and
+  is distributor-controlled / brand-read-only. All the brand's products **count**, including ones with no SKU
+  match (aggregated "unmapped" bucket) — superseding R13.6's "confirmed-mapped only / exclude unmapped", which
+  **undercounted** the brand until every SKU was mapped. **Hop B** = `NetworkProduct` (optional): reconciles a
+  distributor product to the brand's specific SKU, auto-matched by **barcode/SKU** (**not HSN** — HSN is a tax
+  attribute, not on `Product`). **Geography**: the AREA dimension derives from the retailer outlet's
+  **pincode** (city/district/state coarser rollups) — a national standard, so it aggregates across
+  distributors with **no** area mapping (unlike SKUs); an optional brand `BrandTerritory` (pincode groupings)
+  overlays the brand's own geography. **Rationale**: reuses the existing `ProductBrand` (cheap, complete
+  attribution) and the existing `customer.pincode` (free cross-distributor geography); SKU/territory mapping
+  become optional refinements rather than prerequisites. **Alternatives rejected**: single-level SKU-only
+  (undercounts, ignores existing brand label); per-distributor area codes / a `NetworkArea` map (unnecessary —
+  pincode already normalizes nationally). Full detail in the product-brand-attribution sub-spec.
+
 ---
 
 ## Resolved unknowns summary
@@ -218,3 +287,10 @@ and visit-logging offline at a retailer counter. Reference systems: BeatRoute, B
 | Cross-tenant RBAC / rep | `FIELD_REP` role in distributor tenant; `TradeLink` = sole trust edge (R10) |
 | Idempotency / snapshots | UID-keyed offline upserts; deterministic recomputable versioned snapshots (R11) |
 | Phasing | P1 SFA → P2 brand DMS view → P3 schemes/claims/analytics (R12) |
+| Retailer PII default | Coded/aggregated by default; identified opt-in; full PII never crosses (R13.1) |
+| Snapshot freshness | Event-triggered, coalesced ≤ ~5 min/distributor (R13.2) |
+| Geo at check-in | Capture + flag out-of-radius; never block (R13.3) |
+| Ad-hoc & new outlet | Unplanned visits + offline new-retailer, distributor-scoped (R13.4) |
+| Primary-order placement | Brand-tenant order → link → distributor confirm handshake (R13.5) |
+| Cross-workspace product identity | Two-level: Hop A `NetworkBrand` attribution (reuse `ProductBrand`, count incl. unmapped, point-in-time) + optional Hop B `NetworkProduct` SKU map (barcode/SKU) (R13.6 → **R13.7**) |
+| Geography / area dimension | Area = retailer `pincode` (city/state rollups), comparable across distributors with no mapping; optional brand territory overlay (R13.7) |
