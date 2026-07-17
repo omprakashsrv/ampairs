@@ -36,6 +36,8 @@ data class OrderResponse(
     val discount: List<Discount>? = null,
     var priceMode: String = "TAX_EXCLUSIVE",
     var overallDiscountMode: String = "POST_TAX_REDUCTION",
+    var createdAt: Instant? = null,
+    var updatedAt: Instant? = null,
 )
 
 fun List<Order>.toResponse(): List<OrderResponse> {
@@ -72,7 +74,9 @@ fun Order.toResponse(orderItems: List<OrderItem>): OrderResponse {
         orderItems = orderItems.toResponse(),
         discount = this.discount,
         priceMode = this.priceMode,
-        overallDiscountMode = this.overallDiscountMode
+        overallDiscountMode = this.overallDiscountMode,
+        createdAt = this.createdAt,
+        updatedAt = this.updatedAt,
     )
 }
 
