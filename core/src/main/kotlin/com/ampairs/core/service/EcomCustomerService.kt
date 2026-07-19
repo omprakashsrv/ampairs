@@ -4,9 +4,10 @@ package com.ampairs.core.service
  * Cross-module bridge: resolves the workspace CRM `Customer` (distributor account) a storefront buyer
  * is allowed to order for.
  *
- * A storefront buyer must be **pre-linked** to a distributor by the workspace owner — either an
- * explicit `CustomerContact`, or the owner having created a CRM customer with the buyer's phone.
- * Buyers are **never auto-created**: an unlinked buyer cannot order and is told to contact the owner.
+ * A storefront buyer must be **linked** to a distributor — either an explicit `CustomerContact`, or by
+ * confirming a phone-match candidate via [findLinkCandidateByPhone] + [confirmLink]. Buyers are never
+ * auto-linked without their own confirmation: an unlinked buyer cannot order and is told to link (or,
+ * if no phone match exists, to contact the owner).
  *
  * Follows the same pattern as [OrderEcomService] / [EcomStorefrontLookupService]: the interface lives in
  * `core`, the implementation in the owning module, so callers depend only on `core`. Requires an active
@@ -21,14 +22,10 @@ interface EcomCustomerService {
      * Resolution order:
      *  1. [requestedCustomerId] — only if the login is actually linked to it;
      *  2. the login's default (else first) linked account;
-     *  3. a CRM customer the owner already created with the buyer's [phone] — auto-linked as a contact;
-     *  4. else null (not linked).
+     *  3. else null (not linked — the caller should offer [findLinkCandidateByPhone]).
      */
     fun resolveLinkedCustomerId(
         ecomUserId: String,
-        phone: String?,
-        name: String?,
-        email: String?,
         requestedCustomerId: String? = null,
     ): String?
 
@@ -38,6 +35,30 @@ interface EcomCustomerService {
      * tenant context.
      */
     fun listAccountsForUser(ecomUserId: String): List<EcomCustomerAccount>
+
+    /**
+     * Read-only lookup: is there a CRM `Customer` in this workspace whose phone matches [phone]?
+     * Never creates anything — used to offer the buyer a "link your account?" confirmation instead of
+     * silently linking them. Returns null when there's no match (the caller should fall back to
+     * "contact the business owner").
+     */
+    fun findLinkCandidateByPhone(phone: String): EcomLinkCandidate?
+
+    /**
+     * Confirms the buyer's link to [customerId], after they've approved a candidate from
+     * [findLinkCandidateByPhone]. Re-validates server-side that [customerId]'s phone still equals
+     * [phone] — never trusts the client's claim. Idempotent: if the login is already linked to this
+     * account, returns the existing link rather than erroring or duplicating.
+     *
+     * Throws when [customerId] doesn't exist or its phone no longer matches [phone].
+     */
+    fun confirmLink(
+        ecomUserId: String,
+        customerId: String,
+        name: String?,
+        phone: String?,
+        email: String?,
+    ): EcomCustomerAccount
 }
 
 /** A CRM account a storefront buyer may order on behalf of. */
@@ -46,4 +67,18 @@ data class EcomCustomerAccount(
     val name: String,
     val isDefault: Boolean,
     val role: String,
+)
+
+/**
+ * A CRM account found to match the buyer's phone, offered for confirmation before linking. Carries
+ * enough of the CRM record for the buyer to recognize/verify it's really their account (shown in a
+ * confirmation sheet client-side) — [phone]/[gstNumber]/[address] mirror the workspace owner's own
+ * CRM data entry, not the buyer's.
+ */
+data class EcomLinkCandidate(
+    val customerId: String,
+    val name: String,
+    val phone: String,
+    val gstNumber: String?,
+    val address: String?,
 )

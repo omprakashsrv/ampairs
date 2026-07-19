@@ -52,14 +52,12 @@ class CheckoutService(
         customerPhone: String?,
         storefront: Storefront,
     ): EcomOrder {
-        // A storefront buyer may only order for a distributor the workspace owner has linked them to.
-        // Resolve that CRM account up front — an unlinked buyer is blocked with a clear message rather
-        // than silently creating an account. Tenant context is set by the controller.
+        // A storefront buyer may only order for a distributor they're linked to (an explicit contact,
+        // or a self-confirmed phone-match link via EcomCustomerService.confirmLink). Resolve that CRM
+        // account up front — an unlinked buyer is blocked with a clear message rather than silently
+        // creating a link. Tenant context is set by the controller.
         val resolvedCustomerId = ecomCustomerService.resolveLinkedCustomerId(
             ecomUserId = customerId,
-            phone = customerPhone,
-            name = customerName,
-            email = customerEmail,
             requestedCustomerId = request.customerId,
         ) ?: throw EcomNotLinkedException(
             "Your account is not linked to any distributor. Please contact the business owner to get linked before placing an order."
