@@ -74,6 +74,21 @@ class CustomerExceptionHandler : BaseExceptionHandler() {
             moduleName = "customer"
         )
     }
+
+    @ExceptionHandler(EcomLinkInvalidException::class)
+    fun handleEcomLinkInvalidException(
+        ex: EcomLinkInvalidException,
+        request: HttpServletRequest,
+    ): ResponseEntity<ApiResponse<Any>> {
+        return createErrorResponse(
+            httpStatus = HttpStatus.BAD_REQUEST,
+            errorCode = "ECOM_LINK_INVALID",
+            message = "Can't link this account",
+            details = ex.message ?: "This account is not linked to your phone number",
+            request = request,
+            moduleName = "ecom"
+        )
+    }
 }
 
 // Custom customer exceptions
@@ -81,3 +96,11 @@ class CustomerNotFoundException(message: String, cause: Throwable? = null) : Run
 class DuplicateCustomerException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
 class InvalidCustomerDataException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
 class CustomerAccessDeniedException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
+
+/**
+ * Thrown by [com.ampairs.customer.domain.service.EcomCustomerServiceImpl.confirmLink] when the
+ * requested `customerId` doesn't exist or its phone no longer matches the buyer's own phone — the
+ * candidate was stale, or the client attempted to confirm a link it was never offered. Surfaces as
+ * HTTP 400 with code `ECOM_LINK_INVALID`.
+ */
+class EcomLinkInvalidException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)

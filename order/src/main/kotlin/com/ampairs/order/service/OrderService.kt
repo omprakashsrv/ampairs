@@ -6,11 +6,13 @@ import com.ampairs.core.security.AuthenticationHelper
 import com.ampairs.event.domain.events.OrderCreatedEvent
 import com.ampairs.event.domain.events.OrderStatusChangedEvent
 import com.ampairs.event.domain.events.OrderUpdatedEvent
+import com.ampairs.event.domain.kafka.EcomOrderStatusEvent
 import com.ampairs.inventory.service.InventoryStockService
 import com.ampairs.inventory.service.StockLine
 import com.ampairs.inventory.service.StockMutationCommand
 import com.ampairs.inventory.service.StockSourceType
 import com.ampairs.invoice.service.InvoiceService
+import com.ampairs.order.kafka.EcomOrderStatusProducer
 import com.ampairs.order.domain.enums.OrderStatus
 import com.ampairs.order.domain.dto.OrderResponse
 import com.ampairs.order.domain.dto.OrderUpdateRequest
@@ -49,7 +51,8 @@ class OrderService(
     val orderPagingRepository: OrderPagingRepository,
     val invoiceService: InvoiceService,
     val inventoryStockService: InventoryStockService,
-    val eventPublisher: ApplicationEventPublisher
+    val eventPublisher: ApplicationEventPublisher,
+    val ecomOrderStatusProducer: EcomOrderStatusProducer,
 ) {
 
     /**
@@ -76,12 +79,50 @@ class OrderService(
             },
         )
         when (order.status) {
-            OrderStatus.CONFIRMED, OrderStatus.PROCESSING, OrderStatus.SHIPPED, OrderStatus.DELIVERED ->
+            OrderStatus.CONFIRMED, OrderStatus.PROCESSING, OrderStatus.SHIPPED,
+            OrderStatus.OUT_FOR_DELIVERY, OrderStatus.DELIVERED, OrderStatus.INVOICED ->
                 inventoryStockService.applySale(command)
             OrderStatus.CANCELLED, OrderStatus.REFUNDED ->
                 inventoryStockService.reverseSale(command)
             else -> Unit
         }
+    }
+
+    /**
+     * Bridges a management-side status change back to the buyer-facing [EcomOrderStatus] (ecom
+     * module — not depended on here, so the mapped value travels as a plain string, same as
+     * [com.ampairs.order.service.OrderEcomServiceImpl.confirmEcomOrder]). Only INVOICED/SHIPPED/
+     * OUT_FOR_DELIVERY/DELIVERED/CANCELLED are meaningful to the buyer; everything else (DRAFT,
+     * ORDERED, CONFIRMED, PROCESSING, REFUNDED, ...) is a no-op here — CONFIRMED is instead handled
+     * by [OrderEcomServiceImpl.confirmEcomOrder] itself, which is the only path that sets it.
+     */
+    private fun ecomStatusFor(status: OrderStatus): String? = when (status) {
+        OrderStatus.INVOICED -> "PROCESSING"
+        OrderStatus.SHIPPED, OrderStatus.OUT_FOR_DELIVERY -> "DISPATCHED"
+        OrderStatus.DELIVERED -> "DELIVERED"
+        OrderStatus.CANCELLED -> "CANCELLED"
+        else -> null
+    }
+
+    /**
+     * Without this, an order ingested from the storefront (has [Order.ecomOrderRef]) silently never
+     * tells the buyer app about anything that happens after ingestion/confirmation — the buyer stays
+     * stuck on "Reviewing your order" forever regardless of invoicing/shipping/delivery on the seller
+     * side. No-ops for non-ecom orders and for statuses with no buyer-facing meaning.
+     */
+    private fun notifyEcomIfLinked(order: Order, oldStatus: OrderStatus?) {
+        val ecomOrderRef = order.ecomOrderRef
+        if (ecomOrderRef.isNullOrBlank() || oldStatus == order.status) return
+        val mapped = ecomStatusFor(order.status) ?: return
+        ecomOrderStatusProducer.publishStatusUpdate(
+            EcomOrderStatusEvent(
+                ecomOrderRef = ecomOrderRef,
+                workspaceId = order.ownerId,
+                newStatus = mapped,
+                managementOrderRef = order.uid,
+                updatedAt = Instant.now(),
+            )
+        )
     }
 
     /**
@@ -102,18 +143,22 @@ class OrderService(
         val isNewOrder = existingOrder == null
         val oldStatus = existingOrder?.status
 
-        order.uid = existingOrder?.uid.toString()
+        order.uid = existingOrder?.uid ?: order.uid
         order.orderNumber = existingOrder?.orderNumber ?: ""
         if (order.orderNumber.isEmpty()) {
             val orderNumber = orderRepository.findMaxOrderNumber().getOrDefault("0").toIntOrNull() ?: 0
             order.orderNumber = (orderNumber + 1).toString()
         }
+        // ecomOrderRef is a system-assigned, immutable-once-set linkage — no request DTO exposes it
+        // for the client to send back, so it must be carried over explicitly or every update wipes
+        // it (breaking both notifyEcomIfLinked and confirmEcomOrder's own findByEcomOrderRef lookup).
+        order.ecomOrderRef = existingOrder?.ecomOrderRef ?: order.ecomOrderRef
         val savedOrder = orderRepository.save(order)
 
         orderItems.forEach { orderItem ->
             if (orderItem.uid.isNotEmpty()) {
                 val existingOrderItem = orderItemRepository.findByUid(orderItem.uid).getOrNull()
-                orderItem.uid = existingOrderItem?.uid.toString()
+                orderItem.uid = existingOrderItem?.uid ?: orderItem.uid
             }
             orderItemRepository.save(orderItem)
         }
@@ -160,6 +205,7 @@ class OrderService(
                 )
             }
         }
+        notifyEcomIfLinked(savedOrder, oldStatus)
 
         // Spec 014: apply/reverse inventory for the sale (idempotent; no-op if module/config off).
         syncStockForOrder(savedOrder, orderItems)
@@ -169,28 +215,40 @@ class OrderService(
 
     @Transactional
     fun createInvoice(order: Order, orderItems: List<OrderItem>): OrderResponse {
-        val existingOrder = orderRepository.findById(order.id).getOrNull()
-        order.uid = existingOrder?.uid.toString()
+        // Must look up by uid (not id — the numeric PK is never populated from the request), or
+        // this always misses and both the invoiceRefId guard below and the status update never
+        // fire, letting the same order be invoiced repeatedly.
+        val existingOrder = orderRepository.findByUid(order.uid).getOrNull()
+        val oldStatus = existingOrder?.status
+        order.uid = existingOrder?.uid ?: order.uid
         order.orderNumber = existingOrder?.orderNumber ?: ""
         if (order.orderNumber.isEmpty()) {
             val orderNumber = orderRepository.findMaxOrderNumber().getOrDefault("0").toIntOrNull() ?: 0
             order.orderNumber = (orderNumber + 1).toString()
         }
+        // See updateOrder's identical comment — ecomOrderRef must be carried over, not clobbered.
+        order.ecomOrderRef = existingOrder?.ecomOrderRef ?: order.ecomOrderRef
+        // Invoicing is terminal for the order's sale lifecycle regardless of whether this is the
+        // first call (creates the invoice) or a repeat call (idempotent re-save below).
+        order.status = OrderStatus.INVOICED
         val savedOrder = orderRepository.save(order)
         val savedOrderItems = orderItems.map { orderItem ->
             if (orderItem.uid.isNotEmpty()) {
                 val existingOrderItem = orderItemRepository.findByUid(orderItem.uid).getOrNull()
-                orderItem.uid = existingOrderItem?.uid.toString()
+                orderItem.uid = existingOrderItem?.uid ?: orderItem.uid
             }
             orderItemRepository.save(orderItem)
         }.toList()
         if (!existingOrder?.invoiceRefId.isNullOrEmpty()) {
+            // Already invoiced — reuse the existing invoice ref instead of creating a duplicate.
             savedOrder.invoiceRefId = existingOrder.invoiceRefId
+            orderRepository.save(savedOrder)
         } else {
             val updatedInvoice = invoiceService.updateInvoice(savedOrder.toInvoice(), savedOrderItems.toInvoiceItems())
             savedOrder.invoiceRefId = updatedInvoice.id
             orderRepository.save(savedOrder)
         }
+        notifyEcomIfLinked(savedOrder, oldStatus)
 
         return savedOrder.toResponse(orderItems)
     }
@@ -206,11 +264,16 @@ class OrderService(
 
     private fun upsertOrder(order: Order, orderItems: List<OrderItem>): OrderResponse {
         val existing = if (order.uid.isNotEmpty()) orderRepository.findByUid(order.uid).getOrNull() else null
+        val oldStatus = existing?.status
         if (existing != null) {
             order.id = existing.id
             order.uid = existing.uid
             order.createdAt = existing.createdAt
             if (order.orderNumber.isEmpty()) order.orderNumber = existing.orderNumber
+            // See updateOrder's identical comment — ecomOrderRef must be carried over, not clobbered.
+            // OrderUpdateRequest has no field for it at all, so every offline-sync push would
+            // otherwise silently null it out on the very first update after ingestion.
+            order.ecomOrderRef = existing.ecomOrderRef
         }
         if (order.orderNumber.isEmpty()) {
             val maxOrderNumber = orderRepository.findMaxOrderNumber().getOrDefault("0").toIntOrNull() ?: 0
@@ -226,6 +289,11 @@ class OrderService(
             item.orderId = savedOrder.uid
             orderItemRepository.save(item)
         }
+        // No per-row *internal* activity events on this bulk path (see doc comment above), but the
+        // ecom bridge is a functional link (not a log entry) — a client marking an order
+        // SHIPPED/OUT_FOR_DELIVERY/DELIVERED offline and syncing it through this exact endpoint must
+        // still notify the buyer, or the storefront never advances past ingestion/confirmation.
+        notifyEcomIfLinked(savedOrder, oldStatus)
         // Spec 014: apply/reverse inventory for the sale on the offline-sync path too. Idempotent per
         // line, so re-pushing an order with unchanged items/quantities is a no-op (no double-count).
         syncStockForOrder(savedOrder, savedItems)

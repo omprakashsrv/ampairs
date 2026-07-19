@@ -26,6 +26,7 @@ class EcomOrderEventPublisher(
 
 private fun EcomOrder.toPlacedEvent(requestedCustomerId: String?): EcomOrderPlacedEvent = EcomOrderPlacedEvent(
     ecomOrderRef = ecomOrderRef,
+    orderNumber = orderNumber,
     workspaceId = workspaceId,
     storefrontId = storefrontId,
     customerId = customerId,

@@ -6,6 +6,8 @@ import java.time.Instant
 
 data class EcomOrderPlacedEvent(
     val ecomOrderRef: String,
+    /** Human-friendly order number (e.g. "ECO-00001") — copied onto the ingested management order. */
+    val orderNumber: String = "",
     val workspaceId: String,
     val storefrontId: String,
     val customerId: String,

@@ -41,4 +41,11 @@ interface UserService {
      * @return Current user ID or null if not authenticated
      */
     fun getCurrentUserId(): String?
+
+    /**
+     * Look up a user by their registered phone number (used to manually link an app account to a
+     * CRM customer by phone — see EcomCustomerService.linkContactByPhone).
+     * @return User instance or null if no account has this phone
+     */
+    fun getUserByPhone(phone: String): User?
 }

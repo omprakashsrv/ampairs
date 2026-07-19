@@ -38,6 +38,7 @@ class CheckoutService(
     private val orderEventPublisher: EcomOrderEventPublisher,
     private val offerApplicationService: OfferApplicationService,
     private val ecomCustomerService: EcomCustomerService,
+    private val orderNumberService: EcomOrderNumberService,
 ) {
 
     private val pricingCurrency = "INR"
@@ -52,14 +53,12 @@ class CheckoutService(
         customerPhone: String?,
         storefront: Storefront,
     ): EcomOrder {
-        // A storefront buyer may only order for a distributor the workspace owner has linked them to.
-        // Resolve that CRM account up front — an unlinked buyer is blocked with a clear message rather
-        // than silently creating an account. Tenant context is set by the controller.
+        // A storefront buyer may only order for a distributor they're linked to (an explicit contact,
+        // or a self-confirmed phone-match link via EcomCustomerService.confirmLink). Resolve that CRM
+        // account up front — an unlinked buyer is blocked with a clear message rather than silently
+        // creating a link. Tenant context is set by the controller.
         val resolvedCustomerId = ecomCustomerService.resolveLinkedCustomerId(
             ecomUserId = customerId,
-            phone = customerPhone,
-            name = customerName,
-            email = customerEmail,
             requestedCustomerId = request.customerId,
         ) ?: throw EcomNotLinkedException(
             "Your account is not linked to any distributor. Please contact the business owner to get linked before placing an order."
@@ -84,6 +83,9 @@ class CheckoutService(
         // Unique business reference for the order (the column is unique + non-null). Generated here
         // because BaseDomain.prePersist only fills uid — an unset ref inserts "" and collides.
         order.ecomOrderRef = Helper.generateUniqueId("ECO", Constants.ID_LENGTH)
+        // Human-friendly, gap-free number the buyer sees/quotes to identify or track this order —
+        // copied onto the ingested management order too so both sides share the same number.
+        order.orderNumber = orderNumberService.next()
         // Orders await merchant review. The default (PLACED) is a dead state — confirmOrder/
         // editLineItems require PENDING_MERCHANT_REVIEW and advanceStatus has no transition out of
         // PLACED, so a PLACED order can never progress.
