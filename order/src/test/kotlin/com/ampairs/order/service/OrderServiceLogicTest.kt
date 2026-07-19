@@ -66,7 +66,7 @@ class OrderServiceLogicTest {
 
     @BeforeEach
     fun setUp() {
-        service = OrderService(orderRepository, orderItemRepository, orderPagingRepository, invoiceService, inventoryStockService, eventPublisher)
+        service = OrderService(orderRepository, orderItemRepository, orderPagingRepository, invoiceService, inventoryStockService, eventPublisher, ecomOrderStatusProducer)
         ecomService = OrderEcomServiceImpl(orderRepository, orderItemRepository, orderServiceMock, ecomOrderStatusProducer)
         ingestionService = EcomOrderIngestionService(orderRepository, orderItemRepository, ecomOrderStatusProducer)
         whenever(orderRepository.save(any<Order>())).thenAnswer { it.arguments[0] }
@@ -122,29 +122,60 @@ class OrderServiceLogicTest {
     // ==================== createInvoice ====================
 
     @Test
-    fun `createInvoice generates an invoice and stores its reference when none exists`() {
+    fun `createInvoice generates an invoice, stores its reference and advances status when none exists`() {
         val existing = Order().apply { id = 7; uid = "ORD-1"; orderNumber = "9"; invoiceRefId = null }
-        whenever(orderRepository.findById(7)).thenReturn(Optional.of(existing))
+        whenever(orderRepository.findByUid("ORD-1")).thenReturn(Optional.of(existing))
         whenever(invoiceService.updateInvoice(any(), any())).thenReturn(InvoiceResponse(id = "INV-99"))
 
-        val order = Order().apply { id = 7; uid = "ORD-1" }
+        val order = Order().apply { uid = "ORD-1" }
         val response = service.createInvoice(order, listOf(orderItem()))
 
         assertEquals("INV-99", order.invoiceRefId)
+        assertEquals(OrderStatus.INVOICED, order.status)
         verify(invoiceService).updateInvoice(any(), any())
         assertEquals("9", response.orderNumber)
     }
 
     @Test
-    fun `createInvoice reuses the existing invoice reference and skips generation`() {
+    fun `createInvoice reuses the existing invoice reference, skips generation and stays invoiced`() {
         val existing = Order().apply { id = 7; uid = "ORD-1"; orderNumber = "9"; invoiceRefId = "INV-OLD" }
-        whenever(orderRepository.findById(7)).thenReturn(Optional.of(existing))
+        whenever(orderRepository.findByUid("ORD-1")).thenReturn(Optional.of(existing))
 
-        val order = Order().apply { id = 7; uid = "ORD-1" }
+        val order = Order().apply { uid = "ORD-1" }
         service.createInvoice(order, emptyList())
 
         assertEquals("INV-OLD", order.invoiceRefId)
+        assertEquals(OrderStatus.INVOICED, order.status)
         verify(invoiceService, never()).updateInvoice(any(), any())
+    }
+
+    @Test
+    fun `createInvoice notifies the storefront with PROCESSING when the order is ecom-linked`() {
+        val existing = Order().apply {
+            id = 7; uid = "ORD-1"; orderNumber = "9"; ownerId = "WS-1"
+            ecomOrderRef = "ECOM-1"; status = OrderStatus.CONFIRMED
+        }
+        whenever(orderRepository.findByUid("ORD-1")).thenReturn(Optional.of(existing))
+        whenever(invoiceService.updateInvoice(any(), any())).thenReturn(InvoiceResponse(id = "INV-99"))
+
+        val order = Order().apply { uid = "ORD-1" }
+        service.createInvoice(order, emptyList())
+
+        verify(ecomOrderStatusProducer).publishStatusUpdate(argThat<EcomOrderStatusEvent> {
+            ecomOrderRef == "ECOM-1" && newStatus == "PROCESSING" && managementOrderRef == "ORD-1"
+        })
+    }
+
+    @Test
+    fun `createInvoice does not notify the storefront for a non-ecom order`() {
+        val existing = Order().apply { id = 7; uid = "ORD-1"; orderNumber = "9" }
+        whenever(orderRepository.findByUid("ORD-1")).thenReturn(Optional.of(existing))
+        whenever(invoiceService.updateInvoice(any(), any())).thenReturn(InvoiceResponse(id = "INV-99"))
+
+        val order = Order().apply { uid = "ORD-1" }
+        service.createInvoice(order, emptyList())
+
+        verify(ecomOrderStatusProducer, never()).publishStatusUpdate(any())
     }
 
     // ==================== getOrders ====================

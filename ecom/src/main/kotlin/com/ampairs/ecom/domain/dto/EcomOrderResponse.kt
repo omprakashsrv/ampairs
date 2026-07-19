@@ -54,7 +54,10 @@ fun EcomOrderLineItem.asLineItemResponse() = EcomOrderLineItemResponse(
 fun EcomOrder.asEcomOrderResponse() = EcomOrderResponse(
     uid = uid,
     ecomOrderRef = ecomOrderRef,
-    orderNumber = orderNumber,
+    // Defensive: rows created before V1.0.123/124 (or loaded from a stale replica) can still surface
+    // as a real null here despite the non-null Kotlin type — Hibernate sets fields via reflection,
+    // bypassing the null check the constructor would otherwise enforce.
+    orderNumber = orderNumber.orEmpty(),
     storefrontId = storefrontId,
     customerName = customerName,
     customerEmail = customerEmail,
