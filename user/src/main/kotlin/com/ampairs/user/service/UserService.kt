@@ -54,4 +54,6 @@ class UserService(val userRepository: UserRepository) {
         return userRepository.findByUidIn(ids)
     }
 
+    fun getUserByPhone(phone: String): User? = userRepository.findByPhone(phone).orElse(null)
+
 }

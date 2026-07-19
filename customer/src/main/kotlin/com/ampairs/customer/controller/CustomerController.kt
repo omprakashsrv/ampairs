@@ -5,10 +5,12 @@ import com.ampairs.core.domain.dto.PageResponse
 import com.ampairs.core.exception.NotFoundException
 import com.ampairs.customer.domain.dto.*
 import com.ampairs.customer.domain.service.CustomerService
+import com.ampairs.customer.domain.service.EcomCustomerServiceImpl
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
+import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.*
 
 @RestController
@@ -16,6 +18,7 @@ import org.springframework.web.bind.annotation.*
 @Tag(name = "Customer Management", description = "Customer CRUD and management operations")
 class CustomerController(
     private val customerService: CustomerService,
+    private val ecomCustomerService: EcomCustomerServiceImpl,
 ) {
 
     /**
@@ -72,5 +75,34 @@ class CustomerController(
         val customer = customerService.getCustomerByUid(customerId)
             ?: throw NotFoundException("Customer not found: $customerId")
         return ApiResponse.success(customer.asCustomerResponse())
+    }
+
+    /** The app accounts linked to this customer (active or restricted) — "linked accounts" section. */
+    @GetMapping("/{customerId}/contacts")
+    fun getContacts(@PathVariable customerId: String): ApiResponse<List<CustomerContactResponse>> {
+        val contacts = ecomCustomerService.listContactsForCustomer(customerId).map { it.asContactResponse() }
+        return ApiResponse.success(contacts)
+    }
+
+    /** Owner-initiated link: finds the app account registered with [request]'s phone and links it. */
+    @PostMapping("/{customerId}/contacts")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun linkContact(
+        @PathVariable customerId: String,
+        @RequestBody @Valid request: LinkContactRequest,
+    ): ApiResponse<CustomerContactResponse> {
+        val contact = ecomCustomerService.linkContactByPhone(customerId, request.phone, request.name, request.role, request.isDefault)
+        return ApiResponse.success(contact.asContactResponse())
+    }
+
+    /** Restrict or re-enable a linked account's ordering access. */
+    @PatchMapping("/{customerId}/contacts/{contactUid}/status")
+    fun setContactStatus(
+        @PathVariable customerId: String,
+        @PathVariable contactUid: String,
+        @RequestBody request: SetContactStatusRequest,
+    ): ApiResponse<CustomerContactResponse> {
+        val contact = ecomCustomerService.setContactActive(contactUid, request.active)
+        return ApiResponse.success(contact.asContactResponse())
     }
 }

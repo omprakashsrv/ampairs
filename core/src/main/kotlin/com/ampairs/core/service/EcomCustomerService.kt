@@ -59,6 +59,20 @@ interface EcomCustomerService {
         phone: String?,
         email: String?,
     ): EcomCustomerAccount
+
+    /**
+     * Every buyer↔CRM-customer link across the current workspace, across ALL customers — feeds the
+     * owner's "ecom users" management screen (independent of any single customer's detail page).
+     * Requires tenant context (the caller's workspace).
+     */
+    fun listAllContacts(): List<EcomContactSummary>
+
+    /**
+     * Restricts ([active] = false) or re-enables ([active] = true) a contact's access. A restricted
+     * contact is treated as unlinked by [resolveLinkedCustomerId]/[confirmLink] — the buyer is told
+     * to contact the owner again, exactly as if never linked.
+     */
+    fun setContactActive(contactUid: String, active: Boolean): EcomContactSummary
 }
 
 /** A CRM account a storefront buyer may order on behalf of. */
@@ -81,4 +95,16 @@ data class EcomLinkCandidate(
     val phone: String,
     val gstNumber: String?,
     val address: String?,
+)
+
+/** A buyer↔CRM-customer link, for the owner's management views (per-customer or workspace-wide). */
+data class EcomContactSummary(
+    val contactUid: String,
+    val customerId: String,
+    val customerName: String,
+    val name: String,
+    val phone: String?,
+    val role: String,
+    val isDefault: Boolean,
+    val active: Boolean,
 )

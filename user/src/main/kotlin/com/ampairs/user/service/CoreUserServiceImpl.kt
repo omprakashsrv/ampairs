@@ -55,4 +55,8 @@ class CoreUserServiceImpl(
             null
         }
     }
+
+    override fun getUserByPhone(phone: String): com.ampairs.core.domain.User? {
+        return authUserService.getUserByPhone(phone)
+    }
 }
