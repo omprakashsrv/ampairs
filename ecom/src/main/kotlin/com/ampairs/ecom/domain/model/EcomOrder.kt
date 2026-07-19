@@ -30,6 +30,15 @@ class EcomOrder : BaseDomain() {
     @Column(name = "ecom_order_ref", nullable = false, length = 50, unique = true)
     var ecomOrderRef: String = ""
 
+    /**
+     * Human-friendly, gap-free order number (e.g. "ECO-00001") issued via the sequence module at
+     * checkout — what the buyer sees/quotes to identify or track this order. [ecomOrderRef] stays
+     * the opaque, stable API lookup key; this is display-only. The same value is copied onto the
+     * ingested management order so both sides reference the same number.
+     */
+    @Column(name = "order_number", length = 50)
+    var orderNumber: String = ""
+
     @Column(name = "storefront_id", nullable = false, length = 200)
     var storefrontId: String = ""
 

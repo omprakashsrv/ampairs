@@ -40,6 +40,7 @@ dependencies {
     api(project(mapOf("path" to ":user")))
     implementation(project(mapOf("path" to ":notification")))
     implementation(project(mapOf("path" to ":pricing")))
+    implementation(project(mapOf("path" to ":sequence")))
 
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.springframework.boot:spring-boot-starter-web")

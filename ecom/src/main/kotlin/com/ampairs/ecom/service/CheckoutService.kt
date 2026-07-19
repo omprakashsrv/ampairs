@@ -38,6 +38,7 @@ class CheckoutService(
     private val orderEventPublisher: EcomOrderEventPublisher,
     private val offerApplicationService: OfferApplicationService,
     private val ecomCustomerService: EcomCustomerService,
+    private val orderNumberService: EcomOrderNumberService,
 ) {
 
     private val pricingCurrency = "INR"
@@ -82,6 +83,9 @@ class CheckoutService(
         // Unique business reference for the order (the column is unique + non-null). Generated here
         // because BaseDomain.prePersist only fills uid — an unset ref inserts "" and collides.
         order.ecomOrderRef = Helper.generateUniqueId("ECO", Constants.ID_LENGTH)
+        // Human-friendly, gap-free number the buyer sees/quotes to identify or track this order —
+        // copied onto the ingested management order too so both sides share the same number.
+        order.orderNumber = orderNumberService.next()
         // Orders await merchant review. The default (PLACED) is a dead state — confirmOrder/
         // editLineItems require PENDING_MERCHANT_REVIEW and advanceStatus has no transition out of
         // PLACED, so a PLACED order can never progress.

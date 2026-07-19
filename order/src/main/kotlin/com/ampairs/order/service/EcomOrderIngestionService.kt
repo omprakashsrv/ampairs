@@ -42,6 +42,9 @@ class EcomOrderIngestionService(
         val order = Order().apply {
             orderType = "ECOM"
             ecomOrderRef = event.ecomOrderRef
+            // Same number the buyer sees on the ecom side (assigned once at checkout) — never
+            // generated independently here, so both sides always reference the same order number.
+            orderNumber = event.orderNumber
             customerId = crmCustomerId
             customerName = event.customerName
             customerPhone = event.customerPhone

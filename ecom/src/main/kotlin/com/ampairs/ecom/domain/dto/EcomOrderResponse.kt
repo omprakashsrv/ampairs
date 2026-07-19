@@ -22,6 +22,8 @@ data class EcomOrderLineItemResponse(
 data class EcomOrderResponse(
     val uid: String,
     val ecomOrderRef: String,
+    /** Human-friendly order number (e.g. "ECO-00001") — what the buyer sees/quotes to track this order. */
+    val orderNumber: String,
     val storefrontId: String,
     val customerName: String,
     val customerEmail: String,
@@ -52,6 +54,7 @@ fun EcomOrderLineItem.asLineItemResponse() = EcomOrderLineItemResponse(
 fun EcomOrder.asEcomOrderResponse() = EcomOrderResponse(
     uid = uid,
     ecomOrderRef = ecomOrderRef,
+    orderNumber = orderNumber,
     storefrontId = storefrontId,
     customerName = customerName,
     customerEmail = customerEmail,
