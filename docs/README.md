@@ -30,8 +30,18 @@ Complete documentation for each backend module — entities, endpoints, migratio
 | [modules/event.md](modules/event.md) | Domain event streaming, WebSocket/STOMP, device presence |
 | [modules/notification.md](modules/notification.md) | SMS (MSG91/SNS), push notifications, retry queue |
 | [modules/unit.md](modules/unit.md) | Units of measure and conversion rules |
+| [modules/setting.md](modules/setting.md) | Central workspace settings registry (cross-module toggles, offline-sync) |
 | [modules/form.md](modules/form.md) | Dynamic field config and custom attributes per entity type |
 | [modules/file.md](modules/file.md) | Object storage — S3, MinIO, local filesystem |
+| [modules/user.md](modules/user.md) | User identity, profile, account deletion lifecycle |
+| [modules/supplier.md](modules/supplier.md) | Supplier management |
+| [modules/purchase.md](modules/purchase.md) | Purchase recording (bills + purchase items) |
+| [modules/payment.md](modules/payment.md) | Payment recording and allocation |
+| [modules/pricing.md](modules/pricing.md) | Price lists, tiers, offers/coupons, geo zones |
+| [modules/sequence.md](modules/sequence.md) | Document number sequences — definitions + allocations |
+| [modules/ecom.md](modules/ecom.md) | Storefronts — public catalog, cart, checkout, buyer accounts |
+| [modules/printing.md](modules/printing.md) | Print-template storage + offline-sync |
+| [modules/agent.md](modules/agent.md) | AI model manifest/download proxy + chat telemetry |
 
 ## API Reference
 
