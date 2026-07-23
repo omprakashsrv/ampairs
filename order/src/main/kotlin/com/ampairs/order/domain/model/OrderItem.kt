@@ -15,6 +15,11 @@ class OrderItem : OwnableBaseDomain() {
     @Column(name = "order_id", nullable = false, length = 255)
     var orderId: String = ""
 
+    // Soft-delete flag. A line the client removed during ordering is pushed with active = false so
+    // the deletion propagates to every device via the order /sync feed (in-band delete).
+    @Column(name = "active", nullable = false)
+    var active: Boolean = true
+
     @Column(name = "description", nullable = false, length = 255)
     var description: String = ""
 

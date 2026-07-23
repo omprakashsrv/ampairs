@@ -48,6 +48,9 @@ fun List<InvoiceItemRequest>.toInvoiceItems(): List<InvoiceItem> {
         invoiceItem.totalTax = it.totalTax
         invoiceItem.basePrice = it.basePrice
         invoiceItem.invoiceId = it.invoiceId
+        // A removed line arrives as active = false (or softDeleted = true); persisted verbatim so the
+        // deletion round-trips on the invoice /sync feed.
+        invoiceItem.active = it.active && !it.softDeleted
         invoiceItem.productId = it.productId
         invoiceItem.taxCode = it.taxCode
         invoiceItem.unitId = it.unitId

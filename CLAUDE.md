@@ -2,9 +2,9 @@
 
 ## Project
 
-Ampairs — business management SaaS. Backend (Spring Boot 4.0 + Kotlin 2.3 + Java 21), Web (Angular 20 + M3, separate repo), Mobile (Compose Multiplatform, separate repo).
+Ampairs — business management SaaS. Backend (Spring Boot 4.1 + Kotlin 2.4 + Java 21), Web (Angular 20 + M3, separate repo), Mobile (Compose Multiplatform, separate repo).
 
-- 17 domain modules at root + `ampairs_service` aggregator
+- 25 domain modules at root + `ampairs_service` aggregator (core, notification, auth, user, workspace, form, event, file, product, business, customer, supplier, order, invoice, purchase, payment, pricing, tax, unit, setting, printing, agent, sequence, subscription, ecom)
 - Package convention: `com.ampairs.{module}.{domain|repository|service|controller}`
 - Each module has its own `CLAUDE.md` — read it when working in that directory
 - Full module docs: `docs/modules/`
@@ -59,7 +59,7 @@ design: `tax` (subscribe model), `file` (multipart).
 ```
 /speckit.specify → /speckit.clarify → /speckit.plan → /speckit.tasks → /speckit.analyze → /speckit.implement
 ```
-Specs in `specs/{###-feature}/`. Next number: `006`.
+Specs in `specs/{###-feature}/`. Next number: `029` (check `ls specs/` — highest existing is `028`).
 
 ## Build commands
 ```bash

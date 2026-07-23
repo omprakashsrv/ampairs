@@ -62,6 +62,10 @@ class EcomExceptionHandler : BaseExceptionHandler() {
     @ExceptionHandler(StoreUnauthenticatedException::class)
     fun handleStoreUnauthenticated(ex: StoreUnauthenticatedException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> =
         createErrorResponse(HttpStatus.FORBIDDEN, "STORE_UNAUTHENTICATED", "Authentication required", ex.message, request, moduleName = "ecom")
+
+    @ExceptionHandler(EcomNotLinkedException::class)
+    fun handleEcomNotLinked(ex: EcomNotLinkedException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> =
+        createErrorResponse(HttpStatus.FORBIDDEN, "ECOM_NOT_LINKED", "Not linked to a distributor", ex.message, request, moduleName = "ecom")
 }
 
 // Ecom domain exceptions
@@ -77,3 +81,10 @@ class EcomOrderNotFoundException(message: String) : RuntimeException(message)
 class InvalidOrderStatusTransitionException(message: String) : RuntimeException(message)
 class StoreAccessDeniedException(message: String) : RuntimeException(message)
 class StoreUnauthenticatedException(message: String) : RuntimeException(message)
+
+/**
+ * Thrown at checkout when the storefront buyer is not linked to any workspace distributor account.
+ * Ordering is blocked until the workspace owner links the buyer (an explicit contact, or a CRM
+ * customer created with the buyer's phone). Surfaces as HTTP 403 with code `ECOM_NOT_LINKED`.
+ */
+class EcomNotLinkedException(message: String) : RuntimeException(message)

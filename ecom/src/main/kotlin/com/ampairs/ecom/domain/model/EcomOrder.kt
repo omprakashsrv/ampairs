@@ -3,6 +3,7 @@ package com.ampairs.ecom.domain.model
 import com.ampairs.core.domain.model.BaseDomain
 import com.ampairs.ecom.domain.enums.EcomOrderStatus
 import jakarta.persistence.*
+import org.hibernate.annotations.BatchSize
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.math.BigDecimal
@@ -28,6 +29,15 @@ class EcomOrder : BaseDomain() {
 
     @Column(name = "ecom_order_ref", nullable = false, length = 50, unique = true)
     var ecomOrderRef: String = ""
+
+    /**
+     * Human-friendly, gap-free order number (e.g. "ECO-00001") issued via the sequence module at
+     * checkout — what the buyer sees/quotes to identify or track this order. [ecomOrderRef] stays
+     * the opaque, stable API lookup key; this is display-only. The same value is copied onto the
+     * ingested management order so both sides reference the same number.
+     */
+    @Column(name = "order_number", length = 50)
+    var orderNumber: String = ""
 
     @Column(name = "storefront_id", nullable = false, length = 200)
     var storefrontId: String = ""
@@ -89,6 +99,7 @@ class EcomOrder : BaseDomain() {
     @Column(name = "merchant_reviewed_at")
     var merchantReviewedAt: Instant? = null
 
+    @BatchSize(size = 30)
     @OneToMany
     @JoinColumn(name = "ecom_order_id", referencedColumnName = "uid", insertable = false, updatable = false)
     var lineItems: MutableList<EcomOrderLineItem> = mutableListOf()

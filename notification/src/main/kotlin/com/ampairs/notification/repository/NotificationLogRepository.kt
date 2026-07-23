@@ -40,4 +40,12 @@ interface NotificationLogRepository : CrudRepository<NotificationLog, Long> {
         """
     )
     fun findAllForUser(@Param("userId") userId: String, pageable: Pageable): Page<NotificationLog>
+
+    /**
+     * Sync checkpoint: max updatedAt across the whole workspace (null when empty). @TenantId-filtered.
+     * Not user-filtered — a user-targeted row may advance the checkpoint for other users, causing an
+     * occasional no-op incremental pull, which is harmless.
+     */
+    @Query("SELECT MAX(n.updatedAt) FROM notification_log n")
+    fun findMaxUpdatedAt(): Instant?
 }

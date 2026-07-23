@@ -1,6 +1,8 @@
 package com.ampairs.ecom.repository
 
 import com.ampairs.ecom.domain.model.Storefront
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.query.Param
@@ -27,4 +29,26 @@ interface StorefrontRepository : CrudRepository<Storefront, Long> {
     fun existsBySlug(@Param("slug") slug: String): Boolean
 
     fun findByOwnerId(ownerId: String): Storefront?
+
+    // Public directory feed: published storefronts across ALL tenants, optionally filtered
+    // by a case-insensitive substring of name or slug. Native (like the slug lookups above)
+    // so the @TenantId owner_id auto-filter is bypassed — the directory is intentionally
+    // cross-tenant. Callers pass an empty string to match every published row (LIKE '%%').
+    @Query(
+        value = """
+            SELECT * FROM ecom_storefront
+            WHERE status = 'PUBLISHED'
+              AND (LOWER(name) LIKE LOWER(CONCAT('%', :q, '%'))
+                   OR LOWER(slug) LIKE LOWER(CONCAT('%', :q, '%')))
+            ORDER BY name ASC
+        """,
+        countQuery = """
+            SELECT COUNT(*) FROM ecom_storefront
+            WHERE status = 'PUBLISHED'
+              AND (LOWER(name) LIKE LOWER(CONCAT('%', :q, '%'))
+                   OR LOWER(slug) LIKE LOWER(CONCAT('%', :q, '%')))
+        """,
+        nativeQuery = true,
+    )
+    fun searchPublished(@Param("q") q: String, pageable: Pageable): Page<Storefront>
 }

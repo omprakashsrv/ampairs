@@ -2,10 +2,12 @@ package com.ampairs.tax.domain.model
 
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.tax.config.Constants
+import jakarta.persistence.AttributeOverride
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Index
 import jakarta.persistence.Table
+import jakarta.persistence.UniqueConstraint
 
 @Entity
 @Table(
@@ -16,7 +18,17 @@ import jakarta.persistence.Table
         Index(name = "idx_tax_comp_jurisdiction", columnList = "jurisdiction"),
         Index(name = "idx_tax_comp_updated", columnList = "updated_at"),
         Index(name = "idx_tax_comp_active", columnList = "is_active")
+    ],
+    // uid is unique PER WORKSPACE, not globally: workspace tax components deliberately reuse the
+    // master component uid (e.g. COMP_CGST_9) across tenants. Overriding the inherited global
+    // unique keeps Hibernate's schema view aligned with migration V1.0.122.
+    uniqueConstraints = [
+        UniqueConstraint(name = "uk_tax_component_owner_uid", columnNames = ["owner_id", "uid"])
     ]
+)
+@AttributeOverride(
+    name = "uid",
+    column = Column(name = "uid", length = 200, updatable = false, nullable = false)
 )
 class TaxComponent : OwnableBaseDomain() {
 

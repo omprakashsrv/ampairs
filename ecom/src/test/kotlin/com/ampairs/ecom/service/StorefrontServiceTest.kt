@@ -2,6 +2,9 @@ package com.ampairs.ecom.service
 
 import com.ampairs.ecom.domain.dto.StorefrontRequest
 import com.ampairs.ecom.domain.dto.StorefrontUpdateRequest
+import com.ampairs.ecom.domain.dto.applyTo
+import com.ampairs.ecom.domain.dto.asStorefrontResponse
+import com.ampairs.ecom.domain.dto.toStorefront
 import com.ampairs.ecom.domain.enums.StorefrontStatus
 import com.ampairs.ecom.domain.model.Storefront
 import com.ampairs.ecom.exception.StorefrontAlreadyExistsException
@@ -18,8 +21,11 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
+import org.springframework.data.domain.PageImpl
+import org.springframework.data.domain.PageRequest
 
 @ExtendWith(MockitoExtension::class)
 class StorefrontServiceTest {
@@ -117,6 +123,57 @@ class StorefrontServiceTest {
         assertThrows<StorefrontNotFoundException> {
             storefrontService.getPublishedStorefrontBySlug("draft-shop")
         }
+    }
+
+    // ── listPublishedStorefronts ──────────────────────────────────────────────
+
+    @Test
+    fun `listPublishedStorefronts trims the query and delegates to repository`() {
+        val pageable = PageRequest.of(0, 20)
+        val page = PageImpl(listOf(makeStorefront("sf1", "ws1", "my-shop")))
+        whenever(storefrontRepository.searchPublished(eq("acme"), eq(pageable))).thenReturn(page)
+
+        val result = storefrontService.listPublishedStorefronts("  acme  ", pageable)
+
+        assertEquals(1, result.totalElements.toInt())
+        verify(storefrontRepository).searchPublished("acme", pageable)
+    }
+
+    @Test
+    fun `listPublishedStorefronts passes empty string for blank query`() {
+        val pageable = PageRequest.of(0, 20)
+        whenever(storefrontRepository.searchPublished(eq(""), eq(pageable))).thenReturn(PageImpl(emptyList()))
+
+        storefrontService.listPublishedStorefronts("   ", pageable)
+
+        verify(storefrontRepository).searchPublished("", pageable)
+    }
+
+    @Test
+    fun `listPublishedStorefronts passes empty string for null query`() {
+        val pageable = PageRequest.of(0, 20)
+        whenever(storefrontRepository.searchPublished(eq(""), eq(pageable))).thenReturn(PageImpl(emptyList()))
+
+        storefrontService.listPublishedStorefronts(null, pageable)
+
+        verify(storefrontRepository).searchPublished("", pageable)
+    }
+
+    // ── brand color mapping ───────────────────────────────────────────────────
+
+    @Test
+    fun `brand color round-trips through create request and bootstrap response`() {
+        val entity = StorefrontRequest(name = "Shop", slug = "shop", brandColorArgb = 4279650378L).toStorefront("ws1")
+        assertEquals(4279650378L, entity.brandColorArgb)
+        // asStorefrontResponse is what GET /store/{slug} serializes for the bootstrap.
+        assertEquals(4279650378L, entity.asStorefrontResponse().brandColorArgb)
+    }
+
+    @Test
+    fun `brand color is applied through update request`() {
+        val entity = makeStorefront("sf1", "ws1", "shop")
+        StorefrontUpdateRequest(brandColorArgb = 4279650378L).applyTo(entity)
+        assertEquals(4279650378L, entity.brandColorArgb)
     }
 
     // ── publishStorefront ─────────────────────────────────────────────────────

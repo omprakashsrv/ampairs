@@ -56,6 +56,9 @@ class OrderServiceLogicTest {
     @Mock private lateinit var inventoryStockService: InventoryStockService
     @Mock private lateinit var eventPublisher: ApplicationEventPublisher
     @Mock private lateinit var ecomOrderStatusProducer: EcomOrderStatusProducer
+    // A mock OrderService for the ecom confirm path (real `service` below is the subject of the
+    // OrderService tests). Keeps confirmEcomOrder from executing real invoice generation.
+    @Mock private lateinit var orderServiceMock: OrderService
 
     private lateinit var service: OrderService
     private lateinit var ecomService: OrderEcomServiceImpl
@@ -63,8 +66,8 @@ class OrderServiceLogicTest {
 
     @BeforeEach
     fun setUp() {
-        service = OrderService(orderRepository, orderItemRepository, orderPagingRepository, invoiceService, inventoryStockService, eventPublisher)
-        ecomService = OrderEcomServiceImpl(orderRepository, ecomOrderStatusProducer)
+        service = OrderService(orderRepository, orderItemRepository, orderPagingRepository, invoiceService, inventoryStockService, eventPublisher, ecomOrderStatusProducer)
+        ecomService = OrderEcomServiceImpl(orderRepository, orderItemRepository, orderServiceMock, ecomOrderStatusProducer)
         ingestionService = EcomOrderIngestionService(orderRepository, orderItemRepository, ecomOrderStatusProducer)
         whenever(orderRepository.save(any<Order>())).thenAnswer { it.arguments[0] }
         whenever(orderItemRepository.save(any<OrderItem>())).thenAnswer { it.arguments[0] }
@@ -119,29 +122,60 @@ class OrderServiceLogicTest {
     // ==================== createInvoice ====================
 
     @Test
-    fun `createInvoice generates an invoice and stores its reference when none exists`() {
+    fun `createInvoice generates an invoice, stores its reference and advances status when none exists`() {
         val existing = Order().apply { id = 7; uid = "ORD-1"; orderNumber = "9"; invoiceRefId = null }
-        whenever(orderRepository.findById(7)).thenReturn(Optional.of(existing))
+        whenever(orderRepository.findByUid("ORD-1")).thenReturn(Optional.of(existing))
         whenever(invoiceService.updateInvoice(any(), any())).thenReturn(InvoiceResponse(id = "INV-99"))
 
-        val order = Order().apply { id = 7; uid = "ORD-1" }
+        val order = Order().apply { uid = "ORD-1" }
         val response = service.createInvoice(order, listOf(orderItem()))
 
         assertEquals("INV-99", order.invoiceRefId)
+        assertEquals(OrderStatus.INVOICED, order.status)
         verify(invoiceService).updateInvoice(any(), any())
         assertEquals("9", response.orderNumber)
     }
 
     @Test
-    fun `createInvoice reuses the existing invoice reference and skips generation`() {
+    fun `createInvoice reuses the existing invoice reference, skips generation and stays invoiced`() {
         val existing = Order().apply { id = 7; uid = "ORD-1"; orderNumber = "9"; invoiceRefId = "INV-OLD" }
-        whenever(orderRepository.findById(7)).thenReturn(Optional.of(existing))
+        whenever(orderRepository.findByUid("ORD-1")).thenReturn(Optional.of(existing))
 
-        val order = Order().apply { id = 7; uid = "ORD-1" }
+        val order = Order().apply { uid = "ORD-1" }
         service.createInvoice(order, emptyList())
 
         assertEquals("INV-OLD", order.invoiceRefId)
+        assertEquals(OrderStatus.INVOICED, order.status)
         verify(invoiceService, never()).updateInvoice(any(), any())
+    }
+
+    @Test
+    fun `createInvoice notifies the storefront with PROCESSING when the order is ecom-linked`() {
+        val existing = Order().apply {
+            id = 7; uid = "ORD-1"; orderNumber = "9"; ownerId = "WS-1"
+            ecomOrderRef = "ECOM-1"; status = OrderStatus.CONFIRMED
+        }
+        whenever(orderRepository.findByUid("ORD-1")).thenReturn(Optional.of(existing))
+        whenever(invoiceService.updateInvoice(any(), any())).thenReturn(InvoiceResponse(id = "INV-99"))
+
+        val order = Order().apply { uid = "ORD-1" }
+        service.createInvoice(order, emptyList())
+
+        verify(ecomOrderStatusProducer).publishStatusUpdate(argThat<EcomOrderStatusEvent> {
+            ecomOrderRef == "ECOM-1" && newStatus == "PROCESSING" && managementOrderRef == "ORD-1"
+        })
+    }
+
+    @Test
+    fun `createInvoice does not notify the storefront for a non-ecom order`() {
+        val existing = Order().apply { id = 7; uid = "ORD-1"; orderNumber = "9" }
+        whenever(orderRepository.findByUid("ORD-1")).thenReturn(Optional.of(existing))
+        whenever(invoiceService.updateInvoice(any(), any())).thenReturn(InvoiceResponse(id = "INV-99"))
+
+        val order = Order().apply { uid = "ORD-1" }
+        service.createInvoice(order, emptyList())
+
+        verify(ecomOrderStatusProducer, never()).publishStatusUpdate(any())
     }
 
     // ==================== getOrders ====================
@@ -196,7 +230,7 @@ class OrderServiceLogicTest {
 
     // ==================== EcomOrderIngestionService.ingest ====================
 
-    private fun placedEvent(ref: String = "ECOM-1") = EcomOrderPlacedEvent(
+    private fun placedEvent(ref: String = "ECOM-1", requestedCustomerId: String? = null) = EcomOrderPlacedEvent(
         ecomOrderRef = ref,
         workspaceId = "WS-1",
         storefrontId = "SF-1",
@@ -204,6 +238,7 @@ class OrderServiceLogicTest {
         customerName = "Acme",
         customerEmail = "a@b.com",
         customerPhone = "999",
+        requestedCustomerId = requestedCustomerId,
         deliveryAddress = Address(state = "MAHARASHTRA"),
         lineItems = listOf(
             EcomOrderLineItemPayload(
@@ -228,14 +263,24 @@ class OrderServiceLogicTest {
 
         verify(orderRepository).save(argThat<Order> {
             orderType == "ECOM" && ecomOrderRef == "ECOM-1" && status == OrderStatus.PENDING_MERCHANT_REVIEW &&
-                placeOfSupply == "MAHARASHTRA" && subtotal == 200.0 && totalAmount == 236.0
+                placeOfSupply == "MAHARASHTRA" && subtotal == 200.0 && totalAmount == 236.0 && customerId == "CUS-1"
         })
         verify(orderItemRepository).save(argThat<OrderItem> {
-            productId == "PRD-1" && quantity == 2.0 && unitPrice == 100.0 && lineTotal == 200.0
+            productId == "PRD-1" && quantity == 2.0 && unitPrice == 100.0 && lineTotal == 200.0 &&
+                totalCost == 200.0 && basePrice == 200.0 && totalTax == 0.0
         })
         verify(ecomOrderStatusProducer).publishStatusUpdate(argThat<EcomOrderStatusEvent> {
             newStatus == "PENDING_MERCHANT_REVIEW"
         })
+    }
+
+    @Test
+    fun `ingest prefers the checkout-resolved CRM customer id over the raw ecom user id`() {
+        whenever(orderRepository.findByEcomOrderRef("ECOM-1")).thenReturn(null)
+
+        ingestionService.ingest(placedEvent(requestedCustomerId = "CUS-RESOLVED"))
+
+        verify(orderRepository).save(argThat<Order> { customerId == "CUS-RESOLVED" })
     }
 
     @Test

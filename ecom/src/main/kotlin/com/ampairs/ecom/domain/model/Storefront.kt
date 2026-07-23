@@ -31,6 +31,10 @@ class Storefront : OwnableBaseDomain() {
     @Column(name = "banner_url", length = 500)
     var bannerUrl: String? = null
 
+    /** Optional theme color stored as a packed ARGB int in a long (e.g. 0xFF1B6C4A). Clients render it directly. */
+    @Column(name = "brand_color_argb")
+    var brandColorArgb: Long? = null
+
     @Column(name = "status", nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     var status: StorefrontStatus = StorefrontStatus.DRAFT
