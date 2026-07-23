@@ -6,6 +6,7 @@ import com.ampairs.event.domain.kafka.ConfirmedLineItemPayload
 import com.ampairs.event.domain.kafka.EcomOrderStatusEvent
 import com.ampairs.order.domain.enums.OrderStatus
 import com.ampairs.order.kafka.EcomOrderStatusProducer
+import com.ampairs.order.repository.OrderItemRepository
 import com.ampairs.order.repository.OrderRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -15,6 +16,8 @@ import java.time.Instant
 @Service
 class OrderEcomServiceImpl(
     private val orderRepository: OrderRepository,
+    private val orderItemRepository: OrderItemRepository,
+    private val orderService: OrderService,
     private val ecomOrderStatusProducer: EcomOrderStatusProducer,
 ) : OrderEcomService {
 
@@ -33,6 +36,15 @@ class OrderEcomServiceImpl(
         }
         order.status = OrderStatus.CONFIRMED
         orderRepository.save(order)
+
+        // Merchant confirmation raises the invoice for the order (idempotent: OrderService.createInvoice
+        // reuses an existing invoiceRefId). Confirm + invoice are atomic — createInvoice joins this
+        // transaction, so if the invoice can't be created the confirmation rolls back too (no confirmed
+        // ecom order without an invoice), and the merchant can retry.
+        if (order.invoiceRefId.isNullOrEmpty()) {
+            val items = orderItemRepository.findByOrderIdOrderByIndexAsc(order.uid)
+            orderService.createInvoice(order, items)
+        }
 
         val confirmedPayloads = confirmedItems.map { item ->
             ConfirmedLineItemPayload(

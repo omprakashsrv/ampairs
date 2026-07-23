@@ -11,6 +11,11 @@ import com.ampairs.ecom.exception.ProductUnavailableException
 import com.ampairs.ecom.repository.EcomCartItemRepository
 import com.ampairs.ecom.repository.EcomCartRepository
 import com.ampairs.ecom.repository.EcomListedProductRepository
+import com.ampairs.ecom.repository.StorefrontRepository
+import com.ampairs.core.domain.dto.MoneyDto
+import com.ampairs.pricing.domain.dto.PriceResolutionResponse
+import com.ampairs.pricing.domain.enums.PriceSource
+import com.ampairs.pricing.service.PricingResolutionService
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNotNull
 import org.junit.jupiter.api.BeforeEach
@@ -36,6 +41,8 @@ class CartServiceTest {
     @Mock private lateinit var cartRepository: EcomCartRepository
     @Mock private lateinit var cartItemRepository: EcomCartItemRepository
     @Mock private lateinit var listedProductRepository: EcomListedProductRepository
+    @Mock private lateinit var storefrontRepository: StorefrontRepository
+    @Mock private lateinit var pricingResolutionService: PricingResolutionService
     // Field-injected @PersistenceContext EntityManager (write paths flush+clear before re-reading).
     @Mock private lateinit var entityManager: EntityManager
 
@@ -43,7 +50,10 @@ class CartServiceTest {
 
     @BeforeEach
     fun setup() {
-        cartService = CartService(cartRepository, cartItemRepository, listedProductRepository)
+        cartService = CartService(
+            cartRepository, cartItemRepository, listedProductRepository,
+            storefrontRepository, pricingResolutionService,
+        )
         // @InjectMocks uses constructor injection only, so the @PersistenceContext field isn't set;
         // inject the EntityManager mock explicitly.
         ReflectionTestUtils.setField(cartService, "entityManager", entityManager)
@@ -124,10 +134,48 @@ class CartServiceTest {
         whenever(cartItemRepository.findByCartIdAndListedProductId("c1", "p1")).thenReturn(null)
         whenever(cartItemRepository.save(any<EcomCartItem>())).thenReturn(makeCartItem("i1", "c1", "p1"))
         whenever(cartRepository.findBySessionToken("tok")).thenReturn(updatedCart)
+        whenever(pricingResolutionService.resolve(any())).thenReturn(fallbackResolution())
 
         val result = cartService.addOrUpdateItem("tok", request)
         verify(cartItemRepository).save(any<EcomCartItem>())
         assertNotNull(result)
+    }
+
+    @Test
+    fun `addOrUpdateItem snapshots the resolved price onto the cart item (SC-001)`() {
+        val cart = makeCart("c1")
+        val product = makeProduct("p1", stock = 100)
+        val request = CartItemRequest(listedProductId = "p1", quantity = 10)
+
+        whenever(cartRepository.findFirstBySessionToken("tok")).thenReturn(cart)
+        whenever(listedProductRepository.findByUid("p1")).thenReturn(product)
+        whenever(cartItemRepository.findByCartIdAndListedProductId("c1", "p1")).thenReturn(null)
+        whenever(cartItemRepository.save(any<EcomCartItem>())).thenAnswer { it.arguments[0] as EcomCartItem }
+        whenever(cartRepository.findBySessionToken("tok")).thenReturn(cart)
+        // The list resolves the line to a wholesale tier ₹225 (22500 minor) from list "WHOLE".
+        whenever(pricingResolutionService.resolve(any())).thenReturn(
+            PriceResolutionResponse(
+                effectiveUnitPrice = MoneyDto(22500, "INR"),
+                source = PriceSource.PRICE_LIST,
+                matchedPriceListUid = "WHOLE",
+                appliedTierMinQty = BigDecimal(10),
+                belowMoq = false,
+            )
+        )
+
+        val captor = argumentCaptor<EcomCartItem>()
+        cartService.addOrUpdateItem("tok", request)
+        verify(cartItemRepository).save(captor.capture())
+
+        // The resolved price is snapshotted onto the row at add-time. Because the cart line carries
+        // its own snapshot (never re-derived from the product/list), a later price-list edit cannot
+        // retroactively change what the buyer was quoted — SC-001.
+        val saved = captor.firstValue
+        assertEquals(22500, saved.resolvedUnitPriceMinor)
+        assertEquals("INR", saved.currency)
+        assertEquals(PriceSource.PRICE_LIST.name, saved.priceSource)
+        assertEquals("WHOLE", saved.matchedPriceListUid)
+        assertEquals(0, BigDecimal("225.00").compareTo(saved.unitPrice))
     }
 
     @Test
@@ -142,6 +190,7 @@ class CartServiceTest {
         whenever(cartItemRepository.findByCartIdAndListedProductId("c1", "p1")).thenReturn(existingItem)
         whenever(cartItemRepository.save(existingItem)).thenReturn(existingItem)
         whenever(cartRepository.findBySessionToken("tok")).thenReturn(cart)
+        whenever(pricingResolutionService.resolve(any())).thenReturn(fallbackResolution())
 
         cartService.addOrUpdateItem("tok", request)
         assertEquals(5, existingItem.quantity)
@@ -305,6 +354,15 @@ class CartServiceTest {
         isVisible = true
         imageUrls = listOf("https://cdn.example.com/$uid.jpg")
     }
+
+    /** Catalog-fallback resolution matching makeProduct's ₹100.00 price (10000 minor). */
+    private fun fallbackResolution() = PriceResolutionResponse(
+        effectiveUnitPrice = MoneyDto(10000, "INR"),
+        source = PriceSource.CATALOG_FALLBACK,
+        matchedPriceListUid = null,
+        appliedTierMinQty = null,
+        belowMoq = false,
+    )
 
     private fun makeCartItem(uid: String, cartId: String, productId: String) = EcomCartItem().apply {
         this.uid = uid

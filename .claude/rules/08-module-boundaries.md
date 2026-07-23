@@ -11,12 +11,20 @@
 |--------|------|
 | `core` | Shared utils, base domains, ApiResponse, TenantContextHolder |
 | `auth` | JWT, device sessions, refresh tokens |
+| `user` | User identity, profile, account deletion lifecycle |
 | `workspace` | Workspaces, roles, RBAC |
 | `product` | Catalog, inventory, SKU |
 | `customer` | CRM, contacts |
+| `supplier` | Suppliers (vendors) |
 | `tax` | GST, tax rules |
 | `order` | Order processing, fulfillment |
-| `invoice` | Invoices, payments |
+| `invoice` | Invoices, payment status |
+| `purchase` | Purchase recording (supplier bills + items) |
+| `payment` | Payment vouchers, allocations, ledger, party balances |
+| `pricing` | Price lists, tiers, offers/coupons, geo zones |
+| `sequence` | Document number sequences (definitions + allocations) |
+| `ecom` | Storefronts — public catalog, cart, checkout, buyer accounts |
 | `subscription` | Plans, billing |
 | `setting` | Central workspace settings registry (cross-module toggles, offline-sync) |
 | `printing` | Print-template storage + offline-sync (`/printing/v1`, opaque layout JSON) |
+| `agent` | AI model manifest/download proxy + chat telemetry |

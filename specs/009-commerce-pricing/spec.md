@@ -26,6 +26,56 @@ Builds on `008-ecommerce-order-platform` (storefront, cart, checkout, orders) an
 - Q: Channel set? → A: `SalesChannel { RETAIL, WHOLESALE }` (extensible). India-MVP may launch
   retail-only; the wholesale path must exist in the schema and resolution from day one.
 
+### Session 2026-06-23 (program review — pricing/offers split confirmed)
+
+- Q: Are pricing and offers one feature or two? → A: **Two.** This feature (009) owns **base-price
+  resolution** (channel + group/customer/brand/category price lists, slab tiers, MOQ, variant,
+  validity, catalog fallback). A separate feature (**015 Commerce Promotions**) owns **offers** that
+  modify the order on top of resolved prices (cart/coupon discounts, BOGO/free-goods, brand
+  volume/value schemes). 009 leaves a clean handoff: resolution returns the effective unit price +
+  source; the promotion engine consumes that output, then tax runs.
+- Q: Brands and distribution explicitly in scope? → A: Yes. Price lists may be scoped to a **brand**
+  or **category** (not only product/variant), and the **DISTRIBUTOR** segment is served via
+  customer-group-scoped wholesale lists (the `SalesChannel` enum stays extensible:
+  `DISTRIBUTOR`/`B2B_MARKETPLACE` later). Per-customer special prices are the highest-priority match.
+- Q: In-store first or online first? → A: **In-store first.** Wire `PricingResolutionService` into the
+  KMP app order/invoice line-entry path (replacing `sellingPrice × multiplier`) and the monolith
+  `order`/`invoice` services at the 010 seam; **then** project price lists to the ecom read model so
+  the storefront/online ordering resolve identically.
+- Q: Resolution precedence (overlap)? → A: per-customer special > customer-group/channel list >
+  brand/category list > catalog fallback; ties broken by list `priority`, then most-recently-activated
+  (FR-004). Variant match wins over base product within a list.
+
+### Session 2026-06-23 (clarify — annotation/field-value targeting)
+
+- Q: How is "custom pricing by any product/customer field value" modeled? → A: **Hybrid.**
+  Structured, first-class **targeting dimensions** for the hot cases (sales channel, customer group,
+  **customer-type**, specific customer, brand, category, product/variant, **product-group**,
+  **geo-zone**) **plus** an optional list of **attribute predicates** `{ field, operator, value }`
+  over customer/product attributes (incl. custom JSON attributes) for rare cases. Predicates are
+  evaluated **last** and rank **below** any structured-dimension match (lowest precedence) so
+  resolution stays deterministic, indexable, offline-resolvable, and projectable to the ecom read
+  model. The dimension set is extensible (new structured dimensions added case-by-case).
+- Q: Geography granularity for pincode-based pricing? → A: **Named geo-zones.** A reusable `GeoZone`
+  (zone = set of pincodes, pincode-ranges, and/or states) is referenced by price lists; the resolver
+  maps the customer's (or delivery) pincode → zone. Exact-pincode pricing is a single-pincode zone.
+  `GeoZone` is shared master data (referenced by uid; reused by promotions feature 015).
+- Q: Where do merchants create/manage price lists (management surface)? → A: **KMP app admin UI
+  only** — no Angular web admin in this feature. Management is offline-first: the app `feature/pricing`
+  is a full CRUD module (Room write `synced=false` + `markPendingPush`, `PricingSyncDelegate` owns
+  push **and** pull), not just a read-model. Backend exposes the same `/pricing/v1` CRUD + `/sync`.
+- Q: Updated overlap precedence with the new dimensions? → A: per-customer special >
+  customer/group + channel list (most specific) > product-group / brand / category list > geo-zone /
+  customer-type list > **attribute-predicate match** > catalog fallback; ties → list `priority`, then
+  most-recently-activated; variant match wins over base within a list.
+- Q: Where is price resolution executed — merchant orders vs online orders? → A: **Two trust models.**
+  (1) **Merchant app** order/invoice resolves price **client-side** (offline, over the synced
+  read-model), snapshots it, and pushes; the backend `order`/`invoice` `/sync` endpoints **persist the
+  client snapshot as-is and do NOT re-resolve** (everything the app needs is already synced to it).
+  (2) **Online customer** orders (ecom) are resolved/validated **server-side** at cart/checkout (the
+  shopper device is untrusted and has no merchant data) over the ecom projection. The resolution
+  *algorithm* is single-sourced and must produce identical results in both (parity, SC-006).
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 — Merchant sets a wholesale price list with tier breaks (Priority: P1)
@@ -119,7 +169,7 @@ at qty 50, and confirm the line auto-fills the ₹210 tier from the locally proj
 ### User Story 4 — Currency travels with every price (global-ready) (Priority: P3)
 
 Every price the engine stores, resolves, and returns carries an explicit ISO-4217 currency. For the
-India launch this is always `INR`, but no code assumes it — so multi-currency in feature 015 is a data
+India launch this is always `INR`, but no code assumes it — so multi-currency in the Go-Global feature is a data
 change, not a refactor.
 
 **Why this priority**: Cheap insurance now; very expensive to retrofit later. Not a launch blocker for
@@ -158,7 +208,25 @@ India, hence P3.
 ### Functional Requirements
 
 - **FR-001**: The system MUST let a merchant create, edit, activate, deactivate, and soft-delete
-  **price lists** scoped to a `SalesChannel` (RETAIL | WHOLESALE) and an optional customer group.
+  **price lists** scoped to a `SalesChannel` (RETAIL | WHOLESALE) and any combination of structured
+  **targeting dimensions**: customer group, customer-type, specific customer, brand, category,
+  product-group, product/variant, and **geo-zone** (see FR-016/FR-017).
+- **FR-016**: The system MUST support **named geo-zones** as reusable master data (a `GeoZone` whose
+  membership is a set of pincodes, pincode-ranges, and/or states). A price list MAY be scoped to a
+  geo-zone; resolution MUST map the customer's (or delivery) pincode to its zone. An exact-pincode
+  price is a single-pincode zone. `GeoZone` is **owned by the `pricing` module** (exposed via a public
+  `GeoZoneService.zoneForPincode`), referenced by uid from promotions (`015`), and **projected to the
+  ecom read model** so storefront server-side resolution maps pincode→zone without a cross-module call.
+  `SalesChannel` lives in `core` (shared).
+- **FR-017**: A price list MAY additionally carry an optional ordered list of **attribute predicates**
+  `{ field, operator, value }` over customer/product attributes (incl. custom JSON attributes).
+  Predicate-only matches MUST rank **below** every structured-dimension match (lowest precedence
+  before catalog fallback) and MUST be evaluated deterministically. Resolution remains offline-capable
+  and projectable.
+- **FR-018**: Price-list **management** (create/edit/activate/deactivate/soft-delete, incl. items,
+  tiers, MOQ, geo-zones, predicates) MUST be performed in the **KMP app admin UI** and work
+  offline-first (local write `synced=false` → `markPendingPush` → `PricingSyncDelegate` push). No
+  Angular web admin is in scope for this feature.
 - **FR-002**: A price list MUST contain **price-list items** targeting a product (or specific variant),
   each with a unit price and optional **MOQ** and optional ordered **quantity tiers** (`minQty`,
   `unitPrice`).
@@ -182,8 +250,13 @@ India, hence P3.
   in one list share one currency.
 - **FR-011**: Pricing master data MUST be **projected to the ecom read model** so storefront and app
   resolution need no synchronous call into the pricing module.
-- **FR-012**: The pricing module MUST expose a **public service interface** for `order`/`invoice` to
-  resolve prices in-process (per module-boundary rules — no direct repository access).
+- **FR-012**: Price resolution is executed in **two places only**: (a) the **merchant app**
+  client-side resolver (offline), and (b) the **ecom server-side** path (cart/checkout) over the
+  projection. The backend `order`/`invoice` `/sync` endpoints MUST persist the client-provided price
+  snapshot **without re-resolving** (offline-first trust model). The pricing module exposes its
+  resolution as a **single-sourced algorithm/service** (used for the ecom projection-based resolver,
+  admin preview, and to keep the app resolver in parity) — no synchronous cross-module resolution call
+  on the merchant order path.
 - **FR-013**: Price lists and items are **tenant-scoped** (`OwnableBaseDomain`) and MUST never leak
   across workspaces.
 - **FR-014**: Tier ranges within an item MUST be validated contiguous and non-overlapping at save.
@@ -204,9 +277,16 @@ India, hence P3.
 
 ### Key Entities
 
-- **PriceList** (`OwnableBaseDomain`) — `uid`, `name`, `channel: SalesChannel`,
-  `customerGroupId: String?` (null = applies to all in channel), `currency`, `priority: Int`,
-  `status` (DRAFT/ACTIVE/INACTIVE), optional `startsAt`/`endsAt`, `active`.
+- **PriceList** (`OwnableBaseDomain`) — `uid`, `name`, `channel: SalesChannel`, and optional
+  structured targeting: `customerGroupId?`, `customerType?`, `customerId?`, `brandId?`, `categoryId?`,
+  `productGroupId?`, `geoZoneId?` (null on all = applies to all in channel); plus
+  `attributePredicates: List<AttributePredicate>?` (lowest-precedence match); `currency`,
+  `priority: Int`, `status` (DRAFT/ACTIVE/INACTIVE), optional `startsAt`/`endsAt`, `active`.
+- **GeoZone** (`OwnableBaseDomain`, **owned by `pricing`**) — `uid`, `name`, `members` (pincodes,
+  pincode-ranges, states); exposed via public `GeoZoneService`; referenced by `PriceList.geoZoneId`
+  and by promotions (`015`); projected to ecom (`EcomGeoZoneProjection`). `SalesChannel` is owned by `core`.
+- **AttributePredicate** (value/JSON) — `field` (e.g. `customer.attributes.tier`, `product.attributes.x`),
+  `operator` (EQ/NEQ/IN/GT/LT/...), `value`. Evaluated last, lowest precedence.
 - **PriceListItem** (`OwnableBaseDomain`) — `uid`, `priceListId`, `productId`, `variantSku: String?`,
   `unitPrice` (BigDecimal) + inherits list `currency`, `moq: BigDecimal?`, `tiers: List<PriceTier>`
   (JSON; each `minQty`, `unitPrice`).
@@ -232,17 +312,21 @@ India, hence P3.
 - **SC-004**: Public storefront resolution P95 < 50 ms under the projected read model.
 - **SC-005**: Every price returned by any pricing API carries an explicit currency; a contract test
   rejects any bare-number money field.
-- **SC-006**: The same resolution produces the same effective price on the storefront, in B2B app
-  order entry, and in the monolith `order` service for identical inputs.
+- **SC-006**: The single-sourced resolution algorithm produces the **same effective price** in the
+  merchant app (offline, over Room) and on the ecom server-side path (over the projection) for
+  identical inputs (parity test). The monolith `order`/`invoice` `/sync` stores the app's snapshot
+  verbatim and does not re-resolve (verified: pushed snapshot == persisted snapshot).
 
 ## Out of Scope (this feature)
 
-- Payments/refunds (feature 011), shipping rates (012), coupons/promotions (013) — promotions stack
-  **on top of** resolved prices later, they do not belong in the pricing engine.
-- Implementing the stubbed Order/Invoice **sync delegates** (feature 010) — 009 ships the read model
-  + resolution; full B2B offline round-trip lands with 010.
-- Multi-currency **activation** / FX / VAT+sales-tax strategy impls (feature 015) — 009 only carries
-  the currency field and keeps `INR` as the workspace default.
+- Payments/refunds (the Payments feature, `013-payment-collection`), shipping rates (the Shipping
+  feature, future), coupons/promotions (the Promotions feature, `015-commerce-promotions`) — promotions
+  stack **on top of** resolved prices, they do not belong in the pricing engine.
+- Implementing the stubbed Order/Invoice **sync delegates** (the Store-Ops feature,
+  `010-store-ops-order-invoice`) — 009 ships the read model + resolution; full B2B offline round-trip
+  lands with Store-Ops.
+- Multi-currency **activation** / FX / VAT+sales-tax strategy impls (the Go-Global feature, future) —
+  009 only carries the currency field and keeps `INR` as the workspace default.
 - Search/faceting changes.
 
 ## Dependencies & Assumptions

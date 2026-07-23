@@ -10,6 +10,7 @@ import com.ampairs.file.storage.ObjectStorageService
 import org.slf4j.LoggerFactory
 import org.springframework.core.io.InputStreamResource
 import org.springframework.http.CacheControl
+import org.springframework.http.ContentDisposition
 import org.springframework.http.HttpHeaders
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.TimeUnit
 
 @RestController
@@ -68,7 +70,12 @@ class FileController(
             val contentType = file.contentType?.let { MediaType.parseMediaType(it) } ?: MediaType.APPLICATION_OCTET_STREAM
             val headers = HttpHeaders().apply {
                 setContentType(contentType)
-                set(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"${file.name}\"")
+                // RFC 6266 encoding — raw filenames may contain non-Latin-1 chars (e.g. the U+202F
+                // narrow no-break space in macOS screenshot names), which Tomcat rejects, dropping
+                // the whole header. ContentDisposition emits the filename*=UTF-8'' form.
+                setContentDisposition(
+                    ContentDisposition.inline().filename(file.name, StandardCharsets.UTF_8).build()
+                )
                 setCacheControl(CacheControl.maxAge(1, TimeUnit.HOURS).cachePublic())
             }
             ResponseEntity.ok().headers(headers).body(InputStreamResource(stream))

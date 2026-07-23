@@ -31,6 +31,10 @@ class Storefront : OwnableBaseDomain() {
     @Column(name = "banner_url", length = 500)
     var bannerUrl: String? = null
 
+    /** Optional theme color stored as a packed ARGB int in a long (e.g. 0xFF1B6C4A). Clients render it directly. */
+    @Column(name = "brand_color_argb")
+    var brandColorArgb: Long? = null
+
     @Column(name = "status", nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     var status: StorefrontStatus = StorefrontStatus.DRAFT
@@ -44,6 +48,11 @@ class Storefront : OwnableBaseDomain() {
     @Column(name = "access_mode", nullable = false, length = 20)
     @Enumerated(EnumType.STRING)
     var accessMode: StorefrontAccessMode = StorefrontAccessMode.PUBLIC
+
+    /** Sales channel this storefront prices in (RETAIL for B2C, WHOLESALE for B2B). Used by price resolution. */
+    @Column(name = "default_channel", nullable = false, length = 30)
+    @Enumerated(EnumType.STRING)
+    var defaultChannel: com.ampairs.core.domain.enums.SalesChannel = com.ampairs.core.domain.enums.SalesChannel.RETAIL
 
     override fun obtainSeqIdPrefix(): String = "SFR"
 }

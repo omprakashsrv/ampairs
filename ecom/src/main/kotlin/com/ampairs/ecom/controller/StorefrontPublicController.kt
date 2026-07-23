@@ -19,9 +19,17 @@ import com.ampairs.ecom.exception.EcomOrderNotFoundException
 import com.ampairs.ecom.interceptor.StorefrontTenantInterceptor
 import com.ampairs.ecom.repository.EcomListedProductRepository
 import com.ampairs.ecom.repository.EcomTaxonomyImageRepository
+import com.ampairs.core.domain.dto.MoneyDto
+import com.ampairs.pricing.domain.dto.CouponApplyRequest
+import com.ampairs.pricing.domain.dto.CouponResponse
+import com.ampairs.pricing.domain.dto.PriceResolutionRequest
+import com.ampairs.pricing.domain.dto.PriceResolutionResponse
+import com.ampairs.pricing.service.CouponService
+import com.ampairs.pricing.service.PricingResolutionService
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.domain.Sort
 import org.springframework.web.bind.annotation.*
+import java.math.BigDecimal
 import java.time.Instant
 
 @RestController
@@ -29,7 +37,70 @@ import java.time.Instant
 class StorefrontPublicController(
     private val listedProductRepository: EcomListedProductRepository,
     private val taxonomyImageRepository: EcomTaxonomyImageRepository,
+    private val pricingResolutionService: PricingResolutionService,
+    private val couponService: CouponService,
 ) {
+
+    /**
+     * Validate a coupon code for an online shopper in the storefront's channel — no side effects
+     * (redemption happens atomically at checkout). Runs within the StorefrontTenantInterceptor's
+     * tenant context, so the lookup is scoped to the storefront's workspace.
+     */
+    @GetMapping("/coupon/validate")
+    fun validateCoupon(
+        @PathVariable slug: String,
+        @RequestAttribute(StorefrontTenantInterceptor.STOREFRONT_ATTR) storefront: Storefront,
+        @RequestParam("code") code: String,
+        @RequestParam("customer_id", required = false) customerId: String? = null,
+    ): ApiResponse<CouponResponse> = ApiResponse.success(
+        couponService.validate(
+            CouponApplyRequest(
+                code = code,
+                channel = storefront.defaultChannel,
+                customerId = customerId,
+            )
+        )
+    )
+
+    /**
+     * Resolve the effective unit price a shopper sees for a listed product, in the storefront's
+     * channel (RETAIL by default; WHOLESALE for B2B storefronts), honoring an optional customer
+     * segment + delivery pincode. Runs in-process via the single-sourced pricing engine, within the
+     * StorefrontTenantInterceptor's tenant context (no X-Workspace-ID needed). Anonymous shoppers
+     * never get a WHOLESALE-only price unless the storefront's defaultChannel is WHOLESALE.
+     */
+    @GetMapping("/products/{productId}/price")
+    fun resolvePrice(
+        @PathVariable slug: String,
+        @PathVariable productId: String,
+        @RequestAttribute(StorefrontTenantInterceptor.STOREFRONT_ATTR) storefront: Storefront,
+        @RequestParam(defaultValue = "1") quantity: Int,
+        @RequestParam("variant_sku", required = false) variantSku: String? = null,
+        @RequestParam("customer_id", required = false) customerId: String? = null,
+        @RequestParam("customer_group_id", required = false) customerGroupId: String? = null,
+        @RequestParam("customer_type", required = false) customerType: String? = null,
+        @RequestParam("pincode", required = false) pincode: String? = null,
+    ): ApiResponse<PriceResolutionResponse> {
+        val product = listedProductRepository.findByUid(productId)
+            ?.takeIf { it.storefrontId == storefront.uid && it.isVisible }
+            ?: throw EcomOrderNotFoundException("Product not found")
+        val currency = "INR"
+        val resolution = pricingResolutionService.resolve(
+            PriceResolutionRequest(
+                channel = storefront.defaultChannel,
+                productId = product.managementProductId,
+                variantSku = variantSku,
+                quantity = BigDecimal(quantity),
+                customerId = customerId,
+                customerGroupId = customerGroupId,
+                customerType = customerType,
+                pincode = pincode,
+                fallbackUnitPriceMinor = MoneyDto.of(product.price, currency)?.amountMinor,
+                currency = currency,
+            )
+        )
+        return ApiResponse.success(resolution)
+    }
 
     @GetMapping
     fun getStorefront(

@@ -41,4 +41,8 @@ interface PaymentVoucherRepository : JpaRepository<PaymentVoucher, Long> {
 
     @EntityGraph("PaymentVoucher.withAllocations")
     fun findByUpdatedAtGreaterThanEqual(lastSync: Instant, pageable: Pageable): Page<PaymentVoucher>
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(v.updatedAt) FROM payment_voucher v")
+    fun findMaxUpdatedAt(): Instant?
 }

@@ -39,8 +39,11 @@ class CheckoutController(
             val principal = authentication.principal
             val customerEmail = if (principal is User) principal.email ?: "" else ""
             val customerName = if (principal is User) principal.getDisplayName() else customerId
+            // Recorded on the order for the merchant's record; linking itself now happens explicitly
+            // via CustomerAccountController's link-candidate/confirm endpoints, not at checkout time.
+            val customerPhone = if (principal is User) principal.phone.takeIf { it.isNotBlank() } else null
 
-            val order = checkoutService.checkout(sessionToken, request, customerId, customerEmail, customerName, storefront)
+            val order = checkoutService.checkout(sessionToken, request, customerId, customerEmail, customerName, customerPhone, storefront)
             return ApiResponse.success(order.asEcomOrderResponse())
         } finally {
             TenantContextHolder.clearTenantContext()

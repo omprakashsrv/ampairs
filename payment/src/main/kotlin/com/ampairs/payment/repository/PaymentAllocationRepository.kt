@@ -48,4 +48,8 @@ interface PaymentAllocationRepository : JpaRepository<PaymentAllocation, Long> {
     fun findAllByOrderByUpdatedAtAsc(pageable: Pageable): Page<PaymentAllocation>
 
     fun findByUpdatedAtGreaterThanEqual(lastSync: Instant, pageable: Pageable): Page<PaymentAllocation>
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(a.updatedAt) FROM payment_allocation a")
+    fun findMaxUpdatedAt(): Instant?
 }

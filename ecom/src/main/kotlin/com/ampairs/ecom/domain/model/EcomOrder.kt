@@ -3,6 +3,7 @@ package com.ampairs.ecom.domain.model
 import com.ampairs.core.domain.model.BaseDomain
 import com.ampairs.ecom.domain.enums.EcomOrderStatus
 import jakarta.persistence.*
+import org.hibernate.annotations.BatchSize
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.math.BigDecimal
@@ -28,6 +29,15 @@ class EcomOrder : BaseDomain() {
 
     @Column(name = "ecom_order_ref", nullable = false, length = 50, unique = true)
     var ecomOrderRef: String = ""
+
+    /**
+     * Human-friendly, gap-free order number (e.g. "ECO-00001") issued via the sequence module at
+     * checkout — what the buyer sees/quotes to identify or track this order. [ecomOrderRef] stays
+     * the opaque, stable API lookup key; this is display-only. The same value is copied onto the
+     * ingested management order so both sides reference the same number.
+     */
+    @Column(name = "order_number", length = 50)
+    var orderNumber: String = ""
 
     @Column(name = "storefront_id", nullable = false, length = 200)
     var storefrontId: String = ""
@@ -69,6 +79,14 @@ class EcomOrder : BaseDomain() {
     @Column(name = "total_amount", nullable = false, precision = 19, scale = 4)
     var totalAmount: BigDecimal = BigDecimal.ZERO
 
+    // ── promotion-application snapshot (015) — captured at checkout; immune to later offer edits ──
+    @Column(name = "promotion_discount_minor")
+    var promotionDiscountMinor: Long? = null
+
+    /** JSON array of the applied offers (uid/name/reward/discount) the engine fired at checkout. */
+    @Column(name = "applied_promotions_json", columnDefinition = "TEXT")
+    var appliedPromotionsJson: String? = null
+
     @Column(name = "notes", columnDefinition = "TEXT")
     var notes: String? = null
 
@@ -81,6 +99,7 @@ class EcomOrder : BaseDomain() {
     @Column(name = "merchant_reviewed_at")
     var merchantReviewedAt: Instant? = null
 
+    @BatchSize(size = 30)
     @OneToMany
     @JoinColumn(name = "ecom_order_id", referencedColumnName = "uid", insertable = false, updatable = false)
     var lineItems: MutableList<EcomOrderLineItem> = mutableListOf()

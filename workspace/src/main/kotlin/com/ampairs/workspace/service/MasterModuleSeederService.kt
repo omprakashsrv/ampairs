@@ -69,8 +69,10 @@ class MasterModuleSeederService(
         return listOf(
             createBusinessModule(),
             createCustomerModule(),
+            createSupplierModule(),
             createProductModule(),
             createOrderModule(),
+            createPurchaseModule(),
             createInvoiceModule(),
             createPaymentModule(),
             createInventoryModule(),
@@ -78,6 +80,7 @@ class MasterModuleSeederService(
             createUnitModule(),
             createPrintingModule(),
             createStorefrontModule(),
+            createPricingModule(),
             createAiAssistantModule()
         )
     }
@@ -173,6 +176,48 @@ class MasterModuleSeederService(
         displayOrder = 10
         active = true
     }
+
+    private fun createSupplierModule() = MasterModule().apply {
+        moduleCode = "supplier-management"
+        name = "Supplier Management"
+        description = "Comprehensive supplier (vendor) master with contact information, credit terms, GST compliance, and purchase relationship tracking"
+        tagline = "Manage your suppliers and vendors effectively"
+        category = ModuleCategory.CUSTOMER_MANAGEMENT
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.FREE
+        requiredRole = UserRole.EMPLOYEE
+        complexity = ModuleComplexity.STANDARD
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 8, true, "Essential for managing the vendors you buy stock from"),
+            createBusinessRelevance(BusinessType.WHOLESALE, 10, true, "Critical for B2B procurement and supplier credit control"),
+            createBusinessRelevance(BusinessType.MANUFACTURING, 9, true, "Important for managing raw-material and component suppliers")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = listOf("SUPPLIER_READ", "SUPPLIER_WRITE"),
+            optionalPermissions = listOf("SUPPLIER_DELETE", "SUPPLIER_EXPORT")
+        )
+        uiMetadata = createUIMetadata(
+            icon = "local_shipping",
+            primaryColor = "#00897B",
+            tags = listOf("Suppliers", "Vendors", "Procurement", "GST", "Credit Management")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/suppliers",
+            displayName = "Suppliers",
+            iconName = "local_shipping",
+            menuItems = listOf(
+                createMenuItem("supplier-list", "All Suppliers", "/suppliers", "local_shipping", 1, true),
+                createMenuItem("supplier-create", "Create Supplier", "/suppliers/create", "add_business", 2),
+            )
+        )
+        navigationIndex = 25
+        provider = "Ampairs"
+        sizeMb = 5
+        featured = false
+        displayOrder = 15
+        active = true
+    }
     
     private fun createProductModule() = MasterModule().apply {
         moduleCode = "product-management"
@@ -259,6 +304,49 @@ class MasterModuleSeederService(
         sizeMb = 12
         featured = true
         displayOrder = 30
+        active = true
+    }
+
+    private fun createPurchaseModule() = MasterModule().apply {
+        moduleCode = "purchase-management"
+        name = "Purchase Management"
+        description = "End-to-end purchase document processing with line items, supplier tracking, and automatic stock-in on receipt"
+        tagline = "Streamline your procurement and stock receipts"
+        category = ModuleCategory.ORDER_MANAGEMENT
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.BASIC
+        requiredRole = UserRole.EMPLOYEE
+        complexity = ModuleComplexity.STANDARD
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 8, true, "Essential for recording stock purchases and replenishment"),
+            createBusinessRelevance(BusinessType.WHOLESALE, 10, true, "Critical for bulk procurement and supplier order management"),
+            createBusinessRelevance(BusinessType.MANUFACTURING, 9, true, "Important for raw-material and component purchasing")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = listOf("PURCHASE_READ", "PURCHASE_WRITE"),
+            optionalPermissions = listOf("PURCHASE_DELETE", "PURCHASE_APPROVE"),
+            dependencies = listOf("supplier-management", "product-management")
+        )
+        uiMetadata = createUIMetadata(
+            icon = "shopping_bag",
+            primaryColor = "#5E35B1",
+            tags = listOf("Purchases", "Procurement", "Stock-in", "Suppliers")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/purchases",
+            displayName = "Purchases",
+            iconName = "shopping_bag",
+            menuItems = listOf(
+                createMenuItem("purchase-list", "All Purchases", "/purchases", "shopping_bag", 1, true),
+                createMenuItem("purchase-create", "Create Purchase", "/purchases/create", "add_shopping_cart", 2),
+            )
+        )
+        navigationIndex = 45
+        provider = "Ampairs"
+        sizeMb = 12
+        featured = false
+        displayOrder = 35
         active = true
     }
     
@@ -558,6 +646,52 @@ class MasterModuleSeederService(
         sizeMb = 4
         featured = false
         displayOrder = 65
+        active = true
+    }
+
+    private fun createPricingModule() = MasterModule().apply {
+        moduleCode = "pricing-management"
+        name = "Pricing & Offers"
+        description = "Channel- and segment-aware price lists with quantity tiers and MOQ, reusable geo-zones, and promotions/offers (cart & coupon discounts, BOGO, brand/category targeting) applied on top of resolved prices — fully offline-first"
+        tagline = "Set the right price and run offers for every customer"
+        category = ModuleCategory.SALES_MANAGEMENT
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.BASIC
+        requiredRole = UserRole.MANAGER
+        complexity = ModuleComplexity.ADVANCED
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 8, false, "Run counter offers and customer-group pricing to drive sales"),
+            createBusinessRelevance(BusinessType.WHOLESALE, 10, true, "Essential for channel/segment price lists, quantity tiers, and dealer schemes"),
+            createBusinessRelevance(BusinessType.MANUFACTURING, 9, false, "Useful for distributor pricing tiers and volume-based offers")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = listOf("PRODUCT_READ"),
+            optionalPermissions = listOf("CUSTOMER_READ", "ORDER_READ"),
+            dependencies = listOf("product-management", "customer-management")
+        )
+        uiMetadata = createUIMetadata(
+            icon = "sell",
+            primaryColor = "#C2185B",
+            tags = listOf("Pricing", "Price Lists", "Offers", "Promotions", "Discounts", "Geo Zones")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/pricing",
+            displayName = "Pricing",
+            iconName = "sell",
+            menuItems = listOf(
+                createMenuItem("pricing-overview", "Overview", "/pricing", "dashboard", 1, true),
+                createMenuItem("price-lists", "Price Lists", "/pricing/lists", "list_alt", 2),
+                createMenuItem("offers", "Offers", "/pricing/offers", "local_offer", 3),
+                createMenuItem("geo-zones", "Geo Zones", "/pricing/zones", "place", 4),
+                createMenuItem("price-tester", "Price Tester", "/pricing/tester", "science", 5)
+            )
+        )
+        navigationIndex = 45
+        provider = "Ampairs"
+        sizeMb = 6
+        featured = true
+        displayOrder = 35
         active = true
     }
 

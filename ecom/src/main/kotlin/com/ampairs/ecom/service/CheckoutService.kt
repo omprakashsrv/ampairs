@@ -7,7 +7,9 @@ import com.ampairs.ecom.domain.model.CustomerAddress
 import com.ampairs.ecom.domain.model.EcomOrder
 import com.ampairs.ecom.domain.model.EcomOrderLineItem
 import com.ampairs.ecom.domain.model.Storefront
+import com.ampairs.core.service.EcomCustomerService
 import com.ampairs.ecom.exception.CartExpiredException
+import com.ampairs.ecom.exception.EcomNotLinkedException
 import com.ampairs.ecom.exception.EmptyCartException
 import com.ampairs.ecom.event.EcomOrderEventPublisher
 import com.ampairs.ecom.exception.InvalidDeliveryAddressException
@@ -16,9 +18,15 @@ import com.ampairs.ecom.repository.EcomCartRepository
 import com.ampairs.ecom.repository.EcomOrderLineItemRepository
 import com.ampairs.ecom.repository.EcomOrderRepository
 import com.ampairs.core.config.Constants
+import com.ampairs.core.domain.dto.MoneyDto
 import com.ampairs.core.utils.Helper
+import com.ampairs.pricing.domain.dto.CartLineInput
+import com.ampairs.pricing.domain.dto.OfferApplicationRequest
+import com.ampairs.pricing.service.OfferApplicationService
+import com.ampairs.pricing.util.PricingJson
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
 import java.time.Instant
 
 @Service
@@ -28,7 +36,12 @@ class CheckoutService(
     private val orderLineItemRepository: EcomOrderLineItemRepository,
     private val addressRepository: CustomerAddressRepository,
     private val orderEventPublisher: EcomOrderEventPublisher,
+    private val offerApplicationService: OfferApplicationService,
+    private val ecomCustomerService: EcomCustomerService,
+    private val orderNumberService: EcomOrderNumberService,
 ) {
+
+    private val pricingCurrency = "INR"
 
     @Transactional
     fun checkout(
@@ -37,8 +50,20 @@ class CheckoutService(
         customerId: String,
         customerEmail: String,
         customerName: String,
+        customerPhone: String?,
         storefront: Storefront,
     ): EcomOrder {
+        // A storefront buyer may only order for a distributor they're linked to (an explicit contact,
+        // or a self-confirmed phone-match link via EcomCustomerService.confirmLink). Resolve that CRM
+        // account up front — an unlinked buyer is blocked with a clear message rather than silently
+        // creating a link. Tenant context is set by the controller.
+        val resolvedCustomerId = ecomCustomerService.resolveLinkedCustomerId(
+            ecomUserId = customerId,
+            requestedCustomerId = request.customerId,
+        ) ?: throw EcomNotLinkedException(
+            "Your account is not linked to any distributor. Please contact the business owner to get linked before placing an order."
+        )
+
         val cart = cartRepository.findBySessionToken(sessionToken)
             ?: throw CartExpiredException("Cart not found: $sessionToken")
 
@@ -58,6 +83,9 @@ class CheckoutService(
         // Unique business reference for the order (the column is unique + non-null). Generated here
         // because BaseDomain.prePersist only fills uid — an unset ref inserts "" and collides.
         order.ecomOrderRef = Helper.generateUniqueId("ECO", Constants.ID_LENGTH)
+        // Human-friendly, gap-free number the buyer sees/quotes to identify or track this order —
+        // copied onto the ingested management order too so both sides share the same number.
+        order.orderNumber = orderNumberService.next()
         // Orders await merchant review. The default (PLACED) is a dead state — confirmOrder/
         // editLineItems require PENDING_MERCHANT_REVIEW and advanceStatus has no transition out of
         // PLACED, so a PLACED order can never progress.
@@ -68,6 +96,7 @@ class CheckoutService(
         order.customerId = customerId
         order.customerName = customerName
         order.customerEmail = customerEmail
+        order.customerPhone = customerPhone ?: ""
         order.placedAt = Instant.now()
         order.deliveryAddress = deliveryAddress
         order.notes = request.notes
@@ -76,7 +105,31 @@ class CheckoutService(
         order.subtotal = cartItems.fold(java.math.BigDecimal.ZERO) { acc, item ->
             acc + item.unitPrice.multiply(java.math.BigDecimal(item.quantity))
         }
-        order.totalAmount = order.subtotal
+
+        // Apply eligible promotions server-side (single-sourced engine; the app mirrors it offline).
+        // Lines are already price-resolved; the engine only computes the discount on top.
+        val offerResult = offerApplicationService.apply(
+            OfferApplicationRequest(
+                channel = storefront.defaultChannel,
+                customerId = customerId,
+                pincode = order.deliveryAddress["pinCode"] as? String,
+                currency = pricingCurrency,
+                lines = cartItems.map { item ->
+                    CartLineInput(
+                        productId = item.managementProductId,
+                        quantity = BigDecimal(item.quantity),
+                        unitPriceMinor = item.resolvedUnitPriceMinor
+                            ?: MoneyDto.of(item.unitPrice, pricingCurrency)?.amountMinor ?: 0L,
+                    )
+                },
+            )
+        )
+        val discountMinor = offerResult.totalDiscount.amountMinor
+        order.promotionDiscountMinor = discountMinor.takeIf { it > 0 }
+        order.appliedPromotionsJson = offerResult.appliedOffers
+            .takeIf { it.isNotEmpty() }
+            ?.let { PricingJson.write(it) }
+        order.totalAmount = (order.subtotal - BigDecimal.valueOf(discountMinor).movePointLeft(2)).max(BigDecimal.ZERO)
 
         val savedOrder = orderRepository.save(order)
 
@@ -89,9 +142,14 @@ class CheckoutService(
             li.unitPrice = item.unitPrice
             li.quantityOrdered = item.quantity
             li.lineTotal = item.unitPrice.multiply(java.math.BigDecimal(item.quantity))
+            // Carry the price-resolution snapshot from cart → order line (honored even if a list is later edited).
+            li.resolvedUnitPriceMinor = item.resolvedUnitPriceMinor
+            li.currency = item.currency
+            li.priceSource = item.priceSource
+            li.matchedPriceListUid = item.matchedPriceListUid
             li
         }
-        orderLineItemRepository.saveAll(lineItems)
+        val savedLineItems = orderLineItemRepository.saveAll(lineItems).toMutableList()
 
         if (request.saveAddress && request.deliveryAddress != null) {
             val addr = CustomerAddress()
@@ -110,7 +168,15 @@ class CheckoutService(
         cartRepository.save(cart)
 
         val orderWithItems = orderRepository.findByEcomOrderRef(savedOrder.ecomOrderRef) ?: savedOrder
-        orderEventPublisher.publishOrderPlaced(orderWithItems)
+        // Re-fetching in this same session returns the cached order instance, whose lineItems
+        // collection was initialized empty at construction — the items were persisted through a
+        // separate repository, so the @EntityGraph JOIN FETCH does NOT re-populate it. Attach the
+        // just-saved items in-memory so the placed-event (and the management order + invoice built
+        // from it) actually carry the line items instead of coming through empty.
+        orderWithItems.lineItems = savedLineItems
+        // Carry the resolved (already-linked) CRM account so ingestion attaches the management order
+        // to it directly — no re-resolution/auto-create on the order side.
+        orderEventPublisher.publishOrderPlaced(orderWithItems, resolvedCustomerId)
 
         return orderWithItems
     }

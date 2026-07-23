@@ -22,6 +22,8 @@ data class EcomOrderLineItemResponse(
 data class EcomOrderResponse(
     val uid: String,
     val ecomOrderRef: String,
+    /** Human-friendly order number (e.g. "ECO-00001") — what the buyer sees/quotes to track this order. */
+    val orderNumber: String,
     val storefrontId: String,
     val customerName: String,
     val customerEmail: String,
@@ -52,6 +54,10 @@ fun EcomOrderLineItem.asLineItemResponse() = EcomOrderLineItemResponse(
 fun EcomOrder.asEcomOrderResponse() = EcomOrderResponse(
     uid = uid,
     ecomOrderRef = ecomOrderRef,
+    // Defensive: rows created before V1.0.123/124 (or loaded from a stale replica) can still surface
+    // as a real null here despite the non-null Kotlin type — Hibernate sets fields via reflection,
+    // bypassing the null check the constructor would otherwise enforce.
+    orderNumber = orderNumber.orEmpty(),
     storefrontId = storefrontId,
     customerName = customerName,
     customerEmail = customerEmail,

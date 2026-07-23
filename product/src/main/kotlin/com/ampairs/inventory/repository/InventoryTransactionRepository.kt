@@ -432,4 +432,8 @@ interface InventoryTransactionRepository : CrudRepository<InventoryTransaction, 
         @Param("fromInclusive") fromInclusive: Instant,
         @Param("toExclusive") toExclusive: Instant,
     ): BigDecimal
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(t.updatedAt) FROM inventory_transaction t")
+    fun findMaxUpdatedAt(): Instant?
 }

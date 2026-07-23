@@ -11,10 +11,18 @@ import com.ampairs.ecom.exception.ProductUnavailableException
 import com.ampairs.ecom.repository.EcomCartItemRepository
 import com.ampairs.ecom.repository.EcomCartRepository
 import com.ampairs.ecom.repository.EcomListedProductRepository
+import com.ampairs.ecom.repository.StorefrontRepository
+import com.ampairs.core.domain.dto.MoneyDto
+import com.ampairs.core.domain.enums.SalesChannel
+import com.ampairs.core.multitenancy.TenantContextHolder
+import com.ampairs.ecom.domain.model.EcomListedProduct
+import com.ampairs.pricing.domain.dto.PriceResolutionRequest
+import com.ampairs.pricing.service.PricingResolutionService
 import jakarta.persistence.EntityManager
 import jakarta.persistence.PersistenceContext
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.UUID
@@ -24,7 +32,36 @@ class CartService(
     private val cartRepository: EcomCartRepository,
     private val cartItemRepository: EcomCartItemRepository,
     private val listedProductRepository: EcomListedProductRepository,
+    private val storefrontRepository: StorefrontRepository,
+    private val pricingResolutionService: PricingResolutionService,
 ) {
+
+    private val pricingCurrency = "INR"
+
+    /**
+     * Resolve the effective unit price for a cart line via the pricing engine (in-process), honoring
+     * the storefront's channel + the cart's customer. Falls back to the catalog price when no list
+     * matches → identical to pre-009 behavior for unconfigured merchants.
+     */
+    private fun EcomCartItem.applyResolvedPrice(product: EcomListedProduct, quantity: Int, customerId: String?) {
+        val channel = storefrontRepository.findByOwnerId(TenantContextHolder.getCurrentTenant() ?: "")?.defaultChannel
+            ?: SalesChannel.RETAIL
+        val resolution = pricingResolutionService.resolve(
+            PriceResolutionRequest(
+                channel = channel,
+                productId = product.managementProductId,
+                quantity = BigDecimal(quantity),
+                customerId = customerId,
+                fallbackUnitPriceMinor = MoneyDto.of(product.price, pricingCurrency)?.amountMinor,
+                currency = pricingCurrency,
+            )
+        )
+        unitPrice = MoneyDto(resolution.effectiveUnitPrice.amountMinor, resolution.effectiveUnitPrice.currency).toBigDecimal()
+        resolvedUnitPriceMinor = resolution.effectiveUnitPrice.amountMinor
+        currency = resolution.effectiveUnitPrice.currency
+        priceSource = resolution.source.name
+        matchedPriceListUid = resolution.matchedPriceListUid
+    }
 
     @PersistenceContext
     private lateinit var entityManager: EntityManager
@@ -100,8 +137,8 @@ class CartService(
 
         if (existing != null) {
             existing.quantity = request.quantity
-            existing.unitPrice = product.price
             existing.mrpAtAdd = product.mrp
+            existing.applyResolvedPrice(product, request.quantity, cart.customerId)
             cartItemRepository.save(existing)
         } else {
             val item = EcomCartItem()
@@ -111,10 +148,10 @@ class CartService(
             item.productName = product.name
             item.brand = product.brand
             item.unit = product.unit
-            item.unitPrice = product.price
             item.mrpAtAdd = product.mrp
             item.quantity = request.quantity
             item.primaryImageUrl = product.imageUrls.firstOrNull()
+            item.applyResolvedPrice(product, request.quantity, cart.customerId)
             cartItemRepository.save(item)
         }
 

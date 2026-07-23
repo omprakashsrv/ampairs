@@ -6,6 +6,8 @@ import java.time.Instant
 
 data class EcomOrderPlacedEvent(
     val ecomOrderRef: String,
+    /** Human-friendly order number (e.g. "ECO-00001") — copied onto the ingested management order. */
+    val orderNumber: String = "",
     val workspaceId: String,
     val storefrontId: String,
     val customerId: String,
@@ -17,6 +19,8 @@ data class EcomOrderPlacedEvent(
     val subtotal: BigDecimal,
     val totalAmount: BigDecimal,
     val placedAt: Instant,
+    /** The CRM distributor account checkout already resolved (and confirmed linked) for this buyer. */
+    val requestedCustomerId: String? = null,
 )
 
 data class EcomOrderLineItemPayload(

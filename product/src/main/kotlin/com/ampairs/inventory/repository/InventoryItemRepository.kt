@@ -242,4 +242,8 @@ interface InventoryItemRepository : CrudRepository<InventoryItem, Long>,
     /** Count of active items at/below their (non-zero) reorder level. */
     @Query("SELECT COUNT(i) FROM inventory_item i WHERE i.isActive = true AND i.reorderLevel > 0 AND i.currentStock <= i.reorderLevel")
     fun countLowStock(): Long
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(i.updatedAt) FROM inventory_item i")
+    fun findMaxUpdatedAt(): Instant?
 }

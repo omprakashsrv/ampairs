@@ -18,6 +18,12 @@ interface CustomerRepository : CrudRepository<Customer, Long>, PagingAndSortingR
     @EntityGraph("Customer.withImages")
     fun findByUid(uid: String): Customer?
 
+    /** Existing CRM customer with this phone in the current workspace, for ecom dedup (@TenantId-filtered). */
+    fun findFirstByPhone(phone: String): Customer?
+
+    /** Batch name lookup for the "ecom users" management list (@TenantId-filtered). */
+    fun findByUidIn(uids: List<String>): List<Customer>
+
     @EntityGraph("Customer.withImages")
     @Query("SELECT c FROM customer c WHERE c.updatedAt >= :lastSync ORDER BY c.updatedAt ASC")
     fun findCustomersUpdatedAfter(lastSync: Instant, pageable: Pageable): Page<Customer>
