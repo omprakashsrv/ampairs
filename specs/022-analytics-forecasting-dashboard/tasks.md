@@ -78,9 +78,11 @@ wiring every story needs. **No user-story work starts until this phase is done.*
   `data/common/.../ApiUrlBuilder.kt`. DONE (ampairs-app branch). Verification: ampairs-app CI (KMP build
   is egress-blocked locally — `api.foojay.io` 403 for the JetBrains-vendor toolchain; confirmed).
 - [X] T012 [P] (MOB) `SyncEntity.DEMAND_FORECAST` in `data/sync/.../SyncEntity.kt`. DONE (ampairs-app branch).
-- [ ] T013 (MOB) `AnalyticsRoomDatabase` + `DemandForecastEntity` + DAO (forecast mirror ONLY) in
-  `feature/analytics/.../data/db/`, with platform DB factories `AnalyticsModule.{android,ios,desktop}.kt`
-  using `@SingleIn(WorkspaceScope::class)` + `closableRegistry.register` + explicit reified type param
+- [X] T013 (MOB) `DemandForecastEntity` + `DemandForecastDao` forecast mirror. DONE + CI-green (all 3
+  targets). ADAPTED to main's DB consolidation: the entity/DAO live in `:data:database` (not the feature
+  module) inside the single `AmpairsWorkspaceDatabase` (registered + `abstract fun demandForecastDao()`,
+  version 2→3, `WORKSPACE_MIGRATION_2_3` wired into the 3 platform `DatabaseModule`s, DAO `@Provides` in
+  `WorkspaceDatabaseDaoModule`). No per-feature `AnalyticsRoomDatabase` — that pattern is obsolete.
   (metro-di §5). (depends on T003)
 - [ ] T014 (MOB) `Route.Analytics` in `shared/.../navigation/Routes.kt`, an `AnalyticsEntryProvider`,
   register in `CombinedEntryProvider`, and map `"analytics-dashboard" → Route.Analytics` in
@@ -234,9 +236,11 @@ still renders.
   once the forecast batch (T037–T041) writes them.
 
 ### Mobile implementation (US2)
-- [ ] T043 [US2] (MOB) `DemandForecastSyncDelegate` (PULL-ONLY) `@ContributesIntoMap(WorkspaceScope::class)`
-  + `@SyncEntityKey(SyncEntity.DEMAND_FORECAST)`; implements `pull()` only into the `DemandForecastEntity`
-  mirror (offline-sync skill; no push path). (depends on T013, T030, T012)
+- [X] T043 [US2] (MOB) `DemandForecastSyncDelegate` (PULL-ONLY) `@ContributesIntoMap(WorkspaceScope::class)`
+  + `@SyncEntityKey(SyncEntity.DEMAND_FORECAST)`; batched incremental `pull()` into the mirror, `push`=no-op
+  (`SyncResult.Success(0)`). DONE + CI-green. Also added `AnalyticsApi`/`AnalyticsApiImpl`
+  (`@ContributesBinding(AppScope)`, `ApiUrlBuilder.analyticsUrl("v1/forecasts/sync")`) +
+  `DemandForecastResponse` DTO. Mirrors the pricing `GeoZoneSyncDelegate` pattern.
 - [ ] T044 [US2] (MOB) On-device simple EWMA fallback in `domain/` for offline "expected demand" when no
   backend forecast is present. (depends on T010)
 - [ ] T045 [US2] (MOB) Forecast sparkline widget + reorder-candidate indicator on the dashboard, reading
