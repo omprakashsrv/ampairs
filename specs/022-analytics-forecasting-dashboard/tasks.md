@@ -165,10 +165,13 @@ match the backend `…/dashboard/kpis` to the last currency unit.
   via `SessionUserFilter` (matches every other controller — no manual context).
 
 ### Mobile implementation (US1)
-- [ ] T028 [P] [US1] (MOB) Per-feature aggregate DAO queries (date-bounded `GROUP BY`, indexed) added to
-  each existing module's DB: `feature/invoice` (sales + GST), `feature/order` (sales), `feature/payment`
-  (collections/aging from ledger/party-balance/open bills), `feature/inventory` (stock value/low-stock/turns).
-  One sub-task per module; add covering indexes per R12.
+- [X] T028 [P] [US1] (MOB) Per-feature aggregate DAO queries (date-bounded `GROUP BY`) added to the
+  consolidated `:data:database` `*AgentDao`s (main merged all workspace @Entity/@Dao into one DB, so the
+  aggregates live on the existing read-only agent DAOs, not per-feature DBs): `InvoiceAgentDao` (net/tax/
+  count + GST intra-vs-inter via `place_of_supply IS [NOT] seller_place_of_supply` + `gstByRateBetween` +
+  `salesTrendDaily`), `InventoryAgentDao` (stock value/low-stock/turns via inventory_transactions STOCK_OUT),
+  `PaymentAgentDao` (`sumOutstanding` from party_balance + `openInvoicesForAging` invoice⨝allocation).
+  CI-green (slices 3a `8d56769` + 3b `2bb1808`). No new covering indexes — queries reuse existing PKs/indexes.
 - [ ] T029 [US1] (MOB) `data/query/` cross-module read facade composing the per-feature DAO results in the
   ViewModel (no cross-DB join; second keyed lookup for names — R4). (depends on T028)
 - [ ] T030 [US1] (MOB) `AnalyticsApi(+Impl)` in `data/api/` for deep-history reads via
