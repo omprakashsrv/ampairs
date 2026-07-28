@@ -195,7 +195,7 @@ match the backend `…/dashboard/kpis` to the last currency unit.
   `collectAsStateWithLifecycle`; loading/error states. CI-green all 3 targets (slice 4b `43dc562`).
 - [X] T033 [US1] (MOB) On-device CSV export via the clipboard (Share action) — `buildDashboardCsv` is
   non-composable and takes the currency symbol + period label as String params. (PDF-via-print path
-  deferred as a follow-up; CSV covers the export need.) Pushed slice 4c `e537266` (CI pending).
+  deferred as a follow-up; CSV covers the export need.) CI-green all 3 targets (slice 4c `e537266`).
 
 **Checkpoint**: P1 dashboard works fully offline (MVP). Run T015–T019; `./gradlew :analytics:test` (BE)
 and `:feature:analytics:check` + 3-target compile (MOB) green.
