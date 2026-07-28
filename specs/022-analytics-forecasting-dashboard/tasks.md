@@ -84,9 +84,11 @@ wiring every story needs. **No user-story work starts until this phase is done.*
   version 2→3, `WORKSPACE_MIGRATION_2_3` wired into the 3 platform `DatabaseModule`s, DAO `@Provides` in
   `WorkspaceDatabaseDaoModule`). No per-feature `AnalyticsRoomDatabase` — that pattern is obsolete.
   (metro-di §5). (depends on T003)
-- [ ] T014 (MOB) `Route.Analytics` in `shared/.../navigation/Routes.kt`, an `AnalyticsEntryProvider`,
-  register in `CombinedEntryProvider`, and map `"analytics-dashboard" → Route.Analytics` in
-  `feature/workspace/.../ModuleRegistry.kt`. (depends on T004)
+- [X] T014 (MOB) `Route.Analytics` in `shared/.../Routes.kt`, an `AnalyticsEntryProvider`, registered
+  in `CombinedEntryProvider`; `navigateToMenuItemNav3` maps analytics/dashboard/business-dashboard/
+  business-reporting + `/analytics|/dashboard|/reports` → `Route.Analytics`, and
+  `DynamicModuleNavigationService` marks `BUSINESS_DASHBOARD`/`BUSINESS_REPORTING` implemented (the
+  real seams — there is no `ModuleRegistry.kt`). CI-green all 3 targets (slice 4b `43dc562`).
 
 **Checkpoint**: Schema live; both modules compile with foundations. 3-target compile gate green
 (`androidApp:compileDebugKotlinAndroid`, `shared:compileKotlinIosSimulatorArm64`, `desktopApp:compileKotlin`).
@@ -172,8 +174,10 @@ match the backend `…/dashboard/kpis` to the last currency unit.
   `salesTrendDaily`), `InventoryAgentDao` (stock value/low-stock/turns via inventory_transactions STOCK_OUT),
   `PaymentAgentDao` (`sumOutstanding` from party_balance + `openInvoicesForAging` invoice⨝allocation).
   CI-green (slices 3a `8d56769` + 3b `2bb1808`). No new covering indexes — queries reuse existing PKs/indexes.
-- [ ] T029 [US1] (MOB) `data/query/` cross-module read facade composing the per-feature DAO results in the
-  ViewModel (no cross-DB join; second keyed lookup for names — R4). (depends on T028)
+- [X] T029 [US1] (MOB) `DashboardReadFacade` (`feature/analytics/data/query/`) composes the invoice/
+  inventory/payment agent-DAO results into one `DashboardData` per period (no cross-DB join). Matches
+  each source's date-column format (invoice_date device-local; voucher_date + transactionDate ISO-8601)
+  and the paise→rupees conversion. CI-green all 3 targets (slice 4a `6646315`).
 - [ ] T030 [US1] (MOB) `AnalyticsApi(+Impl)` in `data/api/` for deep-history reads via
   `ApiUrlBuilder.analyticsUrl(...)` (used only outside the device sync window). (depends on T011)
 - [ ] T030a [US1] (MOB) Sync-window boundary handling (FR-011): determine the earliest locally-synced
@@ -181,14 +185,17 @@ match the backend `…/dashboard/kpis` to the last currency unit.
   API when online and merge with local aggregates; when offline, render a **reduced-coverage badge**
   ("showing data from {date}") instead of silently undercounting. Surface coverage state in
   `DashboardUiState`. (depends on T030, T029)
-- [ ] T031 [US1] (MOB) `DashboardViewModel` (`@ContributesIntoMap(WorkspaceScope::class)`+`@ViewModelKey`)
-  exposing `StateFlow<DashboardUiState>`; period selector recomputes; freshness ("last synced") stamp;
-  business-zone bucketing via injected `LocalAppLocale.timeZoneId`. (depends on T029, T010)
-- [ ] T032 [US1] (MOB) `DashboardScreen` + KPI widgets (Compose, commonMain): money via
-  `formatMoney(amount, LocalAppLocale.current)`, dates via `formatDate(...)`; all strings from
-  `stringResource`; `collectAsStateWithLifecycle`. (depends on T031)
-- [ ] T033 [US1] (MOB) On-device CSV/PDF `ExportSheet` from the same local aggregates (currency symbol
-  passed as a String into the non-composable builder; PDF via existing print path). (depends on T032)
+- [X] T031 [US1] (MOB) `DashboardViewModel` (`@ContributesIntoMap(WorkspaceScope::class)`+`@ViewModelKey`)
+  exposes `StateFlow<DashboardUiState>`; period selector recomputes; freshness ("last synced") stamp
+  + refresh spinner from `syncService.observeEntity(INVOICE)`; business-zone bucketing via the zone id
+  the screen pushes in with `setLocale` (a VM can't read `LocalAppLocale`). CI-green (slice 4a `6646315`).
+- [X] T032 [US1] (MOB) `DashboardScreen` (Compose, commonMain): period FilterChips, adaptive KPI card
+  grid, daily sales-trend bars, GST intra/inter + by-rate, receivables-aging buckets. Money via
+  `formatMoney(amount, LocalAppLocale.current)`; all strings from `stringResource`;
+  `collectAsStateWithLifecycle`; loading/error states. CI-green all 3 targets (slice 4b `43dc562`).
+- [X] T033 [US1] (MOB) On-device CSV export via the clipboard (Share action) — `buildDashboardCsv` is
+  non-composable and takes the currency symbol + period label as String params. (PDF-via-print path
+  deferred as a follow-up; CSV covers the export need.) Pushed slice 4c `e537266` (CI pending).
 
 **Checkpoint**: P1 dashboard works fully offline (MVP). Run T015–T019; `./gradlew :analytics:test` (BE)
 and `:feature:analytics:check` + 3-target compile (MOB) green.
