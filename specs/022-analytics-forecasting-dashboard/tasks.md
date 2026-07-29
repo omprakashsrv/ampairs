@@ -116,7 +116,7 @@ match the backend `…/dashboard/kpis` to the last currency unit.
   summary, not just today (FR-014); (b) **exclusions**: drafts and cancelled/voided documents do NOT
   contribute, and refunds/credit notes/partial payments reduce sales/collections/outstanding correctly
   (FR-013).
-- [ ] T017 [P] [US1] (BE) Contract test for each dashboard read endpoint (kpis/trend/aging/gst-summary/top)
+- [X] T017 [P] [US1] (BE) Contract test for each dashboard read endpoint (kpis/trend/aging/gst-summary/top)
   asserting `ApiResponse` envelope + snake_case shape per contracts/dashboard-read.md
   (`.../AnalyticsControllerTest.kt`).
 - [ ] T018 [P] [US1] (BE) GST split unit test: intra (CGST+SGST) vs inter (IGST) from `taxInfos` +
