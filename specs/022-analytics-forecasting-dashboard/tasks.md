@@ -251,10 +251,17 @@ still renders.
   (`SyncResult.Success(0)`). DONE + CI-green. Also added `AnalyticsApi`/`AnalyticsApiImpl`
   (`@ContributesBinding(AppScope)`, `ApiUrlBuilder.analyticsUrl("v1/forecasts/sync")`) +
   `DemandForecastResponse` DTO. Mirrors the pricing `GeoZoneSyncDelegate` pattern.
-- [ ] T044 [US2] (MOB) On-device simple EWMA fallback in `domain/` for offline "expected demand" when no
+- [X] T044 [US2] (MOB) On-device simple EWMA fallback in `domain/` for offline "expected demand" when no
   backend forecast is present. (depends on T010)
-- [ ] T045 [US2] (MOB) Forecast sparkline widget + reorder-candidate indicator on the dashboard, reading
+  DONE: `DemandForecasting` (feature/analytics `domain/`) — pure EWMA; `ewma()` per-day level +
+  `expectedDemand()` horizon-total (matches server `mean_qty` units). Unit-tested (`DemandForecastingTest`).
+- [X] T045 [US2] (MOB) Forecast sparkline widget + reorder-candidate indicator on the dashboard, reading
   the mirror with EWMA fallback. (depends on T043, T044, T032)
+  DONE: `DashboardReadFacade.loadForecasts` reads `DemandForecastDao.latestPerProduct` (server wins) and
+  falls back to EWMA over `InvoiceAgentDao.topProductUnitsBetween` when the mirror is empty; `ProductForecast`
+  domain model carries a trailing 14-day units series + reorder flag (stock < horizon demand). UI:
+  `ForecastSection` with a Canvas sparkline, reorder badge, confidence/estimated subtitle; also added to
+  the CSV export. New read-only DAO queries only (no schema change).
 
 **Checkpoint**: US1 + US2 both work independently. Run T034–T036; suites green.
 
