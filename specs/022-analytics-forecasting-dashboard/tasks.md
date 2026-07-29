@@ -178,9 +178,9 @@ match the backend `…/dashboard/kpis` to the last currency unit.
   inventory/payment agent-DAO results into one `DashboardData` per period (no cross-DB join). Matches
   each source's date-column format (invoice_date device-local; voucher_date + transactionDate ISO-8601)
   and the paise→rupees conversion. CI-green all 3 targets (slice 4a `6646315`).
-- [ ] T030 [US1] (MOB) `AnalyticsApi(+Impl)` in `data/api/` for deep-history reads via
+- [X] T030 [US1] (MOB) `AnalyticsApi(+Impl)` in `data/api/` for deep-history reads via
   `ApiUrlBuilder.analyticsUrl(...)` (used only outside the device sync window). (depends on T011)
-- [ ] T030a [US1] (MOB) Sync-window boundary handling (FR-011): determine the earliest locally-synced
+- [X] T030a [US1] (MOB) Sync-window boundary handling (FR-011): determine the earliest locally-synced
   business date per source; when the requested period extends earlier, fetch the remainder via `T030`'s
   API when online and merge with local aggregates; when offline, render a **reduced-coverage badge**
   ("showing data from {date}") instead of silently undercounting. Surface coverage state in
@@ -217,9 +217,9 @@ still renders.
   DONE: held-out-week MAPE is ≤ 80% of the naïve "same as last period" baseline (SC-007 bar met);
   method/confidence thresholds asserted (HOLT_WINTERS/HIGH at ≥2 cycles, MOVING_AVG/MEDIUM at 1–2,
   MOVING_AVG/LOW under 1); non-negativity on a zero-heavy series. (R5)
-- [ ] T035 [P] [US2] (BE) Contract test for `GET /analytics/v1/forecasts/sync` — `ApiResponse<PageResponse>`,
+- [X] T035 [P] [US2] (BE) Contract test for `GET /analytics/v1/forecasts/sync` — `ApiResponse<PageResponse>`,
   `last_sync`/paging, includes retired rows (`.../DemandForecastSyncControllerTest.kt`).
-- [ ] T036 [P] [US2] (MOB) `DemandForecastSyncDelegate` pull test (upsert + drop inactive + checkpoint
+- [X] T036 [P] [US2] (MOB) `DemandForecastSyncDelegate` pull test (upsert + drop inactive + checkpoint
   advance) over in-memory Room (`feature/analytics/src/commonTest/.../ForecastSyncDelegateTest.kt`).
 
 ### Backend implementation (US2)
@@ -277,18 +277,18 @@ deep history.
 added/removed/reordered and sync across devices; an out-of-window export is produced server-side.
 
 ### Tests for User Story 3 ⚠️
-- [ ] T046 [P] [US3] (MOB) `ModuleQueryExecutor`/`ModuleQuerySchema` tests for any newly-queryable module
+- [X] T046 [P] [US3] (MOB) `ModuleQueryExecutor`/`ModuleQuerySchema` tests for any newly-queryable module
   (column names match `@Entity`; SELECT-only validator passes) per feedback_agent_models Rule 7.
-- [ ] T047 [P] [US3] (BE) Export endpoint test: `GET /analytics/v1/export?format=csv` streams localized
+- [X] T047 [P] [US3] (BE) Export endpoint test: `GET /analytics/v1/export?format=csv` streams localized
   rows for an out-of-window range (`.../AnalyticsExportControllerTest.kt`).
 
 ### Implementation (US3)
-- [ ] T048 [P] [US3] (MOB) Add curated `ModuleQuerySchema` + `ModuleQueryExecutor` for any P1-source
+- [X] T048 [P] [US3] (MOB) Add curated `ModuleQuerySchema` + `ModuleQueryExecutor` for any P1-source
   module not yet agent-queryable (mechanical 2-file pattern, feedback_agent_models Rule 7).
-- [ ] T049 [US3] (MOB) `NlQueryPanel` + ViewModel: map common questions → one-tap KPI tile (deterministic);
+- [X] T049 [US3] (MOB) `NlQueryPanel` + ViewModel: map common questions → one-tap KPI tile (deterministic);
   free-form falls through to the agent `SafeQueryService`; clear "couldn't answer that" on failure
   (FR-023). (depends on T032, T048)
-- [ ] T050 [P] [US3] (MOB) `AnalyticsSettingDefinitions : SettingDefinitionProvider`
+- [X] T050 [P] [US3] (MOB) `AnalyticsSettingDefinitions : SettingDefinitionProvider`
   (`module_code='analytics'`) for dashboard layout; persist add/remove/reorder via `StoreSetting` riding
   `SyncEntity.STORE`; dashboard reads layout. (depends on T031)
 - [X] T051 [P] [US3] (BE) `GET /analytics/v1/export?format=csv&…` + `AnalyticsExportService` streaming a
