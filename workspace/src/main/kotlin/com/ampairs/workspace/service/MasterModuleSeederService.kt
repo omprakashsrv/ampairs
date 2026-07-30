@@ -81,7 +81,8 @@ class MasterModuleSeederService(
             createPrintingModule(),
             createStorefrontModule(),
             createPricingModule(),
-            createAiAssistantModule()
+            createAiAssistantModule(),
+            createAnalyticsModule()
         )
     }
 
@@ -692,6 +693,54 @@ class MasterModuleSeederService(
         sizeMb = 6
         featured = true
         displayOrder = 35
+        active = true
+    }
+
+    /**
+     * Analytics & Forecasting Dashboard (feature 022). `moduleCode = "business-dashboard"` is the code
+     * the mobile client already recognises (`ModuleCodes.BUSINESS_DASHBOARD`, routed to
+     * `Route.Analytics`); without this catalog entry no workspace can enable the dashboard and it never
+     * appears in the app menu.
+     */
+    private fun createAnalyticsModule() = MasterModule().apply {
+        moduleCode = "business-dashboard"
+        name = "Analytics Dashboard"
+        description = "Offline-first business dashboard — sales, collections, receivables aging, GST summary and inventory KPIs with charts, plus per-product demand forecasts and a natural-language query panel."
+        tagline = "Your business at a glance — offline, with charts and forecasts"
+        category = ModuleCategory.ANALYTICS_REPORTING
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.FREE
+        requiredRole = UserRole.EMPLOYEE
+        complexity = ModuleComplexity.STANDARD
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 9, false, "Daily sales, collections and low-stock at a glance"),
+            createBusinessRelevance(BusinessType.WHOLESALE, 9, false, "Receivables aging, GST summary and demand forecasts for reorder"),
+            createBusinessRelevance(BusinessType.MANUFACTURING, 8, false, "Inventory turns and per-product demand forecasting")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = emptyList(),
+            optionalPermissions = listOf("INVOICE_READ", "PAYMENT_READ", "INVENTORY_READ", "PRODUCT_READ"),
+            dependencies = emptyList()
+        )
+        uiMetadata = createUIMetadata(
+            icon = "dashboard",
+            primaryColor = "#6750A4",
+            tags = listOf("Analytics", "Dashboard", "Forecast", "KPI", "Reports", "Charts")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/analytics",
+            displayName = "Dashboard",
+            iconName = "dashboard",
+            menuItems = listOf(
+                createMenuItem("analytics-dashboard", "Dashboard", "/analytics", "dashboard", 1, true)
+            )
+        )
+        navigationIndex = 5
+        provider = "Ampairs"
+        sizeMb = 3
+        featured = true
+        displayOrder = 5
         active = true
     }
 
