@@ -33,11 +33,11 @@ backend ≥80% coverage on bucketing/recompute/forecast (JUnit + Testcontainers)
 - [X] T002 (BE) Wire backend module: add `include("analytics")` to `settings.gradle.kts`,
   `implementation(project(":analytics"))` to `ampairs_service/build.gradle.kts`, and add `"analytics"`
   to the `migrationModules` list in `ampairs_service/build.gradle.kts`. (depends on T001)
-- [ ] T003 [P] (MOB) Create `feature/analytics` module skeleton: `feature/analytics/build.gradle.kts`
+- [X] T003 [P] (MOB) Create `feature/analytics` module skeleton: `feature/analytics/build.gradle.kts`
   (KMP: android/ios/desktop targets, Metro, Room KMP, Ktor, kotlinx.datetime, depends on `data/common`,
   `data/sync`, `feature/agent` query API; `compose.resources { packageOfResClass = "ampairsapp.feature.analytics.generated.resources" }`),
   package tree `feature/analytics/src/{commonMain,androidMain,iosMain,desktopMain}/kotlin/com/ampairs/analytics/{data/api,data/db,data/query,domain,di,sync,ui}` + `commonMain/composeResources/values/strings.xml`.
-- [ ] T004 (MOB) Wire mobile module: add `:feature:analytics` to `settings.gradle.kts` and as a
+- [X] T004 (MOB) Wire mobile module: add `:feature:analytics` to `settings.gradle.kts` and as a
   dependency of `shared/build.gradle.kts`. (depends on T003)
 
 **Checkpoint**: Both modules compile empty (`./gradlew :analytics:compileKotlin` (BE);
@@ -71,7 +71,7 @@ wiring every story needs. **No user-story work starts until this phase is done.*
   `flywayInfo` shows `V1.0.105` applied. (depends on T008; requires a running DB — not run in sandbox)
 
 ### Mobile foundations
-- [ ] T010 [P] (MOB) Domain models in `feature/analytics/.../domain/`: `MetricDefinition`, `KpiResult`,
+- [X] T010 [P] (MOB) Domain models in `feature/analytics/.../domain/`: `MetricDefinition`, `KpiResult`,
   `Period`, `AgingBucket`, aging/turns math helpers, business-zone bucketing util (injected `TimeZone`,
   never `currentSystemDefault()` — cmp-practices §12 / R7).
 - [X] T011 [P] (MOB) `ApiUrlBuilder.analyticsUrl(path)` → `/api/analytics/{path}` in
@@ -119,9 +119,9 @@ match the backend `…/dashboard/kpis` to the last currency unit.
 - [X] T017 [P] [US1] (BE) Contract test for each dashboard read endpoint (kpis/trend/aging/gst-summary/top)
   asserting `ApiResponse` envelope + snake_case shape per contracts/dashboard-read.md
   (`.../AnalyticsControllerTest.kt`).
-- [ ] T018 [P] [US1] (BE) GST split unit test: intra (CGST+SGST) vs inter (IGST) from `taxInfos` +
+- [X] T018 [P] [US1] (BE) GST split unit test: intra (CGST+SGST) vs inter (IGST) from `taxInfos` +
   `placeOfSupply` reconciles to invoice tax (`.../GstSummaryServiceTest.kt`). (R10/SC-006)
-- [ ] T019 [P] [US1] (MOB) Aggregate-DAO unit tests for sales/aging/GST/top/inventory math over an
+- [X] T019 [P] [US1] (MOB) Aggregate-DAO unit tests for sales/aging/GST/top/inventory math over an
   in-memory Room DB with seeded rows (`feature/analytics/src/commonTest/.../KpiQueryTest.kt`). Include a
   **device-timezone-agreement** case: the same seeded rows bucketed with an injected business `TimeZone`
   produce identical day/month totals regardless of the simulated device zone (SC-003, two-device
@@ -302,11 +302,11 @@ added/removed/reordered and sync across devices; an out-of-window export is prod
 
 ## Phase 6: Polish & Cross-Cutting Concerns
 
-- [ ] T052 [P] (BE) Backend coverage ≥80% on bucketing/recompute/forecast; fill gaps; `./gradlew :analytics:test`.
-- [ ] T053 [P] (MOB) `:feature:analytics:check` + 3-target compile gate; fix any KMP platform leaks.
+- [X] T052 [P] (BE) Backend coverage ≥80% on bucketing/recompute/forecast; fill gaps; `./gradlew :analytics:test`.
+- [X] T053 [P] (MOB) `:feature:analytics:check` + 3-target compile gate; fix any KMP platform leaks.
 - [ ] T054 [P] Run `quickstart.md` end-to-end (backend recompute + reads; mobile offline walkthrough;
   parity spot-check SC-004).
-- [ ] T055 [P] Docs: add `analytics/CLAUDE.md` (BE) and a short `feature/analytics` note (MOB); update
+- [X] T055 [P] Docs: add `analytics/CLAUDE.md` (BE) and a short `feature/analytics` note (MOB); update
   module ownership table if needed.
 - [ ] T056 Performance pass: confirm each tile renders <1s and a period switch recomputes <1s
   (SC-001/SC-002) on the spec's SMB volume baseline (per Assumptions: ~thousands of invoices/orders and
