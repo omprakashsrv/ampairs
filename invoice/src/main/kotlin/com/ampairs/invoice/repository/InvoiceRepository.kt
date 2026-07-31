@@ -1,5 +1,6 @@
 package com.ampairs.invoice.repository
 
+import com.ampairs.invoice.domain.enums.InvoiceStatus
 import com.ampairs.invoice.domain.model.Invoice
 import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.Query
@@ -23,4 +24,15 @@ interface InvoiceRepository : CrudRepository<Invoice, Long> {
     /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
     @Query("SELECT MAX(i.updatedAt) FROM invoice i")
     fun findMaxUpdatedAt(): Instant?
+
+    /**
+     * Finalized invoices whose invoiceDate falls in [fromInclusive, toExclusive). Backs the analytics
+     * module's KPI rebuild. @TenantId scopes this to the current workspace.
+     */
+    @EntityGraph("Invoice.withItems")
+    fun findByStatusAndInvoiceDateGreaterThanEqualAndInvoiceDateLessThan(
+        status: InvoiceStatus,
+        fromInclusive: Instant,
+        toExclusive: Instant,
+    ): List<Invoice>
 }

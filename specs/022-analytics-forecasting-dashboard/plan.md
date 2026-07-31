@@ -1,6 +1,6 @@
 # Implementation Plan: Analytics & Forecasting Dashboard
 
-**Branch**: `claude/indian-retail-ecosystem-877med` (spec dir `022-analytics-forecasting-dashboard`) | **Date**: 2026-06-27 | **Spec**: [spec.md](./spec.md)
+**Branch**: `claude/analytics-forecasting-dashboard-0cqkrv` (spec dir `022-analytics-forecasting-dashboard`) | **Date**: 2026-06-27 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/022-analytics-forecasting-dashboard/spec.md`
 
 ## Summary
@@ -152,8 +152,10 @@ Room DBs and pulls only the forecast, mirroring how `feature/agent` already read
 ### P1 — MVP: offline KPI dashboard (sales, collections/aging, top-N, GST, inventory)
 
 - **Backend entities**: `KpiDailySummary` (`owner_id`, `business_date`, `metric_group`, dimension keys
-  `dim_product_id?`/`dim_customer_id?`/`tax_rate?`, measures `gross_minor`/`net_minor`/`tax_minor`/
-  `count`/`qty(15,3)` as `DECIMAL(19,4)`), unique `(owner_id, business_date, metric_group, dim_*)`.
+  `dim_product_id?`/`dim_customer_id?`/`tax_rate?`, money measures `gross_amount`/`net_amount`/
+  `tax_amount` as `DECIMAL(19,4)`, plus `qty DECIMAL(19,3)` and `doc_count INT`), unique
+  `(owner_id, business_date, metric_group, dim_*)`. (Mobile mirrors money as `Long` minor units after the
+  `/sync` boundary — see data-model.md §money-unit resolution.)
 - **Backend services**: `KpiRollupService` — `@TransactionalEventListener(AFTER_COMMIT)` on
   `InvoiceFinalizedEvent`/`InvoicePaidEvent`/`OrderEvents`/`InventoryStockUpdatedEvent` upserts the
   affected day's buckets (business-zone date, R7); `@Scheduled` nightly reconcile recomputes trailing N
