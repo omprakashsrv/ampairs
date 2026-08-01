@@ -59,7 +59,7 @@ dependencies {
     implementation("io.awspring.cloud:spring-cloud-aws-starter-sns")
 
     // Firebase Admin SDK for authentication verification
-    implementation("com.google.firebase:firebase-admin:9.9.0")
+    implementation("com.google.firebase:firebase-admin:9.10.0")
 
     // OpenAPI/Swagger Documentation
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
