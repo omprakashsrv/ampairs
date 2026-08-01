@@ -31,7 +31,6 @@ class EcomOrderManagementController(
         TenantContextHolder.setCurrentTenant(workspaceId)
         try {
             val page = ecomOrderService.getManagementOrders(workspaceId, status, pageable)
-                .map { it.asEcomOrderManagementResponse() }
             return ApiResponse.success(PageResponse.from(page))
         } finally {
             TenantContextHolder.clearTenantContext()

@@ -2,9 +2,11 @@ package com.ampairs.notification.service
 
 import com.ampairs.notification.config.NotificationProperties
 import com.ampairs.notification.model.NotificationQueue
+import com.ampairs.notification.port.DevicePushTokenPort
 import com.ampairs.notification.provider.NotificationChannel
 import com.ampairs.notification.provider.NotificationResult
 import com.ampairs.notification.provider.NotificationStatus
+import com.ampairs.notification.provider.push.FcmPushProvider
 import com.ampairs.notification.provider.sms.AwsSnsSmsProvider
 import com.ampairs.notification.provider.sms.Msg91SmsProvider
 import com.ampairs.notification.repository.NotificationQueueRepository
@@ -14,6 +16,10 @@ import org.junit.jupiter.api.Test
 import org.mockito.Mock
 import org.mockito.Mockito.*
 import org.mockito.MockitoAnnotations
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.eq
+import org.springframework.beans.factory.ObjectProvider
 import java.util.concurrent.Executor
 
 class NotificationServiceTest {
@@ -28,10 +34,16 @@ class NotificationServiceTest {
     private lateinit var awsSnsSmsProvider: AwsSnsSmsProvider
 
     @Mock
+    private lateinit var fcmPushProvider: FcmPushProvider
+
+    @Mock
     private lateinit var taskExecutor: Executor
 
     @Mock
     private lateinit var notificationDatabaseService: NotificationDatabaseService
+
+    @Mock
+    private lateinit var devicePushTokenPort: ObjectProvider<DevicePushTokenPort>
 
     private lateinit var notificationService: NotificationService
 
@@ -58,9 +70,11 @@ class NotificationServiceTest {
             notificationQueueRepository,
             msg91SmsProvider,
             awsSnsSmsProvider,
+            fcmPushProvider,
             taskExecutor,
             notificationDatabaseService,
-            props
+            props,
+            devicePushTokenPort,
         )
     }
 
@@ -129,13 +143,13 @@ class NotificationServiceTest {
         )
 
         `when`(msg91SmsProvider.isAvailable()).thenReturn(true)
-        `when`(msg91SmsProvider.sendNotification(anyString(), anyString())).thenReturn(successResult)
+        `when`(msg91SmsProvider.sendNotification(any(), any(), anyOrNull(), any())).thenReturn(successResult)
 
         // When
         notificationService.processSingleNotification(notificationQueue)
 
         // Then
-        verify(msg91SmsProvider, times(1)).sendNotification("+919876543210", "Test OTP: 123456")
+        verify(msg91SmsProvider, times(1)).sendNotification(eq("+919876543210"), eq("Test OTP: 123456"), anyOrNull(), any())
         // Note: Database service verification disabled due to Mockito argument matcher issues
         // The functionality is working correctly as evidenced by the logs showing successful processing
     }
@@ -166,16 +180,16 @@ class NotificationServiceTest {
         )
 
         `when`(msg91SmsProvider.isAvailable()).thenReturn(true)
-        `when`(msg91SmsProvider.sendNotification(anyString(), anyString())).thenReturn(failedResult)
+        `when`(msg91SmsProvider.sendNotification(any(), any(), anyOrNull(), any())).thenReturn(failedResult)
         `when`(awsSnsSmsProvider.isAvailable()).thenReturn(true)
-        `when`(awsSnsSmsProvider.sendNotification(anyString(), anyString())).thenReturn(successResult)
+        `when`(awsSnsSmsProvider.sendNotification(any(), any(), anyOrNull(), any())).thenReturn(successResult)
 
         // When
         notificationService.processSingleNotification(notificationQueue)
 
         // Then
-        verify(msg91SmsProvider, times(1)).sendNotification("+919876543210", "Test OTP: 123456")
-        verify(awsSnsSmsProvider, times(1)).sendNotification("+919876543210", "Test OTP: 123456")
+        verify(msg91SmsProvider, times(1)).sendNotification(eq("+919876543210"), eq("Test OTP: 123456"), anyOrNull(), any())
+        verify(awsSnsSmsProvider, times(1)).sendNotification(eq("+919876543210"), eq("Test OTP: 123456"), anyOrNull(), any())
         // Note: Database service verification disabled due to Mockito argument matcher issues
         // The functionality is working correctly as evidenced by the logs showing successful fallback
     }
@@ -206,16 +220,16 @@ class NotificationServiceTest {
         )
 
         `when`(msg91SmsProvider.isAvailable()).thenReturn(true)
-        `when`(msg91SmsProvider.sendNotification(anyString(), anyString())).thenReturn(failedResult1)
+        `when`(msg91SmsProvider.sendNotification(any(), any(), anyOrNull(), any())).thenReturn(failedResult1)
         `when`(awsSnsSmsProvider.isAvailable()).thenReturn(true)
-        `when`(awsSnsSmsProvider.sendNotification(anyString(), anyString())).thenReturn(failedResult2)
+        `when`(awsSnsSmsProvider.sendNotification(any(), any(), anyOrNull(), any())).thenReturn(failedResult2)
 
         // When
         notificationService.processSingleNotification(notificationQueue)
 
         // Then
-        verify(msg91SmsProvider, times(1)).sendNotification("+919876543210", "Test OTP: 123456")
-        verify(awsSnsSmsProvider, times(1)).sendNotification("+919876543210", "Test OTP: 123456")
+        verify(msg91SmsProvider, times(1)).sendNotification(eq("+919876543210"), eq("Test OTP: 123456"), anyOrNull(), any())
+        verify(awsSnsSmsProvider, times(1)).sendNotification(eq("+919876543210"), eq("Test OTP: 123456"), anyOrNull(), any())
         // Note: Database service verification disabled due to Mockito argument matcher issues
         // The functionality is working correctly as evidenced by the logs showing both providers being tried
     }

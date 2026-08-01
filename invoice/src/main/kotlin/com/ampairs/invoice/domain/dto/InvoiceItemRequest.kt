@@ -24,6 +24,13 @@ data class InvoiceItemRequest(
     val active: Boolean = true,
     val softDeleted: Boolean = false,
     val discount: List<Discount>? = null,
+    // 009 pricing snapshot — client-resolved; persisted verbatim (no server re-resolution).
+    var resolvedUnitPriceMinor: Long? = null,
+    var currency: String? = null,
+    var priceSource: String? = null,
+    var matchedPriceListUid: String? = null,
+    var appliedTierMinQty: Double? = null,
+    var belowMoq: Boolean? = null,
 )
 
 fun List<InvoiceItemRequest>.toInvoiceItems(): List<InvoiceItem> {
@@ -41,6 +48,9 @@ fun List<InvoiceItemRequest>.toInvoiceItems(): List<InvoiceItem> {
         invoiceItem.totalTax = it.totalTax
         invoiceItem.basePrice = it.basePrice
         invoiceItem.invoiceId = it.invoiceId
+        // A removed line arrives as active = false (or softDeleted = true); persisted verbatim so the
+        // deletion round-trips on the invoice /sync feed.
+        invoiceItem.active = it.active && !it.softDeleted
         invoiceItem.productId = it.productId
         invoiceItem.taxCode = it.taxCode
         invoiceItem.unitId = it.unitId
@@ -48,6 +58,12 @@ fun List<InvoiceItemRequest>.toInvoiceItems(): List<InvoiceItem> {
         invoiceItem.variantSku = it.variantSku
         invoiceItem.taxInfos = it.taxInfos
         invoiceItem.discount = it.discount
+        invoiceItem.resolvedUnitPriceMinor = it.resolvedUnitPriceMinor
+        invoiceItem.currency = it.currency
+        invoiceItem.priceSource = it.priceSource
+        invoiceItem.matchedPriceListUid = it.matchedPriceListUid
+        invoiceItem.appliedTierMinQty = it.appliedTierMinQty
+        invoiceItem.belowMoq = it.belowMoq
         invoiceItem
     }
 }

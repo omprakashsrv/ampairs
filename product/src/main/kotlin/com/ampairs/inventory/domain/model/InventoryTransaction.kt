@@ -3,6 +3,10 @@ package com.ampairs.inventory.domain.model
 import com.ampairs.core.domain.model.OwnableBaseDomain
 import com.ampairs.inventory.config.Constants
 import jakarta.persistence.*
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.annotations.NotFound
+import org.hibernate.annotations.NotFoundAction
+import org.hibernate.type.SqlTypes
 import java.math.BigDecimal
 import java.time.Instant
 
@@ -89,8 +93,12 @@ class InventoryTransaction : OwnableBaseDomain() {
     var inventoryItemId: String = ""
 
     /**
-     * Inventory item entity (lazy loaded)
+     * Inventory item entity (lazy loaded).
+     * NotFound(IGNORE): offline-synced transactions can reference an item uid not present on the
+     * server; without it Hibernate throws EntityFilterException on any read joining the
+     * association instead of resolving null.
      */
+    @NotFound(action = NotFoundAction.IGNORE)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
         name = "inventory_item_id",
@@ -114,8 +122,11 @@ class InventoryTransaction : OwnableBaseDomain() {
     var warehouseId: String = ""
 
     /**
-     * Warehouse entity (lazy loaded)
+     * Warehouse entity (lazy loaded).
+     * NotFound(IGNORE): warehouseId can be '' for offline-synced movements when the workspace has
+     * no default warehouse; resolves null instead of throwing EntityFilterException.
      */
+    @NotFound(action = NotFoundAction.IGNORE)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
         name = "warehouse_id",
@@ -182,8 +193,8 @@ class InventoryTransaction : OwnableBaseDomain() {
      * Serial numbers (optional - for serial-tracked items)
      * Stored as JSON array: ["SN001", "SN002", "SN003"]
      */
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "serial_numbers", columnDefinition = "JSON")
-    @Convert(converter = StringListJsonConverter::class)
     var serialNumbers: List<String>? = null
 
     // ============================================================================
@@ -211,6 +222,31 @@ class InventoryTransaction : OwnableBaseDomain() {
     var referenceNumber: String? = null
 
     // ============================================================================
+    // Source / Idempotency (spec 014 — order/invoice → stock integration)
+    // ============================================================================
+
+    /**
+     * Source of an automatic stock movement (ORDER, INVOICE, RETURN, MANUAL, COUNT).
+     * Used together with [sourceId] + [sourceLineUid] to make auto-deduction idempotent.
+     */
+    @Column(name = "source_type", length = 50)
+    var sourceType: String? = null
+
+    /**
+     * Source document UID (e.g. the order or invoice uid) for an automatic movement.
+     */
+    @Column(name = "source_id", length = 200)
+    var sourceId: String? = null
+
+    /**
+     * Per-line idempotency key for an automatic movement. The partial unique index
+     * (source_type, source_id, source_line_uid, owner_id) — WHERE source_line_uid IS NOT NULL —
+     * guarantees a retried/duplicated sale event never double-counts. Null for manual movements.
+     */
+    @Column(name = "source_line_uid", length = 200)
+    var sourceLineUid: String? = null
+
+    // ============================================================================
     // Transaction Metadata
     // ============================================================================
 
@@ -236,6 +272,7 @@ class InventoryTransaction : OwnableBaseDomain() {
     /**
      * Extensible attributes (JSON)
      */
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "attributes", columnDefinition = "JSON")
     var attributes: Map<String, Any>? = null
 
@@ -292,34 +329,3 @@ class InventoryTransaction : OwnableBaseDomain() {
     }
 }
 
-/**
- * JPA Converter for List<String> to JSON
- * Handles serialization/deserialization of serial numbers array
- */
-@Converter
-class StringListJsonConverter : jakarta.persistence.AttributeConverter<List<String>?, String?> {
-
-    override fun convertToDatabaseColumn(attribute: List<String>?): String? {
-        if (attribute.isNullOrEmpty()) return null
-
-        // Simple JSON array serialization
-        return attribute.joinToString(
-            separator = ",",
-            prefix = "[\"",
-            postfix = "\"]",
-            transform = { it.replace("\"", "\\\"") }
-        )
-    }
-
-    override fun convertToEntityAttribute(dbData: String?): List<String>? {
-        if (dbData.isNullOrBlank() || dbData == "null") return null
-
-        // Simple JSON array deserialization
-        val cleaned = dbData.trim().removeSurrounding("[", "]").trim()
-        if (cleaned.isEmpty()) return emptyList()
-
-        return cleaned
-            .split("\",\"")
-            .map { it.trim().removeSurrounding("\"").replace("\\\"", "\"") }
-    }
-}

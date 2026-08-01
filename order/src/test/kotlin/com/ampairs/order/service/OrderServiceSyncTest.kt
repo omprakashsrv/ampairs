@@ -1,13 +1,17 @@
 package com.ampairs.order.service
 
+import com.ampairs.event.domain.kafka.EcomOrderStatusEvent
 import com.ampairs.order.domain.dto.OrderItemRequest
 import com.ampairs.order.domain.dto.OrderUpdateRequest
+import com.ampairs.order.domain.enums.OrderStatus
 import com.ampairs.order.domain.model.Order
 import com.ampairs.order.domain.model.OrderItem
 import com.ampairs.order.repository.OrderItemRepository
 import com.ampairs.order.repository.OrderPagingRepository
 import com.ampairs.order.repository.OrderRepository
+import com.ampairs.inventory.service.InventoryStockService
 import com.ampairs.invoice.service.InvoiceService
+import com.ampairs.order.kafka.EcomOrderStatusProducer
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -15,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.kotlin.any
+import org.mockito.kotlin.argThat
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
@@ -36,13 +41,15 @@ class OrderServiceSyncTest {
     @Mock private lateinit var orderItemRepository: OrderItemRepository
     @Mock private lateinit var orderPagingRepository: OrderPagingRepository
     @Mock private lateinit var invoiceService: InvoiceService
+    @Mock private lateinit var inventoryStockService: InventoryStockService
     @Mock private lateinit var eventPublisher: ApplicationEventPublisher
+    @Mock private lateinit var ecomOrderStatusProducer: EcomOrderStatusProducer
 
     private lateinit var service: OrderService
 
     @BeforeEach
     fun setup() {
-        service = OrderService(orderRepository, orderItemRepository, orderPagingRepository, invoiceService, eventPublisher)
+        service = OrderService(orderRepository, orderItemRepository, orderPagingRepository, invoiceService, inventoryStockService, eventPublisher, ecomOrderStatusProducer)
     }
 
     @Test
@@ -102,6 +109,46 @@ class OrderServiceSyncTest {
         assertEquals("UNT-9", item.unitId)
         assertEquals(24.0, item.baseQuantity)
         assertEquals("RED-XL", item.variantSku)
+    }
+
+    @Test
+    fun `bulk upsert preserves ecomOrderRef across an update even though the request DTO has no field for it`() {
+        val existing = Order().apply { uid = "ORD-4"; orderNumber = "9"; ecomOrderRef = "ECOM-1" }
+        whenever(orderRepository.findByUid("ORD-4")).thenReturn(Optional.of(existing))
+        whenever(orderRepository.save(any<Order>())).thenAnswer { it.getArgument(0) }
+
+        service.bulkUpsertOrders(listOf(OrderUpdateRequest(id = "ORD-4", orderNumber = "9")))
+
+        verify(orderRepository).save(argThat<Order> { ecomOrderRef == "ECOM-1" })
+    }
+
+    @Test
+    fun `bulk upsert notifies the storefront when an ecom-linked order advances to DELIVERED`() {
+        val existing = Order().apply {
+            uid = "ORD-5"; orderNumber = "9"; ownerId = "WS-1"
+            ecomOrderRef = "ECOM-1"; status = OrderStatus.OUT_FOR_DELIVERY
+        }
+        whenever(orderRepository.findByUid("ORD-5")).thenReturn(Optional.of(existing))
+        whenever(orderRepository.save(any<Order>())).thenAnswer { it.getArgument(0) }
+
+        service.bulkUpsertOrders(listOf(OrderUpdateRequest(id = "ORD-5", orderNumber = "9", status = OrderStatus.DELIVERED)))
+
+        verify(ecomOrderStatusProducer).publishStatusUpdate(argThat<EcomOrderStatusEvent> {
+            ecomOrderRef == "ECOM-1" && newStatus == "DELIVERED" && managementOrderRef == "ORD-5"
+        })
+    }
+
+    @Test
+    fun `bulk upsert does not notify the storefront when status is unchanged`() {
+        val existing = Order().apply {
+            uid = "ORD-6"; orderNumber = "9"; ecomOrderRef = "ECOM-1"; status = OrderStatus.SHIPPED
+        }
+        whenever(orderRepository.findByUid("ORD-6")).thenReturn(Optional.of(existing))
+        whenever(orderRepository.save(any<Order>())).thenAnswer { it.getArgument(0) }
+
+        service.bulkUpsertOrders(listOf(OrderUpdateRequest(id = "ORD-6", orderNumber = "9", status = OrderStatus.SHIPPED)))
+
+        verify(ecomOrderStatusProducer, never()).publishStatusUpdate(any())
     }
 
     @Test

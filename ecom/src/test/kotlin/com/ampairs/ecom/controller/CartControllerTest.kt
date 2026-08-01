@@ -206,16 +206,17 @@ class CartControllerTest {
     }
 
     @Test
-    @DisplayName("POST /cart/{token}/items - validates quantity >= 1")
+    @DisplayName("POST /cart/{token}/items - validates quantity >= 0")
     @WithMockUser(roles = ["USER"])
-    fun `should return 400 for zero quantity`() {
+    fun `should return 400 for negative quantity`() {
         val storefront = makeStorefront("sf-1", "ws-1", "my-shop")
         whenever(storefrontService.getPublishedStorefrontBySlug("my-shop")).thenReturn(storefront)
 
+        // quantity 0 is valid now (means "remove the line"); only negative is rejected.
         mockMvc.perform(
             post("/v1/store/my-shop/cart/tok-1/items")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"listed_product_id":"lp-1","quantity":0}""")
+                .content("""{"listed_product_id":"lp-1","quantity":-1}""")
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.success").value(false))

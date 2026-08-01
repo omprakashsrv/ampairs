@@ -217,6 +217,20 @@ class ProductController(
         return ApiResponse.success(updatedProduct)
     }
 
+    /**
+     * Toggle whether a product is listed on the workspace's ecom storefront. Online action; the
+     * ecom catalog is updated asynchronously (Spring application event -> ecom listener).
+     */
+    @PutMapping("/{productId}/ecom-listing")
+    fun setEcomListing(
+        @PathVariable productId: String,
+        @RequestParam("listed") listed: Boolean,
+    ): ApiResponse<ProductResponse> {
+        val updated = productService.setEcomListing(productId, listed)
+            ?: throw NotFoundException("Product not found: $productId")
+        return ApiResponse.success(updated)
+    }
+
     @PutMapping("/{productId}/inventory")
     fun updateProductInventory(
         @PathVariable productId: String,

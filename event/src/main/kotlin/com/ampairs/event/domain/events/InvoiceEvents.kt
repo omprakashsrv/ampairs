@@ -93,6 +93,56 @@ class InvoiceStatusChangedEvent(
 }
 
 /**
+ * Event published when an invoice reaches the finalized (INVOICED) state. Consumed by the
+ * `payment` module to post the SALES_INVOICE ledger entry (LDG_<invoice.uid>). DRAFT/NEW
+ * invoices never publish this (FR-013).
+ */
+class InvoiceFinalizedEvent(
+    source: Any,
+    override val workspaceId: String,
+    override val entityId: String,
+    override val userId: String,
+    override val deviceId: String,
+    val invoiceNumber: String,
+    val customerUid: String,
+    val totalAmount: Double,
+    val invoiceDateEpochMillis: Long,
+) : BaseEntityEvent(source, workspaceId, entityId, userId, deviceId) {
+
+    override fun getChanges(): Map<String, Any> {
+        return mapOf(
+            "action" to "finalized",
+            "invoiceNumber" to invoiceNumber,
+            "customerUid" to customerUid,
+            "totalAmount" to totalAmount
+        )
+    }
+}
+
+/**
+ * Event published when a finalized invoice is cancelled/de-finalized (leaves INVOICED). Consumed by
+ * the `payment` module to reverse its SALES_INVOICE ledger entry (audit retained — FR-014).
+ */
+class InvoiceCancelledEvent(
+    source: Any,
+    override val workspaceId: String,
+    override val entityId: String,
+    override val userId: String,
+    override val deviceId: String,
+    val invoiceNumber: String,
+    val customerUid: String,
+) : BaseEntityEvent(source, workspaceId, entityId, userId, deviceId) {
+
+    override fun getChanges(): Map<String, Any> {
+        return mapOf(
+            "action" to "cancelled",
+            "invoiceNumber" to invoiceNumber,
+            "customerUid" to customerUid
+        )
+    }
+}
+
+/**
  * Event published when an invoice is deleted
  */
 class InvoiceDeletedEvent(

@@ -40,5 +40,11 @@ class CustomerAddress : BaseDomain() {
     @Column(name = "is_default", nullable = false)
     var isDefault: Boolean = false
 
+    @Column(name = "latitude")
+    var latitude: Double? = null
+
+    @Column(name = "longitude")
+    var longitude: Double? = null
+
     override fun obtainSeqIdPrefix(): String = "CAD"
 }

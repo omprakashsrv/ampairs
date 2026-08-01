@@ -3,6 +3,10 @@ package com.ampairs.ecom.service
 import com.ampairs.core.service.ConfirmedLineItem
 import com.ampairs.core.service.OrderEcomService
 import com.ampairs.ecom.domain.dto.EcomOrderLineItemEditRequest
+import com.ampairs.ecom.domain.dto.EcomOrderManagementResponse
+import com.ampairs.ecom.domain.dto.EcomOrderResponse
+import com.ampairs.ecom.domain.dto.asEcomOrderManagementResponse
+import com.ampairs.ecom.domain.dto.asEcomOrderResponse
 import com.ampairs.ecom.domain.enums.EcomLineItemStatus
 import com.ampairs.ecom.domain.enums.EcomOrderStatus
 import com.ampairs.ecom.domain.model.EcomOrder
@@ -37,8 +41,10 @@ class EcomOrderService(
         )
     }
 
-    fun getCustomerOrders(customerId: String, storefrontId: String, pageable: Pageable): Page<EcomOrder> =
+    @Transactional(readOnly = true)
+    fun getCustomerOrders(customerId: String, storefrontId: String, pageable: Pageable): Page<EcomOrderResponse> =
         orderRepository.findByCustomerIdAndStorefrontId(customerId, storefrontId, pageable)
+            .map { it.asEcomOrderResponse() }
 
     fun getCustomerOrder(customerId: String, ecomOrderRef: String): EcomOrder {
         val order = orderRepository.findByEcomOrderRef(ecomOrderRef)
@@ -47,9 +53,11 @@ class EcomOrderService(
         return order
     }
 
-    fun getManagementOrders(workspaceId: String, status: EcomOrderStatus?, pageable: Pageable): Page<EcomOrder> =
-        if (status != null) orderRepository.findByWorkspaceIdAndStatus(workspaceId, status, pageable)
-        else orderRepository.findByWorkspaceId(workspaceId, pageable)
+    @Transactional(readOnly = true)
+    fun getManagementOrders(workspaceId: String, status: EcomOrderStatus?, pageable: Pageable): Page<EcomOrderManagementResponse> =
+        (if (status != null) orderRepository.findByWorkspaceIdAndStatus(workspaceId, status, pageable)
+        else orderRepository.findByWorkspaceId(workspaceId, pageable))
+            .map { it.asEcomOrderManagementResponse() }
 
     fun getManagementOrder(workspaceId: String, ecomOrderRef: String): EcomOrder {
         val order = orderRepository.findByEcomOrderRef(ecomOrderRef)
@@ -125,7 +133,11 @@ class EcomOrderService(
             confirmed.forEach { payload ->
                 lineItems[payload.managementProductId]?.let {
                     it.quantityConfirmed = payload.quantityConfirmed
-                    try { it.status = EcomLineItemStatus.valueOf(payload.status) } catch (_: IllegalArgumentException) {}
+                    try {
+                        it.status = EcomLineItemStatus.valueOf(payload.status)
+                    } catch (e: IllegalArgumentException) {
+                        log.warn("Ignoring unknown line-item status '{}' for {}", payload.status, event.ecomOrderRef)
+                    }
                     lineItemRepository.save(it)
                 }
             }

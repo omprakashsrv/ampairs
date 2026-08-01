@@ -1,5 +1,13 @@
 # Rate limiting configuration
-limit_req_zone $binary_remote_addr zone=ampairs_per_ip:10m rate=5r/s;
+# 20 QPS per IP
+limit_req_zone $binary_remote_addr zone=ampairs_per_ip:10m rate=20r/s;
+
+# 20 QPS per authenticated user (keyed on Authorization header; falls back to IP when absent)
+map $http_authorization $rate_limit_key {
+    default $http_authorization;
+    ""      $binary_remote_addr;
+}
+limit_req_zone $rate_limit_key zone=ampairs_per_user:10m rate=20r/s;
 
 # Stricter rate limit for app download endpoint (1 request per 10 seconds)
 limit_req_zone $binary_remote_addr zone=ampairs_download:10m rate=6r/m;

@@ -55,6 +55,17 @@ interface InventoryTransactionRepository : CrudRepository<InventoryTransaction, 
     @EntityGraph("InventoryTransaction.full")
     fun findByTransactionNumber(transactionNumber: String): InventoryTransaction?
 
+    /**
+     * Idempotency lookup for automatic (order/invoice-driven) stock movements.
+     * Tenant-scoped automatically via @TenantId. Returns the existing movement for a given
+     * source document line, if one was already recorded (spec 014, R2/SC-002).
+     */
+    fun findBySourceTypeAndSourceIdAndSourceLineUid(
+        sourceType: String,
+        sourceId: String,
+        sourceLineUid: String,
+    ): InventoryTransaction?
+
     // ============================================================================
     // Item-based Queries
     // ============================================================================
@@ -397,4 +408,32 @@ interface InventoryTransactionRepository : CrudRepository<InventoryTransaction, 
         startDate: Instant,
         endDate: Instant
     ): List<InventoryTransaction>
+
+    // ============================================================================
+    // Offline-sync feeds (spec 014) — movements are append-only; @TenantId scopes the workspace.
+    // ============================================================================
+
+    @Query("SELECT t FROM inventory_transaction t WHERE t.updatedAt >= :lastSync")
+    fun findByUpdatedAtAfter(@Param("lastSync") lastSync: Instant, pageable: Pageable): Page<InventoryTransaction>
+
+    @Query("SELECT t FROM inventory_transaction t")
+    fun findAllForSync(pageable: Pageable): Page<InventoryTransaction>
+
+    /**
+     * Total quantity moved OUT (sales/consumption) across all items in [fromInclusive, toExclusive) —
+     * the numerator for workspace inventory turns (feature 022). @TenantId scopes to the workspace.
+     */
+    @Query(
+        "SELECT COALESCE(SUM(t.quantity), 0) FROM inventory_transaction t " +
+            "WHERE t.transactionType = 'STOCK_OUT' " +
+            "AND t.transactionDate >= :fromInclusive AND t.transactionDate < :toExclusive",
+    )
+    fun sumStockOutInWindow(
+        @Param("fromInclusive") fromInclusive: Instant,
+        @Param("toExclusive") toExclusive: Instant,
+    ): BigDecimal
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(t.updatedAt) FROM inventory_transaction t")
+    fun findMaxUpdatedAt(): Instant?
 }

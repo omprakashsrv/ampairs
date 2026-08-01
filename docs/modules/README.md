@@ -22,6 +22,15 @@ Each module is an independent Spring Boot domain bounded context. All share `cor
 | [setting](setting.md) | `/setting/v1/settings/` | Central workspace settings registry (cross-module toggles, offline-sync) |
 | [form](form.md) | `/form/v1/` | Dynamic field config and custom attributes |
 | [file](file.md) | `/files/` | Object storage — S3, MinIO, local |
+| [user](user.md) | `/user/v1/` | User identity, profile, profile picture, account deletion |
+| [supplier](supplier.md) | `/supplier/v1/` | Supplier management |
+| [purchase](purchase.md) | `/purchase/v1/purchases/` | Purchase recording (bills + purchase items) |
+| [payment](payment.md) | `/payment/v1/` | Payment recording and allocation |
+| [pricing](pricing.md) | `/pricing/v1/` | Price lists, tiers, offers/coupons, geo zones |
+| [sequence](sequence.md) | `/sequence/v1/` | Document number sequences — definitions + allocations |
+| [ecom](ecom.md) | `/api/v1/store/{slug}`, `/api/v1/ecom/`, `/api/v1/storefronts` | Storefronts — public catalog, cart, checkout, buyer accounts |
+| [printing](printing.md) | `/printing/v1/templates/` | Print-template storage + offline-sync (opaque layout JSON) |
+| [agent](agent.md) | `/agent/v1/` | AI model manifest/download proxy + chat telemetry for the on-device assistant |
 
 ## Dependency Rules
 

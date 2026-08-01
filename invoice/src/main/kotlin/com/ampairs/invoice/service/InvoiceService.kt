@@ -3,7 +3,9 @@ package com.ampairs.invoice.service
 import com.ampairs.core.multitenancy.DeviceContextHolder
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.core.security.AuthenticationHelper
+import com.ampairs.event.domain.events.InvoiceCancelledEvent
 import com.ampairs.event.domain.events.InvoiceCreatedEvent
+import com.ampairs.event.domain.events.InvoiceFinalizedEvent
 import com.ampairs.event.domain.events.InvoiceStatusChangedEvent
 import com.ampairs.event.domain.events.InvoiceUpdatedEvent
 import com.ampairs.invoice.domain.dto.InvoiceResponse
@@ -11,8 +13,14 @@ import com.ampairs.invoice.domain.dto.InvoiceUpdateRequest
 import com.ampairs.invoice.domain.dto.toInvoice
 import com.ampairs.invoice.domain.dto.toInvoiceItems
 import com.ampairs.invoice.domain.dto.toResponse
+import com.ampairs.invoice.domain.enums.InvoiceStatus
 import com.ampairs.invoice.domain.model.Invoice
 import com.ampairs.invoice.domain.model.InvoiceItem
+import com.ampairs.inventory.service.InventoryStockService
+import com.ampairs.inventory.service.StockLine
+import com.ampairs.inventory.service.StockMutationCommand
+import com.ampairs.inventory.service.StockSourceType
+import java.math.BigDecimal
 import com.ampairs.invoice.repository.InvoiceItemRepository
 import com.ampairs.invoice.repository.InvoicePagingRepository
 import com.ampairs.invoice.repository.InvoiceRepository
@@ -35,8 +43,41 @@ class InvoiceService(
     val invoiceRepository: InvoiceRepository,
     val invoiceItemRepository: InvoiceItemRepository,
     val invoicePagingRepository: InvoicePagingRepository,
+    val inventoryStockService: InventoryStockService,
     val eventPublisher: ApplicationEventPublisher
 ) {
+
+    /**
+     * Spec 014 (US1): move stock when an invoice crosses the finalize boundary. Gated inside the
+     * inventory engine by (a) inventory-management installed and (b) auto_deduct_on_order; idempotent
+     * per invoice line; untracked products skipped. Finalize (→ INVOICED) applies the sale; leaving
+     * INVOICED restores it.
+     */
+    private fun syncStockForInvoice(invoice: Invoice, items: List<InvoiceItem>, previousStatus: InvoiceStatus?) {
+        // Never move stock for a removed (soft-deleted) line.
+        val activeItems = items.filter { it.active }
+        if (activeItems.isEmpty()) return
+        // Avoid double-deduction: an invoice converted from an order lets the ORDER own the stock move.
+        if (!invoice.orderRefId.isNullOrBlank()) return
+        val nowFinalized = invoice.status == InvoiceStatus.INVOICED
+        val wasFinalized = previousStatus == InvoiceStatus.INVOICED
+        if (nowFinalized == wasFinalized) return
+        val command = StockMutationCommand(
+            sourceType = StockSourceType.INVOICE,
+            sourceId = invoice.uid,
+            referenceNumber = invoice.invoiceNumber,
+            performedBy = getUserId(),
+            lines = activeItems.map {
+                StockLine(
+                    sourceLineUid = it.uid,
+                    productId = it.productId,
+                    quantity = BigDecimal.valueOf(it.quantity),
+                )
+            },
+        )
+        if (nowFinalized) inventoryStockService.applySale(command)
+        else inventoryStockService.reverseSale(command)
+    }
 
     /**
      * Helper methods for event publishing
@@ -117,6 +158,9 @@ class InvoiceService(
             }
         }
 
+        // Spec 014: apply/reverse inventory on the finalize boundary (idempotent; no-op if off).
+        syncStockForInvoice(updatedInvoice, invoiceItems, oldStatus)
+
         return invoice.toResponse(invoiceItems)
     }
 
@@ -145,6 +189,7 @@ class InvoiceService(
 
     private fun upsertInvoice(invoice: Invoice, invoiceItems: List<InvoiceItem>): InvoiceResponse {
         val existing = if (invoice.uid.isNotEmpty()) invoiceRepository.findByUid(invoice.uid) else null
+        val previousStatus = existing?.status
         if (existing != null) {
             invoice.id = existing.id
             invoice.uid = existing.uid
@@ -164,7 +209,47 @@ class InvoiceService(
             item.invoiceId = savedInvoice.uid
             invoiceItemRepository.save(item)
         }
+        publishFinalizationEvents(savedInvoice, previousStatus)
+        // Spec 014: apply/reverse inventory on the finalize boundary (idempotent; no-op if off).
+        syncStockForInvoice(savedInvoice, savedItems, previousStatus)
         return savedInvoice.toResponse(savedItems)
+    }
+
+    /**
+     * Bridges the invoice lifecycle to the `payment` party ledger (spec 013, FR-013/014):
+     * publishes [InvoiceFinalizedEvent] when an invoice newly reaches INVOICED, and
+     * [InvoiceCancelledEvent] when it leaves INVOICED. Drafts never post.
+     */
+    private fun publishFinalizationEvents(invoice: Invoice, previousStatus: InvoiceStatus?) {
+        val nowFinalized = invoice.status == InvoiceStatus.INVOICED
+        val wasFinalized = previousStatus == InvoiceStatus.INVOICED
+        if (nowFinalized && !wasFinalized) {
+            eventPublisher.publishEvent(
+                InvoiceFinalizedEvent(
+                    source = this,
+                    workspaceId = getWorkspaceId(),
+                    entityId = invoice.uid,
+                    userId = getUserId(),
+                    deviceId = getDeviceId(),
+                    invoiceNumber = invoice.invoiceNumber,
+                    customerUid = invoice.customerId ?: "",
+                    totalAmount = invoice.totalCost,
+                    invoiceDateEpochMillis = invoice.invoiceDate.toEpochMilli(),
+                )
+            )
+        } else if (wasFinalized && !nowFinalized) {
+            eventPublisher.publishEvent(
+                InvoiceCancelledEvent(
+                    source = this,
+                    workspaceId = getWorkspaceId(),
+                    entityId = invoice.uid,
+                    userId = getUserId(),
+                    deviceId = getDeviceId(),
+                    invoiceNumber = invoice.invoiceNumber,
+                    customerUid = invoice.customerId ?: "",
+                )
+            )
+        }
     }
 
     /**

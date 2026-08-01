@@ -43,6 +43,10 @@ class EcomExceptionHandler : BaseExceptionHandler() {
     fun handleEmptyCart(ex: EmptyCartException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> =
         createErrorResponse(HttpStatus.BAD_REQUEST, ErrorCodes.VALIDATION_ERROR, "Cart is empty", ex.message, request, moduleName = "ecom")
 
+    @ExceptionHandler(InvalidDeliveryAddressException::class)
+    fun handleInvalidDeliveryAddress(ex: InvalidDeliveryAddressException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> =
+        createErrorResponse(HttpStatus.BAD_REQUEST, ErrorCodes.VALIDATION_ERROR, "Invalid delivery address", ex.message, request, moduleName = "ecom")
+
     @ExceptionHandler(EcomOrderNotFoundException::class)
     fun handleEcomOrderNotFound(ex: EcomOrderNotFoundException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> =
         createErrorResponse(HttpStatus.NOT_FOUND, ErrorCodes.NOT_FOUND, "Order not found", ex.message, request, moduleName = "ecom")
@@ -58,6 +62,10 @@ class EcomExceptionHandler : BaseExceptionHandler() {
     @ExceptionHandler(StoreUnauthenticatedException::class)
     fun handleStoreUnauthenticated(ex: StoreUnauthenticatedException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> =
         createErrorResponse(HttpStatus.FORBIDDEN, "STORE_UNAUTHENTICATED", "Authentication required", ex.message, request, moduleName = "ecom")
+
+    @ExceptionHandler(EcomNotLinkedException::class)
+    fun handleEcomNotLinked(ex: EcomNotLinkedException, request: HttpServletRequest): ResponseEntity<ApiResponse<Any>> =
+        createErrorResponse(HttpStatus.FORBIDDEN, "ECOM_NOT_LINKED", "Not linked to a distributor", ex.message, request, moduleName = "ecom")
 }
 
 // Ecom domain exceptions
@@ -68,7 +76,15 @@ class ProductUnavailableException(message: String) : RuntimeException(message)
 class InsufficientStockException(message: String, val availableQuantity: Int) : RuntimeException(message)
 class CartExpiredException(message: String) : RuntimeException(message)
 class EmptyCartException(message: String) : RuntimeException(message)
+class InvalidDeliveryAddressException(message: String) : RuntimeException(message)
 class EcomOrderNotFoundException(message: String) : RuntimeException(message)
 class InvalidOrderStatusTransitionException(message: String) : RuntimeException(message)
 class StoreAccessDeniedException(message: String) : RuntimeException(message)
 class StoreUnauthenticatedException(message: String) : RuntimeException(message)
+
+/**
+ * Thrown at checkout when the storefront buyer is not linked to any workspace distributor account.
+ * Ordering is blocked until the workspace owner links the buyer (an explicit contact, or a CRM
+ * customer created with the buyer's phone). Surfaces as HTTP 403 with code `ECOM_NOT_LINKED`.
+ */
+class EcomNotLinkedException(message: String) : RuntimeException(message)

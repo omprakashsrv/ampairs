@@ -4,6 +4,10 @@ import com.ampairs.ecom.domain.model.CustomerAddress
 import jakarta.validation.constraints.NotBlank
 
 data class CustomerAddressRequest(
+    // Client-generated uid (the app owns address ids). When present, create is idempotent on this
+    // uid so the local id stays authoritative and matches at checkout.
+    val uid: String? = null,
+
     val label: String? = null,
 
     @field:NotBlank
@@ -23,6 +27,9 @@ data class CustomerAddressRequest(
     val country: String = "IN",
     val phone: String? = null,
     val isDefault: Boolean = false,
+    // Optional geolocation, when the address was picked on the map.
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 )
 
 data class CustomerAddressResponse(
@@ -36,6 +43,8 @@ data class CustomerAddressResponse(
     val country: String,
     val phone: String?,
     val isDefault: Boolean,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
 )
 
 fun CustomerAddress.asAddressResponse() = CustomerAddressResponse(
@@ -49,4 +58,6 @@ fun CustomerAddress.asAddressResponse() = CustomerAddressResponse(
     country = country,
     phone = phone,
     isDefault = isDefault,
+    latitude = latitude,
+    longitude = longitude,
 )

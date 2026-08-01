@@ -54,12 +54,12 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("io.jsonwebtoken:jjwt-api:0.13.0")
-    implementation("no.digipost.jaxb:jaxb2-jackson-helper:1.0.1")
+    implementation("no.digipost.jaxb:jaxb2-jackson-helper:2.0.1")
 
     implementation("io.awspring.cloud:spring-cloud-aws-starter-sns")
 
     // Firebase Admin SDK for authentication verification
-    implementation("com.google.firebase:firebase-admin:9.9.0")
+    implementation("com.google.firebase:firebase-admin:9.10.0")
 
     // OpenAPI/Swagger Documentation
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")

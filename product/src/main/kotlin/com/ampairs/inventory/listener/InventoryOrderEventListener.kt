@@ -2,7 +2,7 @@ package com.ampairs.inventory.listener
 
 import com.ampairs.event.domain.events.OrderCreatedEvent
 import com.ampairs.event.domain.events.OrderStatusChangedEvent
-import com.ampairs.inventory.repository.InventoryConfigRepository
+import com.ampairs.setting.service.SettingService
 import org.slf4j.LoggerFactory
 import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
@@ -23,9 +23,9 @@ import org.springframework.stereotype.Component
  * 3. Call stockOut() when order status changes to CONFIRMED/PROCESSING
  * 4. Call stockIn() to restore when order is CANCELLED/REFUNDED
  *
- * Configuration:
- * - InventoryConfig.autoDeductOnOrder: Controls whether Order Service should deduct inventory
- * - InventoryConfig.blockOrdersWhenOutOfStock: Order Service checks stock before confirmation
+ * Configuration (central `setting` module, module_code = "inventory"):
+ * - auto_deduct_on_order: Controls whether Order Service should deduct inventory
+ * - block_orders_when_out_of_stock: Order Service checks stock before confirmation
  *
  * Example Order Service Integration:
  * ```
@@ -54,7 +54,7 @@ import org.springframework.stereotype.Component
  */
 @Component
 class InventoryOrderEventListener(
-    private val inventoryConfigRepository: InventoryConfigRepository
+    private val settingService: SettingService
 ) {
 
     private val logger = LoggerFactory.getLogger(InventoryOrderEventListener::class.java)
@@ -72,9 +72,8 @@ class InventoryOrderEventListener(
                 "(Order ID: ${event.entityId}, Workspace: ${event.workspaceId})"
             )
 
-            // Get inventory configuration
-            val config = inventoryConfigRepository.findFirstByOrderByCreatedAtDesc()
-            if (config?.autoDeductOnOrder == true) {
+            // Get inventory configuration (central setting module)
+            if (settingService.getBoolean("inventory", "auto_deduct_on_order")) {
                 // Log that auto-deduction is enabled
                 // Actual deduction should happen in Order Service before status change
                 when (event.newStatus) {
@@ -105,11 +104,10 @@ class InventoryOrderEventListener(
                 "Order ID: ${event.entityId}, Workspace: ${event.workspaceId})"
             )
 
-            // Log configuration status
-            val config = inventoryConfigRepository.findFirstByOrderByCreatedAtDesc()
-            if (config != null) {
-                logger.debug("Inventory configuration - Auto-deduct: ${config.autoDeductOnOrder}, Block when out of stock: ${config.blockOrdersWhenOutOfStock}")
-            }
+            // Log configuration status (central setting module)
+            val autoDeduct = settingService.getBoolean("inventory", "auto_deduct_on_order")
+            val blockWhenOut = settingService.getBoolean("inventory", "block_orders_when_out_of_stock")
+            logger.debug("Inventory configuration - Auto-deduct: $autoDeduct, Block when out of stock: $blockWhenOut")
 
         } catch (ex: Exception) {
             logger.error("Error processing order creation event for order ${event.orderNumber}: ${ex.message}", ex)

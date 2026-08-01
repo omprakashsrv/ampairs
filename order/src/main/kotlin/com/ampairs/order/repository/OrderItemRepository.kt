@@ -8,4 +8,7 @@ import java.util.*
 @Repository
 interface OrderItemRepository : CrudRepository<OrderItem, Long> {
     fun findByUid(uid: String): Optional<OrderItem>
+
+    /** All line items for an order (ordered as stored), keyed by Order.uid. */
+    fun findByOrderIdOrderByIndexAsc(orderId: String): List<OrderItem>
 }

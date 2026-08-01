@@ -100,7 +100,12 @@ fun bulkUpsert(requests: List<XRequest>): List<XResponse> = requests.map { req -
 
 `customer`, `customer_group` (`/groups/sync`), `customer_type` (`/types/sync`), `product`,
 `product` catalog (`/groups/sync`, `/categories/sync`, `/brands/sync`, `/sub-categories/sync`),
-`unit`, `setting` (store), `order`, `invoice`.
+`unit`, `setting` (store), `order`, `invoice`, `price_list` (`/pricing/v1/price-lists/sync`),
+`price_list_item` (`/pricing/v1/price-lists/items/sync`), `geo_zone` (`/pricing/v1/geo-zones/sync`).
+
+> **Pricing money is minor-unit asymmetric** (spec 009): price-list-item PULL returns
+> `unit_price` as a `MoneyDto { amount_minor, currency }`; PUSH sends `unit_price_minor: Long`
+> (currency inherited from the parent list — single-currency-per-list).
 
 ## Aggregate-grained on the contract
 

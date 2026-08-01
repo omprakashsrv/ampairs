@@ -189,6 +189,9 @@ interface DeviceRegistrationRepository : JpaRepository<DeviceRegistration, Long>
     )
 
     fun existsByWorkspaceIdAndDeviceIdAndIsActiveTrue(workspaceId: String, deviceId: String): Boolean
+
+    /** Devices currently holding a given push token (used to prune dead tokens). */
+    fun findByPushToken(pushToken: String): List<DeviceRegistration>
 }
 
 // =====================

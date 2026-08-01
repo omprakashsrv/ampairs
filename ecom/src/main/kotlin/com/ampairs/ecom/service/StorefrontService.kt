@@ -11,6 +11,8 @@ import com.ampairs.ecom.exception.StorefrontAlreadyExistsException
 import com.ampairs.ecom.exception.StorefrontNotFoundException
 import com.ampairs.ecom.exception.StorefrontSlugConflictException
 import com.ampairs.ecom.repository.StorefrontRepository
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Instant
@@ -42,9 +44,18 @@ class StorefrontService(
         storefrontRepository.findByOwnerId(workspaceId)
             ?: throw StorefrontNotFoundException("No storefront found for workspace $workspaceId")
 
+    /**
+     * Public, cross-tenant directory of published storefronts. [query] is an optional
+     * case-insensitive name/slug substring filter; blank or null returns every published
+     * storefront. Not workspace-scoped — the backing query bypasses the @TenantId filter.
+     */
+    @Transactional(readOnly = true)
+    fun listPublishedStorefronts(query: String?, pageable: Pageable): Page<Storefront> =
+        storefrontRepository.searchPublished(query?.trim().orEmpty(), pageable)
+
     @Transactional(readOnly = true)
     fun getPublishedStorefrontBySlug(slug: String): Storefront =
-        storefrontRepository.findBySlugAndStatus(slug, StorefrontStatus.PUBLISHED)
+        storefrontRepository.findBySlugAndStatus(slug, StorefrontStatus.PUBLISHED.name)
             ?: throw StorefrontNotFoundException("No published storefront found with slug '$slug'")
 
     @Transactional

@@ -5,6 +5,8 @@ import com.ampairs.inventory.config.Constants
 import com.ampairs.unit.domain.model.Unit
 import jakarta.persistence.*
 import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.annotations.NotFound
+import org.hibernate.annotations.NotFoundAction
 import org.hibernate.type.SqlTypes
 import java.math.BigDecimal
 
@@ -99,6 +101,11 @@ class InventoryItem : OwnableBaseDomain() {
     @Column(name = "warehouse_id", nullable = false, length = 200)
     var warehouseId: String = ""
 
+    // NotFound(IGNORE): warehouseId can be '' (offline-sync upserts when the workspace has no
+    // default warehouse). Without it, Hibernate throws EntityFilterException on every read that
+    // joins the association ("Warehouse with identifier value `` is filtered"), 500-ing the
+    // purchase/inventory sync endpoints. Resolves to null instead.
+    @NotFound(action = NotFoundAction.IGNORE)
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "warehouse_id", referencedColumnName = "uid",
                 updatable = false, insertable = false)

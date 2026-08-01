@@ -62,16 +62,16 @@ dependencies {
 
     // Google Play Billing verification
     implementation("com.google.apis:google-api-services-androidpublisher:v3-rev20241217-2.0.0")
-    implementation("com.google.auth:google-auth-library-oauth2-http:1.48.0")
+    implementation("com.google.auth:google-auth-library-oauth2-http:1.49.0")
 
     // Stripe
-    implementation("com.stripe:stripe-java:32.1.0")
+    implementation("com.stripe:stripe-java:33.1.0")
 
     // Razorpay
-    implementation("com.razorpay:razorpay-java:1.4.8")
+    implementation("com.razorpay:razorpay-java:1.4.9")
 
     // Apache Commons for HMAC signature verification
-    implementation("commons-codec:commons-codec:1.17.2")
+    implementation("commons-codec:commons-codec:1.22.0")
 
     // JSON processing
     implementation("org.json:json:20260522")

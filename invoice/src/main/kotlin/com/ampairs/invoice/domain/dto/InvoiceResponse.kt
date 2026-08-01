@@ -37,6 +37,8 @@ data class InvoiceResponse(
     var overallDiscountMode: String = "POST_TAX_REDUCTION",
     var series: String = "INV",
     var sequenceNumber: Long = 0,
+    var createdAt: Instant? = null,
+    var updatedAt: Instant? = null,
 )
 
 fun List<Invoice>.toResponse(): List<InvoiceResponse> {
@@ -74,7 +76,9 @@ fun Invoice.toResponse(invoiceItems: List<InvoiceItem>): InvoiceResponse {
         priceMode = this.priceMode,
         overallDiscountMode = this.overallDiscountMode,
         series = this.series,
-        sequenceNumber = this.sequenceNumber
+        sequenceNumber = this.sequenceNumber,
+        createdAt = this.createdAt,
+        updatedAt = this.updatedAt,
     )
 }
 

@@ -6,10 +6,14 @@ import com.ampairs.notification.provider.NotificationChannel
 import com.ampairs.notification.provider.NotificationProvider
 import com.ampairs.notification.provider.NotificationResult
 import com.ampairs.notification.provider.NotificationStatus
+import com.ampairs.notification.port.DevicePushTokenPort
+import com.ampairs.notification.provider.push.FcmPushProvider
 import com.ampairs.notification.provider.sms.AwsSnsSmsProvider
 import com.ampairs.notification.provider.sms.Msg91SmsProvider
 import com.ampairs.notification.repository.NotificationQueueRepository
+import com.fasterxml.jackson.databind.ObjectMapper
 import org.slf4j.LoggerFactory
+import org.springframework.beans.factory.ObjectProvider
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.context.annotation.Primary
 import org.springframework.scheduling.annotation.Async
@@ -26,12 +30,19 @@ class NotificationService(
     private val notificationQueueRepository: NotificationQueueRepository,
     private val msg91SmsProvider: Msg91SmsProvider,
     private val awsSnsSmsProvider: AwsSnsSmsProvider,
+    private val fcmPushProvider: FcmPushProvider,
     @Qualifier("notificationTaskExecutor") private val taskExecutor: Executor,
     private val notificationDatabaseService: NotificationDatabaseService,
     private val props: NotificationProperties,
+    // Optional — resolved from the subscription module when present; absent in isolated tests.
+    private val devicePushTokenPort: ObjectProvider<DevicePushTokenPort>,
 ) {
 
     private val logger = LoggerFactory.getLogger(NotificationService::class.java)
+
+    // Created internally — the test-profile context has no autowirable ObjectMapper bean, and this is
+    // only used to (de)serialize the push data payload (a Map<String, String>).
+    private val objectMapper = ObjectMapper()
 
     /**
      * Send notification via specified channel
@@ -123,6 +134,46 @@ class NotificationService(
             )
 
             savedNotification.uid
+        }
+    }
+
+    /**
+     * Queue a push notification (FCM) for a single device token.
+     *
+     * @param token The device FCM registration token (becomes the queue recipient)
+     * @param title Notification title
+     * @param body Notification body
+     * @param data Structured key/value payload delivered with the push
+     * @param tenantId Explicit tenant; falls back to the current context, then "default"
+     */
+    @Transactional
+    fun queuePush(
+        token: String,
+        title: String,
+        body: String,
+        data: Map<String, String> = emptyMap(),
+        tenantId: String? = null,
+    ): String {
+        val effectiveTenantId = tenantId
+            ?: com.ampairs.core.multitenancy.TenantContextHolder.getCurrentTenant()
+            ?: "default"
+
+        return com.ampairs.core.multitenancy.TenantContextHolder.withTenant(effectiveTenantId) {
+            val notificationQueue = NotificationQueue().apply {
+                this.recipient = token
+                this.message = body
+                this.title = title
+                this.dataPayload = if (data.isEmpty()) null else objectMapper.writeValueAsString(data)
+                this.channel = NotificationChannel.PUSH_NOTIFICATION
+                this.status = NotificationStatus.PENDING
+                this.scheduledAt = Instant.now()
+                this.ownerId = effectiveTenantId
+            }
+
+            val saved = notificationQueueRepository.save(notificationQueue)
+            logger.info("Push notification queued for token {} with ID: {} (tenant: {})",
+                token.take(12), saved.uid, effectiveTenantId)
+            saved.uid
         }
     }
 
@@ -287,7 +338,12 @@ class NotificationService(
                 )
 
                 // Call external API outside of database transaction
-                val result = provider.sendNotification(notification.recipient, notification.message)
+                val result = provider.sendNotification(
+                    notification.recipient,
+                    notification.message,
+                    notification.title,
+                    parseDataPayload(notification.dataPayload),
+                )
                 lastResult = result
 
                 if (result.success) {
@@ -300,6 +356,12 @@ class NotificationService(
                         "Notification failed via {}: {} - {}",
                         result.providerName, notification.uid, result.errorMessage
                     )
+                    // Prune a dead device token so we stop retrying push to it.
+                    if (notification.channel == NotificationChannel.PUSH_NOTIFICATION &&
+                        result.providerResponse == FcmPushProvider.TOKEN_INVALID_MARKER
+                    ) {
+                        devicePushTokenPort.ifAvailable?.invalidateToken(notification.recipient)
+                    }
                 }
             }
 
@@ -340,9 +402,20 @@ class NotificationService(
     private fun getProvidersForChannel(channel: NotificationChannel): List<NotificationProvider> {
         return when (channel) {
             NotificationChannel.SMS -> getSmsProvidersInOrder()
+            NotificationChannel.PUSH_NOTIFICATION -> listOf(fcmPushProvider)
             NotificationChannel.EMAIL -> emptyList() // TODO: Implement email providers
             NotificationChannel.WHATSAPP -> emptyList() // TODO: Implement WhatsApp providers
             else -> emptyList()
+        }
+    }
+
+    private fun parseDataPayload(json: String?): Map<String, String> {
+        if (json.isNullOrBlank()) return emptyMap()
+        return try {
+            objectMapper.readValue(json, object : com.fasterxml.jackson.core.type.TypeReference<Map<String, String>>() {})
+        } catch (e: Exception) {
+            logger.warn("Failed to parse notification data payload: {}", e.message)
+            emptyMap()
         }
     }
 
@@ -459,6 +532,23 @@ class NotificationService(
     @Transactional
     fun sendImmediateSms(phoneNumber: String, message: String): NotificationResult {
         return sendImmediateNotification(phoneNumber, message, NotificationChannel.SMS)
+    }
+
+    /**
+     * System-wide push announcement to every device subscribed to the global `announcements` FCM
+     * topic (the app subscribes/unsubscribes this topic from its notification settings). Topic sends
+     * are a single FCM call and are not workspace-scoped, so they are sent immediately rather than
+     * queued/persisted in the per-workspace notification feed.
+     */
+    fun sendGlobalAnnouncement(
+        title: String,
+        body: String,
+        data: Map<String, String> = emptyMap(),
+    ): NotificationResult = fcmPushProvider.sendToTopic(ANNOUNCEMENTS_TOPIC, title, body, data)
+
+    companion object {
+        /** Global FCM topic the app subscribes to for system announcements (FcmTopics.ANNOUNCEMENTS). */
+        const val ANNOUNCEMENTS_TOPIC = "announcements"
     }
 }
 

@@ -33,8 +33,7 @@ import java.time.Instant
 class InventoryBatchService(
     private val inventoryBatchRepository: InventoryBatchRepository,
     private val inventoryItemService: InventoryItemService,
-    private val warehouseService: WarehouseService,
-    private val inventoryConfigService: InventoryConfigService
+    private val warehouseService: WarehouseService
 ) {
 
     // ============================================================================
@@ -249,7 +248,7 @@ class InventoryBatchService(
         strategy: String? = null
     ): List<Pair<String, BigDecimal>> {
         // Get consumption strategy
-        val consumptionStrategy = strategy ?: inventoryConfigService.getStockConsumptionStrategy()
+        val consumptionStrategy = strategy ?: Constants.STRATEGY_FIFO
 
         // Get available batches based on strategy
         val batches = when (consumptionStrategy) {
@@ -317,7 +316,7 @@ class InventoryBatchService(
         strategy: String? = null
     ): List<Pair<String, BigDecimal>> {
         // Get consumption strategy
-        val consumptionStrategy = strategy ?: inventoryConfigService.getStockConsumptionStrategy()
+        val consumptionStrategy = strategy ?: Constants.STRATEGY_FIFO
 
         // Get available batches based on strategy
         val batches = when (consumptionStrategy) {

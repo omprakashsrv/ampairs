@@ -69,12 +69,20 @@ class MasterModuleSeederService(
         return listOf(
             createBusinessModule(),
             createCustomerModule(),
+            createSupplierModule(),
             createProductModule(),
             createOrderModule(),
+            createPurchaseModule(),
             createInvoiceModule(),
+            createPaymentModule(),
             createInventoryModule(),
             createTaxCodeModule(),
-            createUnitModule()
+            createUnitModule(),
+            createPrintingModule(),
+            createStorefrontModule(),
+            createPricingModule(),
+            createAiAssistantModule(),
+            createAnalyticsModule()
         )
     }
 
@@ -169,6 +177,48 @@ class MasterModuleSeederService(
         displayOrder = 10
         active = true
     }
+
+    private fun createSupplierModule() = MasterModule().apply {
+        moduleCode = "supplier-management"
+        name = "Supplier Management"
+        description = "Comprehensive supplier (vendor) master with contact information, credit terms, GST compliance, and purchase relationship tracking"
+        tagline = "Manage your suppliers and vendors effectively"
+        category = ModuleCategory.CUSTOMER_MANAGEMENT
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.FREE
+        requiredRole = UserRole.EMPLOYEE
+        complexity = ModuleComplexity.STANDARD
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 8, true, "Essential for managing the vendors you buy stock from"),
+            createBusinessRelevance(BusinessType.WHOLESALE, 10, true, "Critical for B2B procurement and supplier credit control"),
+            createBusinessRelevance(BusinessType.MANUFACTURING, 9, true, "Important for managing raw-material and component suppliers")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = listOf("SUPPLIER_READ", "SUPPLIER_WRITE"),
+            optionalPermissions = listOf("SUPPLIER_DELETE", "SUPPLIER_EXPORT")
+        )
+        uiMetadata = createUIMetadata(
+            icon = "local_shipping",
+            primaryColor = "#00897B",
+            tags = listOf("Suppliers", "Vendors", "Procurement", "GST", "Credit Management")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/suppliers",
+            displayName = "Suppliers",
+            iconName = "local_shipping",
+            menuItems = listOf(
+                createMenuItem("supplier-list", "All Suppliers", "/suppliers", "local_shipping", 1, true),
+                createMenuItem("supplier-create", "Create Supplier", "/suppliers/create", "add_business", 2),
+            )
+        )
+        navigationIndex = 25
+        provider = "Ampairs"
+        sizeMb = 5
+        featured = false
+        displayOrder = 15
+        active = true
+    }
     
     private fun createProductModule() = MasterModule().apply {
         moduleCode = "product-management"
@@ -257,6 +307,49 @@ class MasterModuleSeederService(
         displayOrder = 30
         active = true
     }
+
+    private fun createPurchaseModule() = MasterModule().apply {
+        moduleCode = "purchase-management"
+        name = "Purchase Management"
+        description = "End-to-end purchase document processing with line items, supplier tracking, and automatic stock-in on receipt"
+        tagline = "Streamline your procurement and stock receipts"
+        category = ModuleCategory.ORDER_MANAGEMENT
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.BASIC
+        requiredRole = UserRole.EMPLOYEE
+        complexity = ModuleComplexity.STANDARD
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 8, true, "Essential for recording stock purchases and replenishment"),
+            createBusinessRelevance(BusinessType.WHOLESALE, 10, true, "Critical for bulk procurement and supplier order management"),
+            createBusinessRelevance(BusinessType.MANUFACTURING, 9, true, "Important for raw-material and component purchasing")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = listOf("PURCHASE_READ", "PURCHASE_WRITE"),
+            optionalPermissions = listOf("PURCHASE_DELETE", "PURCHASE_APPROVE"),
+            dependencies = listOf("supplier-management", "product-management")
+        )
+        uiMetadata = createUIMetadata(
+            icon = "shopping_bag",
+            primaryColor = "#5E35B1",
+            tags = listOf("Purchases", "Procurement", "Stock-in", "Suppliers")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/purchases",
+            displayName = "Purchases",
+            iconName = "shopping_bag",
+            menuItems = listOf(
+                createMenuItem("purchase-list", "All Purchases", "/purchases", "shopping_bag", 1, true),
+                createMenuItem("purchase-create", "Create Purchase", "/purchases/create", "add_shopping_cart", 2),
+            )
+        )
+        navigationIndex = 45
+        provider = "Ampairs"
+        sizeMb = 12
+        featured = false
+        displayOrder = 35
+        active = true
+    }
     
     private fun createInvoiceModule() = MasterModule().apply {
         moduleCode = "invoice-billing"
@@ -298,6 +391,50 @@ class MasterModuleSeederService(
         sizeMb = 15
         featured = true
         displayOrder = 40
+        active = true
+    }
+
+    private fun createPaymentModule() = MasterModule().apply {
+        moduleCode = "payment-collection"
+        name = "Payments & Collection"
+        description = "Subsidiary party ledger for receivables and collections — opening balances, sales/returns/payments, multi-mode receipts (cash, cheque, UPI, NEFT/RTGS/IMPS, bank transfer), bill-wise allocation, aging, and a live closing balance per party"
+        tagline = "Track what every party owes and collect it on time"
+        category = ModuleCategory.FINANCIAL_MANAGEMENT
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.BASIC
+        requiredRole = UserRole.EMPLOYEE
+        complexity = ModuleComplexity.ADVANCED
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 9, true, "Essential for tracking customer dues and recording counter collections"),
+            createBusinessRelevance(BusinessType.WHOLESALE, 10, true, "Critical for distributor receivables, party ledgers, and credit control"),
+            createBusinessRelevance(BusinessType.MANUFACTURING, 9, true, "Important for managing dealer outstanding and payment follow-up")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = listOf("PAYMENT_READ", "PAYMENT_WRITE"),
+            optionalPermissions = listOf("PAYMENT_DELETE", "PAYMENT_RECONCILE"),
+            dependencies = listOf("customer-management", "invoice-billing")
+        )
+        uiMetadata = createUIMetadata(
+            icon = "payments",
+            primaryColor = "#00897B",
+            tags = listOf("Collections", "Receivables", "Party Ledger", "Payments", "Aging")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/payments",
+            displayName = "Payments",
+            iconName = "payments",
+            menuItems = listOf(
+                createMenuItem("payment-dashboard", "Collections", "/payments", "payments", 1, true),
+                createMenuItem("payment-record", "Record Payment", "/payments/record", "add_card", 2),
+                createMenuItem("payment-outstanding", "Outstanding", "/payments/outstanding", "request_quote", 3)
+            )
+        )
+        navigationIndex = 55
+        provider = "Ampairs"
+        sizeMb = 6
+        featured = true
+        displayOrder = 45
         active = true
     }
 
@@ -386,6 +523,48 @@ class MasterModuleSeederService(
         active = true
     }
 
+    private fun createStorefrontModule() = MasterModule().apply {
+        moduleCode = "storefront-management"
+        name = "Online Store"
+        description = "Set up and manage your customer-facing online storefront — configure store name, branding (logo and banner), access mode, and publish your catalog so customers can browse and place orders"
+        tagline = "Sell online with your own branded storefront"
+        category = ModuleCategory.SALES_MANAGEMENT
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.FREE
+        requiredRole = UserRole.MANAGER
+        complexity = ModuleComplexity.STANDARD
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 9, false, "Enables an online storefront for customers to browse and order"),
+            createBusinessRelevance(BusinessType.WHOLESALE, 7, false, "Optional B2B online ordering channel"),
+            createBusinessRelevance(BusinessType.MANUFACTURING, 6, false, "Optional direct-to-customer sales channel")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = listOf("PRODUCT_READ"),
+            optionalPermissions = listOf("ORDER_READ", "ORDER_WRITE"),
+            dependencies = listOf("product-management")
+        )
+        uiMetadata = createUIMetadata(
+            icon = "storefront",
+            primaryColor = "#7026B5",
+            tags = listOf("Storefront", "Online Store", "E-commerce", "Branding", "Catalog")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/storefront",
+            displayName = "Store",
+            iconName = "storefront",
+            menuItems = listOf(
+                createMenuItem("storefront-setup", "Store Setup", "/storefront", "storefront", 1, true)
+            )
+        )
+        navigationIndex = 80
+        provider = "Ampairs"
+        sizeMb = 6
+        featured = true
+        displayOrder = 65
+        active = true
+    }
+
     private fun createTaxCodeModule() = MasterModule().apply {
         moduleCode = "tax-code-management"
         name = "Tax Code Management"
@@ -428,6 +607,185 @@ class MasterModuleSeederService(
         active = true
     }
     
+    private fun createPrintingModule() = MasterModule().apply {
+        moduleCode = "printing-management"
+        name = "Printing"
+        description = "Multi-platform printing for invoices, orders and receipts — thermal (ESC/POS) over USB/Bluetooth/network and inkjet/laser via the system print service, with workspace-shared templates per document type and printer class"
+        tagline = "Print invoices, orders and receipts on any printer"
+        category = ModuleCategory.ADMINISTRATION
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.FREE
+        requiredRole = UserRole.EMPLOYEE
+        complexity = ModuleComplexity.STANDARD
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 10, true, "Essential for printing bills and receipts at the counter on thermal printers"),
+            createBusinessRelevance(BusinessType.WHOLESALE, 9, true, "Important for printing invoices and orders on A4/inkjet printers"),
+            createBusinessRelevance(BusinessType.MANUFACTURING, 7, false, "Useful for printing orders, labels and delivery documents")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = listOf("PRINT_READ", "PRINT_WRITE"),
+            optionalPermissions = listOf("PRINT_TEMPLATE_WRITE")
+        )
+        uiMetadata = createUIMetadata(
+            icon = "print",
+            primaryColor = "#455A64",
+            tags = listOf("Printing", "Thermal", "ESC/POS", "Templates", "Receipts", "Invoices")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/printing",
+            displayName = "Printing",
+            iconName = "print",
+            menuItems = listOf(
+                createMenuItem("printer-list", "Printers", "/printing/printers", "print", 1, true),
+                createMenuItem("print-templates", "Templates", "/printing/templates", "description", 2),
+                createMenuItem("print-queue", "Print Queue", "/printing/queue", "queue", 3)
+            )
+        )
+        navigationIndex = 80
+        provider = "Ampairs"
+        sizeMb = 4
+        featured = false
+        displayOrder = 65
+        active = true
+    }
+
+    private fun createPricingModule() = MasterModule().apply {
+        moduleCode = "pricing-management"
+        name = "Pricing & Offers"
+        description = "Channel- and segment-aware price lists with quantity tiers and MOQ, reusable geo-zones, and promotions/offers (cart & coupon discounts, BOGO, brand/category targeting) applied on top of resolved prices — fully offline-first"
+        tagline = "Set the right price and run offers for every customer"
+        category = ModuleCategory.SALES_MANAGEMENT
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.BASIC
+        requiredRole = UserRole.MANAGER
+        complexity = ModuleComplexity.ADVANCED
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 8, false, "Run counter offers and customer-group pricing to drive sales"),
+            createBusinessRelevance(BusinessType.WHOLESALE, 10, true, "Essential for channel/segment price lists, quantity tiers, and dealer schemes"),
+            createBusinessRelevance(BusinessType.MANUFACTURING, 9, false, "Useful for distributor pricing tiers and volume-based offers")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = listOf("PRODUCT_READ"),
+            optionalPermissions = listOf("CUSTOMER_READ", "ORDER_READ"),
+            dependencies = listOf("product-management", "customer-management")
+        )
+        uiMetadata = createUIMetadata(
+            icon = "sell",
+            primaryColor = "#C2185B",
+            tags = listOf("Pricing", "Price Lists", "Offers", "Promotions", "Discounts", "Geo Zones")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/pricing",
+            displayName = "Pricing",
+            iconName = "sell",
+            menuItems = listOf(
+                createMenuItem("pricing-overview", "Overview", "/pricing", "dashboard", 1, true),
+                createMenuItem("price-lists", "Price Lists", "/pricing/lists", "list_alt", 2),
+                createMenuItem("offers", "Offers", "/pricing/offers", "local_offer", 3),
+                createMenuItem("geo-zones", "Geo Zones", "/pricing/zones", "place", 4),
+                createMenuItem("price-tester", "Price Tester", "/pricing/tester", "science", 5)
+            )
+        )
+        navigationIndex = 45
+        provider = "Ampairs"
+        sizeMb = 6
+        featured = true
+        displayOrder = 35
+        active = true
+    }
+
+    /**
+     * Analytics & Forecasting Dashboard (feature 022). `moduleCode = "business-dashboard"` is the code
+     * the mobile client already recognises (`ModuleCodes.BUSINESS_DASHBOARD`, routed to
+     * `Route.Analytics`); without this catalog entry no workspace can enable the dashboard and it never
+     * appears in the app menu.
+     */
+    private fun createAnalyticsModule() = MasterModule().apply {
+        moduleCode = "business-dashboard"
+        name = "Analytics Dashboard"
+        description = "Offline-first business dashboard — sales, collections, receivables aging, GST summary and inventory KPIs with charts, plus per-product demand forecasts and a natural-language query panel."
+        tagline = "Your business at a glance — offline, with charts and forecasts"
+        category = ModuleCategory.ANALYTICS_REPORTING
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.FREE
+        requiredRole = UserRole.EMPLOYEE
+        complexity = ModuleComplexity.STANDARD
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 9, false, "Daily sales, collections and low-stock at a glance"),
+            createBusinessRelevance(BusinessType.WHOLESALE, 9, false, "Receivables aging, GST summary and demand forecasts for reorder"),
+            createBusinessRelevance(BusinessType.MANUFACTURING, 8, false, "Inventory turns and per-product demand forecasting")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = emptyList(),
+            optionalPermissions = listOf("INVOICE_READ", "PAYMENT_READ", "INVENTORY_READ", "PRODUCT_READ"),
+            dependencies = emptyList()
+        )
+        uiMetadata = createUIMetadata(
+            icon = "dashboard",
+            primaryColor = "#6750A4",
+            tags = listOf("Analytics", "Dashboard", "Forecast", "KPI", "Reports", "Charts")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/analytics",
+            displayName = "Dashboard",
+            iconName = "dashboard",
+            menuItems = listOf(
+                createMenuItem("analytics-dashboard", "Dashboard", "/analytics", "dashboard", 1, true)
+            )
+        )
+        navigationIndex = 5
+        provider = "Ampairs"
+        sizeMb = 3
+        featured = true
+        displayOrder = 5
+        active = true
+    }
+
+    private fun createAiAssistantModule() = MasterModule().apply {
+        moduleCode = "ai-assistant"
+        name = "AI Assistant"
+        description = "Offline-first text and voice assistant that answers business questions about your own data (customers, products, stock, invoices) and drafts bills by voice — entirely on-device, with explicit confirmation before any money action"
+        tagline = "Ask questions and draft bills by voice — works offline"
+        category = ModuleCategory.COMMUNICATION
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.FREE
+        requiredRole = UserRole.EMPLOYEE
+        complexity = ModuleComplexity.STANDARD
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 8, false, "Hands-free billing and quick answers at the counter, even without internet"),
+            createBusinessRelevance(BusinessType.WHOLESALE, 8, false, "Fast voice-driven order/invoice drafting and on-device business queries"),
+            createBusinessRelevance(BusinessType.MANUFACTURING, 7, false, "Quick spoken lookups across customers, products, and stock")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = emptyList(),
+            optionalPermissions = listOf("CUSTOMER_READ", "PRODUCT_READ", "INVOICE_READ", "INVOICE_WRITE"),
+            dependencies = listOf("customer-management", "product-management", "invoice-billing")
+        )
+        uiMetadata = createUIMetadata(
+            icon = "auto_awesome",
+            primaryColor = "#6750A4",
+            tags = listOf("AI", "Assistant", "Voice", "Offline", "Chat")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/assistant",
+            displayName = "Assistant",
+            iconName = "auto_awesome",
+            menuItems = listOf(
+                createMenuItem("assistant-chat", "Assistant", "/assistant", "auto_awesome", 1, true)
+            )
+        )
+        navigationIndex = 90
+        provider = "Ampairs"
+        sizeMb = 5
+        featured = true
+        displayOrder = 70
+        active = true
+    }
+
     // Helper functions to create embedded objects
     private fun createBusinessRelevance(
         businessType: BusinessType,

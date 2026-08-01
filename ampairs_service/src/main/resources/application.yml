@@ -168,6 +168,11 @@ spring:
   mvc:
     servlet:
       path: /api
+    async:
+      # Streaming model downloads (AiModelController) run for minutes; -1 disables the MVC async
+      # request timeout so large/slow downloads aren't cut off mid-stream (an AsyncRequestTimeoutException
+      # at the default ~30s otherwise aborts the transfer). The socket/client governs the lifetime.
+      request-timeout: -1
   servlet:
     multipart:
       enabled: true
@@ -456,6 +461,41 @@ google:
 firebase:
   enabled: ${FIREBASE_ENABLED:true}
   service-account-key-path: ${FIREBASE_SERVICE_ACCOUNT_KEY_PATH:keys/ampairs-firebase-adminsdk.json}
+
+# On-device AI assistant (agent module)
+agent:
+  # HuggingFace access token used by the model-download proxy (AiModelProxyService) to fetch the
+  # license-gated Gemma .litertlm checkpoints (litert-community/* and google/*). Blank → gated
+  # models return 502 ("requires authentication"). Set AGENT_HF_TOKEN (or HF_TOKEN) to a HuggingFace
+  # token whose account has accepted each model's license. SECRET — never commit a real value.
+  hf-token: ${AGENT_HF_TOKEN:${HF_TOKEN:}}
+  # Anthropic API key used by the cloud chat proxy (AnthropicChatProvider) to serve the on-device
+  # assistant's online model tier (POST /agent/v1/chat/completions). Blank → routing to Anthropic
+  # returns 503 ("provider not configured"); the on-device models are unaffected. SECRET — never commit.
+  anthropic-api-key: ${AGENT_ANTHROPIC_API_KEY:${ANTHROPIC_API_KEY:}}
+  chat:
+    # Provider used for models that match no provider's allow-list (or a blank model). One of the
+    # provider ids below (anthropic / openrouter).
+    default-provider: ${AGENT_CHAT_DEFAULT_PROVIDER:openrouter}
+    anthropic:
+      # Model used when the routed request's model isn't in this provider's allow-list.
+      default-model: ${AGENT_CHAT_DEFAULT_MODEL:claude-sonnet-4-6}
+      # Comma-separated allow-list of Anthropic model ids the proxy will forward.
+      allowed-models: ${AGENT_CHAT_ALLOWED_MODELS:claude-sonnet-4-6,claude-opus-4-8,claude-haiku-4-5}
+    openrouter:
+      # OpenRouter API key (OpenAI-compatible). Blank → routing to OpenRouter returns 503. SECRET.
+      api-key: ${OPENROUTER_API_KEY:}
+      base-url: ${OPENROUTER_BASE_URL:https://openrouter.ai/api/v1}
+      # Default to the free smart router; allow-list the free options the app can request.
+      default-model: ${OPENROUTER_DEFAULT_MODEL:openrouter/owl-alpha}
+      allowed-models: ${OPENROUTER_ALLOWED_MODELS:openrouter/owl-alpha}
+      # Optional ranking headers (OpenRouter leaderboards); blank → not sent.
+      referer: ${OPENROUTER_REFERER:}
+      title: ${OPENROUTER_TITLE:Ampairs}
+      # Turn off model reasoning/thinking tokens (default true = reasoning disabled). The structured intent
+      # turn gets no benefit from chain-of-thought, and free reasoning models otherwise add large latency
+      # on every request. Set OPENROUTER_DISABLE_REASONING=false to re-enable for a richer model.
+      disable-reasoning: ${OPENROUTER_DISABLE_REASONING:true}
 
 # Notification Configuration
 notification:

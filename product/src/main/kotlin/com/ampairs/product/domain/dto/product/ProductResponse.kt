@@ -2,8 +2,6 @@ package com.ampairs.product.domain.dto.product
 
 import com.ampairs.file.domain.dto.FileResponse
 import com.ampairs.file.domain.dto.toFileResponse
-import com.ampairs.inventory.domain.dto.InventoryResponse
-import com.ampairs.inventory.domain.dto.asResponse
 import com.ampairs.unit.domain.dto.UnitConversionResponse
 import com.ampairs.unit.domain.dto.UnitResponse
 import com.ampairs.unit.domain.dto.asUnitConversionResponses
@@ -43,13 +41,15 @@ data class ProductResponse(
     val baseUnit: UnitResponse?,
     val baseUnitId: String?,
     val images: List<FileResponse>?,
-    val inventory: InventoryResponse?,
 
     // Product classification and variants
     val productType: String?,
     val serviceType: String?,
     val hasVariants: Boolean,
-    val variants: List<ProductVariantResponse>?
+    val variants: List<ProductVariantResponse>?,
+
+    /** Whether the product is listed on the workspace's ecom storefront. */
+    val isEcomListed: Boolean = false
 )
 
 fun List<Product>.asResponse(): List<ProductResponse> {
@@ -85,13 +85,13 @@ fun List<Product>.asResponse(): List<ProductResponse> {
                 fileResponse
             },
             baseUnitId = it.baseUnitId,
-            inventory = if (it.inventory.size > 0) it.inventory[0].asResponse() else null,
 
             // Product classification and variants
             productType = it.productType?.name,
             serviceType = it.serviceType?.name,
             hasVariants = it.hasVariants,
-            variants = it.variants.asResponse()
+            variants = it.variants.asResponse(),
+            isEcomListed = it.isEcomListed
         )
     }
 }
@@ -128,13 +128,13 @@ fun Product.asResponse(): ProductResponse {
             fileResponse
         },
         baseUnitId = baseUnitId,
-        inventory = if (inventory.size > 0) inventory[0].asResponse() else null,
 
         // Product classification and variants
         productType = productType?.name,
         serviceType = serviceType?.name,
         hasVariants = hasVariants,
-        variants = variants.asResponse()
+        variants = variants.asResponse(),
+        isEcomListed = isEcomListed
     )
 }
 

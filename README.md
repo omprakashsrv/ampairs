@@ -8,7 +8,7 @@ Comprehensive multi-platform business management system with workspace-based mul
 
 | App | Repository | Technology | Purpose |
 |-----|-----------|-----------|---------|
-| **Backend** | this repo | Spring Boot 3.5 + Kotlin 2.2 + Java 25 | REST API, business logic, database |
+| **Backend** | this repo | Spring Boot 4.1 + Kotlin 2.4 + Java 21 | REST API, business logic, database |
 | **Web** | [omprakashsrv/ampairs-web](https://github.com/omprakashsrv/ampairs-web) | Angular 20 + Material Design 3 | Browser client |
 | **Mobile / Desktop** | [omprakashsrv/ampairs-app](https://github.com/omprakashsrv/ampairs-app) | Compose Multiplatform | Android, iOS, Desktop |
 
@@ -23,26 +23,36 @@ ampairs/
 ├── ampairs_service/    # Main Spring Boot application (aggregates all modules)
 ├── core/               # Shared utilities, base entities, multi-tenancy, AWS
 ├── auth/               # JWT authentication, OTP, device-aware sessions
+├── user/               # User identity, profile, account deletion lifecycle
 ├── workspace/          # Workspace management, RBAC, memberships, invitations
 ├── product/            # Product catalog, inventory (multi-warehouse, batch/serial)
 ├── subscription/       # Subscription plans, billing, recurring charges
 ├── customer/           # CRM, contacts, GST-aware addressing
+├── supplier/           # Supplier management
 ├── tax/                # GST configuration, HSN/SAC catalog, calculation engine
 ├── business/           # Business profile, legal details, multi-branch
 ├── order/              # Order lifecycle, pricing, discounts, status transitions
 ├── invoice/            # Invoice generation, GST compliance, PDF export
+├── purchase/           # Purchase recording (bills, purchase items)
+├── payment/            # Payment recording and allocation
+├── pricing/            # Price lists, tiers, offers/coupons, geo zones
+├── sequence/           # Document number sequences (definitions + allocations)
+├── ecom/               # Storefronts: public catalog, cart, checkout, buyer accounts
 ├── event/              # Domain event streaming, WebSocket/STOMP delivery
 ├── notification/       # Multi-channel notifications (SMS, email, push, WhatsApp)
 ├── unit/               # Unit of measure definitions and conversions
 ├── setting/            # Central workspace settings registry (cross-module toggles, offline bulk-sync)
+├── printing/           # Print-template storage + offline-sync (opaque layout JSON)
+├── agent/              # AI model manifest/download proxy + chat telemetry for the on-device assistant
 ├── form/               # Dynamic form builder, configurable entity schemas
 ├── file/               # File storage, upload/download, AWS S3 integration
 │
 ├── specs/              # Feature specifications (spec → plan → tasks → impl)
+├── docs/               # Developer documentation (modules, guides, deployment)
 ├── scripts/            # Deployment and automation scripts
 ├── ansible/            # Infrastructure as code
 ├── .github/workflows/  # CI/CD pipelines
-└── docker-compose.yml  # Local development dependencies
+└── docker-compose.yml  # Local development dependencies (PostgreSQL/PostGIS, Kafka)
 ```
 
 > Web and mobile apps live in their own repositories and consume the backend REST API.
@@ -53,15 +63,15 @@ ampairs/
 
 ### Prerequisites
 
-- Java 25+
+- Java 21+
 - Docker (required for Testcontainers integration tests)
-- MySQL 8.0+ or via `docker-compose.yml`
+- PostgreSQL 17 (dev/runtime DB) via `docker-compose.yml` — MySQL migrations are kept for parity
 - Node.js 20+ (web frontend only)
 
 ### Backend
 
 ```bash
-# Start local dependencies (MySQL, RabbitMQ, etc.)
+# Start local dependencies (PostgreSQL/PostGIS, Kafka)
 docker-compose up -d
 
 # Run the application
@@ -98,7 +108,7 @@ docker-compose up -d
 
 ### Backend
 
-- **Modular monolith**: 16 domain modules + `ampairs_service` aggregator
+- **Modular monolith**: 25 domain modules + `ampairs_service` aggregator
 - **Multi-tenancy**: Workspace-based isolation via `@TenantId` on `OwnableBaseDomain`
 - **Auth**: Device-aware JWT with concurrent multi-device login support
 - **API**: Versioned REST endpoints (`/api/v1/{resource}`), all responses wrapped in `ApiResponse<T>`
@@ -137,7 +147,7 @@ Features follow a spec-driven process using the built-in speckit commands:
 /speckit.implement → execute tasks
 ```
 
-Existing specs: `specs/002` (timezone), `003` (business), `004` (unit), `005` (backend).
+Existing specs: `specs/002` … `specs/028` (see `specs/`); next number: `029`.
 
 ---
 
@@ -157,7 +167,7 @@ Push to `main` triggers the CI/CD pipeline:
 # Output: ampairs_service/build/libs/ampairs_service-1.0.0.jar
 ```
 
-See [DEPLOYMENT.md](DEPLOYMENT.md) for full production setup.
+See [docs/deployment/deployment.md](docs/deployment/deployment.md) for full production setup.
 
 ---
 
@@ -187,7 +197,17 @@ journalctl -u ampairs -f
 ## Contributing
 
 1. Read [CLAUDE.md](CLAUDE.md) and `.claude/rules/` for coding standards
-2. Create a feature branch: `git checkout -b ###-feature-name` (e.g. `006-payment-gateway`)
+2. Create a feature branch: `git checkout -b ###-feature-name` (e.g. `029-my-feature`)
 3. Use Conventional Commits: `feat(module):`, `fix(module):`, `refactor(module):` — subject ≤72 chars
 4. Run `./gradlew ciBuild` and ensure it passes before opening a PR
 5. For features > 30 min, start with `/speckit.specify` to generate a spec first
+
+---
+
+## License
+
+**Source-available, noncommercial** — licensed under the [PolyForm Noncommercial License 1.0.0](LICENSE.md).
+
+You may use, modify, and share this software for any **noncommercial** purpose. **Commercial use is not permitted** — including use by or for a business to generate revenue, sell the software, or charge customers for products or services built with it. This is *not* an OSI-approved open-source license (it restricts commercial use).
+
+For a commercial license, contact the copyright holder. Copyright © 2026 Om Prakash.

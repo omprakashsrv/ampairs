@@ -7,7 +7,10 @@ import org.springframework.data.jpa.repository.EntityGraph
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.CrudRepository
 import org.springframework.data.repository.PagingAndSortingRepository
+import org.springframework.data.repository.query.Param
 import org.springframework.stereotype.Repository
+import java.math.BigDecimal
+import java.time.Instant
 
 /**
  * Inventory Item Repository
@@ -212,4 +215,35 @@ interface InventoryItemRepository : CrudRepository<InventoryItem, Long>,
      * @return Count of active inventory items
      */
     fun countByIsActive(isActive: Boolean): Long
+
+    // ============================================================================
+    // Offline-sync feeds (spec 014) — INCLUDE inactive (soft-deleted) rows so deletes propagate.
+    // @TenantId filters by current workspace automatically.
+    // ============================================================================
+
+    @Query("SELECT i FROM inventory_item i WHERE i.updatedAt >= :lastSync")
+    fun findByUpdatedAtAfter(@Param("lastSync") lastSync: Instant, pageable: Pageable): Page<InventoryItem>
+
+    @Query("SELECT i FROM inventory_item i")
+    fun findAllForSync(pageable: Pageable): Page<InventoryItem>
+
+    // ============================================================================
+    // Analytics KPI aggregates (feature 022). @TenantId scopes to the workspace.
+    // ============================================================================
+
+    /** Total stock value at current cost: Σ(currentStock × costPrice) over active items. */
+    @Query("SELECT COALESCE(SUM(i.currentStock * i.costPrice), 0) FROM inventory_item i WHERE i.isActive = true")
+    fun sumStockValue(): BigDecimal
+
+    /** Total units on hand over active items (denominator for inventory turns). */
+    @Query("SELECT COALESCE(SUM(i.currentStock), 0) FROM inventory_item i WHERE i.isActive = true")
+    fun sumCurrentStock(): BigDecimal
+
+    /** Count of active items at/below their (non-zero) reorder level. */
+    @Query("SELECT COUNT(i) FROM inventory_item i WHERE i.isActive = true AND i.reorderLevel > 0 AND i.currentStock <= i.reorderLevel")
+    fun countLowStock(): Long
+
+    /** Sync checkpoint: max updatedAt for the current workspace (null when empty). @TenantId-filtered. */
+    @Query("SELECT MAX(i.updatedAt) FROM inventory_item i")
+    fun findMaxUpdatedAt(): Instant?
 }

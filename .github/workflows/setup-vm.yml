@@ -28,7 +28,6 @@ jobs:
       API_DOMAIN: ${{ inputs.domain || vars.API_DOMAIN || 'api.ampairs.in' }}
       APP_UPSTREAM: ${{ vars.APP_UPSTREAM || 'http://127.0.0.1:8080' }}
       LETSENCRYPT_EMAIL: ${{ vars.LETSENCRYPT_EMAIL }}
-      KAFKA_VERSION: ${{ vars.KAFKA_VERSION || '3.9.0' }}
       AWS_REGION: ${{ vars.AWS_REGION || 'ap-south-1' }}
       AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
       AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -96,10 +95,10 @@ jobs:
           fi
 
       - name: Checkout repository
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v7
         with:
           python-version: '3.11'
 
@@ -152,7 +151,6 @@ jobs:
           API_DOMAIN: ${{ env.API_DOMAIN }}
           APP_UPSTREAM: ${{ env.APP_UPSTREAM }}
           LETSENCRYPT_EMAIL: ${{ env.LETSENCRYPT_EMAIL }}
-          KAFKA_VERSION: ${{ env.KAFKA_VERSION }}
           AWS_REGION: ${{ env.AWS_REGION }}
           AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
