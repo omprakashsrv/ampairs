@@ -34,7 +34,12 @@ class ConnectorSparseUpsertService(
     /** Serialise concurrent upserts per (installation, entity) so checkpoint windows don't overlap (FR-021). */
     private val locks = ConcurrentHashMap<String, Any>()
 
-    fun upsert(installationUid: String, entityType: String, rows: List<SparseUpsertRow>): List<SparseUpsertResult> {
+    fun upsert(
+        installationUid: String,
+        entityType: String,
+        rows: List<SparseUpsertRow>,
+        trigger: String = "MANUAL",
+    ): List<SparseUpsertResult> {
         installationService.getInstallation(installationUid)
         val writer = writersByType[entityType]
             ?: throw BusinessException("CONNECTOR_UNSUPPORTED_ENTITY", "No connector writer for entity type '$entityType'")
@@ -58,7 +63,7 @@ class ConnectorSparseUpsertService(
                     SparseUpsertResult(row.refId, null, WriteOutcome.FAILED.name, emptyList(), e.message)
                 }
             }
-            recordRun(installationUid, entityType, rows.size, created, updated, skipped, failed)
+            recordRun(installationUid, entityType, rows.size, created, updated, skipped, failed, trigger)
             results
         }
     }
@@ -71,12 +76,13 @@ class ConnectorSparseUpsertService(
         updated: Int,
         skipped: Int,
         failed: Int,
+        trigger: String,
     ) {
         runRepository.save(
             ConnectorSyncRun().apply {
                 this.installationUid = installationUid
                 this.entityType = entityType
-                this.trigger = "MANUAL"
+                this.trigger = trigger
                 this.startedAt = Instant.now()
                 this.finishedAt = Instant.now()
                 this.processed = processed

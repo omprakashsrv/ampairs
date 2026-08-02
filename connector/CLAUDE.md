@@ -24,5 +24,11 @@ connection config + secrets, field mappings, sync checkpoints, and run history.
 
 ## Status (incremental delivery)
 - ✅ Setup + Foundational + US1 (catalogue + install/uninstall).
-- ⏳ US2 (config + mapping), US3 (sparse upsert + checkpoints + runs), client migration, web UI.
-See `specs/013-apps-extension-platform/tasks.md`.
+- ✅ US2 (config + mapping), US3 (sparse upsert + checkpoints + runs), client migration.
+- ✅ **Server-side execution (spec 029)**: `ServerSideConnectorSyncExecutor` SPI + `ConnectorRunScheduler`
+  (cross-tenant `@Scheduled`, dispatches only `HostingType.SERVER_SIDE`) + `ConnectorHttpClient` +
+  the **Generic HTTP/JSON** connector (`GenericHttpJsonExecutor`/`Provider`) + server-side connection
+  test (`ConnectorConnectionTester`). Reuses the sparse-upsert path + encrypted secret store unchanged.
+  Decrypted config for execution only via `ConnectorConfigService.resolveForExecution()`.
+- ⏳ Server-side OAuth + webhooks (deferred, FR-S08); vendor providers; per-cycle pagination.
+See `specs/013-apps-extension-platform/tasks.md` and `specs/029-connector-ui-server-side/`.

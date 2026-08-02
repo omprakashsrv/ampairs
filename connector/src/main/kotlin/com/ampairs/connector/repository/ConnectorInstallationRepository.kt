@@ -25,4 +25,15 @@ interface ConnectorInstallationRepository : CrudRepository<ConnectorInstallation
 
     @Query("SELECT MAX(i.updatedAt) FROM connector_installation i")
     fun findMaxUpdatedAt(): Instant?
+
+    /**
+     * ALL active, ENABLED installations across EVERY tenant — for the server-side run scheduler, which
+     * runs outside any request/tenant context. `nativeQuery = true` bypasses the `@TenantId` filter
+     * (rule 05-multi-tenancy); the scheduler then sets tenant context per row from [ConnectorInstallation.ownerId].
+     */
+    @Query(
+        value = "SELECT * FROM connector_installation WHERE active = true AND status = 'ENABLED'",
+        nativeQuery = true,
+    )
+    fun findAllEnabledAcrossTenants(): List<ConnectorInstallation>
 }

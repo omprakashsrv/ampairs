@@ -21,18 +21,20 @@ Serves BOTH hosting types. Turns `feature/connector` (today pure data/sync plumb
 - **T008** (S) commonMain strings (`composeResources/values/strings.xml`), accessibility (icon `contentDescription`), `collectAsStateWithLifecycle`.
 - **T009** (S) Compile-validate all targets on CI: `androidApp:compileDebugKotlinAndroid`, `shared:compileKotlinIosSimulatorArm64`, `desktopApp:compileKotlin`.
 
-## Phase B — Server-Side Execution Engine (backend: `connector` module)
+## Phase B — Server-Side Execution Engine (backend: `connector` module) ✅ DONE
 
 Makes `HostingType.SERVER_SIDE` real, reusing the writer SPI + sparse-upsert + secret cipher unchanged.
 
-- **T010** (M) `ServerSideConnectorSyncExecutor` SPI in `connector` (or `core` if a cross-module writer needs it): `connectorType`, `runCycle(installation, config, mapping): RunResult`. Registered by type in a Spring map.
-- **T011** (M) `ConnectorRunScheduler` (`@Scheduled` + `@EnableScheduling`) — select active, non-`PAUSED`, **SERVER_SIDE** installations across tenants (native, tenant-safe), dispatch each to its executor by type; per-installation error isolation; record run via existing sync-state services. **CLIENT_SIDE never dispatched (FR-S02).**
-- **T012** (M) Outbound HTTP infra — Spring `RestClient` bean + a thin `ConnectorHttpClient` (base URL, auth header injection from decrypted secrets, JSON path extraction, page-cursor). Secrets never logged (FR-S05).
-- **T013** (M) `GenericHttpJsonExecutor implements ServerSideConnectorSyncExecutor` — for each supported entity: fetch (paged) → map rows via stored `FieldMapping` (server-side apply of the same mapping shape the client uses) → build presence-scoped rows → `ConnectorSparseUpsertService` → advance checkpoint → accumulate counts. Bounded per cycle (batch caps, `hasNext`).
-- **T014** (M) `GenericHttpJsonConnectorProvider : ConnectorCatalogueProvider` — `hostingType = SERVER_SIDE`, `connectionSchema` = baseUrl (non-secret) + apiKey (secret) + per-entity path/pagination; a default mapping template (refId + a couple of common fields); `supportedDirections = [INBOUND]`.
-- **T015** (S) Server-side connection test — `ConnectorConfigService.recordConnectionTest` path for SERVER_SIDE actually calls `ConnectorHttpClient` against the base URL and stores `last_validated_at` (FR-S06). CLIENT_SIDE unchanged.
-- **T016** (M) Tests: `GenericHttpJsonExecutorTest` (mapping apply, presence-scoping, checkpoint advance on success, no-advance on failure, PARTIAL across entities), `ConnectorRunSchedulerTest` (dispatch only SERVER_SIDE + non-paused, error isolation). Mockito/JUnit5.
-- **T017** (S) `./gradlew :connector:compileKotlin :connector:test` green locally.
+- ✅ **T010** `ServerSideConnectorSyncExecutor` SPI (`service/ServerSideConnectorSyncExecutor.kt`): `connectorType`, `runCycle(installation): ServerSyncOutcome`, optional `testConnection(installation)`. Registered by type in a Spring map.
+- ✅ **T011** `ConnectorRunScheduler` (`@Scheduled`; `@EnableScheduling` already app-wide) — selects active ENABLED **SERVER_SIDE** installations across tenants via native `findAllEnabledAcrossTenants()` (bypasses `@TenantId`), sets tenant context per row, dispatches by type; per-installation error isolation; records FAILED runs for pre-upsert entity errors. **CLIENT_SIDE never dispatched (FR-S02).**
+- ✅ **T012** `ConnectorHttpClient` — `RestClient` GET + header auth (from decrypted secrets) + dotted JSON records-path extraction + a reachability `probe()`. Secrets never logged (FR-S05).
+- ✅ **T013** `GenericHttpJsonExecutor` — per supported entity with a `path.{entity}` + mapping: fetch → map rows via stored `FieldMapping` (presence-preserving) → `ConnectorSparseUpsertService.upsert(..., "SCHEDULED")` → advance checkpoint on clean cycle. Optional `since_param` incremental. Config resolved via new `ConnectorConfigService.resolveForExecution()` (decrypted, server-execution-only).
+- ✅ **T014** `GenericHttpJsonConnectorProvider : ConnectorCatalogueProvider` — `hostingType = SERVER_SIDE`, schema = base_url + api_key (secret) + auth header/scheme + per-entity path; default mapping (customer/product); `INBOUND`.
+- ✅ **T015** Server-side connection test — `ConnectorConnectionTester` routes `POST /config/test` by hosting type: SERVER_SIDE probes via the executor and stores `last_validated_at` (FR-S06); CLIENT_SIDE records the client-reported result (unchanged).
+- ✅ **T016** Tests (13, green): `GenericHttpJsonExecutorTest` (mapping apply, presence-scoping, checkpoint advance/no-advance, fetch-error capture, no-refId drop), `ConnectorRunSchedulerTest` (dispatch only SERVER_SIDE, disabled no-op, failure recording), `ConnectorConnectionTesterTest` (hosting-type routing).
+- ✅ **T017** `:connector:compileKotlin` + `:connector:test` green locally.
+
+**Deferred within Phase B (follow-ups):** per-cycle pagination loop / `hasNext` (currently one bounded GET per entity), OAuth + webhooks (FR-S08), vendor providers.
 
 ## Phase C — Client-side Tally completeness (parallel, smaller — optional in this phase)
 

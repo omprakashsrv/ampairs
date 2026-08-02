@@ -32,6 +32,19 @@ class ConnectorConfigService(
         return config?.toResponse() ?: ConfigResponse(installationUid, emptyMap(), emptyList(), null)
     }
 
+    /**
+     * Resolved config (non-secret values + DECRYPTED secrets) for SERVER-SIDE execution only. This is
+     * the one place decrypted secrets leave the service — used by [ServerSideConnectorSyncExecutor]s to
+     * authenticate outbound calls. NEVER return this from a controller and NEVER log the secrets.
+     */
+    fun resolveForExecution(installationUid: String): ResolvedConnectorConfig {
+        val config = configRepository.findByInstallationUid(installationUid)
+            ?: return ResolvedConnectorConfig(emptyMap(), emptyMap())
+        val nonSecret = config.nonSecretValues?.takeIf { it.isNotBlank() }
+            ?.let { objectMapper.readValue(it, mapType) } ?: emptyMap()
+        return ResolvedConnectorConfig(nonSecret, config.decodeSecrets())
+    }
+
     @Transactional
     fun upsert(installationUid: String, request: ConfigRequest): ConfigResponse {
         installationService.getInstallation(installationUid)
@@ -73,4 +86,16 @@ class ConnectorConfigService(
         secretKeysSet = decodeSecrets().keys.sorted(),
         lastValidatedAt = lastValidatedAt,
     )
+}
+
+/**
+ * Decrypted connection config for server-side execution. NOT a DTO — never serialised to a client.
+ * [secrets] holds decrypted values (api keys / tokens); treat as sensitive and never log.
+ */
+data class ResolvedConnectorConfig(
+    val values: Map<String, String>,
+    val secrets: Map<String, String>,
+) {
+    fun value(key: String): String? = values[key]?.takeIf { it.isNotBlank() }
+    fun secret(key: String): String? = secrets[key]?.takeIf { it.isNotBlank() }
 }
