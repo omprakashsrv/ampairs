@@ -5,6 +5,7 @@ import com.ampairs.connector.domain.dto.ConfigResponse
 import com.ampairs.connector.domain.dto.ConnectionTestRequest
 import com.ampairs.connector.domain.dto.ConnectionTestResponse
 import com.ampairs.connector.service.ConnectorConfigService
+import com.ampairs.connector.service.ConnectorConnectionTester
 import com.ampairs.core.domain.dto.ApiResponse
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController
 @RequestMapping("/connector/v1/installations/{uid}/config")
 class ConnectorConfigController(
     private val configService: ConnectorConfigService,
+    private val connectionTester: ConnectorConnectionTester,
 ) {
     @GetMapping
     fun get(@PathVariable uid: String): ApiResponse<ConfigResponse> =
@@ -29,10 +31,10 @@ class ConnectorConfigController(
         ApiResponse.success(configService.upsert(uid, request))
 
     /**
-     * Records a connection-test result. For client-side connectors the client runs the actual
-     * reachability check and reports the outcome here (FR-009).
+     * Connection test. For CLIENT_SIDE connectors the client runs the reachability check and its result
+     * is recorded (FR-009); for SERVER_SIDE connectors the backend performs the probe (FR-S06).
      */
     @PostMapping("/test")
     fun test(@PathVariable uid: String, @RequestBody request: ConnectionTestRequest): ApiResponse<ConnectionTestResponse> =
-        ApiResponse.success(configService.recordConnectionTest(uid, request.ok, request.message))
+        ApiResponse.success(connectionTester.test(uid, request))
 }
