@@ -1,41 +1,44 @@
 package com.ampairs.product.connector
 
-import com.ampairs.core.connector.DslEntityWriter
-import com.ampairs.product.domain.model.Product
+import com.ampairs.core.connector.ConnectorEntityWriter
+import com.ampairs.core.connector.WriteOutcome
+import com.ampairs.core.connector.WriteResult
 import com.ampairs.product.repository.ProductRepository
 import org.springframework.stereotype.Component
 
 /**
- * Tally closing-balance → Product stock (spec 013), demonstrating the mapping DSL for a COMPLEX target.
+ * Tally closing-balance → Product stock (spec 013), for the `stock_balance` connector entity.
  *
- * NOTE (merge of `main`, spec 014): the inventory subsystem was redesigned into a multi-warehouse,
- * transaction/ledger-backed model (`com.ampairs.inventory`) where stock is a per-(product, warehouse)
- * `InventoryItem` mutated through movement commands (`InventoryStockService.applySale/applyPurchase`,
- * idempotent per source line) rather than a single settable "stock" value. Tally's *absolute* closing
- * balance no longer maps cleanly onto that model (which warehouse? snapshot vs. movement? — a design
- * decision, not a mechanical port), so the `stockQuantity` binding is intentionally a **no-op** until
- * it is re-mapped as a COUNT-style adjustment into a default warehouse. The writer stays registered so
- * `stock_balance` rows are still accepted and matched to their product without error. Follow-up: spec 013.
+ * Status: **SKIPPED / not yet applied.** The `main` merge replaced the old single-scalar stock with a
+ * multi-warehouse, ledger-backed inventory model (`com.ampairs.inventory`, spec 014): stock is a
+ * per-(product, warehouse) `InventoryItem` reconciled through **transactions** (a physical COUNT sets
+ * on-hand and records an `InventoryTransaction`, keeping `quantityOnHand` and the ledger in sync).
+ * Tally sends an *absolute closing balance*, which does NOT map mechanically onto that model — a
+ * correct integration must (1) resolve a per-workspace **default warehouse**, (2) resolve/auto-create
+ * the product's `InventoryItem`, and (3) apply the balance as an **idempotent physical COUNT**
+ * (`InventoryTransactionService.physicalCount`, skipping when the counted qty equals current on-hand,
+ * via `WarehouseService.getDefaultWarehouse()`). Those are policy + correctness decisions (auto-create
+ * scope, SKU uniqueness, no-default-warehouse behaviour) that warrant their own tests.
  *
- * Matched by the product's `refId` (Tally GUID); `createIfMissing = false` so a stock row never
- * fabricates a bare product — it's skipped until the product itself syncs.
+ * Until that lands, this writer **explicitly SKIPs** every row (matching the product only for context)
+ * rather than persisting a no-op "UPDATED" — so connector run history reflects reality instead of a
+ * phantom success, and no stock data is silently discarded-as-applied. Follow-up: spec 013 §stock_balance.
  */
 @Component
 class ConnectorProductStockWriter(
     private val productRepository: ProductRepository,
-) : DslEntityWriter<Product>() {
+) : ConnectorEntityWriter {
 
     override val entityType: String = "stock_balance"
-    override val createIfMissing: Boolean = false
 
-    override fun findByRefId(refId: String): Product? = productRepository.findByRefId(refId)
-    override fun findByUid(uid: String): Product? = productRepository.findByUid(uid)
-    override fun newInstance(): Product = Product() // unused (createIfMissing = false)
-    override fun persist(entity: Product): Product = entity // product unchanged; stock write is disabled (see KDoc)
-
-    override fun defineFields(f: FieldBinding<Product>) {
-        // stockQuantity intentionally not applied — pending warehouse-aware re-mapping onto the
-        // redesigned inventory model (spec 014). Registered so the field is accepted, not rejected.
-        f.field("stockQuantity") { _, _ -> /* no-op */ }
+    override fun applySparse(refId: String?, uid: String?, presentColumns: Map<String, Any?>): WriteResult {
+        val product = refId?.takeIf { it.isNotBlank() }?.let { productRepository.findByRefId(it) }
+            ?: uid?.takeIf { it.isNotBlank() }?.let { productRepository.findByUid(it) }
+        return WriteResult(
+            outcome = WriteOutcome.SKIPPED,
+            ampairsUid = product?.uid,
+            appliedColumns = emptyList(),
+            message = "stock_balance not applied — pending inventory (spec 014) physical-count integration",
+        )
     }
 }

@@ -3,6 +3,7 @@ package com.ampairs.connector.service
 import com.ampairs.connector.domain.dto.SparseUpsertResult
 import com.ampairs.connector.domain.dto.SparseUpsertRow
 import com.ampairs.core.connector.ConnectorEntityWriter
+import com.ampairs.core.connector.WriteOutcome
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
@@ -21,6 +22,13 @@ class ConnectorRowWriter {
     fun writeRow(writer: ConnectorEntityWriter, allowlist: Set<String>, row: SparseUpsertRow): SparseUpsertResult {
         val present = row.values.filterKeys { it in allowlist }
         val result = writer.applySparse(row.refId, row.uid, present)
+        // Rollback must not depend on the writer THROWING. A writer that legally RETURNS a FAILED
+        // outcome (the SPI allows it) would otherwise have its partial writes committed by this
+        // REQUIRES_NEW transaction, defeating the per-row isolation guarantee. Throw here so the row's
+        // transaction rolls back; the caller (ConnectorSparseUpsertService) records it as FAILED.
+        if (result.outcome == WriteOutcome.FAILED) {
+            throw IllegalStateException(result.message ?: "Connector write failed for entity '${writer.entityType}'")
+        }
         return SparseUpsertResult(
             refId = row.refId,
             ampairsUid = result.ampairsUid,

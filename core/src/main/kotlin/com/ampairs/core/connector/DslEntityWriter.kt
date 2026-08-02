@@ -10,14 +10,14 @@ import com.ampairs.core.domain.model.OwnableBaseDomain
  * to flat reflection ([SparsePropertyApplier]). This keeps the complex, entity-specific logic inside
  * the owning module (Constitution Principle IX) while staying type-safe.
  *
- * Example (mapping a Tally stock quantity into a Product's Inventory child rows):
+ * Example (mapping a scalar value into a related/child object owned by this module's service):
  * ```
  * override fun defineFields(f: FieldBinding<Product>) {
  *     f.field("stockQuantity") { product, value ->
- *         val qty = (value as? Number)?.toDouble() ?: return@field
- *         val inv = inventoryRepo.findByProductId(product.uid) ?: Inventory().apply { productId = product.uid }
- *         inv.stock = qty
- *         inventoryRepo.save(inv)
+ *         val qty = (value as? Number)?.toBigDecimal() ?: return@field
+ *         // Delegate to the owning module's public service (Principle IX) — never reach into another
+ *         // module's repositories. e.g. inventoryStockWriter.setOnHand(product.uid, qty)
+ *         stockWriter.setOnHand(product.uid, qty)
  *     }
  *     // "name", "refId", ... not declared here → applied by reflection automatically
  * }
