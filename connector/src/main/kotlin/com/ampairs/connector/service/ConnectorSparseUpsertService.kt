@@ -42,13 +42,14 @@ class ConnectorSparseUpsertService(
 
         val lock = locks.computeIfAbsent("$installationUid::$entityType") { Any() }
         return synchronized(lock) {
-            var created = 0; var updated = 0; var failed = 0
+            var created = 0; var updated = 0; var skipped = 0; var failed = 0
             val results = rows.map { row ->
                 try {
                     val result = rowWriter.writeRow(writer, allowlist, row)
                     when (result.outcome) {
                         WriteOutcome.CREATED.name -> created++
                         WriteOutcome.UPDATED.name -> updated++
+                        WriteOutcome.SKIPPED.name -> skipped++
                         WriteOutcome.FAILED.name -> failed++
                     }
                     result
@@ -57,12 +58,20 @@ class ConnectorSparseUpsertService(
                     SparseUpsertResult(row.refId, null, WriteOutcome.FAILED.name, emptyList(), e.message)
                 }
             }
-            recordRun(installationUid, entityType, rows.size, created, updated, failed)
+            recordRun(installationUid, entityType, rows.size, created, updated, skipped, failed)
             results
         }
     }
 
-    private fun recordRun(installationUid: String, entityType: String, processed: Int, created: Int, updated: Int, failed: Int) {
+    private fun recordRun(
+        installationUid: String,
+        entityType: String,
+        processed: Int,
+        created: Int,
+        updated: Int,
+        skipped: Int,
+        failed: Int,
+    ) {
         runRepository.save(
             ConnectorSyncRun().apply {
                 this.installationUid = installationUid
@@ -74,10 +83,16 @@ class ConnectorSparseUpsertService(
                 this.created = created
                 this.updated = updated
                 this.failed = failed
+                // `skipped` isn't a persisted column (it's derivable as processed-created-updated-failed),
+                // but it drives the status so an all-skipped batch is not misreported as SUCCESS: rows
+                // that matched no product (e.g. stock_balance before the product syncs, createIfMissing=false)
+                // apply nothing, and reporting SUCCESS with 0/0/0 hid that. SKIPPED surfaces it.
                 this.status = when {
-                    failed == 0 -> "SUCCESS"
+                    processed == 0 -> "SUCCESS"
                     failed == processed -> "FAILED"
-                    else -> "PARTIAL"
+                    failed > 0 -> "PARTIAL"
+                    created + updated == 0 -> "SKIPPED"
+                    else -> "SUCCESS"
                 }
             }
         )

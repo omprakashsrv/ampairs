@@ -56,6 +56,7 @@ class ConnectorMappingService(
     /** The writable allowlist for a connector/entity: mapped (non-unmapped) ampairsField names. */
     fun allowlist(installationUid: String, entityType: String): Set<String> {
         val mapping = mappingRepository.findByInstallationUidAndEntityType(installationUid, entityType)
+            ?.takeIf { it.active }   // a soft-deleted mapping must not yield a live allowlist (matches list())
             ?: return emptySet()
         return mapping.parseRules().filterNot { it.unmapped }.map { it.ampairsField }.toSet()
     }
