@@ -9,6 +9,8 @@ data class InvoiceUpdateRequest(
     val invoiceDate: java.time.Instant? = null,
     val invoiceNumber: String = "",
     val orderRefId: String? = null,
+    // External-system reference (e.g. Tally voucher master id captured after an app→Tally push).
+    val refId: String? = null,
     var customerId: String? = null,
     var customerName: String? = null,
     var customerPhone: String? = null,
@@ -40,6 +42,7 @@ fun InvoiceUpdateRequest.toInvoice(): Invoice {
     invoice.uid = this.id
     invoice.invoiceNumber = this.invoiceNumber
     invoice.orderRefId = this.orderRefId
+    invoice.refId = this.refId
     invoice.customerId = this.customerId
     invoice.customerName = this.customerName
     invoice.customerPhone = this.customerPhone

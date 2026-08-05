@@ -11,6 +11,9 @@ data class InvoiceResponse(
     val invoiceDate: Instant = Instant.now(),
     val invoiceNumber: String = "",
     val orderRefId: String? = null,
+    // External-system reference (e.g. the Tally voucher master id captured after an app→Tally push).
+    // Round-trips through /sync so the client's idempotency marker is durable across reinstall.
+    val refId: String? = null,
     var customerId: String? = null,
     var customerName: String? = null,
     var customerPhone: String? = null,
@@ -53,6 +56,7 @@ fun Invoice.toResponse(invoiceItems: List<InvoiceItem>): InvoiceResponse {
         invoiceDate = this.invoiceDate,
         invoiceNumber = this.invoiceNumber,
         orderRefId = this.orderRefId,
+        refId = this.refId,
         customerId = this.customerId,
         customerName = this.customerName,
         customerPhone = this.customerPhone,

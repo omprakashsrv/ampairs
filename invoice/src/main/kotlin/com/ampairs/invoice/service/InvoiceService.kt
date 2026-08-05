@@ -195,6 +195,9 @@ class InvoiceService(
             invoice.uid = existing.uid
             invoice.createdAt = existing.createdAt
             if (invoice.invoiceNumber.isEmpty()) invoice.invoiceNumber = existing.invoiceNumber
+            // Preserve an already-captured external ref (e.g. Tally master id) when a client that
+            // doesn't carry it re-syncs the invoice — never null out an existing ref on upsert.
+            if (invoice.refId == null) invoice.refId = existing.refId
         }
         if (invoice.invoiceNumber.isEmpty() && invoice.sequenceNumber > 0) {
             invoice.invoiceNumber = "${invoice.series}-${invoice.sequenceNumber}"
