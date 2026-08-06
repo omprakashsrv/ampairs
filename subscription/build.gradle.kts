@@ -74,7 +74,7 @@ dependencies {
     implementation("commons-codec:commons-codec:1.22.0")
 
     // JSON processing
-    implementation("org.json:json:20260522")
+    implementation("org.json:json:20260719")
 
     runtimeOnly("com.mysql:mysql-connector-j")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
