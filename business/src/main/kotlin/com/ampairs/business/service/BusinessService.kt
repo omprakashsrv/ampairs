@@ -59,6 +59,10 @@ class BusinessService(
      * @return Business profile
      * @throws BusinessNotFoundException if no business found for workspace
      */
+    // noRollbackFor: a missing profile is a normal, expected outcome for callers like
+    // BusinessTimeZoneProvider that catch and fall back — it must not poison an ambient
+    // transaction (e.g. AnalyticsNightlyBatch's reconcileTrailing) into UnexpectedRollbackException.
+    @Transactional(readOnly = true, noRollbackFor = [BusinessNotFoundException::class])
     fun getBusinessProfile(): Business {
         val workspaceId = getWorkspaceId()
         return businessRepository.findByOwnerId(workspaceId)

@@ -98,7 +98,9 @@ class TokenCleanupService(
     private fun cleanupExplicitlyRevokedTokens(): Int {
         return try {
             val farFutureDate = Instant.now().plus(100 * 365, ChronoUnit.DAYS)
-            tokenRepository.deleteExpiredOrRevokedTokens(farFutureDate)
+            transactionTemplate.execute {
+                tokenRepository.deleteExpiredOrRevokedTokens(farFutureDate)
+            } ?: 0
         } catch (e: Exception) {
             logger.warn("Error cleaning up explicitly revoked tokens", e)
             0
