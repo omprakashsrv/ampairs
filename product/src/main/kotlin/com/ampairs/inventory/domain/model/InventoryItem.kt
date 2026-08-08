@@ -156,6 +156,9 @@ class InventoryItem : OwnableBaseDomain() {
     @Column(name = "unit_id", length = 200)
     var unitId: String? = null
 
+    // NotFound(IGNORE): same rationale as `warehouse` above — a unit_id that doesn't resolve
+    // under the current tenant filter (blank, not yet synced, cross-tenant) must not 500 the read.
+    @NotFound(action = NotFoundAction.IGNORE)
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "unit_id", referencedColumnName = "uid",
                 updatable = false, insertable = false)
