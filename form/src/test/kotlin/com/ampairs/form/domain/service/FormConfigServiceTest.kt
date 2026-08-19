@@ -123,6 +123,7 @@ class FormConfigServiceTest {
             fieldRepository = fieldRepository,
             registry = FormFieldRegistry(listOf(provider)),
             validationEngine = ValidationEngine(),
+            entityChangePublisher = mock(),
         )
     }
 

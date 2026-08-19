@@ -19,7 +19,7 @@ class PriceListServiceTest {
 
     private val priceListRepository: PriceListRepository = mock()
     private val priceListItemRepository: PriceListItemRepository = mock()
-    private val service = PriceListServiceImpl(priceListRepository, priceListItemRepository)
+    private val service = PriceListServiceImpl(priceListRepository, priceListItemRepository, mock())
 
     private fun itemReq(tiers: List<PriceTierRequest>) = PriceListItemRequest(
         priceListId = "PRL1", productId = "RICE", unitPriceMinor = 24000, tiers = tiers,

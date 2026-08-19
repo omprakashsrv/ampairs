@@ -21,6 +21,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.math.BigDecimal
@@ -47,8 +48,8 @@ class PaymentVoucherServiceTest {
 
     @BeforeEach
     fun setup() {
-        voucherService = PaymentVoucherService(voucherRepo, allocationRepo, balanceService, voucherNumberService)
-        allocationService = PaymentAllocationService(allocationRepo, voucherRepo, voucherService)
+        voucherService = PaymentVoucherService(voucherRepo, allocationRepo, balanceService, voucherNumberService, mock())
+        allocationService = PaymentAllocationService(allocationRepo, voucherRepo, voucherService, mock())
 
         whenever(voucherRepo.save(any<PaymentVoucher>())).thenAnswer { inv ->
             val v = inv.getArgument<PaymentVoucher>(0)

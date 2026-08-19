@@ -21,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional
 class LedgerEntryService(
     private val ledgerEntryRepository: LedgerEntryRepository,
     private val balanceService: BalanceService,
+    private val entityChangePublisher: com.ampairs.core.sync.EntityChangePublisher,
 ) {
 
     @Transactional
@@ -49,6 +50,8 @@ class LedgerEntryService(
                 incoming
             }
             val saved = ledgerEntryRepository.save(toSave)
+            if (existing == null) entityChangePublisher.created("ledger_entry", saved.uid)
+            else entityChangePublisher.updated("ledger_entry", saved.uid)
             affectedParties.add(saved.partyUid)
             results.add(saved.asResponse())
         }

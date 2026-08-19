@@ -27,6 +27,7 @@ import java.time.Instant
 class PriceListServiceImpl(
     private val priceListRepository: PriceListRepository,
     private val priceListItemRepository: PriceListItemRepository,
+    private val entityChangePublisher: com.ampairs.core.sync.EntityChangePublisher,
 ) : PriceListService {
 
     private val logger = LoggerFactory.getLogger(PriceListServiceImpl::class.java)
@@ -45,8 +46,12 @@ class PriceListServiceImpl(
     @Transactional
     override fun bulkUpsertLists(requests: List<PriceListRequest>): List<PriceListResponse> = requests.map { req ->
         val existing = req.uid?.takeIf { it.isNotBlank() }?.let { priceListRepository.findByUid(it) }
+        val isNew = existing == null
         val list = (existing ?: PriceList()).applyRequest(req)
-        priceListRepository.save(list).asResponse()
+        val saved = priceListRepository.save(list)
+        if (isNew) entityChangePublisher.created("price_list", saved.uid)
+        else entityChangePublisher.updated("price_list", saved.uid)
+        saved.asResponse()
     }
 
     @Transactional
@@ -82,8 +87,12 @@ class PriceListServiceImpl(
         validateTiers(req)
         val currency = priceListRepository.findByUid(req.priceListId)?.currency ?: Constants.DEFAULT_CURRENCY
         val existing = req.uid?.takeIf { it.isNotBlank() }?.let { priceListItemRepository.findByUid(it) }
+        val isNew = existing == null
         val item = (existing ?: PriceListItem()).applyRequest(req, currency)
-        priceListItemRepository.save(item).asResponse(currency)
+        val saved = priceListItemRepository.save(item)
+        if (isNew) entityChangePublisher.created("price_list_item", saved.uid)
+        else entityChangePublisher.updated("price_list_item", saved.uid)
+        saved.asResponse(currency)
     }
 
     /** Tiers must be strictly ascending by minQty and each minQty > 0 (contiguous, non-overlapping). */

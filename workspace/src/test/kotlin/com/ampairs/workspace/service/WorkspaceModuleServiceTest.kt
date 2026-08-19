@@ -36,6 +36,9 @@ class WorkspaceModuleServiceTest {
     @Mock
     private lateinit var masterModuleRepository: MasterModuleRepository
 
+    @Mock
+    private lateinit var entityChangePublisher: com.ampairs.core.sync.EntityChangePublisher
+
     private lateinit var service: WorkspaceModuleService
 
     private fun masterModule(block: MasterModule.() -> Unit = {}): MasterModule =
@@ -65,7 +68,7 @@ class WorkspaceModuleServiceTest {
 
     @BeforeEach
     fun setUp() {
-        service = WorkspaceModuleService(workspaceModuleRepository, masterModuleRepository)
+        service = WorkspaceModuleService(workspaceModuleRepository, masterModuleRepository, entityChangePublisher)
         whenever(workspaceModuleRepository.save(any<WorkspaceModule>())).thenAnswer { it.arguments[0] }
         whenever(masterModuleRepository.save(any<MasterModule>())).thenAnswer { it.arguments[0] }
         TenantContextHolder.setCurrentTenant("WSP-1")

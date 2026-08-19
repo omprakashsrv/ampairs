@@ -17,6 +17,7 @@ import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
 import org.mockito.junit.jupiter.MockitoSettings
 import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 import java.math.BigDecimal
@@ -48,7 +49,7 @@ class BalanceServiceFootToZeroTest {
 
     @BeforeEach
     fun setup() {
-        service = BalanceService(ledgerRepo, balanceRepo, customerService)
+        service = BalanceService(ledgerRepo, balanceRepo, customerService, mock())
 
         whenever(ledgerRepo.signedSumForParty(any())).thenAnswer { inv ->
             val party = inv.getArgument<String>(0)

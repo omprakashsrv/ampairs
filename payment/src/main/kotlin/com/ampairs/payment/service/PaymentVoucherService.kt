@@ -34,6 +34,7 @@ class PaymentVoucherService(
     private val allocationRepository: PaymentAllocationRepository,
     private val balanceService: BalanceService,
     private val voucherNumberService: VoucherNumberService,
+    private val entityChangePublisher: com.ampairs.core.sync.EntityChangePublisher,
 ) {
 
     @Transactional
@@ -75,6 +76,8 @@ class PaymentVoucherService(
         }
 
         val saved = voucherRepository.save(voucher)
+        if (existing == null) entityChangePublisher.created("payment_voucher", saved.uid)
+        else entityChangePublisher.updated("payment_voucher", saved.uid)
         recomputeUnallocated(saved)
         postOrReverseLedger(saved)
         return voucherRepository.findByUid(saved.uid)?.asResponse() ?: saved.asResponse()

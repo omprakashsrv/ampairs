@@ -44,6 +44,7 @@ class FormConfigService(
     private val fieldRepository: FormFieldRepository,
     private val registry: FormFieldRegistry,
     private val validationEngine: ValidationEngine,
+    private val entityChangePublisher: com.ampairs.core.sync.EntityChangePublisher,
 ) {
 
     // ---- Read (UI) -------------------------------------------------------------------------------
@@ -135,6 +136,8 @@ class FormConfigService(
 
         schema.version += 1
         val savedSchema = schemaRepository.save(schema)
+        // Signal other devices to re-pull the form schema aggregate feed.
+        entityChangePublisher.updated("form", savedSchema.uid)
         return assembleResponse(savedSchema)
     }
 

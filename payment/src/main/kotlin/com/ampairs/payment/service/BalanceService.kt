@@ -30,6 +30,7 @@ class BalanceService(
     private val ledgerEntryRepository: LedgerEntryRepository,
     private val partyBalanceRepository: PartyBalanceRepository,
     private val customerService: CustomerService,
+    private val entityChangePublisher: com.ampairs.core.sync.EntityChangePublisher,
 ) {
     private val logger = LoggerFactory.getLogger(BalanceService::class.java)
 
@@ -72,6 +73,8 @@ class BalanceService(
         entry.narration = narration
         entry.active = true
         val saved = ledgerEntryRepository.save(entry)
+        if (existing == null) entityChangePublisher.created("ledger_entry", saved.uid)
+        else entityChangePublisher.updated("ledger_entry", saved.uid)
         recompute(partyUid)
         return saved
     }
@@ -87,6 +90,7 @@ class BalanceService(
         entry.active = false
         entry.reversed = true
         ledgerEntryRepository.save(entry)
+        entityChangePublisher.updated("ledger_entry", entry.uid)
         recompute(entry.partyUid)
         return true
     }
@@ -118,6 +122,7 @@ class BalanceService(
         val saved = ledgerEntryRepository.save(contra)
         original.reversed = true
         ledgerEntryRepository.save(original)
+        entityChangePublisher.updated("ledger_entry", saved.uid)
         recompute(original.partyUid)
         return saved
     }
@@ -141,6 +146,7 @@ class BalanceService(
         balance.cachedClosingBalance = closing
         balance.lastComputedAt = Instant.now()
         partyBalanceRepository.save(balance)
+        entityChangePublisher.updated("party_balance", balance.uid)
         mirrorToCustomer(partyUid, closing)
         return closing
     }

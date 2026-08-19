@@ -1,6 +1,7 @@
 package com.ampairs.workspace.service
 
 import com.ampairs.core.multitenancy.TenantContextHolder
+import com.ampairs.core.sync.EntityChangePublisher
 import com.ampairs.workspace.model.MasterModule
 import com.ampairs.workspace.model.WorkspaceModule
 import com.ampairs.workspace.model.dto.*
@@ -21,8 +22,18 @@ import java.time.Instant
 @Transactional
 class WorkspaceModuleService(
     private val workspaceModuleRepository: WorkspaceModuleRepository,
-    private val masterModuleRepository: MasterModuleRepository
+    private val masterModuleRepository: MasterModuleRepository,
+    private val entityChangePublisher: EntityChangePublisher,
 ) {
+
+    /**
+     * Mobile `SyncEntity` code for the workspace module-enablement list. Emitting a real-time
+     * change signal under this code lets other devices re-pull their installed modules — mirroring
+     * how customer/product/etc. propagate across devices.
+     */
+    private companion object {
+        const val MODULE_SYNC_ENTITY = "module"
+    }
 
     /**
      * Get comprehensive module overview for workspace
@@ -196,6 +207,9 @@ class WorkspaceModuleService(
         savedModule.status = WorkspaceModuleStatus.ACTIVE
         workspaceModuleRepository.save(savedModule)
 
+        // Signal other devices to re-pull their installed-module list.
+        entityChangePublisher.created(MODULE_SYNC_ENTITY, moduleCode)
+
         return ModuleInstallationResponse(
             success = true,
             moduleId = savedModule.uid,
@@ -250,6 +264,9 @@ class WorkspaceModuleService(
 
         // Remove from workspace
         workspaceModuleRepository.delete(workspaceModule)
+
+        // Signal other devices to re-pull their installed-module list.
+        entityChangePublisher.deleted(MODULE_SYNC_ENTITY, moduleCode)
 
         return ModuleUninstallationResponse(
             success = true,
@@ -597,14 +614,18 @@ class WorkspaceModuleService(
      */
     fun reorderModules(orders: List<com.ampairs.workspace.model.dto.ModuleReorderItem>) {
         val workspaceId = TenantContextHolder.getCurrentTenant() ?: return
+        var changed = false
         orders.forEach { item ->
             workspaceModuleRepository
                 .findByWorkspaceIdAndMasterModuleModuleCode(workspaceId, item.moduleCode)
                 ?.also { module ->
                     module.displayOrder = item.displayOrder
                     workspaceModuleRepository.save(module)
+                    changed = true
                 }
         }
+        // Signal other devices once so they re-pull the reordered list.
+        if (changed) entityChangePublisher.updated(MODULE_SYNC_ENTITY, workspaceId)
     }
 
     private fun checkMissingDependencies(workspaceId: String, masterModule: MasterModule): List<String> {
