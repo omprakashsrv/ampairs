@@ -25,6 +25,7 @@ class AdjustmentService(
     private val adjustmentRepository: AdjustmentVoucherRepository,
     private val balanceService: BalanceService,
     private val voucherNumberService: VoucherNumberService,
+    private val entityChangePublisher: com.ampairs.core.sync.EntityChangePublisher,
 ) {
 
     @Transactional
@@ -51,6 +52,8 @@ class AdjustmentService(
         }
 
         val saved = adjustmentRepository.save(voucher)
+        if (existing == null) entityChangePublisher.created("adjustment", saved.uid)
+        else entityChangePublisher.updated("adjustment", saved.uid)
         if (saved.active) {
             balanceService.postSourceEntry(
                 partyUid = saved.partyUid,

@@ -20,6 +20,7 @@ import java.time.Instant
 @Service
 class GeoZoneServiceImpl(
     private val geoZoneRepository: GeoZoneRepository,
+    private val entityChangePublisher: com.ampairs.core.sync.EntityChangePublisher,
 ) : GeoZoneService {
 
     private val logger = LoggerFactory.getLogger(GeoZoneServiceImpl::class.java)
@@ -47,8 +48,12 @@ class GeoZoneServiceImpl(
     @Transactional
     override fun bulkUpsert(requests: List<GeoZoneRequest>): List<GeoZoneResponse> = requests.map { req ->
         val existing = req.uid?.takeIf { it.isNotBlank() }?.let { geoZoneRepository.findByUid(it) }
+        val isNew = existing == null
         val zone = (existing ?: GeoZone()).applyRequest(req)
-        geoZoneRepository.save(zone).asResponse()
+        val saved = geoZoneRepository.save(zone)
+        if (isNew) entityChangePublisher.created("geo_zone", saved.uid)
+        else entityChangePublisher.updated("geo_zone", saved.uid)
+        saved.asResponse()
     }
 
     @Transactional(readOnly = true)

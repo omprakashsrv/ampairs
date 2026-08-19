@@ -18,6 +18,7 @@ import java.time.Instant
 @Service
 class OfferServiceImpl(
     private val offerRepository: OfferRepository,
+    private val entityChangePublisher: com.ampairs.core.sync.EntityChangePublisher,
 ) : OfferService {
 
     private val logger = LoggerFactory.getLogger(OfferServiceImpl::class.java)
@@ -45,7 +46,11 @@ class OfferServiceImpl(
     @Transactional
     override fun bulkUpsert(requests: List<OfferRequest>): List<OfferResponse> = requests.map { req ->
         val existing = req.uid?.takeIf { it.isNotBlank() }?.let { offerRepository.findByUid(it) }
+        val isNew = existing == null
         val offer = (existing ?: Offer()).applyRequest(req)
-        offerRepository.save(offer).asResponse()
+        val saved = offerRepository.save(offer)
+        if (isNew) entityChangePublisher.created("offer", saved.uid)
+        else entityChangePublisher.updated("offer", saved.uid)
+        saved.asResponse()
     }
 }

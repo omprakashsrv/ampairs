@@ -25,6 +25,7 @@ class PaymentAllocationService(
     private val allocationRepository: PaymentAllocationRepository,
     private val voucherRepository: PaymentVoucherRepository,
     private val voucherService: PaymentVoucherService,
+    private val entityChangePublisher: com.ampairs.core.sync.EntityChangePublisher,
 ) {
 
     @Transactional
@@ -44,6 +45,8 @@ class PaymentAllocationService(
             }
             validateNotExceeding(toSave)
             val saved = allocationRepository.save(toSave)
+            if (existing == null) entityChangePublisher.created("payment_allocation", saved.uid)
+            else entityChangePublisher.updated("payment_allocation", saved.uid)
             affectedVouchers.add(saved.paymentVoucherUid)
             results.add(saved.asResponse())
         }
