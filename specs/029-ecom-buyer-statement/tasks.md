@@ -26,9 +26,9 @@ Backend module roots at repo root: `core/`, `invoice/`, `payment/`, `ecom/` unde
 
 **Purpose**: Confirm the ground the read-through builds on. No new module, no migration.
 
-- [ ] T001 Verify build baseline compiles: `./gradlew :core:compileKotlin :invoice:compileKotlin :payment:compileKotlin :ecom:compileKotlin`
-- [ ] T002 Confirm existing dependency edges exist (no build.gradle change expected): `invoice`→`core`, `payment`→`core`, `ecom`→`core` in each module's `build.gradle.kts`; note if any is missing
-- [ ] T003 Confirm the buyer surface exemption: `ecom` `CustomerAccountController` order endpoints run without `X-Workspace-ID` and set tenant from `storefront_slug` (reference for the new endpoints) in `ecom/src/main/kotlin/com/ampairs/ecom/controller/CustomerAccountController.kt`
+- [x] T001 Verify build baseline compiles: `./gradlew :core:compileKotlin :invoice:compileKotlin :payment:compileKotlin :ecom:compileKotlin`
+- [x] T002 Confirm existing dependency edges exist (no build.gradle change expected): `invoice`→`core`, `payment`→`core`, `ecom`→`core` in each module's `build.gradle.kts`; note if any is missing
+- [x] T003 Confirm the buyer surface exemption: `ecom` `CustomerAccountController` order endpoints run without `X-Workspace-ID` and set tenant from `storefront_slug` (reference for the new endpoints) in `ecom/src/main/kotlin/com/ampairs/ecom/controller/CustomerAccountController.kt`
 
 ---
 
@@ -39,11 +39,11 @@ EVERY user story depends on.
 
 **⚠️ CRITICAL**: No user story phase can begin until this phase is complete.
 
-- [ ] T004 [P] Create buyer invoice DTOs `BuyerInvoiceSummary`, `BuyerInvoiceDetail`, `BuyerInvoiceLine` in `core/src/main/kotlin/com/ampairs/core/service/InvoiceEcomService.kt` (data classes; `Instant`/`BigDecimal`; `status: String`; `orderRefId: String?`)
-- [ ] T005 [P] Declare interface `InvoiceEcomService` with `listBuyerInvoices(partyUid, pageable): Page<BuyerInvoiceSummary>`, `getBuyerInvoice(invoiceUid, partyUid): BuyerInvoiceDetail?`, `listInvoicesForOrder(orderRefId, partyUid): List<BuyerInvoiceSummary>` in the same `core/.../service/InvoiceEcomService.kt`
-- [ ] T006 [P] Create buyer ledger DTOs `BuyerOutstandingResponse`, `BuyerOpenBill`, `BuyerAgingBucket`, `BuyerStatementResponse`, `BuyerStatementLine` in `core/src/main/kotlin/com/ampairs/core/service/PartyLedgerEcomService.kt`
-- [ ] T007 [P] Declare interface `PartyLedgerEcomService` with `outstanding(partyUid, asOf): BuyerOutstandingResponse`, `statement(partyUid, from, to): BuyerStatementResponse` in the same `core/.../service/PartyLedgerEcomService.kt`
-- [ ] T008 Add a private `resolveParty(authentication, storefrontSlug, customerId?)` helper in `ecom/.../controller/CustomerAccountController.kt`: set tenant from `storefrontService.getPublishedStorefrontBySlug(slug).ownerId` (try/finally), resolve `EcomCustomerService.resolveLinkedCustomerId(userId, customerId)`, throw `NOT_LINKED`→403 when null (US8). Reuse across all new endpoints.
+- [x] T004 [P] Create buyer invoice DTOs `BuyerInvoiceSummary`, `BuyerInvoiceDetail`, `BuyerInvoiceLine` in `core/src/main/kotlin/com/ampairs/core/service/InvoiceEcomService.kt` (data classes; `Instant`/`BigDecimal`; `status: String`; `orderRefId: String?`)
+- [x] T005 [P] Declare interface `InvoiceEcomService` with `listBuyerInvoices(partyUid, pageable): Page<BuyerInvoiceSummary>`, `getBuyerInvoice(invoiceUid, partyUid): BuyerInvoiceDetail?`, `listInvoicesForOrder(orderRefId, partyUid): List<BuyerInvoiceSummary>` in the same `core/.../service/InvoiceEcomService.kt`
+- [x] T006 [P] Create buyer ledger DTOs `BuyerOutstandingResponse`, `BuyerOpenBill`, `BuyerAgingBucket`, `BuyerStatementResponse`, `BuyerStatementLine` in `core/src/main/kotlin/com/ampairs/core/service/PartyLedgerEcomService.kt`
+- [x] T007 [P] Declare interface `PartyLedgerEcomService` with `outstanding(partyUid, asOf): BuyerOutstandingResponse`, `statement(partyUid, from, to): BuyerStatementResponse` in the same `core/.../service/PartyLedgerEcomService.kt`
+- [x] T008 Add a private `resolveParty(authentication, storefrontSlug, customerId?)` helper in `ecom/.../controller/CustomerAccountController.kt`: set tenant from `storefrontService.getPublishedStorefrontBySlug(slug).ownerId` (try/finally), resolve `EcomCustomerService.resolveLinkedCustomerId(userId, customerId)`, throw `NOT_LINKED`→403 when null (US8). Reuse across all new endpoints.
 - [ ] T009 [P] Unit test the party-resolution/exemption contract stub in `ecom/src/test/kotlin/com/ampairs/ecom/controller/CustomerAccountResolveTest.kt` (linked → partyUid; unlinked → 403 NOT_LINKED; restricted `active=false` contact → unlinked)
 
 **Checkpoint**: Interfaces + DTOs compile; resolve helper enforces the link gate.
@@ -56,11 +56,11 @@ EVERY user story depends on.
 **Independent test**: `GET /v1/ecom/account/invoices?storefront_slug=…` returns the linked customer's
 finalized invoices only (no drafts), `PageResponse`-wrapped, each with `order_ref` or null.
 
-- [ ] T010 [P] [US1] Add derived finder `findByCustomerIdAndStatusIn(customerId, statuses, pageable): Page<Invoice>` (called with `finalizedStatuses = setOf(InvoiceStatus.INVOICED)`, sorted `invoiceDate` desc) in `invoice/src/main/kotlin/com/ampairs/invoice/repository/InvoiceRepository.kt`
-- [ ] T011 [US1] Implement `InvoiceEcomServiceImpl.listBuyerInvoices(...)` in `invoice/src/main/kotlin/com/ampairs/invoice/service/InvoiceEcomServiceImpl.kt`: filter to `{INVOICED}` (excludes DRAFT/NEW), map `Invoice`→`BuyerInvoiceSummary` (status→buyer string; `total` only, no `amountDue`; raw `orderRefId` passed through for the controller to swap); `@Service`
-- [ ] T012 [US1] Add `EcomOrderRepository.findByManagementOrderRef(managementOrderRef): EcomOrder?` in `ecom/src/main/kotlin/com/ampairs/ecom/repository/EcomOrderRepository.kt` (used to swap `orderRefId`→buyer-facing `order_ref`)
-- [ ] T013 [US1] Add `GET /v1/ecom/account/invoices` to `ecom/.../controller/CustomerAccountController.kt`: `resolveParty(...)`, call `invoiceEcomService.listBuyerInvoices(partyUid, pageable)`, map each item's `orderRefId`→`order_ref` via `findByManagementOrderRef`, return `ApiResponse.success(PageResponse.from(page))`
-- [ ] T014 [P] [US1] Unit test invoice→DTO mapping + finalized filter in `invoice/src/test/kotlin/com/ampairs/invoice/service/InvoiceEcomServiceImplTest.kt` (drafts excluded; status string; total mapped)
+- [x] T010 [P] [US1] Add derived finder `findByCustomerIdAndStatusIn(customerId, statuses, pageable): Page<Invoice>` (called with `finalizedStatuses = setOf(InvoiceStatus.INVOICED)`, sorted `invoiceDate` desc) in `invoice/src/main/kotlin/com/ampairs/invoice/repository/InvoiceRepository.kt`
+- [x] T011 [US1] Implement `InvoiceEcomServiceImpl.listBuyerInvoices(...)` in `invoice/src/main/kotlin/com/ampairs/invoice/service/InvoiceEcomServiceImpl.kt`: filter to `{INVOICED}` (excludes DRAFT/NEW), map `Invoice`→`BuyerInvoiceSummary` (status→buyer string; `total` only, no `amountDue`; raw `orderRefId` passed through for the controller to swap); `@Service`
+- [x] T012 [US1] Add `EcomOrderRepository.findByManagementOrderRef(managementOrderRef): EcomOrder?` in `ecom/src/main/kotlin/com/ampairs/ecom/repository/EcomOrderRepository.kt` (used to swap `orderRefId`→buyer-facing `order_ref`)
+- [x] T013 [US1] Add `GET /v1/ecom/account/invoices` to `ecom/.../controller/CustomerAccountController.kt`: `resolveParty(...)`, call `invoiceEcomService.listBuyerInvoices(partyUid, pageable)`, map each item's `orderRefId`→`order_ref` via `findByManagementOrderRef`, return `ApiResponse.success(PageResponse.from(page))`
+- [x] T014 [P] [US1] Unit test invoice→DTO mapping + finalized filter in `invoice/src/test/kotlin/com/ampairs/invoice/service/InvoiceEcomServiceImplTest.kt` (drafts excluded; status string; total mapped)
 - [ ] T015 [US1] Integration test `GET .../invoices` in `ecom/src/test/kotlin/com/ampairs/ecom/controller/BuyerInvoiceListIT.kt` (linked → own finalized invoices; draft absent; `order_ref` set for ecom invoice, null otherwise; unlinked → 403)
 
 **Checkpoint**: MVP — buyer can list their invoices.
@@ -73,9 +73,9 @@ finalized invoices only (no drafts), `PageResponse`-wrapped, each with `order_re
 **Independent test**: `GET /v1/ecom/account/invoices/{uid}` returns detail for own invoice; another
 party's invoice or a draft → 404.
 
-- [ ] T016 [US2] Implement `InvoiceEcomServiceImpl.getBuyerInvoice(invoiceUid, partyUid)` in `invoice/.../service/InvoiceEcomServiceImpl.kt`: load via existing `findByUid` + item entity graph; return null if `customerId != partyUid` or draft; map `Invoice`+items → `BuyerInvoiceDetail` (subtotal/taxTotal/total; lines omit cost/margin)
-- [ ] T017 [US2] Add `GET /v1/ecom/account/invoices/{invoiceUid}` to `ecom/.../controller/CustomerAccountController.kt`: `resolveParty(...)`, call `getBuyerInvoice(...)`, `?: throw NotFound`, swap `orderRefId`→`order_ref`, `ApiResponse.success(...)`
-- [ ] T018 [P] [US2] Unit test detail mapping + guard in `invoice/src/test/kotlin/com/ampairs/invoice/service/InvoiceEcomServiceImplTest.kt` (wrong party → null; draft → null; lines carry no cost field)
+- [x] T016 [US2] Implement `InvoiceEcomServiceImpl.getBuyerInvoice(invoiceUid, partyUid)` in `invoice/.../service/InvoiceEcomServiceImpl.kt`: load via existing `findByUid` + item entity graph; return null if `customerId != partyUid` or draft; map `Invoice`+items → `BuyerInvoiceDetail` (subtotal/taxTotal/total; lines omit cost/margin)
+- [x] T017 [US2] Add `GET /v1/ecom/account/invoices/{invoiceUid}` to `ecom/.../controller/CustomerAccountController.kt`: `resolveParty(...)`, call `getBuyerInvoice(...)`, `?: throw NotFound`, swap `orderRefId`→`order_ref`, `ApiResponse.success(...)`
+- [x] T018 [P] [US2] Unit test detail mapping + guard in `invoice/src/test/kotlin/com/ampairs/invoice/service/InvoiceEcomServiceImplTest.kt` (wrong party → null; draft → null; lines carry no cost field)
 - [ ] T019 [US2] Integration test `GET .../invoices/{uid}` in `ecom/src/test/kotlin/com/ampairs/ecom/controller/BuyerInvoiceDetailIT.kt` (own → 200 with lines; other party → 404; draft → 404)
 
 **Checkpoint**: Buyer can open an invoice.
@@ -88,12 +88,12 @@ party's invoice or a draft → 404.
 **Independent test**: `GET .../orders/{ref}/invoices` and order-detail `invoices[]` return the order's
 finalized invoices; invoice detail/list carry `order_ref`; empty/multi/pending-ingest handled.
 
-- [ ] T020 [P] [US3] Add derived finder `findByOrderRefIdAndStatusIn(orderRefId, statuses): List<Invoice>` in `invoice/.../repository/InvoiceRepository.kt`
-- [ ] T021 [US3] Implement `InvoiceEcomServiceImpl.listInvoicesForOrder(orderRefId, partyUid)` in `invoice/.../service/InvoiceEcomServiceImpl.kt`: finalized invoices where `orderRefId` matches AND `customerId == partyUid`; map → `BuyerInvoiceSummary`
-- [ ] T022 [US3] Add `GET /v1/ecom/account/orders/{ecomOrderRef}/invoices` to `ecom/.../controller/CustomerAccountController.kt`: resolve party, `getCustomerOrder(partyUid, ecomOrderRef)` (ownership re-check), read `managementOrderRef` (null → `[]`), call `listInvoicesForOrder(managementOrderRef, partyUid)`, swap `order_ref`
-- [ ] T023 [US3] Extend order detail: add `invoices: List<BuyerInvoiceSummary>` to `ecom/src/main/kotlin/com/ampairs/ecom/domain/dto/EcomOrderResponse.kt` and populate it in the order-detail path (`EcomOrderService`/controller) via `listInvoicesForOrder(order.managementOrderRef, partyUid)` — empty when none
-- [ ] T024 [US4] Ensure invoice→order reverse link surfaces `order_ref` on both `BuyerInvoiceSummary` and `BuyerInvoiceDetail` wire output (controller swap already added in T013/T017); add a small `resolveOrderRef(orderRefId): String?` controller helper wrapping `findByManagementOrderRef(...)?.ecomOrderRef` in `ecom/.../controller/CustomerAccountController.kt`
-- [ ] T025 [P] [US3] Unit test `listInvoicesForOrder` in `invoice/src/test/kotlin/com/ampairs/invoice/service/InvoiceEcomServiceImplTest.kt` (multiple invoices for one order; wrong-party filtered out)
+- [x] T020 [P] [US3] Add derived finder `findByOrderRefIdAndStatusIn(orderRefId, statuses): List<Invoice>` in `invoice/.../repository/InvoiceRepository.kt`
+- [x] T021 [US3] Implement `InvoiceEcomServiceImpl.listInvoicesForOrder(orderRefId, partyUid)` in `invoice/.../service/InvoiceEcomServiceImpl.kt`: finalized invoices where `orderRefId` matches AND `customerId == partyUid`; map → `BuyerInvoiceSummary`
+- [x] T022 [US3] Add `GET /v1/ecom/account/orders/{ecomOrderRef}/invoices` to `ecom/.../controller/CustomerAccountController.kt`: resolve party, `getCustomerOrder(partyUid, ecomOrderRef)` (ownership re-check), read `managementOrderRef` (null → `[]`), call `listInvoicesForOrder(managementOrderRef, partyUid)`, swap `order_ref`
+- [x] T023 [US3] Extend order detail: add `invoices: List<BuyerInvoiceSummary>` to `ecom/src/main/kotlin/com/ampairs/ecom/domain/dto/EcomOrderResponse.kt` and populate it in the order-detail path (`EcomOrderService`/controller) via `listInvoicesForOrder(order.managementOrderRef, partyUid)` — empty when none
+- [x] T024 [US4] Ensure invoice→order reverse link surfaces `order_ref` on both `BuyerInvoiceSummary` and `BuyerInvoiceDetail` wire output (controller swap already added in T013/T017); add a small `resolveOrderRef(orderRefId): String?` controller helper wrapping `findByManagementOrderRef(...)?.ecomOrderRef` in `ecom/.../controller/CustomerAccountController.kt`
+- [x] T025 [P] [US3] Unit test `listInvoicesForOrder` in `invoice/src/test/kotlin/com/ampairs/invoice/service/InvoiceEcomServiceImplTest.kt` (multiple invoices for one order; wrong-party filtered out)
 - [ ] T026 [US3] Integration test order↔invoice in `ecom/src/test/kotlin/com/ampairs/ecom/controller/OrderInvoiceLinkIT.kt` (order with one/multiple/zero invoices; `management_order_ref` null → `[]`; order-detail `invoices[]` matches the dedicated endpoint; non-ecom invoice → `order_ref` null)
 
 **Checkpoint**: Both link directions resolve.
@@ -105,9 +105,9 @@ finalized invoices; invoice detail/list carry `order_ref`; empty/multi/pending-i
 **Goal**: A linked buyer sees current balance, open bills with due dates, and aging.
 **Independent test**: `GET .../outstanding` matches what the owner sees for that customer in `payment`.
 
-- [ ] T027 [US5] Implement `PartyLedgerEcomServiceImpl.outstanding(partyUid, asOf)` in `payment/src/main/kotlin/com/ampairs/payment/service/PartyLedgerEcomServiceImpl.kt`: delegate to `OutstandingService.openBills`, `AgingService`/`PartyBalanceRepository.findByPartyUid`; map → `BuyerOutstandingResponse` (direction→"DR"/"CR"); `@Service`
-- [ ] T028 [US5] Add `GET /v1/ecom/account/outstanding` to `ecom/.../controller/CustomerAccountController.kt`: resolve party, call `partyLedgerEcomService.outstanding(partyUid, Instant.now())`, `ApiResponse.success(...)`
-- [ ] T029 [P] [US5] Unit test outstanding mapping in `payment/src/test/kotlin/com/ampairs/payment/service/PartyLedgerEcomServiceImplTest.kt` (empty ledger → zero balance; DR/CR direction string; bucket labels preserved)
+- [x] T027 [US5] Implement `PartyLedgerEcomServiceImpl.outstanding(partyUid, asOf)` in `payment/src/main/kotlin/com/ampairs/payment/service/PartyLedgerEcomServiceImpl.kt`: delegate to `OutstandingService.openBills`, `AgingService`/`PartyBalanceRepository.findByPartyUid`; map → `BuyerOutstandingResponse` (direction→"DR"/"CR"); `@Service`
+- [x] T028 [US5] Add `GET /v1/ecom/account/outstanding` to `ecom/.../controller/CustomerAccountController.kt`: resolve party, call `partyLedgerEcomService.outstanding(partyUid, Instant.now())`, `ApiResponse.success(...)`
+- [x] T029 [P] [US5] Unit test outstanding mapping in `payment/src/test/kotlin/com/ampairs/payment/service/PartyLedgerEcomServiceImplTest.kt` (empty ledger → zero balance; DR/CR direction string; bucket labels preserved)
 - [ ] T030 [US5] Integration test `GET .../outstanding` in `ecom/src/test/kotlin/com/ampairs/ecom/controller/BuyerOutstandingIT.kt` (linked → own bills+aging; unlinked → 403)
 
 **Checkpoint**: Buyer sees what they owe.
@@ -119,9 +119,9 @@ finalized invoices; invoice detail/list carry `order_ref`; empty/multi/pending-i
 **Goal**: A linked buyer views a date-ranged statement (invoices + payments) with a running balance.
 **Independent test**: `GET .../statement` — last line's running balance == closing balance.
 
-- [ ] T031 [US6] Implement `PartyLedgerEcomServiceImpl.statement(partyUid, from, to)` in `payment/.../service/PartyLedgerEcomServiceImpl.kt`: delegate to `StatementService.buildStatement`; map `PartyStatementResponse`→`BuyerStatementResponse` (EntryType→`kind`; `voucherNo`→`reference`; drop `partyUid`)
-- [ ] T032 [US6] Add `GET /v1/ecom/account/statement` (params `from?`,`to?`) to `ecom/.../controller/CustomerAccountController.kt`: resolve party, default `from`=null/`to`=now, call `partyLedgerEcomService.statement(...)`, `ApiResponse.success(...)`
-- [ ] T033 [P] [US6] Unit test statement mapping in `payment/src/test/kotlin/com/ampairs/payment/service/PartyLedgerEcomServiceImplTest.kt` (kind mapping; opening/closing signs; last-line == closing)
+- [x] T031 [US6] Implement `PartyLedgerEcomServiceImpl.statement(partyUid, from, to)` in `payment/.../service/PartyLedgerEcomServiceImpl.kt`: delegate to `StatementService.buildStatement`; map `PartyStatementResponse`→`BuyerStatementResponse` (EntryType→`kind`; `voucherNo`→`reference`; drop `partyUid`)
+- [x] T032 [US6] Add `GET /v1/ecom/account/statement` (params `from?`,`to?`) to `ecom/.../controller/CustomerAccountController.kt`: resolve party, default `from`=null/`to`=now, call `partyLedgerEcomService.statement(...)`, `ApiResponse.success(...)`
+- [x] T033 [P] [US6] Unit test statement mapping in `payment/src/test/kotlin/com/ampairs/payment/service/PartyLedgerEcomServiceImplTest.kt` (kind mapping; opening/closing signs; last-line == closing)
 - [ ] T034 [US6] Integration test `GET .../statement` in `ecom/src/test/kotlin/com/ampairs/ecom/controller/BuyerStatementIT.kt` (interleaved invoice/payment lines; running balance foots to closing; window filter honored)
 
 **Checkpoint**: Buyer can reconcile.
@@ -145,8 +145,8 @@ never returns that account's data.
 **Purpose**: Security/isolation hardening, docs, and gate.
 
 - [ ] T036 [P] Tenant-isolation integration test in `ecom/src/test/kotlin/com/ampairs/ecom/controller/BuyerTenantIsolationIT.kt` (same buyer, two storefronts/workspaces → each returns only that workspace's invoices/ledger)
-- [ ] T037 [P] Verify no cross-module leakage: `ecom` imports only `com.ampairs.core.service.*` for these calls (no `invoice`/`payment` impl or repo imports) — grep check noted in PR description
-- [ ] T038 [P] Confirm `NO_MIGRATION_NEEDED.md` carries the spec-029 entry (already added) and no `db/migration` files were introduced
+- [x] T037 [P] Verify no cross-module leakage: `ecom` imports only `com.ampairs.core.service.*` for these calls (no `invoice`/`payment` impl or repo imports) — grep check noted in PR description
+- [x] T038 [P] Confirm `NO_MIGRATION_NEEDED.md` carries the spec-029 entry (already added) and no `db/migration` files were introduced
 - [ ] T039 Run the full gate: `./gradlew :core:test :invoice:test :payment:test :ecom:test` then `./gradlew testAll` (Docker up); fix failures
 - [ ] T040 [P] Update `docs/modules/ecom.md` (buyer account section) with the new endpoints and the order↔invoice link; keep `spec.md` §12 open questions in sync if any resolved
 
