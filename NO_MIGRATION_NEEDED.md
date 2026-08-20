@@ -60,3 +60,11 @@ run against MySQL — `flyway-mysql` was not on the classpath). Restored:
 
 PostgreSQL remains the primary/production vendor; MySQL migrations are currently authored by
 translation and are not yet exercised by CI (no MySQL integration tests).
+
+## 2026-08-20 — spec 029 (ecom buyer account: invoices, statement, order↔invoice)
+
+No migration. The feature is read-only over existing `invoice`, `payment`, and `ecom` tables plus a
+join. The order↔invoice link already exists in the schema
+(`EcomOrder.management_order_ref == Order.uid == Invoice.order_ref_id`) — no new columns or tables.
+New work is limited to `core` service interfaces + buyer-safe DTOs, derived-query repository finders,
+and new read endpoints under `/v1/ecom/account/**`.
