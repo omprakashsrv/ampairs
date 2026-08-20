@@ -126,5 +126,7 @@ fun findByOrderRefIdAndStatusIn(orderRefId: String, statuses: Collection<Invoice
 fun findByManagementOrderRef(managementOrderRef: String): EcomOrder?
 ```
 
-`finalizedStatuses` = the invoice module's existing non-draft/finalized set (same predicate
-`OutstandingService` relies on). Invoice detail lookup uses the existing `findByUid` + entity graph.
+`finalizedStatuses = {InvoiceStatus.INVOICED}` — the sole finalize boundary the system keys off
+(`InvoiceFinalizedEvent`, ledger posting, stock movement, analytics). `DRAFT` and `NEW` are
+pre-finalization and never shown to the buyer. Invoice detail lookup uses the existing `findByUid`
++ entity graph, then applies the `customerId == partyUid` and `status ∈ finalizedStatuses` guards.

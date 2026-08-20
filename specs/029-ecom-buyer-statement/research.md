@@ -55,10 +55,10 @@ ecom concepts.
 
 ## R4 — `amountDue` sourcing for the invoice list
 
-**Decision.** Keep the invoice **list** total-only (`amountDue` omitted or `= total`); per-bill
-outstanding/dues come from the `outstanding` endpoint (payment-backed `OutstandingService.openBills`,
-which already computes `total − Σ active allocations` + due date + aging). Revisit only if UX demands
-dues inline (OQ-5).
+**Decision.** Keep the invoice DTOs total-only — **`amountDue` is omitted entirely** (not `= total`);
+per-bill outstanding/dues come from the `/outstanding` endpoint (payment-backed
+`OutstandingService.openBills`, which already computes `total − Σ active allocations` + due date +
+aging). Revisit only if UX demands dues inline (OQ-5, now resolved this way).
 
 **Rationale.** `OutstandingService` already owns the allocation math in `payment`. Duplicating an
 allocation read inside `invoice` adds an `invoice→payment` edge and a second source of truth for the

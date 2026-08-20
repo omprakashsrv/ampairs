@@ -56,8 +56,8 @@ EVERY user story depends on.
 **Independent test**: `GET /v1/ecom/account/invoices?storefront_slug=…` returns the linked customer's
 finalized invoices only (no drafts), `PageResponse`-wrapped, each with `order_ref` or null.
 
-- [ ] T010 [P] [US1] Add derived finder `findByCustomerIdAndStatusIn(customerId, statuses, pageable): Page<Invoice>` in `invoice/src/main/kotlin/com/ampairs/invoice/repository/InvoiceRepository.kt`
-- [ ] T011 [US1] Implement `InvoiceEcomServiceImpl.listBuyerInvoices(...)` in `invoice/src/main/kotlin/com/ampairs/invoice/service/InvoiceEcomServiceImpl.kt`: filter finalized statuses, map `Invoice`→`BuyerInvoiceSummary` (status→buyer string; `orderRefId` passed through); `@Service`
+- [ ] T010 [P] [US1] Add derived finder `findByCustomerIdAndStatusIn(customerId, statuses, pageable): Page<Invoice>` (called with `finalizedStatuses = setOf(InvoiceStatus.INVOICED)`, sorted `invoiceDate` desc) in `invoice/src/main/kotlin/com/ampairs/invoice/repository/InvoiceRepository.kt`
+- [ ] T011 [US1] Implement `InvoiceEcomServiceImpl.listBuyerInvoices(...)` in `invoice/src/main/kotlin/com/ampairs/invoice/service/InvoiceEcomServiceImpl.kt`: filter to `{INVOICED}` (excludes DRAFT/NEW), map `Invoice`→`BuyerInvoiceSummary` (status→buyer string; `total` only, no `amountDue`; raw `orderRefId` passed through for the controller to swap); `@Service`
 - [ ] T012 [US1] Add `EcomOrderRepository.findByManagementOrderRef(managementOrderRef): EcomOrder?` in `ecom/src/main/kotlin/com/ampairs/ecom/repository/EcomOrderRepository.kt` (used to swap `orderRefId`→buyer-facing `order_ref`)
 - [ ] T013 [US1] Add `GET /v1/ecom/account/invoices` to `ecom/.../controller/CustomerAccountController.kt`: `resolveParty(...)`, call `invoiceEcomService.listBuyerInvoices(partyUid, pageable)`, map each item's `orderRefId`→`order_ref` via `findByManagementOrderRef`, return `ApiResponse.success(PageResponse.from(page))`
 - [ ] T014 [P] [US1] Unit test invoice→DTO mapping + finalized filter in `invoice/src/test/kotlin/com/ampairs/invoice/service/InvoiceEcomServiceImplTest.kt` (drafts excluded; status string; total mapped)

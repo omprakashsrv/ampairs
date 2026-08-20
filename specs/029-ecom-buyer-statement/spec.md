@@ -99,21 +99,25 @@ is exactly what these produce.
 - **FR-003** All reads are keyed by the resolved `partyUid` (== CRM customer uid == `Invoice.customerId`
   == payment `partyUid`). The client-sent `customer_id` is never trusted directly.
 - **FR-004** `GET /v1/ecom/account/invoices` → **paginated** list of the resolved party's invoices
-  (`invoice.customerId == partyUid`), newest first. Drafts are excluded — a buyer only sees finalized
-  invoices (status ∈ finalized set, mirroring `OutstandingService`'s finalized-only rule). Each item
-  carries the linked order ref so the client can render "for order …" without a second call.
+  (`invoice.customerId == partyUid`), newest first. A buyer sees **only finalized invoices**, defined
+  as **`finalizedStatuses = {InvoiceStatus.INVOICED}`** — `DRAFT` and `NEW` (pre-finalization) are
+  excluded. This is the same finalize boundary the rest of the system keys off (`InvoiceFinalizedEvent`,
+  ledger posting, stock movement, analytics all trigger on `INVOICED`). Each item carries the linked
+  order ref so the client can render "for order …" without a second call.
 - **FR-005** `GET /v1/ecom/account/invoices/{invoiceUid}` → single invoice detail (line items + totals)
   for the resolved party. If `invoice.customerId != partyUid` → **404** (never 403 — don't confirm the
-  invoice exists in another account). Drafts → 404.
+  invoice exists in another account). A non-finalized invoice (`status ∉ finalizedStatuses`, i.e.
+  `DRAFT`/`NEW`) → **404**.
 - **FR-006** `GET /v1/ecom/account/orders/{ecomOrderRef}/invoices` → invoices raised for that order.
   Resolves the order via `getCustomerOrder(partyUid, ecomOrderRef)` (existing ownership re-check),
   reads its `managementOrderRef`, and returns invoices where `orderRefId == managementOrderRef`
   (empty list if none yet). The existing order-detail response (`GET .../orders/{ecomOrderRef}`) is
   **extended** with an `invoices` array of the same lightweight refs (single round-trip for US3).
-- **FR-007** Invoice-detail and each list item expose the reverse link: `orderRef` (the buyer-facing
-  `EcomOrder.ecomOrderRef`/`orderNumber`) resolved from `invoice.orderRefId → EcomOrder.managementOrderRef`,
-  or `null` for a non-ecom invoice (US4). The reverse resolution is a single lookup in `ecom` (the
-  controller owns both sides), so no new cross-module call is needed for it.
+- **FR-007** Invoice-detail and each list item expose the reverse link on the wire as **`order_ref`**
+  (the buyer-facing `EcomOrder.ecomOrderRef`/`orderNumber`), resolved by the ecom controller from the
+  DTO's raw `orderRefId → EcomOrder.managementOrderRef`, or `null` for a non-ecom invoice (US4). The
+  reverse resolution is a single lookup in `ecom` (the controller owns both sides), so no new
+  cross-module call is needed for it.
 - **FR-008** `GET /v1/ecom/account/outstanding` → current balance + open bills + aging summary for the
   resolved party.
 - **FR-009** `GET /v1/ecom/account/statement?from&to` → running-balance statement for the resolved
@@ -148,15 +152,15 @@ is exactly what these produce.
 data class BuyerInvoiceSummary(
     val invoiceUid: String, val invoiceNumber: String,
     val invoiceDate: Instant, val status: String,     // buyer-facing status string, not raw enum
-    val total: BigDecimal, val amountDue: BigDecimal,  // due = total − Σ active allocations
-    val orderRef: String?,                             // buyer-facing EcomOrder ref, null if non-ecom
+    val total: BigDecimal,                            // total-only; per-bill dues come from /outstanding (see §6, OQ-5)
+    val orderRefId: String?,                          // raw workspace Order.uid, null if non-ecom
 )
 data class BuyerInvoiceDetail(
     val invoiceUid: String, val invoiceNumber: String,
     val invoiceDate: Instant, val status: String,
-    val orderRef: String?,
+    val orderRefId: String?,
     val lines: List<BuyerInvoiceLine>,
-    val subtotal: BigDecimal, val taxTotal: BigDecimal, val total: BigDecimal, val amountDue: BigDecimal,
+    val subtotal: BigDecimal, val taxTotal: BigDecimal, val total: BigDecimal,
 )
 data class BuyerInvoiceLine(
     val description: String, val quantity: BigDecimal,
@@ -166,6 +170,13 @@ data class BuyerInvoiceLine(
 
 The order-detail response gains: `val invoices: List<BuyerInvoiceSummary>` (may be empty). The same
 `BuyerInvoiceSummary` is reused for the order→invoices list and the invoice list.
+
+**DTO field vs wire field (the swap):** the `core` DTO carries the raw `orderRefId` (workspace
+`Order.uid`) because `InvoiceEcomService` (in `invoice`) has no knowledge of storefronts. The **ecom
+controller** maps it to the buyer-facing value and serializes it as **`order_ref`** (from
+`EcomOrder.ecomOrderRef`, `null` for a non-ecom invoice). So the JSON the buyer receives has
+`order_ref`, never the internal `order_ref_id`. Wire examples in `contracts/buyer-account-api.md`
+show `order_ref`.
 
 **Buyer-safe ledger DTOs (defined in `core.service`, mapped from payment DTOs):**
 
@@ -246,13 +257,14 @@ interface PartyLedgerEcomService {
 }
 ```
 
-- `InvoiceEcomServiceImpl` (in `invoice`) filters by `customerId == partyUid`, excludes drafts, maps
-  entities → buyer DTOs, and computes `amountDue` from the payment allocations it can already see via
-  the existing `payment`→`invoice` integration **or** leaves `amountDue = total` if allocation lookup
-  is out of scope for `invoice` (see OQ-5 — cleaner to compute `amountDue` in the `payment`-backed
-  `outstanding` call and keep the invoice list total-only). The `orderRef` reverse-link is filled by
-  the **ecom controller**, not the impl (ecom owns the `EcomOrder` side), so `InvoiceEcomService`
-  returns `orderRefId` (workspace uid) and ecom swaps it for the buyer-facing ref.
+- `InvoiceEcomServiceImpl` (in `invoice`) filters by `customerId == partyUid`, keeps only
+  `finalizedStatuses = {INVOICED}` (excludes `DRAFT`/`NEW`), and maps entities → buyer DTOs. The
+  invoice DTOs are **total-only** — no `amountDue`. Per-bill outstanding/dues are the job of the
+  `payment`-backed `/outstanding` endpoint (`OutstandingService.openBills`), which already owns the
+  allocation math; duplicating it in `invoice` would add an `invoice→payment` edge and a second source
+  of truth (decision recorded at OQ-5 / research R4). The reverse order link is filled by the **ecom
+  controller**, not the impl (ecom owns the `EcomOrder` side): `InvoiceEcomService` returns the raw
+  `orderRefId` (workspace uid) and ecom swaps it for the buyer-facing `order_ref`.
 - `PartyLedgerEcomServiceImpl` (in `payment`) delegates to the existing `StatementService`,
   `OutstandingService`, `AgingService`/`PartyBalanceRepository`.
 - Both require an active tenant context (set by the ecom controller) — same contract as the other
@@ -327,9 +339,10 @@ Phases 1a and 1b are independent and can land in either order or in parallel.
 - **Integration (ecom) — invoices & linking:**
   - linked buyer → 200 with own party's invoice list (finalized only; drafts absent);
   - invoice detail for own invoice → 200; invoice belonging to **another** party → 404 (not 403);
+    a non-finalized (`DRAFT`/`NEW`) invoice addressed directly → 404;
   - order → invoices: order with one/multiple/zero invoices returns the right set; order detail carries
     the same `invoices[]`;
-  - invoice → order: ecom-originated invoice exposes `orderRef`; non-ecom invoice → `orderRef = null`;
+  - invoice → order: ecom-originated invoice exposes `order_ref`; non-ecom invoice → `order_ref = null`;
   - `managementOrderRef` still null (ingest pending) → order→invoices returns empty list, not error.
 - **Integration (ecom) — money position:**
   - linked buyer → 200 with own party's statement/outstanding;
@@ -359,9 +372,9 @@ Phases 1a and 1b are independent and can land in either order or in parallel.
 - **OQ-3** Phase 2 invoice PDF: reuse the workspace invoice PDF renderer, or a buyer-branded variant?
 - **OQ-4** Do we surface payment *receipts* the buyer can download, or is the statement line enough
   for Phase 1? (Assumed: statement line only.)
-- **OQ-5** `amountDue` on the invoice list: compute it in `invoice` (needs a `payment`-allocation
-  read from the invoice module — an extra cross-module edge) or leave the list total-only and let the
-  `outstanding` endpoint own per-bill dues? (Spec leans total-only in the list; dues via `outstanding`.)
+- **OQ-5** *(RESOLVED — total-only)* Invoice DTOs carry no `amountDue`; per-bill dues come from the
+  `payment`-backed `/outstanding` endpoint. This avoids an `invoice→payment` edge and a duplicate
+  source of truth for the outstanding number. Revisit only if UX needs dues inline in the list.
 - **OQ-6** Invoice `status` buyer-facing vocabulary — expose the raw finalized/paid/cancelled states,
   or collapse to a smaller buyer set (e.g. "Raised" / "Paid" / "Part-paid" / "Cancelled")?
 - **OQ-7** Should the invoice list be filterable (by date range / paid-vs-open), or is newest-first
