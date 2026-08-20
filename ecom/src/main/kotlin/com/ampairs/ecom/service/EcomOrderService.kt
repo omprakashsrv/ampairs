@@ -53,6 +53,15 @@ class EcomOrderService(
         return order
     }
 
+    /**
+     * Spec 029 — invoice→order reverse link: resolve a workspace order uid (`Invoice.orderRefId`) to
+     * the buyer-facing storefront order ref, or null when it did not originate from an ecom order.
+     */
+    @Transactional(readOnly = true)
+    fun findBuyerOrderRef(managementOrderRef: String?): String? =
+        managementOrderRef?.takeIf { it.isNotBlank() }
+            ?.let { orderRepository.findByManagementOrderRef(it)?.ecomOrderRef }
+
     @Transactional(readOnly = true)
     fun getManagementOrders(workspaceId: String, status: EcomOrderStatus?, pageable: Pageable): Page<EcomOrderManagementResponse> =
         (if (status != null) orderRepository.findByWorkspaceIdAndStatus(workspaceId, status, pageable)
