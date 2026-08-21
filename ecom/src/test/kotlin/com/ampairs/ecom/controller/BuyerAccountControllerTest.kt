@@ -126,6 +126,39 @@ class BuyerAccountControllerTest {
             .andExpect(status().isForbidden)
     }
 
+    // ── US7 multi-account resolution ────────────────────────────────────────────
+
+    @Test
+    @WithMockUser(username = "cust-1", roles = ["USER"])
+    @DisplayName("GET /invoices - customer_id the buyer IS linked to returns that account's data")
+    fun `invoice list multi-account picks requested party`() {
+        whenever(ecomCustomerService.resolveLinkedCustomerId(eq("cust-1"), eq("PARTY2"))).thenReturn("PARTY2")
+        whenever(invoiceEcomService.listBuyerInvoices(eq("PARTY2"), any()))
+            .thenReturn(PageImpl(listOf(summary(uid = "INV2", orderRefId = null))))
+
+        mockMvc.perform(get("/v1/ecom/account/invoices?storefront_slug=$slug&customer_id=PARTY2"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.content[0].invoice_number").value("INV-INV2"))
+    }
+
+    @Test
+    @WithMockUser(username = "cust-1", roles = ["USER"])
+    @DisplayName("GET /invoices - customer_id the buyer is NOT linked to resolves to the login's default, never the requested account")
+    fun `invoice list unlinked customer_id falls back to default`() {
+        // resolveLinkedCustomerId honors the requested id ONLY if the login is linked to it; here the
+        // buyer is not linked to OTHER, so the resolver returns their default account (PARTY1).
+        whenever(ecomCustomerService.resolveLinkedCustomerId(eq("cust-1"), eq("OTHER"))).thenReturn("PARTY1")
+        whenever(invoiceEcomService.listBuyerInvoices(eq("PARTY1"), any())).thenReturn(PageImpl(listOf(summary())))
+        whenever(orderService.findBuyerOrderRef("ORD9")).thenReturn("ECO-7")
+
+        mockMvc.perform(get("/v1/ecom/account/invoices?storefront_slug=$slug&customer_id=OTHER"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.content[0].invoice_number").value("INV-INV1"))
+
+        // The other account's invoices are never queried — only the resolved party's.
+        org.mockito.kotlin.verify(invoiceEcomService, org.mockito.kotlin.never()).listBuyerInvoices(eq("OTHER"), any())
+    }
+
     // ── US2 invoice detail ──────────────────────────────────────────────────────
 
     @Test

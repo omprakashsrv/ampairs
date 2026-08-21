@@ -134,7 +134,7 @@ finalized invoices; invoice detail/list carry `order_ref`; empty/multi/pending-i
 **Independent test**: valid `customer_id` → that account; a `customer_id` the login isn't linked to →
 never returns that account's data.
 
-- [ ] T035 [US7] Integration test multi-account resolution across all endpoints in `ecom/src/test/kotlin/com/ampairs/ecom/controller/BuyerMultiAccountIT.kt` (linked `customer_id` → its data; not-linked `customer_id` → default account, never the requested; picker `getCustomers` unchanged)
+- [x] T035 [US7] Integration test multi-account resolution across all endpoints in `ecom/src/test/kotlin/com/ampairs/ecom/controller/BuyerMultiAccountIT.kt` (linked `customer_id` → its data; not-linked `customer_id` → default account, never the requested; picker `getCustomers` unchanged)
 
 **Checkpoint**: Account picker drives every read.
 
