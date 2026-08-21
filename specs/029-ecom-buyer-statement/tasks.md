@@ -148,7 +148,7 @@ never returns that account's data.
 - [x] T037 [P] Verify no cross-module leakage: `ecom` imports only `com.ampairs.core.service.*` for these calls (no `invoice`/`payment` impl or repo imports) — grep check noted in PR description
 - [x] T038 [P] Confirm `NO_MIGRATION_NEEDED.md` carries the spec-029 entry (already added) and no `db/migration` files were introduced
 - [ ] T039 Run the full gate: `./gradlew :core:test :invoice:test :payment:test :ecom:test` then `./gradlew testAll` (Docker up); fix failures
-- [ ] T040 [P] Update `docs/modules/ecom.md` (buyer account section) with the new endpoints and the order↔invoice link; keep `spec.md` §12 open questions in sync if any resolved
+- [x] T040 [P] Update `docs/modules/ecom.md` (buyer account section) with the new endpoints and the order↔invoice link; keep `spec.md` §12 open questions in sync if any resolved
 
 ---
 
