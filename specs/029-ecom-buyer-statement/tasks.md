@@ -144,10 +144,10 @@ never returns that account's data.
 
 **Purpose**: Security/isolation hardening, docs, and gate.
 
-- [ ] T036 [P] Tenant-isolation integration test in `ecom/src/test/kotlin/com/ampairs/ecom/controller/BuyerTenantIsolationIT.kt` (same buyer, two storefronts/workspaces → each returns only that workspace's invoices/ledger)
+- [x] T036 [P] Tenant-isolation integration test in `ecom/src/test/kotlin/com/ampairs/ecom/controller/BuyerTenantIsolationIT.kt` (same buyer `PARTY1` in two workspaces → each returns only that workspace's invoices via `InvoiceEcomServiceImpl`, and only that workspace's ledger balance via `PartyBalanceRepository`; proves `@TenantId` on Invoice/PartyBalance end-to-end on H2). Ledger asserted at the balance repo (not `outstanding()`) because the aging-bucket settings lookup uses `store_setting."value"`, a Postgres-only column H2 can't parse.
 - [x] T037 [P] Verify no cross-module leakage: `ecom` imports only `com.ampairs.core.service.*` for these calls (no `invoice`/`payment` impl or repo imports) — grep check noted in PR description
 - [x] T038 [P] Confirm `NO_MIGRATION_NEEDED.md` carries the spec-029 entry (already added) and no `db/migration` files were introduced
-- [ ] T039 Run the full gate: `./gradlew :core:test :invoice:test :payment:test :ecom:test` then `./gradlew testAll` (Docker up); fix failures
+- [x] T039 Run the module gate `./gradlew :core:test :invoice:test :payment:test :ecom:test` — green. Full `./gradlew testAll` (Docker up) runs in CI (sandbox has no Docker); the backend coverage bot on PR #219 posts only after CI compile + tests pass = green signal.
 - [x] T040 [P] Update `docs/modules/ecom.md` (buyer account section) with the new endpoints and the order↔invoice link; keep `spec.md` §12 open questions in sync if any resolved
 
 ---
