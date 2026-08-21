@@ -39,22 +39,24 @@ interface InvoiceEcomService {
 /**
  * Buyer-safe invoice summary. Carries no cost/margin, audit, or tenant fields. [orderRefId] is the
  * raw workspace order uid; the ecom controller replaces it with the buyer-facing storefront ref.
+ *
+ * No payment status here: the `invoice` module only knows the finalize state, not whether the bill is
+ * settled (that is payment-ledger data). The ecom controller composes the buyer-facing "Paid"/"Unpaid"
+ * status from [PartyLedgerEcomService.outstanding] before serializing (spec OQ-6).
  */
 data class BuyerInvoiceSummary(
     val invoiceUid: String,
     val invoiceNumber: String,
     val invoiceDate: Instant,
-    val status: String,
     val total: BigDecimal,
     val orderRefId: String?,
 )
 
-/** Buyer-safe invoice detail (line items + totals). No cost/margin exposed. */
+/** Buyer-safe invoice detail (line items + totals). No cost/margin exposed. See [BuyerInvoiceSummary] on payment status. */
 data class BuyerInvoiceDetail(
     val invoiceUid: String,
     val invoiceNumber: String,
     val invoiceDate: Instant,
-    val status: String,
     val orderRefId: String?,
     val lines: List<BuyerInvoiceLine>,
     val subtotal: BigDecimal,

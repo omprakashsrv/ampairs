@@ -46,7 +46,6 @@ class InvoiceEcomServiceImpl(
         invoiceUid = uid,
         invoiceNumber = invoiceNumber,
         invoiceDate = invoiceDate,
-        status = buyerStatus(status),
         total = BigDecimal.valueOf(totalCost),
         orderRefId = orderRefId,
     )
@@ -55,7 +54,6 @@ class InvoiceEcomServiceImpl(
         invoiceUid = uid,
         invoiceNumber = invoiceNumber,
         invoiceDate = invoiceDate,
-        status = buyerStatus(status),
         orderRefId = orderRefId,
         lines = invoiceItems.filter { it.active }.sortedBy { it.index }.map { it.toLine() },
         subtotal = BigDecimal.valueOf(basePrice),
@@ -73,15 +71,5 @@ class InvoiceEcomServiceImpl(
     private companion object {
         /** The sole finalize boundary the system keys off (ledger/stock/analytics). */
         val FINALIZED = setOf(InvoiceStatus.INVOICED)
-
-        /**
-         * Buyer-facing status string (never the raw enum — DTO isolation). Only [InvoiceStatus.INVOICED]
-         * is ever surfaced today; the mapping is centralized so the vocabulary can grow (spec OQ-6).
-         */
-        fun buyerStatus(status: InvoiceStatus): String = when (status) {
-            InvoiceStatus.INVOICED -> "RAISED"
-            InvoiceStatus.DRAFT -> "DRAFT"
-            InvoiceStatus.NEW -> "PENDING"
-        }
     }
 }

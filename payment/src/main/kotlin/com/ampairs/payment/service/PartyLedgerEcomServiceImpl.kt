@@ -45,6 +45,7 @@ class PartyLedgerEcomServiceImpl(
             balanceDirection = directionOf(closing),
             openBills = bills.map {
                 BuyerOpenBill(
+                    billUid = it.billUid,
                     billNo = it.billNo,
                     billDate = it.billDate,
                     total = it.total,

@@ -375,7 +375,12 @@ Phases 1a and 1b are independent and can land in either order or in parallel.
 - **OQ-5** *(RESOLVED — total-only)* Invoice DTOs carry no `amountDue`; per-bill dues come from the
   `payment`-backed `/outstanding` endpoint. This avoids an `invoice→payment` edge and a duplicate
   source of truth for the outstanding number. Revisit only if UX needs dues inline in the list.
-- **OQ-6** Invoice `status` buyer-facing vocabulary — expose the raw finalized/paid/cancelled states,
-  or collapse to a smaller buyer set (e.g. "Raised" / "Paid" / "Part-paid" / "Cancelled")?
+- **OQ-6** *(RESOLVED — Paid/Unpaid)* Invoice `status` is a two-value buyer-facing payment state:
+  "Unpaid" when the invoice still carries an outstanding balance (its uid appears in the party
+  ledger's open bills), "Paid" otherwise. The `invoice` module no longer emits a status (it knows only
+  the finalize state, not settlement); the ecom controller composes it from
+  `PartyLedgerEcomService.outstanding(...).openBills`, so no `invoice→payment` edge is added — the join
+  happens in `ecom`, which already depends on both via `core`. `BuyerOpenBill` now carries `bill_uid`
+  (the invoice uid) so the controller can key the two lists together.
 - **OQ-7** Should the invoice list be filterable (by date range / paid-vs-open), or is newest-first
   pagination enough for the first cut? (Assumed: pagination only.)

@@ -10,6 +10,10 @@ import java.time.Instant
  * Spec 029 — ecom wire shapes for a buyer's invoices. The `core` [BuyerInvoiceSummary]/[BuyerInvoiceDetail]
  * carry the raw workspace `orderRefId`; the ecom controller resolves it to the buyer-facing storefront
  * order ref ([orderRef], serialized `order_ref`) via `EcomOrder.managementOrderRef` before mapping here.
+ *
+ * [status] is the buyer-facing payment state ("Paid" / "Unpaid"), computed by the ecom controller from
+ * the party ledger's open bills (spec OQ-6) — an invoice with an outstanding balance is "Unpaid". It is
+ * passed in rather than read off the `core` DTO, whose status reflects only the invoice finalize state.
  */
 data class BuyerInvoiceSummaryResponse(
     val invoiceUid: String,
@@ -39,7 +43,7 @@ data class BuyerInvoiceLineResponse(
     val lineTotal: BigDecimal,
 )
 
-fun BuyerInvoiceSummary.toResponse(orderRef: String?) = BuyerInvoiceSummaryResponse(
+fun BuyerInvoiceSummary.toResponse(orderRef: String?, status: String) = BuyerInvoiceSummaryResponse(
     invoiceUid = invoiceUid,
     invoiceNumber = invoiceNumber,
     invoiceDate = invoiceDate,
@@ -48,7 +52,7 @@ fun BuyerInvoiceSummary.toResponse(orderRef: String?) = BuyerInvoiceSummaryRespo
     orderRef = orderRef,
 )
 
-fun BuyerInvoiceDetail.toResponse(orderRef: String?) = BuyerInvoiceDetailResponse(
+fun BuyerInvoiceDetail.toResponse(orderRef: String?, status: String) = BuyerInvoiceDetailResponse(
     invoiceUid = invoiceUid,
     invoiceNumber = invoiceNumber,
     invoiceDate = invoiceDate,

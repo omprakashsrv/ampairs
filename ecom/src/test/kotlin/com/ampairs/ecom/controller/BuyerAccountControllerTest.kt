@@ -96,8 +96,25 @@ class BuyerAccountControllerTest {
 
     private fun summary(uid: String = "INV1", orderRefId: String? = "ORD9") = BuyerInvoiceSummary(
         invoiceUid = uid, invoiceNumber = "INV-$uid", invoiceDate = Instant.parse("2026-08-15T10:00:00Z"),
-        status = "RAISED", total = BigDecimal("9207.50"), orderRefId = orderRefId,
+        total = BigDecimal("9207.50"), orderRefId = orderRefId,
     )
+
+    private fun openBill(billUid: String) = BuyerOpenBill(
+        billUid = billUid, billNo = "INV-$billUid", billDate = Instant.parse("2026-08-15T10:00:00Z"),
+        total = BigDecimal("9207.50"), outstanding = BigDecimal("9207.50"),
+        dueDate = null, daysOverdue = 0, agingBucket = "0-30",
+    )
+
+    // The buyer-facing "Paid"/"Unpaid" status is computed by the controller from the party ledger's
+    // open bills, so every invoice-returning endpoint calls outstanding(...). Stub it (uids listed here
+    // come back "Unpaid"; everything else "Paid"). Without this the mock returns null → NPE.
+    private fun stubUnpaid(vararg unpaidUids: String) =
+        whenever(partyLedgerEcomService.outstanding(any(), any())).thenReturn(
+            BuyerOutstandingResponse(
+                currentBalance = BigDecimal.ZERO, balanceDirection = "DR",
+                openBills = unpaidUids.map { openBill(it) }, aging = emptyList(),
+            ),
+        )
 
     // ── US1 invoice list ────────────────────────────────────────────────────────
 
@@ -106,13 +123,14 @@ class BuyerAccountControllerTest {
     @DisplayName("GET /invoices - linked buyer sees finalized invoices with swapped order_ref")
     fun `invoice list linked`() {
         linked()
+        stubUnpaid("INV1")
         whenever(invoiceEcomService.listBuyerInvoices(eq("PARTY1"), any())).thenReturn(PageImpl(listOf(summary())))
         whenever(orderService.findBuyerOrderRef("ORD9")).thenReturn("ECO-7")
 
         mockMvc.perform(get("/v1/ecom/account/invoices?storefront_slug=$slug"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.content[0].invoice_number").value("INV-INV1"))
-            .andExpect(jsonPath("$.data.content[0].status").value("RAISED"))
+            .andExpect(jsonPath("$.data.content[0].status").value("Unpaid"))
             .andExpect(jsonPath("$.data.content[0].order_ref").value("ECO-7"))
     }
 
@@ -133,6 +151,7 @@ class BuyerAccountControllerTest {
     @DisplayName("GET /invoices - customer_id the buyer IS linked to returns that account's data")
     fun `invoice list multi-account picks requested party`() {
         whenever(ecomCustomerService.resolveLinkedCustomerId(eq("cust-1"), eq("PARTY2"))).thenReturn("PARTY2")
+        stubUnpaid()
         whenever(invoiceEcomService.listBuyerInvoices(eq("PARTY2"), any()))
             .thenReturn(PageImpl(listOf(summary(uid = "INV2", orderRefId = null))))
 
@@ -148,6 +167,7 @@ class BuyerAccountControllerTest {
         // resolveLinkedCustomerId honors the requested id ONLY if the login is linked to it; here the
         // buyer is not linked to OTHER, so the resolver returns their default account (PARTY1).
         whenever(ecomCustomerService.resolveLinkedCustomerId(eq("cust-1"), eq("OTHER"))).thenReturn("PARTY1")
+        stubUnpaid()
         whenever(invoiceEcomService.listBuyerInvoices(eq("PARTY1"), any())).thenReturn(PageImpl(listOf(summary())))
         whenever(orderService.findBuyerOrderRef("ORD9")).thenReturn("ECO-7")
 
@@ -166,10 +186,11 @@ class BuyerAccountControllerTest {
     @DisplayName("GET /invoices/{uid} - own finalized invoice returns detail + order_ref")
     fun `invoice detail ok`() {
         linked()
+        stubUnpaid("INV1")
         whenever(invoiceEcomService.getBuyerInvoice(eq("INV1"), eq("PARTY1"))).thenReturn(
             BuyerInvoiceDetail(
                 invoiceUid = "INV1", invoiceNumber = "INV-42", invoiceDate = Instant.parse("2026-08-15T10:00:00Z"),
-                status = "RAISED", orderRefId = "ORD9",
+                orderRefId = "ORD9",
                 lines = listOf(BuyerInvoiceLine("Widget", BigDecimal.TEN, BigDecimal("900.0"), BigDecimal("9000.0"))),
                 subtotal = BigDecimal("9000.0"), taxTotal = BigDecimal("207.5"), total = BigDecimal("9207.5"),
             ),
@@ -179,6 +200,7 @@ class BuyerAccountControllerTest {
         mockMvc.perform(get("/v1/ecom/account/invoices/INV1?storefront_slug=$slug"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.order_ref").value("ECO-7"))
+            .andExpect(jsonPath("$.data.status").value("Unpaid"))
             .andExpect(jsonPath("$.data.lines[0].description").value("Widget"))
             .andExpect(jsonPath("$.data.total").value(9207.5))
     }
@@ -201,6 +223,7 @@ class BuyerAccountControllerTest {
     @DisplayName("GET /orders/{ref}/invoices - returns finalized invoices for the order")
     fun `order invoices`() {
         linked()
+        stubUnpaid() // INV1 has no open bill → "Paid"
         whenever(orderService.getCustomerOrder("cust-1", "ECO-7")).thenReturn(order(managementRef = "ORD9"))
         whenever(invoiceEcomService.listInvoicesForOrder(eq("ORD9"), eq("PARTY1"))).thenReturn(listOf(summary()))
         whenever(orderService.findBuyerOrderRef("ORD9")).thenReturn("ECO-7")
@@ -208,6 +231,7 @@ class BuyerAccountControllerTest {
         mockMvc.perform(get("/v1/ecom/account/orders/ECO-7/invoices?storefront_slug=$slug"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data[0].invoice_number").value("INV-INV1"))
+            .andExpect(jsonPath("$.data[0].status").value("Paid"))
             .andExpect(jsonPath("$.data[0].order_ref").value("ECO-7"))
     }
 
@@ -216,6 +240,7 @@ class BuyerAccountControllerTest {
     @DisplayName("GET /orders/{ref} - order detail carries invoices[] (non-ecom invoice -> null order_ref)")
     fun `order detail invoices`() {
         linked()
+        stubUnpaid()
         whenever(orderService.getCustomerOrder("cust-1", "ECO-7")).thenReturn(order(managementRef = "ORD9"))
         whenever(invoiceEcomService.listInvoicesForOrder(eq("ORD9"), eq("PARTY1")))
             .thenReturn(listOf(summary(orderRefId = "ORD9")))
@@ -238,7 +263,7 @@ class BuyerAccountControllerTest {
             BuyerOutstandingResponse(
                 currentBalance = BigDecimal("15420.00"), balanceDirection = "DR",
                 openBills = listOf(
-                    BuyerOpenBill("INV-42", Instant.parse("2026-08-15T10:00:00Z"), BigDecimal("9207.50"),
+                    BuyerOpenBill("INV1", "INV-42", Instant.parse("2026-08-15T10:00:00Z"), BigDecimal("9207.50"),
                         BigDecimal("9207.50"), Instant.parse("2026-09-14T10:00:00Z"), 0, "0-30"),
                 ),
                 aging = listOf(BuyerAgingBucket("0-30", BigDecimal("9207.50"))),

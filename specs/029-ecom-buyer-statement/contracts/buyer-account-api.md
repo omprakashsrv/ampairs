@@ -26,7 +26,7 @@ Paginated, finalized-only, newest first.
   "data": {
     "content": [
       { "invoice_uid": "INV20260815ab12", "invoice_number": "INV-00042",
-        "invoice_date": "2026-08-15T10:00:00Z", "status": "RAISED",
+        "invoice_date": "2026-08-15T10:00:00Z", "status": "Unpaid",
         "total": 9207.50, "order_ref": "ECO-00007" }
     ],
     "page_number": 0, "page_size": 20, "total_elements": 1, "total_pages": 1,
@@ -36,6 +36,7 @@ Paginated, finalized-only, newest first.
 }
 ```
 - `order_ref` is the buyer-facing `EcomOrder.ecomOrderRef`/`orderNumber` (controller-resolved from `orderRefId`), `null` for non-ecom invoices.
+- `status` is the buyer-facing payment state — `"Unpaid"` while the invoice carries an outstanding balance (its uid is in `/outstanding`'s `open_bills[].bill_uid`), else `"Paid"`. Composed by the ecom controller from the party ledger, not the `invoice` module (OQ-6).
 
 **403** `NOT_LINKED` — login not linked to any account.
 
@@ -49,7 +50,7 @@ Paginated, finalized-only, newest first.
 ```json
 { "success": true, "data": {
     "invoice_uid": "INV20260815ab12", "invoice_number": "INV-00042",
-    "invoice_date": "2026-08-15T10:00:00Z", "status": "RAISED", "order_ref": "ECO-00007",
+    "invoice_date": "2026-08-15T10:00:00Z", "status": "Unpaid", "order_ref": "ECO-00007",
     "lines": [ { "description": "Widget A", "quantity": 10, "unit_price": 900.00, "line_total": 9000.00 } ],
     "subtotal": 9000.00, "tax_total": 207.50, "total": 9207.50
   }, "error": null }
@@ -81,7 +82,7 @@ round-trip.
 **200** → `ApiResponse<EcomOrderResponse>` with added:
 ```json
 { "invoices": [ { "invoice_uid": "INV20260815ab12", "invoice_number": "INV-00042",
-                  "invoice_date": "2026-08-15T10:00:00Z", "status": "RAISED",
+                  "invoice_date": "2026-08-15T10:00:00Z", "status": "Unpaid",
                   "total": 9207.50, "order_ref": "ECO-00007" } ] }
 ```
 Empty array when no invoice has been raised for the order.
@@ -96,7 +97,7 @@ Empty array when no invoice has been raised for the order.
 ```json
 { "success": true, "data": {
     "current_balance": 15420.00, "balance_direction": "DR",
-    "open_bills": [ { "bill_no": "INV-00042", "bill_date": "2026-08-15T10:00:00Z",
+    "open_bills": [ { "bill_uid": "INV20260815ab12", "bill_no": "INV-00042", "bill_date": "2026-08-15T10:00:00Z",
                       "total": 9207.50, "outstanding": 9207.50,
                       "due_date": "2026-09-14T10:00:00Z", "days_overdue": 0, "aging_bucket": "0-30" } ],
     "aging": [ { "label": "0-30", "amount": 9207.50 }, { "label": "31-60", "amount": 6212.50 } ]

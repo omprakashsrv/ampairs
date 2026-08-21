@@ -185,8 +185,7 @@ class CustomerAccountController(
             // Order viewing does not require a CRM link, so an unlinked buyer just sees an empty list.
             val partyUid = ecomCustomerService.resolveLinkedCustomerId(userId, customerId)
             val invoices = partyUid
-                ?.let { invoiceEcomService.listInvoicesForOrder(order.managementOrderRef.orEmpty(), it) }
-                ?.let { swapOrderRefs(it) }
+                ?.let { swapOrderRefs(invoiceEcomService.listInvoicesForOrder(order.managementOrderRef.orEmpty(), it), unpaidInvoiceUids(it)) }
                 ?: emptyList()
             return ApiResponse.success(order.asEcomOrderResponse().copy(invoices = invoices))
         } finally {
@@ -205,8 +204,9 @@ class CustomerAccountController(
         authentication: Authentication,
     ): ApiResponse<PageResponse<BuyerInvoiceSummaryResponse>> =
         withParty(authentication, storefrontSlug, customerId) { partyUid ->
+            val unpaid = unpaidInvoiceUids(partyUid)
             val page = invoiceEcomService.listBuyerInvoices(partyUid, pageable)
-                .map { it.toResponse(orderService.findBuyerOrderRef(it.orderRefId)) }
+                .map { it.toResponse(orderService.findBuyerOrderRef(it.orderRefId), paymentStatus(it.invoiceUid, unpaid)) }
             ApiResponse.success(PageResponse.from(page))
         }
 
@@ -221,7 +221,8 @@ class CustomerAccountController(
         withParty(authentication, storefrontSlug, customerId) { partyUid ->
             val detail = invoiceEcomService.getBuyerInvoice(invoiceUid, partyUid)
                 ?: throw NotFoundException("Invoice not found: $invoiceUid")
-            ApiResponse.success(detail.toResponse(orderService.findBuyerOrderRef(detail.orderRefId)))
+            val status = paymentStatus(detail.invoiceUid, unpaidInvoiceUids(partyUid))
+            ApiResponse.success(detail.toResponse(orderService.findBuyerOrderRef(detail.orderRefId), status))
         }
 
     /** Finalized invoices raised for one of the buyer's orders (US3). */
@@ -241,6 +242,7 @@ class CustomerAccountController(
                 ?: throw AccessDeniedException("NOT_LINKED")
             val invoices = swapOrderRefs(
                 invoiceEcomService.listInvoicesForOrder(order.managementOrderRef.orEmpty(), partyUid),
+                unpaidInvoiceUids(partyUid),
             )
             return ApiResponse.success(invoices)
         } finally {
@@ -297,7 +299,19 @@ class CustomerAccountController(
         }
     }
 
-    // Replace each summary's raw workspace orderRefId with the buyer-facing storefront order ref.
-    private fun swapOrderRefs(summaries: List<com.ampairs.core.service.BuyerInvoiceSummary>): List<BuyerInvoiceSummaryResponse> =
-        summaries.map { it.toResponse(orderService.findBuyerOrderRef(it.orderRefId)) }
+    // Replace each summary's raw workspace orderRefId with the buyer-facing storefront order ref, and
+    // stamp its buyer-facing payment status ("Paid"/"Unpaid") from the party's open bills.
+    private fun swapOrderRefs(
+        summaries: List<com.ampairs.core.service.BuyerInvoiceSummary>,
+        unpaidUids: Set<String>,
+    ): List<BuyerInvoiceSummaryResponse> =
+        summaries.map { it.toResponse(orderService.findBuyerOrderRef(it.orderRefId), paymentStatus(it.invoiceUid, unpaidUids)) }
+
+    // The invoice uids that still carry an outstanding balance for this party (spec OQ-6). An invoice
+    // appears in the party ledger's open bills (keyed by invoice uid) exactly while it is not fully paid.
+    private fun unpaidInvoiceUids(partyUid: String): Set<String> =
+        partyLedgerEcomService.outstanding(partyUid, Instant.now()).openBills.map { it.billUid }.toSet()
+
+    private fun paymentStatus(invoiceUid: String, unpaidUids: Set<String>): String =
+        if (invoiceUid in unpaidUids) "Unpaid" else "Paid"
 }

@@ -76,7 +76,6 @@ class InvoiceEcomServiceImplTest {
         val s = page.content.first()
         assertEquals("1", s.invoiceUid)
         assertEquals("INV-1", s.invoiceNumber)
-        assertEquals("RAISED", s.status)
         assertEquals(BigDecimal.valueOf(9207.5), s.total)
         assertEquals("ORD9", s.orderRefId)
     }
@@ -114,7 +113,6 @@ class InvoiceEcomServiceImplTest {
 
         val detail = service.getBuyerInvoice("1", "CUS1")!!
 
-        assertEquals("RAISED", detail.status)
         assertEquals("ORD9", detail.orderRefId)
         assertEquals(BigDecimal.valueOf(9000.0), detail.subtotal)
         assertEquals(BigDecimal.valueOf(207.5), detail.taxTotal)

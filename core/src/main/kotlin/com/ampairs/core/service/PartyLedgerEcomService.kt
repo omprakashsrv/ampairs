@@ -33,6 +33,7 @@ data class BuyerOutstandingResponse(
 )
 
 data class BuyerOpenBill(
+    val billUid: String,
     val billNo: String?,
     val billDate: Instant,
     val total: BigDecimal,
