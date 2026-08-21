@@ -161,7 +161,7 @@ targets after commonMain changes.
 - [x] T042 [P] Add `BuyerInvoiceRepository` + `StatementRepository` (live reads; optional cache) under `ampairs-app/feature/ecom/src/commonMain/.../data/repository/`
 - [x] T043 Build `InvoiceListScreen` + `InvoiceDetailScreen` (with originating-order link) + VMs `@ContributesIntoMap(WorkspaceScope::class)` under `ampairs-app/feature/ecom/.../ui/account/`; money via `formatMoney(amount, LocalAppLocale.current)`, dates via `formatDate(..., locale)`
 - [x] T044 Add `invoices` section to the existing order-detail screen; `AccountStatementScreen` + VM; wire into `AccountScreen`; reuse the account picker
-- [ ] T045 Compile all targets: `./gradlew androidApp:compileDebugKotlinAndroid shared:compileKotlinIosSimulatorArm64 desktopApp:compileKotlin`
+- [x] T045 Compile all targets: `./gradlew androidApp:compileDebugKotlinAndroid shared:compileKotlinIosSimulatorArm64 desktopApp:compileKotlin`
 
 ---
 
