@@ -299,6 +299,16 @@ class BuyerAccountControllerTest {
             .andExpect(jsonPath("$.data.lines[0].kind").value("INVOICE"))
     }
 
+    @Test
+    @WithMockUser(username = "cust-1", roles = ["USER"])
+    @DisplayName("GET /statement - a malformed from/to is a 400, not a 500")
+    fun `statement bad date 400`() {
+        linked()
+
+        mockMvc.perform(get("/v1/ecom/account/statement?storefront_slug=$slug&from=2026-08-01"))
+            .andExpect(status().isBadRequest)
+    }
+
     private fun order(managementRef: String?) = EcomOrder().apply {
         uid = "eo-1"; ecomOrderRef = "ECO-7"; orderNumber = "ECO-7"; storefrontId = "sf-1"; workspaceId = "ws-1"
         customerId = "cust-1"; customerName = "Buyer"; customerEmail = "b@x.com"

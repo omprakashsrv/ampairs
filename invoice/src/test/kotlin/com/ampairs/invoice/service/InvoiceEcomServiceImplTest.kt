@@ -6,7 +6,6 @@ import com.ampairs.invoice.domain.model.InvoiceItem
 import com.ampairs.invoice.repository.InvoiceRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
-import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -54,11 +53,12 @@ class InvoiceEcomServiceImplTest {
         totalCost = 9207.5
     }
 
-    private fun item(desc: String, qty: Double, price: Double, total: Double, index: Int, active: Boolean = true) =
+    private fun item(desc: String, qty: Double, price: Double, base: Double, total: Double, index: Int, active: Boolean = true) =
         InvoiceItem().apply {
             description = desc
             quantity = qty
             sellingPrice = price
+            basePrice = base
             totalCost = total
             this.index = index
             this.active = active
@@ -104,9 +104,9 @@ class InvoiceEcomServiceImplTest {
     fun `getBuyerInvoice maps own finalized invoice with active lines sorted, no cost field`() {
         val inv = invoice("1", customerId = "CUS1", status = InvoiceStatus.INVOICED, orderRefId = "ORD9").apply {
             invoiceItems = mutableListOf(
-                item("B", qty = 2.0, price = 100.0, total = 200.0, index = 1),
-                item("A", qty = 10.0, price = 900.0, total = 9000.0, index = 0),
-                item("gone", qty = 1.0, price = 5.0, total = 5.0, index = 2, active = false),
+                item("B", qty = 2.0, price = 100.0, base = 200.0, total = 210.0, index = 1),
+                item("A", qty = 10.0, price = 900.0, base = 9000.0, total = 9450.0, index = 0),
+                item("gone", qty = 1.0, price = 5.0, base = 5.0, total = 5.25, index = 2, active = false),
             )
         }
         whenever(invoiceRepository.findByUid("1")).thenReturn(inv)
@@ -120,8 +120,10 @@ class InvoiceEcomServiceImplTest {
         // inactive line dropped, remaining sorted by index
         assertEquals(listOf("A", "B"), detail.lines.map { it.description })
         assertEquals(BigDecimal.valueOf(900.0), detail.lines.first().unitPrice)
-        // BuyerInvoiceLine exposes no cost/margin field (compile-time guarantee): assert the shape
-        assertTrue(detail.lines.all { it.lineTotal.signum() >= 0 })
+        // lineTotal is the NET (basePrice) line amount, not the tax-inclusive totalCost, so the lines
+        // reconcile with the subtotal/tax/total breakdown above.
+        assertEquals(BigDecimal.valueOf(9000.0), detail.lines.first().lineTotal)
+        assertEquals(BigDecimal.valueOf(200.0), detail.lines[1].lineTotal)
     }
 
     @Test

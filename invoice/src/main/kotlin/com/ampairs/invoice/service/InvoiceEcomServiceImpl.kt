@@ -65,7 +65,10 @@ class InvoiceEcomServiceImpl(
         description = description,
         quantity = BigDecimal.valueOf(quantity),
         unitPrice = BigDecimal.valueOf(sellingPrice),
-        lineTotal = BigDecimal.valueOf(totalCost),
+        // Net (pre-tax) line amount, so the lines reconcile with the detail's subtotal (invoice.basePrice)
+        // + tax = total breakdown. Using totalCost (tax-inclusive) here would make the rows sum to the
+        // grand total instead of the subtotal, double-presenting tax alongside the separate tax line.
+        lineTotal = BigDecimal.valueOf(basePrice),
     )
 
     private companion object {

@@ -34,6 +34,7 @@ import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
 import java.time.Instant
+import java.time.format.DateTimeParseException
 
 @RestController
 @RequestMapping("/v1/ecom/account")
@@ -274,8 +275,16 @@ class CustomerAccountController(
             ApiResponse.success(partyLedgerEcomService.statement(partyUid, parseInstant(from), parseInstant(to)))
         }
 
+    // A malformed from/to must be a 400, not a 500: IllegalArgumentException maps to BAD_REQUEST in
+    // the global handler, whereas the raw DateTimeParseException would surface as an unexpected error.
     private fun parseInstant(raw: String?): Instant? =
-        raw?.takeIf { it.isNotBlank() }?.let { Instant.parse(it) }
+        raw?.takeIf { it.isNotBlank() }?.let {
+            try {
+                Instant.parse(it)
+            } catch (e: DateTimeParseException) {
+                throw IllegalArgumentException("Invalid ISO-8601 instant '$it' — expected e.g. 2026-08-01T00:00:00Z", e)
+            }
+        }
 
     /**
      * Runs [block] under the storefront's tenant with the buyer resolved to a linked CRM party.
