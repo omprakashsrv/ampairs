@@ -102,22 +102,10 @@ class BuyerAccountControllerTest {
         total = BigDecimal("9207.50"), orderRefId = orderRefId,
     )
 
-    private fun openBill(billUid: String) = BuyerOpenBill(
-        billUid = billUid, billNo = "INV-$billUid", billDate = Instant.parse("2026-08-15T10:00:00Z"),
-        total = BigDecimal("9207.50"), outstanding = BigDecimal("9207.50"),
-        dueDate = null, daysOverdue = 0, agingBucket = "0-30",
-    )
-
-    // The buyer-facing "Paid"/"Unpaid" status is computed by the controller from the party ledger's
-    // open bills, so every invoice-returning endpoint calls outstanding(...). Stub it (uids listed here
-    // come back "Unpaid"; everything else "Paid"). Without this the mock returns null → NPE.
+    // Every invoice-returning endpoint classifies paid/unpaid via unpaidInvoiceUids(shownUids). Stub it
+    // to report the listed uids as "Unpaid" (everything else "Paid"). Without this the mock returns null.
     private fun stubUnpaid(vararg unpaidUids: String) =
-        whenever(partyLedgerEcomService.outstanding(any(), any())).thenReturn(
-            BuyerOutstandingResponse(
-                currentBalance = BigDecimal.ZERO, balanceDirection = "DR",
-                openBills = unpaidUids.map { openBill(it) }, aging = emptyList(),
-            ),
-        )
+        whenever(partyLedgerEcomService.unpaidInvoiceUids(any())).thenReturn(unpaidUids.toSet())
 
     // ── US1 invoice list ────────────────────────────────────────────────────────
 

@@ -19,6 +19,13 @@ interface PartyLedgerEcomService {
     fun outstanding(partyUid: String, asOf: Instant): BuyerOutstandingResponse
 
     /**
+     * Of [invoiceUids], the subset that still carries an outstanding balance — the buyer-facing
+     * "Unpaid" set. Targeted classification for the invoices actually being shown (a list page / one
+     * invoice), so the caller never scans the whole party ledger the way [outstanding] does.
+     */
+    fun unpaidInvoiceUids(invoiceUids: Collection<String>): Set<String>
+
+    /**
      * Running-balance statement for [partyUid] over the window [[from], [to]] (null [from] = account
      * opening, null [to] = now). The last line's running balance equals the closing balance.
      */

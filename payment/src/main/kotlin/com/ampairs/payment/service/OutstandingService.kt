@@ -64,6 +64,22 @@ class OutstandingService(
         return result.sortedBy { it.billDate }
     }
 
+    /**
+     * Of [invoiceUids], the subset that still carries an outstanding balance
+     * (`invoice.totalCost > Σ active allocations`). Targeted paid/unpaid classification for a specific
+     * set of invoices (e.g. the page a buyer is viewing) — bounded by [invoiceUids], unlike [openBills]
+     * which scans every finalized invoice of the party.
+     */
+    fun unpaidInvoiceUids(invoiceUids: Collection<String>): Set<String> {
+        val unpaid = mutableSetOf<String>()
+        for (uid in invoiceUids.toSet()) {
+            val invoice = invoiceService.getInvoice(uid) ?: continue
+            val allocated = allocationRepository.allocatedTotalForTarget(AllocationTarget.INVOICE, uid)
+            if (BigDecimal.valueOf(invoice.totalCost).subtract(allocated).signum() > 0) unpaid += uid
+        }
+        return unpaid
+    }
+
     /** Module code constant exposed for reuse. */
     fun moduleCode(): String = Constants.MODULE_CODE
 }

@@ -185,9 +185,10 @@ class CustomerAccountController(
             // Order↔invoice link (spec 029): attach the finalized invoices raised for this order.
             // Order viewing does not require a CRM link, so an unlinked buyer just sees an empty list.
             val partyUid = ecomCustomerService.resolveLinkedCustomerId(userId, customerId)
-            val invoices = partyUid
-                ?.let { swapOrderRefs(invoiceEcomService.listInvoicesForOrder(order.managementOrderRef.orEmpty(), it), unpaidInvoiceUids(it)) }
-                ?: emptyList()
+            val invoices = partyUid?.let { pid ->
+                val list = invoiceEcomService.listInvoicesForOrder(order.managementOrderRef.orEmpty(), pid)
+                swapOrderRefs(list, unpaidInvoiceUids(list.map { it.invoiceUid }))
+            } ?: emptyList()
             return ApiResponse.success(order.asEcomOrderResponse().copy(invoices = invoices))
         } finally {
             TenantContextHolder.clearTenantContext()
@@ -205,8 +206,8 @@ class CustomerAccountController(
         authentication: Authentication,
     ): ApiResponse<PageResponse<BuyerInvoiceSummaryResponse>> =
         withParty(authentication, storefrontSlug, customerId) { partyUid ->
-            val unpaid = unpaidInvoiceUids(partyUid)
             val page = invoiceEcomService.listBuyerInvoices(partyUid, pageable)
+            val unpaid = unpaidInvoiceUids(page.content.map { it.invoiceUid })
             // Resolve every row's order ref in one query (not one per row) to avoid an N+1 over the page.
             val orderRefs = orderService.findBuyerOrderRefs(page.content.mapNotNull { it.orderRefId })
             ApiResponse.success(
@@ -227,7 +228,7 @@ class CustomerAccountController(
         withParty(authentication, storefrontSlug, customerId) { partyUid ->
             val detail = invoiceEcomService.getBuyerInvoice(invoiceUid, partyUid)
                 ?: throw NotFoundException("Invoice not found: $invoiceUid")
-            val status = paymentStatus(detail.invoiceUid, unpaidInvoiceUids(partyUid))
+            val status = paymentStatus(detail.invoiceUid, unpaidInvoiceUids(listOf(detail.invoiceUid)))
             ApiResponse.success(detail.toResponse(orderService.findBuyerOrderRef(detail.orderRefId), status))
         }
 
@@ -246,10 +247,8 @@ class CustomerAccountController(
             val order = orderService.getCustomerOrder(userId, ecomOrderRef)
             val partyUid = ecomCustomerService.resolveLinkedCustomerId(userId, customerId)
                 ?: throw AccessDeniedException("NOT_LINKED")
-            val invoices = swapOrderRefs(
-                invoiceEcomService.listInvoicesForOrder(order.managementOrderRef.orEmpty(), partyUid),
-                unpaidInvoiceUids(partyUid),
-            )
+            val list = invoiceEcomService.listInvoicesForOrder(order.managementOrderRef.orEmpty(), partyUid)
+            val invoices = swapOrderRefs(list, unpaidInvoiceUids(list.map { it.invoiceUid }))
             return ApiResponse.success(invoices)
         } finally {
             TenantContextHolder.clearTenantContext()
@@ -324,10 +323,11 @@ class CustomerAccountController(
         return summaries.map { it.toResponse(orderRefs[it.orderRefId], paymentStatus(it.invoiceUid, unpaidUids)) }
     }
 
-    // The invoice uids that still carry an outstanding balance for this party (spec OQ-6). An invoice
-    // appears in the party ledger's open bills (keyed by invoice uid) exactly while it is not fully paid.
-    private fun unpaidInvoiceUids(partyUid: String): Set<String> =
-        partyLedgerEcomService.outstanding(partyUid, Instant.now()).openBills.map { it.billUid }.toSet()
+    // Of the invoices being shown, the subset still carrying an outstanding balance (spec OQ-6) → the
+    // "Unpaid" set. Classified only for [invoiceUids] (the page / the one invoice), so we don't scan the
+    // whole party ledger the way `outstanding` does. Skips the call entirely when there's nothing to show.
+    private fun unpaidInvoiceUids(invoiceUids: Collection<String>): Set<String> =
+        if (invoiceUids.isEmpty()) emptySet() else partyLedgerEcomService.unpaidInvoiceUids(invoiceUids)
 
     private fun paymentStatus(invoiceUid: String, unpaidUids: Set<String>): String =
         if (invoiceUid in unpaidUids) "Unpaid" else "Paid"

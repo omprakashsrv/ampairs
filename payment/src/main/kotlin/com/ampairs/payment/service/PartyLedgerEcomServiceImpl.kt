@@ -59,6 +59,9 @@ class PartyLedgerEcomServiceImpl(
         )
     }
 
+    override fun unpaidInvoiceUids(invoiceUids: Collection<String>): Set<String> =
+        outstandingService.unpaidInvoiceUids(invoiceUids)
+
     override fun statement(partyUid: String, from: Instant?, to: Instant?): BuyerStatementResponse =
         statementService.buildStatement(partyUid, from, to).toBuyer()
 
