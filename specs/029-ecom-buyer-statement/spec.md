@@ -99,15 +99,15 @@ is exactly what these produce.
 - **FR-003** All reads are keyed by the resolved `partyUid` (== CRM customer uid == `Invoice.customerId`
   == payment `partyUid`). The client-sent `customer_id` is never trusted directly.
 - **FR-004** `GET /v1/ecom/account/invoices` → **paginated** list of the resolved party's invoices
-  (`invoice.customerId == partyUid`), newest first. A buyer sees **only finalized invoices**, defined
-  as **`finalizedStatuses = {InvoiceStatus.INVOICED}`** — `DRAFT` and `NEW` (pre-finalization) are
-  excluded. This is the same finalize boundary the rest of the system keys off (`InvoiceFinalizedEvent`,
-  ledger posting, stock movement, analytics all trigger on `INVOICED`). Each item carries the linked
-  order ref so the client can render "for order …" without a second call.
+  (`invoice.customerId == partyUid`), newest first. A buyer sees the seller's **issued** invoices,
+  defined as **`buyerVisibleStatuses = {InvoiceStatus.NEW, InvoiceStatus.INVOICED}`** — only `DRAFT`
+  work-in-progress is excluded. *(Originally `{INVOICED}` only, matching the ledger/stock finalize
+  boundary; broadened to include `NEW` because the app creates invoices as `NEW` and has no finalize
+  action to reach `INVOICED`, so an `INVOICED`-only filter showed buyers nothing.)* Each item carries
+  the linked order ref so the client can render "for order …" without a second call.
 - **FR-005** `GET /v1/ecom/account/invoices/{invoiceUid}` → single invoice detail (line items + totals)
   for the resolved party. If `invoice.customerId != partyUid` → **404** (never 403 — don't confirm the
-  invoice exists in another account). A non-finalized invoice (`status ∉ finalizedStatuses`, i.e.
-  `DRAFT`/`NEW`) → **404**.
+  invoice exists in another account). A `DRAFT` invoice (`status ∉ buyerVisibleStatuses`) → **404**.
 - **FR-006** `GET /v1/ecom/account/orders/{ecomOrderRef}/invoices` → invoices raised for that order.
   Resolves the order via `getCustomerOrder(partyUid, ecomOrderRef)` (existing ownership re-check),
   reads its `managementOrderRef`, and returns invoices where `orderRefId == managementOrderRef`

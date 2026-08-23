@@ -95,6 +95,14 @@ class InvoiceEcomServiceImplTest {
     }
 
     @Test
+    fun `getBuyerInvoice returns a NEW (issued, not-yet-finalized) invoice`() {
+        // The app creates invoices as NEW and has no finalize step; buyers must still see them.
+        whenever(invoiceRepository.findByUid("1"))
+            .thenReturn(invoice("1", customerId = "CUS1", status = InvoiceStatus.NEW, orderRefId = "ORD9"))
+        assertEquals("1", service.getBuyerInvoice("1", "CUS1")!!.invoiceUid)
+    }
+
+    @Test
     fun `getBuyerInvoice returns null when missing`() {
         whenever(invoiceRepository.findByUid("nope")).thenReturn(null)
         assertNull(service.getBuyerInvoice("nope", "CUS1"))

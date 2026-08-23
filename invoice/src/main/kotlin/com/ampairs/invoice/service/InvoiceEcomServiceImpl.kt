@@ -16,9 +16,10 @@ import java.math.BigDecimal
 
 /**
  * Spec 029 — buyer-facing read of workspace invoices, exposed to `ecom` via the `core`
- * [InvoiceEcomService] interface. Only finalized (`INVOICED`) invoices are ever returned; drafts and
- * pre-finalization (`NEW`) invoices are never shown to a buyer. Every read is guarded by
- * `customerId == partyUid`. Requires an active tenant context (set by the ecom controller).
+ * [InvoiceEcomService] interface. Returns invoices the seller has actually issued — `NEW` (created)
+ * and `INVOICED` (finalized) — hiding only `DRAFT` work-in-progress. (The app creates invoices as
+ * `NEW` and has no finalize step, so an `INVOICED`-only filter showed the buyer nothing.) Every read
+ * is guarded by `customerId == partyUid`. Requires an active tenant context (set by the ecom controller).
  */
 @Service
 @Transactional(readOnly = true)
@@ -27,18 +28,18 @@ class InvoiceEcomServiceImpl(
 ) : InvoiceEcomService {
 
     override fun listBuyerInvoices(partyUid: String, pageable: Pageable): Page<BuyerInvoiceSummary> =
-        invoiceRepository.findByCustomerIdAndStatusIn(partyUid, FINALIZED, pageable)
+        invoiceRepository.findByCustomerIdAndStatusIn(partyUid, BUYER_VISIBLE, pageable)
             .map { it.toSummary() }
 
     override fun getBuyerInvoice(invoiceUid: String, partyUid: String): BuyerInvoiceDetail? {
         val invoice = invoiceRepository.findByUid(invoiceUid) ?: return null
         if (invoice.customerId != partyUid) return null
-        if (invoice.status !in FINALIZED) return null
+        if (invoice.status !in BUYER_VISIBLE) return null
         return invoice.toDetail()
     }
 
     override fun listInvoicesForOrder(orderRefId: String, partyUid: String): List<BuyerInvoiceSummary> =
-        invoiceRepository.findByOrderRefIdAndStatusIn(orderRefId, FINALIZED)
+        invoiceRepository.findByOrderRefIdAndStatusIn(orderRefId, BUYER_VISIBLE)
             .filter { it.customerId == partyUid }
             .map { it.toSummary() }
 
@@ -72,7 +73,11 @@ class InvoiceEcomServiceImpl(
     )
 
     private companion object {
-        /** The sole finalize boundary the system keys off (ledger/stock/analytics). */
-        val FINALIZED = setOf(InvoiceStatus.INVOICED)
+        /**
+         * Statuses a storefront buyer may see: issued invoices — `NEW` (created) and `INVOICED`
+         * (finalized). Only true `DRAFT` work-in-progress is hidden. `INVOICED` alone showed nothing,
+         * because the app creates invoices as `NEW` with no finalize action to reach `INVOICED`.
+         */
+        val BUYER_VISIBLE = setOf(InvoiceStatus.NEW, InvoiceStatus.INVOICED)
     }
 }

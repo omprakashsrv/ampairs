@@ -12,8 +12,8 @@ import java.time.Instant
  *
  * Every read is keyed by the resolved CRM party (`partyUid == Invoice.customerId`) — the ecom
  * controller resolves the buyer's login to a linked CRM customer before calling. Requires an active
- * tenant context (set by the controller from the storefront slug). Only **finalized** invoices
- * (`InvoiceStatus.INVOICED`) are ever returned; drafts are never exposed to a buyer.
+ * tenant context (set by the controller from the storefront slug). Returns the seller's **issued**
+ * invoices — `NEW` (created) and `INVOICED` (finalized) — hiding only `DRAFT` work-in-progress.
  *
  * The returned DTOs carry the raw workspace [BuyerInvoiceSummary.orderRefId] / [BuyerInvoiceDetail.orderRefId];
  * the ecom controller swaps it for the buyer-facing storefront order ref before serializing.
