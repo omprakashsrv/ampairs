@@ -21,6 +21,7 @@ import com.ampairs.ecom.domain.dto.EcomOrderResponse
 import com.ampairs.ecom.domain.dto.asAddressResponse
 import com.ampairs.ecom.domain.dto.asEcomOrderResponse
 import com.ampairs.ecom.domain.dto.toResponse
+import com.ampairs.ecom.exception.EcomNotLinkedException
 import com.ampairs.ecom.service.CustomerAddressService
 import com.ampairs.ecom.service.EcomOrderService
 import com.ampairs.ecom.service.StorefrontService
@@ -29,7 +30,6 @@ import jakarta.validation.Valid
 import org.springframework.data.domain.Pageable
 import org.springframework.data.web.PageableDefault
 import org.springframework.http.HttpStatus
-import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
@@ -246,7 +246,7 @@ class CustomerAccountController(
             val userId = AuthenticationHelper.getUserId(authentication)!!
             val order = orderService.getCustomerOrder(userId, ecomOrderRef)
             val partyUid = ecomCustomerService.resolveLinkedCustomerId(userId, customerId)
-                ?: throw AccessDeniedException("NOT_LINKED")
+                ?: throw EcomNotLinkedException("NOT_LINKED")
             val list = invoiceEcomService.listInvoicesForOrder(order.managementOrderRef.orEmpty(), partyUid)
             val invoices = swapOrderRefs(list, unpaidInvoiceUids(list.map { it.invoiceUid }))
             return ApiResponse.success(invoices)
@@ -292,7 +292,9 @@ class CustomerAccountController(
 
     /**
      * Runs [block] under the storefront's tenant with the buyer resolved to a linked CRM party.
-     * Throws [AccessDeniedException] (`NOT_LINKED`, → 403) when the login is not linked to any account.
+     * Throws [EcomNotLinkedException] (→ 403, code `ECOM_NOT_LINKED`) when the login is not linked to
+     * any account — a distinct, machine-readable signal so the client can show a "link your account"
+     * hint for this case only (and a generic error for transient failures), rather than a bare 403.
      */
     private fun <T> withParty(
         authentication: Authentication,
@@ -305,7 +307,7 @@ class CustomerAccountController(
         try {
             val userId = AuthenticationHelper.getUserId(authentication)!!
             val partyUid = ecomCustomerService.resolveLinkedCustomerId(userId, requestedCustomerId)
-                ?: throw AccessDeniedException("NOT_LINKED")
+                ?: throw EcomNotLinkedException("NOT_LINKED")
             return block(partyUid)
         } finally {
             TenantContextHolder.clearTenantContext()

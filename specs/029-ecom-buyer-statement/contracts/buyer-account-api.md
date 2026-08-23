@@ -6,7 +6,7 @@ All endpoints:
 - Tenant: resolved from `storefront_slug` → `storefront.ownerId`, set via `TenantContextHolder` in try/finally at the controller.
 - Party: resolved via `EcomCustomerService.resolveLinkedCustomerId(userId, customer_id?)` → `partyUid`.
 - Envelope: `ApiResponse<T>` always; lists use `PageResponse<T>`; JSON is global SNAKE_CASE.
-- Errors: unlinked buyer → **403** `NOT_LINKED`; wrong-party / draft / missing document → **404**. Bubble to `GlobalExceptionHandler` (no controller try/catch for business errors).
+- Errors: unlinked buyer → **403** `ECOM_NOT_LINKED`; wrong-party / draft / missing document → **404**. Bubble to `GlobalExceptionHandler` (no controller try/catch for business errors).
 
 Common query params: `storefront_slug` (required), `customer_id` (optional; honored only if the login
 is genuinely linked to it, else the login's default account).
@@ -38,7 +38,7 @@ Paginated, finalized-only, newest first.
 - `order_ref` is the buyer-facing `EcomOrder.ecomOrderRef`/`orderNumber` (controller-resolved from `orderRefId`), `null` for non-ecom invoices.
 - `status` is the buyer-facing payment state — `"Unpaid"` while the invoice carries an outstanding balance (its uid is in `/outstanding`'s `open_bills[].bill_uid`), else `"Paid"`. Composed by the ecom controller from the party ledger, not the `invoice` module (OQ-6).
 
-**403** `NOT_LINKED` — login not linked to any account.
+**403** `ECOM_NOT_LINKED` — login not linked to any account.
 
 ---
 
@@ -104,7 +104,7 @@ Empty array when no invoice has been raised for the order.
   }, "error": null }
 ```
 
-**403** `NOT_LINKED`.
+**403** `ECOM_NOT_LINKED`.
 
 ---
 
@@ -128,7 +128,7 @@ Empty array when no invoice has been raised for the order.
 ```
 Last line's `running_balance` == `closing_balance` (party-ledger invariant, unchanged from spec 013).
 
-**403** `NOT_LINKED`.
+**403** `ECOM_NOT_LINKED`.
 
 ---
 
@@ -144,7 +144,7 @@ buyer-facing PDF for an invoice owned by the resolved party (404 otherwise).
 | Scenario | Result |
 |---|---|
 | Linked buyer, own party | 200 with own data |
-| Unlinked buyer | 403 `NOT_LINKED` |
+| Unlinked buyer | 403 `ECOM_NOT_LINKED` |
 | `customer_id` for an account the login is **not** linked to | Resolves to the login's default (never the requested), or 403 if none |
 | Multi-account buyer, valid `customer_id` | 200 for that account |
 | Same buyer, two storefronts/workspaces | Each returns only that workspace's data (tenant isolation) |
