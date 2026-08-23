@@ -1,9 +1,14 @@
 {
-    "keyId": "00063e80",
+    "currentKeyId": "ea49067a",
+    "keys": [
+    {
+    "keyId": "ea49067a",
     "algorithm": "RS256",
-    "createdAt": "2025-09-09T15:40:51.808801Z",
-    "expiresAt": "2025-12-08T15:40:51.808787Z",
+    "createdAt": "2026-08-23T15:09:02.074093682Z",
+    "expiresAt": "2026-11-21T15:09:02.074013489Z",
     "isActive": true,
-    "privateKeyPath": "keys/private.pem",
-    "publicKeyPath": "keys/public.pem"
+    "isCurrent": true,
+    "keyDirectory": "keys/ea49067a_2026-08-23"
+}
+    ]
 }
