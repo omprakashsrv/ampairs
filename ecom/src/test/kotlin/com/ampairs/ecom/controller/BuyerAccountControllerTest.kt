@@ -81,6 +81,9 @@ class BuyerAccountControllerTest {
     fun setUp() {
         whenever(workspaceMemberService.isWorkspaceMember(any())).thenReturn(true)
         whenever(storefrontService.getPublishedStorefrontBySlug(slug)).thenReturn(storefront())
+        // The list endpoints resolve order refs in one batched call; default to no mapping (overridden
+        // per-test where a specific ORD→ECO swap is asserted).
+        whenever(orderService.findBuyerOrderRefs(any())).thenReturn(emptyMap())
         mockMvc = MockMvcBuilders
             .webAppContextSetup(webApplicationContext)
             .apply<DefaultMockMvcBuilder>(springSecurity())
@@ -125,7 +128,7 @@ class BuyerAccountControllerTest {
         linked()
         stubUnpaid("INV1")
         whenever(invoiceEcomService.listBuyerInvoices(eq("PARTY1"), any())).thenReturn(PageImpl(listOf(summary())))
-        whenever(orderService.findBuyerOrderRef("ORD9")).thenReturn("ECO-7")
+        whenever(orderService.findBuyerOrderRefs(any())).thenReturn(mapOf("ORD9" to "ECO-7"))
 
         mockMvc.perform(get("/v1/ecom/account/invoices?storefront_slug=$slug"))
             .andExpect(status().isOk)
@@ -169,7 +172,7 @@ class BuyerAccountControllerTest {
         whenever(ecomCustomerService.resolveLinkedCustomerId(eq("cust-1"), eq("OTHER"))).thenReturn("PARTY1")
         stubUnpaid()
         whenever(invoiceEcomService.listBuyerInvoices(eq("PARTY1"), any())).thenReturn(PageImpl(listOf(summary())))
-        whenever(orderService.findBuyerOrderRef("ORD9")).thenReturn("ECO-7")
+        whenever(orderService.findBuyerOrderRefs(any())).thenReturn(mapOf("ORD9" to "ECO-7"))
 
         mockMvc.perform(get("/v1/ecom/account/invoices?storefront_slug=$slug&customer_id=OTHER"))
             .andExpect(status().isOk)
@@ -226,7 +229,7 @@ class BuyerAccountControllerTest {
         stubUnpaid() // INV1 has no open bill → "Paid"
         whenever(orderService.getCustomerOrder("cust-1", "ECO-7")).thenReturn(order(managementRef = "ORD9"))
         whenever(invoiceEcomService.listInvoicesForOrder(eq("ORD9"), eq("PARTY1"))).thenReturn(listOf(summary()))
-        whenever(orderService.findBuyerOrderRef("ORD9")).thenReturn("ECO-7")
+        whenever(orderService.findBuyerOrderRefs(any())).thenReturn(mapOf("ORD9" to "ECO-7"))
 
         mockMvc.perform(get("/v1/ecom/account/orders/ECO-7/invoices?storefront_slug=$slug"))
             .andExpect(status().isOk)
@@ -244,7 +247,7 @@ class BuyerAccountControllerTest {
         whenever(orderService.getCustomerOrder("cust-1", "ECO-7")).thenReturn(order(managementRef = "ORD9"))
         whenever(invoiceEcomService.listInvoicesForOrder(eq("ORD9"), eq("PARTY1")))
             .thenReturn(listOf(summary(orderRefId = "ORD9")))
-        whenever(orderService.findBuyerOrderRef("ORD9")).thenReturn(null) // non-ecom mapping
+        // non-ecom mapping: ORD9 absent from the batched ref map (default emptyMap) → order_ref null
 
         mockMvc.perform(get("/v1/ecom/account/orders/ECO-7?storefront_slug=$slug"))
             .andExpect(status().isOk)

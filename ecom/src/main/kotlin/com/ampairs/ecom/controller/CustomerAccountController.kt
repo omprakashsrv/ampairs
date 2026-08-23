@@ -207,8 +207,13 @@ class CustomerAccountController(
         withParty(authentication, storefrontSlug, customerId) { partyUid ->
             val unpaid = unpaidInvoiceUids(partyUid)
             val page = invoiceEcomService.listBuyerInvoices(partyUid, pageable)
-                .map { it.toResponse(orderService.findBuyerOrderRef(it.orderRefId), paymentStatus(it.invoiceUid, unpaid)) }
-            ApiResponse.success(PageResponse.from(page))
+            // Resolve every row's order ref in one query (not one per row) to avoid an N+1 over the page.
+            val orderRefs = orderService.findBuyerOrderRefs(page.content.mapNotNull { it.orderRefId })
+            ApiResponse.success(
+                PageResponse.from(
+                    page.map { it.toResponse(orderRefs[it.orderRefId], paymentStatus(it.invoiceUid, unpaid)) },
+                ),
+            )
         }
 
     /** A single finalized invoice owned by the linked buyer (US2). Wrong party / draft → 404. */
@@ -313,8 +318,11 @@ class CustomerAccountController(
     private fun swapOrderRefs(
         summaries: List<com.ampairs.core.service.BuyerInvoiceSummary>,
         unpaidUids: Set<String>,
-    ): List<BuyerInvoiceSummaryResponse> =
-        summaries.map { it.toResponse(orderService.findBuyerOrderRef(it.orderRefId), paymentStatus(it.invoiceUid, unpaidUids)) }
+    ): List<BuyerInvoiceSummaryResponse> {
+        // One query for the whole list's order refs (avoids an N+1 over the summaries).
+        val orderRefs = orderService.findBuyerOrderRefs(summaries.mapNotNull { it.orderRefId })
+        return summaries.map { it.toResponse(orderRefs[it.orderRefId], paymentStatus(it.invoiceUid, unpaidUids)) }
+    }
 
     // The invoice uids that still carry an outstanding balance for this party (spec OQ-6). An invoice
     // appears in the party ledger's open bills (keyed by invoice uid) exactly while it is not fully paid.

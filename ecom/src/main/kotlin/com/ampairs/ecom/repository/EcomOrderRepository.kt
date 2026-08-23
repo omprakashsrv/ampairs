@@ -28,6 +28,9 @@ interface EcomOrderRepository :
      */
     fun findByManagementOrderRef(managementOrderRef: String): EcomOrder?
 
+    /** Batched form of [findByManagementOrderRef] — one query for a page of invoices (avoids N+1). @TenantId-filtered. */
+    fun findByManagementOrderRefIn(managementOrderRefs: Collection<String>): List<EcomOrder>
+
     fun findByWorkspaceId(workspaceId: String, pageable: Pageable): Page<EcomOrder>
 
     fun findByWorkspaceIdAndStatus(workspaceId: String, status: EcomOrderStatus, pageable: Pageable): Page<EcomOrder>
