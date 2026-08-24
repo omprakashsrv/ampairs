@@ -1,15 +1,19 @@
 # AI Business Operations Manager — Framework Blueprint
 
-**Status:** Draft blueprint (architecture, not yet a build commitment) · **rev 2** (app-first placement)
-**Module (backend host):** `:aiops` — `com.ampairs.aiops` · **Module (app host):** `feature/aiops` (KMP) in `ampairs-app`
-**Shared engine:** host-agnostic Kotlin SPI (runs on device *and* server) · **Reasoning:** app = on-device/cloud `LlmEngine`; backend = Koog
+**Status:** Draft blueprint (architecture, not yet a build commitment) · **rev 3** (app-side orchestration)
+**Module (app host):** `feature/aiops` (KMP) in `ampairs-app` · **Module (deferred backend host):** `:aiops` — `com.ampairs.aiops`
+**Shared engine:** host-agnostic Kotlin SPI (runs on device *and* server) · **Reasoning:** app = on-device/cloud `LlmEngine`; backend (later) = Koog
+**Program spine:** [`README.md`](README.md) (roadmap) · **Decisions:** [ADR 0005](../adr/0005-ai-ops-manager-app-side-orchestration.md), [ADR 0006](../adr/0006-aiops-engine-shared-kmp-module.md)
 **Related:** `.claude/skills/koog/SKILL.md` · `docs/spikes/koog-agent-backend-spike.md` · `specs/030-koog-agent-assistant` · `specs/031-ai-ops-manager-foundation` · PR #221
 
-> **Read this first.** The product vision ("AI Retail Business Operations Manager") maps onto **one
-> reusable decision engine** with pluggable capabilities. The important architectural decision (rev 2)
-> is **where it runs**: we start **on the app**, doing *implicit, at-the-point-of-edit* fixes over the
-> data the app already holds, and push *workspace-wide + scheduled + autonomous* work to the **backend**
-> later. The engine SPI is written **once, host-agnostic**, so a capability can run on either side.
+> **Read this first.** The product vision maps onto **one reusable decision engine** with pluggable
+> capabilities. The settled architectural decision (rev 3, **ADR 0005**) is **where the orchestrator
+> runs: app-side.** Each app instance is one workspace with the **full master resident in Room**, the
+> `LlmEngine` (on-device + a cloud tier for hard reasoning *calls*, not orchestration hops), and an
+> audited write→sync path — so **all** near-term capabilities, *including whole-dataset dedup*, run on
+> the app. The **backend** (`:aiops` + Koog) is a **deferred, optional tier** for only always-on
+> autonomy and admin cross-tenant. The engine SPI is written **once, host-agnostic** (**ADR 0006**), so
+> the same capability can later run under Koog on the server.
 
 ---
 
@@ -43,23 +47,30 @@ The app is not a thin client — it already contains most of what a naive plan w
 - **No new server infra** to ship value: no `:aiops` module, no fleet-scan scheduler, no
   per-workspace-tenant-context-across-threads problem (each app instance is already one workspace/user).
 
-### What genuinely needs the backend (later)
-- **Whole-dataset, cross-entity work** — deduplicating *all* customers/products needs every record,
-  reconciled across devices. The app sees only what's synced onto *this* device; the **server is
-  authoritative** for "are these two the same?".
-- **Scheduled / continuous / autonomous** (L3–L4) — overnight scans, the morning brief, "I reviewed your
-  business while you slept". A phone isn't always on; this is inherently server work.
-- **Authoritative audit & cross-device rollback** as a business-of-record.
+### Dedup runs app-side too (the rev-2→rev-3 correction)
+An earlier draft put whole-dataset dedup on the backend for authority. **Revised:** offline-first syncs
+the **whole** customer/product master onto each device (ADR 0002), so the app already holds the full set
+needed to dedup. Dedup therefore runs **app-side** over the resident master, with two risks recorded
+(neither a blocker, per ADR 0005):
+- **Non-resident master** (partial sync / very large catalogs) → gate whole-set capabilities on a
+  "master fully synced" check; degrade to single-entity capabilities otherwise.
+- **Multi-device duplicate work / write conflicts** → absorbed by offline-sync's UID-keyed
+  last-write-wins (ADR 0002); prefer reversible **LINK** over destructive **MERGE**.
 
-### The split is by capability *shape*, not by taste
+### What genuinely needs the backend (deferred, optional tier)
+- **Always-on / continuous autonomy** (L3–L4) — overnight scans, the morning brief, "I reviewed your
+  business while you slept". A phone isn't always on; this is inherently server work.
+- **Platform-admin cross-tenant** monitoring across many workspaces.
+
+### Everything near-term is app-side; the split is by *shape* only within the app
 ```
-                         SINGLE-ENTITY, decidable from one record (+ small reference data)
-   APP  (Phase A)   ►    unit standardization · capitalization/format · GSTIN/phone/pincode↔city↔state
-   implicit, L0–L2        validation · single-product hierarchy sanity · contact-card capture+extract
-                         ────────────────────────────────────────────────────────────────────────────
-   BACKEND (Phase B) ►    CROSS-ENTITY / whole-dataset · dedup (product & customer) · "same product
-   scheduled, L2–L4       across suppliers" · duplicate SKU/phone across the base · authoritative
-                          contact→customer match · overnight scans · morning brief · continuous monitoring
+   APP (near-term)  ►  ALL Epic-1 capabilities, orchestrated on device:
+   L0–L2               single-entity: unit standardization · capitalization/format ·
+                       GSTIN/phone/pincode↔city↔state validation · hierarchy sanity · contact-card
+                       whole-dataset (resident master): product & customer dedup · duplicate SKU/phone
+                       ────────────────────────────────────────────────────────────────────────────
+   BACKEND (deferred)  ►  only what the device can't do: always-on overnight scans · morning brief ·
+   L3–L4, optional        continuous monitoring · admin cross-tenant  — same engine SPI, under Koog
 ```
 
 ### One engine, two hosts
@@ -151,7 +162,8 @@ else    ⇒ human exception (REVIEW | ASK)
 Stored via the `setting` module (backend) and mirrored to the app; read by the gate. L0 Observe · L1
 Recommend · L2 Auto-correct (low-risk) · L3 Auto-execute (policy) · L4 Autonomous. **Default L1** (propose,
 never change). Tax/HSN never auto-applies without an explicit per-workspace opt-in, any level.
-App-side ships L0–L2 (single-entity); L3–L4 (continuous/autonomous) are backend-only.
+App-side (near-term) ships **L0–L2** across all Epic-1 capabilities (single-entity *and* resident-master
+dedup); **L3–L4** (continuous/autonomous) are the deferred backend tier.
 
 ---
 
@@ -186,10 +198,13 @@ server-side gets a consolidated audit even for app-applied fixes.
 |---|---|---|
 | **Implicit (on save)** | App | user saves entity → run that entity's single-entity detectors → auto-fix (L2, opt-in) or inline suggestion chip |
 | **User "clean now"** | App | run all local capabilities over the resident workspace data → report + review list |
-| **Event-driven** | Backend | entity create/update on the `event` stream → relevant detectors for that aggregate |
-| **Scheduled** | Backend | nightly per-workspace scan → detect → prioritize → auto-resolve → build morning brief |
+| **Event-driven** | Backend *(deferred)* | entity create/update on the `event` stream → relevant detectors for that aggregate |
+| **Scheduled** | Backend *(deferred)* | nightly per-workspace scan → detect → prioritize → auto-resolve → build morning brief |
 
-**Backend tenant propagation (Phase B):** fleet scans have no request thread, and Koog switches
+The app-side **Implicit (on save)** trigger is the app's own event-driven path — near-term, no backend
+needed. The Backend rows are the **deferred tier** (ADR 0005).
+
+**Backend tenant propagation (deferred tier):** fleet scans have no request thread, and Koog switches
 coroutine threads, so each per-workspace scan runs inside a `ThreadContextElement` that carries
 `TenantContextHolder` across threads (the mechanism the Koog spike validates). Engine-level two-tenant
 test mandatory. *(The app host sidesteps this entirely — one instance = one workspace.)*
@@ -213,19 +228,22 @@ for tax/HSN).
 
 ## 9. Agent catalog + placement
 
-| Agent | Capability | Shape | Phase / host |
+| Agent | Capability | Shape | Host (near-term = app) |
 |---|---|---|---|
-| Product | unit standardization | single-entity | **A · app** |
-| Product | capitalization/format, single-product hierarchy sanity | single-entity | A · app |
-| Product | dedup, "same product across suppliers", duplicate SKU | cross-entity | **B · backend** |
-| Product | HSN/GST sanity | single-entity, **advisory** | A (suggest) · app; auto only backend+opt-in |
-| Customer | field validation (GSTIN/phone/pincode↔city↔state) | single-entity | **A · app** |
-| Customer | contact card → capture + extract + normalize | single-entity | A · app |
-| Customer | dedup, authoritative contact→customer match | cross-entity | **B · backend** |
-| Inventory / Purchase / Sales | low/dead-stock, price/discount/invoice anomalies | cross-entity, temporal | B · backend |
+| Product | unit standardization | single-entity | **app** (Epic 1) |
+| Product | capitalization/format, single-product hierarchy sanity | single-entity | **app** (Epic 1) |
+| Product | dedup, "same product across suppliers", duplicate SKU | whole-dataset (resident master) | **app** (Epic 1) |
+| Product | HSN/GST sanity | single-entity, **advisory** | **app** (Epic 1) — suggest only; never auto |
+| Customer | field validation (GSTIN/phone/pincode↔city↔state) | single-entity | **app** (Epic 1) |
+| Customer | contact card → capture + extract + normalize | single-entity | **app** (Epic 1) |
+| Customer | dedup, contact→customer match | whole-dataset (resident master) | **app** (Epic 1) |
+| Inventory / Purchase / Sales | low/dead-stock, price/discount/invoice anomalies | cross-entity, temporal | **backend** (Epic 3, deferred) |
+| — always-on autonomy · morning brief · admin cross-tenant | orchestration | continuous | **backend** (Epic 2, deferred) |
 
-A thin **orchestrator** (backend) aggregates `aiops_agent_run` into the workspace morning brief and
-enforces global cost/rate limits.
+Near-term, the orchestrator is **app-side** (ADR 0005): on device it runs each capability over the
+resident workspace master and aggregates results into the on-device manager view. A **backend**
+orchestrator (aggregating `aiops_agent_run` into an overnight morning brief, with global cost/rate
+limits) is the deferred Epic-2 tier.
 
 ---
 
@@ -288,18 +306,20 @@ Data: product "Basmati Rice" saved with unit `Kgs`.
 mismatch, `Reasoner` (on-device) parses "500 ML" but self-confidence 0.7 → band MEDIUM → **suggestion
 chip**, not auto-fix.
 
-### B) Customer dedup — **backend-side** (why it can't be app-first)
-"ABC Traders" vs "ABC TRADERS PVT LTD", same GSTIN. To decide they're the same and safely LINK them, the
-engine must see **all** customers with that GSTIN/phone/name-block across every device — only the server
-holds the authoritative full set. Flow is the same SPI, but `Detector` blocks over the whole table,
-`Reasoner`=Koog scores the fuzzy set, and `Executor` performs a reversible **LINK** through
-`CustomerService`, audited server-side. Hence Phase B.
+### B) Customer dedup — **app-side, over the resident master**
+"ABC Traders" vs "ABC TRADERS PVT LTD", same GSTIN. Offline-first has synced the **whole** customer
+master into local Room, so the engine can block over the full resident set on device: `Detector` groups
+by GSTIN/phone/name-block across all local customers, `Reasoner`=on-device `LlmEngine` (cloud tier for a
+hard fuzzy set) scores the group, and `Executor` performs a reversible **LINK** through the customer
+repository + offline-sync — audited locally and synced. Gated on a **"master fully synced"** check; if
+the device doesn't hold the full master, the capability degrades to single-entity validation and defers
+the cross-record dedup (ADR 0005). No backend required.
 
 ---
 
 ## 16. Sequence diagrams
 
-**App-side implicit fix (Phase A):**
+**App-side implicit fix (near-term, Epic 1):**
 ```mermaid
 sequenceDiagram
     actor User
@@ -323,7 +343,7 @@ sequenceDiagram
     end
 ```
 
-**Backend scheduled scan (Phase B):**
+**Backend scheduled scan (deferred Epic-2 tier):**
 ```mermaid
 sequenceDiagram
     participant Cron as @Scheduled
@@ -358,35 +378,41 @@ stamp `reverted_at` → `aiops_feedback(REJECT)`.
 
 ## 17. Phasing
 
-- **Phase A — App, implicit, single-entity (ships first, in `ampairs-app`):** shared KMP engine
-  (`feature/aiops`) + `Reasoner`/`Executor` app adapters + `aiops_*` Room tables on the offline-sync
-  contract + **unit standardization** end-to-end (the §15A proof) + inline suggestion/undo UI. Autonomy
-  L0–L2. **No backend module needed.** Then add capitalization/format, customer field validation,
-  contact-card capture+extract, HSN advisory-suggest.
-- **Phase B — Backend, cross-entity + scheduled + autonomous (in `ampairs`, `:aiops`):** whole-dataset
-  dedup (product & customer), authoritative contact→customer match, event + nightly scans, morning-brief
-  orchestration, server-authoritative audit/rollback, L3–L4. Reuses the *same* engine SPI with Koog +
-  public-service adapters; consumes app-synced audit so history is unified.
-- **Phase C — Operations:** inventory / purchase / sales / pricing / supplier anomalies as further
-  cross-entity capabilities on the Phase-B host.
+Aligned with the roadmap ([`README.md`](README.md)) Epics.
+
+- **Epic 1 — App (ships first, in `ampairs-app`):** shared KMP engine (`feature/aiops`) +
+  `Reasoner`/`Executor` app adapters + `aiops_*` Room tables on the offline-sync contract +
+  **unit standardization** end-to-end (the §15A proof) + inline suggestion/undo UI. Then
+  capitalization/format, customer field validation, contact-card capture+extract, **product & customer
+  dedup over the resident master** (§15B), HSN advisory-suggest. Autonomy L0–L2. **No backend module
+  needed.**
+- **Epic 2 — Backend, deferred/optional (in `ampairs`, `:aiops`):** always-on overnight scans, the
+  morning brief, continuous monitoring, and admin cross-tenant — L3–L4. Reuses the *same* engine SPI with
+  Koog + public-service adapters; consumes app-synced audit so history is unified. Unpark only on a real
+  need for always-on autonomy (entry conditions in the roadmap).
+- **Epic 3 — Operations:** inventory / purchase / sales / pricing / supplier anomalies as further
+  capabilities; host chosen per shape.
 
 Each capability is *just another plug-in set*; the host decides where it runs.
 
 ---
 
 ## 18. Open decisions
-1. **Module name** — ✅ **`:aiops`** (backend) / `feature/aiops` (app).
-2. **Placement** — ✅ **app-first (Phase A), backend for cross-entity/scheduled (Phase B).**
-3. **Backend async model (Phase B)** — `@Scheduled` + work queue vs Kafka (`event` module) vs external
-   scheduler; per-workspace concurrency + cost caps. *(Deferred to Phase B — not needed for Phase A.)*
-4. **Shared-engine packaging** — does the KMP `aiops-engine` live only in `ampairs-app`, or become a
-   **published module** (like data-common/auth) so the backend consumes the *same* SPI artifact? Decide
-   before Phase B to avoid two divergent engines.
-5. **Vector/RAG store** for few-shot memory + dedup blocking — Phase B.
-6. **Merge semantics** — reversible LINK preferred over hard MERGE (strong default).
-7. **Reference data** — source/refresh for HSN, pincode↔city↔state, GSTIN format.
+1. **Module name** — ✅ **`feature/aiops`** (app) / `:aiops` (deferred backend). ADR 0006.
+2. **Placement** — ✅ **app-side orchestration; backend deferred/optional.** ADR 0005.
+3. **Shared-engine packaging** — does the KMP `aiops-engine` live only in `ampairs-app`, or become a
+   **published module** (like data-common/auth) so a future backend consumes the *same* SPI artifact?
+   Decide before Epic 2 to avoid two divergent engines. ADR 0006.
+4. **Resident-master gate** — the exact "master fully synced" signal for enabling whole-dataset dedup on
+   device (per-entity sync checkpoint? count reconciliation?). Epic-1 slice 4.
+5. **Merge semantics** — reversible LINK preferred over hard MERGE (strong default).
+6. **Reference data** — source/refresh for HSN, pincode↔city↔state, GSTIN format (ship in-app for Epic 1).
+7. **Backend async model** — `@Scheduled` + work queue vs Kafka (`event`) vs external scheduler;
+   per-workspace concurrency + cost caps. *(Deferred to Epic 2.)*
+8. **Vector/RAG store** for few-shot memory + dedup blocking — *(Deferred to Epic 2.)*
 
 ---
 
-_Next step: with app-first + `:aiops` locked, spec **Phase A** in `ampairs-app` (shared engine + unit
-standardization + inline UI). `specs/031` (backend) is now reframed as **Phase B**._
+_Next step: with app-side orchestration + `feature/aiops` locked, the near-term work is the Epic-1
+slices in `ampairs-app/docs/design/ai-ops-manager/` (shared engine + unit standardization first). The
+backend (`specs/031`) is the deferred Epic-2 tier. See the roadmap [`README.md`](README.md)._

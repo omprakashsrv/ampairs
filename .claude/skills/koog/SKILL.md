@@ -19,6 +19,12 @@ strategies, structured output, memory/RAG, history compression, OpenTelemetry ob
 network LLM clients (OpenAI, Anthropic, Google, DeepSeek, OpenRouter, Ollama, Bedrock, Mistral,
 Alibaba). It is a **JVM/backend fit here.** Read *When to reach for Koog* before adding it.
 
+> **Scope note (AI Ops Manager).** Koog governs only the **optional, deferred backend tier** of the AI
+> Business Operations Manager. The near-term Ops-Manager orchestrator runs **app-side** and uses the
+> app's own `LlmEngine` — **not** Koog (ADR 0005). Both hosts serve the same host-agnostic engine SPI
+> (ADR 0006). This skill's "backend/JVM only, not the app" framing is about **Koog the library**, and is
+> consistent with that split — see [`docs/ai-ops-manager/README.md`](../../docs/ai-ops-manager/README.md).
+
 ---
 
 ## 0. Scope — where Koog belongs in Ampairs (read first)

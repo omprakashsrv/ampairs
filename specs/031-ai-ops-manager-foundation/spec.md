@@ -1,8 +1,9 @@
 # 031 — AI Business Operations Manager: **Phase B** (backend `:aiops` — cross-entity + scheduled)
 
-**Status:** Stub · **Blocked on:** Phase A (app-side) learnings + framework §18 open decisions (async model, shared-engine packaging) + Koog spike Go
+**Status:** Stub · **Deferred / optional backend tier (Epic 2)** — not near-term · **Blocked on:** Epic-1 (app) learnings + a real need for always-on autonomy + framework §18 open decisions + Koog spike Go
+**Program:** the deferred backend tier of the AI Ops Manager — see [`docs/ai-ops-manager/README.md`](../../docs/ai-ops-manager/README.md). Near-term the orchestrator runs **app-side** (ADR 0005); this exists only for always-on overnight autonomy + admin cross-tenant.
 **Modules:** new `aiops` (backend), `core`, `setting` (autonomy), `event` (event trigger), read/write via `customer`/`product`/`unit`/tax public services, Koog
-**Related:** `docs/ai-ops-manager/framework.md` (authoritative design, rev 2) · `.claude/skills/koog/SKILL.md` · `docs/spikes/koog-agent-backend-spike.md` · `specs/030-koog-agent-assistant` · PR #221
+**Related:** [`docs/ai-ops-manager/README.md`](../../docs/ai-ops-manager/README.md) (roadmap) · `docs/ai-ops-manager/framework.md` (design, rev 3) · [ADR 0005](../../docs/adr/0005-ai-ops-manager-app-side-orchestration.md) · `.claude/skills/koog/SKILL.md` · `docs/spikes/koog-agent-backend-spike.md` · `specs/030-koog-agent-assistant` · PR #221
 
 > **Reframed (rev 2).** The framework is now **app-first**: single-entity, implicit fixes (unit
 > standardization, field validation, contact-card capture) ship in **`ampairs-app`** as **Phase A** —

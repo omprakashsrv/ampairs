@@ -1,6 +1,7 @@
 # 030 — Server-side AI assistant: tool-calling data agent (Koog)
 
-**Status:** Stub · **Blocked on:** the Koog backend spike (`docs/spikes/koog-agent-backend-spike.md`)
+**Status:** Stub · **Precursor / optional** (backend Q&A track — **not** on the near-term path) · **Blocked on:** the Koog backend spike (`docs/spikes/koog-agent-backend-spike.md`)
+**Program:** part of the deferred **Epic 2** backend tier — see [`docs/ai-ops-manager/README.md`](../../docs/ai-ops-manager/README.md). The near-term AI Ops work is app-side (ADR 0005); this is optional until always-on/backend Q&A is a real need.
 **Modules:** `agent` (primary), `core`, read-only tool access to `customer` (then `product`, `invoice`, `order`, `payment`) via public service interfaces
 **Related:** `.claude/skills/koog/SKILL.md` · `docs/spikes/koog-agent-backend-spike.md` · PR #221 · module doc `docs/modules/agent.md`
 
