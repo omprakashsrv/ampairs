@@ -59,7 +59,7 @@ design: `tax` (subscribe model), `file` (multipart).
 ```
 /speckit.specify → /speckit.clarify → /speckit.plan → /speckit.tasks → /speckit.analyze → /speckit.implement
 ```
-Specs in `specs/{###-feature}/`. Next number: `029` (check `ls specs/` — highest existing is `028`).
+Specs in `specs/{###-feature}/`. Next number: `031` (check `ls specs/` — highest existing is `030`).
 
 ## Build commands
 ```bash
