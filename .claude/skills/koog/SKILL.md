@@ -52,7 +52,9 @@ Two entry points — pick one:
 
 ```kotlin
 // Option A — Spring Boot starter: auto-configures PromptExecutor beans from properties.
-implementation("ai.koog:koog-spring-boot-starter:1.1.1")
+// NOTE: this artifact has no plain "1.1.1" release — Maven Central only ships it as a
+// "-beta" build. Treat it as beta-stability even though koog-agents itself is stable.
+implementation("ai.koog:koog-spring-boot-starter:1.1.1-beta")
 
 // Option B — plain library: you build executors/agents yourself (more control, no auto-config).
 implementation("ai.koog:koog-agents:1.1.1")
@@ -82,9 +84,11 @@ ai:
 ```
 
 Auto-configured beans (present only when the matching `api-key` is set): `anthropicExecutor`,
-`openAIExecutor`, `googleExecutor`, `openRouterExecutor`, `deepSeekExecutor`, `mistralAIExecutor`,
-`ollamaExecutor`, and `multiLLMPromptExecutor` (fallback across all enabled providers). Inject by type
-when one exists, or disambiguate with `@Qualifier`:
+`openAIExecutor`, `googleExecutor`, `openRouterExecutor`, `deepSeekExecutor`, `ollamaExecutor`. These
+are the **only** six providers the Spring Boot starter wires up — Mistral, Bedrock, and Alibaba clients
+exist in `koog-agents` (Option B) but are **not** auto-configured by the starter, and there is no
+`multiLLMPromptExecutor` fallback bean. Inject by type when one exists, or disambiguate with
+`@Qualifier`:
 
 ```kotlin
 @Service
@@ -141,7 +145,7 @@ class AgentChatService(private val executor: PromptExecutor) {
             system("You are the Ampairs business assistant. Be concise and accurate.")
             user(userMessage)
         }
-        return executor.execute(p, AnthropicModels.Haiku_4_5).first().content
+        return executor.execute(p, AnthropicModels.Haiku_3_5).first().content
     }
 }
 ```
@@ -209,7 +213,7 @@ import ai.koog.agents.core.agent.AIAgent
 val agent = AIAgent(
     promptExecutor = executor,
     systemPrompt = "You are the Ampairs business assistant. Use tools for any data question.",
-    llmModel = AnthropicModels.Haiku_4_5,
+    llmModel = AnthropicModels.Haiku_3_5,
     temperature = 0.2,
     toolRegistry = toolRegistry,
     maxIterations = 8,              // cap the tool-call loop — cost & safety
@@ -251,8 +255,8 @@ data class SalesSummary(
 
 val result = executor.executeStructured<SalesSummary>(
     prompt = prompt("sales-summary") { system(schemaSystemPrompt); user(question) },
-    model = AnthropicModels.Haiku_4_5,
-    fixingParser = StructureFixingParser(model = AnthropicModels.Sonnet_4_5, retries = 3),
+    model = AnthropicModels.Haiku_3_5,
+    fixingParser = StructureFixingParser(fixingModel = AnthropicModels.Sonnet_4_5, retries = 3),
 )
 ```
 
