@@ -1,60 +1,54 @@
-# 031 — AI Business Operations Manager: foundation (`:aiops` engine)
+# 031 — AI Business Operations Manager: **Phase B** (backend `:aiops` — cross-entity + scheduled)
 
-**Status:** Stub · **Blocked on:** framework blueprint sign-off + Koog spike tenant-propagation result
-**Modules:** new `aiops` (primary), `core`, `setting` (autonomy config), `event` (event-driven trigger), `unit` (first capability), Koog
-**Related:** `docs/ai-ops-manager/framework.md` (authoritative design) · `.claude/skills/koog/SKILL.md` · `docs/spikes/koog-agent-backend-spike.md` · `specs/030-koog-agent-assistant` · PR #221
+**Status:** Stub · **Blocked on:** Phase A (app-side) learnings + framework §18 open decisions (async model, shared-engine packaging) + Koog spike Go
+**Modules:** new `aiops` (backend), `core`, `setting` (autonomy), `event` (event trigger), read/write via `customer`/`product`/`unit`/tax public services, Koog
+**Related:** `docs/ai-ops-manager/framework.md` (authoritative design, rev 2) · `.claude/skills/koog/SKILL.md` · `docs/spikes/koog-agent-backend-spike.md` · `specs/030-koog-agent-assistant` · PR #221
 
-> **Placeholder — do not `/speckit.plan` yet.** Full design lives in `docs/ai-ops-manager/framework.md`.
-> Resolve the framework's §16 open decisions (module name, async model) and take the Koog spike to a Go
-> before expanding this via `/speckit.specify`. On abandonment, delete this directory.
-
----
+> **Reframed (rev 2).** The framework is now **app-first**: single-entity, implicit fixes (unit
+> standardization, field validation, contact-card capture) ship in **`ampairs-app`** as **Phase A** —
+> tracked there, not here. This spec is **Phase B**: the *backend* host for the work that genuinely needs
+> a server — **whole-dataset/cross-entity** capabilities (dedup, authoritative contact→customer match)
+> and **scheduled/continuous/autonomous** operation. Do not `/speckit.plan` until Phase A proves the
+> shared engine, framework §18.3–4 are decided, and the Koog spike returns Go.
 
 ## 1. Summary
+Stand up the **backend host** of the AI Ops Manager: the `:aiops` module running the **same host-agnostic
+engine SPI** (from Phase A) with **Koog** as the reasoning port and other modules' **public services** as
+read/write adapters. Prove it with **one cross-entity capability — customer dedup** (reversible LINK) —
+plus the nightly scan runner and unified audit.
 
-Build **Phase 0** of the AI Business Operations Manager: the reusable **decision engine** and
-capability SPI in a new `:aiops` bounded context, proven end-to-end by **one** low-risk capability
-(**unit standardization**). This is the machine every later data-quality and operations capability plugs
-into — it is deliberately *not* a feature by itself beyond the one proof capability.
-
-## 2. Scope (Phase 0 only)
-
+## 2. Scope (Phase B)
 **In:**
-- New `:aiops` module (`com.ampairs.aiops`), depending on `:core` + Koog; reads/writes business data via
-  other modules' **public service interfaces** only.
-- Engine SPI: `Detector → ContextGatherer → CandidateGenerator → CandidateValidator → ConfidenceScorer
-  → RiskPolicy → (Executor | ReviewQueue) → AuditWriter → FeedbackStore` (framework §3).
-- Confidence×risk gate + per-workspace autonomy level via `setting` (framework §4–5).
-- Four tables — `aiops_finding`, `aiops_decision` (audit), `aiops_feedback`, `aiops_agent_run` —
-  `OwnableBaseDomain`, `Instant`, Flyway both vendors, added to `migrationModules` (framework §6).
-- Tenant-scoped scan runner carrying tenant context across Koog coroutine threads (framework §7).
-- Review-queue + audit + **rollback** APIs under `/aiops/v1` (framework §10–11).
-- **One capability**: `product.unit` standardization (KG/Kg/Kgs→KG, L/LTR/Litres→L) as the proof —
-  highest confidence, lowest risk, uses `UnitService`/`UnitConversionService`.
+- `:aiops` module (`com.ampairs.aiops`), `:core` + Koog; business data via public services only.
+- Consume the shared engine SPI (framework §3) — ideally the *same* artifact as the app (framework §18.4).
+- Backend `Reasoner`=Koog, `Executor`=owning public service, `AuditWriter`/`FeedbackStore`=Postgres.
+- Four `aiops_*` tables (Postgres, Flyway both vendors, `migrationModules`); **reconcile app-synced
+  findings/audit** so history is unified (framework §6).
+- Event-driven + **nightly per-workspace scan**, each inside a tenant scope carried across Koog threads
+  (framework §7); engine-level **two-tenant test mandatory**.
+- Review-queue + audit + **rollback** APIs under `/aiops/v1`; orchestrator → morning-brief summary.
+- **One capability: customer dedup** (name+phone+GSTIN+address ensemble → reversible LINK).
 
-**Out (later phases / own specs):** product & customer dedup, hierarchy fix, HSN/GST, contact card →
-customer, inventory/purchase/sales anomalies, morning-brief orchestration, RAG/few-shot learning,
-higher autonomy levels.
+**Out:** single-entity/implicit app capabilities (Phase A); inventory/purchase/sales anomalies (Phase C);
+L4 fully-autonomous defaults; RAG store (framework §18.5).
 
 ## 3. Hard constraints
-- Bounded context + writes via owning-module public services only (rule 08; framework §2).
-- Multi-tenancy: every scan runs in a per-workspace tenant scope; **engine-level two-tenant test
-  mandatory** (rules 05/06; framework §7). LLM is one capped signal, never sole authority (framework §8).
-- `ApiResponse<T>`, no controller try/catch (rule 04); DTOs in `aiops/domain/dto/` (rule 02); SNAKE_CASE
-  (rule 03); `Instant` (rule 01); secrets from env (rule 10).
-- Every mutation audited + reversible; default autonomy = Recommend (L1); auto-fix opt-in per capability.
+Bounded context + writes via owning public services (rule 08); tenant scope per workspace + two-tenant
+test (rules 05/06); LLM one capped signal, tax/HSN advisory-only (framework §4/§8); `ApiResponse<T>`, no
+controller try/catch (rule 04); DTOs in `aiops/domain/dto/` (rule 02); SNAKE_CASE (03); `Instant` (01);
+secrets from env (10); every mutation audited + reversible; default autonomy L1, auto-fix opt-in.
 
 ## 4. Success criteria
-- `product.unit` runs via all three triggers (event/scheduled/user) and, at L2, auto-fixes a
-  high-confidence alias while routing an ambiguous one to the review queue.
-- A human decision writes feedback + audit; a `revert` restores the prior value through `UnitService`.
+- Nightly scan dedups customers across the full workspace set, LINKing a 99%+ ensemble match and
+  queuing an ambiguous one; a human verdict writes feedback + audit; `revert` unlinks via `CustomerService`.
 - Two-tenant scan test green (no cross-tenant leakage).
+- App-applied Phase-A audit rows appear in the unified backend audit.
 - `./gradlew :aiops:compileKotlin :aiops:test` green; existing modules untouched.
 
 ## 5. Open questions
-See `docs/ai-ops-manager/framework.md` §16 (module name, async/job model, vector store, merge
-semantics, cost budget, reference data). These must be answered before `/speckit.plan`.
+Framework §18.3 (async/job model), §18.4 (shared-engine packaging — is the KMP `aiops-engine` published
+so backend reuses it?), §18.5–7. Resolve before `/speckit.plan`.
 
 ---
 
-_Next step: sign off framework §16.1–2, then `/speckit.specify` to expand §2–§4 into an implementable spec._
+_Next step: after Phase A ships and §18.3–4 are decided, `/speckit.specify` to expand §2–§4._
