@@ -37,6 +37,11 @@ data class EcomOrderResponse(
     val notes: String?,
     val placedAt: Instant,
     val confirmedAt: Instant?,
+    /**
+     * Spec 029 — finalized invoices raised for this order (order↔invoice link). Populated by the
+     * buyer order-detail path; empty on the list view and when no invoice has been raised yet.
+     */
+    val invoices: List<BuyerInvoiceSummaryResponse> = emptyList(),
 )
 
 fun EcomOrderLineItem.asLineItemResponse() = EcomOrderLineItemResponse(

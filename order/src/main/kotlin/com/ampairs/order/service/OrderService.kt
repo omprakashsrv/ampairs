@@ -317,7 +317,7 @@ class OrderService(
     fun getOrders(lastUpdated: Instant?): List<Order> {
         val orders =
             orderPagingRepository.findAllByUpdatedAtGreaterThanEqual(
-                lastUpdated ?: Instant.EPOCH, PageRequest.of(0, 50, Sort.by("lastUpdated").ascending())
+                lastUpdated ?: Instant.EPOCH, PageRequest.of(0, 50, Sort.by("updatedAt").ascending())
             )
         return orders
     }

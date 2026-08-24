@@ -11,8 +11,30 @@ Customer-facing **storefronts**: a workspace can publish its catalog as an onlin
 | `StorefrontPublicController` | `/api/v1/store/{slug}` | Published catalog, taxonomy, product listing for a storefront |
 | `CartController` | `/api/v1/store/{slug}/cart` | Session-token carts: add items, claim, checkout |
 | `CheckoutController` | (checkout paths under the cart/order flow) | Convert cart to an ecom order; assigns sequential `order_number` |
-| `CustomerAccountController` | `/api/v1/ecom/account` | Buyer account: addresses (CRUD), linked accounts, order history |
+| `CustomerAccountController` | `/api/v1/ecom/account` | Buyer account: addresses (CRUD), linked accounts, order history, **invoices, statement & order↔invoice link** (spec 029) |
 | `StorefrontAccessController` (directory) | `/api/v1/storefronts` | Storefront directory for the marketplace app |
+
+#### Buyer account: invoices, statement & order↔invoice link (spec 029)
+
+Read-only access to a linked buyer's workspace documents, gated the same way order access is: the
+`storefront_slug` scopes the tenant and the login is resolved to a linked CRM customer (`partyUid`) —
+no workspace membership, no `X-Workspace-ID`. Unlinked → **403** `NOT_LINKED`; another party's
+document → **404**.
+
+| Method & path | Purpose |
+|---|---|
+| `GET /account/invoices?storefront_slug&customer_id?&page?&size?` | Finalized invoices (paginated, newest first) |
+| `GET /account/invoices/{invoiceUid}?storefront_slug&customer_id?` | Single invoice detail (line items + totals) |
+| `GET /account/orders/{ecomOrderRef}/invoices?storefront_slug&customer_id?` | Invoices raised for an order |
+| `GET /account/outstanding?storefront_slug&customer_id?` | Current balance + open bills + aging |
+| `GET /account/statement?storefront_slug&customer_id?&from?&to?` | Running-balance statement (invoices + payments) |
+
+- `GET /account/orders/{ecomOrderRef}` also gains an `invoices[]` array (same order↔invoice link).
+- **Cross-module:** `ecom` reads `invoice`/`payment` only through the `core` interfaces
+  `InvoiceEcomService` (impl in `invoice`) and `PartyLedgerEcomService` (impl in `payment`) — no new
+  module edges, no schema change. The order↔invoice link is the existing chain
+  `EcomOrder.managementOrderRef == Order.uid == Invoice.orderRefId`; the buyer-facing `order_ref` is
+  resolved in the ecom controller. Only finalized (`INVOICED`) invoices are ever exposed.
 
 ### Management (store owner, workspace-scoped)
 

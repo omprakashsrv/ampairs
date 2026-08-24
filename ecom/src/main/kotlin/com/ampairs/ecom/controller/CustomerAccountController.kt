@@ -2,17 +2,26 @@ package com.ampairs.ecom.controller
 
 import com.ampairs.core.domain.dto.ApiResponse
 import com.ampairs.core.domain.dto.PageResponse
+import com.ampairs.core.exception.NotFoundException
 import com.ampairs.core.multitenancy.TenantContextHolder
 import com.ampairs.core.security.AuthenticationHelper
+import com.ampairs.core.service.BuyerOutstandingResponse
+import com.ampairs.core.service.BuyerStatementResponse
 import com.ampairs.core.service.EcomCustomerAccount
 import com.ampairs.core.service.EcomCustomerService
 import com.ampairs.core.service.EcomLinkCandidate
+import com.ampairs.core.service.InvoiceEcomService
+import com.ampairs.core.service.PartyLedgerEcomService
+import com.ampairs.ecom.domain.dto.BuyerInvoiceDetailResponse
+import com.ampairs.ecom.domain.dto.BuyerInvoiceSummaryResponse
 import com.ampairs.ecom.domain.dto.ConfirmLinkRequest
 import com.ampairs.ecom.domain.dto.CustomerAddressRequest
 import com.ampairs.ecom.domain.dto.CustomerAddressResponse
 import com.ampairs.ecom.domain.dto.EcomOrderResponse
 import com.ampairs.ecom.domain.dto.asAddressResponse
 import com.ampairs.ecom.domain.dto.asEcomOrderResponse
+import com.ampairs.ecom.domain.dto.toResponse
+import com.ampairs.ecom.exception.EcomNotLinkedException
 import com.ampairs.ecom.service.CustomerAddressService
 import com.ampairs.ecom.service.EcomOrderService
 import com.ampairs.ecom.service.StorefrontService
@@ -24,6 +33,8 @@ import org.springframework.http.HttpStatus
 import org.springframework.security.access.prepost.PreAuthorize
 import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.*
+import java.time.Instant
+import java.time.format.DateTimeParseException
 
 @RestController
 @RequestMapping("/v1/ecom/account")
@@ -33,6 +44,8 @@ class CustomerAccountController(
     private val orderService: EcomOrderService,
     private val storefrontService: StorefrontService,
     private val ecomCustomerService: EcomCustomerService,
+    private val invoiceEcomService: InvoiceEcomService,
+    private val partyLedgerEcomService: PartyLedgerEcomService,
 ) {
 
     /**
@@ -161,15 +174,163 @@ class CustomerAccountController(
     fun getOrder(
         @PathVariable ecomOrderRef: String,
         @RequestParam("storefront_slug") storefrontSlug: String,
+        @RequestParam("customer_id", required = false) customerId: String?,
         authentication: Authentication,
     ): ApiResponse<EcomOrderResponse> {
         val storefront = storefrontService.getPublishedStorefrontBySlug(storefrontSlug)
         TenantContextHolder.setCurrentTenant(storefront.ownerId)
         try {
-            val customerId = AuthenticationHelper.getUserId(authentication)!!
-            return ApiResponse.success(orderService.getCustomerOrder(customerId, ecomOrderRef).asEcomOrderResponse())
+            val userId = AuthenticationHelper.getUserId(authentication)!!
+            val order = orderService.getCustomerOrder(userId, ecomOrderRef)
+            // Order↔invoice link (spec 029): attach the finalized invoices raised for this order.
+            // Order viewing does not require a CRM link, so an unlinked buyer just sees an empty list.
+            val partyUid = ecomCustomerService.resolveLinkedCustomerId(userId, customerId)
+            val invoices = partyUid?.let { pid ->
+                val list = invoiceEcomService.listInvoicesForOrder(order.managementOrderRef.orEmpty(), pid)
+                swapOrderRefs(list, unpaidInvoiceUids(list.map { it.invoiceUid }))
+            } ?: emptyList()
+            return ApiResponse.success(order.asEcomOrderResponse().copy(invoices = invoices))
         } finally {
             TenantContextHolder.clearTenantContext()
         }
     }
+
+    // ── Spec 029: buyer invoices, order↔invoice link, and money position ────────────────────────
+
+    /** A linked buyer's finalized invoices, newest first (US1). */
+    @GetMapping("/invoices")
+    fun getInvoices(
+        @RequestParam("storefront_slug") storefrontSlug: String,
+        @RequestParam("customer_id", required = false) customerId: String?,
+        @PageableDefault(size = 20) pageable: Pageable,
+        authentication: Authentication,
+    ): ApiResponse<PageResponse<BuyerInvoiceSummaryResponse>> =
+        withParty(authentication, storefrontSlug, customerId) { partyUid ->
+            val page = invoiceEcomService.listBuyerInvoices(partyUid, pageable)
+            val unpaid = unpaidInvoiceUids(page.content.map { it.invoiceUid })
+            // Resolve every row's order ref in one query (not one per row) to avoid an N+1 over the page.
+            val orderRefs = orderService.findBuyerOrderRefs(page.content.mapNotNull { it.orderRefId })
+            ApiResponse.success(
+                PageResponse.from(
+                    page.map { it.toResponse(orderRefs[it.orderRefId], paymentStatus(it.invoiceUid, unpaid)) },
+                ),
+            )
+        }
+
+    /** A single finalized invoice owned by the linked buyer (US2). Wrong party / draft → 404. */
+    @GetMapping("/invoices/{invoiceUid}")
+    fun getInvoice(
+        @PathVariable invoiceUid: String,
+        @RequestParam("storefront_slug") storefrontSlug: String,
+        @RequestParam("customer_id", required = false) customerId: String?,
+        authentication: Authentication,
+    ): ApiResponse<BuyerInvoiceDetailResponse> =
+        withParty(authentication, storefrontSlug, customerId) { partyUid ->
+            val detail = invoiceEcomService.getBuyerInvoice(invoiceUid, partyUid)
+                ?: throw NotFoundException("Invoice not found: $invoiceUid")
+            val status = paymentStatus(detail.invoiceUid, unpaidInvoiceUids(listOf(detail.invoiceUid)))
+            ApiResponse.success(detail.toResponse(orderService.findBuyerOrderRef(detail.orderRefId), status))
+        }
+
+    /** Finalized invoices raised for one of the buyer's orders (US3). */
+    @GetMapping("/orders/{ecomOrderRef}/invoices")
+    fun getOrderInvoices(
+        @PathVariable ecomOrderRef: String,
+        @RequestParam("storefront_slug") storefrontSlug: String,
+        @RequestParam("customer_id", required = false) customerId: String?,
+        authentication: Authentication,
+    ): ApiResponse<List<BuyerInvoiceSummaryResponse>> {
+        val storefront = storefrontService.getPublishedStorefrontBySlug(storefrontSlug)
+        TenantContextHolder.setCurrentTenant(storefront.ownerId)
+        try {
+            val userId = AuthenticationHelper.getUserId(authentication)!!
+            val order = orderService.getCustomerOrder(userId, ecomOrderRef)
+            val partyUid = ecomCustomerService.resolveLinkedCustomerId(userId, customerId)
+                ?: throw EcomNotLinkedException("NOT_LINKED")
+            val list = invoiceEcomService.listInvoicesForOrder(order.managementOrderRef.orEmpty(), partyUid)
+            val invoices = swapOrderRefs(list, unpaidInvoiceUids(list.map { it.invoiceUid }))
+            return ApiResponse.success(invoices)
+        } finally {
+            TenantContextHolder.clearTenantContext()
+        }
+    }
+
+    /** Current balance + open bills + aging for the linked buyer (US5). */
+    @GetMapping("/outstanding")
+    fun getOutstanding(
+        @RequestParam("storefront_slug") storefrontSlug: String,
+        @RequestParam("customer_id", required = false) customerId: String?,
+        authentication: Authentication,
+    ): ApiResponse<BuyerOutstandingResponse> =
+        withParty(authentication, storefrontSlug, customerId) { partyUid ->
+            ApiResponse.success(partyLedgerEcomService.outstanding(partyUid, Instant.now()))
+        }
+
+    /** Running-balance statement of invoices + payments for the linked buyer (US6). */
+    @GetMapping("/statement")
+    fun getStatement(
+        @RequestParam("storefront_slug") storefrontSlug: String,
+        @RequestParam("customer_id", required = false) customerId: String?,
+        @RequestParam("from", required = false) from: String?,
+        @RequestParam("to", required = false) to: String?,
+        authentication: Authentication,
+    ): ApiResponse<BuyerStatementResponse> =
+        withParty(authentication, storefrontSlug, customerId) { partyUid ->
+            ApiResponse.success(partyLedgerEcomService.statement(partyUid, parseInstant(from), parseInstant(to)))
+        }
+
+    // A malformed from/to must be a 400, not a 500: IllegalArgumentException maps to BAD_REQUEST in
+    // the global handler, whereas the raw DateTimeParseException would surface as an unexpected error.
+    private fun parseInstant(raw: String?): Instant? =
+        raw?.takeIf { it.isNotBlank() }?.let {
+            try {
+                Instant.parse(it)
+            } catch (e: DateTimeParseException) {
+                throw IllegalArgumentException("Invalid ISO-8601 instant '$it' — expected e.g. 2026-08-01T00:00:00Z", e)
+            }
+        }
+
+    /**
+     * Runs [block] under the storefront's tenant with the buyer resolved to a linked CRM party.
+     * Throws [EcomNotLinkedException] (→ 403, code `ECOM_NOT_LINKED`) when the login is not linked to
+     * any account — a distinct, machine-readable signal so the client can show a "link your account"
+     * hint for this case only (and a generic error for transient failures), rather than a bare 403.
+     */
+    private fun <T> withParty(
+        authentication: Authentication,
+        storefrontSlug: String,
+        requestedCustomerId: String?,
+        block: (partyUid: String) -> T,
+    ): T {
+        val storefront = storefrontService.getPublishedStorefrontBySlug(storefrontSlug)
+        TenantContextHolder.setCurrentTenant(storefront.ownerId)
+        try {
+            val userId = AuthenticationHelper.getUserId(authentication)!!
+            val partyUid = ecomCustomerService.resolveLinkedCustomerId(userId, requestedCustomerId)
+                ?: throw EcomNotLinkedException("NOT_LINKED")
+            return block(partyUid)
+        } finally {
+            TenantContextHolder.clearTenantContext()
+        }
+    }
+
+    // Replace each summary's raw workspace orderRefId with the buyer-facing storefront order ref, and
+    // stamp its buyer-facing payment status ("Paid"/"Unpaid") from the party's open bills.
+    private fun swapOrderRefs(
+        summaries: List<com.ampairs.core.service.BuyerInvoiceSummary>,
+        unpaidUids: Set<String>,
+    ): List<BuyerInvoiceSummaryResponse> {
+        // One query for the whole list's order refs (avoids an N+1 over the summaries).
+        val orderRefs = orderService.findBuyerOrderRefs(summaries.mapNotNull { it.orderRefId })
+        return summaries.map { it.toResponse(orderRefs[it.orderRefId], paymentStatus(it.invoiceUid, unpaidUids)) }
+    }
+
+    // Of the invoices being shown, the subset still carrying an outstanding balance (spec OQ-6) → the
+    // "Unpaid" set. Classified only for [invoiceUids] (the page / the one invoice), so we don't scan the
+    // whole party ledger the way `outstanding` does. Skips the call entirely when there's nothing to show.
+    private fun unpaidInvoiceUids(invoiceUids: Collection<String>): Set<String> =
+        if (invoiceUids.isEmpty()) emptySet() else partyLedgerEcomService.unpaidInvoiceUids(invoiceUids)
+
+    private fun paymentStatus(invoiceUid: String, unpaidUids: Set<String>): String =
+        if (invoiceUid in unpaidUids) "Unpaid" else "Paid"
 }

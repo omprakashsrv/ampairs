@@ -22,6 +22,15 @@ interface EcomOrderRepository :
 
     fun findByCustomerIdAndStorefrontId(customerId: String, storefrontId: String, pageable: Pageable): Page<EcomOrder>
 
+    /**
+     * Spec 029 — invoice→order reverse link: map a workspace order uid (`Invoice.orderRefId`) back to
+     * the ecom order so the buyer-facing storefront ref can be surfaced. @TenantId-filtered.
+     */
+    fun findByManagementOrderRef(managementOrderRef: String): EcomOrder?
+
+    /** Batched form of [findByManagementOrderRef] — one query for a page of invoices (avoids N+1). @TenantId-filtered. */
+    fun findByManagementOrderRefIn(managementOrderRefs: Collection<String>): List<EcomOrder>
+
     fun findByWorkspaceId(workspaceId: String, pageable: Pageable): Page<EcomOrder>
 
     fun findByWorkspaceIdAndStatus(workspaceId: String, status: EcomOrderStatus, pageable: Pageable): Page<EcomOrder>

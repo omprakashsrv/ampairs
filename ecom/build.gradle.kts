@@ -60,6 +60,13 @@ dependencies {
     testImplementation("org.mockito.kotlin:mockito-kotlin:6.3.0")
     testImplementation(project(":ampairs_service"))
     testImplementation(project(":workspace"))
+    // Buyer-account tests mock the concrete EcomCustomerServiceImpl (spec 029) so the customer
+    // module's own concrete-typed injection points still resolve to the same mock bean.
+    testImplementation(project(":customer"))
+    // Tenant-isolation IT (spec 029) seeds real Invoice + PartyBalance rows across two tenants to prove
+    // the buyer read services (InvoiceEcomService / PartyLedgerEcomService) honor @TenantId.
+    testImplementation(project(":invoice"))
+    testImplementation(project(":payment"))
     testImplementation("com.h2database:h2")
 }
 

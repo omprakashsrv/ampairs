@@ -53,6 +53,29 @@ class EcomOrderService(
         return order
     }
 
+    /**
+     * Spec 029 — invoice→order reverse link: resolve a workspace order uid (`Invoice.orderRefId`) to
+     * the buyer-facing storefront order ref, or null when it did not originate from an ecom order.
+     */
+    @Transactional(readOnly = true)
+    fun findBuyerOrderRef(managementOrderRef: String?): String? =
+        managementOrderRef?.takeIf { it.isNotBlank() }
+            ?.let { orderRepository.findByManagementOrderRef(it)?.ecomOrderRef }
+
+    /**
+     * Batched [findBuyerOrderRef]: resolve many workspace order uids to their buyer-facing storefront
+     * refs in ONE query (keyed by `managementOrderRef`). Used when mapping a page of invoices, so the
+     * ref swap doesn't fire a lookup per row. Missing/non-ecom refs are simply absent from the map.
+     */
+    @Transactional(readOnly = true)
+    fun findBuyerOrderRefs(managementOrderRefs: Collection<String>): Map<String, String> {
+        val refs = managementOrderRefs.filter { it.isNotBlank() }.toSet()
+        if (refs.isEmpty()) return emptyMap()
+        return orderRepository.findByManagementOrderRefIn(refs)
+            .mapNotNull { order -> order.managementOrderRef?.let { it to order.ecomOrderRef } }
+            .toMap()
+    }
+
     @Transactional(readOnly = true)
     fun getManagementOrders(workspaceId: String, status: EcomOrderStatus?, pageable: Pageable): Page<EcomOrderManagementResponse> =
         (if (status != null) orderRepository.findByWorkspaceIdAndStatus(workspaceId, status, pageable)
