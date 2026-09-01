@@ -1,0 +1,11 @@
+# Ampairs pull-based deployment — least-privilege sudo rule.
+#
+# Install as /etc/sudoers.d/ampairs-deploy (mode 0440, owned root:root):
+#   sudo install -m 0440 -o root -g root scripts/ampairs-deploy-sudoers /etc/sudoers.d/ampairs-deploy
+#   sudo visudo -cf /etc/sudoers.d/ampairs-deploy   # validate before trusting it
+#
+# The ampairs-deploy user may run EXACTLY ONE command as root: the apply helper.
+# No wildcards, no shell, no systemctl-with-arbitrary-args — so a compromise of the
+# unprivileged polling agent cannot escalate to arbitrary root commands. The helper
+# itself decides what to start/stop and validates its inputs.
+ampairs-deploy ALL=(root) NOPASSWD: /usr/local/sbin/ampairs-apply-jar

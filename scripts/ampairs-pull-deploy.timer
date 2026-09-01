@@ -1,0 +1,13 @@
+[Unit]
+Description=Run the Ampairs pull-based deployment agent periodically
+
+[Timer]
+# Poll for a new version every 2 minutes. RandomizedDelaySec spreads load and avoids
+# hammering S3 exactly on the minute. Persistent=true catches up after downtime.
+OnBootSec=2min
+OnUnitActiveSec=2min
+RandomizedDelaySec=30
+Persistent=true
+
+[Install]
+WantedBy=timers.target

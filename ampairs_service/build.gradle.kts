@@ -8,7 +8,10 @@ plugins {
 }
 
 group = "com.ampairs"
-version = ""
+// Inherit the version from the root build (subprojects { version = "1.0.0" }). Do NOT pin
+// it to "" here — bootBuildInfo publishes project.version to /api/actuator/info as
+// build.version, which the deploy pipeline reads to confirm what is live.
+version = rootProject.version
 java.sourceCompatibility = JavaVersion.VERSION_21
 java {
     toolchain {
@@ -28,6 +31,34 @@ allOpen {
     annotation("jakarta.persistence.MappedSuperclass")
     annotation("jakarta.persistence.Embeddable")
 }
+
+// ── Deployed-version visibility ────────────────────────────────────────────────
+// `bootBuildInfo` writes META-INF/build-info.properties into the jar; Spring Boot's
+// InfoContributor then surfaces it at GET /api/actuator/info as `build.*`. The
+// deploy pipeline (and the server-side pull agent) reads `build.commit` from that
+// endpoint to confirm which commit is actually running in production — no SSH needed.
+springBoot {
+    buildInfo {
+        properties {
+            // `additional` entries appear under build.* in the /actuator/info payload.
+            additional.put("commit", resolveGitCommit())
+        }
+    }
+}
+
+// Resolve the git commit being built: CI exports GITHUB_SHA; locally fall back to
+// `git rev-parse`. Returns "unknown" if neither is available (e.g. a source tarball).
+fun resolveGitCommit(): String =
+    System.getenv("GITHUB_SHA")?.takeIf { it.isNotBlank() }
+        ?: runCatching {
+            ProcessBuilder("git", "rev-parse", "HEAD")
+                .directory(rootDir)
+                .redirectErrorStream(true)
+                .start()
+                .inputStream.bufferedReader().use { it.readText() }
+                .trim()
+        }.getOrNull()?.takeIf { it.isNotBlank() }
+        ?: "unknown"
 
 dependencies {
     // Project modules
