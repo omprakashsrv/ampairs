@@ -1,0 +1,312 @@
+openapi: 3.0.3
+info:
+  title: Ampairs Connector Platform API
+  version: 0.1.0
+  description: >
+    Apps & Extensions connector platform. All endpoints are workspace-scoped and
+    require the `X-Workspace-ID` header. All responses use the standard
+    `ApiResponse<T>` envelope. JSON is global SNAKE_CASE. Base path: `/connector`.
+
+    Two write models exist:
+      1. The connector platform's own metadata (installations, config, mappings,
+         checkpoints, runs) uses standard CRUD + the canonical `/sync` style.
+      2. Synced business DATA is written via the dedicated connector **sparse
+         upsert** endpoint, which applies a per-row presence-bounded partial
+         update so unmapped/omitted columns are never nulled. This is SEPARATE
+         from the global `/{module}/v1/{resource}/sync` contract, which is
+         unchanged for normal offline clients (FR-018a).
+
+servers:
+  - url: /connector/v1
+
+components:
+  parameters:
+    WorkspaceId:
+      name: X-Workspace-ID
+      in: header
+      required: true
+      schema: { type: string }
+    LastSync:
+      name: last_sync
+      in: query
+      required: false
+      schema: { type: string, description: ISO-8601 watermark }
+    Page: { name: page, in: query, schema: { type: integer, default: 0 } }
+    Size: { name: size, in: query, schema: { type: integer, default: 100 } }
+    SortBy: { name: sort_by, in: query, schema: { type: string, default: updatedAt } }
+    SortDir: { name: sort_dir, in: query, schema: { type: string, default: ASC } }
+  schemas:
+    ApiResponse:
+      type: object
+      properties:
+        success: { type: boolean }
+        data: {}
+        error:
+          type: object
+          nullable: true
+          properties:
+            code: { type: string }
+            message: { type: string }
+            details: { type: string, nullable: true }
+            validation_errors: { type: object, additionalProperties: { type: string }, nullable: true }
+            module: { type: string, nullable: true }
+        timestamp: { type: string, format: date-time }
+        path: { type: string, nullable: true }
+        trace_id: { type: string, nullable: true }
+    CatalogueConnector:
+      type: object
+      description: Code-defined connector available to install (gated by tier/installed modules).
+      properties:
+        type: { type: string, example: tally }
+        display_name: { type: string }
+        description: { type: string }
+        hosting_type: { type: string, enum: [CLIENT_SIDE, SERVER_SIDE] }
+        supported_entities: { type: array, items: { type: string } }
+        supported_directions: { type: array, items: { type: string, enum: [INBOUND, OUTBOUND] } }
+        connection_schema:
+          type: array
+          items:
+            type: object
+            properties:
+              key: { type: string }
+              label: { type: string }
+              secret: { type: boolean }
+              required: { type: boolean }
+        multiple_instances_allowed: { type: boolean }
+        installed: { type: boolean, description: whether this workspace already has it installed }
+    Installation:
+      type: object
+      properties:
+        uid: { type: string }
+        connector_type: { type: string }
+        status: { type: string, enum: [NEEDS_CONFIG, ENABLED, PAUSED, ERROR, UNINSTALLED] }
+        auto_start: { type: boolean }
+        schedule_seconds: { type: integer, nullable: true }
+        last_error_message: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    ConfigRequest:
+      type: object
+      properties:
+        non_secret_values: { type: object, additionalProperties: true, description: e.g. host, port }
+        secret_values: { type: object, additionalProperties: true, description: write-only; never returned }
+    ConfigResponse:
+      type: object
+      description: Secrets are NEVER returned; only presence is indicated.
+      properties:
+        installation_uid: { type: string }
+        non_secret_values: { type: object, additionalProperties: true }
+        secret_keys_set: { type: array, items: { type: string }, description: names of secrets that are set (masked) }
+        last_validated_at: { type: string, format: date-time, nullable: true }
+    FieldMappingRule:
+      type: object
+      properties:
+        external_field: { type: string }
+        ampairs_field: { type: string, description: target column; the writable allowlist member }
+        unmapped: { type: boolean, default: false }
+        transform: { type: string, nullable: true }
+    FieldMapping:
+      type: object
+      properties:
+        installation_uid: { type: string }
+        entity_type: { type: string }
+        version: { type: integer }
+        rules: { type: array, items: { $ref: '#/components/schemas/FieldMappingRule' } }
+    SyncCheckpoint:
+      type: object
+      properties:
+        installation_uid: { type: string }
+        entity_type: { type: string }
+        direction: { type: string, enum: [INBOUND, OUTBOUND] }
+        watermark: { type: string }
+        last_synced_at: { type: string, format: date-time, nullable: true }
+    SyncRun:
+      type: object
+      properties:
+        uid: { type: string }
+        installation_uid: { type: string }
+        entity_type: { type: string, nullable: true }
+        trigger: { type: string, enum: [SCHEDULED, MANUAL, EVENT] }
+        started_at: { type: string, format: date-time }
+        finished_at: { type: string, format: date-time, nullable: true }
+        status: { type: string, enum: [RUNNING, SUCCESS, PARTIAL, FAILED] }
+        processed: { type: integer }
+        created: { type: integer }
+        updated: { type: integer }
+        failed: { type: integer }
+        error_detail: { type: string, nullable: true }
+    SparseUpsertRow:
+      type: object
+      description: >
+        ONE external record. `values` is a SPARSE MAP keyed by ampairs column name.
+        KEY PRESENCE is the signal (FR-018c): a column absent from `values` is left
+        untouched (preserved); a column present with null intentionally clears it.
+        The server intersects the keys with the installation's mapped allowlist for
+        `entity_type` and ignores any key outside it (FR-018/FR-018b).
+      required: [entity_type, values]
+      properties:
+        ref_id: { type: string, description: external id; identity match key (FR-019) }
+        entity_type: { type: string }
+        values:
+          type: object
+          additionalProperties: true
+          example: { column1: "a", column2: 42 }
+    SparseUpsertResult:
+      type: object
+      properties:
+        ref_id: { type: string }
+        ampairs_uid: { type: string, nullable: true }
+        outcome: { type: string, enum: [CREATED, UPDATED, SKIPPED, FAILED] }
+        applied_columns: { type: array, items: { type: string } }
+        message: { type: string, nullable: true }
+
+paths:
+  /catalogue:
+    get:
+      summary: List connectors available to this workspace (tier/module gated)
+      parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+      responses:
+        '200':
+          description: ApiResponse<List<CatalogueConnector>>
+          content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } }
+
+  /installations:
+    get:
+      summary: List this workspace's connector installations
+      parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+      responses: { '200': { description: ApiResponse<List<Installation>> } }
+    post:
+      summary: Install a connector (FR-003) — one active per type unless multi-instance (FR-005)
+      parameters: [ { $ref: '#/components/parameters/WorkspaceId' } ]
+      requestBody:
+        content:
+          application/json:
+            schema: { type: object, properties: { connector_type: { type: string } } }
+      responses: { '201': { description: ApiResponse<Installation> (status=NEEDS_CONFIG) } }
+
+  /installations/{uid}:
+    delete:
+      summary: Uninstall (soft-delete; stops sync) (FR-003)
+      parameters:
+        - { $ref: '#/components/parameters/WorkspaceId' }
+        - { name: uid, in: path, required: true, schema: { type: string } }
+      responses: { '204': { description: removed } }
+  /installations/{uid}/pause:
+    post:
+      summary: Pause sync (FR-025)
+      parameters:
+        - { $ref: '#/components/parameters/WorkspaceId' }
+        - { name: uid, in: path, required: true, schema: { type: string } }
+      responses: { '200': { description: ApiResponse<Installation> } }
+  /installations/{uid}/resume:
+    post:
+      summary: Resume sync (FR-025)
+      parameters:
+        - { $ref: '#/components/parameters/WorkspaceId' }
+        - { name: uid, in: path, required: true, schema: { type: string } }
+      responses: { '200': { description: ApiResponse<Installation> } }
+
+  /installations/{uid}/config:
+    get:
+      summary: Get connection config (secrets masked, FR-008)
+      parameters:
+        - { $ref: '#/components/parameters/WorkspaceId' }
+        - { name: uid, in: path, required: true, schema: { type: string } }
+      responses: { '200': { description: ApiResponse<ConfigResponse> } }
+    put:
+      summary: Set/update connection config (FR-007/FR-010); secrets encrypted at rest
+      parameters:
+        - { $ref: '#/components/parameters/WorkspaceId' }
+        - { name: uid, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content: { application/json: { schema: { $ref: '#/components/schemas/ConfigRequest' } } }
+      responses: { '200': { description: ApiResponse<ConfigResponse> } }
+  /installations/{uid}/config/test:
+    post:
+      summary: Validate the connection without exposing secrets (FR-009)
+      parameters:
+        - { $ref: '#/components/parameters/WorkspaceId' }
+        - { name: uid, in: path, required: true, schema: { type: string } }
+      responses: { '200': { description: ApiResponse<{ ok, message }> } }
+
+  /installations/{uid}/mappings:
+    get:
+      summary: Get all field mappings for an installation
+      parameters:
+        - { $ref: '#/components/parameters/WorkspaceId' }
+        - { name: uid, in: path, required: true, schema: { type: string } }
+      responses: { '200': { description: ApiResponse<List<FieldMapping>> } }
+    put:
+      summary: Upsert the mapping for one entity (validated against entity schema, FR-013)
+      parameters:
+        - { $ref: '#/components/parameters/WorkspaceId' }
+        - { name: uid, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content: { application/json: { schema: { $ref: '#/components/schemas/FieldMapping' } } }
+      responses: { '200': { description: ApiResponse<FieldMapping> } }
+
+  /sync:
+    get:
+      summary: >
+        Pull connector platform metadata (installations + config(masked) + mappings +
+        checkpoints) for a workspace so the client can mirror it. Canonical /sync style.
+      parameters:
+        - { $ref: '#/components/parameters/WorkspaceId' }
+        - { $ref: '#/components/parameters/LastSync' }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Size' }
+        - { $ref: '#/components/parameters/SortBy' }
+        - { $ref: '#/components/parameters/SortDir' }
+      responses: { '200': { description: ApiResponse<PageResponse<Installation+...>> } }
+
+  /installations/{uid}/checkpoints:
+    put:
+      summary: Report/advance a sync checkpoint from the client (FR-017)
+      parameters:
+        - { $ref: '#/components/parameters/WorkspaceId' }
+        - { name: uid, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content: { application/json: { schema: { $ref: '#/components/schemas/SyncCheckpoint' } } }
+      responses: { '200': { description: ApiResponse<SyncCheckpoint> } }
+
+  /installations/{uid}/runs:
+    get:
+      summary: List sync run history (FR-020/FR-007 visibility)
+      parameters:
+        - { $ref: '#/components/parameters/WorkspaceId' }
+        - { name: uid, in: path, required: true, schema: { type: string } }
+        - { $ref: '#/components/parameters/Page' }
+        - { $ref: '#/components/parameters/Size' }
+      responses: { '200': { description: ApiResponse<PageResponse<SyncRun>> } }
+    post:
+      summary: Record a sync run (start/finish/counts/error) from the client
+      parameters:
+        - { $ref: '#/components/parameters/WorkspaceId' }
+        - { name: uid, in: path, required: true, schema: { type: string } }
+      requestBody:
+        content: { application/json: { schema: { $ref: '#/components/schemas/SyncRun' } } }
+      responses: { '200': { description: ApiResponse<SyncRun> } }
+
+  /installations/{uid}/data/{entity_type}/upsert:
+    post:
+      summary: >
+        Connector-scoped SPARSE UPSERT of business data (FR-018). Per-row presence ∩
+        installation mapping allowlist partial update; omitted columns preserved,
+        out-of-mapping columns ignored, explicit null clears a mapped column. SEPARATE
+        from the global /{module}/v1/{resource}/sync contract (FR-018a).
+      parameters:
+        - { $ref: '#/components/parameters/WorkspaceId' }
+        - { name: uid, in: path, required: true, schema: { type: string } }
+        - { name: entity_type, in: path, required: true, schema: { type: string } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items: { $ref: '#/components/schemas/SparseUpsertRow' }
+      responses:
+        '200':
+          description: ApiResponse<List<SparseUpsertResult>>
+          content: { application/json: { schema: { $ref: '#/components/schemas/ApiResponse' } } }
+</content>
