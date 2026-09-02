@@ -82,8 +82,134 @@ class MasterModuleSeederService(
             createStorefrontModule(),
             createPricingModule(),
             createAiAssistantModule(),
-            createAnalyticsModule()
+            createAnalyticsModule(),
+            createCbEmployeeModule(),
+            createCbStoreModule(),
+            createCbMaintenanceModule()
         )
+    }
+
+    // ── California Burrito maintenance build (customer-specific, gated per workspace) ──────────
+    private fun createCbEmployeeModule() = MasterModule().apply {
+        moduleCode = "cb-employee"
+        name = "Maintenance Team"
+        description = "California Burrito maintenance-org roster: technicians, roles and the reporting hierarchy used for assignment and escalation"
+        tagline = "Who does the work, and who they report to"
+        category = ModuleCategory.HR_MANAGEMENT
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.FREE
+        requiredRole = UserRole.MANAGER
+        complexity = ModuleComplexity.STANDARD
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 6, false, "Maintenance staff roster with reporting chain")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = listOf("CB_EMPLOYEE_READ", "CB_EMPLOYEE_WRITE"),
+            optionalPermissions = listOf("CB_EMPLOYEE_DELETE"),
+            dependencies = emptyList()
+        )
+        uiMetadata = createUIMetadata(
+            icon = "engineering",
+            primaryColor = "#5D4037",
+            tags = listOf("Maintenance", "Team", "Roster")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/cb-employees",
+            displayName = "Maintenance Team",
+            iconName = "engineering",
+            menuItems = listOf(
+                createMenuItem("cb-employee-list", "Team", "/cb-employees", "engineering", 1, true)
+            )
+        )
+        navigationIndex = 90
+        provider = "Ampairs"
+        sizeMb = 2
+        featured = false
+        displayOrder = 90
+        active = true
+    }
+
+    private fun createCbStoreModule() = MasterModule().apply {
+        moduleCode = "cb-store"
+        name = "Outlets"
+        description = "California Burrito outlets and city zonal offices — the where of maintenance, used to zone-route work"
+        tagline = "Outlets and zonal offices"
+        category = ModuleCategory.INVENTORY_MANAGEMENT
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.FREE
+        requiredRole = UserRole.MANAGER
+        complexity = ModuleComplexity.STANDARD
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 6, false, "Outlet master with zone grouping")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = listOf("CB_STORE_READ", "CB_STORE_WRITE"),
+            optionalPermissions = listOf("CB_STORE_DELETE"),
+            dependencies = emptyList()
+        )
+        uiMetadata = createUIMetadata(
+            icon = "storefront",
+            primaryColor = "#00695C",
+            tags = listOf("Outlets", "Stores", "Zones")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/cb-stores",
+            displayName = "Outlets",
+            iconName = "storefront",
+            menuItems = listOf(
+                createMenuItem("cb-store-list", "Outlets", "/cb-stores", "storefront", 1, true)
+            )
+        )
+        navigationIndex = 91
+        provider = "Ampairs"
+        sizeMb = 2
+        featured = false
+        displayOrder = 91
+        active = true
+    }
+
+    private fun createCbMaintenanceModule() = MasterModule().apply {
+        moduleCode = "cb-maintenance"
+        name = "Maintenance"
+        description = "Preventive-maintenance schedules and entries, reactive tickets, zone-based assignment and overdue escalation for California Burrito outlets"
+        tagline = "Planned and unplanned maintenance across every outlet"
+        category = ModuleCategory.PROJECT_MANAGEMENT
+        status = ModuleStatus.ACTIVE
+        requiredTier = SubscriptionTier.FREE
+        requiredRole = UserRole.MANAGER
+        complexity = ModuleComplexity.ADVANCED
+        version = "1.0.0"
+        businessRelevance = listOf(
+            createBusinessRelevance(BusinessType.RETAIL, 8, false, "PM scheduling + reactive tickets for store equipment")
+        )
+        configuration = createModuleConfiguration(
+            requiredPermissions = listOf("CB_MAINTENANCE_READ", "CB_MAINTENANCE_WRITE"),
+            optionalPermissions = listOf("CB_MAINTENANCE_DELETE"),
+            dependencies = listOf("cb-employee", "cb-store")
+        )
+        uiMetadata = createUIMetadata(
+            icon = "build",
+            primaryColor = "#E65100",
+            tags = listOf("Maintenance", "PM", "Tickets")
+        )
+        routeInfo = createRouteInfo(
+            basePath = "/cb-maintenance",
+            displayName = "Maintenance",
+            iconName = "build",
+            menuItems = listOf(
+                createMenuItem("cb-pm-due", "Due / Overdue", "/cb-maintenance/pm", "event_available", 1, true),
+                createMenuItem("cb-tickets", "Tickets", "/cb-maintenance/tickets", "confirmation_number", 2),
+                createMenuItem("cb-pm-schedules", "PM Schedules", "/cb-maintenance/schedules", "schedule", 3)
+            )
+        )
+        navigationIndex = 92
+        provider = "Ampairs"
+        sizeMb = 4
+        featured = false
+        displayOrder = 92
+        active = true
     }
 
     private fun createBusinessModule() = MasterModule().apply {
