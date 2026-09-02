@@ -10,7 +10,7 @@ import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
 
 /**
- * A California Burrito outlet. Kept separate from `product.Warehouse` — a store here needs zone
+ * An outlet. Kept separate from `product.Warehouse` — a store here needs zone
  * routing, not inventory semantics (module plan §2).
  */
 @Entity(name = "cb_store")

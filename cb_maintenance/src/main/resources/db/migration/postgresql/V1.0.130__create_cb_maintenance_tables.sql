@@ -1,6 +1,6 @@
 -- cb_maintenance Module Migration (PostgreSQL)
 -- Version: 1.0.130
--- Description: California Burrito maintenance — PM schedules/entries, tickets, asset-category aliases
+-- Description: maintenance — PM schedules/entries, tickets, asset-category aliases
 -- Dependencies: V1.0.128 (cb_employee), V1.0.129 (cb_store)
 
 CREATE TABLE pm_schedule (

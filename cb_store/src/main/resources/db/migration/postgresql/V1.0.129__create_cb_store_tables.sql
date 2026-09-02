@@ -1,6 +1,6 @@
 -- cb_store Module Migration (PostgreSQL)
 -- Version: 1.0.129
--- Description: California Burrito outlets + zonal offices
+-- Description: outlets + zonal offices
 -- Dependencies: V1.0.0__create_core_tables.sql
 
 CREATE TABLE zonal_office (
@@ -17,7 +17,7 @@ CREATE TABLE zonal_office (
 
 CREATE INDEX idx_cb_zonal_office_owner ON zonal_office(owner_id);
 
-COMMENT ON TABLE zonal_office IS 'California Burrito city-level maintenance offices';
+COMMENT ON TABLE zonal_office IS 'city-level maintenance offices';
 
 CREATE TABLE store (
     id BIGSERIAL PRIMARY KEY,
@@ -38,4 +38,4 @@ CREATE TABLE store (
 CREATE INDEX idx_cb_store_owner ON store(owner_id);
 CREATE INDEX idx_cb_store_zone ON store(zonal_office_id);
 
-COMMENT ON TABLE store IS 'California Burrito outlets, zone-routed for maintenance';
+COMMENT ON TABLE store IS 'outlets, zone-routed for maintenance';

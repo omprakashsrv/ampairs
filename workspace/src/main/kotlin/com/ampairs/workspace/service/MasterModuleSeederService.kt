@@ -89,11 +89,11 @@ class MasterModuleSeederService(
         )
     }
 
-    // ── California Burrito maintenance build (customer-specific, gated per workspace) ──────────
+    // ── Maintenance build (customer-specific, gated per workspace) ──────────
     private fun createCbEmployeeModule() = MasterModule().apply {
         moduleCode = "cb-employee"
         name = "Maintenance Team"
-        description = "California Burrito maintenance-org roster: technicians, roles and the reporting hierarchy used for assignment and escalation"
+        description = "Maintenance-org roster: technicians, roles and the reporting hierarchy used for assignment and escalation"
         tagline = "Who does the work, and who they report to"
         category = ModuleCategory.HR_MANAGEMENT
         status = ModuleStatus.ACTIVE
@@ -133,7 +133,7 @@ class MasterModuleSeederService(
     private fun createCbStoreModule() = MasterModule().apply {
         moduleCode = "cb-store"
         name = "Outlets"
-        description = "California Burrito outlets and city zonal offices — the where of maintenance, used to zone-route work"
+        description = "Outlets and city zonal offices — the where of maintenance, used to zone-route work"
         tagline = "Outlets and zonal offices"
         category = ModuleCategory.INVENTORY_MANAGEMENT
         status = ModuleStatus.ACTIVE
@@ -173,7 +173,7 @@ class MasterModuleSeederService(
     private fun createCbMaintenanceModule() = MasterModule().apply {
         moduleCode = "cb-maintenance"
         name = "Maintenance"
-        description = "Preventive-maintenance schedules and entries, reactive tickets, zone-based assignment and overdue escalation for California Burrito outlets"
+        description = "Preventive-maintenance schedules and entries, reactive tickets, zone-based assignment and overdue escalation across all outlets"
         tagline = "Planned and unplanned maintenance across every outlet"
         category = ModuleCategory.PROJECT_MANAGEMENT
         status = ModuleStatus.ACTIVE

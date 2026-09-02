@@ -12,7 +12,7 @@ import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Component
 
 /**
- * Nightly PM generation + overdue escalation for California Burrito. A `@Scheduled` method runs with
+ * Nightly PM generation + overdue escalation for the workspace. A `@Scheduled` method runs with
  * NO ambient tenant, so this driver enumerates the workspaces where `cb-maintenance` is enabled and
  * sets `TenantContextHolder` per workspace itself (mirrors subscription's workspace-iterating
  * batches). The per-workspace work lives in the services; this is only the loop + tenant boundary.

@@ -1,6 +1,6 @@
 -- cb_employee Module Migration (PostgreSQL)
 -- Version: 1.0.128
--- Description: California Burrito maintenance-org roster (employee)
+-- Description: maintenance-org roster (employee)
 -- Dependencies: V1.0.0__create_core_tables.sql
 
 CREATE TABLE employee (
@@ -26,4 +26,4 @@ CREATE INDEX idx_cb_employee_owner ON employee(owner_id);
 CREATE INDEX idx_cb_employee_zone ON employee(zonal_office_id);
 CREATE INDEX idx_cb_employee_user ON employee(user_id);
 
-COMMENT ON TABLE employee IS 'California Burrito maintenance-org roster with reporting hierarchy';
+COMMENT ON TABLE employee IS 'maintenance-org roster with reporting hierarchy';

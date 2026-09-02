@@ -1,6 +1,6 @@
 -- cb_employee Module Migration (MySQL)
 -- Version: 1.0.128
--- Description: California Burrito maintenance-org roster (employee)
+-- Description: maintenance-org roster (employee)
 -- Dependencies: V1.0.0__create_core_tables.sql
 
 CREATE TABLE employee (
@@ -27,4 +27,4 @@ CREATE TABLE employee (
     INDEX idx_cb_employee_zone (zonal_office_id),
     INDEX idx_cb_employee_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='California Burrito maintenance-org roster with reporting hierarchy';
+COMMENT='maintenance-org roster with reporting hierarchy';

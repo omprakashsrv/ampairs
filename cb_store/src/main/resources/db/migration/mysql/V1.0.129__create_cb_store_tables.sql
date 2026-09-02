@@ -1,6 +1,6 @@
 -- cb_store Module Migration (MySQL)
 -- Version: 1.0.129
--- Description: California Burrito outlets + zonal offices
+-- Description: outlets + zonal offices
 -- Dependencies: V1.0.0__create_core_tables.sql
 
 CREATE TABLE zonal_office (
@@ -18,7 +18,7 @@ CREATE TABLE zonal_office (
     UNIQUE INDEX idx_cb_zonal_office_uid (uid),
     INDEX idx_cb_zonal_office_owner (owner_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='California Burrito city-level maintenance offices';
+COMMENT='city-level maintenance offices';
 
 CREATE TABLE store (
     id BIGINT NOT NULL AUTO_INCREMENT,
@@ -39,4 +39,4 @@ CREATE TABLE store (
     INDEX idx_cb_store_owner (owner_id),
     INDEX idx_cb_store_zone (zonal_office_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-COMMENT='California Burrito outlets, zone-routed for maintenance';
+COMMENT='outlets, zone-routed for maintenance';

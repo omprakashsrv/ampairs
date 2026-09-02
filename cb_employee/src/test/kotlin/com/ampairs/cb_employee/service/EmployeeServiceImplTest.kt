@@ -37,16 +37,16 @@ class EmployeeServiceImplTest {
     }
 
     @Test
-    fun `escalation falls through to the Maintenance Leader when a zone has no AM (Pune, Mumbai)`() {
-        // Pune/Mumbai: staff report straight to Sanju V P (the Maintenance Leader), no AM in between.
-        val exec = employee("PUNE1", MaintenanceRole.EXECUTIVE, reportsTo = "SANJU")
-        val leader = employee("SANJU", MaintenanceRole.MAINTENANCE_LEADER, reportsTo = null)
-        whenever(repository.findByUid("PUNE1")).thenReturn(exec)
-        whenever(repository.findByUid("SANJU")).thenReturn(leader)
+    fun `escalation falls through to the Maintenance Leader when a zone has no AM`() {
+        // In a zone with no Assistant Manager, staff report straight to the Maintenance Leader.
+        val exec = employee("E2", MaintenanceRole.EXECUTIVE, reportsTo = "LEADER1")
+        val leader = employee("LEADER1", MaintenanceRole.MAINTENANCE_LEADER, reportsTo = null)
+        whenever(repository.findByUid("E2")).thenReturn(exec)
+        whenever(repository.findByUid("LEADER1")).thenReturn(leader)
 
-        val target = service.resolveEscalationTarget("PUNE1")
+        val target = service.resolveEscalationTarget("E2")
 
-        assertEquals("SANJU", target.uid)
+        assertEquals("LEADER1", target.uid)
     }
 
     @Test
