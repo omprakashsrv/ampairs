@@ -8,6 +8,7 @@ import com.ampairs.cb_employee.domain.model.Employee
 import com.ampairs.cb_employee.domain.model.MaintenanceRole
 import com.ampairs.cb_employee.exception.EmployeeNotFoundException
 import com.ampairs.cb_employee.repository.EmployeeRepository
+import com.ampairs.core.service.UserService
 import com.ampairs.core.sync.EntityChangePublisher
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.Page
@@ -22,9 +23,23 @@ import java.time.Instant
 class EmployeeServiceImpl(
     private val employeeRepository: EmployeeRepository,
     private val entityChangePublisher: EntityChangePublisher,
+    private val userService: UserService,
 ) : EmployeeService {
 
     private val logger = LoggerFactory.getLogger(EmployeeServiceImpl::class.java)
+
+    /**
+     * Link a roster row to its login when the client didn't supply one: match the employee's mobile
+     * to a registered user's phone. Without this, `user_id` stays null and the caller can't be
+     * resolved by [MaintenanceAccessService], so every cb_maintenance /sync call is rejected.
+     * Matching by contact (not by "current user") keeps a manager's bulk roster push correct — each
+     * row links to its own person, or stays unlinked if no account exists yet.
+     */
+    private fun Employee.linkUserByMobileIfUnset() {
+        if (!userId.isNullOrBlank()) return
+        val phone = mobile?.trim()?.takeIf { it.isNotBlank() } ?: return
+        userService.getUserByPhone(phone)?.let { userId = it.uid }
+    }
 
     @Transactional(readOnly = true)
     override fun findByUid(uid: String): EmployeeResponse? {
@@ -93,11 +108,13 @@ class EmployeeServiceImpl(
             val existing = request.uid?.takeIf { it.isNotBlank() }?.let { employeeRepository.findByUid(it) }
             if (existing != null) {
                 existing.applyRequest(request)
+                existing.linkUserByMobileIfUnset()
                 employeeRepository.save(existing)
                     .also { entityChangePublisher.updated("cb_employee", it.uid) }
                     .asEmployeeResponse()
             } else {
                 val employee = Employee().applyRequest(request)
+                employee.linkUserByMobileIfUnset()
                 employeeRepository.save(employee)
                     .also { entityChangePublisher.created("cb_employee", it.uid) }
                     .asEmployeeResponse()
@@ -107,6 +124,7 @@ class EmployeeServiceImpl(
     @Transactional
     override fun create(request: EmployeeRequest): EmployeeResponse {
         val employee = Employee().applyRequest(request)
+        employee.linkUserByMobileIfUnset()
         val saved = employeeRepository.save(employee)
         entityChangePublisher.created("cb_employee", saved.uid)
         return saved.asEmployeeResponse()
