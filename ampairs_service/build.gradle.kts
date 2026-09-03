@@ -143,9 +143,9 @@ val flywayRuntime by configurations.creating {
 }
 
 dependencies {
-    flywayRuntime("org.flywaydb:flyway-core:12.11.0")
-    flywayRuntime("org.flywaydb:flyway-database-postgresql:12.11.0")
-    flywayRuntime("org.flywaydb:flyway-mysql:12.11.0")
+    flywayRuntime("org.flywaydb:flyway-core:13.1.0")
+    flywayRuntime("org.flywaydb:flyway-database-postgresql:13.1.0")
+    flywayRuntime("org.flywaydb:flyway-mysql:13.1.0")
     flywayRuntime("org.postgresql:postgresql:42.7.13")
     flywayRuntime("com.mysql:mysql-connector-j:9.7.0")
     flywayRuntime("org.slf4j:slf4j-simple:2.0.18")
