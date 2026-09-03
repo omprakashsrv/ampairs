@@ -1,6 +1,7 @@
 package com.ampairs.cb_maintenance.service
 
 import com.ampairs.cb_employee.domain.dto.EmployeeResponse
+import com.ampairs.cb_employee.service.EmployeeService
 import com.ampairs.cb_maintenance.domain.dto.PmEntryRequest
 import com.ampairs.cb_maintenance.domain.dto.PmEntryResponse
 import com.ampairs.cb_maintenance.domain.dto.applyRequest
@@ -30,6 +31,7 @@ class PmEntryService(
     private val pmEntryRepository: PmEntryRepository,
     private val pmScheduleRepository: PmScheduleRepository,
     private val storeService: StoreService,
+    private val employeeService: EmployeeService,
     private val ticketService: TicketService,
     private val accessService: MaintenanceAccessService,
     private val entityChangePublisher: EntityChangePublisher,
@@ -70,6 +72,16 @@ class PmEntryService(
             val entry = (existing ?: PmEntry()).applyRequest(request)
             if (entry.zonalOfficeId.isBlank() && entry.storeId.isNotBlank()) {
                 entry.zonalOfficeId = storeService.getZonalOfficeId(entry.storeId)
+            }
+            // If the store carries no zone, a claimed entry would fall out of the claimer's zone feed
+            // (and only stay in the unassigned-orphan branch until assigned). Resolve the orphan into
+            // the assignee's zone so a self-assigned PM stays visible to the employee who took it.
+            if (entry.zonalOfficeId.isBlank()) {
+                entry.assignedToEmployeeId?.takeIf { it.isNotBlank() }?.let { assignee ->
+                    runCatching { employeeService.getByUid(assignee).zonalOfficeId }
+                        .getOrNull()?.takeIf { it.isNotBlank() }
+                        ?.let { entry.zonalOfficeId = it }
+                }
             }
             val saved = pmEntryRepository.save(entry)
             // A completion synced up from a device spawns tickets for failures and auto-resolves the

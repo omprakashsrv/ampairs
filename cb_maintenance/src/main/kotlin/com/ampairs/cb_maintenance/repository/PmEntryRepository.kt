@@ -42,12 +42,22 @@ interface PmEntryRepository : CrudRepository<PmEntry, Long> {
     @Query("SELECT p FROM cb_pm_entry p WHERE p.updatedAt >= :lastSync")
     fun findByUpdatedAtAfter(@Param("lastSync") lastSync: Instant, pageable: Pageable): Page<PmEntry>
 
+    // A zoned field employee sees their own zone AND unassigned zone-orphans (blank zonalOfficeId):
+    // generated entries whose store has no zone would otherwise be invisible to every field employee
+    // (only the HQ all-zones view saw them). Surfacing them for any employee to claim implements the
+    // §4.3 free-flow rule (unassigned + empty zone pool → visible chain-wide) at the list-feed level.
     @EntityGraph("CbPmEntry.basic")
-    @Query("SELECT p FROM cb_pm_entry p WHERE p.zonalOfficeId = :zone")
+    @Query(
+        "SELECT p FROM cb_pm_entry p WHERE p.zonalOfficeId = :zone " +
+            "OR (p.zonalOfficeId = '' AND p.assignedToEmployeeId IS NULL)",
+    )
     fun findByZonalOfficeIdForSync(@Param("zone") zone: String, pageable: Pageable): Page<PmEntry>
 
     @EntityGraph("CbPmEntry.basic")
-    @Query("SELECT p FROM cb_pm_entry p WHERE p.zonalOfficeId = :zone AND p.updatedAt >= :lastSync")
+    @Query(
+        "SELECT p FROM cb_pm_entry p WHERE (p.zonalOfficeId = :zone " +
+            "OR (p.zonalOfficeId = '' AND p.assignedToEmployeeId IS NULL)) AND p.updatedAt >= :lastSync",
+    )
     fun findByZonalOfficeIdAndUpdatedAtAfter(
         @Param("zone") zone: String,
         @Param("lastSync") lastSync: Instant,

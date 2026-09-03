@@ -32,12 +32,21 @@ interface TicketRepository : CrudRepository<Ticket, Long> {
     @Query("SELECT t FROM cb_ticket t WHERE t.updatedAt >= :lastSync")
     fun findByUpdatedAtAfter(@Param("lastSync") lastSync: Instant, pageable: Pageable): Page<Ticket>
 
+    // Zoned employee sees own zone AND unassigned zone-orphans (blank zonalOfficeId), so a ticket
+    // whose store has no zone stays claimable chain-wide (§4.3 free-flow) instead of invisible to
+    // every field employee — mirrors PmEntryRepository.
     @EntityGraph("CbTicket.basic")
-    @Query("SELECT t FROM cb_ticket t WHERE t.zonalOfficeId = :zone")
+    @Query(
+        "SELECT t FROM cb_ticket t WHERE t.zonalOfficeId = :zone " +
+            "OR (t.zonalOfficeId = '' AND t.assignedToEmployeeId IS NULL)",
+    )
     fun findByZonalOfficeIdForSync(@Param("zone") zone: String, pageable: Pageable): Page<Ticket>
 
     @EntityGraph("CbTicket.basic")
-    @Query("SELECT t FROM cb_ticket t WHERE t.zonalOfficeId = :zone AND t.updatedAt >= :lastSync")
+    @Query(
+        "SELECT t FROM cb_ticket t WHERE (t.zonalOfficeId = :zone " +
+            "OR (t.zonalOfficeId = '' AND t.assignedToEmployeeId IS NULL)) AND t.updatedAt >= :lastSync",
+    )
     fun findByZonalOfficeIdAndUpdatedAtAfter(
         @Param("zone") zone: String,
         @Param("lastSync") lastSync: Instant,
