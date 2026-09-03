@@ -53,7 +53,7 @@ dependencies {
     implementation("org.locationtech.jts:jts-core:1.20.0")
 
     // OpenAPI/Swagger Documentation
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0")
 
     implementation("io.jsonwebtoken:jjwt-api:0.13.0")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.13.0")

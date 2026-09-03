@@ -50,7 +50,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
 
     // OpenAPI/Swagger Documentation  
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.1.0")
     
     runtimeOnly("com.mysql:mysql-connector-j")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
