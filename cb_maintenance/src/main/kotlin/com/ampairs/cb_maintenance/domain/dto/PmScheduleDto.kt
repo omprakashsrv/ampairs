@@ -8,10 +8,12 @@ import java.time.Instant
 
 data class PmScheduleRequest(
     val uid: String? = null,
-    /** Taxonomy department (category-level link to ticket_bucket). */
+    /** Taxonomy department (denormalized alongside [assetCategory]). */
     val department: String = "",
     @field:NotBlank(message = "Asset category is required")
     val assetCategory: String,
+    /** Exact ticket_bucket taxonomy leaf (Department › Category › Issue [› Issue-detail]). */
+    val ticketBucketId: String? = null,
     @field:NotBlank(message = "Task name is required")
     val taskName: String,
     val checklist: List<String>? = null,
@@ -27,6 +29,7 @@ data class PmScheduleResponse(
     val refId: String?,
     val department: String,
     val assetCategory: String,
+    val ticketBucketId: String?,
     val taskName: String,
     val checklist: List<String>?,
     val frequencyUnit: FrequencyUnit,
@@ -40,6 +43,7 @@ fun PmSchedule.applyRequest(request: PmScheduleRequest): PmSchedule = apply {
     request.uid?.let { uid = it }
     department = request.department.trim()
     assetCategory = request.assetCategory.trim()
+    ticketBucketId = request.ticketBucketId?.trim()?.takeIf { it.isNotBlank() }
     taskName = request.taskName.trim()
     checklist = request.checklist?.takeIf { it.isNotEmpty() }
     frequencyUnit = request.frequencyUnit
@@ -53,6 +57,7 @@ fun PmSchedule.asPmScheduleResponse(): PmScheduleResponse = PmScheduleResponse(
     refId = refId,
     department = department,
     assetCategory = assetCategory,
+    ticketBucketId = ticketBucketId,
     taskName = taskName,
     checklist = checklist,
     frequencyUnit = frequencyUnit,

@@ -24,20 +24,29 @@ import org.hibernate.type.SqlTypes
         Index(name = "idx_cb_pm_schedule_uid", columnList = "uid", unique = true),
         Index(name = "idx_cb_pm_schedule_owner", columnList = "owner_id"),
         Index(name = "idx_cb_pm_schedule_category", columnList = "asset_category"),
+        Index(name = "idx_cb_pm_schedule_bucket", columnList = "ticket_bucket_id"),
     ]
 )
 class PmSchedule : OwnableBaseDomain() {
 
     /**
-     * Taxonomy department this PM belongs to (category-level link to the ticket-bucket taxonomy —
-     * `department` + [assetCategory]). PM is per-category routine work, so it links at the category
-     * level rather than to a single issue leaf; reports group PM work by department + category.
+     * Taxonomy department this PM belongs to (kept denormalized alongside [assetCategory] for
+     * grouping/reporting). The exact taxonomy leaf is [ticketBucketId].
      */
     @Column(name = "department", length = 100, nullable = false)
     var department: String = ""
 
     @Column(name = "asset_category", length = 100, nullable = false)
     var assetCategory: String = ""
+
+    /**
+     * The exact ticket-bucket taxonomy leaf this PM maps to (Department › Category › Issue
+     * [› Issue-detail]) — the uid of a `ticket_bucket` row, same granularity a ticket carries.
+     * Nullable for schedules created before the leaf link existed / when the catalog isn't seeded.
+     * Lets reports join PM ↔ ticket on the identical classification.
+     */
+    @Column(name = "ticket_bucket_id", length = 200)
+    var ticketBucketId: String? = null
 
     @Column(name = "task_name", length = 200, nullable = false)
     var taskName: String = ""
