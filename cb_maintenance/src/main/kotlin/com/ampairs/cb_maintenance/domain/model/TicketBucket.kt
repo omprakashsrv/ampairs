@@ -1,7 +1,7 @@
 package com.ampairs.cb_maintenance.domain.model
 
 import com.ampairs.cb_maintenance.config.Constants
-import com.ampairs.core.domain.model.BaseDomain
+import com.ampairs.core.domain.model.OwnableBaseDomain
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.Index
@@ -13,12 +13,13 @@ import jakarta.persistence.UniqueConstraint
  * One leaf of the maintenance ticket-classification taxonomy:
  * `department › category › subCategory1 [› subCategory2]`.
  *
- * Global reference data — the taxonomy is the same for every workspace that installs
- * cb-maintenance, so this extends [BaseDomain] (no `owner_id`/`@TenantId`) and is seeded once by
- * Flyway. The `/sync` feed is therefore pull-only and unfiltered: every device downloads the full
- * catalog to drive the cascading Department → Category → Sub-category pickers on the raise-ticket
- * form. `subCategory2` is stored as `""` (not null) when the leaf has only three levels so the
- * uniqueness constraint behaves identically on PostgreSQL and MySQL.
+ * Workspace-scoped reference data: extends [OwnableBaseDomain] (`@TenantId owner_id`), so each
+ * workspace owns its own copy of the taxonomy and the `/sync` GET feed is tenant-filtered
+ * automatically. Pull-only in the app — the device downloads its workspace's catalog to drive the
+ * cascading Department → Category → Sub-category pickers on the raise-ticket form. The rows are
+ * seeded per workspace (scoped to that workspace's `owner_id`), not by a global Flyway insert.
+ * `subCategory2` is stored as `""` (not null) when the leaf has only three levels so the uniqueness
+ * constraint behaves identically on PostgreSQL and MySQL.
  */
 @Entity(name = "cb_ticket_bucket")
 @NamedEntityGraph(name = "CbTicketBucket.basic")
@@ -27,14 +28,15 @@ import jakarta.persistence.UniqueConstraint
     uniqueConstraints = [
         UniqueConstraint(
             name = "uk_cb_ticket_bucket",
-            columnNames = ["department", "category", "sub_category_1", "sub_category_2"],
+            columnNames = ["owner_id", "department", "category", "sub_category_1", "sub_category_2"],
         ),
     ],
     indexes = [
+        Index(name = "idx_cb_ticket_bucket_owner", columnList = "owner_id"),
         Index(name = "idx_cb_ticket_bucket_dept", columnList = "department"),
     ]
 )
-class TicketBucket : BaseDomain() {
+class TicketBucket : OwnableBaseDomain() {
 
     @Column(name = "department", length = 100, nullable = false)
     var department: String = ""
