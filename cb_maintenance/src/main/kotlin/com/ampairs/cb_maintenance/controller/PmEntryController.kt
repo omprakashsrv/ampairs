@@ -28,7 +28,11 @@ class PmEntryController(
     private val accessService: MaintenanceAccessService,
 ) {
 
-    /** Zone-scoped incremental pull — the caller's own zone only (LEADER sees all). */
+    /**
+     * Incremental pull — a zoned field employee sees only their own zone; a MAINTENANCE_LEADER or a
+     * workspace admin/owner with no roster row sees all zones (HQ view). Not gated on being a
+     * maintenance employee, so the owner can see generated PM entries without being on the roster.
+     */
     @GetMapping("/sync")
     fun getSync(
         @RequestParam("last_sync", required = false) lastSync: String?,
@@ -37,8 +41,7 @@ class PmEntryController(
         @RequestParam("sort_by", defaultValue = "updatedAt") sortBy: String,
         @RequestParam("sort_dir", defaultValue = "ASC") sortDir: String,
     ): ApiResponse<PageResponse<PmEntryResponse>> {
-        val caller = accessService.requireCurrentEmployee()
-        val zoneFilter = accessService.effectiveZoneFilter(caller)
+        val zoneFilter = accessService.readZoneFilter()
         val prop = when (sortBy) {
             "dueDate" -> "dueDate"
             "status" -> "status"

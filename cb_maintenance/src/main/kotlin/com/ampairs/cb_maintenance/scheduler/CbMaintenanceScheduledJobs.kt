@@ -31,8 +31,14 @@ class CbMaintenanceScheduledJobs(
 ) {
     private val logger = LoggerFactory.getLogger(CbMaintenanceScheduledJobs::class.java)
 
-    /** Roll preventive-maintenance entries forward. Nightly at 01:30 UTC. */
-    @Scheduled(cron = "0 30 1 * * *")
+    /**
+     * Roll preventive-maintenance entries forward — one next-due entry per (active store, active
+     * schedule) whose next occurrence has entered the generation window. Runs every 30 minutes; the
+     * generation is stateful/idempotent (cursor = the pair's last entry's dueDate + frequency, with a
+     * duplicate guard), so frequent runs never double-create — they just surface new occurrences
+     * promptly instead of waiting for the next night.
+     */
+    @Scheduled(cron = "0 0/30 * * * *")
     fun generatePreventiveMaintenance() {
         forEachEnabledWorkspace("PM generation") {
             val windowDays = runCatching {

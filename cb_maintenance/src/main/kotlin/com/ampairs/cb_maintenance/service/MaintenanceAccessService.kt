@@ -34,6 +34,15 @@ class MaintenanceAccessService(
         if (caller.role == MaintenanceRole.MAINTENANCE_LEADER) null else caller.zonalOfficeId
 
     /**
+     * Zone filter for READ/sync feeds, resolved WITHOUT requiring the caller to be a maintenance
+     * employee. A workspace admin/owner (no roster row) or a MAINTENANCE_LEADER reads all zones
+     * (`null`); a zoned field employee reads only their own zone. Workspace membership already gates
+     * the tenant, so a non-roster caller seeing all zones is the intended "HQ view" — this is what
+     * lets the owner see generated PM entries / tickets without being added to the roster first.
+     */
+    fun readZoneFilter(): String? = currentEmployee()?.let { effectiveZoneFilter(it) }
+
+    /**
      * Assert the caller may see/act on a record in [recordZone]. MAINTENANCE_LEADER passes always;
      * same-zone passes; and the §4.3 free-flow case (unassigned record whose local pool is empty)
      * is visible chain-wide.
