@@ -26,6 +26,9 @@ include("sequence")
 include("subscription")
 include("ecom")
 include("analytics")
+include("cb_employee")
+include("cb_store")
+include("cb_maintenance")
 include("ampairs_service")
 
 

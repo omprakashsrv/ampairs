@@ -44,6 +44,14 @@ interface WorkspaceModuleRepository : JpaRepository<WorkspaceModule, String>,
     fun findByWorkspaceIdAndEnabledTrue(workspaceId: String): List<WorkspaceModule>
 
     /**
+     * Cross-tenant: every enabled install of a given module code across all workspaces. Used by
+     * scheduled batch jobs (e.g. cb_maintenance PM generation / escalation) to iterate the
+     * workspaces where a module is turned on. `workspaceId` is an explicit column here (not
+     * `@TenantId`), so this is not auto-filtered by the current tenant.
+     */
+    fun findByMasterModuleModuleCodeAndEnabledTrue(moduleCode: String): List<WorkspaceModule>
+
+    /**
      * Sync checkpoint: max `updatedAt` across a workspace's installed modules (null when none).
      * WorkspaceModule carries an explicit `workspaceId` column (not `@TenantId`), so the workspace
      * is filtered explicitly here rather than relying on ambient tenant filtering.

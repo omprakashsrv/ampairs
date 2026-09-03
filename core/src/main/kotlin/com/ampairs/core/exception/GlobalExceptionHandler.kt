@@ -21,6 +21,8 @@ import org.springframework.web.method.annotation.MethodArgumentTypeMismatchExcep
 import org.springframework.web.multipart.MaxUploadSizeExceededException
 import org.springframework.web.servlet.NoHandlerFoundException
 import org.springframework.web.server.ResponseStatusException
+import org.springframework.web.bind.annotation.ResponseStatus
+import org.springframework.core.annotation.AnnotatedElementUtils
 
 @RestControllerAdvice
 @Order(Ordered.LOWEST_PRECEDENCE) // Execute last, after module-specific handlers
@@ -298,6 +300,30 @@ class GlobalExceptionHandler : BaseExceptionHandler() {
         ex: Exception,
         request: HttpServletRequest,
     ): ResponseEntity<ApiResponse<Any>> {
+        // Honor a @ResponseStatus carried by a custom exception (e.g. a module's
+        // FORBIDDEN/NOT_FOUND exception) — otherwise Spring's ResponseStatus resolver never
+        // runs because this catch-all handler shadows it, turning every such error into a 500.
+        AnnotatedElementUtils.findMergedAnnotation(ex.javaClass, ResponseStatus::class.java)?.let { rs ->
+            val status = HttpStatus.resolve(rs.code.value()) ?: rs.value
+            val message = rs.reason.takeIf { it.isNotBlank() } ?: ex.message ?: status.reasonPhrase
+            logger.warn("Request {} rejected with {}: {}", request.requestURI, status.value(), message)
+            return createErrorResponse(
+                httpStatus = status,
+                errorCode = when (status) {
+                    HttpStatus.FORBIDDEN -> ErrorCodes.ACCESS_DENIED
+                    HttpStatus.UNAUTHORIZED -> ErrorCodes.AUTHENTICATION_FAILED
+                    HttpStatus.CONFLICT -> ErrorCodes.DUPLICATE_ENTRY
+                    HttpStatus.NOT_FOUND -> ErrorCodes.NOT_FOUND
+                    HttpStatus.BAD_REQUEST -> ErrorCodes.BAD_REQUEST
+                    else -> ErrorCodes.INTERNAL_SERVER_ERROR
+                },
+                message = message,
+                details = null,
+                request = request,
+                moduleName = "global",
+            )
+        }
+
         logger.error("Unexpected error for request {}: {}", request.requestURI, ex.message, ex)
 
         return createErrorResponse(
