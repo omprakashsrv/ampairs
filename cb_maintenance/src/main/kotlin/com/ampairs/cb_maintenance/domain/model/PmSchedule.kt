@@ -28,6 +28,14 @@ import org.hibernate.type.SqlTypes
 )
 class PmSchedule : OwnableBaseDomain() {
 
+    /**
+     * Taxonomy department this PM belongs to (category-level link to the ticket-bucket taxonomy —
+     * `department` + [assetCategory]). PM is per-category routine work, so it links at the category
+     * level rather than to a single issue leaf; reports group PM work by department + category.
+     */
+    @Column(name = "department", length = 100, nullable = false)
+    var department: String = ""
+
     @Column(name = "asset_category", length = 100, nullable = false)
     var assetCategory: String = ""
 

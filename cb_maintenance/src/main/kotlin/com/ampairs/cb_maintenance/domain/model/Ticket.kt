@@ -27,6 +27,7 @@ import java.time.Instant
         Index(name = "idx_cb_ticket_owner", columnList = "owner_id"),
         Index(name = "idx_cb_ticket_scope", columnList = "zonal_office_id, store_id, status, raised_at"),
         Index(name = "idx_cb_ticket_assignee", columnList = "assigned_to_employee_id"),
+        Index(name = "idx_cb_ticket_bucket", columnList = "ticket_bucket_id"),
     ]
 )
 class Ticket : OwnableBaseDomain() {
@@ -43,6 +44,15 @@ class Ticket : OwnableBaseDomain() {
 
     @Column(name = "sub_category", length = 150, nullable = false)
     var subCategory: String = ""
+
+    /**
+     * Link to the exact ticket_bucket taxonomy leaf the ticket was classified under
+     * (Department › Category › Sub category 1 [› Sub category 2]). Lets reports join
+     * `ticket → ticket_bucket` for the full classification. Nullable for tickets raised outside the
+     * catalog (e.g. PM-failure spawns) or before it was seeded.
+     */
+    @Column(name = "ticket_bucket_id", length = 200)
+    var ticketBucketId: String? = null
 
     @Column(name = "description", columnDefinition = "TEXT")
     var description: String? = null

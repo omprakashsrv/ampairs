@@ -8,6 +8,8 @@ import java.time.Instant
 
 data class PmScheduleRequest(
     val uid: String? = null,
+    /** Taxonomy department (category-level link to ticket_bucket). */
+    val department: String = "",
     @field:NotBlank(message = "Asset category is required")
     val assetCategory: String,
     @field:NotBlank(message = "Task name is required")
@@ -23,6 +25,7 @@ data class PmScheduleRequest(
 data class PmScheduleResponse(
     val uid: String,
     val refId: String?,
+    val department: String,
     val assetCategory: String,
     val taskName: String,
     val checklist: List<String>?,
@@ -35,6 +38,7 @@ data class PmScheduleResponse(
 
 fun PmSchedule.applyRequest(request: PmScheduleRequest): PmSchedule = apply {
     request.uid?.let { uid = it }
+    department = request.department.trim()
     assetCategory = request.assetCategory.trim()
     taskName = request.taskName.trim()
     checklist = request.checklist?.takeIf { it.isNotEmpty() }
@@ -47,6 +51,7 @@ fun PmSchedule.applyRequest(request: PmScheduleRequest): PmSchedule = apply {
 fun PmSchedule.asPmScheduleResponse(): PmScheduleResponse = PmScheduleResponse(
     uid = uid,
     refId = refId,
+    department = department,
     assetCategory = assetCategory,
     taskName = taskName,
     checklist = checklist,

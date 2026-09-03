@@ -15,6 +15,8 @@ data class TicketRequest(
     val assetCategory: String,
     @field:NotBlank(message = "Sub-category is required")
     val subCategory: String,
+    /** Link to the ticket_bucket taxonomy leaf this ticket was classified under (for reporting). */
+    val ticketBucketId: String? = null,
     val description: String? = null,
     val status: TicketStatus = TicketStatus.OPEN,
     val assignedToEmployeeId: String? = null,
@@ -35,6 +37,7 @@ data class TicketResponse(
     val zonalOfficeId: String,
     val assetCategory: String,
     val subCategory: String,
+    val ticketBucketId: String?,
     val description: String?,
     val status: TicketStatus,
     val assignedToEmployeeId: String?,
@@ -65,6 +68,7 @@ fun Ticket.applyRequest(request: TicketRequest): Ticket = apply {
     request.zonalOfficeId?.takeIf { it.isNotBlank() }?.let { zonalOfficeId = it }
     assetCategory = request.assetCategory.trim()
     subCategory = request.subCategory.trim()
+    ticketBucketId = request.ticketBucketId?.takeIf { it.isNotBlank() }
     description = request.description?.trim()
     status = request.status
     assignedToEmployeeId = request.assignedToEmployeeId?.takeIf { it.isNotBlank() }
@@ -85,6 +89,7 @@ fun Ticket.asTicketResponse(): TicketResponse = TicketResponse(
     zonalOfficeId = zonalOfficeId,
     assetCategory = assetCategory,
     subCategory = subCategory,
+    ticketBucketId = ticketBucketId,
     description = description,
     status = status,
     assignedToEmployeeId = assignedToEmployeeId,
