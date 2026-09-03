@@ -5,6 +5,7 @@ object Constants {
     const val PM_SCHEDULE_PREFIX = "PMS"
     const val PM_ENTRY_PREFIX = "PME"
     const val ASSET_CATEGORY_ALIAS_PREFIX = "ACA"
+    const val TICKET_BUCKET_PREFIX = "TKB"
 
     /** Backend module code used for workspace module-enablement gating. */
     const val MODULE_CODE = "cb-maintenance"

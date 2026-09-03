@@ -3,6 +3,7 @@ package com.ampairs.cb_maintenance.sync
 import com.ampairs.cb_maintenance.repository.AssetCategoryAliasRepository
 import com.ampairs.cb_maintenance.repository.PmEntryRepository
 import com.ampairs.cb_maintenance.repository.PmScheduleRepository
+import com.ampairs.cb_maintenance.repository.TicketBucketRepository
 import com.ampairs.cb_maintenance.repository.TicketRepository
 import com.ampairs.core.sync.SyncCheckpointContributor
 import org.springframework.stereotype.Component
@@ -18,6 +19,7 @@ class CbMaintenanceCheckpointContributor(
     private val pmScheduleRepository: PmScheduleRepository,
     private val pmEntryRepository: PmEntryRepository,
     private val assetCategoryAliasRepository: AssetCategoryAliasRepository,
+    private val ticketBucketRepository: TicketBucketRepository,
 ) : SyncCheckpointContributor {
 
     override fun checkpoints(): Map<String, Instant?> = mapOf(
@@ -25,5 +27,6 @@ class CbMaintenanceCheckpointContributor(
         "cb_pm_schedule" to pmScheduleRepository.findMaxUpdatedAt(),
         "cb_pm_entry" to pmEntryRepository.findMaxUpdatedAt(),
         "cb_asset_alias" to assetCategoryAliasRepository.findMaxUpdatedAt(),
+        "cb_ticket_bucket" to ticketBucketRepository.findMaxUpdatedAt(),
     )
 }
