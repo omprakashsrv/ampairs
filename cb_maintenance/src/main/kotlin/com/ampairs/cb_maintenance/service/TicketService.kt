@@ -113,6 +113,22 @@ class TicketService(
         return ticketRepository.save(ticket).also { entityChangePublisher.created("cb_ticket", it.uid) }
     }
 
+    /**
+     * Auto-resolve the ticket a completed PM entry was created to address (ticket → PM-task → done).
+     * Idempotent and guarded: never resolves a ticket that this very entry SPAWNED from a failed check
+     * (that is the opposite PM-failure → ticket direction), and never re-resolves a terminal ticket.
+     */
+    @Transactional
+    fun markResolvedFromPmEntry(ticketUid: String, resolvingEntryUid: String) {
+        val ticket = ticketRepository.findByUid(ticketUid) ?: return
+        if (ticket.originPmEntryId == resolvingEntryUid) return
+        if (ticket.status == TicketStatus.RESOLVED || ticket.status == TicketStatus.CLOSED) return
+        ticket.status = TicketStatus.RESOLVED
+        ticket.resolvedAt = Instant.now()
+        ticketRepository.save(ticket)
+        entityChangePublisher.updated("cb_ticket", ticket.uid)
+    }
+
     @Transactional
     fun reassign(uid: String, newAssigneeId: String, caller: EmployeeResponse): TicketResponse {
         val ticket = findByUid(uid)

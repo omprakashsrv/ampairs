@@ -72,8 +72,9 @@ class PmEntryService(
                 entry.zonalOfficeId = storeService.getZonalOfficeId(entry.storeId)
             }
             val saved = pmEntryRepository.save(entry)
-            // A completion synced up from a device spawns tickets server-side (idempotent).
-            if (saved.status == PmEntryStatus.DONE) spawnTicketsForFailures(saved)
+            // A completion synced up from a device spawns tickets for failures and auto-resolves the
+            // ticket this entry was created to address (both idempotent, server-side).
+            if (saved.status == PmEntryStatus.DONE) onEntryDone(saved)
             entityChangePublisher.updated("cb_pm_entry", saved.uid)
             saved.asPmEntryResponse()
         }
@@ -89,7 +90,7 @@ class PmEntryService(
         entry.completedByEmployeeId = caller.uid
         if (checklistResult != null) entry.checklistResult = checklistResult
         val saved = pmEntryRepository.save(entry)
-        spawnTicketsForFailures(saved)
+        onEntryDone(saved)
         entityChangePublisher.updated("cb_pm_entry", saved.uid)
         return saved.asPmEntryResponse()
     }
@@ -149,6 +150,17 @@ class PmEntryService(
         }
         if (created > 0) logger.info("PM generation created {} entries (window {} days)", created, windowDays)
         return created
+    }
+
+    /**
+     * Runs when a PM entry reaches DONE: spawn tickets for failed checklist items, then auto-resolve
+     * the ticket the entry was created to address (if any). Order matters — spawn first so it can set
+     * `entry.ticketId` for a failure-spawned ticket, and the resolve step is guarded against resolving
+     * a ticket this same entry just spawned.
+     */
+    private fun onEntryDone(entry: PmEntry) {
+        spawnTicketsForFailures(entry)
+        entry.ticketId?.takeIf { it.isNotBlank() }?.let { ticketService.markResolvedFromPmEntry(it, entry.uid) }
     }
 
     private fun spawnTicketsForFailures(entry: PmEntry) {
