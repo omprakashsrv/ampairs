@@ -46,15 +46,24 @@ interface WorkspaceModuleRepository : JpaRepository<WorkspaceModule, String>,
     /**
      * Cross-tenant: every enabled install of a given module code across all workspaces. Used by
      * scheduled batch jobs (e.g. cb_maintenance PM generation / escalation) to iterate the
-     * workspaces where a module is turned on. `workspaceId` is an explicit column here (not
-     * `@TenantId`), so this is not auto-filtered by the current tenant.
+     * workspaces where a module is turned on. `workspaceId` is `@TenantId`-filtered, so this must
+     * be a native query to bypass Hibernate's tenant filter — the job runs with no ambient tenant,
+     * and a derived/JPQL query here would silently return zero rows for every workspace.
      */
-    fun findByMasterModuleModuleCodeAndEnabledTrue(moduleCode: String): List<WorkspaceModule>
+    @Query(
+        value = """
+            SELECT wm.* FROM workspace_modules wm
+            JOIN master_modules mm ON mm.id = wm.master_module_id
+            WHERE mm.module_code = :moduleCode AND wm.enabled = true
+        """,
+        nativeQuery = true
+    )
+    fun findByMasterModuleModuleCodeAndEnabledTrue(@Param("moduleCode") moduleCode: String): List<WorkspaceModule>
 
     /**
      * Sync checkpoint: max `updatedAt` across a workspace's installed modules (null when none).
-     * WorkspaceModule carries an explicit `workspaceId` column (not `@TenantId`), so the workspace
-     * is filtered explicitly here rather than relying on ambient tenant filtering.
+     * Only ever called with the ambient tenant already set to this same `workspaceId`, so the
+     * explicit filter here is redundant with (not a substitute for) `@TenantId` auto-filtering.
      */
     @Query("SELECT MAX(m.updatedAt) FROM WorkspaceModule m WHERE m.workspaceId = :workspaceId")
     fun findMaxUpdatedAtByWorkspaceId(@Param("workspaceId") workspaceId: String): Instant?
