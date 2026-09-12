@@ -97,9 +97,11 @@ class InventoryTransaction : OwnableBaseDomain() {
      * NotFound(IGNORE): offline-synced transactions can reference an item uid not present on the
      * server; without it Hibernate throws EntityFilterException on any read joining the
      * association instead of resolving null.
+     * @NotFound forces EAGER regardless of declared fetch type; FetchType.EAGER matches that
+     * actual runtime behavior instead of the misleading LAZY (silences HHH160133).
      */
     @NotFound(action = NotFoundAction.IGNORE)
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(
         name = "inventory_item_id",
         referencedColumnName = "uid",
@@ -125,9 +127,10 @@ class InventoryTransaction : OwnableBaseDomain() {
      * Warehouse entity (lazy loaded).
      * NotFound(IGNORE): warehouseId can be '' for offline-synced movements when the workspace has
      * no default warehouse; resolves null instead of throwing EntityFilterException.
+     * @NotFound forces EAGER regardless of declared fetch type; see inventoryItem above.
      */
     @NotFound(action = NotFoundAction.IGNORE)
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(
         name = "warehouse_id",
         referencedColumnName = "uid",

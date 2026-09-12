@@ -105,8 +105,10 @@ class InventoryItem : OwnableBaseDomain() {
     // default warehouse). Without it, Hibernate throws EntityFilterException on every read that
     // joins the association ("Warehouse with identifier value `` is filtered"), 500-ing the
     // purchase/inventory sync endpoints. Resolves to null instead.
+    // @NotFound forces EAGER regardless of declared fetch type; FetchType.EAGER here just matches
+    // that actual runtime behavior instead of the misleading LAZY (silences HHH160133).
     @NotFound(action = NotFoundAction.IGNORE)
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "warehouse_id", referencedColumnName = "uid",
                 updatable = false, insertable = false)
     var warehouse: Warehouse? = null
@@ -158,8 +160,9 @@ class InventoryItem : OwnableBaseDomain() {
 
     // NotFound(IGNORE): same rationale as `warehouse` above — a unit_id that doesn't resolve
     // under the current tenant filter (blank, not yet synced, cross-tenant) must not 500 the read.
+    // @NotFound forces EAGER regardless of declared fetch type; see warehouse above.
     @NotFound(action = NotFoundAction.IGNORE)
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "unit_id", referencedColumnName = "uid",
                 updatable = false, insertable = false)
     var unit: Unit? = null
