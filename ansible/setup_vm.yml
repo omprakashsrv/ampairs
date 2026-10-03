@@ -32,6 +32,12 @@
     backup_retention_days: "{{ lookup('env', 'BACKUP_RETENTION_DAYS') | default('7', true) }}"
     backup_on_calendar: "{{ lookup('env', 'BACKUP_ON_CALENDAR') | default('hourly', true) }}"
     postgresql_client_version: "{{ lookup('env', 'BACKUP_PG_VERSION') | default('17', true) }}"
+    # JVM heap for the Spring Boot service: the LOWER of a fixed cap and a share of VM RAM,
+    # so a small VM never gives the heap more than 60% of its memory.
+    jvm_max_heap_mb: "{{ lookup('env', 'JVM_MAX_HEAP_MB') | default('600', true) }}"
+    jvm_heap_ram_percent: "{{ lookup('env', 'JVM_HEAP_RAM_PERCENT') | default('60', true) }}"
+    # Hard memory ceiling for nginx (systemd cgroup MemoryMax).
+    nginx_memory_max: "{{ lookup('env', 'NGINX_MEMORY_MAX') | default('200M', true) }}"
 
   pre_tasks:
     - name: Fail if Let's Encrypt email is not provided
@@ -132,6 +138,56 @@
         name: nginx
         state: started
         enabled: true
+
+    - name: Ensure nginx systemd drop-in directory exists
+      ansible.builtin.file:
+        path: /etc/systemd/system/nginx.service.d
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+
+    - name: Limit nginx memory usage
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/nginx.service.d/memory.conf
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          # Managed by Ansible (setup_vm.yml) — hard memory ceiling for nginx.
+          [Service]
+          MemoryAccounting=true
+          MemoryMax={{ nginx_memory_max }}
+      register: nginx_memory_dropin
+
+    - name: Restart nginx to apply memory limit
+      ansible.builtin.systemd:
+        name: nginx
+        daemon_reload: true
+        state: restarted
+      when: nginx_memory_dropin.changed
+
+    - name: Compute JVM heap size for the Spring Boot service
+      ansible.builtin.set_fact:
+        jvm_heap_mb: "{{ [jvm_max_heap_mb | int, (ansible_memtotal_mb | int) * (jvm_heap_ram_percent | int) // 100] | min }}"
+
+    - name: Ensure Ampairs config directory exists
+      ansible.builtin.file:
+        path: /etc/ampairs
+        state: directory
+        mode: "0755"
+
+    - name: Deploy JVM memory settings for the Spring Boot service
+      ansible.builtin.copy:
+        dest: /etc/ampairs/jvm.env
+        owner: root
+        group: root
+        mode: "0644"
+        content: |
+          # Managed by Ansible (setup_vm.yml) / deploy workflow.
+          # Heap = min({{ jvm_max_heap_mb }} MB, {{ jvm_heap_ram_percent }}% of {{ ansible_memtotal_mb }} MB RAM)
+          JAVA_OPTS=-Xmx{{ jvm_heap_mb }}m -Xms{{ (jvm_heap_mb | int) // 2 }}m
+      notify: Restart Ampairs service
 
     - name: Check if nginx site configuration exists
       ansible.builtin.stat:
@@ -410,4 +466,10 @@
     - name: Reload systemd
       ansible.builtin.systemd:
         daemon_reload: true
+
+    # try-restart: only restarts the app if it is already running (it is
+    # installed by the deploy workflow, so it may not exist on a fresh VM).
+    - name: Restart Ampairs service
+      ansible.builtin.command: systemctl try-restart ampairs-production.service
+      changed_when: true
 

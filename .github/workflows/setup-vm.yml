@@ -44,6 +44,9 @@ jobs:
       BACKUP_RETENTION_DAYS: ${{ vars.BACKUP_RETENTION_DAYS || '7' }}
       BACKUP_ON_CALENDAR: ${{ vars.BACKUP_ON_CALENDAR || 'hourly' }}
       BACKUP_DB_PASSWORD: ${{ secrets.BACKUP_DB_PASSWORD }}
+      JVM_MAX_HEAP_MB: ${{ vars.JVM_MAX_HEAP_MB || '600' }}
+      JVM_HEAP_RAM_PERCENT: ${{ vars.JVM_HEAP_RAM_PERCENT || '60' }}
+      NGINX_MEMORY_MAX: ${{ vars.NGINX_MEMORY_MAX || '200M' }}
 
     steps:
       - name: Validate required configuration
@@ -166,6 +169,9 @@ jobs:
           BACKUP_LOCAL_DIR: ${{ env.BACKUP_LOCAL_DIR }}
           BACKUP_RETENTION_DAYS: ${{ env.BACKUP_RETENTION_DAYS }}
           BACKUP_ON_CALENDAR: ${{ env.BACKUP_ON_CALENDAR }}
+          JVM_MAX_HEAP_MB: ${{ env.JVM_MAX_HEAP_MB }}
+          JVM_HEAP_RAM_PERCENT: ${{ env.JVM_HEAP_RAM_PERCENT }}
+          NGINX_MEMORY_MAX: ${{ env.NGINX_MEMORY_MAX }}
         run: |
           export ANSIBLE_HOST_KEY_CHECKING=False
           ansible-playbook ansible/setup_vm.yml \

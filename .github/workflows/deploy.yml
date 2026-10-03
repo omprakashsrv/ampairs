@@ -390,6 +390,21 @@ jobs:
             exit 1
           fi
 
+          # JVM heap = min(JVM_MAX_HEAP_MB, JVM_HEAP_RAM_PERCENT% of VM RAM)
+          JVM_MAX_HEAP_MB=${{ vars.JVM_MAX_HEAP_MB || '600' }}
+          JVM_HEAP_RAM_PERCENT=${{ vars.JVM_HEAP_RAM_PERCENT || '60' }}
+          MEM_TOTAL_MB=$(( $(awk '/^MemTotal:/ {print $2}' /proc/meminfo) / 1024 ))
+          HEAP_MB=$(( MEM_TOTAL_MB * JVM_HEAP_RAM_PERCENT / 100 ))
+          if [ "$HEAP_MB" -gt "$JVM_MAX_HEAP_MB" ]; then HEAP_MB=$JVM_MAX_HEAP_MB; fi
+          echo "VM RAM: ${MEM_TOTAL_MB} MB -> JVM heap: -Xmx${HEAP_MB}m"
+          sudo mkdir -p /etc/ampairs
+          printf '%s\n' \
+            "# Managed by Ansible (setup_vm.yml) / deploy workflow." \
+            "# Heap = min(${JVM_MAX_HEAP_MB} MB, ${JVM_HEAP_RAM_PERCENT}% of ${MEM_TOTAL_MB} MB RAM)" \
+            "JAVA_OPTS=-Xmx${HEAP_MB}m -Xms$(( HEAP_MB / 2 ))m" \
+            | sudo tee /etc/ampairs/jvm.env > /dev/null
+          sudo chmod 644 /etc/ampairs/jvm.env
+
           # Update systemd service file
           sudo cp ~/ampairs-production.service /etc/systemd/system/ampairs-production.service
 
