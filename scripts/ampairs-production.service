@@ -14,8 +14,10 @@ WorkingDirectory=/opt/ampairs/production
 ExecStart=/usr/bin/java $JAVA_OPTS -jar /opt/ampairs/production/ampairs-service.jar
 ExecReload=/bin/kill -HUP $MAINPID
 
-# JVM Configuration
-Environment="JAVA_OPTS=-Xmx1024m -Xms512m"
+# JVM Configuration — fallback default; /etc/ampairs/jvm.env (written by Ansible and the
+# deploy workflow) overrides it with Xmx = min(600 MB, 60% of VM RAM).
+Environment="JAVA_OPTS=-Xmx600m -Xms300m"
+EnvironmentFile=-/etc/ampairs/jvm.env
 
 # Spring Boot Configuration
 Environment="SPRING_PROFILES_ACTIVE=production"
