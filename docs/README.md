@@ -11,6 +11,20 @@ All developer documentation for Ampairs, organized by concern.
 | [getting-started.md](getting-started.md) | Clone, run locally, profiles, build commands |
 | [architecture.md](architecture.md) | System design, request lifecycle, security layers, data model |
 
+## AI Business Operations Manager
+
+The AI agent that reviews a workspace's data, auto-fixes high-confidence issues, and escalates the rest.
+**Orchestration runs app-side** (ADR 0005); the backend is a deferred tier. Start at the roadmap.
+
+| Document | Description |
+|----------|-------------|
+| [ai-ops-manager/README.md](ai-ops-manager/README.md) | **Program roadmap** — the spine: artifact map, epics, backlog, method |
+| [ai-ops-manager/framework.md](ai-ops-manager/framework.md) | Engine design — SPI, decision engine, data model, walkthroughs |
+| [adr/0005-…](adr/0005-ai-ops-manager-app-side-orchestration.md) | Decision: app-side orchestration; backend deferred |
+| [adr/0006-…](adr/0006-aiops-engine-shared-kmp-module.md) | Decision: host-agnostic shared KMP engine |
+| [spikes/koog-agent-backend-spike.md](spikes/koog-agent-backend-spike.md) | Spike: Koog backend tool-calling (deferred tier) |
+| specs [030](../specs/030-koog-agent-assistant/spec.md) · [031](../specs/031-ai-ops-manager-foundation/spec.md) | Backend Q&A + `:aiops` foundation (Epic 2, deferred) |
+
 ## Modules
 
 Complete documentation for each backend module — entities, endpoints, migrations, package structure.

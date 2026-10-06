@@ -12,3 +12,5 @@ Format: one file per decision, `NNNN-kebab-title.md`, status `Accepted | Superse
 | [0002](0002-unified-offline-sync-contract.md) | One canonical `/sync` contract for all syncable entities | Accepted |
 | [0003](0003-flyway-vendor-parity-postgres-primary.md) | Flyway dual-vendor migrations; PostgreSQL is primary | Accepted |
 | [0004](0004-otp-recaptcha-secure-defaults.md) | Secure-by-default OTP bypass and reCAPTCHA enforcement | Accepted |
+| [0005](0005-ai-ops-manager-app-side-orchestration.md) | AI Ops Manager: app-side orchestration; backend deferred | Accepted |
+| [0006](0006-aiops-engine-shared-kmp-module.md) | AI Ops engine is a host-agnostic shared KMP module | Accepted |
