@@ -1,3 +1,27 @@
+# ── Actuator exposure control ───────────────────────────────────────────────
+# Only health + info are safe to expose publicly: health for uptime probes,
+# info for deploy-version verification (build.commit / build.version). Every other
+# actuator endpoint (env, metrics, prometheus, caches, beans, ...) leaks internal
+# configuration and MUST NOT be reachable from the internet.
+#
+# Grafana Alloy scrapes 127.0.0.1:8080/actuator/prometheus directly (see
+# grafana-alloy-remote-write.hcl.j2) and bypasses nginx, so denying here does not
+# affect monitoring. nginx picks the FIRST matching regex location, so the
+# allow-list block is declared before the catch-all deny.
+location ~ ^/api/actuator/(health|info)(/.*)?$ {
+    proxy_pass {{ app_upstream }};
+    limit_req zone=ampairs_per_ip burst=10 nodelay;
+
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+}
+
+location ~ ^/api/actuator(/|$) {
+    return 404;
+}
+
 # Stricter rate limiting for app download endpoint
 # 1 request per 10 seconds, no burst allowed
 location ~ ^/api/v1/app-updates/download/ {
