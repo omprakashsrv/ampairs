@@ -1,6 +1,6 @@
 # Implementation Plan: GST E-Invoicing (IRN) & E-Way Bill
 
-**Branch**: `claude/indian-retail-ecosystem-877med` (spec dir `015-einvoice-eway-bill`) | **Date**: 2026-06-27 | **Spec**: [spec.md](./spec.md)
+**Branch**: `claude/einvoice-eway-bill-specs-9s8ugx` (spec dir `015-einvoice-eway-bill`) | **Date**: 2026-06-28 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/015-einvoice-eway-bill/spec.md`
 
 ## Summary
@@ -23,6 +23,18 @@ sidecar persistence model + outbound retry queue; and a thin offline-first Compo
 threshold) is per-workspace `setting` config, not hardcoded. Full design rationale in
 [research.md](./research.md).
 
+**Clarifications applied (2026-06-28 session)** — see spec `## Clarifications`:
+- **Authorization**: manual generate/retry and *all* cancellations are restricted to workspace
+  **administrators/owners**; automatic system registration on finalize is unaffected (it is a system
+  action, not a user action).
+- **Retry policy**: transient failures retry with exponential backoff for a **bounded window
+  (default 48 h, per-workspace configurable)**, then transition to `FAILED` for manual retry;
+  permanent/validation rejections fail immediately without retry.
+- **Retention**: signed legal artifacts (signed invoice JWS, signed QR) are retained **for as long as
+  the parent invoice is retained** (match invoice retention policy) — no independent purge schedule.
+- **Failure surfacing**: in addition to per-invoice `FAILED` status + reason, expose an **aggregate
+  failed-document view** so stuck documents are never silently missed.
+
 ## Technical Context
 
 **Language/Version**: Backend Kotlin 2.3 / Java 21 (Spring Boot 4.0); Mobile Kotlin Multiplatform 2.4
@@ -31,25 +43,29 @@ threshold) is per-workspace `setting` config, not hardcoded. Full design rationa
 (`@Scheduled` retry worker), an HTTP client for GSP calls (WebClient/RestClient), `core`
 (`OwnableBaseDomain`, `ApiResponse`, `PageResponse`, `TenantContextHolder`); consumes
 `InvoiceFinalizedEvent` / `InvoiceCancelledEvent` from `event`/`invoice`; reads `InvoiceService`,
-`SettingService`. Mobile — Room KMP, Ktor, Metro DI, Navigation3, a QR-render lib (e.g. qrose) in
+`SettingService`; reads workspace role/RBAC (for admin/owner-gated actions) via `workspace` public
+service. Mobile — Room KMP, Ktor, Metro DI, Navigation3, a QR-render lib (e.g. qrose) in
 `commonMain`, existing `data/sync` (`CentralSyncService`, `SyncDelegate`), `data/common`
 (`ApiUrlBuilder`), `feature/invoice` (read-only reference), the existing `printing`/PDF path.
 **Storage**: Backend — PostgreSQL/MySQL via Flyway; signed JWS/QR as `TEXT`/`LONGTEXT`; timestamps
 `TIMESTAMPTZ`/`TIMESTAMP`; money in payload builders `BigDecimal` scale 2. Mobile — Room
 (workspace-scoped DB `einvoice`), display-only strings/longs.
 **Testing**: Backend — JUnit/Testcontainers (`./gradlew :einvoice:test`) incl. INV-01 builder golden
-tests against the NIC sandbox schema, idempotency/duplicate-IRN handling, cancellation-window guards.
-Mobile — `./gradlew :feature:einvoice:check` + 3-target compile gates; QR-render snapshot.
+tests against the NIC sandbox schema, idempotency/duplicate-IRN handling, cancellation-window guards,
+retry-window expiry → FAILED transition, admin/owner authorization guards. Mobile —
+`./gradlew :feature:einvoice:check` + 3-target compile gates; QR-render snapshot.
 **Target Platform**: Backend service (Linux); Mobile Android (minSdk 24) / iOS / Desktop (JVM).
 **Project Type**: Mobile + API — new backend module + KMP feature module.
 **Performance Goals**: Finalize stays instant (IRN is async); IRN generation completes < 10 s when GSP
-healthy; retry worker drains the queue with exponential backoff; QR renders offline with no lag.
-**Constraints**: IRN/EWB are **online-only** (queue + retry); one IRN per invoice (idempotent);
-statutory 24h cancel windows enforced; GSP credentials never leave the server; signed payloads
-access-controlled; workspace data isolation.
+healthy; retry worker drains the queue with exponential backoff within the 48 h window; QR renders
+offline with no lag.
+**Constraints**: IRN/EWB are **online-only** (queue + bounded-window retry — default 48 h, then
+FAILED); one IRN per invoice (idempotent); statutory 24h cancel windows enforced; generate/cancel
+restricted to workspace admins/owners; GSP credentials never leave the server; signed payloads
+access-controlled and retained per parent-invoice retention; workspace data isolation.
 **Scale/Scope**: Per workspace: thousands of e-invoices/month. ~4 backend entities (`EInvoiceDocument`,
-`EwayBill`, `EInvoiceJob`/queue, `EInvoiceCredential`), ~2 pull-only sync entities + ~3 action
-endpoints, ~2 mobile screens/overlays + PDF embed.
+`EwayBill`, `EInvoiceJob`/queue, `EInvoiceCredential`), ~2 pull-only sync entities + ~4 action
+endpoints + 1 failed-document list endpoint, ~2 mobile screens/overlays + PDF embed.
 
 ## Constitution Check
 
@@ -57,19 +73,19 @@ endpoints, ~2 mobile screens/overlays + PDF embed.
 
 | Principle | Status | How this plan complies |
 |---|---|---|
-| I. Type Safety (Instant/TIMESTAMPTZ) | ✅ PASS | All timestamps `Instant` → `TIMESTAMPTZ`/`TIMESTAMP` (ackDate, validUpto, cancelledAt); payload money `BigDecimal` scale 2 — never floating point in the IRP payload. |
+| I. Type Safety (Instant/TIMESTAMPTZ) | ✅ PASS | All timestamps `Instant` → `TIMESTAMPTZ`/`TIMESTAMP` (ackDate, validUpto, cancelledAt, nextAttemptAt, windowExpiresAt); payload money `BigDecimal` scale 2 — never floating point in the IRP payload. |
 | II. DTO & Contract Isolation | ✅ PASS | Request/Response DTOs in `einvoice/domain/dto/`; entities never exposed; signed JWS/QR omitted from list DTOs, exposed only on detail. |
 | III. Global JSON SNAKE_CASE | ✅ PASS | Internal API uses global Jackson SNAKE_CASE. The **INV-01 / EWB** payloads use NIC's PascalCase schema via an isolated `Inv01PayloadBuilder` with explicit `@JsonProperty` (genuinely non-standard external contract — documented inline). |
-| IV. Multi-Tenant Isolation | ✅ PASS | All entities extend `OwnableBaseDomain` (`@TenantId ownerId`); tenant set by `SessionUserFilter` via `X-Workspace-ID`; provider/creds resolved per workspace; services never mutate tenant context. |
-| V. API Response Standardization | ✅ PASS | All endpoints return `ApiResponse<T>`; sync pull returns `ApiResponse<PageResponse<T>>`. |
+| IV. Multi-Tenant Isolation | ✅ PASS | All entities extend `OwnableBaseDomain` (`@TenantId ownerId`); tenant set by `SessionUserFilter` via `X-Workspace-ID`; provider/creds resolved per workspace; services never mutate tenant context. Admin/owner-gated actions check workspace role at the controller boundary. |
+| V. API Response Standardization | ✅ PASS | All endpoints return `ApiResponse<T>`; sync pull + failed-document list return `ApiResponse<PageResponse<T>>`. |
 | VI. Centralized Exception Handling | ✅ PASS | Typed `EInvoiceException`/`GspException` bubble to a module exception handler; no business try/catch in controllers (provider retry logic lives in the worker/service, not the controller). |
-| VII. Efficient Data Loading | ✅ PASS | `@NamedEntityGraph` for invoice+e-invoice+e-way joins; derived queries; `@Query` only for the sync feed and the pending-job poll. |
+| VII. Efficient Data Loading | ✅ PASS | `@NamedEntityGraph` for invoice+e-invoice+e-way joins; derived queries; `@Query` only for the sync feed, the pending-job poll, and the failed-document list. |
 | VIII. Angular Material 3 Exclusivity | ✅ N/A (this phase) | Web UI deferred; tracked follow-up. |
-| IX. Domain-Driven Module Boundaries | ✅ PASS | New `einvoice` bounded context; reads `invoice`/`setting` via public service interfaces + domain events, never repositories. |
+| IX. Domain-Driven Module Boundaries | ✅ PASS | New `einvoice` bounded context; reads `invoice`/`setting`/`workspace` via public service interfaces + domain events, never repositories. |
 | X. Compose Multiplatform Parity | ✅ PASS | Shared logic/UI in `feature/einvoice/src/commonMain`; thin platform DI; QR render in `commonMain`. |
 | XI. Security & Secrets Hygiene | ✅ PASS | GSP/NIC credentials env-provided + encrypted per-workspace row; cached NIC session token; signed-blob ACL; no secrets in source/`keys/`. |
-| Flyway | ✅ PASS | Versioned migration in **both** `mysql/` and `postgresql/`; `einvoice` added to `migrationModules`; next version after `V1.0.104` (check `flywayInfo`). |
-| Testing & Quality Gates | ✅ PASS | Backend ≥80% on payload-builder + idempotency + cancel-window logic; mobile `check` + 3-target compile. |
+| Flyway | ✅ PASS | Versioned migration in **both** `mysql/` and `postgresql/`; `einvoice` added to `migrationModules`; next version after current max (check `flywayInfo`). |
+| Testing & Quality Gates | ✅ PASS | Backend ≥80% on payload-builder + idempotency + cancel-window + retry-window + authz logic; mobile `check` + 3-target compile. |
 
 **Result**: PASS — no violations. Web deferral is a documented scope decision. Complexity Tracking not
 required.
@@ -81,14 +97,14 @@ required.
 ```
 specs/015-einvoice-eway-bill/
 ├── plan.md              # This file
-├── spec.md              # Feature specification (/speckit.specify output)
+├── spec.md              # Feature specification (/speckit.specify + /speckit.clarify output)
 ├── research.md          # Phase 0 — design decisions + rationale
 ├── data-model.md        # Phase 1 — entities, states, INV-01 field mapping
 ├── quickstart.md        # Phase 1 — exercise IRN/EWB against the NIC sandbox
 ├── contracts/
 │   ├── README.md
 │   ├── einvoice-sync.md         # pull-only /sync feeds (documents, eway-bills)
-│   └── einvoice-actions.md      # generate/cancel IRN, generate/cancel/update EWB
+│   └── einvoice-actions.md      # generate/cancel IRN, generate/cancel/update EWB, failed list
 ├── checklists/requirements.md
 └── tasks.md             # Phase 2 (/speckit.tasks — NOT created here)
 ```
@@ -104,17 +120,17 @@ einvoice/
     │   │   ├── model/      # EInvoiceDocument, EwayBill, EInvoiceJob, EInvoiceCredential
     │   │   ├── enums/      # IrnStatus, EwbStatus, TransMode, VehicleType, CancelReason, JobStatus
     │   │   └── dto/        # request/response DTOs + converters; Inv01* + Ewb* payload models
-    │   ├── repository/     # Spring Data repos (+ @EntityGraph, sync feed, pending-job poll)
+    │   ├── repository/     # Spring Data repos (+ @EntityGraph, sync feed, pending-job poll, failed list)
     │   ├── service/        # EInvoiceService, EwayBillService, Inv01PayloadBuilder, EwbPayloadBuilder,
-    │   │                   #   EInvoiceQueueWorker (@Scheduled retry), EInvoiceSettingDefinitions
+    │   │                   #   EInvoiceQueueWorker (@Scheduled retry, 48h window), EInvoiceSettingDefinitions
     │   ├── provider/       # EInvoiceProvider port + MasterIndiaProvider/ClearTaxProvider/NicDirectProvider,
     │   │                   #   EInvoiceProviderResolver, NicSessionTokenCache
-    │   ├── controller/     # EInvoiceController (sync + actions)
+    │   ├── controller/     # EInvoiceController (sync + actions + failed list; admin/owner-gated commands)
     │   ├── event/          # InvoiceFinalizedEvent/InvoiceCancelledEvent listener → enqueue/cancel
     │   └── config/         # Constants, credential encryption
     └── resources/db/migration/
-        ├── mysql/V1.0.105__create_einvoice_tables.sql
-        └── postgresql/V1.0.105__create_einvoice_tables.sql
+        ├── mysql/V{next}__create_einvoice_tables.sql
+        └── postgresql/V{next}__create_einvoice_tables.sql
 # wiring: settings.gradle.kts (include "einvoice"); ampairs_service/build.gradle.kts
 #         (implementation(project(":einvoice")) + "einvoice" in migrationModules)
 
@@ -143,17 +159,21 @@ side of `feature/payment`). The `invoice` module is untouched beyond the already
 
 - **Entities**: `EInvoiceDocument` (irn, ackNo, ackDate, signedInvoice, signedQrCode, irnStatus,
   gspProvider, request/response audit, cancel fields) 1:1 invoice; `EInvoiceJob` (queue: invoiceUid,
-  jobStatus, attemptCount, nextAttemptAt, lastError); `EInvoiceCredential` (encrypted per-workspace GSP
-  creds). Flyway `V1.0.105` in both vendors.
+  jobStatus, attemptCount, nextAttemptAt, windowExpiresAt, lastError); `EInvoiceCredential` (encrypted
+  per-workspace GSP creds). Flyway `V{next}` in both vendors.
 - **Provider**: `EInvoiceProvider` port + one implementation (NIC sandbox `NicDirectProvider` or one
   GSP) + `EInvoiceProviderResolver` + `NicSessionTokenCache`.
 - **Pipeline**: `InvoiceFinalizedEvent` listener → upsert `EInvoiceDocument(PENDING)` + enqueue job;
-  `EInvoiceQueueWorker` (`@Scheduled`) polls `PENDING`/`FAILED`, builds INV-01 via `Inv01PayloadBuilder`,
-  calls provider, persists IRN/QR/ack, marks `GENERATED`; idempotent get-by-doc pre-check; 3029 →
-  success.
-- **Endpoints**: `POST /einvoice/v1/documents/{invoiceUid}/generate` (manual trigger / retry);
-  `POST /einvoice/v1/documents/{invoiceUid}/cancel` (24h guard + reason); `GET /einvoice/v1/documents/sync`
-  (pull-only). `EInvoiceSettingDefinitions` (`einvoice_enabled`, `einvoice_provider`).
+  `EInvoiceQueueWorker` (`@Scheduled`) polls `PENDING`/`FAILED`-within-window, builds INV-01 via
+  `Inv01PayloadBuilder`, calls provider, persists IRN/QR/ack, marks `GENERATED`; idempotent get-by-doc
+  pre-check; 3029 → success. **Transient errors retry with exponential backoff until `windowExpiresAt`
+  (default now + 48 h); on window expiry → `FAILED`. Validation/permanent rejections → `FAILED`
+  immediately (no retry).**
+- **Endpoints**: `POST /einvoice/v1/documents/{invoiceUid}/generate` (manual trigger / retry —
+  **admin/owner only**); `POST /einvoice/v1/documents/{invoiceUid}/cancel` (24h guard + reason —
+  **admin/owner only**); `GET /einvoice/v1/documents/sync` (pull-only); `GET /einvoice/v1/documents/failed`
+  (aggregate failed-document list, paginated). `EInvoiceSettingDefinitions` (`einvoice_enabled`,
+  `einvoice_provider`, `einvoice_retry_window_hours`).
 - **Mobile**: `EInvoiceDocumentSyncDelegate` (pull-only); invoice detail shows IRN/ack/QR with
   PENDING/GENERATED/FAILED state; PDF/print template embeds QR + IRN; "Generate now" online command.
 
@@ -163,8 +183,8 @@ side of `feature/payment`). The `invoice` module is untouched beyond the already
   transDistance, transDocNo/date, vehicleType, ewbStatus) — Flyway follow-up version.
 - **Service/endpoints**: `EwayBillService`; `POST /einvoice/v1/eway-bills` (generate, off IRN when
   present), `POST /einvoice/v1/eway-bills/{uid}/cancel` (24h), `POST .../update-vehicle` (Part-B),
-  `POST .../extend-validity`; `GET /einvoice/v1/eway-bills/sync` (pull-only). `eway_enabled`,
-  `eway_value_threshold` settings.
+  `POST .../extend-validity` — all **admin/owner only**; `GET /einvoice/v1/eway-bills/sync` (pull-only).
+  `eway_enabled`, `eway_value_threshold` settings.
 - **Mobile**: transporter/vehicle entry sheet → online command; EWB chip + validity on invoice detail;
   EWB no embedded in print.
 
@@ -172,18 +192,18 @@ side of `feature/payment`). The `invoice` module is untouched beyond the already
 
 - Second GSP implementation + per-workspace provider switch + fallback on GSP outage.
 - Daily reconciliation job: for `PENDING`/`FAILED` older than N hours, re-query NIC get-by-doc to heal
-  lost-ack cases; alert on stuck queue depth.
+  lost-ack cases; alert on stuck queue depth (feeds the failed-document view).
 - Credit-note hand-off for late (>24h) cancellations (links to `payment` adjustments / future
   credit-note feature); cancelled-IRN reprint guard.
 
 ### Mobile / offline considerations
 
 - IRN/EWB are **server-authored, online-only**; the app pulls and renders. A field user offline sees
-  "IRN pending"; the backend generates on reconnect.
+  "IRN pending"; the backend generates on reconnect (within the 48 h retry window).
 - QR is stored as a string and rendered to a bitmap **offline** — printing a compliant invoice never
   needs connectivity once the document has synced.
 - No client-authored push for these entities; the only writes are explicit online commands
-  (generate/cancel/EWB), never `markPendingPush` sync.
+  (generate/cancel/EWB — admin/owner only), never `markPendingPush` sync.
 
 ## Complexity Tracking
 
