@@ -1,6 +1,6 @@
 # Implementation Plan: Bank Reconciliation
 
-**Branch**: `claude/indian-retail-ecosystem-877med` (spec dir `024-bank-reconciliation`) | **Date**: 2026-06-27 | **Spec**: [spec.md](./spec.md)
+**Branch**: `claude/bank-reconciliation-spec-jipccu` (spec dir `024-bank-reconciliation`) | **Date**: 2026-06-27 | **Spec**: [spec.md](./spec.md)
 **Input**: Feature specification from `/specs/024-bank-reconciliation/spec.md`
 
 ## Summary
