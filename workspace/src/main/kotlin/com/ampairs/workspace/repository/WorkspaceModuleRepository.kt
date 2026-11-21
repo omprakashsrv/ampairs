@@ -44,23 +44,6 @@ interface WorkspaceModuleRepository : JpaRepository<WorkspaceModule, String>,
     fun findByWorkspaceIdAndEnabledTrue(workspaceId: String): List<WorkspaceModule>
 
     /**
-     * Cross-tenant: every enabled install of a given module code across all workspaces. Used by
-     * scheduled batch jobs (e.g. cb_maintenance PM generation / escalation) to iterate the
-     * workspaces where a module is turned on. `workspaceId` is `@TenantId`-filtered, so this must
-     * be a native query to bypass Hibernate's tenant filter — the job runs with no ambient tenant,
-     * and a derived/JPQL query here would silently return zero rows for every workspace.
-     */
-    @Query(
-        value = """
-            SELECT wm.* FROM workspace_modules wm
-            JOIN master_modules mm ON mm.id = wm.master_module_id
-            WHERE mm.module_code = :moduleCode AND wm.enabled = true
-        """,
-        nativeQuery = true
-    )
-    fun findByMasterModuleModuleCodeAndEnabledTrue(@Param("moduleCode") moduleCode: String): List<WorkspaceModule>
-
-    /**
      * Sync checkpoint: max `updatedAt` across a workspace's installed modules (null when none).
      * Only ever called with the ambient tenant already set to this same `workspaceId`, so the
      * explicit filter here is redundant with (not a substitute for) `@TenantId` auto-filtering.

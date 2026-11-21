@@ -57,9 +57,6 @@ dependencies {
     implementation(project(mapOf("path" to ":printing")))
     implementation(project(mapOf("path" to ":agent")))
     implementation(project(mapOf("path" to ":analytics")))
-    implementation(project(mapOf("path" to ":cb_employee")))
-    implementation(project(mapOf("path" to ":cb_store")))
-    implementation(project(mapOf("path" to ":cb_maintenance")))
 
     // Spring Boot starters
     implementation("org.springframework.boot:spring-boot-starter-web")
@@ -126,7 +123,7 @@ tasks.withType<Test> {
 }
 
 val migrationModules = listOf(
-    "agent", "analytics", "auth", "business", "cb_employee", "cb_maintenance", "cb_store", "core", "customer", "ecom", "event", "file", "form",
+    "agent", "analytics", "auth", "business", "core", "customer", "ecom", "event", "file", "form",
     "invoice", "notification", "order", "payment", "pricing", "printing", "product", "purchase", "sequence", "setting", "subscription",
     "supplier", "tax", "unit", "user", "workspace"
 )
