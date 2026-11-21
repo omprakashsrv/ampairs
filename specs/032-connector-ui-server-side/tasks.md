@@ -1,4 +1,4 @@
-# Tasks: Connector UI & Server-Side Execution (spec 029)
+# Tasks: Connector UI & Server-Side Execution (spec 032)
 
 **Stacked on**: `013-apps-extension-platform` (must build against the connector platform, not `main`).
 **Repos**: `ampairs` (backend), `ampairs-app` (client). Backend builds/tests locally (JDK 21); client relies on CI.
@@ -44,8 +44,8 @@ Makes `HostingType.SERVER_SIDE` real, reusing the writer SPI + sparse-upsert + s
 
 ## Cross-cutting / docs
 
-- **T021** (S) `plan.md` + `data-model.md` deltas for spec 029 (executor SPI, generic provider config shape). No new tables — reuses 013's.
-- **T022** (S) Update `013` FR-H05 note to reference 029 as the landing spec for server-side.
+- **T021** (S) `plan.md` + `data-model.md` deltas for spec 032 (executor SPI, generic provider config shape). No new tables — reuses 013's.
+- **T022** (S) Update `013` FR-H05 note to reference 032 as the landing spec for server-side.
 
 ---
 

@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component
 import java.time.Instant
 
 /**
- * Drives SERVER-SIDE connector sync on the backend (spec 029 FR-S02). On a fixed interval it selects
+ * Drives SERVER-SIDE connector sync on the backend (spec 032 FR-S02). On a fixed interval it selects
  * every active, ENABLED installation ACROSS ALL TENANTS, keeps only those whose connector is
  * [HostingType.SERVER_SIDE], and dispatches each to its [ServerSideConnectorSyncExecutor]. CLIENT_SIDE
  * connectors (Tally) are never dispatched — their engine runs in the desktop app.

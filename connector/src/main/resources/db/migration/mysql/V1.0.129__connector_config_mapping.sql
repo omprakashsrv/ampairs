@@ -1,7 +1,7 @@
 -- Connector Module Database Migration (MySQL)
 -- Version: 1.0.94
 -- Description: Connector connection config (encrypted secrets) + per-entity field mappings (spec 013).
--- Dependencies: V1.0.93__connector_installation.sql
+-- Dependencies: V1.0.128__connector_installation.sql
 
 CREATE TABLE connector_config (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,

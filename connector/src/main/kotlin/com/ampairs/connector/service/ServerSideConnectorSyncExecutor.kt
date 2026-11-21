@@ -16,7 +16,7 @@ import com.ampairs.connector.domain.model.ConnectorInstallation
  * [runCycle] with tenant context already set — so implementations use the tenant-scoped services
  * normally and MUST NOT touch [com.ampairs.core.multitenancy.TenantContextHolder] themselves.
  *
- * OAuth authorize/callback/refresh and webhook receivers are out of scope for this phase (spec 029
+ * OAuth authorize/callback/refresh and webhook receivers are out of scope for this phase (spec 032
  * FR-S08); this SPI and the encrypted secret store accommodate them without re-architecting.
  */
 interface ServerSideConnectorSyncExecutor {

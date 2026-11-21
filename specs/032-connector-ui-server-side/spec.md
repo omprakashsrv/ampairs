@@ -1,6 +1,6 @@
 # Feature Specification: Connector UI & Server-Side Execution
 
-**Feature Branch**: `029-connector-ui-server-side` (stacked on `013-apps-extension-platform`)
+**Feature Branch**: `032-connector-ui-server-side` (stacked on `013-apps-extension-platform`)
 **Created**: 2026-08-02
 **Status**: Draft
 **Depends on**: `013-apps-extension-platform` (connector platform: catalogue, installations, config, mapping, sparse-upsert, checkpoints, runs, `ConnectorEntityWriter` SPI, `ConnectorSecretCipher`)

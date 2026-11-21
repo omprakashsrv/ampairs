@@ -26,7 +26,7 @@ import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
-/** Unit tests for the Generic HTTP/JSON server-side executor (spec 029 FR-S03/S04). */
+/** Unit tests for the Generic HTTP/JSON server-side executor (spec 032 FR-S03/S04). */
 @ExtendWith(MockitoExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class GenericHttpJsonExecutorTest {

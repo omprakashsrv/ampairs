@@ -21,7 +21,7 @@ import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
 import org.mockito.quality.Strictness
 
-/** Unit tests for the server-side run scheduler (spec 029 FR-S02): dispatch only SERVER_SIDE, isolate failures. */
+/** Unit tests for the server-side run scheduler (spec 032 FR-S02): dispatch only SERVER_SIDE, isolate failures. */
 @ExtendWith(MockitoExtension::class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class ConnectorRunSchedulerTest {
