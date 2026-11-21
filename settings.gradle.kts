@@ -26,6 +26,7 @@ include("sequence")
 include("subscription")
 include("ecom")
 include("analytics")
+include("connector")
 include("ampairs_service")
 
 
