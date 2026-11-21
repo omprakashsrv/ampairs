@@ -71,7 +71,7 @@ dependencies {
     implementation("com.razorpay:razorpay-java:1.4.9")
 
     // Apache Commons for HMAC signature verification
-    implementation("commons-codec:commons-codec:1.22.0")
+    implementation("commons-codec:commons-codec:1.22.1")
 
     // JSON processing
     implementation("org.json:json:20260522")
