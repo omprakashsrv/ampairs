@@ -1,0 +1,19 @@
+[Unit]
+Description=Ampairs pull-based deployment agent (poll S3, deploy if changed)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=ampairs-deploy
+Group=ampairs-deploy
+# Unprivileged poller; the only privileged action is `sudo ampairs-apply-jar`,
+# which is constrained by /etc/sudoers.d/ampairs-deploy.
+ExecStart=/usr/local/bin/ampairs-pull-deploy.sh
+
+# Hardening — the agent only needs to read config, write its log/lock, and call out to S3.
+NoNewPrivileges=false
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/log/ampairs /run/lock
