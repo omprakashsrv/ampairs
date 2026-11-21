@@ -47,7 +47,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-security")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("io.jsonwebtoken:jjwt-api:0.13.0")
-    implementation("no.digipost.jaxb:jaxb2-jackson-helper:1.0.1")
+    implementation("no.digipost.jaxb:jaxb2-jackson-helper:2.0.1")
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.3")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.13.0")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.13.0")
