@@ -8,7 +8,7 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7" apply false
     id("org.flywaydb.flyway") version "13.1.0" apply false
     kotlin("jvm") version "2.4.10" apply false
-    kotlin("plugin.spring") version "2.4.10" apply false
+    kotlin("plugin.spring") version "2.4.21" apply false
 }
 
 // Project information
